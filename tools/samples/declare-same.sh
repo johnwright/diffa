@@ -16,4 +16,4 @@
 #
 
 
-bin/declare.sh -agent http://localhost:19093/diffa-agent -pairKey WEB-1 -pairGroup mygroup -upstreamName a -downstreamName b -versionPolicy same -upstreamUrl http://localhost:19293/diffa-participants/p/upstream -downstreamUrl http://localhost:19293/diffa-participants/p/downstream -matchTimeout 5
+bin/declare.sh -agent http://localhost:19093/diffa-agent -pairKey WEB-2 -pairGroup mygroup -upstreamName a -downstreamName b -versionPolicy same -upstreamUrl http://localhost:19293/diffa-participants/p/upstream -downstreamUrl http://localhost:19293/diffa-participants/p/downstream -matchTimeout 5

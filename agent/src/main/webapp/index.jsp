@@ -46,7 +46,7 @@
 					<!--<button id="zoomin" class="neutral">Zoom in</button>-->
 					<!--<button id="zoomout" class="neutral">Zoom out</button>-->
 				</div>
-				<div class="right">Refreshing in <span id="countdown">...not started</span></div>
+				<div class="right"><span id="errorContainer"></span></div>
 			</div>
 			<table id="difflist" class="left" summary="Table summary text"  border="0" cellspacing="0" cellpadding="0">
 				<thead>

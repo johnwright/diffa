@@ -18,14 +18,15 @@
 
 var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport
 	INTERVAL_MINS = 2, // the x-axis increments that difference events are bucketed into
-	POLL_SECS = 10, // how often the server is polled for new events
 	X_INCREMENTS = 60, // how many x-axis increments to fit into the HEATMAP_WIDTH. X_INCREMENTS * INTERVAL_MINS is the timeframe covered by the viewport
 	IS_POLLING = false, // global tracker for whether polling is switched on
 	COLOURS = {
 		selected: "#FFF2CC", // lightyellow
 		background: "#CFE2F3", // lightblue
 		darkblue: "#0000FF"
-	};
+	},
+	POLL_SECS = 1, // how often the server is polled for new events - the client is intended to run with this interval
+	POLL_INTERVAL = POLL_SECS*1000;
 
 // enable testing from file URI's - this makes use of jquery.ajax.js, which is a patched verion of jQuery.ajax that allows cross-domain requests (it will not work in Chrome!)
 if(document.location.protocol.indexOf("http") == -1) {
@@ -186,18 +187,14 @@ function setupHeatmapConfig(raphael_data) {
 	// addZoom(); here if you want to
 }
 
-function updateCountdown(val) {
-	if(!val) {
-		$('#countdown').text('... now!');
-	} else {
-		$('#countdown').text(val+"s");
-	}
+function updateError(val) {
+	$('#errorContainer').text(val+"s");
 }
 
 function stopPolling() {
-	var interval = startPolling.countdownInterval;
-	if(interval) {
-		clearInterval(interval);
+	var timeout = startPolling.pollingTimeout;
+	if(timeout) {
+		clearTimeout(timeout);
 	}
 	IS_POLLING = false;
 }
@@ -206,16 +203,11 @@ function startPolling() {
 	if(IS_POLLING) {
 		return false;
 	}
-	var config = startPolling.config,
-		SCROLL_INTERVAL = 1000,
-		POLL_MS = POLL_SECS*1000;
-	
 	var poll = function() {
-		var interval = startPolling.countdownInterval;
-		if(interval) {
-			clearInterval(interval);
+		var timeout = startPolling.pollingTimeout;
+		if(timeout) {
+			clearTimeout(timeout);
 		}
-		updateCountdown();
 		IS_POLLING = true;
 		
 		var sessionID = startPolling.config.sessionID,
@@ -228,31 +220,18 @@ function startPolling() {
 			if(!startPolling.etag) {
 				startPolling.etag = "";
 			}
-			//var etag = xhr.getResponseHeader('ETag');
+			var etag = xhr.getResponseHeader('ETag');
 			var raphael_data = mapDiffaToRaphael(data);
 			$(document).trigger('diffsLoaded', [{
-				raphael_data: raphael_data
-			//	redraw: etag!==startPolling.etag
+				raphael_data: raphael_data,
+				redraw: etag!==startPolling.etag
 			}]);
 			startPolling.etag = etag;
-			
-			var config = startPolling.config;
-			var startTime = Date.now();
-			var intervalCallback = function() {
-				var timeSincePoll = Date.now()-startTime;
-				if(timeSincePoll > POLL_MS) {
-					clearInterval(startPolling.countdownInterval);
-					poll();
-				} else {
-					updateCountdown(Math.round((POLL_MS-timeSincePoll)/1000));
-				}
-			};
-			startPolling.countdownInterval = window.setInterval(intervalCallback, SCROLL_INTERVAL);
-
+			startPolling.pollingTimeout = window.setTimeout(poll, POLL_INTERVAL);
 		};
 		var pollXHRError = function(xhr, status, ex) {
 			IS_POLLING = false;
-			$('#countdown').text('...error!');
+			updateError('error!');
 			if(console && console.log) {
 				var error = {
 					url: url,
@@ -275,6 +254,15 @@ function startPolling() {
 	poll();
 }
 
+function clearSwimLanes() {
+	var config = startPolling.config,
+		swimlanes = config.swimlanes;
+	for(var i=0, il=swimlanes.length; i<il; i++) {
+		swimlanes[i].remove();
+	}
+	config.swimlanes = [];
+}
+
 function drawSwimLanes() {
 	var config = startPolling.config,
 		axisyPaper = config.axisyPaper,
@@ -286,14 +274,21 @@ function drawSwimLanes() {
 		bottomgutter = config.bottomgutter,
 		Y = config.Y,
 		txt = config.txt,
-		COLOURS = config.COLOURS;
+		COLOURS = config.COLOURS,
+		label,
+		boundary;
+	if(!config.swimlanes) {
+		config.swimlanes = [];
+	}
+	clearSwimLanes();
 	$.each(axisy, function(i, label) {
 		/* Use something like this for highlighting swimlanes
 		paper.rect(leftgutter+1, 1, width-2-leftgutter, (height-bottomgutter)/2-2, 0).attr({fill: COLOURS.selected, stroke: "none"}); */
 		var laneHeight = Y*i;
-		axisyPaper.text(20, Y * (i + .5), label).attr(txt);
+		label = axisyPaper.text(20, Y * (i + .5), label).attr(txt);
+		config.swimlanes.push(label);
 		if(i>0) {
-			axisxPaper.path("M "+leftgutter+" "+laneHeight+"L"+width+" "+laneHeight).attr({"stroke-dasharray": "--", stroke: "#000"});
+			boundary = axisxPaper.path("M "+0+" "+laneHeight+"L"+config.axisxPaper.width+" "+laneHeight).attr({"stroke-dasharray": "--", stroke: "#000"});
 		}
 	});
 }
@@ -412,6 +407,7 @@ function drawBlobs() {
 					var dt = paper.circle(dx, dy, R).attr({stroke: "#000", fill: color});
 					dt.cluster = clusters[clusterCount];
 					clusters[clusterCount++].dt = dt; // this to make it easy to get to the dt
+					config.blobs.push(glow);
 					config.blobs.push(dt);
 					if(value>1) {
 						if(value>5) {
@@ -580,7 +576,6 @@ function findCircleForEvent(diffEvent) {
 	var circle,
 		config = startPolling.config,
 		clusters = config.clusters,
-		blobs = config.blobs,
 		timeToFind = diffEvent.detectedAt;
 	var eventTime, index;
 	$.each(clusters, function(i, cluster) {
@@ -744,11 +739,15 @@ $(function () {
 	
 	// bind to custom events
 	$(document).bind('diffsLoaded', function(e, params) {
-		setupHeatmapConfig(params.raphael_data);
-		drawSwimLanes();
-		drawXAxis();
-		drawBlobs();
-		updateDiffList();
+		if(params && params.redraw) {
+			setupHeatmapConfig(params.raphael_data);
+			drawSwimLanes();
+			drawXAxis();
+			drawBlobs();
+			updateDiffList();
+		} else {
+			updateError('last check for updates: '+(new Date).formatString('0hh:0mm:0ss'));
+		}		
 	});
 	$(document).bind('blobSelected', function(e, data) {
 		var circle = data.dt;
