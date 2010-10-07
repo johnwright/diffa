@@ -24,7 +24,6 @@ var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport
 	COLOURS = {
 		selected: "#FFF2CC", // lightyellow
 		background: "#CFE2F3", // lightblue
-		bigcluster: "#E06666", // lightred
 		darkblue: "#0000FF"
 	};
 
@@ -226,10 +225,17 @@ function startPolling() {
 				pollXHRError(xhr, status);
 				return false;
 			}
+			if(!startPolling.etag) {
+				startPolling.etag = "";
+			}
+			//var etag = xhr.getResponseHeader('ETag');
 			var raphael_data = mapDiffaToRaphael(data);
-			setupHeatmapConfig(raphael_data);
-			$(document).trigger('diffsLoaded');
-
+			$(document).trigger('diffsLoaded', [{
+				raphael_data: raphael_data
+			//	redraw: etag!==startPolling.etag
+			}]);
+			startPolling.etag = etag;
+			
 			var config = startPolling.config;
 			var startTime = Date.now();
 			var intervalCallback = function() {
@@ -299,6 +305,23 @@ function clearXAxis() {
 		labels[i].remove();
 	}
 	config.xLabels = [];
+}
+
+function nudgeXAxis() { // NB: not working yet, see comment below
+	var xDistance = (HEATMAP_WIDTH / X_INCREMENTS) * (POLL_SECS / (INTERVAL_MINS*60));
+	// move axisxPaper over
+	var config = startPolling.config;
+	var $paper = $('#axisxPaper');
+	var right = parseInt($paper.css('right'),10)+xDistance;
+	right += 'px';
+	$paper.css('right', right);
+	// move NOW back same distance
+	var now = config.xLabels[config.xLabels.length-1];
+	var x = now.attr('x');
+	//var width = config.axisxPaper.width;
+	//now.attr('x', width+xDistance);
+	config.axisxPaper.setSize(config.axisxPaper.width+xDistance);
+	now.translate(xDistance); // not working out, I think because fractional pixels aren't being treated the same in SVG as in CSS
 }
 
 function drawXAxis() {
@@ -385,9 +408,6 @@ function drawBlobs() {
 				(function (dx, dy, R, value) {
 					//var color = "hsb(" + [(1 - R / max) * .5, 1, .75] + ")";
 					var color = "#FFF";
-					if(value>20) {
-						color = config.COLOURS.bigcluster;
-					}
 					var glow = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: config.COLOURS.darkblue, opacity: 0 });
 					var dt = paper.circle(dx, dy, R).attr({stroke: "#000", fill: color});
 					dt.cluster = clusters[clusterCount];
@@ -723,7 +743,8 @@ $(function () {
 	});
 	
 	// bind to custom events
-	$(document).bind('diffsLoaded', function() {
+	$(document).bind('diffsLoaded', function(e, params) {
+		setupHeatmapConfig(params.raphael_data);
 		drawSwimLanes();
 		drawXAxis();
 		drawBlobs();
