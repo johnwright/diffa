@@ -126,8 +126,7 @@ no data found
 
       var API_BASE = "<%= apiRoot %>/rest"
     </script>
-		<script type="text/javascript" src="js/jquery-1.4.1.js" charset="utf-8"></script>
-		<script type="text/javascript" src="js/jquery.ajax.js" charset="utf-8"></script>
+		<script type="text/javascript" src="js/jquery-1.4.1.patched.js" charset="utf-8"></script>
 		<script type="text/javascript" src="js/jquery-ui-slider.1.8.5.min.js" charset="utf-8"></script>
 		<script type="text/javascript" src="js/jquery.color.js" charset="utf-8"></script>
 		<script type="text/javascript" src="js/raphael.js" charset="utf-8"></script> 

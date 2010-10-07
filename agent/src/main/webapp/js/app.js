@@ -18,7 +18,7 @@
 
 var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport
 	INTERVAL_MINS = 2, // the x-axis increments that difference events are bucketed into
-	X_INCREMENTS = 60, // how many x-axis increments to fit into the HEATMAP_WIDTH. X_INCREMENTS * INTERVAL_MINS is the timeframe covered by the viewport
+	X_INCREMENTS = 360, // how many x-axis increments to fit into the HEATMAP_WIDTH. X_INCREMENTS * INTERVAL_MINS is the timeframe covered by the viewport; this is the default - it updates if the first poll that returns data shows data older than 12 hours
 	IS_POLLING = false, // global tracker for whether polling is switched on
 	COLOURS = {
 		selected: "#FFF2CC", // lightyellow
@@ -33,7 +33,7 @@ if(document.location.protocol.indexOf("http") == -1) {
 	API_BASE = "http://localhost:19093"+API_BASE;
 }
 
-function mapDiffaToRaphael(fdData) {
+function mapDiffaToRaphael(fdData, recalcXIncrements) {
 	var data = [],	// this is all the blobs, where events within two minutes are grouped into a single blob and the value is the number of events
 		axisx = [],	// this is the two-minute intervals from NOW back to the earliest event
 		axisy = [];	// this is the unique list of pairKeys
@@ -57,15 +57,24 @@ function mapDiffaToRaphael(fdData) {
 			axisy.push(pairKey);
 		}
 	});
-	
+
+	// support rescaling the x-axis to fit all the data in
+	if(recalcXIncrements) {
+		console.log('recalcing');
+		if(mapDiffaToRaphael.defaultXIncrements) {
+			X_INCREMENTS = mapDiffaToRaphael.defaultXIncrements;
+		}
+		if(minTime<now-INTERVAL_MS*X_INCREMENTS) {
+			X_INCREMENTS = (now-minTime) / INTERVAL_MS;
+		}
+	}
 	// if minTime is not earlier than the limit created by X_INCREMENTS, we need to fill up the array so the graph is full width
 	var limit = Math.min(minTime,now-INTERVAL_MS*X_INCREMENTS);
-	
 	// create x-axis increments of two minutes
 	for(var i=now; i>=limit; i-=INTERVAL_MS) {
 		axisx.push(i);
 	}
-	axisx.push(i); // just to overlap beyond earliest event // TO-DO: evaluate if this is necessary
+	axisx.push(i); // just to overlap beyond earliest event // TO-DO: figure out if this is necessary
 	
 	var index,
 		currEvent,
@@ -217,14 +226,20 @@ function startPolling() {
 				pollXHRError(xhr, status);
 				return false;
 			}
+			var recalcXIncrements = false;
+			if(!startPolling.config.blobs || !startPolling.config.blobs.length) {
+				// support rescaling the x-axis to fit in more data
+				recalcXIncrements = true;
+			}
 			if(!startPolling.etag) {
 				startPolling.etag = "";
 			}
 			var etag = xhr.getResponseHeader('ETag');
-			var raphael_data = mapDiffaToRaphael(data);
+			var raphael_data = mapDiffaToRaphael(data, recalcXIncrements);
 			$(document).trigger('diffsLoaded', [{
 				raphael_data: raphael_data,
-				redraw: etag!==startPolling.etag
+				redraw: etag!==startPolling.etag,
+				recalcXIncrements: recalcXIncrements
 			}]);
 			startPolling.etag = etag;
 			startPolling.pollingTimeout = window.setTimeout(poll, POLL_INTERVAL);
@@ -337,10 +352,16 @@ function drawXAxis() {
 	var now = axisx[axisx.length-1];
 
 	axisx = $.map(axisx, function(timestamp, i) {
-		var mins_ago = (now-timestamp)/(60*1000),
-			label;
-		if(i % 2 !== 0) {
-			label = (new Date(timestamp)).formatString("0hh:0mm"); // JRL: this will be misleading if the event is older than midnight
+		var label,
+			d = new Date(timestamp),
+			dmins = d.getMinutes();
+		if(dmins<INTERVAL_MINS/2 || dmins>=60-INTERVAL_MINS/2) {
+			if(dmins>=60-INTERVAL_MINS/2) {
+				d.setHours(d.getHours()+1);
+			}
+			d.setMinutes(0);
+			
+			label = d.formatString("hh:0mm"); /* JRL: this will be misleading if the timeline goes back before midnight */
 		} else {
 			label = "";
 		}

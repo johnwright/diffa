@@ -4945,6 +4945,10 @@ jQuery.extend({
 
 		// Open the socket
 		// Passing null username, generates a login popup on Opera (#2865)
+		// JRL: for cross-domain AJAX from file: URI's in Firefox (doesn't work in Chrome, already works in other browsers)
+		if(window.Components && window.netscape && window.netscape.security && document.location.protocol.indexOf("http") == -1) {
+			window.netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+		}
 		if ( s.username ) {
 			xhr.open(type, s.url, s.async, s.username, s.password);
 		} else {
