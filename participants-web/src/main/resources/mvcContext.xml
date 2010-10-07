@@ -1,0 +1,61 @@
+<!--
+
+    Copyright (C) 2010 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security-2.0.1.xsd">
+
+  <bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping" />
+  <bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter" />
+
+
+  <bean name="homeController" class="net.lshift.diffa.participants.web.ParticipantUIController">
+    <constructor-arg ref="upstreamPart" />
+    <constructor-arg ref="downstreamPart" />
+  </bean>
+
+  <bean id="htmlMediaType" class="org.springframework.http.MediaType">
+    <constructor-arg value="text" />
+    <constructor-arg value="html" />
+  </bean>
+  <bean class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+    <property name="order" value="0" />
+    <property name="defaultContentType" ref="htmlMediaType"/>
+    <property name="mediaTypes">
+      <map>
+        <entry key="json" value="application/json" />
+      </map>
+    </property>
+    <property name="defaultViews">
+      <list>
+        <bean class="net.lshift.diffa.util.ResultOnlyMappingJacksonJsonView" />
+      </list>
+    </property>
+    <property name="viewResolvers" ref="jspViewResolver" />
+  </bean>
+
+  <bean id="jspViewResolver"
+      class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+      <property name="order" value="1" />
+      <property name="prefix" value="/WEB-INF/views/" />
+      <property name="suffix" value=".jsp" />
+  </bean>
+</beans>

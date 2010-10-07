@@ -1,0 +1,256 @@
+<!--
+
+    Copyright (C) 2010 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<beans
+  xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+
+  <bean id="placeholderConfig" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+    <property name="properties">
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName" value="java:comp/env/diffaProperties"/>
+      </bean>
+    </property>
+  </bean>
+
+  <bean id="configurationRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
+    <constructor-arg ref="protocolMapper" />
+    <constructor-arg value="configuration" />
+  </bean>
+  <bean id="changesRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
+    <constructor-arg ref="protocolMapper" />
+    <constructor-arg value="changes" />
+  </bean>
+  <bean id="differencesRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
+    <constructor-arg ref="protocolMapper" />
+    <constructor-arg value="differences" />
+  </bean>
+  <bean id="matchesRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
+    <constructor-arg ref="protocolMapper" />
+    <constructor-arg value="matches" />
+  </bean>
+
+
+  <!--
+    =============
+      Protocols
+    =============
+  -->
+  <bean id="protocolMapper" class="net.lshift.diffa.kernel.protocol.ProtocolMapper">
+    <constructor-arg>
+      <map>        
+        <entry key="changes">
+          <list>
+            <bean class="net.lshift.diffa.messaging.json.ChangesHandler">
+              <constructor-arg ref="changesFrontend" />
+            </bean>
+          </list>
+        </entry>        
+      </map>
+    </constructor-arg>
+  </bean>
+
+
+  <!--
+    ============
+      Policies
+    ============
+  -->
+  <bean id="versionPolicyManager" class="net.lshift.diffa.kernel.differencing.VersionPolicyManager"/>
+
+  <bean id="registerSamePolicy" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="versionPolicyManager"/>
+    <property name="targetMethod" value="registerPolicy"/>
+    <property name="arguments">
+      <list>
+        <value>same</value>
+        <bean class="net.lshift.diffa.kernel.differencing.SameVersionPolicy">
+            <constructor-arg ref="versionCorrelationStore" />
+            <constructor-arg ref="sessionManager" />
+          </bean>
+      </list>
+    </property>
+  </bean>
+
+  <bean id="registerCorrelatedPolicy" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="versionPolicyManager"/>
+    <property name="targetMethod" value="registerPolicy"/>
+    <property name="arguments">
+      <list>
+        <value>correlated</value>
+        <bean class="net.lshift.diffa.kernel.differencing.CorrelatedVersionPolicy">
+          <constructor-arg ref="versionCorrelationStore" />
+          <constructor-arg ref="sessionManager" />
+        </bean>
+      </list>
+    </property>
+  </bean>
+
+  <!--
+    ============
+      Matching
+    ============
+  -->
+  <bean id="matchingManager" class="net.lshift.diffa.kernel.matching.LocalEventMatchingManager" destroy-method="close">
+    <constructor-arg ref="diffaConfigStore" />
+  </bean>
+
+
+  <!--
+    ============
+      Sessions
+    ============
+  -->
+  <bean id="sessionManager" class="net.lshift.diffa.kernel.differencing.DefaultSessionManager">
+    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="sessionCacheProvider" />
+    <constructor-arg ref="matchingManager" />
+    <constructor-arg ref="versionPolicyManager" />
+    <constructor-arg ref="participantFactory" />
+  </bean>
+  <bean id="sessionCacheProvider" class="net.lshift.diffa.kernel.differencing.LocalSessionCacheProvider" />
+
+  <!--
+    ============
+      Notifications
+    ============
+  -->
+
+  <bean id="notifier" class="net.lshift.diffa.kernel.notifications.EventNotifier" destroy-method="destroy">
+    <constructor-arg ref="sessionManager" />
+    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg>
+      <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="org.joda.time.Period"/>
+        <property name="targetMethod" value="minutes"/>
+        <property name="arguments">
+          <list>
+            <value>${event.notifier.quiet.time}</value>
+          </list>
+        </property>
+      </bean>
+    </constructor-arg>
+  </bean>
+
+  <bean id="registerSmtpProvider" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="notifier"/>
+    <property name="targetMethod" value="registerProvider"/>
+    <property name="arguments">
+      <bean class="net.lshift.diffa.agent.notifications.SmtpNotifier">
+        <constructor-arg index="0">
+          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/mail/Session"/>
+          </bean>
+        </constructor-arg>
+        <constructor-arg index="1">
+          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/diffaCustomRoot"/>
+          </bean>
+        </constructor-arg>
+        <constructor-arg index="2" value="${diffa.host}:${diffa.port}"/>
+      </bean>
+    </property>
+  </bean>  
+
+  <!--
+    ================
+      Participants
+    ================
+  -->
+  <bean id="participantFactory" class="net.lshift.diffa.kernel.participants.ParticipantFactory">
+    <constructor-arg>
+      <list>        
+        <bean class="net.lshift.diffa.messaging.json.JSONRestParticipantProtocolFactory" />
+      </list>
+    </constructor-arg>
+  </bean>
+
+
+  <!--
+    =============
+      Frontends
+    =============
+  -->
+  <bean id="configurationFrontend" class="net.lshift.diffa.kernel.frontend.Configuration">
+    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="matchingManager"/>
+    <constructor-arg ref="sessionManager"/>
+  </bean>
+  <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
+    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="versionPolicyManager"/>
+    <constructor-arg ref="matchingManager"/>
+  </bean>
+  <bean id="matchesFrontend" class="net.lshift.diffa.kernel.frontend.Matches">
+    <constructor-arg ref="matchingManager"/>
+  </bean>
+  <bean id="actionsFrontend" class="net.lshift.diffa.kernel.frontend.ActionsProxy">
+    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="participantFactory" />
+  </bean>
+
+  <!--
+    ========
+      Data
+    ========
+  -->
+  <bean id="diffaSessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+    <property name="dataSource">
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/jdbc/diffaDS"/>
+      </bean>
+    </property>
+    <property name="hibernateProperties">
+      <bean class="net.lshift.diffa.agent.util.HibernatePropertiesFactory">
+        <constructor-arg index="0">
+          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/diffaHibernateDialect"/>
+          </bean>
+        </constructor-arg>
+        <constructor-arg index="1">
+          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/diffaCreateDB"/>
+          </bean>
+        </constructor-arg>
+      </bean>
+    </property>
+    <property name="mappingResources">
+      <list>
+          <value>net/lshift/diffa/kernel/differencing/Correlations.hbm.xml</value>
+          <value>net/lshift/diffa/kernel/config/Config.hbm.xml</value>
+      </list>
+    </property>
+  </bean>
+  <bean id="diffaConfigStore" class="net.lshift.diffa.kernel.config.HibernateConfigStore">
+    <constructor-arg index="0" ref="diffaSessionFactory" />
+  </bean>
+  <bean id="versionCorrelationStore" class="net.lshift.diffa.kernel.differencing.HibernateVersionCorrelationStore">
+    <constructor-arg index="0" ref="diffaSessionFactory" />
+  </bean>
+
+  <!--
+    ========
+      Boot the REST proxy
+    ========
+  -->
+
+  <import resource="RESTful-context.xml"/>
+  
+</beans>

@@ -1,0 +1,3 @@
+[submodule "javamail-file-transport"]
+	path = javamail-file-transport
+	url = git://github.com/lshift/javamail-file-transport

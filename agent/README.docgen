@@ -1,0 +1,15 @@
+The REST API documentation in markdown is auto-generated from annotations in the code. This is linked to the 'process-classes' phase.
+
+The result should normally go to the 'doc/rest' subdirectory of a 'gh-pages' branch checkout.
+
+You can specify the target directory by overriding the docs.targetDir property. Thus a full example would look as follows:
+
+    cd DIFFA-MASTER-CHECKOUT/agent
+    mvn install -Ddocs.targetDir=../../DIFFA-GH-PAGES-CHECKOUT/doc/rest
+
+...assuming you have your checkouts of 'gh-pages' and 'master' in a common directory.
+
+After checking the generated content you need to commit both the docgen logic/templates on the master branch and the generated files on the gh-pages branch separately.
+
+Also see README in the root of the 'gh-pages' branch.
+

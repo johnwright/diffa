@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!--
+
+    Copyright (C) 2010 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="net.lshift.diffa.kernel.config">
+    <class name="Endpoint" table="endpoint" abstract="false">
+      <id name="name" type="string" />
+      <property name="url" type="string" not-null="true" unique="true" />
+      <property name="online" type="boolean" />
+    </class>
+
+    <class name="Pair" table="pair" abstract="false">
+      <id name="key" type="string" column="pair_key" />
+      <many-to-one name="upstream" class="Endpoint" not-null="true" lazy="false" fetch="join" />
+      <many-to-one name="downstream" class="Endpoint" not-null="true" lazy="false" fetch="join" />
+      <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false" />
+      <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false" />
+      <many-to-one name="group" column="name" class="PairGroup" not-null="true" lazy="false" fetch="join" />
+    </class>
+
+    <class name="PairGroup" table="pair_group" abstract="false">
+      <id name="key" type="string" column="group_key" />
+    </class>
+
+  <class name="User" table="users" abstract="false">
+    <id name="name" type="string"/>
+    <property name="email" type="string" />
+  </class>
+
+  <query name="endpointByName">
+    select e from Endpoint e where e.name = :name
+  </query>
+
+  <query name="userByName">
+    select u from User u where u.name = :name
+  </query>
+
+  <query name="pairByKey">
+    select c from Pair c where c.key = :key
+  </query>
+
+  <query name="groupByKey">
+    select g from PairGroup g where g.key = :key
+  </query>
+
+  <query name="allEndpoints">
+    select e from Endpoint e
+  </query>
+
+  <query name="allUsers">
+    select u from User u
+  </query>
+
+  <query name="allGroups">
+    select g from PairGroup g
+  </query>
+
+  <query name="pairsByGroup">
+    select p from Pair p where p.group = :group
+  </query>
+
+</hibernate-mapping>

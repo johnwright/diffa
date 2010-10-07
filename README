@@ -1,0 +1,13 @@
+License Checking
+----------------
+
+Diffa uses the maven license plugin (http://code.google.com/p/maven-license-plugin/) to check that the license files are up to date.
+
+To run the license check:
+
+mvn -e license:format -Dyear=2010
+
+To reformat each file according to the header file:
+
+mvn -e license:format -Dyear=2010
+

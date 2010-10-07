@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2010 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.1 http://maven.apache.org/xsd/assembly-1.1.1.xsd">
+
+  <formats>
+    <!--<format>dir</format>-->     <!-- Uncomment this when working on the packaging -->
+    <format>zip</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <dependencySets>
+    <!-- Web Application -->
+    <dependencySet>
+      <scope>compile</scope>
+      <unpack>true</unpack>
+      <outputDirectory>webapps/root/</outputDirectory>
+      <includes>
+        <include>net.lshift.diffa:diffa-agent:war</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
+      <scope>compile</scope>
+      <unpack>true</unpack>
+      <outputDirectory>webapps/participant-demo/</outputDirectory>
+      <includes>
+        <include>net.lshift.diffa:diffa-participants-web:war</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+
+    <!-- Jetty Booter, Tool Jars -->
+    <dependencySet>
+      <useTransitiveFiltering>false</useTransitiveFiltering>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>org.eclipse.jetty:jetty-start</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
+      <useTransitiveFiltering>false</useTransitiveFiltering>
+      <useStrictFiltering>true</useStrictFiltering>
+      <outputDirectory>tools/</outputDirectory>
+      <includes>
+        <include>net.lshift.diffa:diffa-tools</include>
+        <include>commons-cli:commons-cli</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+
+
+    <!-- Jetty Runtime -->
+    <dependencySet>
+      <outputDirectory>lib</outputDirectory>
+      <useTransitiveFiltering>true</useTransitiveFiltering>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>org.eclipse.jetty:jetty-server</include>
+        <include>org.eclipse.jetty:jetty-util</include>
+        <include>org.eclipse.jetty:jetty-plus</include>
+        <include>org.eclipse.jetty:jetty-jmx</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+    <dependencySet>
+      <scope>provided</scope>
+      <outputDirectory>lib</outputDirectory>
+      <useTransitiveFiltering>false</useTransitiveFiltering>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>javax.servlet:servlet-api</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+
+    <!-- JDNI Support -->
+    <dependencySet>
+      <outputDirectory>lib/jndi</outputDirectory>
+      <useTransitiveFiltering>true</useTransitiveFiltering>
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>commons-dbcp:commons-dbcp</include>
+        <include>org.apache.derby:derby</include>
+        <include>javax.mail:mail</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+
+    <!-- JSP Support -->
+    <dependencySet>
+      <outputDirectory>lib/jsp</outputDirectory>
+      <!--<useTransitiveFiltering>true</useTransitiveFiltering>-->
+      <useStrictFiltering>true</useStrictFiltering>
+      <includes>
+        <include>org.eclipse.jetty:jetty-jsp-2.1</include>
+        <include>org.eclipse.jdt.core.compiler:ecj</include>
+        <include>org.mortbay.jetty:jsp-2.1-glassfish</include>
+        <include>org.mortbay.jetty:jsp-api-2.1-glassfish</include>
+      </includes>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+  </dependencySets>
+
+  <fileSets>
+    <fileSet>
+      <directory>src/main/assembly/resources</directory>
+      <outputDirectory>.</outputDirectory>
+      <filtered>false</filtered>
+    </fileSet>
+  </fileSets>
+
+</assembly>

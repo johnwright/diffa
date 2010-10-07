@@ -1,0 +1,116 @@
+<!--
+
+    Copyright (C) 2010 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security-2.0.1.xsd">
+
+  <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations" value="classpath:demo.properties" />
+  </bean>
+
+  <bean id="configClient" class="net.lshift.diffa.messaging.json.ConfigurationRestClient">
+      <constructor-arg>
+          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/agentUrl"/>
+          </bean>
+      </constructor-arg>
+  </bean>
+
+  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="configClient"/>
+    <property name="targetMethod" value="declareGroup"/>
+    <property name="arguments">
+      <list>
+        <value>${demo.group}</value>
+      </list>
+    </property>
+  </bean>
+
+  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="configClient"/>
+    <property name="targetMethod" value="declareEndpoint"/>
+    <property name="arguments">
+      <list>
+        <value>${demo.downstreamName}</value>
+        <value>${demo.downstreamUrl}</value>
+      </list>
+    </property>
+  </bean>
+
+  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="configClient"/>
+    <property name="targetMethod" value="declareEndpoint"/>
+    <property name="arguments">
+      <list>
+        <value>${demo.upstreamName}</value>
+        <value>${demo.upstreamUrl}</value>
+      </list>
+    </property>
+  </bean>
+
+  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="configClient"/>
+    <property name="targetMethod" value="declarePair"/>
+    <property name="arguments">
+      <list>
+        <value>${demo.pair.key}</value>
+        <value>${demo.versionPolicy}</value>
+        <value>${demo.matchTimeout}</value>
+        <value>${demo.upstreamName}</value>
+        <value>${demo.downstreamName}</value>
+        <value>${demo.group}</value>
+      </list>
+    </property>
+  </bean>
+
+  <bean id="upstreamPart" class="net.lshift.diffa.participants.UpstreamWebParticipant">
+    <constructor-arg value="a" />
+    <constructor-arg>
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName" value="java:comp/env/agentUrl"/>
+      </bean>
+    </constructor-arg>
+  </bean>
+  <bean id="downstreamPart" class="net.lshift.diffa.participants.DownstreamWebParticipant">
+    <constructor-arg value="b" />
+    <constructor-arg>
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName" value="java:comp/env/agentUrl"/>
+      </bean>
+    </constructor-arg>
+  </bean>
+
+  <bean id="upstreamRequestHandler" class="net.lshift.diffa.participants.web.ParticipantRequestHandler">
+    <constructor-arg>
+      <bean class="net.lshift.diffa.messaging.json.UpstreamParticipantHandler">
+        <constructor-arg ref="upstreamPart" />
+      </bean>
+    </constructor-arg>
+  </bean>
+  <bean id="downstreamRequestHandler" class="net.lshift.diffa.participants.web.ParticipantRequestHandler">
+    <constructor-arg>
+      <bean class="net.lshift.diffa.messaging.json.DownstreamParticipantHandler">
+        <constructor-arg ref="downstreamPart" />
+      </bean>
+    </constructor-arg>
+  </bean>
+</beans>

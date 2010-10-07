@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2010 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+
+<web-app version="2.4">
+
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+
+  <listener>
+    <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+  </listener>
+
+  <servlet>
+    <servlet-name>jerseyspring</servlet-name>
+    <servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+    <init-param>
+      <param-name>com.sun.jersey.config.property.packages</param-name>
+      <param-value>net.lshift.diffa.agent.rest;org.codehaus.jackson.jaxrs</param-value>
+    </init-param>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>jerseyspring</servlet-name>
+    <url-pattern>/rest/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>configurationRequestHandler</servlet-name>
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>configurationRequestHandler</servlet-name>
+    <url-pattern>/configuration/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>changesRequestHandler</servlet-name>
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>changesRequestHandler</servlet-name>
+    <url-pattern>/changes/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>differencesRequestHandler</servlet-name>
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>differencesRequestHandler</servlet-name>
+    <url-pattern>/differences/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>matchesRequestHandler</servlet-name>
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>matchesRequestHandler</servlet-name>
+    <url-pattern>/matches/*</url-pattern>
+  </servlet-mapping>
+
+  <resource-ref>
+    <description>Diff Engine DataSource</description>
+    <res-ref-name>jdbc/diffaDS</res-ref-name>
+    <res-type>javax.sql.DataSource</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+
+  <resource-ref>
+    <description>diffa Mail</description>
+    <res-ref-name>mail/Session</res-ref-name>
+    <res-type>javax.mail.Session</res-type>
+    <res-auth>Container</res-auth>
+  </resource-ref>
+
+  <env-entry>
+    <env-entry-name>diffaCustomRoot</env-entry-name>
+    <env-entry-value>__context__</env-entry-value>
+    <env-entry-type>java.lang.String</env-entry-type>
+  </env-entry>
+  <env-entry>
+    <env-entry-name>diffaProperties</env-entry-name>
+    <env-entry-type>java.io.Properties</env-entry-type>
+  </env-entry>
+  <env-entry>
+    <env-entry-name>diffaHibernateDialect</env-entry-name>
+    <env-entry-value>org.hibernate.dialect.SQLServerDialect</env-entry-value>
+    <env-entry-type>java.lang.String</env-entry-type>
+  </env-entry>
+  <env-entry>
+    <env-entry-name>diffaCreateDB</env-entry-name>
+    <env-entry-value>false</env-entry-value>
+    <env-entry-type>java.lang.Boolean</env-entry-type>
+  </env-entry>
+</web-app>
+
