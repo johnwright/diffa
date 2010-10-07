@@ -222,11 +222,10 @@ function startPolling() {
 		var sessionID = startPolling.config.sessionID,
 			url = API_BASE+"/diffs/sessions/"+sessionID;
 		var pollXHRCallback = function(data, status, xhr) {
-			if(!data/* || !data.length*/) {
+			if(!data) {
 				pollXHRError(xhr, status);
 				return false;
 			}
-			// data = test_data;
 			var raphael_data = mapDiffaToRaphael(data);
 			setupHeatmapConfig(raphael_data);
 			$(document).trigger('diffsLoaded');
@@ -616,12 +615,13 @@ function showContent(circle, diffEvent) {
 			}
 		}
 	});
-
-	// I'm avoiding getting the list of actions dynamically, since "resend source" is the only one available and it is hard-coded. The URL for resending is /actions/WEB-1/resend/${id}	
+	
 	var $actionListContainer = $('#actionlist').empty();
-	var actionListCallback = function() {
+	var actionListCallback = function(actionList, status, xhr) {
+		if(!actionList) {
+			return;
+		}
 		var $repairStatus = $('#repairstatus');
-		var actionList = test_action_list; // TO-DO: replace with getting the real data from the repsonse
 		$.each(actionList, function(i, action) {
 		
 			$("<label>"+action.name+"</label>").appendTo($actionListContainer);
@@ -664,7 +664,10 @@ function showContent(circle, diffEvent) {
 			$('<br class="clearboth"/>').appendTo($actionListContainer);
 		});
 	};
-	window.setTimeout(actionListCallback, 200); // TO-DO: replace this with a real call to get the repair list, although it is hard-coded at the moment to only return the resend source action
+	$.ajax({
+		url: API_BASE+'/actions/'+pairKey,
+		success: actionListCallback
+	});
 }
 
 function createSession() {
