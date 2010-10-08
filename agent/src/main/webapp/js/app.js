@@ -623,27 +623,49 @@ function showContent(circle, diffEvent) {
 	var itemID = diffEvent.objId.id,
 		pairKey = diffEvent.objId.pairKey,
 		upstreamLabel = "upstream",
-		upstreamValue = diffEvent.upstreamVsn || "no data",
+		upstreamVersion = diffEvent.upstreamVsn || "no version",
+		upstreamContent = "", // load dynamically
 		downstreamLabel = "downstream",
-		downstreamValue = diffEvent.downstreamVsn || "no data";
+		downstreamVersion = diffEvent.downstreamVsn || "no version",
+		downstreamContent = "" // load dynamically
 	
 	$('#contentviewer h6').eq(0).text('Content for item ID: '+itemID);
-	$('#item1')
-		.find('.diffHash span').text(upstreamLabel).end()
-		.find('pre').text(upstreamValue);
-	$('#item2')
-		.find('.diffHash span').text(downstreamLabel).end()
-		.find('pre').text(downstreamValue);
+	$('#item1 .diffHash')
+		.html('<span>'+upstreamLabel+'</span>'+upstreamVersion);
+	$('#item2 .diffHash')
+		.html('<span>'+downstreamLabel+'</span>'+downstreamVersion);
 
-	// go get the real values for the upstream and downstream labels
+	
+	var getContent = function(url,selector,label) {
+		$.ajax({
+			url: url+'/'+itemID,
+			success: function(data) {
+				console.log(arguments);
+				$(selector).text(data.message||"no content found");
+			},
+			error: function(xhr, status, ex) {
+				if(console && console.log) {
+					console.log('error getting the content for '+(label||"(no label)"), status, ex, xhr);
+				}
+			}
+		});
+	};
+
+	// go get the real values for the upstream and downstream labels and the URL's for content
+	var upstreamContentURL, downstreamContentURL;
 	$.ajax({
 		method: "GET",
 		url: API_BASE+"/config/pairs/"+pairKey,
 		success: function(data, status, xhr) {
 			upstreamLabel = data.upstream.name;
+			upstreamContentURL = data.upstream.url;
 			$('#item1 h6').text(upstreamLabel);
 			downstreamLabel = data.downstream.name;
+			downstreamContentURL = data.downstream.url;
 			$('#item2 h6').text(downstreamLabel);
+			// go get the content for upstream and downstream
+			getContent(upstreamContentURL,"#item1 pre",upstreamLabel);
+			getContent(downstreamContentURL,"#item2 pre",downstreamLabel);
 		},
 		error: function(xhr, status, ex) {
 			if(console && console.log) {
