@@ -74,8 +74,7 @@
 							<span>item 1</span>
 						</div>
 						<div class="codeBox">
-							<pre name="code" class="css">
-							</pre>
+							<pre></pre>
 						</div>
 					</div>
 					<div id="item2" class="diffSet">
@@ -83,9 +82,7 @@
 							<span>item 2</span>
 						</div>
 						<div class="codeBox">
-							<pre>
-no data found
-							</pre>
+							<pre></pre>
 						</div>
 					</div>
 				</div>

@@ -60,7 +60,6 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 
 	// support rescaling the x-axis to fit all the data in
 	if(recalcXIncrements) {
-		console.log('recalcing');
 		if(mapDiffaToRaphael.defaultXIncrements) {
 			X_INCREMENTS = mapDiffaToRaphael.defaultXIncrements;
 		}
@@ -577,20 +576,27 @@ function highlightSelectedBlob(blob) {
 		selectedBlob = paper.selectedBlob;
 	if(selectedBlob) {
 		selectedBlob.attr("fill", "#FFF");
+		paper.selectedBlob = null;
 	}
-   	blob.attr("fill", config.COLOURS.selected);
-	paper.selectedBlob = blob;
+	if(blob) {
+		blob.attr("fill", config.COLOURS.selected);
+		paper.selectedBlob = blob;
+	}
 }
 
 function highlightDiffListRows(circle) {
 	$rows = $("#difflist").find("tbody tr").filter(function() {
 		return $(this).data('circle')===circle;
 	});
-	$rows
-		.siblings()
-		.removeClass('selected')
-		.end()
-		.addClass('selected');
+	if($rows.length) {
+		$rows
+			.siblings()
+			.removeClass('selected')
+			.end()
+			.addClass('selected');
+	} else {
+		$('#difflist').find('tbody tr').removeClass('selected');
+	}
 }
 
 function findCircleForEvent(diffEvent) {
@@ -616,6 +622,14 @@ function findCircleForEvent(diffEvent) {
 }
 
 function showContent(circle, diffEvent) {
+	if(!circle) { // reset content box
+		$('#contentviewer h6').eq(0).text('No item selected');
+		$('#item1 .diffHash').html('<span>item 1</span>')
+		$('#item1 pre').empty();
+		$('#item2 .diffHash').html('<span>item 2</span>');
+		$('#item2 pre').empty();
+		return;
+	}
 	if(!diffEvent) {
 		diffEvent = circle.cluster[0]; // diffEvent as a parameter comes from a clicking a specific row of the diffList
 	}
@@ -627,7 +641,7 @@ function showContent(circle, diffEvent) {
 		upstreamContent = "", // load dynamically
 		downstreamLabel = "downstream",
 		downstreamVersion = diffEvent.downstreamVsn || "no version",
-		downstreamContent = "" // load dynamically
+		downstreamContent = ""; // load dynamically
 	
 	$('#contentviewer h6').eq(0).text('Content for item ID: '+itemID);
 	$('#item1 .diffHash')
@@ -640,7 +654,6 @@ function showContent(circle, diffEvent) {
 		$.ajax({
 			url: url+'/'+itemID,
 			success: function(data) {
-				console.log(arguments);
 				$(selector).text(data.message||"no content found");
 			},
 			error: function(xhr, status, ex) {
@@ -769,8 +782,11 @@ $(function () {
 		return false;
 	});
 	
-	// set up click handlers to fire custom events
-	$('#difflist').click(function(e) {
+	var diffListSelect = function(e) {
+		if(!e) {
+			$(document).trigger('blobSelected', {});
+			return;
+		}
 		var $diffRow = $(e.target).closest('tr'),
 			diffEvent = $diffRow.data('event'),
 			circle = findCircleForEvent(diffEvent);
@@ -778,6 +794,17 @@ $(function () {
 			dt: circle,
 			diffEvent: diffEvent // provide the event that was clicked, because the table can show more than one event per row
 		});
+	};
+	
+	// set up click handlers to fire custom events
+	$('#difflist').click(function(e) {
+		diffListSelect(e);
+		return false;
+	});
+	$('#difflist').hover(function(e) {
+		diffListSelect(e);
+	}, function() {
+		diffListSelect();
 	});
 	
 	// bind to custom events
