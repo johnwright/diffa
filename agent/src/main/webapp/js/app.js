@@ -64,7 +64,9 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 			X_INCREMENTS = mapDiffaToRaphael.defaultXIncrements;
 		}
 		if(minTime<now-INTERVAL_MS*X_INCREMENTS) {
-			X_INCREMENTS = (now-minTime) / INTERVAL_MS;
+			mapDiffaToRaphael.defaultXIncrements = X_INCREMENTS;
+			X_INCREMENTS = ((now-minTime) / INTERVAL_MS);
+			X_INCREMENTS += Math.ceil(10 / (HEATMAP_WIDTH / X_INCREMENTS)); // 10px room to breath for oldest data point
 		}
 	}
 	// if minTime is not earlier than the limit created by X_INCREMENTS, we need to fill up the array so the graph is full width
