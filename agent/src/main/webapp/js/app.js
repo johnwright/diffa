@@ -426,7 +426,8 @@ function drawBlobs() {
 					var glow = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: config.COLOURS.darkblue, opacity: 0 });
 					var dt = paper.circle(dx, dy, R).attr({stroke: "#000", fill: color});
 					dt.cluster = clusters[clusterCount];
-					clusters[clusterCount++].dt = dt; // this to make it easy to get to the dt
+					clusters[clusterCount].dt = dt; // this to make it easy to get to the dt
+					clusters[clusterCount++].glow = glow; // this to make it easy to get to the glow
 					config.blobs.push(glow);
 					config.blobs.push(dt);
 					if(value>1) {
@@ -441,21 +442,19 @@ function drawBlobs() {
 					}
 					var dot = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: config.COLOURS.darkblue, opacity: 0});
 					config.blobs.push(dot);
-					dot[0].onmouseover = function () {
-						glow.attr({
-							fill: "r"+COLOURS.darkblue+"-"+COLOURS.background,
-							'opacity': 0.5
+					$(dot[0]).hover(function() {
+						$(document).trigger('blobHovered', {
+							dt: dt,
+							glow: glow
 						});
-					};
-					dot[0].onmouseout = function () {
-						glow.attr({
-							fill: "config.COLOURS.darkblue",
-							opacity: 0
+					}, function() {
+						$(document).trigger('blobUnHovered', {
+							dt: dt,
+							glow: glow
 						});
-					};
-					dot[0].onclick = function() {
+					}).click(function() {
 						$(document).trigger('blobSelected', {dt: dt});
-					};
+					});
 				})(X * j + X*offset, Y * (i + .5), R, d);
 			}
 			o++;
@@ -591,17 +590,18 @@ function highlightDiffListRows(circle, persist) {
 	if($rows.length) {
 		$rows
 			.siblings()
-			.removeClass(persist ? "selected" : "highlighted")
+			.removeClass(persist ? "selected highlighted" : "highlighted")
 			.end()
 			.removeClass("highlighted")
-			.addClass(persist ? "selected" : "highlighted"); // BUG: is adding grey when mouseout
+			.addClass(persist ? "selected" : "highlighted");
 	} else {
-		$('#difflist').find('tbody tr').removeClass('highlighted selected');
+		$('#difflist').find('tbody tr').removeClass('highlighted');
 	}
 }
 
-function findCircleForEvent(diffEvent) {
-	var circle,
+function findBlobForEvent(diffEvent) {
+	var dt,
+		glow,
 		config = startPolling.config,
 		clusters = config.clusters,
 		timeToFind = diffEvent.detectedAt;
@@ -618,8 +618,12 @@ function findCircleForEvent(diffEvent) {
 			}
 		});
 	});
-	circle = clusters[index].dt;
-	return circle;
+	dt = clusters[index].dt;
+	glow = clusters[index].glow;
+	return {
+		dt: dt,
+		glow: glow
+	};
 }
 
 function showContent(circle, diffEvent, loadContent) {
@@ -792,9 +796,10 @@ $(function () {
 		}
 		var $diffRow = e.target.nodeName==="tr" ? $(e.target) : $(e.target).closest('tr'),
 			diffEvent = $diffRow.data('event'),
-			circle = findCircleForEvent(diffEvent);
+			blob = findBlobForEvent(diffEvent);
 		return {
-			dt: circle,
+			dt: blob.dt,
+			glow: blob.glow,
 			diffEvent: diffEvent // provide the event that was clicked, because the table can show more than one event per row
 		}
 	};
@@ -803,27 +808,17 @@ $(function () {
 	$('#difflist').click(function(e) {
 		// select
 		var eData = diffListSelect(e);
-		diffListSelect.selected = eData;
-		var circle = eData.dt;
-		highlightSelectedBlob(circle);
-		highlightDiffListRows(circle, "persist");
-		showContent(circle, eData.diffEvent, true);
+		$(document).trigger('blobSelected', eData);
 		return false;
 	});
-	$('#difflist tr').live('mouseover', function(e) {
+	$('#difflist tbody tr').live('mouseover', function(e) {
 		// hover
 		var eData = diffListSelect(e);
-		var circle = eData.dt;
-		highlightSelectedBlob(circle);
-		highlightDiffListRows(circle);
-		showContent(circle, eData.diffEvent, false);
+		$(document).trigger('blobHovered', eData);
 	}).live('mouseout', function() {
 		// unhover = select prev selected
-		var eData = diffListSelect();
-		var circle = eData.dt;
-		highlightSelectedBlob(circle);
-		highlightDiffListRows(circle, "persist");
-		showContent(circle, eData.diffEvent, true);
+		var eData = diffListSelect.hovered;
+		$(document).trigger('blobUnHovered', eData);
 	});
 	
 	// bind to custom events
@@ -838,9 +833,41 @@ $(function () {
 			updateError('last check for updates: '+(new Date).formatString('0hh:0mm:0ss'));
 		}		
 	});
-
-	$(document).bind('blobHovered', function(e, data) {
-
+	
+	$(document).bind('blobSelected', function(e, params) {
+		diffListSelect.selected = params;
+		var circle = params.dt;
+		highlightSelectedBlob(circle);
+		highlightDiffListRows(circle, "persist");
+		showContent(circle, params.diffEvent, true);
+	});
+	
+	$(document).bind('blobHovered', function(e, params) {
+		diffListSelect.hovered = params;
+		var glow = params.glow,
+			circle = params.dt;
+		if(glow) {
+			glow.attr({
+				fill: "r"+COLOURS.darkblue+"-"+COLOURS.background,
+				'opacity': 0.5
+			});
+		}
+		highlightDiffListRows(circle);
+		showContent(circle, params.diffEvent, false);
+	});
+	
+	$(document).bind('blobUnHovered', function(e, params) {
+		diffListSelect.hovered = null;
+		var glow = params.glow,
+			circle = params.dt;
+		if(glow) {
+			glow.attr({
+				fill: "config.COLOURS.darkblue",
+				opacity: 0
+			});
+		}
+		highlightDiffListRows();
+		showContent();
 	});
 	
 	$('#scrollBar').slider({
