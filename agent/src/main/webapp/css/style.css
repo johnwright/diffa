@@ -112,7 +112,8 @@ SILVER 		- DOTTED BORDERS
 
 .codeBox {
 	font-size: 0.8em;
-	width: 380px;
+	width: 350px;
+	overflow: auto;
 }
 
 #diffRepair label {
