@@ -567,7 +567,6 @@ function updateDiffList() {
 	var $difflist = $('#difflist').find('tbody').empty().end();
 	$.each(clusters, function(i, cluster) {
 		$.each(cluster, function(j, event) {
-			console.log(i,j,event,cluster.dt);
 			addDiffRow($difflist, event, cluster);
 		});
 	});
@@ -588,11 +587,9 @@ function highlightSelectedBlob(blob) {
 }
 
 function highlightDiffListRows(circle, persist) {
-	console.log('highlight getting this circle',circle);
 	$rows = $("#difflist").find("tbody tr").filter(function() {
 		return $(this).data('circle')===circle;
 	});
-	console.log('found rows',$rows,$rows.length);
 	if($rows.length) {
 		$rows
 			.siblings()
@@ -798,7 +795,6 @@ $(function () {
 	$('#difflist tbody tr').live('mouseover', function(e) {
 		// hover
 		var eData = diffListSelect(e);
-		console.log('triggering blobHovered with eData',eData);
 		$(document).trigger('blobHovered', eData);
 	}).live('mouseout', function() {
 		// unhover = select prev selected
@@ -831,7 +827,6 @@ $(function () {
 		diffListSelect.hovered = params;
 		var glow = params.glow,
 			circle = params.dt;
-		console.log('blobHovered called with params,circle',params,circle);
 		if(glow) {
 			glow.attr({
 				fill: "r"+COLOURS.darkblue+"-"+COLOURS.background,
