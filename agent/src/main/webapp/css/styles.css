@@ -38,6 +38,9 @@ circle.disabled {
 	overflow: auto;
 }
 
+#scrollBar {
+	margin-left: 0.6em;
+}
 /* BUTTONS - from http://particletree.com/features/rediscovering-the-button-element/ */
 
 .buttons a, .buttons button{
