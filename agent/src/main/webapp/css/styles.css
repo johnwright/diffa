@@ -41,6 +41,11 @@ circle.disabled {
 #scrollBar {
 	margin-left: 0.6em;
 }
+
+#diffListContainer {
+	height: 520px;
+	overflow: auto;
+}
 /* BUTTONS - from http://particletree.com/features/rediscovering-the-button-element/ */
 
 .buttons a, .buttons button{

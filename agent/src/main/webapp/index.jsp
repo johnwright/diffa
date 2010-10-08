@@ -48,24 +48,25 @@
 				</div>
 				<div class="right"><span id="errorContainer"></span></div>
 			</div>
-			<table id="difflist" class="left" summary="Table summary text"  border="0" cellspacing="0" cellpadding="0">
-				<thead>
-					<tr>
-						<th class="grid2col date">Date</th>
-						<th class="grid2col">Time</th>
-						<th class="grid2col">Group</th>
-						<th class="grid2col">Pairing</th>
-						<th class="grid3col">Item ID</th>
-						<th class="grid4col">Difference type</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td colspan="6">No items loaded yet...</td>
-					</tr>
-				</tbody>
-			</table>
-			
+			<div id="diffListContainer" class="left">
+				<table id="difflist" summary="Table of differences"  border="0" cellspacing="0" cellpadding="0">
+					<thead>
+						<tr>
+							<th class="grid2col date">Date</th>
+							<th class="grid2col">Time</th>
+							<th class="grid2col">Group</th>
+							<th class="grid2col">Pairing</th>
+							<th class="grid3col">Item ID</th>
+							<th class="grid4col">Difference type</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td colspan="6">No items loaded yet...</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 			<div id="contentviewer" class="grid9col left marginleft">
 				<h6>No item selected</h6>
 				<div>

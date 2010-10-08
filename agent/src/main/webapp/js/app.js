@@ -743,10 +743,12 @@ function showContent(circle, diffEvent, loadContent) {
 			$('<br class="clearboth"/>').appendTo($actionListContainer);
 		});
 	};
-	$.ajax({
-		url: API_BASE+'/actions/'+pairKey,
-		success: actionListCallback
-	});
+	if(loadContent) {
+		$.ajax({
+			url: API_BASE+'/actions/'+pairKey,
+			success: actionListCallback
+		});
+	}	
 }
 
 function createSession() {
@@ -853,6 +855,7 @@ $(function () {
 			});
 		}
 		highlightDiffListRows(circle);
+		console.log('in blobHovered',e);
 		showContent(circle, params.diffEvent, false);
 	});
 	
