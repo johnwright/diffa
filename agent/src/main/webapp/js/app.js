@@ -610,7 +610,6 @@ function highlightDiffListRows(circle, persist) {
 }
 
 function showContent(circle, diffEvent, loadContent) {
-	console.log(circle,diffEvent,diffListSelect.selected);
 	if(!circle) {
 		if(!diffListSelect.selected) { // reset content box
 			$('#contentviewer h6').eq(0).text('No item selected');
