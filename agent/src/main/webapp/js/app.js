@@ -805,17 +805,40 @@ $(function () {
 	// bind to custom events
 	$(document).bind('diffsLoaded', function(e, params) {
 		if(params && params.redraw) {
+			var selectedRow = diffListSelect.selected,
+				selectedEvent,
+				rowToClick;
 			setupHeatmapConfig(params.raphael_data);
 			drawSwimLanes();
 			drawXAxis();
 			drawBlobs();
 			updateDiffList();
+			if(selectedRow) {
+				selectedEvent = selectedRow.diffEvent;
+				var clusters = startPolling.config.clusters,
+					matched = false;
+				$.each(clusters, function(i, cluster) {
+					if(matched) {
+						return false;
+					}
+					$.each(cluster, function(j, event) {
+						if(event.seqId === selectedEvent.seqId) {
+							$(document).trigger('blobSelected', {dt: cluster.dt});
+							return false;
+						} 
+					});
+				});
+			}
+			
 		} else {
 			updateError('last check for updates: '+(new Date).formatString('0hh:0mm:0ss'));
 		}		
 	});
 	
 	$(document).bind('blobSelected', function(e, params) {
+		if(!params.diffEvent) {
+			params.diffEvent = params.dt.cluster[0];
+		}
 		diffListSelect.selected = params;
 		var circle = params.dt;
 		highlightSelectedBlob(circle);
