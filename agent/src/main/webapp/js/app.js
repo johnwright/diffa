@@ -621,7 +621,7 @@ function findCircleForEvent(diffEvent) {
 	return circle;
 }
 
-function showContent(circle, diffEvent) {
+function showContent(circle, diffEvent, loadContent) {
 	if(!circle) { // reset content box
 		$('#contentviewer h6').eq(0).text('No item selected');
 		$('#item1 .diffHash').html('<span>item 1</span>')
@@ -630,6 +630,7 @@ function showContent(circle, diffEvent) {
 		$('#item2 pre').empty();
 		return;
 	}
+
 	if(!diffEvent) {
 		diffEvent = circle.cluster[0]; // diffEvent as a parameter comes from a clicking a specific row of the diffList
 	}
@@ -677,8 +678,10 @@ function showContent(circle, diffEvent) {
 			downstreamContentURL = data.downstream.url;
 			$('#item2 h6').text(downstreamLabel);
 			// go get the content for upstream and downstream
-			getContent(upstreamContentURL,"#item1 pre",upstreamLabel);
-			getContent(downstreamContentURL,"#item2 pre",downstreamLabel);
+			if(loadContent) {
+				getContent(upstreamContentURL,"#item1 pre",upstreamLabel);
+				getContent(downstreamContentURL,"#item2 pre",downstreamLabel);
+			}			
 		},
 		error: function(xhr, status, ex) {
 			if(console && console.log) {
@@ -784,27 +787,42 @@ $(function () {
 	
 	var diffListSelect = function(e) {
 		if(!e) {
-			$(document).trigger('blobSelected', {});
-			return;
+			return diffListSelect.selected || {};
 		}
-		var $diffRow = $(e.target).closest('tr'),
+		var $diffRow = e.target.nodeName==="tr" ? $(e.target) : $(e.target).closest('tr'),
 			diffEvent = $diffRow.data('event'),
 			circle = findCircleForEvent(diffEvent);
-		$(document).trigger('blobSelected', {
+		return {
 			dt: circle,
 			diffEvent: diffEvent // provide the event that was clicked, because the table can show more than one event per row
-		});
+		}
 	};
 	
 	// set up click handlers to fire custom events
 	$('#difflist').click(function(e) {
-		diffListSelect(e);
+		// select
+		var eData = diffListSelect(e);
+		diffListSelect.selected = eData;
+		var circle = eData.dt;
+		highlightSelectedBlob(circle);
+		highlightDiffListRows(circle);
+		showContent(circle, eData.diffEvent, true);
 		return false;
 	});
-	$('#difflist').hover(function(e) {
-		diffListSelect(e);
-	}, function() {
-		diffListSelect();
+	$('#difflist tr').live('mouseover', function(e) {
+		// hover
+		var eData = diffListSelect(e);
+		var circle = eData.dt;
+		highlightSelectedBlob(circle);
+		highlightDiffListRows(circle);
+		showContent(circle, eData.diffEvent, false);
+	}).live('mouseout', function() {
+		// unhover = select prev selected
+		var eData = diffListSelect();
+		var circle = eData.dt;
+		highlightSelectedBlob(circle);
+		highlightDiffListRows(circle);
+		showContent(circle, eData.diffEvent, true);
 	});
 	
 	// bind to custom events
@@ -819,11 +837,9 @@ $(function () {
 			updateError('last check for updates: '+(new Date).formatString('0hh:0mm:0ss'));
 		}		
 	});
-	$(document).bind('blobSelected', function(e, data) {
-		var circle = data.dt;
-		highlightSelectedBlob(circle);
-		highlightDiffListRows(circle);
-		showContent(circle, data.diffEvent);
+
+	$(document).bind('blobHovered', function(e, data) {
+
 	});
 	
 	$('#scrollBar').slider({
