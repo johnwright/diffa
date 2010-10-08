@@ -104,7 +104,7 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 		data: data.reverse(),
 		clusters: clusters.reverse(),
 		axisx: axisx.reverse(),
-		axisy: axisy
+		axisy: axisy.reverse()
 	}
 }
 
@@ -415,7 +415,8 @@ function drawBlobs() {
 			} else if(d<=10) {
 				R = Math.max(max*(d/10),5); // JRL: this '5' is a choice of min size for the blobs
 			} else {
-				R = max;
+				//R = max;
+				R = Math.max(max*(d/10),5); //JRL: max is not giving nice big sizes, so we're ignoring it for now. TO-DO: decide on a way to limit or appropriately adjust blob sizes
 			}
 			if (R) {
 				
@@ -518,7 +519,8 @@ function addDiffRow($difflist, event, cluster) {
 		group = config.groups[pairing],
 		itemID = event.objId.id,
 		diffType = findDiffType(event.upstreamVsn,event.downstreamVsn);
-	var circle = cluster.dt;
+	var circle = cluster.dt,
+		glow = cluster.glow;
 	var $rows = $difflist.find('tbody tr').filter(function() {
 		return $(this).find('td').eq(0).text();
 	});
@@ -536,6 +538,7 @@ function addDiffRow($difflist, event, cluster) {
 		.append('<td>'+diffType+'</td>')
 		.data('event', event)
 		.data('circle', circle)
+		.data('glow', glow)
 		.appendTo($difflist);
 	// now go get the group if we don't have it
 	if(!group) {
@@ -564,6 +567,7 @@ function updateDiffList() {
 	var $difflist = $('#difflist').find('tbody').empty().end();
 	$.each(clusters, function(i, cluster) {
 		$.each(cluster, function(j, event) {
+			console.log(i,j,event,cluster.dt);
 			addDiffRow($difflist, event, cluster);
 		});
 	});
@@ -584,9 +588,11 @@ function highlightSelectedBlob(blob) {
 }
 
 function highlightDiffListRows(circle, persist) {
+	console.log('highlight getting this circle',circle);
 	$rows = $("#difflist").find("tbody tr").filter(function() {
 		return $(this).data('circle')===circle;
 	});
+	console.log('found rows',$rows,$rows.length);
 	if($rows.length) {
 		$rows
 			.siblings()
@@ -599,44 +605,19 @@ function highlightDiffListRows(circle, persist) {
 	}
 }
 
-function findBlobForEvent(diffEvent) {
-	var dt,
-		glow,
-		config = startPolling.config,
-		clusters = config.clusters,
-		timeToFind = diffEvent.detectedAt;
-	var eventTime, index;
-	$.each(clusters, function(i, cluster) {
-		if(index) {
-			return false;
-		}
-		$.each(cluster, function(j, event) {
-			eventTime = event.detectedAt;
-			if(eventTime===timeToFind) {
-				index = i;
-				return false;
-			}
-		});
-	});
-	dt = clusters[index].dt;
-	glow = clusters[index].glow;
-	return {
-		dt: dt,
-		glow: glow
-	};
-}
-
 function showContent(circle, diffEvent, loadContent) {
-	if(!circle) { // reset content box
-		$('#contentviewer h6').eq(0).text('No item selected');
-		$('#item1 .diffHash').html('<span>item 1</span>')
-		$('#item1 pre').empty();
-		$('#item2 .diffHash').html('<span>item 2</span>');
-		$('#item2 pre').empty();
+	if(!circle) {
+		if(!diffListSelect.selected) { // reset content box
+			$('#contentviewer h6').eq(0).text('No item selected');
+			$('#item1 .diffHash').html('<span>item 1</span>')
+			$('#item1 pre').empty();
+			$('#item2 .diffHash').html('<span>item 2</span>');
+			$('#item2 pre').empty();
+		}
 		return;
 	}
 
-	if(!diffEvent) {
+	if(!diffEvent) { // TO-DO: rewind this stack and see if we can do without diffEvent, since it might always be present on circle
 		diffEvent = circle.cluster[0]; // diffEvent as a parameter comes from a clicking a specific row of the diffList
 	}
 	
@@ -778,6 +759,21 @@ function scrollHeatmapTo(pct) {
 	}
 }
 
+function diffListSelect(e) {
+	if(!e) {
+		return diffListSelect.selected || {};
+	}
+	var $diffRow = e.target.nodeName==="tr" ? $(e.target) : $(e.target).closest('tr'),
+		diffEvent = $diffRow.data('event'),
+		dt = $diffRow.data('circle'),
+		glow = $diffRow.data('glow');
+	return {
+		dt: dt,
+		glow: glow,
+		diffEvent: diffEvent // provide the event that was clicked, because the table can show more than one event per row
+	}
+}
+
 $(function () {
 	
 	$('#livebutton').click(function(e) {
@@ -792,20 +788,6 @@ $(function () {
 		return false;
 	});
 	
-	var diffListSelect = function(e) {
-		if(!e) {
-			return diffListSelect.selected || {};
-		}
-		var $diffRow = e.target.nodeName==="tr" ? $(e.target) : $(e.target).closest('tr'),
-			diffEvent = $diffRow.data('event'),
-			blob = findBlobForEvent(diffEvent);
-		return {
-			dt: blob.dt,
-			glow: blob.glow,
-			diffEvent: diffEvent // provide the event that was clicked, because the table can show more than one event per row
-		}
-	};
-	
 	// set up click handlers to fire custom events
 	$('#difflist').click(function(e) {
 		// select
@@ -816,6 +798,7 @@ $(function () {
 	$('#difflist tbody tr').live('mouseover', function(e) {
 		// hover
 		var eData = diffListSelect(e);
+		console.log('triggering blobHovered with eData',eData);
 		$(document).trigger('blobHovered', eData);
 	}).live('mouseout', function() {
 		// unhover = select prev selected
@@ -848,6 +831,7 @@ $(function () {
 		diffListSelect.hovered = params;
 		var glow = params.glow,
 			circle = params.dt;
+		console.log('blobHovered called with params,circle',params,circle);
 		if(glow) {
 			glow.attr({
 				fill: "r"+COLOURS.darkblue+"-"+COLOURS.background,
@@ -855,7 +839,6 @@ $(function () {
 			});
 		}
 		highlightDiffListRows(circle);
-		console.log('in blobHovered',e);
 		showContent(circle, params.diffEvent, false);
 	});
 	
