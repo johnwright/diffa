@@ -584,18 +584,19 @@ function highlightSelectedBlob(blob) {
 	}
 }
 
-function highlightDiffListRows(circle) {
+function highlightDiffListRows(circle, persist) {
 	$rows = $("#difflist").find("tbody tr").filter(function() {
 		return $(this).data('circle')===circle;
 	});
 	if($rows.length) {
 		$rows
 			.siblings()
-			.removeClass('selected')
+			.removeClass(persist ? "selected" : "highlighted")
 			.end()
-			.addClass('selected');
+			.removeClass("highlighted")
+			.addClass(persist ? "selected" : "highlighted"); // BUG: is adding grey when mouseout
 	} else {
-		$('#difflist').find('tbody tr').removeClass('selected');
+		$('#difflist').find('tbody tr').removeClass('highlighted selected');
 	}
 }
 
@@ -805,7 +806,7 @@ $(function () {
 		diffListSelect.selected = eData;
 		var circle = eData.dt;
 		highlightSelectedBlob(circle);
-		highlightDiffListRows(circle);
+		highlightDiffListRows(circle, "persist");
 		showContent(circle, eData.diffEvent, true);
 		return false;
 	});
@@ -821,7 +822,7 @@ $(function () {
 		var eData = diffListSelect();
 		var circle = eData.dt;
 		highlightSelectedBlob(circle);
-		highlightDiffListRows(circle);
+		highlightDiffListRows(circle, "persist");
 		showContent(circle, eData.diffEvent, true);
 	});
 	

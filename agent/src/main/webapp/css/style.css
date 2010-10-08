@@ -59,6 +59,10 @@ SILVER 		- DOTTED BORDERS
 	background-color: #FFF2CC;
 }
 
+#difflist tr.highlighted {
+	background-color: #EDECE1;
+}
+
 #difflist .date {
 	padding-left: 5px;
 } 
