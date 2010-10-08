@@ -42,6 +42,12 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 		INTERVAL_MS = INTERVAL_MINS*60*1000,
 		now = minTime = Date.now();
 		
+	if(!mapDiffaToRaphael.startTime) {
+		mapDiffaToRaphael.startTime = now;
+	} else {
+		now += INTERVAL_MS - ((now - mapDiffaToRaphael.startTime) % INTERVAL_MS); // this keeps the blobs in the same clusters
+	}
+
 	fdData.sort(function(a, b) {
 		return b.detectedAt - a.detectedAt;
 	});
@@ -71,7 +77,6 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 	}
 	// if minTime is not earlier than the limit created by X_INCREMENTS, we need to fill up the array so the graph is full width
 	var limit = Math.min(minTime,now-INTERVAL_MS*X_INCREMENTS);
-	// create x-axis increments of two minutes
 	for(var i=now; i>=limit; i-=INTERVAL_MS) {
 		axisx.push(i);
 	}
