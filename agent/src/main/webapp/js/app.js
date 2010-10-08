@@ -610,6 +610,7 @@ function highlightDiffListRows(circle, persist) {
 }
 
 function showContent(circle, diffEvent, loadContent) {
+	console.log(circle,diffEvent,diffListSelect.selected);
 	if(!circle) {
 		if(!diffListSelect.selected) { // reset content box
 			$('#contentviewer h6').eq(0).text('No item selected');
@@ -617,8 +618,12 @@ function showContent(circle, diffEvent, loadContent) {
 			$('#item1 pre').empty();
 			$('#item2 .diffHash').html('<span>item 2</span>');
 			$('#item2 pre').empty();
+			return;
+		} else {
+			circle = diffListSelect.selected.dt;
+			diffEvent = diffListSelect.selected.diffEvent;
+			loadContent = true;
 		}
-		return;
 	}
 
 	if(!diffEvent) { // TO-DO: rewind this stack and see if we can do without diffEvent, since it might always be present on circle
