@@ -613,6 +613,37 @@ function highlightDiffListRows(circle, persist) {
 	}
 }
 
+function scrollListToSelected(circle) {
+	var selectedRow;
+	$('#difflist tbody tr').each(function(i, row) {
+		if($(row).data('circle')[0]===circle[0]) {
+			selectedRow = row;
+			return false;
+		}
+	});
+	if(selectedRow) {
+		var $diffListContainer = $('#diffListContainer'),
+			$selectedRow = $(selectedRow),
+			top = $diffListContainer.offset().top,
+			height = $diffListContainer.height(),
+			bottom = top+height,
+			rowPos = $selectedRow.offset().top,
+			hiddenPx,
+			currScroll;
+		if(rowPos<top) {
+			hiddenPx = top-rowPos;
+			currScroll = $diffListContainer.scrollTop();
+			$diffListContainer.scrollTop(currScroll-hiddenPx);
+		} else {
+			hiddenPx = rowPos-bottom;
+			if(hiddenPx>0) {
+				$diffListContainer.scrollTop(hiddenPx+height); // to try to put the row at the top of the visible box
+			}
+		}
+		
+	}
+}
+
 function showContent(circle, diffEvent, loadContent) {
 	if(!circle) {
 		if(!diffListSelect.selected) { // reset content box
@@ -770,7 +801,7 @@ function scrollHeatmapTo(pct) {
 
 function diffListSelect(e) {
 	if(!e) {
-		return diffListSelect.selected || {};
+		return false;
 	}
 	var $diffRow = e.target.nodeName==="tr" ? $(e.target) : $(e.target).closest('tr'),
 		diffEvent = $diffRow.data('event'),
@@ -855,6 +886,7 @@ $(function () {
 		var circle = params.dt;
 		highlightSelectedBlob(circle);
 		highlightDiffListRows(circle, "persist");
+		scrollListToSelected(circle);
 		showContent(circle, params.diffEvent, true);
 	});
 	
