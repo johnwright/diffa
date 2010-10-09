@@ -106,7 +106,6 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 			data.push(cluster.length);
 		});
 	});
-	
 	return {
 		data: data.reverse(),
 		clusters: clusters.reverse(),
@@ -172,11 +171,11 @@ function setupHeatmapConfig(raphael_data) {
 
 	var config = startPolling.config,
 		axisxPaper = config.axisxPaper,
-		width = config.width,
+		width = axisxPaper.width,
 		height = config.height,
 		leftgutter = config.leftgutter,
 		bottomgutter = config.bottomgutter,
-		X = (width - leftgutter) / X_INCREMENTS;
+		X = width / X_INCREMENTS;
 		Y = (height - bottomgutter) / axisy.length,
 		max = Math.round(Math.min(Y,X) / 2) - 1;
 	if(max<=0) { // max can end up as -1, so we have to fix that
@@ -289,8 +288,8 @@ function drawSwimLanes() {
 		axisyPaper = config.axisyPaper,
 		axisxPaper = config.axisxPaper,
 		axisy = config.axisy,
-		width = config.width,
 		height = config.height,
+		width = axisxPaper.width,
 		leftgutter = config.leftgutter,
 		bottomgutter = config.bottomgutter,
 		Y = config.Y,
@@ -309,7 +308,7 @@ function drawSwimLanes() {
 		label = axisyPaper.text(20, Y * (i + .5), label).attr(txt);
 		config.swimlanes.push(label);
 		if(i>0) {
-			boundary = axisxPaper.path("M "+0+" "+laneHeight+"L"+config.axisxPaper.width+" "+laneHeight).attr({"stroke-dasharray": "--", stroke: "#000"});
+			boundary = axisxPaper.path("M "+0+" "+laneHeight+"L"+width+" "+laneHeight).attr({"stroke-dasharray": "--", stroke: "#000"});
 		}
 	});
 }
@@ -322,8 +321,8 @@ function clearXAxis() {
 	}
 	config.xLabels = [];
 }
-
-function nudgeXAxis() { // NB: not working yet, see comment below
+/* NB: not working yet, see comment below
+function nudgeXAxis() {
 	var xDistance = (HEATMAP_WIDTH / X_INCREMENTS) * (POLL_SECS / (INTERVAL_MINS*60));
 	// move axisxPaper over
 	var config = startPolling.config;
@@ -338,12 +337,11 @@ function nudgeXAxis() { // NB: not working yet, see comment below
 	//now.attr('x', width+xDistance);
 	config.axisxPaper.setSize(config.axisxPaper.width+xDistance);
 	now.translate(xDistance); // not working out, I think because fractional pixels aren't being treated the same in SVG as in CSS
-}
+}*/
 
 function drawXAxis() {
 	var config = startPolling.config,
 		paper = config.axisxPaper,
-		width = config.width,
 		height = config.height,
 		leftgutter = config.leftgutter,
 		bottomgutter = config.bottomgutter,
@@ -404,7 +402,7 @@ function drawBlobs() {
 		width = config.width,
 		leftgutter = config.leftgutter || 0,
 		max = config.max || 5,
-		X = (width - leftgutter) / axisx.length,
+		X = config.X,
 		Y = config.Y,
 		o = 0;
 	if(!config.blobs) {
