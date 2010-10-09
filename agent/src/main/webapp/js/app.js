@@ -581,7 +581,7 @@ function updateDiffList() {
 
 function highlightSelectedBlob(blob) {
 	var config = startPolling.config,
-		paper = config.axisxPaper;
+		paper = config.axisxPaper,
 		selectedBlob = paper.selectedBlob;
 	if(selectedBlob) {
 		selectedBlob.attr("fill", "#FFF");
@@ -594,7 +594,7 @@ function highlightSelectedBlob(blob) {
 }
 
 function highlightDiffListRows(circle, persist) {
-	$rows = $("#difflist").find("tbody tr").filter(function() {
+	var $rows = $("#difflist").find("tbody tr").filter(function() {
 		return $(this).data('circle')===circle;
 	});
 	if($rows.length) {
@@ -631,12 +631,11 @@ function showContent(circle, diffEvent, loadContent) {
 	
 	var itemID = diffEvent.objId.id,
 		pairKey = diffEvent.objId.pairKey,
+		seqID = diffEvent.seqId,
 		upstreamLabel = "upstream",
 		upstreamVersion = diffEvent.upstreamVsn || "no version",
-		upstreamContent = "", // load dynamically
 		downstreamLabel = "downstream",
-		downstreamVersion = diffEvent.downstreamVsn || "no version",
-		downstreamContent = ""; // load dynamically
+		downstreamVersion = diffEvent.downstreamVsn || "no version";
 	
 	$('#contentviewer h6').eq(0).text('Content for item ID: '+itemID);
 	$('#item1 .diffHash')
@@ -645,11 +644,12 @@ function showContent(circle, diffEvent, loadContent) {
 		.html('<span>'+downstreamLabel+'</span>'+downstreamVersion);
 
 	
-	var getContent = function(url,selector,label) {
+	var getContent = function(selector,label) {
+		var sessionID = startPolling.config.sessionID;
 		$.ajax({
-			url: url+'/'+itemID,
+			url: API_BASE+'/diffs/events/'+sessionID+'/'+seqID,
 			success: function(data) {
-				$(selector).text(data.message||"no content found");
+				$(selector).text(data||"no content found"); // TO-DO: separate out upstream and downstream detail when server supports it
 			},
 			error: function(xhr, status, ex) {
 				if(console && console.log) {
@@ -659,22 +659,19 @@ function showContent(circle, diffEvent, loadContent) {
 		});
 	};
 
-	// go get the real values for the upstream and downstream labels and the URL's for content
-	var upstreamContentURL, downstreamContentURL;
+	// go get the real values for the upstream and downstream labels and the content
 	$.ajax({
 		method: "GET",
 		url: API_BASE+"/config/pairs/"+pairKey,
 		success: function(data, status, xhr) {
 			upstreamLabel = data.upstream.name;
-			upstreamContentURL = data.upstream.url;
 			$('#item1 h6').text(upstreamLabel);
 			downstreamLabel = data.downstream.name;
-			downstreamContentURL = data.downstream.url;
 			$('#item2 h6').text(downstreamLabel);
 			// go get the content for upstream and downstream
 			if(loadContent) {
-				getContent(upstreamContentURL,"#item1 pre",upstreamLabel);
-				getContent(downstreamContentURL,"#item2 pre",downstreamLabel);
+				getContent("#item1 pre",upstreamLabel);
+				getContent("#item2 pre",downstreamLabel);
 			}			
 		},
 		error: function(xhr, status, ex) {
