@@ -66,17 +66,21 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 
 	// support rescaling the x-axis to fit all the data in
 	if(recalcXIncrements) {
-		if(mapDiffaToRaphael.defaultXIncrements) {
-			X_INCREMENTS = mapDiffaToRaphael.defaultXIncrements;
-		}
-		if(minTime<now-INTERVAL_MS*X_INCREMENTS) {
+		if(!mapDiffaToRaphael.defaultXIncrements) {
 			mapDiffaToRaphael.defaultXIncrements = X_INCREMENTS;
+		}
+		if(minTime<now-INTERVAL_MS*mapDiffaToRaphael.defaultXIncrements) {
 			X_INCREMENTS = ((now-minTime) / INTERVAL_MS);
-			X_INCREMENTS += Math.ceil(10 / (HEATMAP_WIDTH / X_INCREMENTS)); // 10px room to breath for oldest data point
+			X_INCREMENTS += Math.ceil(10 * X_INCREMENTS / HEATMAP_WIDTH); // 10px room to breath for oldest data point
 		}
 	}
-	// if minTime is not earlier than the limit created by X_INCREMENTS, we need to fill up the array so the graph is full width
-	var limit = Math.min(minTime,now-INTERVAL_MS*X_INCREMENTS);
+	var limit,
+		earliestVisibleTime = now-INTERVAL_MS*X_INCREMENTS;
+	if(minTime<earliestVisibleTime) {
+		limit = minTime - INTERVAL_MS*Math.ceil(10 * X_INCREMENTS / HEATMAP_WIDTH); // 10px room to breath for oldest data point - need it again because it's outside the viewport
+	} else {
+		limit = earliestVisibleTime;
+	}
 	for(var i=now; i>=limit; i-=INTERVAL_MS) {
 		axisx.push(i);
 	}
@@ -233,7 +237,7 @@ function startPolling() {
 			}
 			var recalcXIncrements = false;
 			if(!startPolling.config.blobs || !startPolling.config.blobs.length) {
-				// support rescaling the x-axis to fit in more data
+				// support rescaling the x-axis to fit in more data (only happens at start)
 				recalcXIncrements = true;
 			}
 			if(!startPolling.etag) {
@@ -375,12 +379,14 @@ function drawXAxis() {
 		return label;
 	});
 	
-	for (var i = 0, ii = axisx.length, label; i < ii; i++) {
-		label = paper.text(X * i, height - bottomgutter + 10, axisx[i]).attr(txt).attr({
-			'text-anchor': 'end'
-		});
-		config.xLabels.push(label);
-	}
+	$.each(axisx, function(i, text) {
+		if(text) {
+			label = paper.text(X * i, height - bottomgutter + 10, axisx[i]).attr(txt).attr({
+				'text-anchor': 'end'
+			});
+			config.xLabels.push(label);
+		}		
+	});
 }
 
 function clearBlobs() {
