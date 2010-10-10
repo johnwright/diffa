@@ -1,18 +1,32 @@
-/*
- * Copyright (C) 2010 LShift Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/**
+Copyright (c) yellowcar ltd 2010
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this
+list of conditions and the following disclaimer in the documentation and/or other
+materials provided with the distribution.
+
+Neither the name of yellowcar ltd nor the names of its contributors may be
+used to endorse or promote products derived from this software without specific
+prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 'AS IS' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGE.
+
+**/
 
 // Requirement: API_BASE must be set - see index.jsp for example
 
@@ -144,6 +158,8 @@ function blankHeatmap(callback) {
 		position: 'absolute',
 		right: '0'
 	}).appendTo($heatmapContainer);
+	$('<div class="buttons right" id="liveContainer"><button id="livebutton">LIVE</button></div>')
+		.appendTo($heatmapContainer);
 	var axisyPaperID = 'axisyPaper',
 		axisxPaperID = 'axisxPaper';
 	$("<div></div>").appendTo($heatmapContainer)
@@ -217,7 +233,9 @@ function stopPolling() {
 }
 
 function startPolling() {
-	if(IS_POLLING) {
+	var sessionID = startPolling.config && startPolling.config.sessionID;
+	if(IS_POLLING || !sessionID) {
+		IS_POLLING = false;
 		return false;
 	}
 	var poll = function() {
@@ -779,8 +797,7 @@ function createSession() {
 		var parts = location.split("/");
 		var sessionID = parts[parts.length - 1];
 		startPolling.config.sessionID = sessionID;
-		$('#livebutton').addClass('active');
-		startPolling();
+		$(document).trigger('liveMode');
 	};
 	$.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
 }
@@ -840,31 +857,18 @@ function addScrollBarLabels($bar) {
 		$limitLabel.text(timeAgo(now,limit));
 	}
 	if(!$nowLabel.length) {
-		$('<span class="buttons left"><button id="nowLabel">NOW</button>').insertAfter($bar);
+		$('<span class="buttons left"><button id="nowLabel">NOW</button></span>').insertAfter($bar);
+		$('#nowLabel').click(function(e) {
+			e.preventDefault();
+			$bar.slider("value", "100");
+			scrollHeatmapTo('100');
+			$(document).trigger('liveMode');
+		});
 	}
-	$('#nowLabel').click(function() {
-		$bar.slider("value", "100");
-		scrollHeatmapTo('100');
-	});
 }
 
 $(function () {
-	
-	$('#livebutton').click(function(e) {
-		e.preventDefault();
-		var sessionID = startPolling.config.sessionID;
-		if(sessionID) {
-			if(IS_POLLING) {
-				$('#livebutton').removeClass('active');
-				stopPolling();
-			} else {
-				$('#livebutton').addClass('active');
-				startPolling();
-			}		
-		}
-		return false;
-	});
-	
+
 	// set up click handlers to fire custom events
 	$('#difflist').click(function(e) {
 		// select
@@ -968,12 +972,26 @@ $(function () {
 	});
 	
 	addScrollBarLabels($('#scrollBar').slider({
-		'value':'100',
-		'slide': function(event, ui) {
-			scrollHeatmapTo(ui.value);
-		}
-	}));
+		'value':'100'
+	}).bind('slide', function(event, ui) {
+			var val = ui.value;
+			if(val===100) {
+				$(document).trigger('liveMode');
+			} else {
+				$(document).trigger('liveModeOff');
+			}
+			scrollHeatmapTo(val);
+		})
+	);
 
+	$(document).bind('liveMode', function() {
+		$('#livebutton').addClass('active');
+		startPolling();
+	});
+	$(document).bind('liveModeOff', function() {
+		$('#livebutton').removeClass('active');
+		stopPolling();
+	});
 	/* JRL: uncomment this chunk if you want to have a session ID box you can use to change the session being polled
 	
 	var $sessionID = $('#sessionID'),
