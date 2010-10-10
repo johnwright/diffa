@@ -16,33 +16,39 @@
 
 // Requirement: API_BASE must be set - see index.jsp for example
 
+// config you can change
 var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport
 	INTERVAL_MINS = 2, // the x-axis increments that difference events are bucketed into
-	X_INCREMENTS = 360, // how many x-axis increments to fit into the HEATMAP_WIDTH. X_INCREMENTS * INTERVAL_MINS is the timeframe covered by the viewport; this is the default - it updates if the first poll that returns data shows data older than 12 hours
-	IS_POLLING = false, // tracker for whether polling is switched on
+	DEFAULT_TIMESPAN_HOURS = 12, // how many hours the heatmap should show by default
+	POLL_SECS = 1; // how often the server is polled for new events
+	
+// constants
+var IS_POLLING = false, // tracker for whether polling is switched on
 	IS_IN_POLL = false, // tracker for whether in the middle of a poll
 	IS_DRAWING = false, // tracker for whether interface is being redrawn
 	COLOURS = {
 		selected: "#FFF2CC", // lightyellow
 		background: "#CFE2F3", // lightblue
 		darkblue: "#0000FF"
-	},
-	POLL_SECS = 1, // how often the server is polled for new events - the client is intended to run with this interval
+	};
+	
+// calculated contstants - don't change
+var X_INCREMENTS = DEFAULT_TIMESPAN_HOURS*60 / INTERVAL_MINS,
+	INTERVAL_MS = INTERVAL_MINS*60*1000,
 	POLL_INTERVAL = POLL_SECS*1000;
 
 // enable testing from file URI's - this makes use of jquery.ajax.js, which is a patched verion of jQuery.ajax that allows cross-domain requests (it will not work in Chrome!)
 if(document.location.protocol.indexOf("http") == -1) {
-	API_BASE = "http://localhost:19093"+API_BASE;
+	API_BASE = "http://localhost:19093"+API_BASE; // TO-DO: make this not dependent on agent running on localhost:19093
 }
 
 function mapDiffaToRaphael(fdData, recalcXIncrements) {
-	var data = [],
-		axisx = [],
-		axisy = [];
-	var pairKey,
+	var axisy = [],
+		axisxCount = 0,
+		pairKey,
 		time,
-		INTERVAL_MS = INTERVAL_MINS*60*1000,
-		now = minTime = Date.now();
+		now = minTime = Date.now(),
+		width = HEATMAP_WIDTH - startPolling.config.leftgutter;
 		
 	if(!mapDiffaToRaphael.startTime) {
 		mapDiffaToRaphael.startTime = now;
@@ -54,7 +60,7 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 		return b.detectedAt - a.detectedAt;
 	});
 	
-	// figure out the swimlanes
+	// figure out the swimlanes and minTime
 	$.each(fdData, function(i, event) {
 		time = event.detectedAt;
 		if(time<minTime) {
@@ -73,33 +79,34 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 		}
 		if(minTime<now-INTERVAL_MS*mapDiffaToRaphael.defaultXIncrements) {
 			X_INCREMENTS = ((now-minTime) / INTERVAL_MS);
-			X_INCREMENTS += Math.ceil(10 * X_INCREMENTS / HEATMAP_WIDTH); // 10px room to breath for oldest data point
+			X_INCREMENTS += Math.ceil(10 * X_INCREMENTS / width); // 10px room to breath for oldest data point
 		}
 	}
+	 	
 	var limit,
 		earliestVisibleTime = now-INTERVAL_MS*X_INCREMENTS;
 	if(minTime<earliestVisibleTime) {
-		limit = minTime - INTERVAL_MS*Math.ceil(10 * X_INCREMENTS / HEATMAP_WIDTH); // 10px room to breath for oldest data point - need it again because it's outside the viewport
+		limit = minTime - INTERVAL_MS*Math.ceil(10 * X_INCREMENTS / width); // 10px room to breath for oldest data point - need it again because it's outside the viewport if we didn't rescale the x-axis
 	} else {
 		limit = earliestVisibleTime;
 	}
-	for(var i=now; i>=limit; i-=INTERVAL_MS) {
-		axisx.push(i);
-	}
-	axisx.push(i); // just to overlap beyond earliest event // TO-DO: figure out if this is necessary
 	
 	var index,
 		currEvent,
 		cluster,
-		clusters = [];
+		clusters = [],
+		intervalBoundary;
 	$.each(axisy, function(i, swimlane) {
-		index=0;
-		$.each(axisx, function(j, intervalBoundary) {
+		index = 0; // tracks fdData index
+		axisxCount = 0;
+		for(intervalBoundary=now; intervalBoundary>limit; intervalBoundary-=INTERVAL_MS) {
+			axisxCount++;
 			cluster = [];
 			while(currEvent = fdData[index]) {
 				if(currEvent.detectedAt>=intervalBoundary) {
 					index++;
 					if(currEvent.objId.pairKey===swimlane) {
+						currEvent.axisxInc = axisxCount;
 						cluster.push(currEvent);
 					}
 				} else {
@@ -107,31 +114,32 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 				}
 			}
 			if(cluster.length>0) {
+				cluster.axisxInc = 
 				clusters.push(cluster);
 			}
-			data.push(cluster.length);
-		});
+		}
 	});
 	return {
-		data: data.reverse(),
-		clusters: clusters.reverse(),
-		axisx: axisx.reverse(),
-		axisy: axisy.reverse()
+		clusters: clusters,
+		axisy: axisy,
+		axisxCount: axisxCount,
+		now: now,
+		xLimit: limit
 	}
 }
 
 function blankHeatmap(callback) {
-	var width = HEATMAP_WIDTH,
-		height = 300,
+	var height = 300,
 		leftgutter = 50,
+		viewportWidth = HEATMAP_WIDTH - leftgutter,
 		bottomgutter = 20,
 		txt = {"font": '10px Fontin-Sans, Arial', stroke: "none", fill: "#000"};
 
-	var $heatmapContainer = $('#heatmapContainer').width(width).height(height).css({
+	var $heatmapContainer = $('#heatmapContainer').width(HEATMAP_WIDTH).height(height).css({
 		'overflow': 'hidden',
 		'position': 'relative'
 	});
-	$('<div id="heatmapBackground"></div>').width(width-leftgutter).height(height-bottomgutter).css({
+	$('<div id="heatmapBackground"></div>').width(viewportWidth).height(height-bottomgutter).css({
 		backgroundColor: COLOURS.background,
 		position: 'absolute',
 		right: '0'
@@ -153,14 +161,14 @@ function blankHeatmap(callback) {
 		fill: '#fff',
 		stroke: 'none'
 	});
-	var axisxPaper = Raphael(axisxPaperID, width-leftgutter, height);
+	var axisxPaper = Raphael(axisxPaperID, viewportWidth, height);
 
 	startPolling.config = {
 		axisyPaper: axisyPaper,
 		axisxPaper: axisxPaper,
-		width: width,
 		height: height,
 		leftgutter: leftgutter,
+		viewportWidth: viewportWidth,
 		bottomgutter: bottomgutter,
 		txt: txt
 	};
@@ -169,20 +177,12 @@ function blankHeatmap(callback) {
 }
 
 function setupHeatmapConfig(raphael_data) {
-	var data = raphael_data.data,
-		clusters = raphael_data.clusters,
-		axisx = raphael_data.axisx,
-		axisy = raphael_data.axisy;
-
-	var config = startPolling.config,
-		axisxPaper = config.axisxPaper,
-		width = axisxPaper.width,
-		height = config.height,
-		leftgutter = config.leftgutter,
-		bottomgutter = config.bottomgutter,
-		X = width / X_INCREMENTS;
-		Y = (height - bottomgutter) / axisy.length,
-		max = Math.round(Math.min(Y,X) / 2) - 1;
+	var axisy = raphael_data.axisy,
+		axisxCount = raphael_data.axisxCount,
+		config = startPolling.config,
+		X = (config.viewportWidth) / X_INCREMENTS,
+		Y = (config.height - config.bottomgutter) / axisy.length,
+		max = Math.round(Math.min(X,Y) / 2) - 1;
 	if(max<=0) { // max can end up as -1, so we have to fix that
 		// optional: we could set a flag to say we had to squeeze more blobs in that could really fit
 		max = 1;
@@ -191,23 +191,21 @@ function setupHeatmapConfig(raphael_data) {
 		X: X,
 		Y: Y,
 		max: max,
-		data: data,
-		clusters: clusters,
-		axisx: axisx,
-		axisy: axisy
+		clusters: raphael_data.clusters,
+		axisy: axisy,
+		axisxCount: axisxCount,
+		now: raphael_data.now,
+		xLimit: raphael_data.xLimit
 	});
-
-	if(axisx.length>X_INCREMENTS) {
-		axisxPaper.setSize(axisx.length*X);
-		var overshot = (config.axisx.length-1-X_INCREMENTS)*X;
+	if(axisxCount>X_INCREMENTS) {
+		config.axisxPaper.setSize(axisxCount*X);
+		var overshot = (axisxCount-X_INCREMENTS)*X;
 		$('#axisxPaper').css('right', overshot-config.leftgutter);
 	}
-	
-	// addZoom(); here if you want to
 }
 
 function updateError(val) {
-	$('#errorContainer').text(val+"s");
+	$('#errorContainer').text(val);
 }
 
 function stopPolling() {
@@ -300,7 +298,7 @@ function drawSwimLanes() {
 		axisxPaper = config.axisxPaper,
 		axisy = config.axisy,
 		height = config.height,
-		width = axisxPaper.width,
+		axisxWidth = axisxPaper.width,
 		leftgutter = config.leftgutter,
 		bottomgutter = config.bottomgutter,
 		Y = config.Y,
@@ -311,6 +309,10 @@ function drawSwimLanes() {
 		config.swimlanes = [];
 	}
 	clearSwimLanes();
+	if(!axisy.length) {
+		updateError('no data to be loaded'); // TO-DO: put this error message somewhere more persistent, as it is overridden by the updating 'last check for updates' notice
+		return false;
+	}
 	$.each(axisy, function(i, label) {
 		/* Use something like this for highlighting swimlanes
 		paper.rect(leftgutter+1, 1, width-2-leftgutter, (height-bottomgutter)/2-2, 0).attr({fill: COLOURS.selected, stroke: "none"}); */
@@ -318,7 +320,7 @@ function drawSwimLanes() {
 		label = axisyPaper.text(20, Y * (i + .5), label).attr(txt);
 		config.swimlanes.push(label);
 		if(i>0) {
-			boundary = axisxPaper.path("M "+0+" "+laneHeight+"L"+width+" "+laneHeight).attr({"stroke-dasharray": "--", stroke: "#000"});
+			boundary = axisxPaper.path("M "+0+" "+laneHeight+"L"+axisxWidth+" "+laneHeight).attr({"stroke-dasharray": "--", stroke: "#000"});
 		}
 	});
 }
@@ -353,48 +355,38 @@ function drawXAxis() {
 	var config = startPolling.config,
 		paper = config.axisxPaper,
 		height = config.height,
-		leftgutter = config.leftgutter,
 		bottomgutter = config.bottomgutter,
-		axisx = config.axisx,
 		X = config.X,
-		txt = config.txt;
+		txt = config.txt,
+		axisxCount = config.axisxCount;
 	if(!config.xLabels) {
 		config.xLabels = [];
 	}
 	clearXAxis();
 	
-	var now = axisx[axisx.length-1],
-		label,
+	var label,
+		xLabel,
+		xLabels = [],
 		d,
-		dmins;
+		dmins,
+		earliestEvent;
 
-	axisx = $.map(axisx, function(timestamp, i) {
-		d = new Date(timestamp);
+	for(var i=0; i<axisxCount; i++) {
+		d = new Date(config.xLimit + INTERVAL_MS*i);
 		dmins = d.getMinutes();
 		if(dmins<INTERVAL_MINS/2 || dmins>=60-INTERVAL_MINS/2) {
 			if(dmins>=60-INTERVAL_MINS/2) {
 				d.setHours(d.getHours()+1);
 			}
 			d.setMinutes(0);
-			
-			label = d.formatString("hh:0mm"); /* JRL: this will be misleading if the timeline goes back before midnight */
-		} else {
-			label = "";
-		}
-		if(i === axisx.length-1) {
-			label = "NOW";
-		}
-		return label;
-	});
-	
-	$.each(axisx, function(i, text) {
-		if(text) {
-			label = paper.text(X * i, height - bottomgutter + 10, axisx[i]).attr(txt).attr({
-				'text-anchor': 'end'
+			label = d.formatString('0hh:0mm'); // JRL: this will be misleading if the timeline goes back before midnight
+			xLabel = paper.text(X * i, height - bottomgutter + 10, label).attr(txt).attr({
+				'text-anchor': 'middle'
 			});
-			config.xLabels.push(label);
-		}		
-	});
+			xLabels.push(xLabel);
+		}
+	}
+	config.xLabels = xLabels;
 }
 
 function clearBlobs() {
@@ -410,76 +402,72 @@ function clearBlobs() {
 function drawBlobs() {
 	var config = startPolling.config,
 		paper = config.axisxPaper,
+		axisxWidth = paper.width,
 		data = config.data,
-		axisx = config.axisx,
 		axisy = config.axisy,
-		width = config.width,
+		axisxCount = config.axisxCount,
 		leftgutter = config.leftgutter || 0,
 		max = config.max || 5,
 		X = config.X,
+		xLimit = config.xLimit,
+		xRange = config.now-xLimit,
 		Y = config.Y,
-		o = 0;
+		clusterCount = 0,
+		clusters = config.clusters;
 	if(!config.blobs) {
 		config.blobs = [];
 	}
 	clearBlobs();
-	var clusterCount = 0,
-		clusters = config.clusters;
-	for (var i = 0, ii = axisy.length; i < ii; i++) {
-		for (var j = 0, jj = axisx.length; j < jj; j++) {
-			var R,
-				d = data[o];
-			if(d<=0) {
-				R = 0;
-			} else if(d<=10) {
-				R = Math.max(max*(d/10),5); // JRL: this '5' is a choice of min size for the blobs
-			} else {
-				//R = max;
-				R = Math.max(max*(d/10),5); //JRL: max is not giving nice big sizes, so we're ignoring it for now. TO-DO: decide on a way to limit or appropriately adjust blob sizes
+
+	$.each(axisy, function(i, swimlane) {
+		var dy = Y*(i + .5);
+		$.each(clusters, function(j, cluster) {
+			if(cluster[0].objId.pairKey!==swimlane) {
+				return true;
 			}
-			if (R) {
-				
-				var offset = (clusters[clusterCount][0].detectedAt-axisx[j])/(INTERVAL_MINS*60*1000);
-				(function (dx, dy, R, value) {
-					//var color = "hsb(" + [(1 - R / max) * .5, 1, .75] + ")";
-					var color = "#FFF";
-					var glow = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: COLOURS.darkblue, opacity: 0 });
-					var dt = paper.circle(dx, dy, R).attr({stroke: "#000", fill: color});
-					dt.cluster = clusters[clusterCount];
-					clusters[clusterCount].dt = dt; // this to make it easy to get to the dt
-					clusters[clusterCount++].glow = glow; // this to make it easy to get to the glow
-					config.blobs.push(glow);
-					config.blobs.push(dt);
-					if(value>1) {
-						if(value>5) {
-							var lbl = paper.text(dx, dy, data[o])
-							.attr({"font": '10px Fontin-Sans, Arial', stroke: "none", fill: "#00F"});
-						} else {
-							var lbl = paper.text(dx + R, dy - 10, data[o])
-							.attr({"font": '10px Fontin-Sans, Arial', stroke: "none", fill: "#00F"});
-						}
-						config.blobs.push(lbl);
-					}
-					var dot = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: COLOURS.darkblue, opacity: 0});
-					config.blobs.push(dot);
-					$(dot[0]).hover(function() {
-						$(document).trigger('blobHovered', {
-							dt: dt,
-							glow: glow
-						});
-					}, function() {
-						$(document).trigger('blobUnHovered', {
-							dt: dt,
-							glow: glow
-						});
-					}).click(function() {
-						$(document).trigger('blobSelected', {dt: dt});
-					});
-				})(X * j + X*offset, Y * (i + .5), R, d);
+			var currCluster = clusters[clusterCount],
+				value = currCluster.length,
+				axisxInc = currCluster.axisxInc,
+				R = Math.max(max*(value/10),5), //JRL: max is not giving nice big sizes, so we're not using it as an upper limit for now. TO-DO: decide on a way to limit or appropriately adjust blob sizes
+				//offset = (currCluster[currCluster.length-1].detectedAt-(config.now-axisxInc*INTERVAL_MS))/(INTERVAL_MS),
+				//dx = X*axisxInc + X*offset,
+				dx = axisxWidth*(currCluster[currCluster.length-1].detectedAt-xLimit)/xRange;
+			//var color = "hsb(" + [(1 - R / max) * .5, 1, .75] + ")";
+			var color = "#FFF";
+			var glow = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: COLOURS.darkblue, opacity: 0 });
+			var dt = paper.circle(dx, dy, R).attr({stroke: "#000", fill: color});
+			dt.cluster = clusters[clusterCount];
+			clusters[clusterCount].dt = dt; // this to make it easy to get to the dt
+			clusters[clusterCount++].glow = glow; // this to make it easy to get to the glow
+			config.blobs.push(glow);
+			config.blobs.push(dt);
+			if(value>1) {
+				if(value>5) {
+					var lbl = paper.text(dx, dy, value)
+					.attr({"font": '10px Fontin-Sans, Arial', stroke: "none", fill: "#00F"});
+				} else {
+					var lbl = paper.text(dx + R, dy - 10, value)
+					.attr({"font": '10px Fontin-Sans, Arial', stroke: "none", fill: "#00F"});
+				}
+				config.blobs.push(lbl);
 			}
-			o++;
-		}
-	}
+			var dot = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: COLOURS.darkblue, opacity: 0});
+			config.blobs.push(dot);
+			$(dot[0]).hover(function() {
+				$(document).trigger('blobHovered', {
+					dt: dt,
+					glow: glow
+				});
+			}, function() {
+				$(document).trigger('blobUnHovered', {
+					dt: dt,
+					glow: glow
+				});
+			}).click(function() {
+				$(document).trigger('blobSelected', {dt: dt});
+			});
+		});
+	});
 }
 
 /* JRL: this is not right yet, don't use it
@@ -800,13 +788,13 @@ function createSession() {
 function scrollHeatmapTo(pct) {
 	var config = startPolling.config,
 		axisxWidth = config.axisxPaper.width,
-		viewportWidth = HEATMAP_WIDTH - config.leftgutter,
+		viewportWidth = config.viewportWidth,
 		scale = pct/100;
 		
 	// 100% means scrolled as far right as possible i.e. NOW is showing
 	// 0% means scrolled as far left as possible i.e. earliest event is showing
 	if(axisxWidth>viewportWidth) {
-		var overshot = (config.axisx.length-1-X_INCREMENTS)*config.X;
+		var overshot = (config.axisxCount-X_INCREMENTS)*config.X;
 		$('#axisxPaper').css({
 			'right': overshot*scale-config.leftgutter
 		});	
@@ -864,40 +852,46 @@ $(function () {
 	
 	// bind to custom events
 	$(document).bind('diffsLoaded', function(e, params) {
-		if(IS_DRAWING) {
-			return false;
-		}
-		IS_DRAWING = true;
-		if(params && params.redraw) {
-			var selectedRow = diffListSelect.selected,
-				selectedEvent,
-				rowToClick;
-			setupHeatmapConfig(params.raphael_data);
-			drawSwimLanes();
-			drawXAxis();
-			drawBlobs();
-			updateDiffList();
-			if(selectedRow) {
-				selectedEvent = selectedRow.diffEvent;
-				var clusters = startPolling.config.clusters,
-					matched = false;
-				$.each(clusters, function(i, cluster) {
-					if(matched) {
-						return false;
-					}
-					$.each(cluster, function(j, event) {
-						if(event.seqId === selectedEvent.seqId) {
-							$(document).trigger('blobSelected', {dt: cluster.dt});
-							return false;
-						} 
-					});
-				});
+		try {
+			if(IS_DRAWING) {
+				return false;
 			}
-			
-		} else {
-			updateError('last check for updates: '+(new Date).formatString('0hh:0mm:0ss'));
+			IS_DRAWING = true;
+			if(params && params.redraw) {
+				var selectedRow = diffListSelect.selected,
+					selectedEvent,
+					rowToClick;
+				setupHeatmapConfig(params.raphael_data);
+				drawSwimLanes();
+				drawXAxis();
+				drawBlobs();
+				updateDiffList();
+				if(selectedRow) {
+					selectedEvent = selectedRow.diffEvent;
+					var clusters = startPolling.config.clusters,
+						matched = false;
+					$.each(clusters, function(i, cluster) {
+						if(matched) {
+							return false;
+						}
+						$.each(cluster, function(j, event) {
+							if(event.seqId === selectedEvent.seqId) {
+								$(document).trigger('blobSelected', {dt: cluster.dt});
+								return false;
+							} 
+						});
+					});
+				}
+				
+			} else {
+				updateError('last check for updates: '+(new Date).formatString('0hh:0mm:0ss'));
+			}
+			IS_DRAWING = false;
+		} catch(ex) {
+			if(console && console.log) {
+				console.log('error caught during diffsLoaded handler',ex);
+			}
 		}
-		IS_DRAWING = false;
 	});
 	
 	$(document).bind('blobSelected', function(e, params) {
