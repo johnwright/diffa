@@ -842,6 +842,10 @@ function addScrollBarLabels($bar) {
 	if(!$nowLabel.length) {
 		$('<span class="buttons left"><button id="nowLabel">NOW</button>').insertAfter($bar);
 	}
+	$('#nowLabel').click(function() {
+		$bar.slider("value", "100");
+		scrollHeatmapTo('100');
+	});
 }
 
 $(function () {
@@ -963,13 +967,12 @@ $(function () {
 		showContent();
 	});
 	
-	addScrollBarLabels($('#scrollBar').slider(
-		{
-			'value':'100',
-			slide: function(event, ui) {
-				scrollHeatmapTo(ui.value);
-			}
-		}));
+	addScrollBarLabels($('#scrollBar').slider({
+		'value':'100',
+		'slide': function(event, ui) {
+			scrollHeatmapTo(ui.value);
+		}
+	}));
 
 	/* JRL: uncomment this chunk if you want to have a session ID box you can use to change the session being polled
 	

@@ -32,24 +32,24 @@
 	<body>
 		<div id="wrap" class="jbasewrap">
 
-			<h1 class="padtop">Diffa</h1>
-			<div id="heatmapContainer"></div>
+			<h1 class="padtop logo">Diffa</h1>
+			<div id="heatmapContainer" class="margintop"></div>
 			<div id="heatmapcontrols" class="clear padtop padbottom">
 				<!--<div class="left">
 					<label for="sessionID">please add a session ID:</label>
 					<input type="text" id="sessionID" size="40" />
 					<span id="sessionStatus"></span>
 				</div>-->
-				<div id="scrollBarContainer" class="left">
-					<div id="scrollBar" class="left grid4col"></div>
-					<br class="clearboth" />
-				</div>
 				<div class="buttons right">
 					<button id="livebutton">LIVE</button>
 					<!--<button id="zoomin" class="neutral">Zoom in</button>-->
 					<!--<button id="zoomout" class="neutral">Zoom out</button>-->
 				</div>
 				<div class="right"><span id="errorContainer"></span></div>
+				<div id="scrollBarContainer" class="left">
+					<div id="scrollBar" class="left grid4col"></div>
+					<br class="clearboth" />
+				</div>
 			</div>
 			<div id="diffListContainer" class="left">
 				<table id="difflist" summary="Table of differences"  border="0" cellspacing="0" cellpadding="0">
