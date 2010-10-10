@@ -36,9 +36,9 @@ if(document.location.protocol.indexOf("http") == -1) {
 }
 
 function mapDiffaToRaphael(fdData, recalcXIncrements) {
-	var data = [],	// this is all the blobs, where events within two minutes are grouped into a single blob and the value is the number of events
-		axisx = [],	// this is the two-minute intervals from NOW back to the earliest event
-		axisy = [];	// this is the unique list of pairKeys
+	var data = [],
+		axisx = [],
+		axisy = [];
 	var pairKey,
 		time,
 		INTERVAL_MS = INTERVAL_MINS*60*1000,
@@ -162,8 +162,7 @@ function blankHeatmap(callback) {
 		height: height,
 		leftgutter: leftgutter,
 		bottomgutter: bottomgutter,
-		txt: txt,
-		COLOURS: COLOURS
+		txt: txt
 	};
 	
 	callback();
@@ -306,7 +305,6 @@ function drawSwimLanes() {
 		bottomgutter = config.bottomgutter,
 		Y = config.Y,
 		txt = config.txt,
-		COLOURS = config.COLOURS,
 		label,
 		boundary;
 	if(!config.swimlanes) {
@@ -365,12 +363,14 @@ function drawXAxis() {
 	}
 	clearXAxis();
 	
-	var now = axisx[axisx.length-1];
+	var now = axisx[axisx.length-1],
+		label,
+		d,
+		dmins;
 
 	axisx = $.map(axisx, function(timestamp, i) {
-		var label,
-			d = new Date(timestamp),
-			dmins = d.getMinutes();
+		d = new Date(timestamp);
+		dmins = d.getMinutes();
 		if(dmins<INTERVAL_MINS/2 || dmins>=60-INTERVAL_MINS/2) {
 			if(dmins>=60-INTERVAL_MINS/2) {
 				d.setHours(d.getHours()+1);
@@ -404,7 +404,7 @@ function clearBlobs() {
 	for(var i=0, il=blobs.length; i<il; i++) {
 		blobs[i].remove();
 	}
-	config.blobs = paper.set();
+	config.blobs = [];
 }
 
 function drawBlobs() {
@@ -420,7 +420,7 @@ function drawBlobs() {
 		Y = config.Y,
 		o = 0;
 	if(!config.blobs) {
-		config.blobs = paper.set();
+		config.blobs = [];
 	}
 	clearBlobs();
 	var clusterCount = 0,
@@ -443,7 +443,7 @@ function drawBlobs() {
 				(function (dx, dy, R, value) {
 					//var color = "hsb(" + [(1 - R / max) * .5, 1, .75] + ")";
 					var color = "#FFF";
-					var glow = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: config.COLOURS.darkblue, opacity: 0 });
+					var glow = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: COLOURS.darkblue, opacity: 0 });
 					var dt = paper.circle(dx, dy, R).attr({stroke: "#000", fill: color});
 					dt.cluster = clusters[clusterCount];
 					clusters[clusterCount].dt = dt; // this to make it easy to get to the dt
@@ -460,7 +460,7 @@ function drawBlobs() {
 						}
 						config.blobs.push(lbl);
 					}
-					var dot = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: config.COLOURS.darkblue, opacity: 0});
+					var dot = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: COLOURS.darkblue, opacity: 0});
 					config.blobs.push(dot);
 					$(dot[0]).hover(function() {
 						$(document).trigger('blobHovered', {
@@ -600,7 +600,7 @@ function highlightSelectedBlob(blob) {
 		paper.selectedBlob = null;
 	}
 	if(blob) {
-		blob.attr("fill", config.COLOURS.selected);
+		blob.attr("fill", COLOURS.selected);
 		paper.selectedBlob = blob;
 	}
 }
@@ -932,7 +932,7 @@ $(function () {
 			circle = params.dt;
 		if(glow) {
 			glow.attr({
-				fill: "config.COLOURS.darkblue",
+				fill: COLOURS.darkblue,
 				opacity: 0
 			});
 		}
