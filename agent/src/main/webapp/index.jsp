@@ -40,7 +40,10 @@
 					<input type="text" id="sessionID" size="40" />
 					<span id="sessionStatus"></span>
 				</div>-->
-				<div id="scrollBar" class="left grid4col"></div>
+				<div id="scrollBarContainer" class="left">
+					<div id="scrollBar" class="left grid4col"></div>
+					<br class="clearboth" />
+				</div>
 				<div class="buttons right">
 					<button id="livebutton">LIVE</button>
 					<!--<button id="zoomin" class="neutral">Zoom in</button>-->

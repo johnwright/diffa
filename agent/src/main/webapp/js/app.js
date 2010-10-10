@@ -816,6 +816,34 @@ function diffListSelect(e) {
 	}
 }
 
+function timeAgo(earlier,later) {
+	var d = new Date(later),
+		timeAgo = earlier - later,
+		showDate = false;
+	if (timeAgo > 1000*60*60*24) {
+		showDate = true;
+	}
+	return d.formatString((showDate ? "DDth MMM " : "")+"0hh:0mm");
+}
+
+function addScrollBarLabels($bar) {
+	var limit = startPolling.config && startPolling.config.xLimit,
+		now = (startPolling.config && startPolling.config.now) || Date.now();
+	if(!limit) {
+		limit = now-DEFAULT_TIMESPAN_HOURS*60*60*1000;
+	}
+	var $limitLabel = $('#limitLabel'),
+		$nowLabel = $('#nowLabel');
+	if(!$limitLabel.length) {
+		$('<div id="limitLabel" class="left">'+timeAgo(now,limit)+'</div>').insertBefore($bar);
+	} else {
+		$limitLabel.text(timeAgo(now,limit));
+	}
+	if(!$nowLabel.length) {
+		$('<span class="buttons left"><button id="nowLabel">NOW</button>').insertAfter($bar);
+	}
+}
+
 $(function () {
 	
 	$('#livebutton').click(function(e) {
@@ -863,6 +891,7 @@ $(function () {
 					rowToClick;
 				setupHeatmapConfig(params.raphael_data);
 				drawSwimLanes();
+				addScrollBarLabels($('#scrollBar'));
 				drawXAxis();
 				drawBlobs();
 				updateDiffList();
@@ -934,12 +963,13 @@ $(function () {
 		showContent();
 	});
 	
-	$('#scrollBar').slider({
-		'value':'100',
-		slide: function(event, ui) {
-			scrollHeatmapTo(ui.value);
-		}
-	});
+	addScrollBarLabels($('#scrollBar').slider(
+		{
+			'value':'100',
+			slide: function(event, ui) {
+				scrollHeatmapTo(ui.value);
+			}
+		}));
 
 	/* JRL: uncomment this chunk if you want to have a session ID box you can use to change the session being polled
 	

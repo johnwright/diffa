@@ -38,8 +38,16 @@ circle.disabled {
 	overflow: auto;
 }
 
+#scrollBarContainer {
+	line-height: 1em;
+}
+
+#scrollBarContainer button {
+	margin-top: -0.5em;
+}
+
 #scrollBar {
-	margin-left: 0.6em;
+	margin: 0 1.2em;
 }
 
 #diffListContainer {
@@ -86,9 +94,9 @@ circle.disabled {
     width:16px;
     height:16px;
 }
-.buttons button.neutral{
-	background-color:#555;
-	border:1px solid #333;
+.buttons button:active {
+	color: #fff;
+	background:#565656;
 }
 
 
@@ -97,7 +105,7 @@ circle.disabled {
     border:1px solid #d12f19;
     color:#fff;
 }*/
-#livebutton:active{    
+#livebutton:active, #livebutton.active:active{    
     background:#fbe3e4;
     border:1px solid #fbc2c4;
     color:#d12f19;
