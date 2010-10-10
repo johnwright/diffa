@@ -19,7 +19,9 @@
 var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport
 	INTERVAL_MINS = 2, // the x-axis increments that difference events are bucketed into
 	X_INCREMENTS = 360, // how many x-axis increments to fit into the HEATMAP_WIDTH. X_INCREMENTS * INTERVAL_MINS is the timeframe covered by the viewport; this is the default - it updates if the first poll that returns data shows data older than 12 hours
-	IS_POLLING = false, // global tracker for whether polling is switched on
+	IS_POLLING = false, // tracker for whether polling is switched on
+	IS_IN_POLL = false, // tracker for whether in the middle of a poll
+	IS_DRAWING = false, // tracker for whether interface is being redrawn
 	COLOURS = {
 		selected: "#FFF2CC", // lightyellow
 		background: "#CFE2F3", // lightblue
@@ -226,7 +228,10 @@ function startPolling() {
 		if(timeout) {
 			clearTimeout(timeout);
 		}
-		IS_POLLING = true;
+		if(IS_IN_POLL) {
+			return false;
+		}
+		IS_IN_POLL = true;
 		
 		var sessionID = startPolling.config.sessionID,
 			url = API_BASE+"/diffs/sessions/"+sessionID;
@@ -250,11 +255,13 @@ function startPolling() {
 				redraw: etag!==startPolling.etag,
 				recalcXIncrements: recalcXIncrements
 			}]);
+			IS_IN_POLL = false;
 			startPolling.etag = etag;
 			startPolling.pollingTimeout = window.setTimeout(poll, POLL_INTERVAL);
 		};
 		var pollXHRError = function(xhr, status, ex) {
 			IS_POLLING = false;
+			IS_IN_POLL = false;
 			updateError('error!');
 			if(console && console.log) {
 				var error = {
@@ -275,6 +282,7 @@ function startPolling() {
 			});
 		}
 	};
+	IS_POLLING = true;
 	poll();
 }
 
@@ -634,6 +642,11 @@ function scrollListToSelected(circle) {
 			hiddenPx = top-rowPos;
 			currScroll = $diffListContainer.scrollTop();
 			$diffListContainer.scrollTop(currScroll-hiddenPx);
+		} else if(rowPos<bottom) {
+			hiddenPx = rowPos+$selectedRow.height()-bottom;
+			if(hiddenPx>0) {
+				$diffListContainer.scrollTop(hiddenPx); // nudge half-hidden row up to be visible
+			}
 		} else {
 			hiddenPx = rowPos-bottom;
 			if(hiddenPx>0) {
@@ -847,6 +860,10 @@ $(function () {
 	
 	// bind to custom events
 	$(document).bind('diffsLoaded', function(e, params) {
+		if(IS_DRAWING) {
+			return false;
+		}
+		IS_DRAWING = true;
 		if(params && params.redraw) {
 			var selectedRow = diffListSelect.selected,
 				selectedEvent,
@@ -875,7 +892,8 @@ $(function () {
 			
 		} else {
 			updateError('last check for updates: '+(new Date).formatString('0hh:0mm:0ss'));
-		}		
+		}
+		IS_DRAWING = false;
 	});
 	
 	$(document).bind('blobSelected', function(e, params) {
