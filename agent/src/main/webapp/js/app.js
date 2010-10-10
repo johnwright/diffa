@@ -791,6 +791,7 @@ function createSession() {
 		var parts = location.split("/");
 		var sessionID = parts[parts.length - 1];
 		startPolling.config.sessionID = sessionID;
+		$('#livebutton').addClass('active');
 		startPolling();
 	};
 	$.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
@@ -831,12 +832,15 @@ $(function () {
 	
 	$('#livebutton').click(function(e) {
 		e.preventDefault();
-		if(IS_POLLING) {
-			$('#livebutton').addClass('disabled');
-			stopPolling();
-		} else {
-			$('#livebutton').removeClass('disabled');
-			startPolling();
+		var sessionID = startPolling.config.sessionID;
+		if(sessionID) {
+			if(IS_POLLING) {
+				$('#livebutton').removeClass('active');
+				stopPolling();
+			} else {
+				$('#livebutton').addClass('active');
+				startPolling();
+			}		
 		}
 		return false;
 	});
