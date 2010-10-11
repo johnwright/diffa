@@ -25,6 +25,7 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
 import net.lshift.diffa.kernel.participants.ParticipantFactory
+import net.lshift.diffa.kernel.participants.ParticipantType
 
 /**
  * Standard implementation of the SessionManager.
@@ -142,20 +143,40 @@ class DefaultSessionManager(
   def retrieveEventsSince(id:String, evtSeqId:String) = sessionsByKey(id).retrieveEventsSince(evtSeqId)
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
 
-  def retrieveEventDetail(sessionID:String, evtSeqId:String) = {
-    log.info("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ")")
+  def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
+    log.info("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
     // TODO (#6) Implement this once event body propagation has been implemented in the downstream
     val event = sessionsByKey(sessionID).getEvent(evtSeqId)
-    if (null != event && null != event.upstreamVsn) {
-      log.info("Running a detail query for " + event.upstreamVsn)
-      val versionID = event.objId
-      val pair = config.getPair(versionID.pairKey)
-      val us = participants.createUpstreamParticipant(pair.upstream.url)
-      us.retrieveContent(versionID.id)
-    }
-    else {
-      log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ")")
-      "Expanded detail not available"
+
+    t match {
+      case ParticipantType.Upstream => {
+        if (null != event && null != event.upstreamVsn) {
+          log.info("Running a detail query for " + event.upstreamVsn)
+          val versionID = event.objId
+          val pair = config.getPair(versionID.pairKey)
+          // TODO (#6) cache the reference to this participant
+          val us = participants.createUpstreamParticipant(pair.upstream.url)
+          us.retrieveContent(versionID.id)
+        }
+        else {
+          log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
+          "Expanded detail not available"
+        }
+      }
+      case ParticipantType.Downstream => {
+        if (null != event && null != event.downstreamVsn) {
+          log.info("Running a detail query for " + event.downstreamVsn)
+          val versionID = event.objId
+          val pair = config.getPair(versionID.pairKey)
+          // TODO (#6) cache the reference to this participant
+          val ds = participants.createDownstreamParticipant(pair.downstream.url)
+          ds.retrieveContent(versionID.id)
+        }
+        else {
+          log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
+          "Expanded detail not available"
+        }
+      }
     }
   }
 

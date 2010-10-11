@@ -30,6 +30,7 @@ import util.matching.Regex
 import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import org.junit.{Before, Test}
+import net.lshift.diffa.kernel.participants.ParticipantType
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -83,7 +84,7 @@ trait CommonDifferenceTests {
     val (diffs, sessionId) = getVerifiedDiffsWithSessionId()
     val seqId = diffs(0).seqId
 
-    val detail = env.diffClient.eventDetail(sessionId, seqId)
+    val detail = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.Upstream)
     assertNotNull(diffs)
 
     assertEquals("abcdef", detail)

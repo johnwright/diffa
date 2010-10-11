@@ -50,3 +50,9 @@ trait DownstreamParticipant extends Participant {
    */
   def generateVersion(entityBody: String): ProcessingResponse
 }
+
+object ParticipantType extends Enumeration {
+  type ParticipantType = Value
+  val Upstream = Value("Upstream")
+  val Downstream = Value("Downstream")
+}
