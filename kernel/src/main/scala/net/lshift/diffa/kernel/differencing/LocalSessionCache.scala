@@ -47,11 +47,8 @@ class LocalSessionCache(val sessionId:String, private val scope:SessionScope) ex
   }
 
   def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) = {
-    events.find( p => (p._2.objId == id && p._2.state == MatchState.UNMATCHED) ) match {
-      case None    =>
-      case Some(x) => events -= x._1
-    }
-    nextSequence(id, lastUpdate, upstreamVsn, downstreamVsn, MatchState.UNMATCHED)
+    filter(id)
+    nextSequence(id, lastUpdate, upstreamVsn, downstreamVsn, MatchState.UNMATCHED)    
   }
 
   def upgradePendingUnmatchedEvent(id:VersionID) = {
@@ -62,14 +59,25 @@ class LocalSessionCache(val sessionId:String, private val scope:SessionScope) ex
     }
   }
 
-  def addMatchedEvent(id:VersionID, vsn:String) = {
-    // Ensure there is an unmatched event to override
+  /**
+   * This filter is implemented in a separate function to improve the factoring and because
+   * the tuple syntax in Scala (i.e. {_1,_2}) is close to unreadable to the naked eye
+   */
+  def filter(id:VersionID) = {
     events.find( p => (p._2.objId == id && p._2.state == MatchState.UNMATCHED) ) match {
-      case None    => null
+      case None    => false
       case Some(x) => {
         events -= x._1
-        nextSequence(id, new DateTime, vsn, vsn, MatchState.MATCHED)
+        true
       }
+    }
+  }
+
+  def addMatchedEvent(id:VersionID, vsn:String) = {
+    // Ensure there is an unmatched event to override
+    filter(id) match {
+      case true  => nextSequence(id, new DateTime, vsn, vsn, MatchState.MATCHED)
+      case false => null
     }
   }
 
