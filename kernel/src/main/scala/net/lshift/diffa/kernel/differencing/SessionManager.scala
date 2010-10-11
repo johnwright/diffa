@@ -116,7 +116,7 @@ trait SessionManager {
 }
 
 class InvalidSessionIDException extends Exception
-class InvalidSequenceNumberException extends Exception
+class InvalidSequenceNumberException(val id:String) extends Exception(id)
 class SequenceOutOfDateException extends Exception
 
 case class SessionEvent(

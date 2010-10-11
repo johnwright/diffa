@@ -18,9 +18,9 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
 import java.lang.String
-import collection.mutable.{ListBuffer, HashSet, HashMap}
 import java.util.concurrent.atomic.AtomicInteger
 import org.joda.time.DateTime
+import collection.mutable.{LinkedHashMap, HashMap}
 
 /**
  * Local implementation of the session cache trait. In no way clustered or crash tolerant.
@@ -29,12 +29,15 @@ import org.joda.time.DateTime
  */
 class LocalSessionCache(val sessionId:String, private val scope:SessionScope) extends SessionCache {
   private val pending = new HashMap[VersionID, SessionEvent]
-  private val events = new ListBuffer[SessionEvent]
+  private val events = new LinkedHashMap[String,SessionEvent]
   private val seqGenerator = new AtomicInteger(1)
 
-  def currentVersion = events.length match {
+  def currentVersion = events.size match {
     case 0 => "0"
-    case _ => events.last.seqId
+    case _ => {
+      val (_, session) = events.last
+      session.seqId
+    }
   }
 
   def isInScope(id: VersionID) = scope.includes(id.pairKey)
@@ -44,16 +47,11 @@ class LocalSessionCache(val sessionId:String, private val scope:SessionScope) ex
   }
 
   def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) = {
-    val event = SessionEvent(nextSequenceId.toString, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
-
-    // Remove any existing unmatched events for the same id
-    events.findIndexOf(e => (e.objId == id && e.state == MatchState.UNMATCHED)) match {
-      case -1   =>
-      case idx  => events.remove(idx)
+    events.find( p => (p._2.objId == id && p._2.state == MatchState.UNMATCHED) ) match {
+      case None    =>
+      case Some(x) => events -= x._1
     }
-
-    events += event
-    event
+    nextSequence(id, lastUpdate, upstreamVsn, downstreamVsn, MatchState.UNMATCHED)
   }
 
   def upgradePendingUnmatchedEvent(id:VersionID) = {
@@ -66,35 +64,39 @@ class LocalSessionCache(val sessionId:String, private val scope:SessionScope) ex
 
   def addMatchedEvent(id:VersionID, vsn:String) = {
     // Ensure there is an unmatched event to override
-    events.findIndexOf(e => { e.objId == id && e.state == MatchState.UNMATCHED } ) match {
-      case -1  => null // No un-matched event. Ignore
-      case idx => {
-        // The unmatched event is now no longer relevant
-        events.remove(idx)
-
-        val event = new SessionEvent(nextSequenceId.toString, id, new DateTime(), MatchState.MATCHED, vsn, vsn)
-        events += event
-        event
+    events.find( p => (p._2.objId == id && p._2.state == MatchState.UNMATCHED) ) match {
+      case None    => null
+      case Some(x) => {
+        events -= x._1
+        nextSequence(id, new DateTime, vsn, vsn, MatchState.MATCHED)
       }
-
     }
   }
 
+  def nextSequence(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, state:MatchState) = {
+    val sequence = nextSequenceId.toString
+    val event = new SessionEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn)
+    events(sequence)= event
+    event
+  }
+
   def retrieveAllUnmatchedEvents:Seq[SessionEvent] =
-    events.filter(_.state == MatchState.UNMATCHED)
+    events.filter(p => p._2.state == MatchState.UNMATCHED).values.toSeq
 
   def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent] = {
     val seqIdNum = Integer.parseInt(evtSeqId)
 
-    events.dropWhile(e => {
-      val curSeqIdNum = Integer.parseInt(e.seqId)
+    events.dropWhile(p => {
+      val curSeqIdNum = Integer.parseInt(p._1)
       curSeqIdNum <= seqIdNum
-    })
+    }).values.toSeq
   }
 
-  def getEvent(evtSeqId:String) : SessionEvent = {
-    // TODO Avoid this linear scan to access an event by its key
-    events.takeWhile(e => e.seqId.equals(evtSeqId))(0)  
+  def getEvent(evtSeqId:String) : SessionEvent = {    
+    events.get(evtSeqId) match {
+      case None    => throw new InvalidSequenceNumberException(evtSeqId)
+      case Some(e) => e
+    }
   }
 
   private def nextSequenceId = seqGenerator.getAndIncrement
