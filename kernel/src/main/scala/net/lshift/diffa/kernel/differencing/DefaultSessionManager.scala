@@ -145,7 +145,7 @@ class DefaultSessionManager(
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.info("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
-    // TODO (#6) Implement this once event body propagation has been implemented in the downstream
+    // TODO (#6) Refactor this to cache the participant stubs and reduce code duplication
     val event = sessionsByKey(sessionID).getEvent(evtSeqId)
 
     t match {
