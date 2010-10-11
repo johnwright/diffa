@@ -86,8 +86,7 @@ trait CommonDifferenceTests {
     val detail = env.diffClient.eventDetail(sessionId, seqId)
     assertNotNull(diffs)
 
-    // TODO Currently the expanded detail is hard coded in the session manager 
-    assertEquals("Expanded Detail", detail)
+    assertEquals("abcdef", detail)
 
     val fileList = messageDir.listFiles
     assertNotNull("File list was null for dir: " + messageDir, fileList)

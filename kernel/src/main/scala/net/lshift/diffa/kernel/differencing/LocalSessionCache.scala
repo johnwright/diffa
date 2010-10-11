@@ -92,6 +92,11 @@ class LocalSessionCache(val sessionId:String, private val scope:SessionScope) ex
     })
   }
 
+  def getEvent(evtSeqId:String) : SessionEvent = {
+    // TODO Avoid this linear scan to access an event by its key
+    events.takeWhile(e => e.seqId.equals(evtSeqId))(0)  
+  }
+
   private def nextSequenceId = seqGenerator.getAndIncrement
 }
 

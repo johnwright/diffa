@@ -84,6 +84,8 @@ trait SessionCache {
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
   def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent]
+
+  def getEvent(evtSeqId:String) : SessionEvent
 }
 
 /**

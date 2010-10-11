@@ -143,8 +143,20 @@ class DefaultSessionManager(
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String) = {
-    // TODO Implement this once event body propagation has been implemented in the participants
-    "Expanded Detail"
+    log.info("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ")")
+    // TODO (#6) Implement this once event body propagation has been implemented in the downstream
+    val event = sessionsByKey(sessionID).getEvent(evtSeqId)
+    if (null != event && null != event.upstreamVsn) {
+      log.info("Running a detail query for " + event.upstreamVsn)
+      val versionID = event.objId
+      val pair = config.getPair(versionID.pairKey)
+      val us = participants.createUpstreamParticipant(pair.upstream.url)
+      us.retrieveContent(versionID.id)
+    }
+    else {
+      log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ")")
+      "Expanded detail not available"
+    }
   }
 
   //
