@@ -277,7 +277,7 @@ function startPolling() {
 		var pollXHRError = function(xhr, status, ex) {
 			IS_POLLING = false;
 			IS_IN_POLL = false;
-			updateError('error!');
+			updateError('Error! Connection with server lost');
 			if(console && console.log) {
 				var error = {
 					url: url,
