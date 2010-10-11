@@ -34,14 +34,13 @@ trait Participant {
    * for which the action should be executed on. 
    */
   def invoke(actionId:String, entityId:String) : ActionResult
-}
-
-trait UpstreamParticipant extends Participant {
   /**
    * Requests that the participant return a serialized form of the item with the given identifier.
    */
   def retrieveContent(identifier:String): String
 }
+
+trait UpstreamParticipant extends Participant {}
 
 trait DownstreamParticipant extends Participant {
   /**

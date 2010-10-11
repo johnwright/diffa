@@ -29,11 +29,6 @@ import net.lshift.diffa.kernel.events.{VersionID, UpstreamChangeEvent}
 class UpstreamFileParticipant(epName:String, root:String, agentRoot:String) extends FileParticipant(root, agentRoot)
     with UpstreamParticipant {
 
-  def retrieveContent(identifier: String) = {
-    val path = new File(rootDir, identifier)
-    IOUtils.toString(new FileInputStream(path))
-  }
-
   protected def onFileChange(f: File) = {
     changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), dateFor(f), dateFor(f), versionFor(f)))
   }

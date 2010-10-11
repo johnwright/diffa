@@ -34,6 +34,7 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
       def generateVersion(entityBody:String) = null
       def invoke(actionId:String, entityId:String)  = null
       def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = null
+      def retrieveContent(id:String) = null
     }
   }
   def createUpstreamParticipant(address:String, protocol:String) = {

@@ -41,6 +41,15 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     }).toList
   }
 
+  override def retrieveContent(identifier: String): String = {
+    val requestObj = new JSONObject
+    requestObj.put("id", identifier)
+
+    val response = executeRpc("retrieve_content", requestObj.toString)
+    val jsonResponse = new JSONObject(response)
+    jsonResponse.getString("content")
+  }
+
   override def invoke(actionId:String, entityId:String) : ActionResult = {
     val request = new JSONObject
     request.put("actionId", actionId)
@@ -64,16 +73,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
  * HTTP Client to UpstreamTestParticipant using JSON over HTTP.
  */
 class UpstreamParticipantRestClient(root:String) extends ParticipantRestClient(root)
-        with UpstreamParticipant {
-  override def retrieveContent(identifier: String): String = {
-    val requestObj = new JSONObject
-    requestObj.put("id", identifier)
-
-    val response = executeRpc("retrieve_content", requestObj.toString)
-    val jsonResponse = new JSONObject(response)
-    jsonResponse.getString("content")
-  }
-}
+        with UpstreamParticipant {}
 
 /**
  * HTTP Client to DownstreamTestParticipant using protocol-buffers over HTTP.
