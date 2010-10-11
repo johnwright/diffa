@@ -33,7 +33,7 @@ class UpstreamWebParticipant(epName:String, val agentRoot:String)
   override def addEntity(id: String, date: DateTime, lastUpdated:DateTime, body: String) = {
     super.addEntity(id, date, lastUpdated, body)
 
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, id, date, lastUpdated, body))
+    changesClient.onChangeEvent(UpstreamChangeEvent(epName, id, date, lastUpdated, uvsnGen(body)))
   }
 
 

@@ -19,21 +19,45 @@ package net.lshift.diffa.participants.web
 import net.lshift.diffa.participants.domain.ParticipantEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.{ModelAttribute, RequestParam, RequestMethod, RequestMapping}
-import net.lshift.diffa.kernel.participants.UpstreamMemoryParticipant
 import org.joda.time.DateTime
 import net.lshift.diffa.participants.{DownstreamWebParticipant, UpstreamWebParticipant}
 import org.joda.time.format.ISODateTimeFormat
+import org.slf4j.{Logger, LoggerFactory}
+import org.springframework.context.{ApplicationContext, ApplicationContextAware}
 
 /**
  * Controller for participant functionality.
  */
 @Controller
 @RequestMapping(Array("/"))
-class ParticipantUIController(upstream:UpstreamWebParticipant, downstream:DownstreamWebParticipant) {
+class ParticipantUIController(upstream:UpstreamWebParticipant, downstream:DownstreamWebParticipant) extends ApplicationContextAware {
+
+  val log:Logger = LoggerFactory.getLogger(getClass)
+
   private val dateParser = ISODateTimeFormat.dateTimeParser
 
+  var init = false
+  var ctx:ApplicationContext = null
+
+  def setApplicationContext(c:ApplicationContext) = { ctx = c }
+
+  def initialize() : Boolean = {
+    log.debug("About to initialize the remote resources for the participant demo app ...")
+    ctx.getBean("declareGroup")
+    ctx.getBean("declareUpstream")
+    ctx.getBean("declareDownstream")
+    ctx.getBean("declarePair")
+    log.info("Initialized all remote resources for the participant demo app")
+    true
+  }
+
   @RequestMapping(method = Array(RequestMethod.GET))
-  def home = "home/index";
+  def home = {
+    if (!init) {
+      init = initialize()
+    }
+    "home/index";
+  }
 
   @RequestMapping(value = Array("/entities"), method = Array(RequestMethod.GET))
   @ModelAttribute("result")

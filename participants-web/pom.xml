@@ -118,7 +118,7 @@
           <jettyConfig>${basedir}/src/test/conf/jetty.xml</jettyConfig>
           <webAppXml>${basedir}/src/test/conf/jetty-env.xml</webAppXml>
           <webAppConfig>
-            <contextPath>/diffa-participants</contextPath>
+            <contextPath>/participant-demo</contextPath>
           </webAppConfig>
         </configuration>
         <executions>

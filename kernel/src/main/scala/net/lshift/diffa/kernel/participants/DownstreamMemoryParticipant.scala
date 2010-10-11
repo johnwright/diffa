@@ -20,7 +20,7 @@ import java.lang.String
 /**
  * Downstream participant stub for use in test cases.
  */
-class DownstreamMemoryParticipant(uvsnGen: String => String, dvsnGen: String => String)
+class DownstreamMemoryParticipant(val uvsnGen: String => String, val dvsnGen: String => String)
         extends MemoryParticipantBase(dvsnGen)
         with DownstreamParticipant {
 

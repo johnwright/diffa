@@ -27,6 +27,8 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
 
   val log:Logger = LoggerFactory.getLogger(getClass)
 
+  log.info("Configured to initialize using the server URL (" + serverRootUrl + ") with a sub URL (" + restResourceSubUrl + ")")
+
   // TODO Implement proper authentication
   val config = new DefaultClientConfig()
   config.getProperties().put(ClientConfig.PROPERTY_FOLLOW_REDIRECTS, true.asInstanceOf[AnyRef]);

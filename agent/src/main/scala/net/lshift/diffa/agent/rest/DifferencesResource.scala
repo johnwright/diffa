@@ -102,7 +102,7 @@ class DifferencesResource extends AbstractRestResource {
   ))
   def getDetail(@PathParam("sessionId") sessionId:String,
                 @PathParam("evtSeqId") evtSeqId:String) : String = {
-    log.info("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId)
+    log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId)
     try{
       session.retrieveEventDetail(sessionId, evtSeqId)
     }
