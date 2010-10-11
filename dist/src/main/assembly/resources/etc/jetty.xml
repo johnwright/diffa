@@ -76,33 +76,14 @@
         </Call>
     </Get>
 
-    <New class="org.eclipse.jetty.webapp.WebAppContext">
-        <Arg>
-            <Ref id="Contexts"/>
-        </Arg>
-        <Arg>webapps/participant-demo</Arg>
-        <Arg>/participant-demo</Arg>
+    <!-- =========================================================== -->
+    <!-- Initialize the two web apps to run inside ths instance      -->
+    <!-- of Jetty:                                                   -->
+    <!-- 1. The Diffa agent                                          -->
+    <!-- 2. Teh demo participants application                        -->                            
+    <!-- =========================================================== -->
 
-        <Set name="ConfigurationClasses">
-            <Array type="java.lang.String">
-                <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
-                <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
-                <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
-                <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
-                <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
-                <Item>org.eclipse.jetty.plus.webapp.Configuration</Item>
-                <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
-                <Item>org.eclipse.jetty.webapp.TagLibConfiguration</Item>
-            </Array>
-        </Set>    
-
-        <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
-            <Arg></Arg>
-            <Arg>agentUrl</Arg>
-            <Arg type="java.lang.String">http://localhost:7654</Arg>
-            <Arg type="boolean">true</Arg>
-        </New>
-    </New>
+    <!-- 1. Boot the agent -->
     <New class="org.eclipse.jetty.webapp.WebAppContext">
         <Arg>
             <Ref id="Contexts"/>
@@ -186,5 +167,33 @@
 
     </New>
 
+    <!-- 2. Boot the demo participant -->
+    <New class="org.eclipse.jetty.webapp.WebAppContext">
+        <Arg>
+            <Ref id="Contexts"/>
+        </Arg>
+        <Arg>webapps/participant-demo</Arg>
+        <Arg>/participant-demo</Arg>
+
+        <Set name="ConfigurationClasses">
+            <Array type="java.lang.String">
+                <Item>org.eclipse.jetty.webapp.WebInfConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.WebXmlConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.MetaInfConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.FragmentConfiguration</Item>
+                <Item>org.eclipse.jetty.plus.webapp.EnvConfiguration</Item>
+                <Item>org.eclipse.jetty.plus.webapp.Configuration</Item>
+                <Item>org.eclipse.jetty.webapp.JettyWebXmlConfiguration</Item>
+                <Item>org.eclipse.jetty.webapp.TagLibConfiguration</Item>
+            </Array>
+        </Set>
+
+        <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+            <Arg></Arg>
+            <Arg>agentUrl</Arg>
+            <Arg type="java.lang.String">http://localhost:7654</Arg>
+            <Arg type="boolean">true</Arg>
+        </New>
+    </New>
 </Configure>
 

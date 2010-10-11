@@ -35,7 +35,7 @@
       </constructor-arg>
   </bean>
 
-  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+  <bean id="declareGroup" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient"/>
     <property name="targetMethod" value="declareGroup"/>
     <property name="arguments">
@@ -45,7 +45,7 @@
     </property>
   </bean>
 
-  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+  <bean id="declareUpstream" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient"/>
     <property name="targetMethod" value="declareEndpoint"/>
     <property name="arguments">
@@ -56,7 +56,7 @@
     </property>
   </bean>
 
-  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+  <bean id="declareDownstream" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient"/>
     <property name="targetMethod" value="declareEndpoint"/>
     <property name="arguments">
@@ -67,7 +67,7 @@
     </property>
   </bean>
 
-  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+  <bean id="declarePair" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient"/>
     <property name="targetMethod" value="declarePair"/>
     <property name="arguments">
