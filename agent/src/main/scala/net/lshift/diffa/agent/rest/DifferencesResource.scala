@@ -101,22 +101,25 @@ class DifferencesResource extends AbstractRestResource {
   @MandatoryParams(Array(
     new MandatoryParam(name="sessionId", datatype="string", description="Session ID"),
     new MandatoryParam(name="evtSeqId", datatype="string", description="Event Sequence ID"),
-    new MandatoryParam(name="participant", datatype="string", description="Denotes whether the upstream or downstream participant is intended. Legal values are {Upstream,Downstream}.")
+    new MandatoryParam(name="participant", datatype="string", description="Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
   ))
   def getDetail(@PathParam("sessionId") sessionId:String,
                 @PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String = {
-    log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId + "; participant = " + participant)    
-    if ( !participant.equals("Upstream") && !participant.equals("Downstream") ) {
-      throw new WebApplicationException(404)
-    }
-    try{
-      session.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.valueOf(participant).get)
-    }
-    catch {
-      case e:Exception => {
-        log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId)
-        throw new WebApplicationException(404) 
+    log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId + "; participant = " + participant)
+
+    ParticipantType.valueOf(participant) match {
+      case None    => throw new WebApplicationException(404)
+      case Some(t) => {
+        try {
+          session.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.valueOf(participant).get)
+        }
+        catch {
+          case e: Exception => {
+            log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId)
+            throw new WebApplicationException(404)
+          }
+        }
       }
     }
   }

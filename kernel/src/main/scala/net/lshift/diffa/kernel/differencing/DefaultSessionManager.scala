@@ -149,7 +149,7 @@ class DefaultSessionManager(
     val event = sessionsByKey(sessionID).getEvent(evtSeqId)
 
     t match {
-      case ParticipantType.Upstream => {
+      case ParticipantType.UPSTREAM => {
         if (null != event && null != event.upstreamVsn) {
           log.info("Running a detail query for " + event.upstreamVsn)
           val versionID = event.objId
@@ -163,7 +163,7 @@ class DefaultSessionManager(
           "Expanded detail not available"
         }
       }
-      case ParticipantType.Downstream => {
+      case ParticipantType.DOWNSTREAM => {
         if (null != event && null != event.downstreamVsn) {
           log.info("Running a detail query for " + event.downstreamVsn)
           val versionID = event.objId

@@ -53,6 +53,6 @@ trait DownstreamParticipant extends Participant {
 
 object ParticipantType extends Enumeration {
   type ParticipantType = Value
-  val Upstream = Value("Upstream")
-  val Downstream = Value("Downstream")
+  val UPSTREAM = Value("upstream")
+  val DOWNSTREAM = Value("downstream")
 }

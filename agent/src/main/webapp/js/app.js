@@ -724,8 +724,8 @@ function showContent(circle, diffEvent, loadContent) {
 			$('#item2 h6').text(downstreamLabel);
 			// go get the content for upstream and downstream
 			if(loadContent) {
-				getContent("#item1 pre",upstreamLabel, "Upstream");
-				getContent("#item2 pre",downstreamLabel, "Downstream");
+				getContent("#item1 pre",upstreamLabel, "upstream");
+				getContent("#item2 pre",downstreamLabel, "downstream");
 			}			
 		},
 		error: function(xhr, status, ex) {

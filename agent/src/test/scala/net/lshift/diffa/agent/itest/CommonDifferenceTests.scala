@@ -84,7 +84,7 @@ trait CommonDifferenceTests {
     val (diffs, sessionId) = getVerifiedDiffsWithSessionId()
     val seqId = diffs(0).seqId
 
-    val detail = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.Upstream)
+    val detail = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.UPSTREAM)
     assertNotNull(diffs)
 
     assertEquals("abcdef", detail)
