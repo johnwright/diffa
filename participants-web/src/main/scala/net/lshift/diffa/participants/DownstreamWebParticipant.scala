@@ -32,7 +32,7 @@ class DownstreamWebParticipant(epName:String, val agentRoot:String)
   override def addEntity(id: String, date: DateTime, lastUpdated: DateTime, body: String) = {
     super.addEntity(id, date, lastUpdated, body)
 
-    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, date, lastUpdated, body))
+    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, date, lastUpdated, dvsnGen(body)))
   }
 
 

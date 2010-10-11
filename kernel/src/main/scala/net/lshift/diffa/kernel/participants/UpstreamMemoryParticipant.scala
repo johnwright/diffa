@@ -20,7 +20,7 @@ import java.lang.String
 /**
  * Upstream participant for uses in test cases.
  */
-class UpstreamMemoryParticipant(uvsnGen: String => String)
+class UpstreamMemoryParticipant(val uvsnGen: String => String)
         extends MemoryParticipantBase(uvsnGen)
         with UpstreamParticipant {
   
