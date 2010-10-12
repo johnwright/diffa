@@ -152,7 +152,7 @@ class DefaultSessionManager(
     t match {
       case ParticipantType.UPSTREAM => {
         if (null != event && null != event.upstreamVsn) {
-          log.info("Running a detail query for " + event.upstreamVsn)
+          log.info("UP: Running a detail query for " + event.upstreamVsn)
           val versionID = event.objId
           val pair = config.getPair(versionID.pairKey)
           val key = pair.upstream.url
@@ -166,11 +166,11 @@ class DefaultSessionManager(
       }
       case ParticipantType.DOWNSTREAM => {
         if (null != event && null != event.downstreamVsn) {
-          log.info("Running a detail query for " + event.downstreamVsn)
+          log.info("DOWN: Running a detail query for " + event.downstreamVsn)
           val versionID = event.objId
           val pair = config.getPair(versionID.pairKey)          
-          val key = pair.upstream.url
-          val participant = participants.getOrElse(key, participantFactory.createUpstreamParticipant(key))
+          val key = pair.downstream.url
+          val participant = participants.getOrElse(key, participantFactory.createDownstreamParticipant(key))
           participant.retrieveContent(versionID.id)          
         }
         else {
