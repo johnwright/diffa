@@ -689,7 +689,7 @@ function showContent(circle, diffEvent, loadContent) {
 		$.ajax({
 			url: API_BASE+'/diffs/events/'+sessionID+'/'+seqID+'/'+upOrDown,
 			success: function(data) {
-				$(selector).text(data||"no content found"); // TO-DO: separate out upstream and downstream detail when server supports it
+				$(selector).text(data||"no content found for "+upOrDown);
 			},
 			error: function(xhr, status, ex) {
 				if(console && console.log) {
