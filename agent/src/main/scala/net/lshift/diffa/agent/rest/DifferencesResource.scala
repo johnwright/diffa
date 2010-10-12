@@ -116,7 +116,7 @@ class DifferencesResource extends AbstractRestResource {
         }
         catch {
           case e: Exception => {
-            log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId)
+            log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId, e)
             throw new WebApplicationException(404)
           }
         }
