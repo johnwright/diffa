@@ -40,6 +40,11 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
     b.digests
   }
 
+  def retrieveContent(identifier: String) = entities.get(identifier) match {
+    case Some(entity) => entity.body
+    case None => null
+  }
+
   def invoke(actionId:String, entityId:String) : ActionResult = {
     actionId match {
       case "resend" => {

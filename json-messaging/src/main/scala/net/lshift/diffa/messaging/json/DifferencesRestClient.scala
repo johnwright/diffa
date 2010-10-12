@@ -22,6 +22,7 @@ import com.sun.jersey.core.util.MultivaluedMapImpl
 import com.sun.jersey.api.client.{WebResource, ClientResponse}
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionEvent}
+import net.lshift.diffa.kernel.participants.ParticipantType
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -71,8 +72,8 @@ class DifferencesRestClient(serverRootUrl:String)
   def poll(sessionId:String, sinceSeqId:String) : Array[SessionEvent] =
     pollInternal(resource.path("sessions/" + sessionId).queryParam("since", sinceSeqId))
 
-  def eventDetail(sessionId:String, evtSeqId:String) : String = {
-    val p = resource.path("events/" + sessionId + "/" + evtSeqId )
+  def eventDetail(sessionId:String, evtSeqId:String, t:ParticipantType.ParticipantType) : String = {
+    val p = resource.path("events/" + sessionId + "/" + evtSeqId + "/" + t.toString )
     val media = p.accept(MediaType.TEXT_PLAIN_TYPE)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus

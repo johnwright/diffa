@@ -105,6 +105,10 @@
               <name>JETTY_NO_SHUTDOWN_HOOK</name>
               <value>true</value>
             </systemProperty>
+            <systemProperty>
+              <name>demo.basedir</name>
+              <value>${basedir}</value>
+            </systemProperty>
           </systemProperties>
           <connectors>
             <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">

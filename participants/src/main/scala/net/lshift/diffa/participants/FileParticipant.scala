@@ -54,6 +54,11 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) {
     builder.digests
   }
 
+  def retrieveContent(identifier: String) = {
+    val path = new File(rootDir, identifier)
+    IOUtils.toString(new FileInputStream(path))
+  }
+
   def invoke(actionId:String, entityId:String) : ActionResult = {
     actionId match {
       case "resend" => ActionResult("error", "Unknown Entity:" + entityId)

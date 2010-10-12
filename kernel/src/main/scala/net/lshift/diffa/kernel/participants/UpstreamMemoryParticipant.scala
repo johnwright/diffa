@@ -23,9 +23,4 @@ import java.lang.String
 class UpstreamMemoryParticipant(val uvsnGen: String => String)
         extends MemoryParticipantBase(uvsnGen)
         with UpstreamParticipant {
-  
-  def retrieveContent(identifier: String) = entities.get(identifier) match {
-    case Some(entity) => entity.body
-    case None => null
-  }
 }

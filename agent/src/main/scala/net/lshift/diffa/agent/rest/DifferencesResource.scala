@@ -26,6 +26,8 @@ import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Des
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
+import net.lshift.diffa.kernel.participants.ParticipantType
+
 @Path("/diffs")
 @Component
 class DifferencesResource extends AbstractRestResource {
@@ -93,23 +95,31 @@ class DifferencesResource extends AbstractRestResource {
   }
 
   @GET
-  @Path("/events/{sessionId}/{evtSeqId}")
+  @Path("/events/{sessionId}/{evtSeqId}/{participant}")
   @Produces(Array("text/plain"))
   @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
   @MandatoryParams(Array(
     new MandatoryParam(name="sessionId", datatype="string", description="Session ID"),
-    new MandatoryParam(name="evtSeqId", datatype="string", description="Event Sequence ID")
+    new MandatoryParam(name="evtSeqId", datatype="string", description="Event Sequence ID"),
+    new MandatoryParam(name="participant", datatype="string", description="Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
   ))
   def getDetail(@PathParam("sessionId") sessionId:String,
-                @PathParam("evtSeqId") evtSeqId:String) : String = {
-    log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId)
-    try{
-      session.retrieveEventDetail(sessionId, evtSeqId)
-    }
-    catch {
-      case e:Exception => {
-        log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId)
-        throw new WebApplicationException(404) 
+                @PathParam("evtSeqId") evtSeqId:String,
+                @PathParam("participant") participant:String) : String = {
+    log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId + "; participant = " + participant)
+
+    ParticipantType.valueOf(participant) match {
+      case None    => throw new WebApplicationException(404)
+      case Some(t) => {
+        try {
+          session.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.valueOf(participant).get)
+        }
+        catch {
+          case e: Exception => {
+            log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId, e)
+            throw new WebApplicationException(404)
+          }
+        }
       }
     }
   }

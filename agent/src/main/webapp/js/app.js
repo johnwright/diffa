@@ -684,10 +684,10 @@ function showContent(circle, diffEvent, loadContent) {
 		.html('<span>'+downstreamLabel+'</span>'+downstreamVersion);
 
 	
-	var getContent = function(selector,label) {
+	var getContent = function(selector,label,upOrDown) {
 		var sessionID = startPolling.config.sessionID;
 		$.ajax({
-			url: API_BASE+'/diffs/events/'+sessionID+'/'+seqID,
+			url: API_BASE+'/diffs/events/'+sessionID+'/'+seqID+'/'+upOrDown,
 			success: function(data) {
 				$(selector).text(data||"no content found"); // TO-DO: separate out upstream and downstream detail when server supports it
 			},
@@ -710,8 +710,8 @@ function showContent(circle, diffEvent, loadContent) {
 			$('#item2 h6').text(downstreamLabel);
 			// go get the content for upstream and downstream
 			if(loadContent) {
-				getContent("#item1 pre",upstreamLabel);
-				getContent("#item2 pre",downstreamLabel);
+				getContent("#item1 pre",upstreamLabel, "upstream");
+				getContent("#item2 pre",downstreamLabel, "downstream");
 			}			
 		},
 		error: function(xhr, status, ex) {

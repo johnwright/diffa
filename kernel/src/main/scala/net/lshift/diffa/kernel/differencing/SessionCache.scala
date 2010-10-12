@@ -84,6 +84,13 @@ trait SessionCache {
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
   def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent]
+
+  /**
+   * Retrieves a single event by its id.
+   * @param evtSeqId sequence id of the event to be retrieved.
+   * @throws InvalidSequenceNumberException if the requested sequence id does not exist or has expired.
+   */
+  def getEvent(evtSeqId:String) : SessionEvent
 }
 
 /**

@@ -17,5 +17,19 @@
 -->
 
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg>demoProperties</Arg>
+    <Arg>
+      <New class="java.util.Properties">
+        <Call name="load">
+          <Arg>
+            <New class="java.io.FileReader">
+              <Arg type="java.lang.String"><SystemProperty name="demo.basedir"/>/target/test-classes/demo.itest.properties</Arg>              
+            </New>
+          </Arg>
+        </Call>
+      </New>
+    </Arg>
+  </New>
 </Configure>
 

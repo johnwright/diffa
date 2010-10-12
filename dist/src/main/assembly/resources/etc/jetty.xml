@@ -194,6 +194,21 @@
             <Arg type="java.lang.String">http://localhost:7654</Arg>
             <Arg type="boolean">true</Arg>
         </New>
+
+      <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
+        <Arg>demoProperties</Arg>
+        <Arg>
+          <New class="java.util.Properties">
+            <Call name="load">
+              <Arg>
+                <New class="java.io.FileReader">
+                  <Arg type="java.lang.String">etc/demo.properties</Arg>
+                </New>
+              </Arg>
+            </Call>
+          </New>
+        </Arg>
+      </New>
     </New>
 </Configure>
 

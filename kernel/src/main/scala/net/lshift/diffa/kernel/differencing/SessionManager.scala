@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import reflect.BeanProperty
+import net.lshift.diffa.kernel.participants.ParticipantType
 
 /**
  * A SessionManager provides a stateful view of the differencing of pairs, and provides mechanisms for polling
@@ -96,7 +97,7 @@ trait SessionManager {
    * differing content bodies). This information may be retrieved by the manager on demand from remote sources, so
    * should generally only be called on explicit user request.
    */
-  def retrieveEventDetail(sessionID:String, evtSeqId:String) : String
+  def retrieveEventDetail(sessionID:String, evtSeqId:String, t:ParticipantType.ParticipantType) : String
 
   /**
    * Indicates that the given session is no longer required.
@@ -115,7 +116,7 @@ trait SessionManager {
 }
 
 class InvalidSessionIDException extends Exception
-class InvalidSequenceNumberException extends Exception
+class InvalidSequenceNumberException(val id:String) extends Exception(id)
 class SequenceOutOfDateException extends Exception
 
 case class SessionEvent(

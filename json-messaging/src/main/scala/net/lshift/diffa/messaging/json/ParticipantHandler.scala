@@ -51,6 +51,14 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
       json.put("result", result.result)
       json.put("output", result.output)
       json.toString
+    }),
+    "retrieve_content" -> defineRpc((s:String) => s)(req => {
+      val reqObj = new JSONObject(req)
+      val content = participant.retrieveContent(reqObj.getString("id"))
+
+      val responseObj = new JSONObject
+      responseObj.put("content", content)
+      responseObj.toString
     })
   )
 
@@ -84,15 +92,5 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
 
 class UpstreamParticipantHandler(val upstream:UpstreamParticipant)
         extends ParticipantHandler(upstream) {
-
-  override protected val endpoints = commonEndpoints ++ Map(
-    "retrieve_content" -> defineRpc((s:String) => s)(req => {
-      val reqObj = new JSONObject(req)
-      val content = upstream.retrieveContent(reqObj.getString("id"))
-
-      val responseObj = new JSONObject
-      responseObj.put("content", content)
-      responseObj.toString
-    })
-  )
+  override protected val endpoints = commonEndpoints
 }

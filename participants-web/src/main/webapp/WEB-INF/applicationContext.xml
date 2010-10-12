@@ -24,7 +24,11 @@
         http://www.springframework.org/schema/security/spring-security-2.0.1.xsd">
 
   <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-        <property name="locations" value="classpath:demo.properties" />
+    <property name="properties">
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName" value="java:comp/env/demoProperties"/>
+      </bean>
+    </property>
   </bean>
 
   <bean id="configClient" class="net.lshift.diffa.messaging.json.ConfigurationRestClient">
@@ -50,8 +54,8 @@
     <property name="targetMethod" value="declareEndpoint"/>
     <property name="arguments">
       <list>
-        <value>${demo.downstreamName}</value>
-        <value>${demo.downstreamUrl}</value>
+        <value>${demo.upstreamName}</value>
+        <value>${demo.upstreamUrl}</value>
       </list>
     </property>
   </bean>
@@ -61,8 +65,8 @@
     <property name="targetMethod" value="declareEndpoint"/>
     <property name="arguments">
       <list>
-        <value>${demo.upstreamName}</value>
-        <value>${demo.upstreamUrl}</value>
+        <value>${demo.downstreamName}</value>
+        <value>${demo.downstreamUrl}</value>
       </list>
     </property>
   </bean>

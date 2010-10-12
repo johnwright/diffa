@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.client
 
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
+import net.lshift.diffa.kernel.participants.ParticipantType
 
 /**
  * Interface supported by clients capable of retrieving differences from the server.
@@ -58,7 +59,7 @@ trait DifferencesClient {
   /**
    * Retrieves further details of the given event with the specified session.
    */
-  def eventDetail(sessionId:String, evtSeqId:String): String
+  def eventDetail(sessionId:String, evtSeqId:String, t:ParticipantType.ParticipantType): String
 
   /**
    * Runs a polling loop for the given session, invoking the provided function each time a new event is received.

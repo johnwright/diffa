@@ -30,6 +30,7 @@ import util.matching.Regex
 import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import org.junit.{Before, Test}
+import net.lshift.diffa.kernel.participants.ParticipantType
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -83,11 +84,10 @@ trait CommonDifferenceTests {
     val (diffs, sessionId) = getVerifiedDiffsWithSessionId()
     val seqId = diffs(0).seqId
 
-    val detail = env.diffClient.eventDetail(sessionId, seqId)
+    val detail = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.UPSTREAM)
     assertNotNull(diffs)
 
-    // TODO Currently the expanded detail is hard coded in the session manager 
-    assertEquals("Expanded Detail", detail)
+    assertEquals("abcdef", detail)
 
     val fileList = messageDir.listFiles
     assertNotNull("File list was null for dir: " + messageDir, fileList)
