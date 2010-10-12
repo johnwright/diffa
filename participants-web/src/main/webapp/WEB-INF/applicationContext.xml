@@ -54,8 +54,8 @@
     <property name="targetMethod" value="declareEndpoint"/>
     <property name="arguments">
       <list>
-        <value>${demo.downstreamName}</value>
-        <value>${demo.downstreamUrl}</value>
+        <value>${demo.upstreamName}</value>
+        <value>${demo.upstreamUrl}</value>
       </list>
     </property>
   </bean>
@@ -65,8 +65,8 @@
     <property name="targetMethod" value="declareEndpoint"/>
     <property name="arguments">
       <list>
-        <value>${demo.upstreamName}</value>
-        <value>${demo.upstreamUrl}</value>
+        <value>${demo.downstreamName}</value>
+        <value>${demo.downstreamUrl}</value>
       </list>
     </property>
   </bean>
