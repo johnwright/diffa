@@ -24,8 +24,7 @@ import net.lshift.diffa.kernel.config.ConfigStore
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
-import net.lshift.diffa.kernel.participants.ParticipantFactory
-import net.lshift.diffa.kernel.participants.ParticipantType
+import net.lshift.diffa.kernel.participants.{Participant, ParticipantFactory, ParticipantType}
 
 /**
  * Standard implementation of the SessionManager.
@@ -46,7 +45,7 @@ class DefaultSessionManager(
         val cacheProvider:SessionCacheProvider,
         val matching:MatchingManager,
         val vpm:VersionPolicyManager,
-        val participants:ParticipantFactory)
+        val participantFactory:ParticipantFactory)
     extends SessionManager
     with DifferencingListener with MatchingStatusListener {
 
@@ -58,6 +57,8 @@ class DefaultSessionManager(
    * This is a map of every open session (keyed on session id) keyed on the pairing it is linked to
    */
   private val sessionsByKey = new HashMap[String, SessionCache]
+
+  private val participants = new HashMap[String, Participant]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
@@ -154,9 +155,9 @@ class DefaultSessionManager(
           log.info("Running a detail query for " + event.upstreamVsn)
           val versionID = event.objId
           val pair = config.getPair(versionID.pairKey)
-          // TODO (#6) cache the reference to this participant
-          val us = participants.createUpstreamParticipant(pair.upstream.url)
-          us.retrieveContent(versionID.id)
+          val key = pair.upstream.url
+          val participant = participants.getOrElse(key, participantFactory.createUpstreamParticipant(key))
+          participant.retrieveContent(versionID.id)
         }
         else {
           log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
@@ -167,10 +168,10 @@ class DefaultSessionManager(
         if (null != event && null != event.downstreamVsn) {
           log.info("Running a detail query for " + event.downstreamVsn)
           val versionID = event.objId
-          val pair = config.getPair(versionID.pairKey)
-          // TODO (#6) cache the reference to this participant
-          val ds = participants.createDownstreamParticipant(pair.downstream.url)
-          ds.retrieveContent(versionID.id)
+          val pair = config.getPair(versionID.pairKey)          
+          val key = pair.upstream.url
+          val participant = participants.getOrElse(key, participantFactory.createUpstreamParticipant(key))
+          participant.retrieveContent(versionID.id)          
         }
         else {
           log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
@@ -276,8 +277,8 @@ class DefaultSessionManager(
         }
 
         val dates = DateConstraint(start, end)
-        val us = participants.createUpstreamParticipant(pair.upstream.url)
-        val ds = participants.createDownstreamParticipant(pair.downstream.url)
+        val us = participantFactory.createUpstreamParticipant(pair.upstream.url)
+        val ds = participantFactory.createDownstreamParticipant(pair.downstream.url)
 
         // TODO Consider doing this operation in the background
         policy.difference(pairKey, dates, us, ds, listener)
