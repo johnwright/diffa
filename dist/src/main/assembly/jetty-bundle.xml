@@ -25,6 +25,7 @@
     <!--<format>dir</format>-->     <!-- Uncomment this when working on the packaging -->
     <format>zip</format>
   </formats>
+    
   <includeBaseDirectory>false</includeBaseDirectory>
   <dependencySets>
     <!-- Web Application -->
@@ -119,6 +120,14 @@
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
   </dependencySets>
+
+  <files>
+    <file>
+      <source>MANIFEST.MF</source>
+      <outputDirectory>.</outputDirectory>
+      <filtered>true</filtered>
+    </file>
+  </files>
 
   <fileSets>
     <fileSet>

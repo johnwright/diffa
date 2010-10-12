@@ -1,0 +1,4 @@
+build.jdk=${java.version}
+build.number=${build.number}
+built.by=${user.name}
+application.version=${pom.version}
