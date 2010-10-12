@@ -106,7 +106,7 @@
               <value>true</value>
             </systemProperty>
             <systemProperty>
-              <name>basedir</name>
+              <name>demo.basedir</name>
               <value>${basedir}</value>
             </systemProperty>
           </systemProperties>
