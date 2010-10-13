@@ -16,8 +16,10 @@
 
 package net.lshift.diffa.kernel.util
 
-import org.hibernate.{Query, Session, SessionFactory}
-import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.util.SessionHelper._
+import org.hibernate.{NonUniqueResultException, Query, Session, SessionFactory}
+import org.slf4j.{LoggerFactory, Logger}
+// for 'SessionFactory.withSession'
 import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
 
 /**
@@ -25,6 +27,8 @@ import scala.collection.JavaConversions._ // for implicit conversions Java colle
  */
 trait HibernateQueryUtils {
   def sessionFactory:SessionFactory
+
+  val log:Logger = LoggerFactory.getLogger(getClass)
 
   /**
    * Executes a list query in the given session, forcing the result type into a typed list of the given
@@ -58,9 +62,19 @@ trait HibernateQueryUtils {
 
     val query: Query = s.getNamedQuery(queryName)
     params foreach {case (param, value) => query.setParameter(param, value)}
-    query.uniqueResult match {
-      case null => None
-      case r:ReturnType => Some(r)
+    try {
+      query.uniqueResult match {
+        case null => None
+        case r: ReturnType => Some(r)
+      }
+    }
+    catch {
+      case e: NonUniqueResultException => {
+        log.warn("Non unique result for :" + queryName)
+        params.foreach(p => log.debug("Key: [" + p._1 + ", Value: [" + p._2 + "]" ))
+        log.debug("Logging stack trace for non unique result", e)
+        None
+      }
     }
   }
 }
