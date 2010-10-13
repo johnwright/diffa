@@ -47,7 +47,11 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
 
     val response = executeRpc("retrieve_content", requestObj.toString)
     val jsonResponse = new JSONObject(response)
-    jsonResponse.getString("content")
+    val s = jsonResponse.optString("content")
+    if (s.equals("")) {
+      log.warn("Returning default value for id: " + identifier)
+    }
+    s
   }
 
   override def invoke(actionId:String, entityId:String) : ActionResult = {
