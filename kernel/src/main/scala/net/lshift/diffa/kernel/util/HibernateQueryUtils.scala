@@ -70,8 +70,8 @@ trait HibernateQueryUtils {
     }
     catch {
       case e: NonUniqueResultException => {
-        log.warn("Non unique result for :" + queryName)
-        params.foreach(p => log.debug("Key: [" + p._1 + ", Value: [" + p._2 + "]" ))
+        log.warn("Non unique result for: " + queryName)
+        params.foreach(p => log.debug("Key: [" + p._1 + "], Value: [" + p._2 + "]" ))
         log.debug("Logging stack trace for non unique result", e)
         None
       }
