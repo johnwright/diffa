@@ -146,39 +146,38 @@ class DefaultSessionManager(
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.debug("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
-    // TODO (#6) Refactor this to cache the participant stubs and reduce code duplication
-    val event = sessionsByKey(sessionID).getEvent(evtSeqId)
-
     t match {
       case ParticipantType.UPSTREAM => {
-        if (null != event && null != event.upstreamVsn) {
-          log.debug("UP: Running a detail query for " + event.upstreamVsn)
-          val versionID = event.objId
-          val pair = config.getPair(versionID.pairKey)
-          val key = pair.upstream.url
-          val participant = participants.getOrElse(key, participantFactory.createUpstreamParticipant(key))
-          participant.retrieveContent(versionID.id)
-        }
-        else {
-          log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
-          "Expanded detail not available"
-        }
+        withValidEvent(sessionID, evtSeqId,
+                      {e:SessionEvent => e.upstreamVsn != null},
+                      {p:net.lshift.diffa.kernel.config.Pair => p.upstream.url},
+                      {k:String => participantFactory.createUpstreamParticipant(k)})
       }
       case ParticipantType.DOWNSTREAM => {
-        if (null != event && null != event.downstreamVsn) {
-          log.debug("DOWN: Running a detail query for " + event.downstreamVsn)
-          val versionID = event.objId
-          val pair = config.getPair(versionID.pairKey)          
-          val key = pair.downstream.url
-          val participant = participants.getOrElse(key, participantFactory.createDownstreamParticipant(key))
-          participant.retrieveContent(versionID.id)          
-        }
-        else {
-          log.error("Failed to execute a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
-          "Expanded detail not available"
-        }
+        withValidEvent(sessionID, evtSeqId,
+                      {e:SessionEvent => e.downstreamVsn != null},
+                      {p:net.lshift.diffa.kernel.config.Pair => p.downstream.url},
+                      {k:String => participantFactory.createDownstreamParticipant(k)})
       }
     }
+  }
+
+  def withValidEvent(sessionID:String, evtSeqId:String,
+                     check:Function1[SessionEvent,Boolean],
+                     resolve:Function1[net.lshift.diffa.kernel.config.Pair,String],
+                     p:Function1[String,Participant]) : String = {
+    val event = sessionsByKey(sessionID).getEvent(evtSeqId)
+    check(event) match {
+      case true  => {
+       val versionID = event.objId
+       val pair = config.getPair(versionID.pairKey)
+       val key = resolve(pair)
+       val participant = participants.getOrElse(key, p(key))
+       participant.retrieveContent(versionID.id)
+      }
+      case false => "Expanded detail not available"
+    }
+
   }
 
   //
