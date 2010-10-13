@@ -20,7 +20,7 @@
 <configuration>
 
   <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-    <file>diffa.log</file>
+    <file>logs/diffa.log</file>
     <layout class="ch.qos.logback.classic.PatternLayout">
       <Pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</Pattern>
     </layout>
