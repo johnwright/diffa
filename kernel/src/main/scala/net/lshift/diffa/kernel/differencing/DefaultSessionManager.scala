@@ -162,6 +162,8 @@ class DefaultSessionManager(
     }
   }
 
+  // TODO The fact that 3 lamdbas are passed in probably indicates bad factoring
+  // -> the participant factory call is probably low hanging fruit for refactoring
   def withValidEvent(sessionID:String, evtSeqId:String,
                      check:Function1[SessionEvent,Boolean],
                      resolve:Function1[net.lshift.diffa.kernel.config.Pair,String],
