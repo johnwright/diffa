@@ -68,7 +68,7 @@ class LocalEventMatcher(val pairKey:String, timeout:Int, reaper:LocalEventMatche
   }
 
   def dispose = {
-    log.info("Disposing analyzer for pair: " + pairKey)
+    log.debug("Disposing analyzer for pair: " + pairKey)
     reaper.detachMatcher(this)
   }
 
@@ -187,7 +187,7 @@ class LocalEventMatcherReaper {
   }
 
   def dispose {
-    log.info("Disposing LocalEventReaper")
+    log.debug("Disposing LocalEventReaper")
 
     reaperMon.synchronized {
       continueReaping = false

@@ -43,7 +43,7 @@ class SmtpNotifier(val session:Session,
     case e:URISyntaxException => log.error("Could not setup link, host = " + host + "; ctx = " + ctx)
   }
 
-  log.info("Setting the notification URL to: " + url)
+  log.debug("Setting the notification URL to: " + url)
 
 
   def notify(event:NotificationEvent, user:User) = {

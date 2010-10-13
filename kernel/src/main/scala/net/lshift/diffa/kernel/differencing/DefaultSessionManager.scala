@@ -145,14 +145,14 @@ class DefaultSessionManager(
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
-    log.info("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
+    log.debug("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
     // TODO (#6) Refactor this to cache the participant stubs and reduce code duplication
     val event = sessionsByKey(sessionID).getEvent(evtSeqId)
 
     t match {
       case ParticipantType.UPSTREAM => {
         if (null != event && null != event.upstreamVsn) {
-          log.info("UP: Running a detail query for " + event.upstreamVsn)
+          log.debug("UP: Running a detail query for " + event.upstreamVsn)
           val versionID = event.objId
           val pair = config.getPair(versionID.pairKey)
           val key = pair.upstream.url
@@ -166,7 +166,7 @@ class DefaultSessionManager(
       }
       case ParticipantType.DOWNSTREAM => {
         if (null != event && null != event.downstreamVsn) {
-          log.info("DOWN: Running a detail query for " + event.downstreamVsn)
+          log.debug("DOWN: Running a detail query for " + event.downstreamVsn)
           val versionID = event.objId
           val pair = config.getPair(versionID.pairKey)          
           val key = pair.downstream.url
@@ -267,7 +267,7 @@ class DefaultSessionManager(
 
     pairs.foreach(pairKey => {
       try {
-        log.info("Execute difference report for pair " + pairKey)
+        log.debug("Execute difference report for pair " + pairKey)
 
         val pair = config.getPair(pairKey)
         val policy: VersionPolicy = vpm.lookupPolicy(pair.versionPolicyName) match {

@@ -44,7 +44,7 @@ abstract class AbstractJSONHandler extends ProtocolHandler {
           handler(request, response)
         } catch {
           case ex => {
-            log.info("Request failed", ex)
+            log.error("Request failed", ex)
 
             response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
             val errorMsg = ex.getMessage match {

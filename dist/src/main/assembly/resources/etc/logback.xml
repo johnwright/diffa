@@ -31,7 +31,7 @@
       <level>info</level>
     </filter>
     <layout class="ch.qos.logback.classic.PatternLayout">
-      <Pattern>%date %-5level %logger{36}:%line - %msg%n</Pattern>
+      <Pattern>%date %-5level %msg%n</Pattern>
     </layout>
   </appender>
 

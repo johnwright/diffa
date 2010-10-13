@@ -47,7 +47,7 @@ class ParticipantUIController(upstream:UpstreamWebParticipant, downstream:Downst
     ctx.getBean("declareUpstream")
     ctx.getBean("declareDownstream")
     ctx.getBean("declarePair")
-    log.info("Initialized all remote resources for the participant demo app")
+    log.debug("Initialized all remote resources for the participant demo app")
     true
   }
 

@@ -29,7 +29,7 @@ class EventNotifier(val sessionManager:SessionManager,
 
   val log:Logger = LoggerFactory.getLogger(getClass)
 
-  log.info("Quiet time set to " + quietTime.toString)
+  log.debug("Quiet time set to " + quietTime.toString)
 
   private val providers = new ListBuffer[NotificationProvider]()
   private var nextRun = new DateTime()

@@ -49,6 +49,14 @@
 
 
   <!--
+    ==================
+      Context Handling
+    ==================
+  -->
+
+  <bean class="net.lshift.diffa.agent.context.ContextRefreshListener"/>
+
+  <!--
     =============
       Protocols
     =============
