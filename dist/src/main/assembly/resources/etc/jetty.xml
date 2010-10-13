@@ -35,12 +35,9 @@
   </New>
 
   <Call class="org.eclipse.jetty.util.log.Log" name="info">
-    <Arg>Redirecting stderr/stdout to<Ref id="ServerLogName"/></Arg>
+    <Arg>Redirecting Jetty stderr to<Ref id="ServerLogName"/></Arg>
   </Call>
   <Call class="java.lang.System" name="setErr">
-    <Arg><Ref id="ServerLog"/></Arg>
-  </Call>
-  <Call class="java.lang.System" name="setOut">
     <Arg><Ref id="ServerLog"/></Arg>
   </Call>
 
@@ -184,7 +181,7 @@
               <Put name="mail.smtp.host">localhost</Put>
               <Put name="mail.from">diffa@localhost</Put>
               <Put name="mail.senderName">diffa Agent</Put>
-              <Put name="mail.debug">true</Put>
+              <Put name="mail.debug">false</Put>
             </New>
           </Set>
         </New>
