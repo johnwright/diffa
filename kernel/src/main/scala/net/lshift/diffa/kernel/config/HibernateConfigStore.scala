@@ -18,15 +18,12 @@ package net.lshift.diffa.kernel.config
 
 import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withSession'
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
-import net.lshift.diffa.kernel._
-import org.hibernate.{Session, Query, SessionFactory}
-import org.slf4j.{Logger, LoggerFactory}
+import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 
 class HibernateConfigStore(val sessionFactory: SessionFactory)
     extends ConfigStore
     with HibernateQueryUtils {
-  private val log:Logger = LoggerFactory.getLogger(getClass)
 
   def createOrUpdateEndpoint(e: Endpoint): Unit = sessionFactory.withSession(s => s.saveOrUpdate(e))
 

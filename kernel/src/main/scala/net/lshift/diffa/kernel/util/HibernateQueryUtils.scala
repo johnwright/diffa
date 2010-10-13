@@ -28,7 +28,7 @@ import scala.collection.JavaConversions._ // for implicit conversions Java colle
 trait HibernateQueryUtils {
   def sessionFactory:SessionFactory
 
-  val log:Logger = LoggerFactory.getLogger(getClass)
+  protected val log:Logger = LoggerFactory.getLogger(getClass)
 
   /**
    * Executes a list query in the given session, forcing the result type into a typed list of the given
