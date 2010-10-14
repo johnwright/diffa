@@ -174,7 +174,10 @@ class DefaultSessionManager(
        val versionID = event.objId
        val pair = config.getPair(versionID.pairKey)
        val key = resolve(pair)
-       val participant = participants.getOrElse(key, p(key))
+       if (!participants.contains(key)) {
+         participants(key) = p(key)
+       }
+       val participant = participants(key)
        participant.retrieveContent(versionID.id)
       }
       case false => "Expanded detail not available"
