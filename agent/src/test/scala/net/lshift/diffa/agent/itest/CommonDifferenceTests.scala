@@ -23,7 +23,6 @@ import java.lang.String
 import support.TestEnvironment
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionEvent}
 import javax.mail.Session
-import java.util.Properties
 import java.io.{File, FileInputStream}
 import javax.mail.internet.MimeMessage
 import util.matching.Regex
@@ -31,6 +30,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
+import java.util.{UUID, Properties}
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -105,6 +105,37 @@ trait CommonDifferenceTests {
 
     assertNotNull(diffs)
     assertFalse(diffs.isEmpty)
+  }
+
+  @Test
+  def walkThroughEventDetails = {
+    def guid() = UUID.randomUUID.toString
+    val up = guid()
+    val down = guid()
+    val NO_CONTENT = "Expanded detail not available"
+    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    Thread.sleep(100)
+    env.addAndNotifyUpstream("abc", yesterday, up)
+
+    val diffs = tryAgain(sessionId,20,100)
+    val seqId = diffs(0).seqId
+
+    val up1 = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.UPSTREAM)
+    val down1 = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.DOWNSTREAM)
+
+    assertEquals(up, up1)
+    assertEquals(NO_CONTENT, down1)
+
+    env.addAndNotifyDownstream("abc", yesterday, down)
+    Thread.sleep(1000)
+    val diffs2 = tryAgain(sessionId,20,100)
+    assertEquals(1, diffs2.length)
+    val seqId2 = diffs2(0).seqId
+
+    val up2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.UPSTREAM)
+    val down2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.DOWNSTREAM)
+    assertEquals(up, up2)
+    assertEquals(down, down2)
   }
 
   @Test
