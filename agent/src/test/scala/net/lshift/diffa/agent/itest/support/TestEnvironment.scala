@@ -50,15 +50,15 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
   val upstream = new UpstreamMemoryParticipant(versionScheme.upstreamVersionGen)
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
+  // Participants' RPC server setup
+  Participants.startUpstreamServer(usPort, upstream)
+  Participants.startDownstreamServer(dsPort, downstream)
+
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort)
   configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort)
   configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
-
-  // Participants' RPC server setup
-  Participants.startUpstreamServer(usPort, upstream)
-  Participants.startDownstreamServer(dsPort, downstream)
 
   // Participants' RPC client setup
   val upstreamClient:UpstreamParticipant = new UpstreamParticipantRestClient("http://localhost:" + usPort)
