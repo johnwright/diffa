@@ -540,7 +540,7 @@ function addDiffRow($difflist, event, cluster) {
 		.find('td')
 		.eq(0)
 		.text();
-	$('<tr></tr>')
+	$('<tr id="evt_' + event.seqId + '"></tr>')
 		.append('<td class="date">'+(currentDate===date ? "" : date)+'</td>')
 		.append('<td>'+time+'</td>')
 		.append('<td id="'+detectedAtRaw+'_'+pairing+'_group">'+(group||"")+'</td>')
@@ -604,13 +604,17 @@ function highlightDiffListRows(circle, persist) {
 	if($rows.length) {
 		$rows
 			.siblings()
-			.removeClass(persist ? "selected highlighted" : "highlighted")
+			.removeClass(persist ? "selected specific_selected highlighted specific_highlight" : "highlighted specific_highlight")
 			.end()
 			.removeClass("highlighted")
 			.addClass(persist ? "selected" : "highlighted");
 	} else {
-		$('#difflist').find('tbody tr').removeClass('highlighted');
+		$('#difflist').find('tbody tr').removeClass('highlighted specific_highlight');
 	}
+}
+
+function highlightSpecificDiffListRow(diffEvent, persist) {
+  $('#evt_' + diffEvent.seqId).addClass(persist ? 'specific_selected' : 'specific_highlighted');
 }
 
 function scrollListToSelected(circle) {
@@ -925,6 +929,7 @@ $(function () {
 		var circle = params.dt;
 		highlightSelectedBlob(circle);
 		highlightDiffListRows(circle, "persist");
+    highlightSpecificDiffListRow(params.diffEvent, 'persist')
 		scrollListToSelected(circle);
 		showContent(circle, params.diffEvent, true);
 	});
@@ -932,7 +937,8 @@ $(function () {
 	$(document).bind('blobHovered', function(e, params) {
 		diffListSelect.hovered = params;
 		var glow = params.glow,
-			circle = params.dt;
+			circle = params.dt,
+      diffEvent = params.diffEvent;
 		if(glow) {
 			glow.attr({
 				fill: "r"+COLOURS.darkblue+"-"+COLOURS.background,
@@ -940,7 +946,10 @@ $(function () {
 			});
 		}
 		highlightDiffListRows(circle);
-		showContent(circle, params.diffEvent, false);
+    showContent(circle, params.diffEvent, false);
+    if (diffEvent) {
+      $('#evt_' + diffEvent.seqId).addClass('specific_highlight');
+    }
 	});
 	
 	$(document).bind('blobUnHovered', function(e, params) {
