@@ -946,7 +946,6 @@ $(function () {
 			});
 		}
 		highlightDiffListRows(circle);
-    showContent(circle, params.diffEvent, false);
     if (diffEvent) {
       $('#evt_' + diffEvent.seqId).addClass('specific_highlight');
     }
@@ -963,7 +962,6 @@ $(function () {
 			});
 		}
 		highlightDiffListRows();
-		showContent();
 	});
 	
 	addScrollBarLabels($('#scrollBar').slider({
