@@ -58,7 +58,7 @@ class DifferencesResource extends AbstractRestResource {
     log.debug("Creating a subscription for this scope: " + scope)
     val sessionId = maybe((_:Seq[String]) => session.start(scope), scope.includedPairs)
     val uri = uriInfo.getBaseUriBuilder.path("diffs/sessions/" + sessionId).build()
-    Response.created(uri).build()
+    Response.created(uri).`type`("text/plain").build()
   }
 
   @GET
