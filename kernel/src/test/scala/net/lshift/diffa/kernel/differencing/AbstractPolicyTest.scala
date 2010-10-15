@@ -193,7 +193,9 @@ abstract class AbstractPolicyTest {
   def storeUpstreamChanges(bizDate:DateTime, lastUpdate:Option[DateTime]) {
     val timestamp = new DateTime
     val (update, observationDate, f) = lastUpdate match {
-      case None     => (timestamp, null, () => store.storeUpstreamVersion(VersionID(abPair, "id1"), bizDate, new DateTime, "vsn1"))
+      case None     => (timestamp, null, () =>
+        store.storeUpstreamVersion(EasyMock.eq(VersionID(abPair, "id1")), EasyMock.eq(bizDate),
+                                   between(timestamp, timestamp.plusMillis(200)), EasyMock.eq("vsn1")))
       case Some(x)  => (x, x, () => store.storeUpstreamVersion(VersionID(abPair, "id1"), bizDate, x, "vsn1"))
     }
     expect(f()).andReturn(Correlation(null, abPair, "id1", bizDate, update, timestamp, "vsn1", null, null, false))

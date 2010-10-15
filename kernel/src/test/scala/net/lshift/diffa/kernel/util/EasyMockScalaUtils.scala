@@ -16,7 +16,8 @@
 
 package net.lshift.diffa.kernel.util
 
-import org.easymock.EasyMock
+import org.joda.time.DateTime
+import org.easymock.{IArgumentMatcher, EasyMock}
 
 /**
  * Created by IntelliJ IDEA.
@@ -54,5 +55,24 @@ object EasyMockScalaUtils {
   def anyString = {
     EasyMock.anyObject
     ""
+  }
+
+  /**
+   * Allows a DateTime to be validated by being between two values.
+   */
+  def between(start:DateTime, end:DateTime):DateTime = {
+    // We create our own matcher here that confirms the value is between the two points. Note that we can't
+    // use EasyMock.and(EasyMock.geq(start), EasyMock.leq(end)) because DateTime isn't Comparable[DateTime] - it is just
+    // Comparable, and this makes the Scala type-checker unhappy.
+    EasyMock.reportMatcher(new IArgumentMatcher() {
+      def matches(argument: Any) = {
+        argument match {
+          case d:DateTime => d.compareTo(start) >= 0 && d.compareTo(end) <= 0
+          case _          => false
+        }
+      }
+      def appendTo(buffer: StringBuffer) = buffer.append("between " + start + " and " + end)
+    })
+    null
   }
 }
