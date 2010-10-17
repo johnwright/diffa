@@ -19,20 +19,14 @@ package net.lshift.diffa.kernel.frontend
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.matching.MatchingManager
-import net.lshift.diffa.kernel.differencing.SessionManager
+import net.lshift.diffa.kernel.differencing.{CorrelationActorSupervisor, SessionManager}
 
-class Configuration(val configStore: ConfigStore, val matchingManager: MatchingManager, val sessionManager: SessionManager) {
+class Configuration(val configStore: ConfigStore,
+                    val matchingManager: MatchingManager,
+                    val supervisor:CorrelationActorSupervisor,
+                    val sessionManager: SessionManager) {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
-
-  def auth(req: AuthRequest): AuthResponse = {
-    log.debug("Processing auth request: " + req.username + " / " + req.password)
-    val response = req.username match {
-      case "admin"  => 1
-      case _        => 0
-    }
-    new AuthResponse(response)
-  }
 
   /*
   * Endpoint CRUD
@@ -86,12 +80,14 @@ class Configuration(val configStore: ConfigStore, val matchingManager: MatchingM
   def createOrUpdatePair(pairDef: PairDef): Unit = {
     log.debug("Processing pair declare/update request: " + pairDef.pairKey)
     configStore.createOrUpdatePair(pairDef)
+    supervisor.startActor(pairDef.pairKey)
     matchingManager.onUpdatePair(pairDef.pairKey)
     sessionManager.onUpdatePair(pairDef.pairKey)
   }
 
   def deletePair(key: String): Unit = {
     log.debug("Processing pair delete request: " + key)
+    supervisor.stopActor(key)
     configStore.deletePair(key)
     matchingManager.onDeletePair(key)
   }

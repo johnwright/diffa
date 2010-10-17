@@ -190,6 +190,15 @@
     </constructor-arg>
   </bean>
 
+  <!--
+    =============
+      Supervision
+    =============
+  -->
+
+  <bean id="correlationActorSupervisor" class="net.lshift.diffa.kernel.differencing.CorrelationActorSupervisor">
+    <constructor-arg ref="versionCorrelationStore"/>
+  </bean>
 
   <!--
     =============
@@ -199,6 +208,7 @@
   <bean id="configurationFrontend" class="net.lshift.diffa.kernel.frontend.Configuration">
     <constructor-arg ref="diffaConfigStore"/>
     <constructor-arg ref="matchingManager"/>
+    <constructor-arg ref="correlationActorSupervisor"/>
     <constructor-arg ref="sessionManager"/>
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">

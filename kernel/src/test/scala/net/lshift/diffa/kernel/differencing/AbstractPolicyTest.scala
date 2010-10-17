@@ -20,12 +20,12 @@ import org.easymock.EasyMock._
 import org.easymock.{IAnswer, EasyMock}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
-import org.junit.Test
 import net.lshift.diffa.kernel.participants._
 import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.events._
+import org.junit.{Before, Test}
 
 /**
  * Base class for the various policy tests.
@@ -47,6 +47,8 @@ abstract class AbstractPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
   val abPair = "A-B"
+
+  val supervisor = new CorrelationActorSupervisor(store)
   
   protected def replayAll = replay(usMock, dsMock, store, listener)
   protected def verifyAll = verify(usMock, dsMock, store, listener)
@@ -54,6 +56,14 @@ abstract class AbstractPolicyTest {
   // Make declaring of sequences of specific types clearer
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)
   def VersionsFromStore[T](vals:T*) = Seq[T](vals:_*)
+
+  @Before def start = {
+    println("Starting actor")
+    supervisor.startActor(abPair)
+    println("Started actor")
+  }
+
+  @Before def stop = supervisor.stopActor(abPair)
 
   @Test
   def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatch {

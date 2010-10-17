@@ -21,6 +21,9 @@ import collection.mutable.Queue
 import net.lshift.diffa.kernel.participants._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
+import se.scalablesolutions.akka.actor.ActorRegistry
+import org.slf4j.LoggerFactory
+import CorrelationActor._
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -29,6 +32,8 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     extends VersionPolicy {
   protected val alerter = Alerter.forClass(getClass)
 
+  val log = LoggerFactory.getLogger(getClass)
+
   /**
    * Handles a participant change. Due to the need to later correlate data, event information is cached to the
    * version correlation store.
@@ -36,16 +41,16 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   def onChange(evt: PairChangeEvent) = {
     val corr = evt match {
       case UpstreamPairChangeEvent(id, date, lastUpdate, vsn) => vsn match {
-        case null => store.clearUpstreamVersion(id)
-        case _    => store.storeUpstreamVersion(id, date, maybe(lastUpdate), vsn)
+        case null => clearUpstreamVersion(id)
+        case _    => storeUpstreamVersion(id, date, maybe(lastUpdate), vsn)
       }
       case DownstreamPairChangeEvent(id, date, lastUpdate, vsn) => vsn match {
-        case null => store.clearDownstreamVersion(id)
-        case _    => store.storeDownstreamVersion(id, date, maybe(lastUpdate), vsn, vsn)
+        case null => clearDownstreamVersion(id)
+        case _    => storeDownstreamVersion(id, date, maybe(lastUpdate), vsn, vsn)
       }
       case DownstreamCorrelatedPairChangeEvent(id, date, lastUpdate, uvsn, dvsn) => (uvsn, dvsn) match {
-        case (null, null) => store.clearDownstreamVersion(id)
-        case _            => store.storeDownstreamVersion(id, date, maybe(lastUpdate), uvsn, dvsn)
+        case (null, null) => clearDownstreamVersion(id)
+        case _            => storeDownstreamVersion(id, date, maybe(lastUpdate), uvsn, dvsn)
       }
     }
 
@@ -112,9 +117,9 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
       vm match {
         case VersionMismatch(id, date, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            store.storeUpstreamVersion(VersionID(pairKey, id), lastUpdate, date, usVsn)
+            storeUpstreamVersion(VersionID(pairKey, id), lastUpdate, date, usVsn)
           } else {
-            store.clearUpstreamVersion(VersionID(pairKey, id))
+            clearUpstreamVersion(VersionID(pairKey, id))
           }
       }
     }

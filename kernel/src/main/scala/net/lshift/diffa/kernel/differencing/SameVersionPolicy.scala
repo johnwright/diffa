@@ -16,14 +16,11 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import net.lshift.diffa.kernel.alerting.{KernelAlerts, Alerter}
+
 import java.lang.String
-import org.joda.time.DateTime
-import collection.immutable.HashSet
-import collection.mutable.{Queue, ListBuffer, HashMap}
-import org.joda.time.format.DateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
+import CorrelationActor._
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -52,9 +49,9 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
       vm match {
         case VersionMismatch(id, date, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            store.storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, partVsn, partVsn)
+            storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, partVsn, partVsn)
           } else {
-            store.clearDownstreamVersion(VersionID(pairKey, id))
+            clearDownstreamVersion(VersionID(pairKey, id))
           }
       }
     }
