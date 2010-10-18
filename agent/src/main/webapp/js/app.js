@@ -18,9 +18,10 @@
 
 // config you can change
 var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport
-	INTERVAL_MINS = 2, // the x-axis increments that difference events are bucketed into
+	INTERVAL_MINS = 15, // the x-axis increments that difference events are bucketed into
 	DEFAULT_TIMESPAN_HOURS = 12, // how many hours the heatmap should show by default
-	POLL_SECS = 1; // how often the server is polled for new events
+	POLL_SECS = 1, // how often the server is polled for new events
+  SCALE = 1;    // the current multiple of DEFAULT_TIMESPAN_HOURS we're zoomed to
 	
 // constants
 var IS_POLLING = false, // tracker for whether polling is switched on
@@ -30,7 +31,8 @@ var IS_POLLING = false, // tracker for whether polling is switched on
 		selected: "#FFF2CC", // lightyellow
 		background: "#CFE2F3", // lightblue
 		darkblue: "#0000FF"
-	};
+	},
+  INTERVALS_PER_LABEL = 4;
 	
 // calculated contstants - don't change
 var X_INCREMENTS = DEFAULT_TIMESPAN_HOURS*60 / INTERVAL_MINS,
@@ -77,9 +79,15 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 		if(!mapDiffaToRaphael.defaultXIncrements) {
 			mapDiffaToRaphael.defaultXIncrements = X_INCREMENTS;
 		}
-		if(minTime<now-INTERVAL_MS*mapDiffaToRaphael.defaultXIncrements) {
-			X_INCREMENTS = ((now-minTime) / INTERVAL_MS);
-			X_INCREMENTS += Math.ceil(10 * X_INCREMENTS / width); // 10px room to breath for oldest data point
+		if(minTime<now-INTERVAL_MS*X_INCREMENTS) {
+      // Re-fit INTERVAL_MS to find a 12 hour bucket that best fits
+      SCALE = Math.ceil((now-minTime) / DEFAULT_TIMESPAN_HOURS / 3600 / 1000);
+
+      INTERVAL_MINS = SCALE * INTERVAL_MINS;
+      INTERVAL_MS = SCALE * INTERVAL_MS;
+
+			//X_INCREMENTS = ((now-minTime) / INTERVAL_MS);
+			//X_INCREMENTS += Math.ceil(10 * X_INCREMENTS / width); // 10px room to breath for oldest data point
 		}
 	}
 	 	
@@ -103,8 +111,8 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 			axisxCount++;
 			cluster = [];
 			while(currEvent = fdData[index]) {
-				if(currEvent.detectedAt>=intervalBoundary) {
-					index++;
+        if(currEvent.detectedAt>=intervalBoundary) {
+          index++;
 					if(currEvent.objId.pairKey===swimlane) {
 						currEvent.axisxInc = axisxCount;
 						cluster.push(currEvent);
@@ -114,8 +122,9 @@ function mapDiffaToRaphael(fdData, recalcXIncrements) {
 				}
 			}
 			if(cluster.length>0) {
-				cluster.axisxInc = 
+				cluster.axisxInc =
 				clusters.push(cluster);
+        cluster.detectedAt = intervalBoundary + INTERVAL_MS/2;
 			}
 		}
 	});
@@ -132,7 +141,7 @@ function blankHeatmap(callback) {
 	var height = 300,
 		leftgutter = 50,
 		viewportWidth = HEATMAP_WIDTH - leftgutter,
-		bottomgutter = 20,
+		bottomgutter = 30,
 		txt = {"font": '10px Fontin-Sans, Arial', stroke: "none", fill: "#000"};
 
 	var $heatmapContainer = $('#heatmapContainer').width(HEATMAP_WIDTH).height(height).css({
@@ -373,21 +382,26 @@ function drawXAxis() {
 		xLabels = [],
 		d,
 		dmins,
-		earliestEvent;
+		earliestEvent,
+    firstIdx = -1;
 
-	for(var i=0; i<axisxCount; i++) {
+  for(var i=0; i<axisxCount; i++) {
 		d = new Date(config.xLimit + INTERVAL_MS*i);
 		dmins = d.getMinutes();
 		if(dmins<INTERVAL_MINS/2 || dmins>=60-INTERVAL_MINS/2) {
-			if(dmins>=60-INTERVAL_MINS/2) {
+      if (firstIdx == -1) firstIdx = i % INTERVALS_PER_LABEL; 
+
+			if(dmins > INTERVAL_MINS/2) {
 				d.setHours(d.getHours()+1);
 			}
-			d.setMinutes(0);
-			label = d.formatString('0hh:0mm'); // JRL: this will be misleading if the timeline goes back before midnight
-			xLabel = paper.text(X * i, height - bottomgutter + 10, label).attr(txt).attr({
-				'text-anchor': 'middle'
-			});
-			xLabels.push(xLabel);
+      if (i % INTERVALS_PER_LABEL == firstIdx) {
+        d.setMinutes(0);
+        label = d.formatString('0DD/0MM\n0hh:0mm');
+        xLabel = paper.text(X * i, height - bottomgutter + 15, label).attr(txt).attr({
+          'text-anchor': 'middle'
+        });
+        xLabels.push(xLabel);
+      }
 		}
 	}
 	config.xLabels = xLabels;
@@ -435,7 +449,7 @@ function drawBlobs() {
 				R = Math.max(max*(value/10),5), //JRL: max is not giving nice big sizes, so we're not using it as an upper limit for now. TO-DO: decide on a way to limit or appropriately adjust blob sizes
 				//offset = (currCluster[currCluster.length-1].detectedAt-(config.now-axisxInc*INTERVAL_MS))/(INTERVAL_MS),
 				//dx = X*axisxInc + X*offset,
-				dx = axisxWidth*(currCluster[currCluster.length-1].detectedAt-xLimit)/xRange;
+				dx = axisxWidth*(currCluster.detectedAt-xLimit)/xRange;
 			//var color = "hsb(" + [(1 - R / max) * .5, 1, .75] + ")";
 			var color = "#FFF";
 			var glow = paper.circle(dx, dy, 2*R).attr({stroke: "none", fill: COLOURS.darkblue, opacity: 0 });
