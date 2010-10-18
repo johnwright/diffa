@@ -26,6 +26,8 @@ import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.events._
 import org.junit.{Before, Test}
+import net.lshift.diffa.kernel.actors.PairActorSupervisor
+import net.lshift.diffa.kernel.config.{PairDef, ConfigStore}
 
 /**
  * Base class for the various policy tests.
@@ -47,8 +49,20 @@ abstract class AbstractPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
   val abPair = "A-B"
+  val policyName = ""
+  val pairDef = new PairDef()
+  pairDef.pairKey = abPair
+  pairDef.versionPolicyName = policyName
 
-  val supervisor = new CorrelationActorSupervisor(store)
+  val configStore = createStrictMock("configStore", classOf[ConfigStore])
+
+  val participantFactory = org.easymock.classextension.EasyMock.createStrictMock("participantFactory", classOf[ParticipantFactory])
+  val versionPolicyManager = org.easymock.classextension.EasyMock.createStrictMock("versionPolicyManager", classOf[VersionPolicyManager])
+  val versionPolicy = createStrictMock("versionPolicy", classOf[VersionPolicy])
+  expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy))
+  org.easymock.classextension.EasyMock.replay(versionPolicyManager)
+
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory)
   
   protected def replayAll = replay(usMock, dsMock, store, listener)
   protected def verifyAll = verify(usMock, dsMock, store, listener)
@@ -57,12 +71,7 @@ abstract class AbstractPolicyTest {
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)
   def VersionsFromStore[T](vals:T*) = Seq[T](vals:_*)
 
-  @Before def start = {
-    println("Starting actor")
-    supervisor.startActor(abPair)
-    println("Started actor")
-  }
-
+  @Before def start = supervisor.startActor(pairDef)
   @Before def stop = supervisor.stopActor(abPair)
 
   @Test

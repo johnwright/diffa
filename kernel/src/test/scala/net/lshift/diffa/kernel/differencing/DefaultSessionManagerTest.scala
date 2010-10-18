@@ -23,6 +23,8 @@ import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
+import net.lshift.diffa.kernel.actors.{DefaultChangeEventClient, ChangeEventClient}
+import org.easymock.EasyMock
 
 /**
  * Test cases for the default session manager.
@@ -75,8 +77,10 @@ class DefaultSessionManagerTest {
     add(protocol2)
   }
   val participantFactory = new ParticipantFactory(protocols)
-  
-  val manager = new DefaultSessionManager(configStore, cacheProvider, matchingManager, versionPolicyManager, participantFactory)
+
+  val changeEventClient = createStrictMock("changeEventClient", classOf[ChangeEventClient])
+
+  val manager = new DefaultSessionManager(configStore, cacheProvider, matchingManager, versionPolicyManager, changeEventClient, participantFactory)
   verify(matchingManager); reset(matchingManager)    // The matching manager will have been called on session manager startup
 
   @Before
@@ -107,14 +111,25 @@ class DefaultSessionManagerTest {
     expect(matchingManager.getMatcher("pair")).andStubReturn(Some(matcher))
     expect(matcher.isVersionIDActive(VersionID("pair", "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(VersionID("pair", "id2"))).andStubReturn(false)
+
     replay(configStore, matchingManager, matcher)
+  }
+
+  def expectForPair(p:String)  = {
+    val p1 = EasyMock.eq(p)
+    val p2 = isA(classOf[DateConstraint])
+    val p3 = isA(classOf[DifferencingListener])
+    expect(changeEventClient.syncPair(p1, p2, p3)).andReturn(true).atLeastOnce
+    replay(changeEventClient)
   }
 
   @Test
   def shouldAlwaysInformMatchEvents {
+
     expect(listener1.onMatch(VersionID("pair", "id"), "vsn"))
-    
     replayAll
+
+    expectForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn")
@@ -128,6 +143,8 @@ class DefaultSessionManagerTest {
     // Replay to get blank stubs
     replayAll
 
+    expectForPair("pair")
+
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     
     manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn")
@@ -139,6 +156,8 @@ class DefaultSessionManagerTest {
     val timestamp = new DateTime()
     expect(listener1.onMismatch(VersionID("pair", "id2"), timestamp, "uvsn", "dvsn"))
     replayAll
+
+    expectForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
 
@@ -152,6 +171,8 @@ class DefaultSessionManagerTest {
     val timestamp = new DateTime()
     replayAll
 
+    expectForPair("pair")
+
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.end("pair", listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn")
@@ -163,6 +184,8 @@ class DefaultSessionManagerTest {
   def shouldNotInformListenerOfEventsOnOtherPairs {
     val timestamp = new DateTime()
     replayAll
+
+    expectForPair("pair2")
 
     val session = manager.start(SessionScope.forPairs("pair2"), listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn")
@@ -176,6 +199,8 @@ class DefaultSessionManagerTest {
     // correlation store will immediately match, but the EventMatcher will see as expiring.
 
     replayAll
+
+    expectForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onDownstreamExpired(VersionID("pair", "unknownid"), "dvsn")

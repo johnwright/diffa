@@ -31,14 +31,23 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     requestObj.put("end", end.toString(JSONEncodingUtils.dateEncoder))
     requestObj.put("granularity", jsonGranularity(granularity))
 
-    val response = executeRpc("query_digests", requestObj.toString)
-    val jsonDigests = new JSONArray(response)
-    (0 until jsonDigests.length).map(i => {
-      val digestObj = jsonDigests.getJSONObject(i)
-      VersionDigest(
-        digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
-        JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")), digestObj.getString("digest"))
-    }).toList
+    try {
+      val response = executeRpc("query_digests", requestObj.toString)
+      val jsonDigests = new JSONArray(response)
+      (0 until jsonDigests.length).map(i => {
+          val digestObj = jsonDigests.getJSONObject(i)
+          VersionDigest(
+          digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
+          JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")), digestObj.getString("digest"))
+        }).toList
+    }
+    catch {
+      // TODO This should probably be handled completely in the executeRpc call,
+      // i.e. have it return an Option instead of an exception
+
+      case e:Exception => List()
+    }
+
   }
 
   override def retrieveContent(identifier: String): String = {

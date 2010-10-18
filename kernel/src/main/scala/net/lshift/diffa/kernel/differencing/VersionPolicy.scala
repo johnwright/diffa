@@ -17,22 +17,29 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
-import net.lshift.diffa.kernel.events.{PairChangeEvent, ChangeEvent}
+import net.lshift.diffa.kernel.events.PairChangeEvent
+import net.jcip.annotations.NotThreadSafe
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
  * and downstream events. This functionality is pluggable since different systems may have different views
  * on how to compare version information between participants.
+ *
+ * Please note that this trait is by design <em>NOT</em> thread safe and hence any access to it must be
+ * serialized by the caller.
+ *
  */
+@NotThreadSafe
 trait VersionPolicy {
+
   /**
    * Indicates to the policy that a change has occurred within a participant.
    */
-  def onChange(evt:PairChangeEvent)
+  def onChange(evt:PairChangeEvent) : Unit
 
   /**
    * Requests that the policy difference the given participants for the given time range. Differences that are
    * detected will be reported to the listener configured in the policy.
    */
-  def difference(pairKey:String, dates:DateConstraint, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener)
+  def difference(pairKey:String, dates:DateConstraint, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Boolean
 }

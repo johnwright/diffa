@@ -14,26 +14,36 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.kernel.actors
 
 import se.scalablesolutions.akka.actor.ActorRegistry
 import se.scalablesolutions.akka.actor.Actor._
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.differencing.VersionPolicyManager
+import net.lshift.diffa.kernel.participants.ParticipantFactory
+import net.lshift.diffa.kernel.config.{PairDef, ConfigStore}
 
-
-class CorrelationActorSupervisor(store:VersionCorrelationStore) {
+class PairActorSupervisor(val policyManager:VersionPolicyManager,
+                          val config:ConfigStore,
+                          val participantFactory:ParticipantFactory) {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  def startActor(key:String) = {
-    val actors = ActorRegistry.actorsFor(key)
+  def startActor(pair:PairDef) = {
+    val actors = ActorRegistry.actorsFor(pair.pairKey)
     actors.length match {
       case 0 => {
-        ActorRegistry.register(actorOf(new CorrelationActor(key, store)).start)
-        log.info("Started actor for key: " + key)
+        policyManager.lookupPolicy(pair.versionPolicyName) match {
+          case Some(p) => {
+            ActorRegistry.register(actorOf(new PairActor(pair.pairKey, p, participantFactory, config)).start)
+            log.info("Started actor for key: " + pair.pairKey)
+          }
+          case None    => log.error("Failed to find policy for name: " + pair.versionPolicyName)
+        }
+
       }
-      case 1    => log.warn("Attempting to re-spawn actor for key: " + key)
-      case x    => log.error("Too many actors for key: " + key + "; actors = " + x)
+      case 1    => log.warn("Attempting to re-spawn actor for key: " + pair.pairKey)
+      case x    => log.error("Too many actors for key: " + pair.pairKey + "; actors = " + x)
     }
   }
 

@@ -120,6 +120,13 @@
     <constructor-arg ref="diffaConfigStore" />
   </bean>
 
+  <!--
+    ============
+      Change Event Stubs
+    ============
+  -->
+
+  <bean id="changeEventClient" class="net.lshift.diffa.kernel.actors.DefaultChangeEventClient"/>
 
   <!--
     ============
@@ -131,6 +138,7 @@
     <constructor-arg ref="sessionCacheProvider" />
     <constructor-arg ref="matchingManager" />
     <constructor-arg ref="versionPolicyManager" />
+    <constructor-arg ref="changeEventClient" />
     <constructor-arg ref="participantFactory" />
   </bean>
   <bean id="sessionCacheProvider" class="net.lshift.diffa.kernel.differencing.LocalSessionCacheProvider" />
@@ -196,8 +204,10 @@
     =============
   -->
 
-  <bean id="correlationActorSupervisor" class="net.lshift.diffa.kernel.differencing.CorrelationActorSupervisor">
-    <constructor-arg ref="versionCorrelationStore"/>
+  <bean id="pairActorSupervisor" class="net.lshift.diffa.kernel.actors.PairActorSupervisor">
+    <constructor-arg ref="versionPolicyManager"/>
+    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="participantFactory"/>
   </bean>
 
   <!--
@@ -208,12 +218,12 @@
   <bean id="configurationFrontend" class="net.lshift.diffa.kernel.frontend.Configuration">
     <constructor-arg ref="diffaConfigStore"/>
     <constructor-arg ref="matchingManager"/>
-    <constructor-arg ref="correlationActorSupervisor"/>
+    <constructor-arg ref="pairActorSupervisor"/>
     <constructor-arg ref="sessionManager"/>
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
     <constructor-arg ref="diffaConfigStore"/>
-    <constructor-arg ref="versionPolicyManager"/>
+    <constructor-arg ref="changeEventClient"/>
     <constructor-arg ref="matchingManager"/>
   </bean>
   <bean id="matchesFrontend" class="net.lshift.diffa.kernel.frontend.Matches">

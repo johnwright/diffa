@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
-import CorrelationActor._
 
 /**
  * Version policy where two events are considered the same based on the downstream reporting the same upstream
@@ -46,14 +45,14 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore, listener:Differenci
 
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
-        case VersionMismatch(id, date, _, null, storedVsn) => clearDownstreamVersion(VersionID(pairKey, id))
+        case VersionMismatch(id, date, _, null, storedVsn) => store.clearDownstreamVersion(VersionID(pairKey, id))
         case VersionMismatch(id, date, lastUpdated, partVsn, _) =>
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)
 
           if (response.dvsn == partVsn) {
             // This is the same destination object, so we're safe to store the correlation
-            storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, response.uvsn, response.dvsn)
+            store.storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, response.uvsn, response.dvsn)
           } else {
             // We can't update our datastore, so we just have to generate a mismatch            
             l.onMismatch(VersionID(pairKey, id), lastUpdated, response.dvsn, partVsn)

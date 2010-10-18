@@ -46,7 +46,14 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
   def executeRpc(path:String, body:String):String = {
     val submitEndpoint = resource.path(path).`type`(MediaType.APPLICATION_JSON_TYPE)
     val response = submitEndpoint.post(classOf[ClientResponse], body)
-    IOUtils.toString(response.getEntityInputStream, "UTF-8")
+    response.getStatus match {
+      case 200 => IOUtils.toString(response.getEntityInputStream, "UTF-8")
+      case _   => {
+        log.error(response.getStatus + "")
+        throw new RuntimeException(response.getStatus() + "")
+      }
+    }
+
   }
 
   def submit(path:String, body:String) = {

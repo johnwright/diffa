@@ -19,11 +19,12 @@ package net.lshift.diffa.kernel.frontend
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.matching.MatchingManager
-import net.lshift.diffa.kernel.differencing.{CorrelationActorSupervisor, SessionManager}
+import net.lshift.diffa.kernel.differencing.SessionManager
+import net.lshift.diffa.kernel.actors.PairActorSupervisor
 
 class Configuration(val configStore: ConfigStore,
                     val matchingManager: MatchingManager,
-                    val supervisor:CorrelationActorSupervisor,
+                    val supervisor:PairActorSupervisor,
                     val sessionManager: SessionManager) {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
@@ -80,7 +81,7 @@ class Configuration(val configStore: ConfigStore,
   def createOrUpdatePair(pairDef: PairDef): Unit = {
     log.debug("Processing pair declare/update request: " + pairDef.pairKey)
     configStore.createOrUpdatePair(pairDef)
-    supervisor.startActor(pairDef.pairKey)
+    supervisor.startActor(pairDef)
     matchingManager.onUpdatePair(pairDef.pairKey)
     sessionManager.onUpdatePair(pairDef.pairKey)
   }

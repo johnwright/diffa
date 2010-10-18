@@ -20,7 +20,6 @@ package net.lshift.diffa.kernel.differencing
 import java.lang.String
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
-import CorrelationActor._
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -49,9 +48,9 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
       vm match {
         case VersionMismatch(id, date, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, partVsn, partVsn)
+            store.storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, partVsn, partVsn)
           } else {
-            clearDownstreamVersion(VersionID(pairKey, id))
+            store.clearDownstreamVersion(VersionID(pairKey, id))
           }
       }
     }

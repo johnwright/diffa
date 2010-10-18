@@ -73,11 +73,7 @@ case class PairGroup(@BeanProperty var key: String) {
 
 case class GroupContainer(@BeanProperty group: PairGroup, @BeanProperty pairs: Array[Pair])
 
-// Container object for pair definition, since we don't want to link in Hibernate objects in the transport layer
-// The reason why this is not a case class is because Jackson barfs
-// during deserialization, see http://jira.codehaus.org/browse/JACKSON-304
-// I decided that I liked Jackson enough to make this exception
-class PairDef(
+case class PairDef(
   @BeanProperty var pairKey: String,
   @BeanProperty var versionPolicyName: String,
   @BeanProperty var matchingTimeout: Int,

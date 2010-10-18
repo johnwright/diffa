@@ -55,7 +55,7 @@ test("crud_all", function() {
     const downstream_def = {name: "TEST_downstream", url: "http://127.0.0.1/2", online: false};
     const pair_def = {
         pairKey: "TEST_pair",
-        versionPolicyName: "",
+        versionPolicyName: "same",
         matchingTimeout: 0,
         upstreamName: upstream_def.name,
         downstreamName: downstream_def.name,
