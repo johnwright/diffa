@@ -45,7 +45,6 @@ class PairActor(val pairKey:String,
   }
 }
 
-case class ActorMessage
 case class ChangeMessage(event:PairChangeEvent)
 case class DifferenceMessage(dates:DateConstraint, listener:DifferencingListener)
 
