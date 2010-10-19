@@ -82,7 +82,7 @@ class Configuration(val configStore: ConfigStore,
   def createOrUpdatePair(pairDef: PairDef): Unit = {
     log.debug("Processing pair declare/update request: " + pairDef.pairKey)
     // Stop a running actor, if there is one
-    withCurrentPair(pairDef, { k:String => supervisor.stopActor(k) } )
+    withCurrentPair(pairDef, (k:String) => supervisor.stopActor(k) )
     configStore.createOrUpdatePair(pairDef)
     supervisor.startActor(configStore.getPair(pairDef.pairKey))
     matchingManager.onUpdatePair(pairDef.pairKey)
