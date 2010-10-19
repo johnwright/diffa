@@ -21,6 +21,7 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.matching.MatchingManager
 import net.lshift.diffa.kernel.differencing.SessionManager
 import net.lshift.diffa.kernel.actors.PairActorSupervisor
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 class Configuration(val configStore: ConfigStore,
                     val matchingManager: MatchingManager,
@@ -80,6 +81,8 @@ class Configuration(val configStore: ConfigStore,
 
   def createOrUpdatePair(pairDef: PairDef): Unit = {
     log.debug("Processing pair declare/update request: " + pairDef.pairKey)
+    // Stop a running actor, if there is one
+    withCurrentPair(pairDef, { k:String => supervisor.stopActor(k) } )
     configStore.createOrUpdatePair(pairDef)
     supervisor.startActor(configStore.getPair(pairDef.pairKey))
     matchingManager.onUpdatePair(pairDef.pairKey)
@@ -91,6 +94,16 @@ class Configuration(val configStore: ConfigStore,
     supervisor.stopActor(key)
     configStore.deletePair(key)
     matchingManager.onDeletePair(key)
+  }
+
+  def withCurrentPair(pairDef: PairDef, f:Function1[String,Unit]) = {
+    try {
+      val current = configStore.getPair(pairDef.pairKey)
+      f(current.key)
+    }
+    catch {
+      case e:MissingObjectException => // Do nothing, the pair doesn't currently exist
+    }
   }
 
   /*
