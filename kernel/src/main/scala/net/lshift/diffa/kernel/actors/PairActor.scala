@@ -22,7 +22,11 @@ import net.lshift.diffa.kernel.differencing.{DateConstraint, DifferencingListene
 import se.scalablesolutions.akka.actor.{ActorRef, ActorRegistry, Actor}
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.participants.ParticipantFactory
+import net.jcip.annotations.ThreadSafe
 
+/**
+ * This actor serializes access to the underlying version policy from concurrent processes.
+ */
 class PairActor(val pairKey:String,
                 val policy:VersionPolicy,
                 val participantFactory:ParticipantFactory,
@@ -32,22 +36,17 @@ class PairActor(val pairKey:String,
 
   self.id_=(pairKey)
 
+  val pair = config.getPair(pairKey)
+  val us = participantFactory.createUpstreamParticipant(pair.upstream.url)
+  val ds = participantFactory.createDownstreamParticipant(pair.downstream.url)
+
   def receive = {
-    case ChangeMessage(event) => {
-      logger.info("Processing change event: " + event)
-      policy.onChange(event)
-    }
+    case ChangeMessage(event)               => policy.onChange(event)
     case DifferenceMessage(dates, listener) => {
-      logger.info("Running difference report for: " + dates)
-      // TODO This could probably get cached
-      val pair = config.getPair(pairKey)
-      val us = participantFactory.createUpstreamParticipant(pair.upstream.url)
-      val ds = participantFactory.createDownstreamParticipant(pair.downstream.url)
+      logger.debug("Running difference report for: " + dates)
       val sync = policy.difference(pairKey, dates, us, ds, listener)
       self.reply(sync)
-      logger.info("Completed difference report for: " + dates)
     }
-    case _ => logger.error("received unknown message")
   }
 }
 
@@ -55,10 +54,20 @@ case class ActorMessage
 case class ChangeMessage(event:PairChangeEvent)
 case class DifferenceMessage(dates:DateConstraint, listener:DifferencingListener)
 
+/**
+ * This is a thread safe entry point to an underlying version policy.
+ */
+@ThreadSafe
 trait ChangeEventClient {
 
+  /**
+   * Propagates the change event to the underlying policy implementation in a serial fashion.
+   */
   def propagateChangeEvent(event:PairChangeEvent) : Unit
 
+  /**
+   * Runs a syncing difference report on the underlying policy implementation in a thread safe way.
+   */
   def syncPair(pairKey:String, dates:DateConstraint, listener:DifferencingListener) : Boolean
 }
 
