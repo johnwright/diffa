@@ -21,11 +21,16 @@ import se.scalablesolutions.akka.actor.Actor._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.differencing.VersionPolicyManager
 import net.lshift.diffa.kernel.participants.ParticipantFactory
+import net.lshift.diffa.kernel.config.ConfigStore
 
 class PairActorSupervisor(val policyManager:VersionPolicyManager,
+                          val config:ConfigStore,
                           val participantFactory:ParticipantFactory) {
 
   private val log = LoggerFactory.getLogger(getClass)
+
+  // Initialize actors for any persistent pairs
+  config.listGroups.foreach(g => g.pairs.foreach(p => startActor(p)) )
 
   def startActor(pair:net.lshift.diffa.kernel.config.Pair) = {
     val actors = ActorRegistry.actorsFor(pair.key)

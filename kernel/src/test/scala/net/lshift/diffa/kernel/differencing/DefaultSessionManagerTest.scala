@@ -23,7 +23,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
-import net.lshift.diffa.kernel.actors.{DefaultChangeEventClient, ChangeEventClient}
+import net.lshift.diffa.kernel.actors.{DefaultPairPolicyClient, PairPolicyClient}
 import org.easymock.EasyMock
 
 /**
@@ -78,9 +78,9 @@ class DefaultSessionManagerTest {
   }
   val participantFactory = new ParticipantFactory(protocols)
 
-  val changeEventClient = createStrictMock("changeEventClient", classOf[ChangeEventClient])
+  val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
 
-  val manager = new DefaultSessionManager(configStore, cacheProvider, matchingManager, versionPolicyManager, changeEventClient, participantFactory)
+  val manager = new DefaultSessionManager(configStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
   verify(matchingManager); reset(matchingManager)    // The matching manager will have been called on session manager startup
 
   @Before
@@ -119,8 +119,8 @@ class DefaultSessionManagerTest {
     val p1 = EasyMock.eq(p)
     val p2 = isA(classOf[DateConstraint])
     val p3 = isA(classOf[DifferencingListener])
-    expect(changeEventClient.syncPair(p1, p2, p3)).andReturn(true).atLeastOnce
-    replay(changeEventClient)
+    expect(pairPolicyClient.syncPair(p1, p2, p3)).andReturn(true).atLeastOnce
+    replay(pairPolicyClient)
   }
 
   @Test

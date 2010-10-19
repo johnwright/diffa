@@ -20,13 +20,13 @@ import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.matching.MatchingManager
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events._
-import net.lshift.diffa.kernel.actors.ChangeEventClient
+import net.lshift.diffa.kernel.actors.PairPolicyClient
 
 /**
  * Front-end for reporting changes.
  */
 class Changes(val config:ConfigStore,
-              val changeEventClient:ChangeEventClient,
+              val changeEventClient:PairPolicyClient,
               val mm:MatchingManager) {
   private val log:Logger = LoggerFactory.getLogger(getClass)
 

@@ -52,7 +52,7 @@ case class DifferenceMessage(dates:DateConstraint, listener:DifferencingListener
  * This is a thread safe entry point to an underlying version policy.
  */
 @ThreadSafe
-trait ChangeEventClient {
+trait PairPolicyClient {
 
   /**
    * Propagates the change event to the underlying policy implementation in a serial fashion.
@@ -65,7 +65,7 @@ trait ChangeEventClient {
   def syncPair(pairKey:String, dates:DateConstraint, listener:DifferencingListener) : Boolean
 }
 
-class DefaultChangeEventClient extends ChangeEventClient {
+class DefaultPairPolicyClient extends PairPolicyClient {
 
   val log = LoggerFactory.getLogger(getClass)
 

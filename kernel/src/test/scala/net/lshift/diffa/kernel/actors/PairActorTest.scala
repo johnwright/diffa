@@ -22,8 +22,8 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.differencing._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant, ParticipantFactory}
-import net.lshift.diffa.kernel.config.Endpoint
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
+import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 
 class PairActorTest {
 
@@ -53,9 +53,15 @@ class PairActorTest {
   expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy))
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, participantFactory)
+  val configStore = createStrictMock("configStore", classOf[ConfigStore])
+  expect(configStore.listGroups).andReturn(Array[GroupContainer]())
+  replay(configStore)
 
-  val client = new DefaultChangeEventClient()
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory)
+
+  verify(configStore)
+
+  val client = new DefaultPairPolicyClient()
 
   val listener = createStrictMock("differencingListener", classOf[DifferencingListener])
 

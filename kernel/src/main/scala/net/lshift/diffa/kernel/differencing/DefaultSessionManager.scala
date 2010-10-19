@@ -25,7 +25,7 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
 import net.lshift.diffa.kernel.participants.{Participant, ParticipantFactory, ParticipantType}
-import net.lshift.diffa.kernel.actors.{ChangeEventClient, PairActor}
+import net.lshift.diffa.kernel.actors.{PairPolicyClient, PairActor}
 
 /**
  * Standard implementation of the SessionManager.
@@ -46,7 +46,7 @@ class DefaultSessionManager(
         val cacheProvider:SessionCacheProvider,
         val matching:MatchingManager,
         val vpm:VersionPolicyManager,
-        val changeEventClient:ChangeEventClient,
+        val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory)
     extends SessionManager
     with DifferencingListener with MatchingStatusListener {
@@ -270,7 +270,7 @@ class DefaultSessionManager(
       case 0  => config.listGroups.flatMap(g => g.pairs.map(p => p.key))
       case _  => scope.includedPairs
     }
-    pairs.foreach(pairKey => changeEventClient.syncPair(pairKey, DateConstraint(start, end), listener))
+    pairs.foreach(pairKey => pairPolicyClient.syncPair(pairKey, DateConstraint(start, end), listener))
   }
 
   def forEachSession(id:VersionID, f: Function1[SessionCache,Any]) = {
