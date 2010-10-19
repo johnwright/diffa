@@ -69,26 +69,23 @@ class DefaultChangeEventClient extends ChangeEventClient {
 
   val log = LoggerFactory.getLogger(getClass)
 
-  def propagateChangeEvent(event:PairChangeEvent) = withActor(event.id.pairKey, (a:ActorRef) => a ! ChangeMessage(event))
+  def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id.pairKey) ! ChangeMessage(event)
 
   def syncPair(pairKey:String, dates:DateConstraint, listener:DifferencingListener) = {
-    def handleMessage(a:ActorRef) = {
-      val result = a !! DifferenceMessage(dates, listener)
-      result match {
-        case Some(b) => b.asInstanceOf[Boolean]
-        case None => {
-          log.error("Message timeout")
-          throw new RuntimeException("Message timeout")
-        }
+    val result = findActor(pairKey) !! DifferenceMessage(dates, listener)
+    result match {
+      case Some(b) => b.asInstanceOf[Boolean]
+      case None => {
+        log.error("Message timeout")
+        throw new RuntimeException("Message timeout")
       }
     }
-    withActor(pairKey,handleMessage)
   }
 
-  def withActor[T](pairKey:String, f:Function1[ActorRef,T]) : T = {
+  def findActor(pairKey:String) = {
     val actors = ActorRegistry.actorsFor(pairKey)
     actors.length match {
-      case 1 => f(actors(0))
+      case 1 => actors(0)
       case 0 => {
         log.error("Could not resolve actor for key: " + pairKey)
         throw new RuntimeException("Unresolvable pair: " + pairKey)
