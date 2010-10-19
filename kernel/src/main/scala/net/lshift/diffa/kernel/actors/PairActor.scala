@@ -20,25 +20,20 @@ import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.differencing.{DateConstraint, DifferencingListener, VersionPolicy}
 import se.scalablesolutions.akka.actor.{ActorRef, ActorRegistry, Actor}
-import net.lshift.diffa.kernel.config.ConfigStore
-import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.jcip.annotations.ThreadSafe
+import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
  */
 class PairActor(val pairKey:String,
-                val policy:VersionPolicy,
-                val participantFactory:ParticipantFactory,
-                val config:ConfigStore) extends Actor {
+                val us:UpstreamParticipant,
+                val ds:DownstreamParticipant,
+                val policy:VersionPolicy) extends Actor {
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
   self.id_=(pairKey)
-
-  val pair = config.getPair(pairKey)
-  val us = participantFactory.createUpstreamParticipant(pair.upstream.url)
-  val ds = participantFactory.createDownstreamParticipant(pair.downstream.url)
 
   def receive = {
     case ChangeMessage(event)               => policy.onChange(event)

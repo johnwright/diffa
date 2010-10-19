@@ -81,7 +81,7 @@ class Configuration(val configStore: ConfigStore,
   def createOrUpdatePair(pairDef: PairDef): Unit = {
     log.debug("Processing pair declare/update request: " + pairDef.pairKey)
     configStore.createOrUpdatePair(pairDef)
-    supervisor.startActor(pairDef)
+    supervisor.startActor(configStore.getPair(pairDef.pairKey))
     matchingManager.onUpdatePair(pairDef.pairKey)
     sessionManager.onUpdatePair(pairDef.pairKey)
   }

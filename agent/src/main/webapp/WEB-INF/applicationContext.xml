@@ -206,7 +206,6 @@
 
   <bean id="pairActorSupervisor" class="net.lshift.diffa.kernel.actors.PairActorSupervisor">
     <constructor-arg ref="versionPolicyManager"/>
-    <constructor-arg ref="diffaConfigStore"/>
     <constructor-arg ref="participantFactory"/>
   </bean>
 
