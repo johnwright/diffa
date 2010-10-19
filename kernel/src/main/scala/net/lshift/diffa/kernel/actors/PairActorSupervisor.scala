@@ -51,7 +51,9 @@ class PairActorSupervisor(val policyManager:VersionPolicyManager,
     val actors = ActorRegistry.actorsFor(key)
     actors.length match {
       case 1 => {
-        ActorRegistry.unregister(actors(0))
+        val actor = actors(0)
+        ActorRegistry.unregister(actor)
+        actor.stop
         log.info("Stopped actor for key: " + key)
       }
       case 0    => log.warn("Could not resolve actor for key: " + key)

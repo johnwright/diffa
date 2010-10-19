@@ -17,12 +17,11 @@
 package net.lshift.diffa.kernel.actors
 
 import org.slf4j.{Logger, LoggerFactory}
-import org.joda.time.DateTime
-import net.lshift.diffa.kernel.events.{PairChangeEvent, VersionID}
-import net.lshift.diffa.kernel.differencing.{DateConstraint, DifferencingListener, VersionPolicy, Correlation}
+import net.lshift.diffa.kernel.events.PairChangeEvent
+import net.lshift.diffa.kernel.differencing.{DateConstraint, DifferencingListener, VersionPolicy}
 import se.scalablesolutions.akka.actor.{ActorRef, ActorRegistry, Actor}
 import net.lshift.diffa.kernel.config.ConfigStore
-import net.lshift.diffa.kernel.participants.{ParticipantFactory, UpstreamParticipant, DownstreamParticipant}
+import net.lshift.diffa.kernel.participants.ParticipantFactory
 
 class PairActor(val pairKey:String,
                 val policy:VersionPolicy,
