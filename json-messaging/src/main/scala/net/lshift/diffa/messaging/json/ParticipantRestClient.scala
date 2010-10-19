@@ -31,45 +31,48 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     requestObj.put("end", end.toString(JSONEncodingUtils.dateEncoder))
     requestObj.put("granularity", jsonGranularity(granularity))
 
-    try {
-      val response = executeRpc("query_digests", requestObj.toString)
-      val jsonDigests = new JSONArray(response)
-      (0 until jsonDigests.length).map(i => {
+    executeRpc("query_digests", requestObj.toString) match {
+      case Some(r) => {
+        val jsonDigests = new JSONArray(r)
+        (0 until jsonDigests.length).map(i => {
           val digestObj = jsonDigests.getJSONObject(i)
           VersionDigest(
-          digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
-          JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")), digestObj.getString("digest"))
+            digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
+            JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")), digestObj.getString("digest"))
         }).toList
+      }
+      case None => List()
     }
-    catch {
-      // TODO This should probably be handled completely in the executeRpc call,
-      // i.e. have it return an Option instead of an exception
-
-      case e:Exception => List()
-    }
-
   }
 
   override def retrieveContent(identifier: String): String = {
     val requestObj = new JSONObject
     requestObj.put("id", identifier)
 
-    val response = executeRpc("retrieve_content", requestObj.toString)
-    val jsonResponse = new JSONObject(response)
-    val s = jsonResponse.optString("content")
-    if (s.equals("")) {
-      log.warn("Returning default value for id: " + identifier)
+    executeRpc("retrieve_content", requestObj.toString) match {
+      case Some(r) => {
+        val jsonResponse = new JSONObject(r)
+        val s = jsonResponse.optString("content")
+        if (s.equals("")) {
+          log.warn("Returning default value for id: " + identifier)
+        }
+        s
+      }
+      case None => ""
     }
-    s
   }
 
   override def invoke(actionId:String, entityId:String) : ActionResult = {
     val request = new JSONObject
     request.put("actionId", actionId)
     request.put("entityId", entityId)
-    val response = executeRpc("invoke", request.toString)
-    val json = new JSONObject(response)
-    ActionResult(json.getString("result"),json.getString("output"))
+    executeRpc("invoke", request.toString) match {
+      case Some(r) => {
+        val json = new JSONObject(r)
+        ActionResult(json.getString("result"),json.getString("output"))
+      }
+      case None    => null
+    }
   }
 
   private def jsonGranularity(gran:RangeGranularity) = {
@@ -97,11 +100,15 @@ class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient
     val requestObj = new JSONObject
     requestObj.put("entityBody", entityBody)
 
-    val response = executeRpc("generate_version", requestObj.toString)
-    val responseObj = new JSONObject(response)
+    executeRpc("generate_version", requestObj.toString) match {
+      case None    => null
+      case Some(r) => {
+        val responseObj = new JSONObject(r)
 
-    ProcessingResponse(
-      responseObj.getString("id"), JSONEncodingUtils.dateParser.parseDateTime(responseObj.getString("date")),
-      responseObj.getString("uvsn"), responseObj.getString("dvsn"))
+        ProcessingResponse(
+          responseObj.getString("id"), JSONEncodingUtils.dateParser.parseDateTime(responseObj.getString("date")),
+          responseObj.getString("uvsn"), responseObj.getString("dvsn"))
+      }
+    }
   }
 }
