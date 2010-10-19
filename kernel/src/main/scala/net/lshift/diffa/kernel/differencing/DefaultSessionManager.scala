@@ -270,28 +270,7 @@ class DefaultSessionManager(
       case 0  => config.listGroups.flatMap(g => g.pairs.map(p => p.key))
       case _  => scope.includedPairs
     }
-
     pairs.foreach(pairKey => changeEventClient.syncPair(pairKey, DateConstraint(start, end), listener))
-//      try {
-//        log.debug("Execute difference report for pair " + pairKey)
-//
-//
-//        val policy: VersionPolicy = vpm.lookupPolicy(pair.versionPolicyName) match {
-//          case Some(p) => p
-//          case None => throw new IllegalArgumentException("Version Policy " + pair.versionPolicyName +
-//                  " is unknown for pair " + pairKey)
-//        }
-//
-//        val dates = DateConstraint(start, end)
-//        val us = participantFactory.createUpstreamParticipant(pair.upstream.url)
-//        val ds = participantFactory.createDownstreamParticipant(pair.downstream.url)
-//
-//        // TODO Consider doing this operation in the background
-//        policy.difference(pairKey, dates, us, ds, listener)
-//      } catch {
-//        case ex => log.error("Exception [" + ex.getMessage + "] thrown whilst differencing for pair: " + pairKey)
-//      }
-//    })
   }
 
   def forEachSession(id:VersionID, f: Function1[SessionCache,Any]) = {

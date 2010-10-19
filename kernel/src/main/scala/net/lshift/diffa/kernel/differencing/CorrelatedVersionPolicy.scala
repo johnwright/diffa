@@ -45,7 +45,8 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore, listener:Differenci
 
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
-        case VersionMismatch(id, date, _, null, storedVsn) => store.clearDownstreamVersion(VersionID(pairKey, id))
+        case VersionMismatch(id, date, _, null, storedVsn) =>
+          store.clearDownstreamVersion(VersionID(pairKey, id))
         case VersionMismatch(id, date, lastUpdated, partVsn, _) =>
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)

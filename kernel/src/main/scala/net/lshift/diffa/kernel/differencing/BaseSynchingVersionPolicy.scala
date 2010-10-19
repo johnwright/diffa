@@ -21,7 +21,6 @@ import collection.mutable.Queue
 import net.lshift.diffa.kernel.participants._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
-import org.slf4j.LoggerFactory
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -29,8 +28,6 @@ import org.slf4j.LoggerFactory
 abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, listener:DifferencingListener)
     extends VersionPolicy {
   protected val alerter = Alerter.forClass(getClass)
-
-  val log = LoggerFactory.getLogger(getClass)
 
   /**
    * Handles a participant change. Due to the need to later correlate data, event information is cached to the
