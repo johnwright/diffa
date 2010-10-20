@@ -87,31 +87,31 @@ $(document).ready(function() {
 		FD.get(CFG_URL, 'endpoints', downstream_def.name, deepEqualFunc(downstream_def));
 		
 		// Test creating a pair
-		FD.create(CFG_URL, 'pairs', pair_def);
-		FD.get(CFG_URL, 'pairs', pair_def.pairKey, deepEqualFunc(expected_pair_def));
-		
-		// Delete the test group and check its and its pairs' nonexistence
-		FD.delete(CFG_URL, 'groups', group_def.key);
-		with_no_error_handling(function() {
-			FD.get(
-				CFG_URL,
-				'groups',
-				group_def.key,
-				function() {
-					ok(false, "Deleted group shouldn't exist.");
-				},
-				not_exists_handler
-			);
-			FD.get(
-				CFG_URL,
-				'pairs',
-				pair_def.pairKey,
-				function() {
-					ok(false, "Pair shouldn't exist after group deletion.");
-				},
-				not_exists_handler
-			);
-		});
+//		FD.create(CFG_URL, 'pairs', pair_def);
+//		FD.get(CFG_URL, 'pairs', pair_def.pairKey, deepEqualFunc(expected_pair_def));
+//
+//		// Delete the test group and check its and its pairs' nonexistence
+//		FD.delete(CFG_URL, 'groups', group_def.key);
+//		with_no_error_handling(function() {
+//			FD.get(
+//				CFG_URL,
+//				'groups',
+//				group_def.key,
+//				function() {
+//					ok(false, "Deleted group shouldn't exist.");
+//				},
+//				not_exists_handler
+//			);
+//			FD.get(
+//				CFG_URL,
+//				'pairs',
+//				pair_def.pairKey,
+//				function() {
+//					ok(false, "Pair shouldn't exist after group deletion.");
+//				},
+//				not_exists_handler
+//			);
+//		});
 	
 		// Delete endpoints
 		FD.delete(CFG_URL, 'endpoints', upstream_def.name);
