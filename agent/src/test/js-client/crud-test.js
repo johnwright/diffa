@@ -56,7 +56,7 @@ $(document).ready(function() {
 			},
 			pair_def = {
 				pairKey: "TEST_pair",
-				versionPolicyName: "",
+				versionPolicyName: "same",
 				matchingTimeout: 0,
 				upstreamName: upstream_def.name,
 				downstreamName: downstream_def.name,

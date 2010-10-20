@@ -16,12 +16,8 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import net.lshift.diffa.kernel.alerting.{KernelAlerts, Alerter}
+
 import java.lang.String
-import org.joda.time.DateTime
-import collection.immutable.HashSet
-import collection.mutable.{Queue, ListBuffer, HashMap}
-import org.joda.time.format.DateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
 

@@ -12,6 +12,34 @@ Maven
 
 Diffa is maven built using Maven. Currently only version 2.2.1 has been tested.
 
+Maven Proxy
+-----------
+
+In order to download artifacts not available in Maven central, you can use the Diffa repository. To do so, 
+add the following to your $M2_HOME/settings.xml:
+
+In the profiles block:
+    <profile>
+      <id>diffa-repo</id>
+      <repositories>
+        <repository>
+          <id>diffa</id>
+          <url>https://nexus.lshift.net/nexus/content/groups/public</url>
+        </repository>
+      </repositories>
+
+      <pluginRepositories>
+        <pluginRepository>
+          <id>diffa</id>
+          <url>https://nexus.lshift.net/nexus/content/groups/public</url>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+
+And in the activeProfiles block:
+    <activeProfile>diffa-repo</activeProfile>
+
+
 Scala
 -----
 

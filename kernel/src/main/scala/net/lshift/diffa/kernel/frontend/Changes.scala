@@ -17,15 +17,17 @@
 package net.lshift.diffa.kernel.frontend
 
 import net.lshift.diffa.kernel.config.ConfigStore
-import net.lshift.diffa.kernel.differencing.VersionPolicyManager
 import net.lshift.diffa.kernel.matching.MatchingManager
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events._
+import net.lshift.diffa.kernel.actors.PairPolicyClient
 
 /**
  * Front-end for reporting changes.
  */
-class Changes(val config:ConfigStore, val vpm:VersionPolicyManager, val mm:MatchingManager) {
+class Changes(val config:ConfigStore,
+              val changeEventClient:PairPolicyClient,
+              val mm:MatchingManager) {
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   /**
@@ -52,13 +54,8 @@ class Changes(val config:ConfigStore, val vpm:VersionPolicyManager, val mm:Match
         case Some(matcher) => matcher.onChange(pairEvt, () => {})
       }
 
-      // Notify the version policy that a change has occurred
-      val policy = vpm.lookupPolicy(pair.versionPolicyName) match {
-        case Some(p) => p
-        case None    => throw new IllegalArgumentException("Version Policy " + pair.versionPolicyName +
-            " is unknown for pair " + pairEvt.id.pairKey)
-      }
-      policy.onChange(pairEvt)
+      // Propagate the change event to the corresponding policy
+      changeEventClient.propagateChangeEvent(pairEvt)
     })
   }
 }

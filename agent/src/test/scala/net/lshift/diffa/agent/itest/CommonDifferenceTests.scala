@@ -118,19 +118,21 @@ trait CommonDifferenceTests {
     env.addAndNotifyUpstream("abc", yesterday, up)
 
     val diffs = tryAgain(sessionId,20,100)
-    val seqId = diffs(0).seqId
+    val seqId1 = diffs(0).seqId
 
-    val up1 = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.UPSTREAM)
-    val down1 = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.DOWNSTREAM)
+    val up1 = env.diffClient.eventDetail(sessionId, seqId1, ParticipantType.UPSTREAM)
+    val down1 = env.diffClient.eventDetail(sessionId, seqId1, ParticipantType.DOWNSTREAM)
 
     assertEquals(up, up1)
     assertEquals(NO_CONTENT, down1)
 
     env.addAndNotifyDownstream("abc", yesterday, down)
-    Thread.sleep(1000)
+    Thread.sleep(2000)
     val diffs2 = tryAgain(sessionId,20,100)
     assertEquals(1, diffs2.length)
     val seqId2 = diffs2(0).seqId
+
+    assertTrue("Invalid sequence id", seqId2 > seqId1)
 
     val up2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.UPSTREAM)
     val down2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.DOWNSTREAM)

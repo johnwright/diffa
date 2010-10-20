@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
-import org.joda.time.DateTime
 
 /**
  * Version policy where two events are considered the same based on the downstream reporting the same upstream
@@ -43,6 +42,7 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore, listener:Differenci
       store.queryDownstreams(pairKey, dates, aggregator.collectDownstream)
       aggregator.digests
     }
+
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
         case VersionMismatch(id, date, _, null, storedVsn) =>

@@ -20,12 +20,12 @@ import org.easymock.EasyMock._
 import org.easymock.{IAnswer, EasyMock}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
-import org.junit.Test
 import net.lshift.diffa.kernel.participants._
 import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.events._
+import org.junit.Test
 
 /**
  * Base class for the various policy tests.
@@ -47,7 +47,7 @@ abstract class AbstractPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
   val abPair = "A-B"
-  
+
   protected def replayAll = replay(usMock, dsMock, store, listener)
   protected def verifyAll = verify(usMock, dsMock, store, listener)
 
