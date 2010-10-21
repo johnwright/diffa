@@ -7,7 +7,7 @@ token = ARGV[2]
 
 repos = 'lshift/diffa'
 
-zip_package = Dir['**/*.zip'].shift
+zip_package = Dir['*.zip'].shift
 
 gh = Net::GitHub::Upload.new(
   :login => login,
