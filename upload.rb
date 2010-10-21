@@ -8,16 +8,25 @@ token = ARGV[2]
 repos = 'lshift/diffa'
 
 zip_package = Dir['*.zip'].shift
+war_package = Dir['*.war'].shift
 
 gh = Net::GitHub::Upload.new(
   :login => login,
   :token => token
 )
 
-direct_link = gh.replace(
+zip_link = gh.replace(
   :repos => repos,
   :file  => zip_package,
-  :description => "Standalone Diffa Agent - build ##{build_number}"
+  :description => "Standalone Diffa agent - build ##{build_number}"
 )
 
-puts "Succesfully uploaded #{zip_package} build number #{build_number} to #{direct_link}" 
+puts "Succesfully uploaded #{zip_package} build number #{build_number} to #{zip_link}" 
+
+war_link = gh.replace(
+  :repos => repos,
+  :file  => war_package,
+  :description => "Diffa war archive - build ##{build_number}"
+)
+
+puts "Succesfully uploaded #{war_package} build number #{build_number} to #{war_link}"
