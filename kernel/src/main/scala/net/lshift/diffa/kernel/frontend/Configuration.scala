@@ -124,7 +124,3 @@ class Configuration(val configStore: ConfigStore,
     configStore.listGroups
   }
 }
-
-abstract class KernelMessage
-case class AuthRequest(username: String, password: String) extends KernelMessage
-case class AuthResponse(response: Int) extends KernelMessage
