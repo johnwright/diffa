@@ -19,7 +19,6 @@ package net.lshift.diffa.participants
 import org.joda.time.DateTime
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.differencing.{DigestBuilder, DateConstraint}
-import net.lshift.diffa.kernel.events.VersionID
 import org.apache.commons.io.IOUtils
 import java.io.{FileInputStream, File}
 import org.apache.commons.codec.digest.DigestUtils

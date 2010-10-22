@@ -17,11 +17,12 @@
 package net.lshift.diffa.agent.itest.support
 
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent, VersionID}
-import net.lshift.diffa.messaging.json._
+import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent}
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
+import net.lshift.diffa.agent.client._
+import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the

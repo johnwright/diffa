@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.json
+package net.lshift.diffa.agent.client
 
 import net.lshift.diffa.kernel.client.UsersClient
 import net.lshift.diffa.kernel.config.User
-
+import net.lshift.diffa.messaging.json.AbstractRestClient
 
 class UsersRestClient(u:String) extends AbstractRestClient(u, "rest/security/") with UsersClient {
 

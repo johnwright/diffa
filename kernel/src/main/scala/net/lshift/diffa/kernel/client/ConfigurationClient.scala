@@ -22,7 +22,6 @@ import net.lshift.diffa.kernel.config.{PairDef, Endpoint, PairGroup}
  * Interface supported by clients capable of configuring the diffa agent.
  */
 trait ConfigurationClient {
-  def auth(user:String, pass:String):Int
   def declareGroup(name: String):PairGroup
   def declareEndpoint(name: String, url: String):Endpoint
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int, upstreamName: String, downstreamName: String, groupKey: String):PairDef
