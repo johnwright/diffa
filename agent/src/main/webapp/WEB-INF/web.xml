@@ -23,10 +23,6 @@
     <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
   </listener>
 
-  <listener>
-    <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
-  </listener>
-
   <servlet>
     <servlet-name>jerseyspring</servlet-name>
     <servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
@@ -43,39 +39,12 @@
   </servlet-mapping>
 
   <servlet>
-    <servlet-name>configurationRequestHandler</servlet-name>
+    <servlet-name>requestHandlerProxy</servlet-name>
     <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>configurationRequestHandler</servlet-name>
-    <url-pattern>/configuration/*</url-pattern>
-  </servlet-mapping>
-
-  <servlet>
-    <servlet-name>changesRequestHandler</servlet-name>
-    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>changesRequestHandler</servlet-name>
+    <servlet-name>requestHandlerProxy</servlet-name>
     <url-pattern>/changes/*</url-pattern>
-  </servlet-mapping>
-
-  <servlet>
-    <servlet-name>differencesRequestHandler</servlet-name>
-    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>differencesRequestHandler</servlet-name>
-    <url-pattern>/differences/*</url-pattern>
-  </servlet-mapping>
-
-  <servlet>
-    <servlet-name>matchesRequestHandler</servlet-name>
-    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>matchesRequestHandler</servlet-name>
-    <url-pattern>/matches/*</url-pattern>
   </servlet-mapping>
 
   <resource-ref>

@@ -23,7 +23,9 @@
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
     <class name="Endpoint" table="endpoint" abstract="false">
       <id name="name" type="string" />
-      <property name="url" type="string" not-null="true" unique="true" />
+      <property name="url" type="string" unique="true" />
+      <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="true" />
+      <property name="contentType" column="content_type" type="string" />      
       <property name="online" type="boolean" />
     </class>
 

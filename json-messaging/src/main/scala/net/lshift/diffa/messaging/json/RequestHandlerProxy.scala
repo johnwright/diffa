@@ -14,30 +14,39 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.http
+package net.lshift.diffa.messaging.json
 
 import org.springframework.web.HttpRequestHandler
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import org.springframework.http.HttpStatus
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler, ProtocolMapper}
-import org.eclipse.jetty.continuation.{ContinuationSupport, Continuation}
+import org.eclipse.jetty.continuation.ContinuationSupport
 import java.io.OutputStream
+import org.slf4j.LoggerFactory
 
 /**
  * Handler for adapting HTTP requests to frontends via protocol handlers.
  */
-class FrontendRequestHandler(mapper:ProtocolMapper, endpointGroup:String) extends HttpRequestHandler {
+class RequestHandlerProxy(mapper:ProtocolMapper) extends HttpRequestHandler {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   def handleRequest(request:HttpServletRequest, response:HttpServletResponse) = {
-    val tRequest = new TransportRequest(request.getPathInfo.substring(1), request.getInputStream)
+
+    val path = request.getServletPath.substring(1)
+    log.debug("Handling path: " + path)
+
+    val tRequest = new TransportRequest(path, request.getInputStream)
     val tResponse = new HttpTransportResponse(request, response)
 
-    mapper.lookupHandler(endpointGroup, request.getContentType) match {
+    mapper.lookupHandler(path, request.getContentType) match {
       case Some(handler:ProtocolHandler) =>
         if (!handler.handleRequest(tRequest, tResponse)) {
           // Request hasn't finished. Make it asynchronous
           tResponse.makeAsync
         }
       case None =>
+        log.error("Cannot resolve handler for path: " + path + " and type: " + request.getContentType)
         response.setStatus(HttpStatus.BAD_REQUEST.value)
         response.getWriter.println("No protocol handlers available for content type")
     }
@@ -49,7 +58,7 @@ class FrontendRequestHandler(mapper:ProtocolMapper, endpointGroup:String) extend
 
     val os = servletResponse.getOutputStream
     def continuation = ContinuationSupport.getContinuation(servletRequest)
-    
+
     def setStatusCode(code: Int) = servletResponse.setStatus(code)
     def withOutputStream(f: (OutputStream) => Unit) = {
       // If the response is marked as async, then we'll need to resume and suspend a continuation

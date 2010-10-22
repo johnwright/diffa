@@ -30,23 +30,7 @@
     </property>
   </bean>
 
-  <bean id="configurationRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
-    <constructor-arg ref="protocolMapper" />
-    <constructor-arg value="configuration" />
-  </bean>
-  <bean id="changesRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
-    <constructor-arg ref="protocolMapper" />
-    <constructor-arg value="changes" />
-  </bean>
-  <bean id="differencesRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
-    <constructor-arg ref="protocolMapper" />
-    <constructor-arg value="differences" />
-  </bean>
-  <bean id="matchesRequestHandler" class="net.lshift.diffa.agent.http.FrontendRequestHandler">
-    <constructor-arg ref="protocolMapper" />
-    <constructor-arg value="matches" />
-  </bean>
-
+  
 
   <!--
     ==================
@@ -55,26 +39,6 @@
   -->
 
   <bean class="net.lshift.diffa.agent.context.ContextRefreshListener"/>
-
-  <!--
-    =============
-      Protocols
-    =============
-  -->
-  <bean id="protocolMapper" class="net.lshift.diffa.kernel.protocol.ProtocolMapper">
-    <constructor-arg>
-      <map>        
-        <entry key="changes">
-          <list>
-            <bean class="net.lshift.diffa.messaging.json.ChangesHandler">
-              <constructor-arg ref="changesFrontend" />
-            </bean>
-          </list>
-        </entry>        
-      </map>
-    </constructor-arg>
-  </bean>
-
 
   <!--
     ============
@@ -236,7 +200,10 @@
       Data
     ========
   -->
-  <bean id="diffaSessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+  <bean id="diffaSessionFactory" class="net.lshift.diffa.kernel.util.ListeningLocalSessionFactoryBean">
+    <constructor-arg>
+      <bean class="net.lshift.diffa.kernel.activation.BaselineConfiguration"/>
+    </constructor-arg>
     <property name="dataSource">
       <bean class="org.springframework.jndi.JndiObjectFactoryBean">
             <property name="jndiName" value="java:comp/env/jdbc/diffaDS"/>
@@ -277,5 +244,13 @@
   -->
 
   <import resource="RESTful-context.xml"/>
+
+  <!--
+    ==============================
+      Boot message handling plugin
+    ==============================
+  -->
+
+  <import resource="classpath*:conf/diffa-messaging-*.xml"/>
   
 </beans>

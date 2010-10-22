@@ -29,8 +29,8 @@ class PairActorTest {
 
   val pairKey = "some-pairing"
   val policyName = ""
-  val upstream = Endpoint("up","up",true)
-  val downstream = Endpoint("down","down",true)
+  val upstream = new Endpoint("up","up",true)
+  val downstream = new Endpoint("down","down",true)
 
   val pair = new net.lshift.diffa.kernel.config.Pair()
   pair.key = pairKey

@@ -1,0 +1,18 @@
+<beans
+  xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
+
+  <bean id="protocolMapper" class="net.lshift.diffa.kernel.protocol.ProtocolMapper">    
+  </bean>
+
+  <bean id="requestHandlerProxy" class="net.lshift.diffa.messaging.json.RequestHandlerProxy">
+    <constructor-arg ref="protocolMapper" />
+  </bean>
+
+  <bean class="net.lshift.diffa.messaging.json.JsonMessagingRegistrar">
+    <constructor-arg ref="protocolMapper" />
+    <constructor-arg ref="diffaConfigStore" />
+  </bean>
+  
+</beans>

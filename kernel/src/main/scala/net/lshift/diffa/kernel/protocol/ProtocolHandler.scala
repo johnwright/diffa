@@ -26,7 +26,7 @@ trait ProtocolHandler {
   /**
    * Retrieves the content types accepted by the handler.
    */
-  def contentTypes:Seq[String]
+  def contentType:String
 
   /**
    * Informs the handler that a request needs to dealt with. The transport will provide details of the
@@ -36,8 +36,4 @@ trait ProtocolHandler {
    */
   def handleRequest(request:TransportRequest, response:TransportResponse):Boolean
 
-  /**
-   * Retrieves a list of all valid endpoint names supported by the protocol handler.
-   */
-  def endpointNames:Seq[String]
 }

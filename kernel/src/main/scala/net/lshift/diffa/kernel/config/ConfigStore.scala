@@ -47,9 +47,13 @@ trait ConfigStore {
 case class Endpoint(
   @BeanProperty var name: String,
   @BeanProperty var url: String,
+  @BeanProperty var contentType: String,
+  @BeanProperty var inboundUrl: String,
   @BeanProperty var online: Boolean) {
 
-  def this() = this(null, null, false)
+  def this() = this(null, null, null, null, false)
+  // TODO legacy constructor
+  @Deprecated def this(name:String, url:String, online:Boolean) = this(name, url, null, null, online)
 }
 
 case class Pair(
