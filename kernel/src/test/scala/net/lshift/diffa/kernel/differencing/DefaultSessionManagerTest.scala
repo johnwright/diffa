@@ -37,6 +37,7 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
       def invoke(actionId:String, entityId:String)  = null
       def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = null
       def retrieveContent(id:String) = null
+      def close() = ()
     }
   }
   def createUpstreamParticipant(address:String, protocol:String) = {
@@ -44,6 +45,7 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
       def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = null
       def invoke(actionId:String, entityId:String)  = null
       def retrieveContent(id:String) = null
+      def close() = ()
     }
   }
   def supportsAddress(address:String, protocol:String) = true

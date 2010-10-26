@@ -20,15 +20,17 @@ import org.joda.time.DateTime
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.differencing.{DigestBuilder, DateConstraint}
 import org.apache.commons.io.IOUtils
-import java.io.{FileInputStream, File}
 import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.messaging.json.ChangesRestClient
 import net.lshift.diffa.kernel.participants.{ActionResult, RangeGranularity}
+import java.io.{Closeable, FileInputStream, File}
 
 /**
  * Basic functionality requried for a file-based participant.
  */
-abstract class FileParticipant(val dir:String, val agentRoot:String) {
+abstract class FileParticipant(val dir:String, val agentRoot:String) extends Closeable {
+
+  private var isClosing = false
   val rootDir = new File(dir)
   val watcher = new DirWatcher(dir, onFileChange)
   val changesClient = new ChangesRestClient(agentRoot)
@@ -63,6 +65,14 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) {
       case "resend" => ActionResult("error", "Unknown Entity:" + entityId)
       case _        => ActionResult("error", "Unknown action:" + actionId)
     }
+  }
+
+  override def close() = {
+    if (!isClosing) {
+      isClosing = true
+      changesClient.close
+      watcher.close
+    }    
   }
 
   protected def onFileChange(f:File)
