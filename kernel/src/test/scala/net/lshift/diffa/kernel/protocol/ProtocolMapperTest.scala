@@ -62,27 +62,4 @@ class ProtocolMapperTest {
   def shouldReturnRightHandlerWhenKnownGroupAndContentTypeIsGiven {
     assertEquals(Some(firstHandler), mapper.lookupHandler("group1", "application/x-first"))
   }
-
-//  @Test
-//  def shouldQueryAllHandlersForEndpointNames {
-//    expect(firstHandler.endpointNames).andReturn(Seq("a", "b"))
-//    expect(secondHandler.endpointNames).andReturn(Seq("b", "c"))
-//    expect(thirdHandler.endpointNames).andReturn(Seq("d", "e"))
-//    replay(firstHandler, secondHandler, thirdHandler)
-//
-//    val endpointNames = mapper.allEndpoints
-//    assertEquals(
-//      HashSet("group1", "group2"),
-//      HashSet(endpointNames.keySet.toSeq: _*))
-//    assertEquals(
-//      HashSet("a", "b", "c"),
-//      HashSet(endpointNames("group1"): _*)
-//    )
-//    assertEquals(
-//      HashSet("d", "e"),
-//      HashSet(endpointNames("group2"): _*)
-//    )
-//
-//    verify(firstHandler, secondHandler, thirdHandler)
-//  }
 }
