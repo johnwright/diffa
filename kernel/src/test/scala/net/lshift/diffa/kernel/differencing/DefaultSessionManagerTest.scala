@@ -74,11 +74,10 @@ class DefaultSessionManagerTest {
   versionPolicyManager.registerPolicy("policy", versionPolicy)
   private val protocol1 = new StubParticipantProtocolFactory()
   private val protocol2 = new StubParticipantProtocolFactory()
-  private val protocols = new java.util.ArrayList[ParticipantProtocolFactory] {
-    add(protocol1)
-    add(protocol2)
-  }
-  val participantFactory = new ParticipantFactory(protocols)
+
+  val participantFactory = new ParticipantFactory()
+  participantFactory.registerFactory(protocol1)
+  participantFactory.registerFactory(protocol2)
 
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
 
@@ -95,8 +94,8 @@ class DefaultSessionManagerTest {
     val u = new Endpoint("1","http://foo.com", true)
     val d = new Endpoint("2","http://bar.com", true)
 
-    participantFactory.createUpstreamParticipant(u.url)
-    participantFactory.createDownstreamParticipant(d.url)
+    participantFactory.createUpstreamParticipant(u)
+    participantFactory.createDownstreamParticipant(d)
 
     val pair1 = new net.lshift.diffa.kernel.config.Pair()
     pair1.versionPolicyName = "policy"

@@ -20,12 +20,12 @@ import java.lang.String
 import net.lshift.diffa.kernel.events.VersionID
 import collection.mutable.{ListBuffer, HashMap}
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.config.ConfigStore
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
 import net.lshift.diffa.kernel.participants.{Participant, ParticipantFactory, ParticipantType}
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, PairActor}
+import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 
 /**
  * Standard implementation of the SessionManager.
@@ -60,7 +60,7 @@ class DefaultSessionManager(
    */
   private val sessionsByKey = new HashMap[String, SessionCache]
 
-  private val participants = new HashMap[String, Participant]
+  private val participants = new HashMap[Endpoint, Participant]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
@@ -152,14 +152,14 @@ class DefaultSessionManager(
       case ParticipantType.UPSTREAM => {
         withValidEvent(sessionID, evtSeqId,
                       {e:SessionEvent => e.upstreamVsn != null},
-                      {p:net.lshift.diffa.kernel.config.Pair => p.upstream.url},
-                      {k:String => participantFactory.createUpstreamParticipant(k)})
+                      {p:net.lshift.diffa.kernel.config.Pair => p.upstream},
+                      {e:Endpoint => participantFactory.createUpstreamParticipant(e)})
       }
       case ParticipantType.DOWNSTREAM => {
         withValidEvent(sessionID, evtSeqId,
                       {e:SessionEvent => e.downstreamVsn != null},
-                      {p:net.lshift.diffa.kernel.config.Pair => p.downstream.url},
-                      {k:String => participantFactory.createDownstreamParticipant(k)})
+                      {p:net.lshift.diffa.kernel.config.Pair => p.downstream},
+                      {e:Endpoint => participantFactory.createDownstreamParticipant(e)})
       }
     }
   }
@@ -168,18 +168,18 @@ class DefaultSessionManager(
   // -> the participant factory call is probably low hanging fruit for refactoring
   def withValidEvent(sessionID:String, evtSeqId:String,
                      check:Function1[SessionEvent,Boolean],
-                     resolve:Function1[net.lshift.diffa.kernel.config.Pair,String],
-                     p:Function1[String,Participant]) : String = {
+                     resolve:(net.lshift.diffa.kernel.config.Pair) => Endpoint,
+                     p:(Endpoint) => Participant): String = {
     val event = sessionsByKey(sessionID).getEvent(evtSeqId)
     check(event) match {
       case true  => {
        val versionID = event.objId
        val pair = config.getPair(versionID.pairKey)
-       val key = resolve(pair)
-       if (!participants.contains(key)) {
-         participants(key) = p(key)
+       val endpoint = resolve(pair)
+       if (!participants.contains(endpoint)) {
+         participants(endpoint) = p(endpoint)
        }
-       val participant = participants(key)
+       val participant = participants(endpoint)
        participant.retrieveContent(versionID.id)
       }
       case false => "Expanded detail not available"

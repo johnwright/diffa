@@ -30,8 +30,7 @@ import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRe
  */
 class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val versionScheme:VersionScheme) {
   val serverRoot = "http://localhost:19093/diffa-agent"
-  val adminUser = "admin"
-  val adminPass = "admin"
+  val contentType = "application/json"
   val matchingTimeout = 1  // 1 second
 
   // Version Generation
@@ -57,8 +56,8 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort)
-  configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort)
+  configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort, contentType)
+  configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort, contentType)
   configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
 
   // Participants' RPC client setup

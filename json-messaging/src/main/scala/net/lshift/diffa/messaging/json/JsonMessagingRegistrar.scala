@@ -21,12 +21,14 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.frontend.Changes
+import net.lshift.diffa.kernel.participants.ParticipantFactory
 
 /**
  * This registers all of the JSON enabled internal endpoints that are listed
  * in the config store.
  */
 class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
+                             val participantfactory:ParticipantFactory,
                              val configStore:ConfigStore) extends ApplicationListener[ContextRefreshedEvent] {
 
   val log = LoggerFactory.getLogger(getClass)
@@ -34,6 +36,9 @@ class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
   val contentType = "application/json"
 
   def onApplicationEvent(event:ContextRefreshedEvent) {
+
+    // 1. Register each defined inbound endpoint
+
     val endpoints = configStore.listEndpoints
     endpoints.find( x => (x.contentType == contentType && x.inboundUrl != null) ) match {
       case None    =>
@@ -43,5 +48,10 @@ class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
         log.info("Registered endpoint [" + e.inboundUrl + "] for [" + handler.contentType) + "]"
       }
     }
+
+    // 2. Register the outbound protocol factory for JSON/HTTP
+
+    val factory = new JSONRestParticipantProtocolFactory()
+    participantfactory.registerFactory(factory)
   }
 }

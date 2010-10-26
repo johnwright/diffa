@@ -154,13 +154,7 @@
       Participants
     ================
   -->
-  <bean id="participantFactory" class="net.lshift.diffa.kernel.participants.ParticipantFactory">
-    <constructor-arg>
-      <list>        
-        <bean class="net.lshift.diffa.messaging.json.JSONRestParticipantProtocolFactory" />
-      </list>
-    </constructor-arg>
-  </bean>
+  <bean id="participantFactory" class="net.lshift.diffa.kernel.participants.ParticipantFactory"/>
 
   <!--
     =============

@@ -30,8 +30,14 @@ class ConfigurationRestClient(serverRootUrl:String)
     g
   }
 
-  def declareEndpoint(name: String, url: String) = {
-    val e = new Endpoint(name, url, false)
+  def declareInboundEndpoint(name: String, url: String, contentType:String):Endpoint = {
+    val e = Endpoint(name, null, contentType, url, false)
+    create("endpoints", e)
+    e
+  }
+
+  def declareEndpoint(name: String, url: String, contentType:String) = {
+    val e = Endpoint(name, url, contentType, null, false)
     create("endpoints", e)
     e
   }

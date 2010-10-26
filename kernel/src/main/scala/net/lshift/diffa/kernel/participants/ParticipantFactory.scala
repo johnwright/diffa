@@ -16,30 +16,34 @@
 
 package net.lshift.diffa.kernel.participants
 
-import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
+import collection.mutable.ListBuffer
+import net.lshift.diffa.kernel.config.Endpoint
 
 /**
  * Factory that will resolve participant addresses to participant instances for querying.
  */
-class ParticipantFactory(val protocolFactories:java.util.List[ParticipantProtocolFactory]) {
-    // TODO: Pass this in from config
-  private val protobuffers = "application/x-protocol-buffers"
-  private val json = "application/json"
+class ParticipantFactory() {
 
-  def createUpstreamParticipant(address:String): UpstreamParticipant = {
-    findFactory(address).createUpstreamParticipant(address, json)
+  private val protocolFactories = new ListBuffer[ParticipantProtocolFactory]
+
+  def registerFactory(f:ParticipantProtocolFactory) = protocolFactories += f
+
+  def createUpstreamParticipant(endpoint:Endpoint): UpstreamParticipant = {
+    val (address, protocol) = (endpoint.url, endpoint.contentType)
+    findFactory(address, protocol).createUpstreamParticipant(address, protocol)
   }
 
-  def createDownstreamParticipant(address:String): DownstreamParticipant = {
-    findFactory(address).createDownstreamParticipant(address, json)
+  def createDownstreamParticipant(endpoint:Endpoint): DownstreamParticipant = {
+    val (address, protocol) = (endpoint.url, endpoint.contentType)
+    findFactory(address, protocol).createDownstreamParticipant(address, protocol)
   }
 
-  def findFactory(address:String) =
-    protocolFactories.find(f => f.supportsAddress(address, json)) match {
-      case None => throw new InvalidParticipantAddressException(address)
+  private def findFactory(address:String, protocol:String) =
+    protocolFactories.find(f => f.supportsAddress(address, protocol)) match {
+      case None => throw new InvalidParticipantAddressException(address, protocol)
       case Some(f) => f
     }
 }
 
-class InvalidParticipantAddressException(addr:String)
-    extends Exception("The address " + addr + " is not a valid participant address")
+class InvalidParticipantAddressException(addr:String, protocol:String)
+    extends Exception("The address " + addr + " is not a valid participant address for the protocol " + protocol)

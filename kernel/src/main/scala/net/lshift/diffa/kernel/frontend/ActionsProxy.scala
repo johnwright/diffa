@@ -38,7 +38,7 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
     def result() = {
       val pair = config.getPair(request.pairKey)
       // TODO I think this creates a new instance for each invocation, not sure whether this is an issue or not
-      val participant = factory.createUpstreamParticipant(pair.upstream.url)
+      val participant = factory.createUpstreamParticipant(pair.upstream)
       participant.invoke(request.actionId, request.entityId)
     }
     

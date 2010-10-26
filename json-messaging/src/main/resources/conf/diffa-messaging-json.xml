@@ -13,6 +13,7 @@
   <bean class="net.lshift.diffa.messaging.json.JsonMessagingRegistrar">
     <constructor-arg ref="protocolMapper" />
     <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="participantFactory" />
   </bean>
   
 </beans>
