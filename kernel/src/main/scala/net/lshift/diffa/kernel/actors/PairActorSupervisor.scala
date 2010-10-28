@@ -38,8 +38,8 @@ class PairActorSupervisor(val policyManager:VersionPolicyManager,
       case 0 => {
         policyManager.lookupPolicy(pair.versionPolicyName) match {
           case Some(p) => {
-            val us = participantFactory.createUpstreamParticipant(pair.upstream.url)
-            val ds = participantFactory.createDownstreamParticipant(pair.downstream.url)
+            val us = participantFactory.createUpstreamParticipant(pair.upstream)
+            val ds = participantFactory.createDownstreamParticipant(pair.downstream)
             ActorRegistry.register(actorOf(new PairActor(pair.key, us, ds, p)).start)
             log.info("Started actor for key: " + pair.key)
           }

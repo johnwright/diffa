@@ -16,40 +16,25 @@
 
 package net.lshift.diffa.kernel.protocol
 
-import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
-import collection.mutable.{HashSet, HashMap}
+import collection.mutable.HashMap
 
 
 /**
  * Manages the mapping of content type information to appropriate protocol handlers.
  */
-class ProtocolMapper(groups:java.util.Map[String, java.util.List[ProtocolHandler]]) {
+class ProtocolMapper() {
+
+  private val handlers = new HashMap[String, ProtocolHandler]
+
+  /**
+   * Post-initialization callback used to register policies with this manager
+   */
+  def registerHandler(url:String, handler:ProtocolHandler) = handlers(url + handler.contentType) = handler
+
   /**
    * Looks up a handler for the given inbound content type. Returns either Some(handler) or None.
    */
-  def lookupHandler(endpointGroup:String, contentType:String):Option[ProtocolHandler] = {
-    if (groups.containsKey(endpointGroup)) {
-      // Try to find a handler that supports the content type
-      val handlers = groups.get(endpointGroup)
-      handlers.find(_.contentTypes.contains(contentType))
-    } else {
-      None
-    }
-  }
-
-  /**
-   * Queries for a list of all valid endpoint names across all registered groups and their handlers.
-   */
-  def allEndpoints:Map[String, Seq[String]] = {
-    val result = new HashMap[String, Seq[String]]
-    groups.keySet.foreach(n => {
-      val handlers = groups.get(n)
-      val handlersRes = new HashSet[String]
-
-      handlers.foreach(h => handlersRes ++= h.endpointNames)
-      result(n) = handlersRes.toSeq
-    })
-
-    Map.empty ++ result
+  def lookupHandler(url:String, contentType:String):Option[ProtocolHandler] = {
+    handlers.get(url + contentType)
   }
 }

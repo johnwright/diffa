@@ -16,13 +16,9 @@
 
 package net.lshift.diffa.messaging.json
 
-import org.apache.commons.io.IOUtils
-import net.lshift.diffa.kernel.protocol.{TransportRequest, TransportResponse, ProtocolHandler}
-import org.apache.http.HttpStatus
 import net.lshift.diffa.kernel.frontend.Changes
 import org.codehaus.jettison.json.JSONObject
-import org.slf4j.{Logger, LoggerFactory}
-import net.lshift.diffa.kernel.events.{VersionID, UpstreamChangeEvent, DownstreamChangeEvent, DownstreamCorrelatedChangeEvent}
+import net.lshift.diffa.kernel.events.{UpstreamChangeEvent, DownstreamChangeEvent, DownstreamCorrelatedChangeEvent}
 
 /**
  * JSON protocol handler for change requests.
@@ -31,7 +27,7 @@ import net.lshift.diffa.kernel.events.{VersionID, UpstreamChangeEvent, Downstrea
 class ChangesHandler(val frontend:Changes) extends AbstractJSONHandler {
 
   protected val endpoints = Map(
-    "" -> defineOnewayRpc((s:String) => s)(s => {
+    "changes" -> defineOnewayRpc((s:String) => s)(s => {
       val jObj = new JSONObject(s)
       val endpoint = jObj.getString("endpoint")
       val id = jObj.getString("id")

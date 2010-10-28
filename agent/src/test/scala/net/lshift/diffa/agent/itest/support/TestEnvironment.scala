@@ -17,11 +17,12 @@
 package net.lshift.diffa.agent.itest.support
 
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent, VersionID}
-import net.lshift.diffa.messaging.json._
+import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent}
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
+import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
+import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -29,8 +30,7 @@ import net.lshift.diffa.kernel.util.Placeholders
  */
 class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val versionScheme:VersionScheme) {
   val serverRoot = "http://localhost:19093/diffa-agent"
-  val adminUser = "admin"
-  val adminPass = "admin"
+  val contentType = "application/json"
   val matchingTimeout = 1  // 1 second
 
   // Version Generation
@@ -56,8 +56,8 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort)
-  configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort)
+  configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort, contentType, null, true)
+  configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort, contentType, null, true)
   configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
 
   // Participants' RPC client setup

@@ -22,12 +22,15 @@ import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.{ClientResponse, Client}
 import org.slf4j.{LoggerFactory, Logger}
 import org.apache.commons.io.IOUtils
+import java.io.Closeable
 
-abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubUrl:String) {
+abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubUrl:String) extends Closeable {
 
   val log:Logger = LoggerFactory.getLogger(getClass)
 
   log.debug("Configured to initialize using the server URL (" + serverRootUrl + ") with a sub URL (" + restResourceSubUrl + ")")
+
+  private var isClosing = false
 
   // TODO Implement proper authentication
   val config = new DefaultClientConfig()
@@ -36,6 +39,13 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
   val client = Client.create(config)
   val serverRootResource = client.resource(serverRootUrl)
   val resource = serverRootResource.path(restResourceSubUrl)
+
+  override def close() = {
+    if (!isClosing) {
+      isClosing = true
+      client.destroy
+    }    
+  }
 
   // TODO This is quite sketchy at the moment
   def rpc(path:String) = {

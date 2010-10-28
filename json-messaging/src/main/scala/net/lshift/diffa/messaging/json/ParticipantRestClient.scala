@@ -88,8 +88,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
 /**
  * HTTP Client to UpstreamTestParticipant using JSON over HTTP.
  */
-class UpstreamParticipantRestClient(root:String) extends ParticipantRestClient(root)
-        with UpstreamParticipant {}
+class UpstreamParticipantRestClient(root:String) extends ParticipantRestClient(root) with UpstreamParticipant {}
 
 /**
  * HTTP Client to DownstreamTestParticipant using protocol-buffers over HTTP.

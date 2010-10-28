@@ -16,10 +16,10 @@
 
 package net.lshift.diffa.tools
 
+import client.DifferencesRestClient
 import org.joda.time.DateTime
 import java.lang.String
 import org.apache.commons.cli._
-import net.lshift.diffa.messaging.json.DifferencesRestClient
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionScope, MatchState}
 

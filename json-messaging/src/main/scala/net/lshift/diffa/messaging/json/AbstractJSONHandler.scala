@@ -35,8 +35,8 @@ abstract class AbstractJSONHandler extends ProtocolHandler {
    */
   protected def endpoints:Map[String, RequestHandler]
 
-  val contentTypes = Seq("application/json")
-  def endpointNames = endpoints.keySet.toSeq
+  val contentType = "application/json"
+
   def handleRequest(request: TransportRequest, response: TransportResponse) = {
     endpoints.get(request.endpoint) match {
       case Some(handler) =>
