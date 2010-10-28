@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.client
+package net.lshift.diffa.tools.client
 
 import org.joda.time.DateTime
 import javax.ws.rs.core.MediaType

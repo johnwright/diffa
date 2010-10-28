@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.tools
 
+import client.ConfigurationRestClient
 import org.apache.commons.cli.{CommandLine, Option}
 import net.lshift.diffa.kernel.client.ConfigurationClient
-import net.lshift.diffa.messaging.json.ConfigurationRestClient
 
 /**
  * Utility class for declaring a differencing configuration.
@@ -32,6 +32,11 @@ object Declare extends DiffaTool {
   options.addOption(new Option("downstreamUrl", true, "the url of the downstream participant"))
   options.addOption(new Option("versionPolicy", true, "the version policy (same or correlated) to use"))
   options.addOption(new Option("matchTimeout", true, "timeout before raising matching alerts"))
+
+  // TODO This should really be passed through from the CLI, but ATM the only serialization
+  // Diffa supports is JSOn anyway
+  val contentType = "application/json"
+  val inboundUrl = "changes"
 
   def run(line:CommandLine, agentUrl:String) {
     val configClient:ConfigurationClient = new ConfigurationRestClient(agentUrl)
@@ -81,7 +86,7 @@ object Declare extends DiffaTool {
       val url = line.getOptionValue(urlKey)
 
       println("Declaring endpoint: " + name + " -> " + url)
-      configClient.declareEndpoint(name, url)
+      configClient.declareEndpoint(name, url, contentType, inboundUrl, true)
       true
     } else {
       false

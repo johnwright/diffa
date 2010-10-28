@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.json
+package net.lshift.diffa.agent.http
 
 import org.springframework.web.HttpRequestHandler
 import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import org.springframework.http.HttpStatus
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler, ProtocolMapper}
-import org.eclipse.jetty.continuation.ContinuationSupport
 import java.io.OutputStream
 import org.slf4j.LoggerFactory
 
@@ -34,60 +33,24 @@ class RequestHandlerProxy(mapper:ProtocolMapper) extends HttpRequestHandler {
   def handleRequest(request:HttpServletRequest, response:HttpServletResponse) = {
 
     val path = request.getServletPath.substring(1)
-    log.debug("Handling path: " + path)
+    log.trace("Handling path: " + path)
 
     val tRequest = new TransportRequest(path, request.getInputStream)
     val tResponse = new HttpTransportResponse(request, response)
 
     mapper.lookupHandler(path, request.getContentType) match {
-      case Some(handler:ProtocolHandler) =>
-        if (!handler.handleRequest(tRequest, tResponse)) {
-          // Request hasn't finished. Make it asynchronous
-          tResponse.makeAsync
-        }
-      case None =>
+      case Some(handler:ProtocolHandler) => handler.handleRequest(tRequest, tResponse)
+      case None => {
         log.error("Cannot resolve handler for path: " + path + " and type: " + request.getContentType)
         response.setStatus(HttpStatus.BAD_REQUEST.value)
         response.getWriter.println("No protocol handlers available for content type")
+      }
     }
   }
 
-  class HttpTransportResponse(val servletRequest:HttpServletRequest, val servletResponse:HttpServletResponse)
-      extends TransportResponse {
-    var async = false
-
-    val os = servletResponse.getOutputStream
-    def continuation = ContinuationSupport.getContinuation(servletRequest)
-
-    def setStatusCode(code: Int) = servletResponse.setStatus(code)
-    def withOutputStream(f: (OutputStream) => Unit) = {
-      // If the response is marked as async, then we'll need to resume and suspend a continuation
-      // around it.
-      if (async) {
-        // TODO: Standard Jetty model would have continuation.resume called, which would re-trigger the request
-        //        handling thread with an empty-ish request. This currently breaks the request handler, since
-        //        the post data is null, and therefore the protocol parser crashes out. Turns out that the output
-        //        stream is still valid though, so you can actually write to it from other threads even if you don't
-        //        resume the connection.
-//        continuation.resume
-      }
-      f(os)
-
-      if (async) {
-        os.flush
-
-        // TODO: Unused due to the above comment.
-//        continuation.suspend
-      }
-    }
-
-    def makeAsync {
-      val cont = continuation
-      os.flush
-
-      cont.setTimeout(0)
-      cont.suspend
-      async = true
-    }
+  class HttpTransportResponse(val request:HttpServletRequest, val response:HttpServletResponse) extends TransportResponse {
+    val os = response.getOutputStream
+    def setStatusCode(code: Int) = response.setStatus(code)
+    def withOutputStream(f: (OutputStream) => Unit) = f(os)
   }
 }

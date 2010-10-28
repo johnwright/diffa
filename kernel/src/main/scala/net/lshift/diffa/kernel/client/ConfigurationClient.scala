@@ -23,7 +23,6 @@ import net.lshift.diffa.kernel.config.{PairDef, Endpoint, PairGroup}
  */
 trait ConfigurationClient {
   def declareGroup(name: String):PairGroup
-  def declareEndpoint(name: String, url: String, contentType:String):Endpoint
-  def declareInboundEndpoint(name: String, url: String, contentType:String):Endpoint
+  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, online:Boolean) : Endpoint
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int, upstreamName: String, downstreamName: String, groupKey: String):PairDef
 }

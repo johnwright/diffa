@@ -52,8 +52,6 @@ case class Endpoint(
   @BeanProperty var online: Boolean) {
 
   def this() = this(null, null, null, null, false)
-  // TODO legacy constructor
-  @Deprecated def this(name:String, url:String, online:Boolean) = this(name, url, null, null, online)
 }
 
 case class Pair(

@@ -25,8 +25,8 @@ import org.joda.time.DateTime
  * Factory that returns a map of example usages of classes for doc generation.
  */
 class DocExamplesFactory {
-  val up = new Endpoint("upstream-system", "http://acme.com/upstream", true)
-  val down = new Endpoint("downstream-system", "http://acme.com/downstream", true)
+  val up = Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null ,true)
+  val down = Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, true)
   val group = PairGroup("important-group")
   var pair = Pair("pair-id", up, down, group, "correlated", 120)
 

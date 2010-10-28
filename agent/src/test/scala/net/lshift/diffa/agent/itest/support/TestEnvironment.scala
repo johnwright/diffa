@@ -21,8 +21,8 @@ import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, Downstre
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
-import net.lshift.diffa.agent.client._
 import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
+import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -56,8 +56,8 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort, contentType)
-  configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort, contentType)
+  configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort, contentType, null, true)
+  configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort, contentType, null, true)
   configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
 
   // Participants' RPC client setup

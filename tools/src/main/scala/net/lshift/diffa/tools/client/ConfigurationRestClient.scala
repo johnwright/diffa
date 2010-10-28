@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.client
+package net.lshift.diffa.tools.client
 
 import net.lshift.diffa.kernel.config.{Endpoint, PairDef, PairGroup}
 import net.lshift.diffa.kernel.client.ConfigurationClient
@@ -30,14 +30,8 @@ class ConfigurationRestClient(serverRootUrl:String)
     g
   }
 
-  def declareInboundEndpoint(name: String, url: String, contentType:String):Endpoint = {
-    val e = Endpoint(name, null, contentType, url, false)
-    create("endpoints", e)
-    e
-  }
-
-  def declareEndpoint(name: String, url: String, contentType:String) = {
-    val e = Endpoint(name, url, contentType, null, false)
+  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, online:Boolean) = {
+    val e = Endpoint(name, url, contentType, inboundUrl, online)
     create("endpoints", e)
     e
   }

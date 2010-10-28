@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.client
+package net.lshift.diffa.tools.client
 
 import net.lshift.diffa.kernel.client.UsersClient
 import net.lshift.diffa.kernel.config.User

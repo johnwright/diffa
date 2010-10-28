@@ -31,7 +31,7 @@
     </property>
   </bean>
 
-  <bean id="configClient" class="net.lshift.diffa.messaging.json.ConfigurationRestClient">
+  <bean id="configClient" class="net.lshift.diffa.tools.client.ConfigurationRestClient">
       <constructor-arg>
           <bean class="org.springframework.jndi.JndiObjectFactoryBean">
             <property name="jndiName" value="java:comp/env/agentUrl"/>

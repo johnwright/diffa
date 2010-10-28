@@ -48,7 +48,7 @@ class ParticipantFactoryTest {
 
   val invalid = Endpoint("invalid", null, null, null, true)
   val jsonOverHttp = Endpoint("jsonOverHttp", "http://localhost", json, null, true)
-  val jsonOverAmqp = Endpoint("jsonOverAmqp", "amqp://localhost", json, null, true)
+  val jsonOverAmqp = Endpoint("jsonOverAmqp", "amqp://localhost", json, "changes-queue", true)
 
   @Test
   def shouldNotCreateUpstreamParticipantWhenNoFactoryAcceptsAddress {

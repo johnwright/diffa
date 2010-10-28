@@ -15,11 +15,7 @@
  */
 package net.lshift.diffa.messaging.json
 
-import org.springframework.context.ApplicationListener
-import org.springframework.context.event.ContextRefreshedEvent
-import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
-import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.frontend.Changes
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 
@@ -28,30 +24,14 @@ import net.lshift.diffa.kernel.participants.ParticipantFactory
  * in the config store.
  */
 class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
-                             val participantfactory:ParticipantFactory,
-                             val configStore:ConfigStore) extends ApplicationListener[ContextRefreshedEvent] {
+                             val participantFactory:ParticipantFactory,
+                             val changes:Changes) {
 
-  val log = LoggerFactory.getLogger(getClass)
+  // Register the outbound participant factory for JSON/HTTP
+  val factory = new JSONRestParticipantProtocolFactory()
+  participantFactory.registerFactory(factory)
 
-  val contentType = "application/json"
-
-  def onApplicationEvent(event:ContextRefreshedEvent) {
-
-    // 1. Register each defined inbound endpoint
-
-    val endpoints = configStore.listEndpoints
-    endpoints.find( x => (x.contentType == contentType && x.inboundUrl != null) ) match {
-      case None    =>
-      case Some(e) => {
-        val handler = new ChangesHandler(event.getApplicationContext.getBean(classOf[Changes]))
-        protocolMapper.registerHandler(e.inboundUrl, handler)
-        log.info("Registered endpoint [" + e.inboundUrl + "] for [" + handler.contentType) + "]"
-      }
-    }
-
-    // 2. Register the outbound protocol factory for JSON/HTTP
-
-    val factory = new JSONRestParticipantProtocolFactory()
-    participantfactory.registerFactory(factory)
-  }
+  // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
+  // application/json are decoded by our ChangesHandler.
+  protocolMapper.registerHandler("changes", new ChangesHandler(changes))
 }

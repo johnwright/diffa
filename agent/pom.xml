@@ -113,6 +113,17 @@
     </dependency>
     <dependency>
       <groupId>net.lshift.diffa</groupId>
+      <artifactId>diffa-tools</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-docgen-maven-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>

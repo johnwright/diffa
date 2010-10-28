@@ -31,11 +31,6 @@ class BaselineConfiguration extends SessionFactoryObserver {
     // The config store will not have been constructed at this point in Spring
     // So just create a throw away instance in order to produce this baseline
     val config = new HibernateConfigStore(factory)
-    val contentType = "application/json"
-    val inboundUrl = "changes"
-    val e = Endpoint("json-messaging-endpoint", null, contentType, inboundUrl, true)
-    config.createOrUpdateEndpoint(e)
-
     log.debug("Diffa baseline configuration created")
   }
 
