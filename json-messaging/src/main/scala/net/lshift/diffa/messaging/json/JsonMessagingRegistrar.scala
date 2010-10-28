@@ -20,8 +20,8 @@ import net.lshift.diffa.kernel.frontend.Changes
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 
 /**
- * This registers all of the JSON enabled internal endpoints that are listed
- * in the config store.
+ * Utility class responsible for registering the JSON protocol support with necessary factories
+ * and request handlers.
  */
 class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
                              val participantFactory:ParticipantFactory,
