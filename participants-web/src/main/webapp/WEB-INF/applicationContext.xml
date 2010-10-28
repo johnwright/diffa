@@ -56,6 +56,9 @@
       <list>
         <value>${demo.upstreamName}</value>
         <value>${demo.upstreamUrl}</value>
+        <value>${demo.upstream.contentType}</value>
+        <value>null</value>
+        <value>true</value>
       </list>
     </property>
   </bean>
@@ -67,6 +70,9 @@
       <list>
         <value>${demo.downstreamName}</value>
         <value>${demo.downstreamUrl}</value>
+        <value>${demo.downstream.contentType}</value>
+        <value>null</value>
+        <value>true</value>
       </list>
     </property>
   </bean>
