@@ -16,18 +16,28 @@
 
 package net.lshift.diffa.agent.context
 
-import org.springframework.context.ApplicationListener
 import org.springframework.context.event.ContextRefreshedEvent
 import org.slf4j.{Logger, LoggerFactory}
+import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
+import org.springframework.context.{ApplicationContext, ApplicationListener}
+import scala.collection.JavaConversions._
 
 /**
- * Generic listener that can write meaningful things when the context is booted
+ * Helper that can trigger specific Agent lifecycle events once the main Spring context has finished it's loading
+ * procedure.
  */
-class ContextRefreshListener extends ApplicationListener[ContextRefreshedEvent] {
+class AgentLifecycleHelper extends ApplicationListener[ContextRefreshedEvent] {
 
   val log:Logger = LoggerFactory.getLogger(getClass)
 
   def onApplicationEvent(event:ContextRefreshedEvent) {
+    fireLifecycle(event.getApplicationContext, _.onAgentAssemblyCompleted)
+
     log.info("Diffa Agent successfully initialized")
+  }
+
+  private def fireLifecycle(ctx:ApplicationContext, firer:(AgentLifecycleAware) => Unit) {
+    val awareBeans = ctx.getBeansOfType(classOf[AgentLifecycleAware])
+    awareBeans.values.foreach(b => firer(b))
   }
 }
