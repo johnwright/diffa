@@ -130,7 +130,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   }
 
   protected class Aggregator(val gran:RangeGranularity) {
-    val builder = new DigestBuilder(gran)
+    val builder = new DigestBuilder(new DateCategoryFunction)
 
     def collectUpstream(id:VersionID, categories:Map[String,String], lastUpdate:DateTime, vsn:String) =
       builder.add(id, categories, lastUpdate, vsn)

@@ -22,13 +22,12 @@ import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.apache.commons.codec.binary.Hex
-import net.lshift.diffa.kernel.util.DateUtils._
 import scala.collection.Map
 
 /**
  * Utility class for building version digests from a sequence of versions.
  */
-class DigestBuilder(val gran:RangeGranularity) {
+class DigestBuilder(val categoryFunction:CategoryFunction) {
   private val digestBuckets = new HashMap[String, Bucket]
   private val versions = new ListBuffer[VersionDigest]
 
@@ -38,11 +37,9 @@ class DigestBuilder(val gran:RangeGranularity) {
   def add(id:VersionID, categories:Map[String,String], lastUpdated:DateTime, vsn:String):Unit = add(id.id, categories, lastUpdated, vsn)
   def add(id:String, categories:Map[String,String], lastUpdated:DateTime, vsn:String) {
       if (!isBucketing) {
-      val categories = new HashMap[String,String]
-      // TODO [#2] fill out map
       versions += VersionDigest(id, categories, lastUpdated, vsn)
     } else {
-      val bucketName = buildBucketName(categories)
+      val bucketName = categoryFunction.bucketName(categories)
       val bucket = digestBuckets.get(bucketName) match {
         case None => {
           val newBucket = new Bucket(bucketName, normaliseDate(categories))
@@ -70,21 +67,22 @@ class DigestBuilder(val gran:RangeGranularity) {
   /**
    * Don't bucket for individual versions.
    */
-  private def isBucketing = gran != IndividualGranularity
+  private def isBucketing = true//gran != IndividualGranularity
 
   /**
    * Generates a name for a bucket based on a date.
    */
-  private def buildBucketName(categories:Map[String,String]) = gran match {
-    case DayGranularity   => ""//date.toString("yyyy-MM-dd")
-    case MonthGranularity => ""//date.toString("yyyy-MM")
-    case YearGranularity  => ""//date.toString("yyyy")
-  }
-  private def normaliseDate(categories:Map[String,String]) = gran match {
-    case DayGranularity   => new DateTime//startOfDay(date)
-    case MonthGranularity => new DateTime//startOfDay(date).withDayOfMonth(1)
-    case YearGranularity => new DateTime//startOfDay(date).withDayOfYear(1)
-  }
+//  private def buildBucketName(categories:Map[String,String]) = gran match {
+//    case DayGranularity   => ""//date.toString("yyyy-MM-dd")
+//    case MonthGranularity => ""//date.toString("yyyy-MM")
+//    case YearGranularity  => ""//date.toString("yyyy")
+//  }
+  private def normaliseDate(categories:Map[String,String]) = new DateTime
+//  gran match {
+//    case DayGranularity   => new DateTime//startOfDay(date)
+//    case MonthGranularity => new DateTime//startOfDay(date).withDayOfMonth(1)
+//    case YearGranularity => new DateTime//startOfDay(date).withDayOfYear(1)
+//  }
 
   private class Bucket(val name:String, val date:DateTime) {
     private val digestAlgorithm = "MD5"
