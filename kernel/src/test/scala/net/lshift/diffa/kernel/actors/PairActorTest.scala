@@ -24,6 +24,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant, ParticipantFactory}
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
+import collection.mutable.HashMap
 
 class PairActorTest {
 
@@ -38,7 +39,8 @@ class PairActorTest {
   pair.upstream = upstream
   pair.downstream = downstream
 
-  val dates = DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1))
+  val dates = List(DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1)))
+  //val dates = DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1))
 
   val us = createStrictMock("upstreamParticipant", classOf[UpstreamParticipant])
   val ds = createStrictMock("downstreamParticipant", classOf[DownstreamParticipant])
@@ -84,10 +86,10 @@ class PairActorTest {
   @Test
   def propagateChange = {
     val id = VersionID(pairKey, "foo")
-    val date = new DateTime()
+    val categories = new HashMap[String,String]()
     val lastUpdate = new DateTime()
     val vsn = "foobar"
-    val event = UpstreamPairChangeEvent(id, date, lastUpdate, vsn)
+    val event = UpstreamPairChangeEvent(id, categories, lastUpdate, vsn)
     
     expect(versionPolicy.onChange(event))
     replay(versionPolicy)

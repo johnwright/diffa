@@ -99,7 +99,8 @@ trait CommonDifferenceTests {
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
     Thread.sleep(100)
-    env.addAndNotifyUpstream("abc", yesterday, "abcdef")
+    env.addAndNotifyUpstream("abc", categories, "abcdef")
+    //env.addAndNotifyUpstream("abc", yesterday, "abcdef")
 
     val diffs = tryAgain(sessionId,20,100)
 
@@ -115,7 +116,8 @@ trait CommonDifferenceTests {
     val NO_CONTENT = "Expanded detail not available"
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
     Thread.sleep(100)
-    env.addAndNotifyUpstream("abc", yesterday, up)
+    env.addAndNotifyUpstream("abc", categories, up)
+    //env.addAndNotifyUpstream("abc", yesterday, up)
 
     val diffs = tryAgain(sessionId,20,100)
     val seqId1 = diffs(0).seqId
@@ -126,7 +128,8 @@ trait CommonDifferenceTests {
     assertEquals(up, up1)
     assertEquals(NO_CONTENT, down1)
 
-    env.addAndNotifyDownstream("abc", yesterday, down)
+    //env.addAndNotifyDownstream("abc", yesterday, down)
+    env.addAndNotifyDownstream("abc", categories, down)
     Thread.sleep(2000)
     val diffs2 = tryAgain(sessionId,20,100)
     assertEquals(1, diffs2.length)
@@ -142,8 +145,10 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldNotFindDifferencesInParticipantsWithSameStateThatAgentWasntInformedOf {
-    env.upstream.addEntity("abc", yesterday, yesterday, "abcdef")
-    env.downstream.addEntity("abc", yesterday, yesterday, "abcdef")
+    env.upstream.addEntity("abc", categories, yesterday, "abcdef")
+    //env.upstream.addEntity("abc", yesterday, yesterday, "abcdef")
+    env.downstream.addEntity("abc", categories, yesterday, "abcdef")
+    //env.downstream.addEntity("abc", yesterday, yesterday, "abcdef")
     val diffs = getReport(env.pairKey, yearAgo, today)
 
     assertNotNull(diffs)
@@ -153,8 +158,10 @@ trait CommonDifferenceTests {
   @Test
   def shouldReportMatchOnlyAsChangesAreReportedWithinMatchingWindow {
 
-    env.addAndNotifyUpstream("abc", today, "abcdef")
-    env.addAndNotifyDownstream("abc", today, "abcdef")
+    env.addAndNotifyUpstream("abc", categories, "abcdef")
+    //env.addAndNotifyUpstream("abc", today, "abcdef")
+    env.addAndNotifyDownstream("abc", categories, "abcdef")
+    //env.addAndNotifyDownstream("abc", today, "abcdef")
 
     val diffs = getReport(env.pairKey, yearAgo, today)
 
@@ -164,7 +171,8 @@ trait CommonDifferenceTests {
   }
 
   def getVerifiedDiffsWithSessionId() = {
-    env.upstream.addEntity("abc", yesterday, yesterday, "abcdef")
+    env.upstream.addEntity("abc", categories, yesterday, "abcdef")
+    //env.upstream.addEntity("abc", yesterday, yesterday, "abcdef")
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
 
     val diffs = tryAgain(sessionId,10,100)

@@ -19,12 +19,13 @@ package net.lshift.diffa.kernel.differencing
 import java.lang.String
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
-import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.participants.QueryConstraint // for 'SessionFactory.withSession'
 import org.hibernate.criterion.{Restrictions, Order}
-import org.hibernate.{Query, Session, SessionFactory}
+import org.hibernate.{Session, SessionFactory}
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.differencing._
 import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
+import scala.collection.Map
 
 /**
  * Hibernate backed implementation of the Version Correlation store.
@@ -33,12 +34,12 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     extends VersionCorrelationStore
     with HibernateQueryUtils {
 
-  def storeUpstreamVersion(id:VersionID, date: DateTime, lastUpdated: DateTime, vsn: String) = {
+  def storeUpstreamVersion(id:VersionID, categories:Map[String,String], lastUpdated: DateTime, vsn: String) = {
     val timestamp = new DateTime()
     sessionFactory.withSession(s => {
       val saveable = queryCurrentCorrelation(s, id) match {
 
-        case None => Correlation(null, id.pairKey, id.id, date, lastUpdated, timestamp, vsn, null, null, false)
+        case None => Correlation(null, id.pairKey, id.id, categories, lastUpdated, timestamp, vsn, null, null, false)
         case Some(c:Correlation) => {
           c.upstreamVsn = vsn
           updateMatchedState(c)
@@ -51,11 +52,11 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     })
   }
   
-  def storeDownstreamVersion(id:VersionID, date: DateTime, lastUpdated: DateTime, uvsn: String, dvsn: String) = {
+  def storeDownstreamVersion(id:VersionID, categories:Map[String,String], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
     val timestamp = new DateTime()
     sessionFactory.withSession(s => {
       val saveable = queryCurrentCorrelation(s, id) match {
-        case None => Correlation(null, id.pairKey, id.id, date, lastUpdated, timestamp, null, uvsn, dvsn, false)
+        case None => Correlation(null, id.pairKey, id.id, categories, lastUpdated, timestamp, null, uvsn, dvsn, false)
         case Some(c:Correlation) => {
           c.downstreamUVsn = uvsn
           c.downstreamDVsn = dvsn
@@ -69,9 +70,9 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     })
   }
 
-  def unmatchedVersions(pairKey:String, dateRange:DateConstraint) = {
+  def unmatchedVersions(pairKey:String, constraints:Seq[QueryConstraint]) = {
     sessionFactory.withSession(s => {
-      val criteria = criteriaForDateRange(s, pairKey, dateRange)
+      val criteria = criteriaForDateRange(s, pairKey, constraints)
       criteria.add(Restrictions.eq("isMatched", false))
 
       criteria.list.map { i => i.asInstanceOf[Correlation] }
@@ -136,22 +137,22 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     })
   }
 
-  def queryUpstreams(pairKey:String, dateRange:DateConstraint, handler:UpstreamVersionHandler) = {
+  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
     sessionFactory.withSession(s => {
-      val criteria = criteriaForDateRange(s, pairKey, dateRange)
+      val criteria = criteriaForDateRange(s, pairKey, constraints)
       criteria.add(Restrictions.isNotNull("upstreamVsn"))
       criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
-        handler(VersionID(c.pairing, c.id), c.date, c.lastUpdate, c.upstreamVsn)
+        handler(VersionID(c.pairing, c.id), c.categories, c.lastUpdate, c.upstreamVsn)
       })
     })
   }
 
-  def queryDownstreams(pairKey:String, dateRange:DateConstraint, handler:DownstreamVersionHandler) = {
+  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
     sessionFactory.withSession(s => {
-      val criteria = criteriaForDateRange(s, pairKey, dateRange)
+      val criteria = criteriaForDateRange(s, pairKey, constraints)
       criteria.add(Restrictions.or(Restrictions.isNotNull("downstreamUVsn"), Restrictions.isNotNull("downstreamDVsn")))
       criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
-        handler(VersionID(c.pairing, c.id), c.date, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
+        handler(VersionID(c.pairing, c.id), c.categories, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
       })
     })
   }
@@ -162,15 +163,15 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     c.isMatched = (c.upstreamVsn == c.downstreamUVsn)
     c
   }
-  private def criteriaForDateRange(s:Session, pairKey:String, dateRange:DateConstraint) = {
+  private def criteriaForDateRange(s:Session, pairKey:String, constraints:Seq[QueryConstraint]) = {
     val criteria = s.createCriteria(classOf[Correlation])
     criteria.add(Restrictions.eq("pairing", pairKey))
-    if (dateRange.start != null) {
-      criteria.add(Restrictions.ge("date", dateRange.start))
-    }
-    if (dateRange.end != null) {
-      criteria.add(Restrictions.le("date", dateRange.end))
-    }
+//    if (dateRange.start != null) {
+//      criteria.add(Restrictions.ge("date", dateRange.start))
+//    }
+//    if (dateRange.end != null) {
+//      criteria.add(Restrictions.le("date", dateRange.end))
+//    }
     criteria.addOrder(Order.asc("id"));
 
     criteria

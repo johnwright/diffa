@@ -17,6 +17,7 @@
 package net.lshift.diffa.agent.itest.support
 
 import org.joda.time.DateTime
+import collection.mutable.HashMap
 
 /**
  * Useful constants for use in test cases.
@@ -25,4 +26,5 @@ object TestConstants {
   val today = new DateTime
   val yesterday = (new DateTime).minusDays(1)
   val yearAgo = today.minusYears(1)
+  val categories = new HashMap[String,String]
 }

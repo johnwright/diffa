@@ -16,12 +16,10 @@
 
 package net.lshift.diffa.participants
 
-import org.joda.time.DateTime
 import java.lang.String
-import net.lshift.diffa.kernel.participants.{RangeGranularity, UpstreamParticipant}
-import org.apache.commons.io.IOUtils
-import java.io.{FileInputStream, File}
-import net.lshift.diffa.kernel.events.{VersionID, UpstreamChangeEvent}
+import net.lshift.diffa.kernel.participants.{UpstreamParticipant}
+import java.io.File
+import net.lshift.diffa.kernel.events.UpstreamChangeEvent
 
 /**
  * Upstream participant implementation backed off the filesystem.
@@ -30,6 +28,6 @@ class UpstreamFileParticipant(epName:String, root:String, agentRoot:String) exte
     with UpstreamParticipant {
 
   protected def onFileChange(f: File) = {
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), dateFor(f), dateFor(f), versionFor(f)))
+    changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), categoriesFor(f), dateFor(f), versionFor(f)))
   }
 }

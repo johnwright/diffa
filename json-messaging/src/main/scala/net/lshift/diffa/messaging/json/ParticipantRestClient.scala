@@ -16,20 +16,22 @@
 
 package net.lshift.diffa.messaging.json
 
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
+import collection.mutable.HashMap
 
 /**
  * Rest client for participant communication.
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
-  override def queryDigests(start:DateTime, end:DateTime, granularity:RangeGranularity) = {
+  // old: override def queryDigests(start:DateTime, end:DateTime, granularity:RangeGranularity) = {
+  override def queryDigests(constraints:Seq[QueryConstraint]) : Seq[VersionDigest] = {
     val requestObj = new JSONObject
-    requestObj.put("start", start.toString(JSONEncodingUtils.dateEncoder))
-    requestObj.put("end", end.toString(JSONEncodingUtils.dateEncoder))
-    requestObj.put("granularity", jsonGranularity(granularity))
+    // TODO [#2]
+    //requestObj.put("start", start.toString(JSONEncodingUtils.dateEncoder))
+    //requestObj.put("end", end.toString(JSONEncodingUtils.dateEncoder))
+    //requestObj.put("granularity", jsonGranularity(granularity))
 
     executeRpc("query_digests", requestObj.toString) match {
       case Some(r) => {
@@ -37,7 +39,10 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
         (0 until jsonDigests.length).map(i => {
           val digestObj = jsonDigests.getJSONObject(i)
           VersionDigest(
-            digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
+            // TODO [#2]
+            //digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
+            digestObj.getString("key"),
+            new HashMap[String,String],
             JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")), digestObj.getString("digest"))
         }).toList
       }
@@ -106,7 +111,10 @@ class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient
         val responseObj = new JSONObject(r)
 
         ProcessingResponse(
-          responseObj.getString("id"), JSONEncodingUtils.dateParser.parseDateTime(responseObj.getString("date")),
+          responseObj.getString("id"),
+          // TODO [#2]
+          //JSONEncodingUtils.dateParser.parseDateTime(responseObj.getString("date")),
+          new HashMap[String,String],
           responseObj.getString("uvsn"), responseObj.getString("dvsn"))
       }
     }

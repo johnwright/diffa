@@ -22,11 +22,15 @@ import collection.immutable.HashSet
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.participants._
+import collection.mutable.HashMap
 
 /**
  * Test cases for the DigestDifferencingUtils object.
  */
 class DigestDifferencingUtilsTest {
+
+  val categories = new HashMap[String,String]
+
   @Test
   def shouldReportNothingOnMatchingEmptyLists {
     val actions = DigestDifferencingUtils.differenceDigests(Seq(), Seq(), IndividualGranularity)
@@ -35,8 +39,10 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldReportNothingOnMatchingNonEmptyLists {
-    val a = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"), VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"))
-    val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"), VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"))
+    val a = Seq(VersionDigest("id1", categories, JAN_1_2010, "h1"), VersionDigest("id2", categories, JAN_1_2010, "h2"))
+    //val a = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"), VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"))
+    val b = Seq(VersionDigest("id1", categories, JAN_1_2010, "h1"), VersionDigest("id2", categories, JAN_1_2010, "h2"))
+    //val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"), VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, IndividualGranularity)
     assertEquals(0, actions.length)
@@ -44,8 +50,10 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldReportNothingOnMatchingNonEmptyListsEvenWhenTheirOrderDiffers {
-    val a = Seq(VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"), VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"))
-    val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"), VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"))
+    val a = Seq(VersionDigest("id2", categories, JAN_1_2010, "h2"), VersionDigest("id1", categories, JAN_1_2010, "h1"))
+    //val a = Seq(VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"), VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"))
+    val b = Seq(VersionDigest("id1", categories, JAN_1_2010, "h1"), VersionDigest("id2", categories, JAN_1_2010, "h2"))
+    //val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "h1"), VersionDigest("id2", JAN_1_2010, JAN_1_2010, "h2"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, IndividualGranularity)
     assertEquals(0, actions.length)
@@ -54,34 +62,42 @@ class DigestDifferencingUtilsTest {
   @Test
   def shouldReportMissingIndividualVersionsInFirstList {
     val a = Seq()
-    val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v1"))
+    val b = Seq(VersionDigest("id1", categories, JAN_1_2010, "v1"))
+    //val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v1"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, IndividualGranularity)
-    assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, null, "v1")), HashSet(actions: _*))
+    assertEquals(HashSet(VersionMismatch("id1", categories, JAN_1_2010, null, "v1")), HashSet(actions: _*))
+    //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, null, "v1")), HashSet(actions: _*))
   }
   
   @Test
   def shouldReportMissingIndividualVersionsInSecondList {
-    val a = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v1"))
+    val a = Seq(VersionDigest("id1", categories, JAN_1_2010, "v1"))
+    //val a = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v1"))
     val b = Seq()
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, IndividualGranularity)
-    assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", null)), HashSet(actions: _*))
+    assertEquals(HashSet(VersionMismatch("id1", categories, JAN_1_2010, "v1", null)), HashSet(actions: _*))
+    //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", null)), HashSet(actions: _*))
   }
 
   @Test
   def shouldReportMismatchedIndividualVersions {
-    val a = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v1"))
-    val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v2"))
+    val a = Seq(VersionDigest("id1", categories, JAN_1_2010, "v1"))
+    //val a = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v1"))
+    val b = Seq(VersionDigest("id1", categories, JAN_1_2010, "v2"))
+    //val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v2"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, IndividualGranularity)
-    assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
+    assertEquals(HashSet(VersionMismatch("id1", categories, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
+    //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestIndividualOnMissingDayVersionsInFirstList {
     val a = Seq()
-    val b = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
+    val b = Seq(VersionDigest("2010-07-08", categories, JUL_8_2010, "v1"))
+    //val b = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, DayGranularity)
     assertEquals(HashSet(QueryAction(JUL_8_2010, endOfDay(JUL_8_2010), IndividualGranularity)), HashSet(actions: _*))
@@ -89,7 +105,8 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldRequestIndividualOnMissingDayVersionsInSecondList {
-    val a = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
+    val a = Seq(VersionDigest("2010-07-08", categories, JUL_8_2010, "v1"))
+    //val a = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
     val b = Seq()
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, DayGranularity)
@@ -98,8 +115,10 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldRequestIndividualOnMismatchedDayVersions {
-    val a = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
-    val b = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v2"))
+    val a = Seq(VersionDigest("2010-07-08", categories, JUL_8_2010, "v1"))
+    //val a = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
+    val b = Seq(VersionDigest("2010-07-08", categories, JUL_8_2010, "v2"))
+    //val b = Seq(VersionDigest("2010-07-08", JUL_8_2010, JUL_8_2010, "v2"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, DayGranularity)
     assertEquals(HashSet(QueryAction(JUL_8_2010, endOfDay(JUL_8_2010), IndividualGranularity)), HashSet(actions: _*))
@@ -108,7 +127,8 @@ class DigestDifferencingUtilsTest {
   @Test
   def shouldRequestIndividualOnMissingMonthVersionsInFirstList {
     val a = Seq()
-    val b = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
+    val b = Seq(VersionDigest("2010-07", categories, JUL_1_2010, "v1"))
+    //val b = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, MonthGranularity)
     assertEquals(HashSet(QueryAction(JUL_1_2010, endOfDay(JUL_31_2010), IndividualGranularity)), HashSet(actions: _*))
@@ -116,7 +136,8 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldRequestIndividualOnMissingMonthVersionsInSecondList {
-    val a = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
+    val a = Seq(VersionDigest("2010-07", categories, JUL_1_2010, "v1"))
+    //val a = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
     val b = Seq()
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, MonthGranularity)
@@ -125,8 +146,10 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldRequestDayOnMismatchedMonthVersions {
-    val a = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
-    val b = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v2"))
+    val a = Seq(VersionDigest("2010-07", categories, JUL_1_2010, "v1"))
+    //val a = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
+    val b = Seq(VersionDigest("2010-07", categories, JUL_1_2010, "v2"))
+    //val b = Seq(VersionDigest("2010-07", JUL_1_2010, JUL_1_2010, "v2"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, MonthGranularity)
     assertEquals(HashSet(QueryAction(JUL_1_2010, endOfDay(JUL_31_2010), DayGranularity)), HashSet(actions: _*))
@@ -135,7 +158,8 @@ class DigestDifferencingUtilsTest {
   @Test
   def shouldRequestIndividualOnMissingYearVersionsInFirstList {
     val a = Seq()
-    val b = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v1"))
+    val b = Seq(VersionDigest("2010", categories, JAN_1_2010, "v1"))
+    //val b = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v1"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, YearGranularity)
     assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), IndividualGranularity)), HashSet(actions: _*))
@@ -143,7 +167,8 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldRequestIndividualOnMissingYearVersionsInSecondList {
-    val a = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v1"))
+    //val a = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v1"))
+    val a = Seq(VersionDigest("2010", categories, JAN_1_2010, "v1"))
     val b = Seq()
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, YearGranularity)
@@ -152,8 +177,10 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldRequestMonthOnMismatchedYearVersions {
-    val a = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v1"))
-    val b = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v2"))
+    val a = Seq(VersionDigest("2010", categories, JAN_1_2010, "v1"))
+    //val a = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v1"))
+    val b = Seq(VersionDigest("2010", categories, JAN_1_2010, "v2"))
+    //val b = Seq(VersionDigest("2010", JAN_1_2010, JAN_1_2010, "v2"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, YearGranularity)
     assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), MonthGranularity)), HashSet(actions: _*))

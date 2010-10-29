@@ -21,6 +21,7 @@ import org.hibernate.{NonUniqueResultException, Query, Session, SessionFactory}
 import org.slf4j.{LoggerFactory, Logger}
 // for 'SessionFactory.withSession'
 import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
+import scala.collection.Map
 
 /**
  * Mixin providing a bunch of useful query utilities for stores.

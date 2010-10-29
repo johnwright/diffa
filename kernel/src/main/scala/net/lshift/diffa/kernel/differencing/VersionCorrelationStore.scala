@@ -18,30 +18,30 @@ package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.VersionID
+import scala.collection.Map
+import net.lshift.diffa.kernel.participants.QueryConstraint
 
 /**
  * Store used for caching version correlation information between a pair of participants.
  */
 trait VersionCorrelationStore {
-  type UpstreamVersionHandler = Function4[VersionID, DateTime, DateTime, String, Unit]
-  type DownstreamVersionHandler = Function5[VersionID, DateTime, DateTime, String, String, Unit]
-
-  // TODO (#2) generalize the date parameter in {storeUpstreamVersion,storeDownstreamVersion}
+  type UpstreamVersionHandler = Function4[VersionID, Map[String,String], DateTime, String, Unit]
+  type DownstreamVersionHandler = Function5[VersionID, Map[String,String], DateTime, String, String, Unit]
 
   /**
    * Stores the details of an upstream version.
    */
-  def storeUpstreamVersion(id:VersionID, date:DateTime, lastUpdated:DateTime, vsn:String):Correlation
+  def storeUpstreamVersion(id:VersionID, categories:Map[String,String], lastUpdated:DateTime, vsn:String):Correlation
 
   /**
    * Stores the details of a downstream version.
    */
-  def storeDownstreamVersion(id:VersionID, date:DateTime, lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
+  def storeDownstreamVersion(id:VersionID, categories:Map[String,String], lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
 
   /**
    * Retrieves all of the unmatched version that have been stored.
    */
-  def unmatchedVersions(pairKey:String, dateRange:DateConstraint):Seq[Correlation]
+  def unmatchedVersions(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
 
   /**
    * Retrieves the current pairing information for the given pairKey/id.
@@ -59,13 +59,13 @@ trait VersionCorrelationStore {
   def clearDownstreamVersion(id:VersionID):Correlation
 
   /**
-   * Queries for all upstream versions for the given pair based on the given date constraint.
+   * Queries for all upstream versions for the given pair based on the given constraints.
    */
-  def queryUpstreams(pairKey:String, dateRange:DateConstraint, handler:UpstreamVersionHandler)
+  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler)
 
   /**
-   * Queries for all downstream versions for the given pair based on the given date constraint.
+   * Queries for all downstream versions for the given pair based on the given constraints.
    */
-  def queryDownstreams(pairKey:String, dateRange:DateConstraint, handler:DownstreamVersionHandler)
+  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler)
 }
 

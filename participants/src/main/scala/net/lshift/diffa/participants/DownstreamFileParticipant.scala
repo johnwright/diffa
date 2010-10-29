@@ -32,6 +32,6 @@ class DownstreamFileParticipant(epName:String, root:String, agentRoot:String) ex
   def generateVersion(entityBody: String) = null
 
   protected def onFileChange(f: File) = {
-    changesClient.onChangeEvent(DownstreamChangeEvent(epName, idFor(f), dateFor(f), dateFor(f), versionFor(f)))
+    changesClient.onChangeEvent(DownstreamChangeEvent(epName, idFor(f), categoriesFor(f), dateFor(f), versionFor(f)))
   }
 }

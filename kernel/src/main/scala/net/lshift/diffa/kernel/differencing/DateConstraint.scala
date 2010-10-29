@@ -17,11 +17,17 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.{Interval, DateTime}
+import net.lshift.diffa.kernel.participants.{RangeGranularity, QueryConstraint}
 
 /**
  *  Selects an entity based on whether it exists between a given start and end date.
  */
-case class DateConstraint(val start:DateTime, val end:DateTime) {
+case class DateConstraint(start:DateTime, end:DateTime) extends QueryConstraint {
+
+  def category = ""
+  def function = ""
+  def values = List[String]()
+
   private val interval = if (start != null && end != null) {
       new Interval(start, end)
     } else {

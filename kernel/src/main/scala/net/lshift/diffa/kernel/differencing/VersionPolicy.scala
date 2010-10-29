@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
+import net.lshift.diffa.kernel.participants.{QueryConstraint, UpstreamParticipant, DownstreamParticipant}
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -41,5 +41,5 @@ trait VersionPolicy {
    * Requests that the policy difference the given participants for the given time range. Differences that are
    * detected will be reported to the listener configured in the policy.
    */
-  def difference(pairKey:String, dates:DateConstraint, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Boolean
+  def difference(pairKey:String, constraints:Seq[QueryConstraint], us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Boolean
 }

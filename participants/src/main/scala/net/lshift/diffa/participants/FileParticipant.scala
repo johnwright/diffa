@@ -17,14 +17,13 @@
 package net.lshift.diffa.participants
 
 import org.joda.time.DateTime
-import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.differencing.{DigestBuilder, DateConstraint}
-import net.lshift.diffa.kernel.events.VersionID
 import org.apache.commons.io.IOUtils
-import java.io.{FileInputStream, File}
 import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.messaging.json.ChangesRestClient
-import net.lshift.diffa.kernel.participants.{ActionResult, RangeGranularity}
+import java.io.{Closeable, FileInputStream, File}
+import net.lshift.diffa.kernel.participants.{QueryConstraint, ActionResult, RangeGranularity}
+import collection.mutable.{HashMap, ListBuffer}
 
 /**
  * Basic functionality requried for a file-based participant.
@@ -34,8 +33,12 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) {
   val watcher = new DirWatcher(dir, onFileChange)
   val changesClient = new ChangesRestClient(agentRoot)
 
-  def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
-    val constraint = DateConstraint(start, end)
+  def queryDigests(constraints:Seq[QueryConstraint]) = {
+    // old: def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
+
+    // TODO [#2] This date constraint is hard coded -> it should come out of the QueryConstraint
+    val now = new DateTime
+    val constraint = DateConstraint(now, now)
     val files = new ListBuffer[File]
 
     DirWalker.walk(dir,
@@ -47,11 +50,13 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) {
         files += f
       })
 
-    val builder = new DigestBuilder(granularity)
-    files.sortBy(_.getAbsolutePath).foreach(f => {
-      builder.add(idFor(f), dateFor(f), dateFor(f), versionFor(f))
-    })
-    builder.digests
+//    val builder = new DigestBuilder(granularity)
+//    files.sortBy(_.getAbsolutePath).foreach(f => {
+//      builder.add(idFor(f), dateFor(f), dateFor(f), versionFor(f))
+//    })
+//    builder.digests
+    // TODO [#2] Deliberately return null
+    null
   }
 
   def retrieveContent(identifier: String) = {
@@ -69,6 +74,8 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) {
   protected def onFileChange(f:File)
 
   protected def idFor(f:File) = f.getAbsolutePath.substring(rootDir.getAbsolutePath.length)
+  // TODO [#2]
+  protected def categoriesFor(f:File) = new HashMap[String,String]
   protected def dateFor(f:File) = new DateTime(f.lastModified)
   protected def versionFor(f:File) = DigestUtils.md5Hex(new FileInputStream(f))
 }

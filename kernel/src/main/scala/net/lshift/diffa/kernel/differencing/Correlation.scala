@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.differencing
 
 import reflect.BeanProperty
 import org.joda.time.DateTime
+import scala.collection.Map
 
 // Base type for upstream and downstream correlations allowing pairs to be managed
 case class Correlation(
@@ -25,7 +26,7 @@ case class Correlation(
   @BeanProperty var pairing:String,
   @BeanProperty var id:String,
   // TODO (#2) Generalize the date to a category string
-  @BeanProperty var date:DateTime,
+  @BeanProperty var categories:Map[String,String],
   @BeanProperty var lastUpdate:DateTime,
   @BeanProperty var timestamp:DateTime,
   @BeanProperty var upstreamVsn:String,

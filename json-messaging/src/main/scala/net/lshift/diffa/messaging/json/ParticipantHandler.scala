@@ -19,6 +19,7 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.differencing.DateConstraint
 
 /**
  * Handler for participants being queried via JSON.
@@ -28,16 +29,19 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     "query_digests" -> defineRpc((s:String) => s)(req => {
       val reqObj = new JSONObject(req)
 
-      val digests = participant.queryDigests(
-        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("start")),
-        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("end")),
-        decodeGranularity(reqObj.getString("granularity")))
+      // TODO [#2] parse properly
+//      val digests = participant.queryDigests(
+//        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("start")),
+//        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("end")),
+//        decodeGranularity(reqObj.getString("granularity")))
+      val digests = participant.queryDigests(List(DateConstraint.any))
 
       val resultObj = new JSONArray
       digests foreach (digest => {
         val digestObj = new JSONObject
         digestObj.put("key", digest.key)
-        digestObj.put("date", digest.date.toString(JSONEncodingUtils.dateEncoder))
+        // TODO [#2]
+        //digestObj.put("date", digest.date.toString(JSONEncodingUtils.dateEncoder))
         digestObj.put("lastUpdated", JSONEncodingUtils.maybeDateStr(digest.lastUpdated))
         digestObj.put("digest", digest.digest)
         resultObj.put(digestObj)
@@ -82,7 +86,8 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
 
       val responseObj = new JSONObject
       responseObj.put("id", response.id)
-      responseObj.put("date", response.date.toString(JSONEncodingUtils.dateEncoder))
+      // TODO [#2]
+      //responseObj.put("date", response.date.toString(JSONEncodingUtils.dateEncoder))
       responseObj.put("uvsn", response.uvsn)
       responseObj.put("dvsn", response.dvsn)
       responseObj.toString

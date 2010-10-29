@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.DateTime
+import scala.collection.Map
 
 /**
  * Describes a digest of version information. For an individual entity, the digest should be the version content and the
@@ -25,4 +26,5 @@ import org.joda.time.DateTime
  * key is generally ignored in the case of aggregates, but it is suggested that a readable variant of the date is used
  * to enhance understanding when reading digest lists.
  */
-case class VersionDigest(val key:String, val date:DateTime, val lastUpdated:DateTime, val digest:String)
+// TODO [#2] Update the documenation based on the final implementation 
+case class VersionDigest(key:String, categories:Map[String,String], lastUpdated:DateTime, digest:String)

@@ -16,12 +16,12 @@
 
 package net.lshift.diffa.agent.itest.support
 
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent, VersionID}
 import net.lshift.diffa.messaging.json._
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
+import scala.collection.Map
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -77,17 +77,17 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, date:DateTime, content:String) = {
-    upstream.addEntity(id, date, Placeholders.dummyLastUpdated, content)
-    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, date, Placeholders.dummyLastUpdated, versionForUpstream(content)))
+  def addAndNotifyUpstream(id:String, categories:Map[String,String], content:String) = {
+    upstream.addEntity(id, categories, Placeholders.dummyLastUpdated, content)
+    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, categories, Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, date:DateTime, content:String) = {
-    downstream.addEntity(id, date, Placeholders.dummyLastUpdated, content)
+  def addAndNotifyDownstream(id:String, categories:Map[String,String], content:String) = {
+    downstream.addEntity(id, categories, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, date, Placeholders.dummyLastUpdated, versionForDownstream(content)))
+        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, categories, Placeholders.dummyLastUpdated, versionForDownstream(content)))
       case CorrelatedVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, date, Placeholders.dummyLastUpdated,
+        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, categories, Placeholders.dummyLastUpdated,
           versionForUpstream(content), versionForDownstream(content)))
     }
   }

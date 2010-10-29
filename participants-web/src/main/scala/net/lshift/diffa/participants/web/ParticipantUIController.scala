@@ -24,6 +24,7 @@ import net.lshift.diffa.participants.{DownstreamWebParticipant, UpstreamWebParti
 import org.joda.time.format.ISODateTimeFormat
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.{ApplicationContext, ApplicationContextAware}
+import collection.mutable.HashMap
 
 /**
  * Controller for participant functionality.
@@ -80,8 +81,8 @@ class ParticipantUIController(upstream:UpstreamWebParticipant, downstream:Downst
     }
 
     partId match {
-      case "upstream"   => upstream.addEntity(entityId, new DateTime, lastUpdatedDate, body)
-      case "downstream" => downstream.addEntity(entityId, new DateTime, lastUpdatedDate, body)
+      case "upstream"   => upstream.addEntity(entityId, new HashMap[String,String], lastUpdatedDate, body)
+      case "downstream" => downstream.addEntity(entityId, new HashMap[String,String], lastUpdatedDate, body)
     }
 
     "json/empty"

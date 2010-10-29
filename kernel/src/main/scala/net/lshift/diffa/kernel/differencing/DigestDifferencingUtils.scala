@@ -20,6 +20,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
+import scala.collection.Map
 
 /**
  * Utility methods for differencing sequences of digests.
@@ -39,7 +40,7 @@ object DigestDifferencingUtils {
       if (!otherMatches) {
         gran match {
           case IndividualGranularity =>
-            result += VersionMismatch(id, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.date, ds1Digest.digest, otherDigest)
+            result += VersionMismatch(id, ds1Digest.categories, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.digest, otherDigest)
           case _ => otherDigest match {
             case null => result += deepestQueryAction(id, gran)
             case _ => result += deeperQueryAction(id, gran)
@@ -56,7 +57,7 @@ object DigestDifferencingUtils {
 
       if (!otherMatches) {
         gran match {
-          case IndividualGranularity => result += VersionMismatch(id, hs2Digest.date, hs2Digest.lastUpdated, null, hs2Digest.digest)
+          case IndividualGranularity => result += VersionMismatch(id, hs2Digest.categories, hs2Digest.lastUpdated, null, hs2Digest.digest)
           case _                     => result += deepestQueryAction(id, gran)
         }
       }
@@ -117,5 +118,5 @@ object DigestDifferencingUtils {
 }
 
 abstract class DifferenceOutcome
-case class QueryAction(val start:DateTime, val end:DateTime, gran:RangeGranularity) extends DifferenceOutcome
-case class VersionMismatch(val id:String, val date:DateTime, val lastUpdated:DateTime, val vsnA:String, val vsnB:String) extends DifferenceOutcome
+case class QueryAction(start:DateTime, end:DateTime, gran:RangeGranularity) extends DifferenceOutcome
+case class VersionMismatch(id:String, categories:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String) extends DifferenceOutcome

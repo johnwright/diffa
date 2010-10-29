@@ -35,15 +35,17 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
     new DownstreamParticipant() {
       def generateVersion(entityBody:String) = null
       def invoke(actionId:String, entityId:String)  = null
-      def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = null
+      def queryDigests(constraints:Seq[QueryConstraint]) = null
       def retrieveContent(id:String) = null
+      def close() = ()
     }
   }
   def createUpstreamParticipant(address:String, protocol:String) = {
     new UpstreamParticipant() {
-      def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = null
+      def queryDigests(constraints:Seq[QueryConstraint]) = null
       def invoke(actionId:String, entityId:String)  = null
       def retrieveContent(id:String) = null
+      def close() = ()
     }
   }
   def supportsAddress(address:String, protocol:String) = true
@@ -117,7 +119,7 @@ class DefaultSessionManagerTest {
 
   def expectForPair(p:String)  = {
     val p1 = EasyMock.eq(p)
-    val p2 = isA(classOf[DateConstraint])
+    val p2 = isA(classOf[Seq[DateConstraint]])
     val p3 = isA(classOf[DifferencingListener])
     expect(pairPolicyClient.syncPair(p1, p2, p3)).andReturn(true).atLeastOnce
     replay(pairPolicyClient)

@@ -32,23 +32,23 @@ import net.lshift.diffa.kernel.events._
 class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener)
     extends BaseSynchingVersionPolicy(store, listener) {
 
-  def synchroniseParticipants(pairKey: String, dates: DateConstraint, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def synchroniseParticipants(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pairKey, dates, us)
-    (new DownstreamSameSyncStrategy).syncHalf(pairKey, dates, ds)
+    (new UpstreamSyncStrategy).syncHalf(pairKey, constraints, us)
+    (new DownstreamSameSyncStrategy).syncHalf(pairKey, constraints, ds)
   }
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
-    def getDigests(pairKey:String, dates:DateConstraint, gran:RangeGranularity) = {
+    def getDigests(pairKey:String, constraints:Seq[QueryConstraint], gran:RangeGranularity) = {
       val aggregator = new Aggregator(gran)
-      store.queryDownstreams(pairKey, dates, aggregator.collectDownstream)
+      store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
       aggregator.digests
     }
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
-        case VersionMismatch(id, date, lastUpdated, partVsn, _) =>
+        case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            store.storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, partVsn, partVsn)
+            store.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn)
           } else {
             store.clearDownstreamVersion(VersionID(pairKey, id))
           }

@@ -16,10 +16,10 @@
 
 package net.lshift.diffa.kernel.participants
 
+import scala.collection.Map
+
+import org.joda.time.DateTime
 import collection.mutable.HashMap
-import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.differencing.DigestBuilder
-import org.joda.time.{Interval, DateTime}
 
 /**
  * Base class for test participants.
@@ -27,17 +27,24 @@ import org.joda.time.{Interval, DateTime}
 class MemoryParticipantBase(nativeVsnGen: String => String) {
   protected val entities = new HashMap[String, TestEntity]
 
-  def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
+  //def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
+  def queryDigests(constraints:Seq[QueryConstraint]) : Seq[VersionDigest] = {
     // Filter on date interval & sort entries by ID into a list
-    val interval = new Interval(start, end)
-    val entitiesInRange = entities.values.filter(ent => interval.contains(ent.date)).toList
-    val sortedEntities = entitiesInRange.sort(_.id < _.id)
+//    val start = new DateTime
+//    val end = new DateTime
+//    val interval = new Interval(start, end)
+//    val entitiesInRange = entities.values.filter(ent => interval.contains(ent.date)).toList
+//    val sortedEntities = entitiesInRange.sort(_.id < _.id)
+//
+//    // Create buckets
+//    // TODO (#2)  fake granularity
+//    val b = new DigestBuilder(IndividualGranularity)
+//    sortedEntities foreach (ent => b.add(ent.id, ent.date, ent.lastUpdated, nativeVsnGen(ent.body)))
+//
+//    b.digests
 
-    // Create buckets
-    val b = new DigestBuilder(granularity)
-    sortedEntities foreach (ent => b.add(ent.id, ent.date, ent.lastUpdated, nativeVsnGen(ent.body)))
-
-    b.digests
+    // TODO (#2) Deliberately return null
+    null
   }
 
   def retrieveContent(identifier: String) = entities.get(identifier) match {
@@ -56,9 +63,9 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
       case _        => ActionResult("error", "Unknown action:" + actionId)
     }
   }
-
-  def addEntity(id: String, date: DateTime, lastUpdated:DateTime, body: String): Unit = {
-    entities += ((id, TestEntity(id, date, lastUpdated, body)))
+  
+  def addEntity(id: String, categories:Map[String,String], lastUpdated:DateTime, body: String): Unit = {
+    entities += ((id, TestEntity(id, categories, lastUpdated, body)))
   }
 
   def removeEntity(id:String) {
@@ -70,4 +77,4 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   }
 }
 
-case class TestEntity(id: String, date: DateTime, lastUpdated:DateTime, body: String)
+case class TestEntity(id: String, categories:Map[String,String], lastUpdated:DateTime, body: String)

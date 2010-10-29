@@ -22,12 +22,14 @@ import org.joda.time.DateTime
  * Trait supported by various RPC bindings providing communications with participants.
  */
 trait Participant {
+
   /**
    * Retrieves aggregated details about a participant's native versions. The participant is expected to aggregate
-   * and filter their data based on the provided parameters. The digest is expected to be built upon a key sorted list
-   * of entries.
+   * and filter their data based on the provided constraints. The digest is expected to be built upon well known
+   * functions that are embodied in each QueryConstraint. Note that when no QueryConstraint is specified, i.e.
+   * an empty list is passed in, the entire data set of the participant will be returned.
    */
-  def queryDigests(start:DateTime, end:DateTime, granularity:RangeGranularity):Seq[VersionDigest]
+  def queryDigests(constraints:Seq[QueryConstraint]) : Seq[VersionDigest]
 
   /**
    * This invokes a request against the participant for the the named action and supplies it with the id entity

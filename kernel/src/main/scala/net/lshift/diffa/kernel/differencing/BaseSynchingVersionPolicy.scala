@@ -21,6 +21,7 @@ import collection.mutable.Queue
 import net.lshift.diffa.kernel.participants._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
+import scala.collection.Map
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -63,11 +64,11 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     }
   }
 
-  def difference(pairKey: String, dates: DateConstraint, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
-    synchroniseParticipants(pairKey, dates, us, ds, l)
+  def difference(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+    synchroniseParticipants(pairKey, constraints, us, ds, l)
 
     // Run a query for mismatched versions, and report each one
-    store.unmatchedVersions(pairKey, dates).foreach(
+    store.unmatchedVersions(pairKey, constraints).foreach(
       corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn))
 
     true
@@ -76,20 +77,28 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   /**
    * Allows the policy to perform a synchronisation of participants.
    */
-  protected def synchroniseParticipants(pairKey: String, dates: DateConstraint, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener)
+  protected def synchroniseParticipants(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener)
 
   /**
    * The basic functionality for a synchronisation strategy.
    */
   protected abstract class SyncStrategy {
-    def syncHalf(pairKey:String, dates:DateConstraint, p:Participant) {
+    def syncHalf(pairKey:String, constraints:Seq[QueryConstraint], p:Participant) {
       val syncActions = new Queue[QueryAction]
-      syncActions += QueryAction(dates.start, dates.end, YearGranularity)
+
+      // TODO [#2] refactor this
+      val s = new DateTime
+      val e = new DateTime
+
+      syncActions += QueryAction(s, e, YearGranularity)
 
       while (syncActions.length > 0) {
         val action = syncActions.dequeue
-        val usDigests = p.queryDigests(action.start, action.end, action.gran)
-        val cachedDigests = getDigests(pairKey, DateConstraint(action.start, action.end), action.gran)
+        // TODO [#2] hardcoded category and function
+        // TODO [#2] granularity of action not taken into account
+        val constraint = RangeQueryConstraint("bizdate","daterange",List("action.start.toString", "action.end.toString"))
+        val usDigests = p.queryDigests(List(constraint))
+        val cachedDigests = getDigests(pairKey, List(constraint), action.gran)
 
         DigestDifferencingUtils.differenceDigests(usDigests, cachedDigests, action.gran).foreach(o => o match {
           case newAction:QueryAction => syncActions += newAction
@@ -98,21 +107,21 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
       }
     }
 
-    def getDigests(pairKey:String, dates:DateConstraint, gran:RangeGranularity):Seq[VersionDigest]
+    def getDigests(pairKey:String, constraints:Seq[QueryConstraint], gran:RangeGranularity):Seq[VersionDigest]
     def handleMismatch(pairKey:String, vm:VersionMismatch)
   }
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
-    def getDigests(pairKey:String, dates:DateConstraint, gran:RangeGranularity) = {
+    def getDigests(pairKey:String, constraints:Seq[QueryConstraint], gran:RangeGranularity) = {
       val aggregator = new Aggregator(gran)
-      store.queryUpstreams(pairKey, dates, aggregator.collectUpstream)
+      store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
       aggregator.digests
     }
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
-        case VersionMismatch(id, date, lastUpdate,  usVsn, _) =>
+        case VersionMismatch(id, categories, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            store.storeUpstreamVersion(VersionID(pairKey, id), lastUpdate, date, usVsn)
+            store.storeUpstreamVersion(VersionID(pairKey, id), categories, lastUpdate, usVsn)
           } else {
             store.clearUpstreamVersion(VersionID(pairKey, id))
           }
@@ -123,10 +132,10 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   protected class Aggregator(val gran:RangeGranularity) {
     val builder = new DigestBuilder(gran)
 
-    def collectUpstream(id:VersionID, date:DateTime, lastUpdate:DateTime, vsn:String) =
-      builder.add(id, date, lastUpdate, vsn)
-    def collectDownstream(id:VersionID, date:DateTime, lastUpdate:DateTime, uvsn:String, dvsn:String) =
-      builder.add(id, date, lastUpdate, dvsn)
+    def collectUpstream(id:VersionID, categories:Map[String,String], lastUpdate:DateTime, vsn:String) =
+      builder.add(id, categories, lastUpdate, vsn)
+    def collectDownstream(id:VersionID, categories:Map[String,String], lastUpdate:DateTime, uvsn:String, dvsn:String) =
+      builder.add(id, categories, lastUpdate, dvsn)
 
     def digests:Seq[VersionDigest] = builder.digests
   }
