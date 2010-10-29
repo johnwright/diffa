@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.actors
 
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
-import net.lshift.diffa.kernel.differencing.{DateConstraint, DifferencingListener, VersionPolicy}
+import net.lshift.diffa.kernel.differencing.{DateRangeConstraint, DifferencingListener, VersionPolicy}
 import se.scalablesolutions.akka.actor.{ActorRef, ActorRegistry, Actor}
 import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.participants.{QueryConstraint, DownstreamParticipant, UpstreamParticipant}

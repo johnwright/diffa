@@ -17,16 +17,16 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.{Interval, DateTime}
-import net.lshift.diffa.kernel.participants.{RangeGranularity, QueryConstraint}
+import net.lshift.diffa.kernel.participants.RangeQueryConstraint
 
 /**
  *  Selects an entity based on whether it exists between a given start and end date.
  */
-case class DateConstraint(start:DateTime, end:DateTime) extends QueryConstraint {
+case class DateRangeConstraint(start:DateTime, end:DateTime) extends RangeQueryConstraint {
 
-  def category = ""
-  def function = ""
-  def values = List[String]()
+  def category = "date"
+  def function = "DATE_RANGE"
+  def values = List[String](start.toString, end.toString)
 
   private val interval = if (start != null && end != null) {
       new Interval(start, end)
@@ -56,7 +56,7 @@ case class DateConstraint(start:DateTime, end:DateTime) extends QueryConstraint 
   /**
    * Intersect the selector with the given date range
    */
-  def constrain(other:DateConstraint):DateConstraint = {
+  def constrain(other:DateRangeConstraint):DateRangeConstraint = {
     val lowerBound = (other.start, this.start) match {
       case (null, _) => this.start
       case (_, null) => other.start
@@ -67,13 +67,13 @@ case class DateConstraint(start:DateTime, end:DateTime) extends QueryConstraint 
       case (_, null) => other.end
       case _ => if (other.end.compareTo(this.end) < 0) other.end else this.end
     }
-    DateConstraint(lowerBound, upperBound)
+    DateRangeConstraint(lowerBound, upperBound)
   }
 }
 
-object DateConstraint {
+object DateRangeConstraint {
   /**
    * Starting point date constraint that accepts any date (ie, it has no bounds).
    */
-  val any = DateConstraint(null, null)
+  val any = DateRangeConstraint(null, null)
 }

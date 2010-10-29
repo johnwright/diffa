@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.config
 
 import reflect.BeanProperty
 import java.util.{Set, HashSet}
+import scala.collection.Map
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -60,9 +61,10 @@ case class Pair(
   @BeanProperty var downstream: Endpoint,
   @BeanProperty var group: PairGroup,
   @BeanProperty var versionPolicyName: String,
-  @BeanProperty var matchingTimeout: Int) {
+  @BeanProperty var matchingTimeout: Int,
+  @BeanProperty var categories: java.util.Map[String,String]) {
 
-  def this() = this(null, null, null, null, null, Pair.NO_MATCHING)
+  def this() = this(null, null, null, null, null, Pair.NO_MATCHING, null)
 }
 
 object Pair {
@@ -81,9 +83,10 @@ case class PairDef(
   @BeanProperty var matchingTimeout: Int,
   @BeanProperty var upstreamName: String,
   @BeanProperty var downstreamName: String,
-  @BeanProperty var groupKey: String) {
+  @BeanProperty var groupKey: String,
+  @BeanProperty var categories: Map[String,String]) {
 
-  def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
+  def this() = this(null, null, null.asInstanceOf[Int], null, null, null, null)
 }
 
 case class User(@BeanProperty var name: String,

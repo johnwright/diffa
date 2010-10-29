@@ -270,7 +270,7 @@ class DefaultSessionManager(
       case 0  => config.listGroups.flatMap(g => g.pairs.map(p => p.key))
       case _  => scope.includedPairs
     }
-    pairs.foreach(pairKey => pairPolicyClient.syncPair(pairKey,List(DateConstraint(start, end)), listener))
+    pairs.foreach(pairKey => pairPolicyClient.syncPair(pairKey,List(DateRangeConstraint(start, end)), listener))
   }
 
   def forEachSession(id:VersionID, f: Function1[SessionCache,Any]) = {

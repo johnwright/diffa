@@ -20,6 +20,8 @@ import net.lshift.diffa.kernel.config.{Pair, PairDef, GroupContainer, PairGroup,
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
 import org.joda.time.DateTime
+import collection.mutable.HashMap
+import scala.collection.JavaConversions._
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.
@@ -28,7 +30,7 @@ class DocExamplesFactory {
   val up = Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null ,true)
   val down = Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, true)
   val group = PairGroup("important-group")
-  var pair = Pair("pair-id", up, down, group, "correlated", 120)
+  var pair = Pair("pair-id", up, down, group, "correlated", 120, HashMap("bizDate" -> "date"))
 
   def getExamples : java.util.Map[Class[_ <: Object], Object] = {
     val map = new java.util.HashMap[Class[_ <: Object], Object]
@@ -37,7 +39,7 @@ class DocExamplesFactory {
     map.put(classOf[Pair], pair)
     map.put(classOf[PairGroup], group)
     map.put(classOf[GroupContainer], GroupContainer(group, Array(pair)))
-    map.put(classOf[PairDef], new PairDef("pairKey","versionPolicyName",120,"upstreamName","downstreamName","groupKey"))
+    map.put(classOf[PairDef], new PairDef("pairKey","versionPolicyName",120,"upstreamName","downstreamName","groupKey", HashMap("bizDate" -> "date")))
     map.put(classOf[SessionEvent], SessionEvent("6f72b9",VersionID("pairKey", "4f8a99"), new DateTime(), MatchState.UNMATCHED, "upstreamV", "downstreamV"))
 
     map

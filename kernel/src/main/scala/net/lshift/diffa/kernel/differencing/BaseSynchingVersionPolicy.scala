@@ -96,7 +96,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
         val action = syncActions.dequeue
         // TODO [#2] hardcoded category and function
         // TODO [#2] granularity of action not taken into account
-        val constraint = RangeQueryConstraint("bizdate","daterange",List("action.start.toString", "action.end.toString"))
+        val constraint = DateRangeConstraint(s,e)
         val usDigests = p.queryDigests(List(constraint))
         val cachedDigests = getDigests(pairKey, List(constraint), action.gran)
 

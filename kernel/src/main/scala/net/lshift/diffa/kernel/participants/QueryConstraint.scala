@@ -23,10 +23,10 @@ package net.lshift.diffa.kernel.participants
  * - A well known function name to apply in the participant
  * - EITHER a list of values OR a range of values TO apply
  */
-abstract class QueryConstraint {
+trait QueryConstraint {
   def category:String
   def function:String
   def values:Seq[String]
 }
 case class ListQueryConstraint(category:String, function:String, values:Seq[String]) extends QueryConstraint
-case class RangeQueryConstraint(category:String, function:String, values:Seq[String]) extends QueryConstraint
+trait RangeQueryConstraint extends QueryConstraint

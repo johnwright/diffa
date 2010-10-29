@@ -36,6 +36,11 @@
       <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false" />
       <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false" />
       <many-to-one name="group" column="name" class="PairGroup" not-null="true" lazy="false" fetch="join" />
+      <map name="categories" table="category" lazy="false" cascade="all">
+         <key column="id"/>
+         <index column="name" type="string"/>
+         <element column="type" type="string"/>
+     </map>
     </class>
 
     <class name="PairGroup" table="pair_group" abstract="false">

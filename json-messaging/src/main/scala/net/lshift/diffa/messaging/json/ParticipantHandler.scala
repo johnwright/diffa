@@ -19,7 +19,7 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.DateConstraint
+import net.lshift.diffa.kernel.differencing.DateRangeConstraint
 
 /**
  * Handler for participants being queried via JSON.
@@ -34,7 +34,7 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
 //        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("start")),
 //        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("end")),
 //        decodeGranularity(reqObj.getString("granularity")))
-      val digests = participant.queryDigests(List(DateConstraint.any))
+      val digests = participant.queryDigests(List(DateRangeConstraint.any))
 
       val resultObj = new JSONArray
       digests foreach (digest => {
