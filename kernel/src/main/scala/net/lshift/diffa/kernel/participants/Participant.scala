@@ -17,12 +17,13 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.DateTime
+import java.io.Closeable
 
 /**
  * Trait supported by various RPC bindings providing communications with participants.
  */
-trait Participant {
-
+trait Participant extends Closeable
+{
   /**
    * Retrieves aggregated details about a participant's native versions. The participant is expected to aggregate
    * and filter their data based on the provided constraints. The digest is expected to be built upon well known

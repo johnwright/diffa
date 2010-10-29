@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
+import net.lshift.diffa.kernel.config.Endpoint
 
 /**
  * Test cases for the participant factory.
@@ -27,17 +28,15 @@ import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 class ParticipantFactoryTest {
   private val protocol1 = createStrictMock("protocol1", classOf[ParticipantProtocolFactory])
   private val protocol2 = createStrictMock("protocol2", classOf[ParticipantProtocolFactory])
-  private val protocols = new java.util.ArrayList[ParticipantProtocolFactory] {
-    add(protocol1)
-    add(protocol2)
-  }
-  private val factory = new ParticipantFactory(protocols)
+
+  private val factory = new ParticipantFactory()
+  factory.registerFactory(protocol1)
+  factory.registerFactory(protocol2)
 
   private val upstream1 = createStrictMock("upstream1", classOf[UpstreamParticipant])
   private val downstream1 = createStrictMock("downstream1", classOf[DownstreamParticipant])
 
     // TODO: Should not be hardcoding
-  private val protobufs = "application/x-protocol-buffers"
   private val json = "application/json"
 
   checkOrder(protocol1, false)
@@ -47,12 +46,16 @@ class ParticipantFactoryTest {
   expect(protocol2.supportsAddress("amqp://localhost", json)).andReturn(true).anyTimes
   expect(protocol2.supportsAddress(anyString, anyString)).andReturn(false).anyTimes
 
+  val invalid = Endpoint("invalid", null, null, null, true)
+  val jsonOverHttp = Endpoint("jsonOverHttp", "http://localhost", json, null, true)
+  val jsonOverAmqp = Endpoint("jsonOverAmqp", "amqp://localhost", json, "changes-queue", true)
+
   @Test
   def shouldNotCreateUpstreamParticipantWhenNoFactoryAcceptsAddress {
     replay(protocol1, protocol2)
 
     expectsInvalidParticipantException {
-      factory.createUpstreamParticipant("invalid")
+      factory.createUpstreamParticipant(invalid)
     }
   }
 
@@ -61,43 +64,44 @@ class ParticipantFactoryTest {
     replay(protocol1, protocol2)
 
     expectsInvalidParticipantException {
-      factory.createDownstreamParticipant("invalid")
+      factory.createDownstreamParticipant(invalid)
     }
   }
 
   @Test
   def shouldCreateUpstreamParticipantWhenFirstProtocolRespondsToAddress {
-    expect(protocol1.createUpstreamParticipant("http://localhost", json)).andReturn(upstream1)
+
+    expect(protocol1.createUpstreamParticipant(jsonOverHttp.url, jsonOverHttp.contentType)).andReturn(upstream1)
     replay(protocol1, protocol2)
 
-    assertEquals(upstream1, factory.createUpstreamParticipant("http://localhost"))
+    assertEquals(upstream1, factory.createUpstreamParticipant(jsonOverHttp))
     verify(protocol1, protocol2)
   }
 
   @Test
   def shouldCreateUpstreamParticipantWhenSecondProtocolRespondsToAddress {
-    expect(protocol2.createUpstreamParticipant("amqp://localhost", json)).andReturn(upstream1)
+    expect(protocol2.createUpstreamParticipant(jsonOverAmqp.url,jsonOverAmqp.contentType)).andReturn(upstream1)
     replay(protocol1, protocol2)
 
-    assertEquals(upstream1, factory.createUpstreamParticipant("amqp://localhost"))
+    assertEquals(upstream1, factory.createUpstreamParticipant(jsonOverAmqp))
     verify(protocol1, protocol2)
   }
 
   @Test
   def shouldCreateDownstreamParticipantWhenFirstProtocolRespondsToAddress {
-    expect(protocol1.createDownstreamParticipant("http://localhost", json)).andReturn(downstream1)
+    expect(protocol1.createDownstreamParticipant(jsonOverHttp.url, jsonOverHttp.contentType)).andReturn(downstream1)
     replay(protocol1, protocol2)
 
-    assertEquals(downstream1, factory.createDownstreamParticipant("http://localhost"))
+    assertEquals(downstream1, factory.createDownstreamParticipant(jsonOverHttp))
     verify(protocol1, protocol2)
   }
 
   @Test
   def shouldCreateDownstreamParticipantWhenSecondProtocolRespondsToAddress {
-    expect(protocol2.createDownstreamParticipant("amqp://localhost", json)).andReturn(downstream1)
+    expect(protocol2.createDownstreamParticipant(jsonOverAmqp.url, jsonOverHttp.contentType)).andReturn(downstream1)
     replay(protocol1, protocol2)
 
-    assertEquals(downstream1, factory.createDownstreamParticipant("amqp://localhost"))
+    assertEquals(downstream1, factory.createDownstreamParticipant(jsonOverAmqp))
     verify(protocol1, protocol2)
   }
 

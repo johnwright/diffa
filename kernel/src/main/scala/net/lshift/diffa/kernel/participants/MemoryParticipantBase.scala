@@ -75,6 +75,8 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   def clearEntities {
     entities.clear
   }
+
+  def close() = entities.clear
 }
 
 case class TestEntity(id: String, categories:Map[String,String], lastUpdated:DateTime, body: String)

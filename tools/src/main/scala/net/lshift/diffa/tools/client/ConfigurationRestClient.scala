@@ -14,24 +14,15 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.json
+package net.lshift.diffa.tools.client
 
 import net.lshift.diffa.kernel.config.{Endpoint, PairDef, PairGroup}
 import net.lshift.diffa.kernel.client.ConfigurationClient
+import net.lshift.diffa.messaging.json.AbstractRestClient
 
 class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")
         with ConfigurationClient {
-
-  def auth(user:String, pass:String) = {
-
-    val response = rpc("endpoints")
-
-    user match {
-      case "admin"  => 1
-      case _        => 0
-    }
-  }
 
   def declareGroup(name: String) = {
     val g = new PairGroup(name)
@@ -39,8 +30,8 @@ class ConfigurationRestClient(serverRootUrl:String)
     g
   }
 
-  def declareEndpoint(name: String, url: String) = {
-    val e = new Endpoint(name, url, false)
+  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, online:Boolean) = {
+    val e = Endpoint(name, url, contentType, inboundUrl, online)
     create("endpoints", e)
     e
   }

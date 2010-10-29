@@ -28,7 +28,9 @@ import collection.mutable.{HashMap, ListBuffer}
 /**
  * Basic functionality requried for a file-based participant.
  */
-abstract class FileParticipant(val dir:String, val agentRoot:String) {
+abstract class FileParticipant(val dir:String, val agentRoot:String) extends Closeable {
+
+  private var isClosing = false
   val rootDir = new File(dir)
   val watcher = new DirWatcher(dir, onFileChange)
   val changesClient = new ChangesRestClient(agentRoot)
@@ -69,6 +71,14 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) {
       case "resend" => ActionResult("error", "Unknown Entity:" + entityId)
       case _        => ActionResult("error", "Unknown action:" + actionId)
     }
+  }
+
+  override def close() = {
+    if (!isClosing) {
+      isClosing = true
+      changesClient.close
+      watcher.close
+    }    
   }
 
   protected def onFileChange(f:File)

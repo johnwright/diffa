@@ -16,27 +16,30 @@
 
 package net.lshift.diffa.participants
 
-import java.io.{FileFilter, File}
 import collection.mutable.HashMap
 import java.util.{TimerTask, Timer}
+import java.io.{Closeable, FileFilter, File}
 
 /**
  * Directory watcher for implementing a filesystem backed participant.
  */
-class DirWatcher(val dir:String, val listener:(File) => Unit, val delay:Int = 100) {
+class DirWatcher(val dir:String, val listener:(File) => Unit, val delay:Int = 100) extends Closeable {
   val seenFiles = new HashMap[String, Long]
   scan(true)
 
   private val scanThread = new Thread {
+    var shouldRun = true
     override def run {
-      while (true) {
+      while (shouldRun) {
         Thread.sleep(delay)
         scan(false)
       }
     }
   }
   scanThread.start
-  
+
+  override def close() = scanThread.shouldRun = false
+
   def scan(initial:Boolean) {
     DirWalker.walk(dir,
       f => {

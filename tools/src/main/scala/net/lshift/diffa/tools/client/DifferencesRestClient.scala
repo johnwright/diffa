@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.json
+package net.lshift.diffa.tools.client
 
 import org.joda.time.DateTime
 import javax.ws.rs.core.MediaType
@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.{WebResource, ClientResponse}
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionEvent}
 import net.lshift.diffa.kernel.participants.ParticipantType
+import net.lshift.diffa.messaging.json.AbstractRestClient
 
 /**
  * A RESTful client to start a matching session and poll for events from it.

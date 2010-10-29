@@ -24,6 +24,8 @@
     <class name="Endpoint" table="endpoint" abstract="false">
       <id name="name" type="string" />
       <property name="url" type="string" not-null="true" unique="true" />
+      <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false" />
+      <property name="contentType" column="content_type" type="string" not-null="true"/>      
       <property name="online" type="boolean" />
     </class>
 

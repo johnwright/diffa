@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.json
+package net.lshift.diffa.tools.client
 
 import net.lshift.diffa.kernel.client.{ActionRequest, Actionable, ActionsClient}
+import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.participants.ActionResult
 
 class ActionsRestClient(serverRootUrl:String)

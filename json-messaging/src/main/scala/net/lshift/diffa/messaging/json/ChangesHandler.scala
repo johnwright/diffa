@@ -29,7 +29,7 @@ import collection.mutable.HashMap
 class ChangesHandler(val frontend:Changes) extends AbstractJSONHandler {
 
   protected val endpoints = Map(
-    "" -> defineOnewayRpc((s:String) => s)(s => {
+    "changes" -> defineOnewayRpc((s:String) => s)(s => {
       val jObj = new JSONObject(s)
       val endpoint = jObj.getString("endpoint")
       val id = jObj.getString("id")
