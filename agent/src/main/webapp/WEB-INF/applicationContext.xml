@@ -33,12 +33,12 @@
   
 
   <!--
-    ==================
-      Context Handling
-    ==================
+    ========================
+      Lifecycle Management
+    ========================
   -->
 
-  <bean class="net.lshift.diffa.agent.context.ContextRefreshListener"/>
+  <bean class="net.lshift.diffa.agent.context.AgentLifecycleHelper"/>
 
   <!--
     ============
@@ -177,6 +177,16 @@
   </bean>
 
   <!--
+    ===============================
+      Inbound Endpoint Management
+    ===============================
+  -->
+
+  <bean id="inboundEndpointManager" class="net.lshift.diffa.kernel.participants.InboundEndpointManager">
+    <constructor-arg ref="diffaConfigStore" />
+  </bean>
+
+  <!--
     =============
       Supervision
     =============
@@ -198,6 +208,7 @@
     <constructor-arg ref="matchingManager"/>
     <constructor-arg ref="pairActorSupervisor"/>
     <constructor-arg ref="sessionManager"/>
+    <constructor-arg ref="inboundEndpointManager" />
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
     <constructor-arg ref="diffaConfigStore"/>
