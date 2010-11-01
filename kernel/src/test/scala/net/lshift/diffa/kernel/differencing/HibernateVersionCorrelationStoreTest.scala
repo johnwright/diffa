@@ -323,7 +323,7 @@ class HibernateVersionCorrelationStoreTest {
       assertEquals(expected.upstreamVsn, actual.upstreamVsn)
       assertEquals(expected.downstreamUVsn, actual.downstreamUVsn)
       assertEquals(expected.downstreamDVsn, actual.downstreamDVsn)
-      assertEquals(expected.categories, actual.categories)
+      assertEquals(expected.attributes, actual.attributes)
     }
   }
 }

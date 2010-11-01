@@ -25,8 +25,8 @@ case class Correlation(
   @BeanProperty var oid:java.lang.Integer,
   @BeanProperty var pairing:String,
   @BeanProperty var id:String,
-  // TODO (#2) Generalize the date to a category string
-  @BeanProperty var categories:Map[String,String],
+  // TODO [#2] the attributes go into the index, not the DB
+  @BeanProperty var attributes:Map[String,String],
   @BeanProperty var lastUpdate:DateTime,
   @BeanProperty var timestamp:DateTime,
   @BeanProperty var upstreamVsn:String,

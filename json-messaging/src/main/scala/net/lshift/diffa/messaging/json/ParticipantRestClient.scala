@@ -41,9 +41,9 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
           VersionDigest(
             // TODO [#2]
             //digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
-            digestObj.getString("key"),
-            new HashMap[String,String],
-            JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")), digestObj.getString("digest"))
+            JSONEncodingUtils.toList(digestObj.getJSONArray("attributes")),
+            JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")),
+            digestObj.getString("digest"))
         }).toList
       }
       case None => List()

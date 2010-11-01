@@ -119,9 +119,9 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     }
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
-        case VersionMismatch(id, categories, lastUpdate,  usVsn, _) =>
+        case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            store.storeUpstreamVersion(VersionID(pairKey, id), categories, lastUpdate, usVsn)
+            store.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn)
           } else {
             store.clearUpstreamVersion(VersionID(pairKey, id))
           }
@@ -132,10 +132,10 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   protected class Aggregator(val gran:RangeGranularity) {
     val builder = new DigestBuilder(new DateCategoryFunction)
 
-    def collectUpstream(id:VersionID, categories:Map[String,String], lastUpdate:DateTime, vsn:String) =
-      builder.add(id, categories, lastUpdate, vsn)
-    def collectDownstream(id:VersionID, categories:Map[String,String], lastUpdate:DateTime, uvsn:String, dvsn:String) =
-      builder.add(id, categories, lastUpdate, dvsn)
+    def collectUpstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, vsn:String) =
+      builder.add(id, attributes, lastUpdate, vsn)
+    def collectDownstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, uvsn:String, dvsn:String) =
+      builder.add(id, attributes, lastUpdate, dvsn)
 
     def digests:Seq[VersionDigest] = builder.digests
   }

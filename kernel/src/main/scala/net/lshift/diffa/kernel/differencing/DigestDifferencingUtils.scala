@@ -31,8 +31,10 @@ object DigestDifferencingUtils {
     val ds1Ids = indexByIdentifier(ds1)
     val ds2Ids = indexByIdentifier(ds2)
 
-    ds1Ids.foreach { case (id, ds1Digest) => {
-      val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(id) match {
+    val attributes:HashMap[String,String] = null
+
+    ds1Ids.foreach { case (label, ds1Digest) => {
+      val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
         case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest, hs2Digest.lastUpdated)
         case None => (false, null, null)
       }
@@ -40,25 +42,25 @@ object DigestDifferencingUtils {
       if (!otherMatches) {
         gran match {
           case IndividualGranularity =>
-            result += VersionMismatch(id, ds1Digest.categories, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.digest, otherDigest)
+            result += VersionMismatch(label, attributes, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.digest, otherDigest)
           case _ => otherDigest match {
-            case null => result += deepestQueryAction(id, gran)
-            case _ => result += deeperQueryAction(id, gran)
+            case null => result += deepestQueryAction(label, gran)
+            case _ => result += deeperQueryAction(label, gran)
           }
         }
       }
     }}
 
-    ds2Ids.foreach { case (id, hs2Digest) => {
-      val otherMatches = ds1Ids.remove(id) match {
+    ds2Ids.foreach { case (label, hs2Digest) => {
+      val otherMatches = ds1Ids.remove(label) match {
         case None => false
         case _    => true    // No need to compare, since we did that above
       }
 
       if (!otherMatches) {
         gran match {
-          case IndividualGranularity => result += VersionMismatch(id, hs2Digest.categories, hs2Digest.lastUpdated, null, hs2Digest.digest)
-          case _                     => result += deepestQueryAction(id, gran)
+          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
+          case _                     => result += deepestQueryAction(label, gran)
         }
       }
     }}
@@ -68,7 +70,7 @@ object DigestDifferencingUtils {
 
   private def indexByIdentifier(hs:Seq[VersionDigest]) = {
     val res = new HashMap[String, VersionDigest]
-    hs.foreach(d => res(d.key) = d)
+    //hs.foreach(d => res(d.key) = d)
 
     res
   }
@@ -119,4 +121,4 @@ object DigestDifferencingUtils {
 
 abstract class DifferenceOutcome
 case class QueryAction(start:DateTime, end:DateTime, gran:RangeGranularity) extends DifferenceOutcome
-case class VersionMismatch(id:String, categories:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String) extends DifferenceOutcome
+case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String) extends DifferenceOutcome

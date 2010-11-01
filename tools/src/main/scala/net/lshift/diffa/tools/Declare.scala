@@ -83,6 +83,7 @@ object Declare extends DiffaTool {
     }
   }
 
+  // TODO [#2] Add unit test for this
   def parseCategories(line:CommandLine) : Map[String,String] = {
     val cats = new HashMap[String,String]
     val categories = line.getOptionValues("categories")

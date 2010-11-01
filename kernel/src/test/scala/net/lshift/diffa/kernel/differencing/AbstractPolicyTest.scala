@@ -65,9 +65,9 @@ abstract class AbstractPolicyTest {
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
     expectUpstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010)),
       DigestsFromParticipant(
-        VersionDigest("2009", categories, null, DigestUtils.md5Hex("vsn1")),
+        VersionDigest(Seq("2009"), null, DigestUtils.md5Hex("vsn1")),
         //VersionDigest("2009", START_2009, null, DigestUtils.md5Hex("vsn1")),
-        VersionDigest("2010", categories, null, DigestUtils.md5Hex("vsn2"))),
+        VersionDigest(Seq("2010"), null, DigestUtils.md5Hex("vsn2"))),
         //VersionDigest("2010", START_2010, null, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1"),
@@ -77,9 +77,9 @@ abstract class AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
     expectDownstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010)),
       DigestsFromParticipant(
-        VersionDigest("2009", categories, null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        VersionDigest(Seq("2009"),  null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         //VersionDigest("2009", START_2009, null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        VersionDigest("2010", categories, null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
+        VersionDigest(Seq("2010"), null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
         //VersionDigest("2010", START_2010, null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
@@ -103,9 +103,9 @@ abstract class AbstractPolicyTest {
     expectUpstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010)),
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest("2009", categories, START_2009, DigestUtils.md5Hex("vsn1")),
+        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1"),
@@ -117,7 +117,7 @@ abstract class AbstractPolicyTest {
     expectUpstreamSync(abPair, List(DateRangeConstraint(START_2010, END_2010)),
     //expectUpstreamSync(abPair, DateConstraint(START_2010, END_2010), MonthGranularity,
       DigestsFromParticipant(
-        VersionDigest("2010-07", categories, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+        VersionDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
         //VersionDigest("2010-07", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2"),
@@ -127,7 +127,7 @@ abstract class AbstractPolicyTest {
     expectUpstreamSync(abPair, List(DateRangeConstraint(JUL_2010, END_JUL_2010)),
     //expectUpstreamSync(abPair, DateConstraint(JUL_2010, END_JUL_2010), DayGranularity,
       DigestsFromParticipant(
-        VersionDigest("2010-07-08", categories, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
+        VersionDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
         //VersionDigest("2010-07-08", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2"),
@@ -137,9 +137,9 @@ abstract class AbstractPolicyTest {
     expectUpstreamSync(abPair, List(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010))),
     //expectUpstreamSync(abPair, DateConstraint(JUL_8_2010, endOfDay(JUL_8_2010)), IndividualGranularity,
       DigestsFromParticipant(
-        VersionDigest("id2", categories, JUL_8_2010_1, "vsn2new"),
+        VersionDigest(Seq("id2"), JUL_8_2010_1, "vsn2new"),
         //VersionDigest("id2", JUL_8_2010_1, JUL_8_2010_1, "vsn2new"),
-        VersionDigest("id4", categories, JUL_8_2010_1, "vsn4")),
+        VersionDigest(Seq("id4"), JUL_8_2010_1, "vsn4")),
         //VersionDigest("id4", JUL_8_2010_1, JUL_8_2010_1, "vsn4")),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2"),
@@ -150,9 +150,9 @@ abstract class AbstractPolicyTest {
     expectDownstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010)),
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest("2009", categories, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
@@ -188,9 +188,9 @@ abstract class AbstractPolicyTest {
     expectUpstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010)),
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest("2009", categories, START_2009, DigestUtils.md5Hex("vsn1")),
+        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex("vsn2"))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         //UpstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1"),
@@ -200,9 +200,9 @@ abstract class AbstractPolicyTest {
     expectDownstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010)),
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest("2009", categories, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
+        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
         //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1a", downstreamVersionFor("vsn1a")),

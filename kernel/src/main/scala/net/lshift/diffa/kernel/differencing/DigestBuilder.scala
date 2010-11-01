@@ -34,16 +34,19 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
   /**
    * Adds a new version into the builder.
    */
-  def add(id:VersionID, categories:Map[String,String], lastUpdated:DateTime, vsn:String):Unit = add(id.id, categories, lastUpdated, vsn)
-  def add(id:String, categories:Map[String,String], lastUpdated:DateTime, vsn:String) {
-      if (!isBucketing) {
-      versions += VersionDigest(id, categories, lastUpdated, vsn)
+  def add(id:VersionID, attributes:Map[String,String], lastUpdated:DateTime, vsn:String) : Unit 
+    = add(id.id, attributes, lastUpdated, vsn)
+
+  def add(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsn:String) {
+    val label = attributes.keySet.reduceLeft(_ + "_" + _)
+    val categoryNames = attributes.keySet.toSeq
+    if (!categoryFunction.shouldBucket) {      
+      versions += VersionDigest(categoryNames, lastUpdated, vsn)
     } else {
-      val bucketName = categoryFunction.bucketName(categories)
-      val bucket = digestBuckets.get(bucketName) match {
+      val bucket = digestBuckets.get(label) match {
         case None => {
-          val newBucket = new Bucket(bucketName, normaliseDate(categories))
-          digestBuckets(bucketName) = newBucket
+          val newBucket = new Bucket(categoryNames)
+          digestBuckets(label) = newBucket
           newBucket
         }
         case Some(b) => b
@@ -56,7 +59,7 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
    * Retrieves the bucketed digests for all version objects that have been provided.
    */
   def digests:Seq[VersionDigest] = {
-    if (!isBucketing) {
+    if (categoryFunction.shouldBucket) {
       versions
     } else {
       // Digest the buckets
@@ -64,38 +67,15 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
     }
   }
 
-  /**
-   * Don't bucket for individual versions.
-   */
-  private def isBucketing = true//gran != IndividualGranularity
-
-  /**
-   * Generates a name for a bucket based on a date.
-   */
-//  private def buildBucketName(categories:Map[String,String]) = gran match {
-//    case DayGranularity   => ""//date.toString("yyyy-MM-dd")
-//    case MonthGranularity => ""//date.toString("yyyy-MM")
-//    case YearGranularity  => ""//date.toString("yyyy")
-//  }
-  private def normaliseDate(categories:Map[String,String]) = new DateTime
-//  gran match {
-//    case DayGranularity   => new DateTime//startOfDay(date)
-//    case MonthGranularity => new DateTime//startOfDay(date).withDayOfMonth(1)
-//    case YearGranularity => new DateTime//startOfDay(date).withDayOfYear(1)
-//  }
-
-  private class Bucket(val name:String, val date:DateTime) {
+  private class Bucket(val categoryNames:Seq[String]) {
     private val digestAlgorithm = "MD5"
-    private val digest =  MessageDigest.getInstance(digestAlgorithm)
-
-    val categories = new HashMap[String,String]
-    // TODO [#2] fill out map
+    private val theDigest =  MessageDigest.getInstance(digestAlgorithm)
 
     def add(vsn:String) = {
       val vsnBytes = vsn.getBytes("UTF-8")
-      digest.update(vsnBytes, 0, vsnBytes.length)
+      theDigest.update(vsnBytes, 0, vsnBytes.length)
     }
 
-    def toDigest = VersionDigest(name, categories, null, new String(Hex.encodeHex(digest.digest)))
+    def toDigest = VersionDigest(categoryNames, null, new String(Hex.encodeHex(theDigest.digest())))
   }
 }

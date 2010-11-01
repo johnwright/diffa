@@ -47,9 +47,9 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
         //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
-        VersionDigest("2009", categories, START_2009, DigestUtils.md5Hex("vsn1")),
+        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2"))),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex("vsn2"))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1"),
         //UpstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1"),
@@ -60,9 +60,9 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
         //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        VersionDigest("2009", categories, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
         //DownstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
@@ -76,7 +76,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(START_2010, END_2010), MonthGranularity,
       DigestsFromParticipant(
         //VersionDigest("2010-07", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
-        VersionDigest("2010-07", categories, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        VersionDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
         //DownstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
@@ -88,7 +88,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(JUL_2010, END_JUL_2010), DayGranularity,
       DigestsFromParticipant(
         //VersionDigest("2010-07-08", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
-        VersionDigest("2010-07-08", categories, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        VersionDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
         //DownstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
@@ -100,11 +100,11 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(JUL_8_2010, endOfDay(JUL_8_2010)), IndividualGranularity,
       DigestsFromParticipant(
         //VersionDigest("id2", JUL_8_2010_1, JUL_8_2010_1, downstreamVersionFor("vsn2")),
-        VersionDigest("id2", categories, JUL_8_2010_1, downstreamVersionFor("vsn2")),
+        VersionDigest(Seq("id2"), JUL_8_2010_1, downstreamVersionFor("vsn2")),
         //VersionDigest("id3", JUL_8_2010_1, JUL_8_2010_1, downstreamVersionFor("vsn3")),
-        VersionDigest("id3", categories, JUL_8_2010_1, downstreamVersionFor("vsn3")),
+        VersionDigest(Seq("id3"), JUL_8_2010_1, downstreamVersionFor("vsn3")),
         //VersionDigest("id5", JUL_8_2010_1, JUL_8_2010_1, downstreamVersionFor("vsn5a"))),
-        VersionDigest("id5", categories, JUL_8_2010_1, downstreamVersionFor("vsn5a"))),
+        VersionDigest(Seq("id5"), JUL_8_2010_1, downstreamVersionFor("vsn5a"))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
         //DownstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
@@ -147,9 +147,9 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
         //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
-        VersionDigest("2009", categories, START_2009, DigestUtils.md5Hex("vsn1")),
+        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2"))),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex("vsn2"))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1"),
         //UpstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1"),
@@ -160,7 +160,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
         //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
-        VersionDigest("2010", categories, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
         //DownstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
@@ -168,7 +168,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(START_2010, END_2010), MonthGranularity,
       DigestsFromParticipant(
         //VersionDigest("2010-07", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
-        VersionDigest("2010-07", categories, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        VersionDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
         //DownstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
@@ -176,16 +176,16 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     //expectDownstreamSync(abPair, DateConstraint(JUL_2010, END_JUL_2010), DayGranularity,
       DigestsFromParticipant(
         //VersionDigest("2010-07-08", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
-        VersionDigest("2010-07-08", categories, JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        VersionDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
         //DownstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamSync(abPair, List(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010))),
     //expectDownstreamSync(abPair, DateConstraint(JUL_8_2010, endOfDay(JUL_8_2010)), IndividualGranularity,
       DigestsFromParticipant(
-        VersionDigest("id2", categories, JUL_8_2010_1, downstreamVersionFor("vsn2")),
+        VersionDigest(Seq("id2"), JUL_8_2010_1, downstreamVersionFor("vsn2")),
         //VersionDigest("id2", JUL_8_2010_1, JUL_8_2010_1, downstreamVersionFor("vsn2")),
-        VersionDigest("id3", categories, JUL_8_2010_1, downstreamVersionFor("vsn3"))),
+        VersionDigest(Seq("id3"), JUL_8_2010_1, downstreamVersionFor("vsn3"))),
         //VersionDigest("id3", JUL_8_2010_1, JUL_8_2010_1, downstreamVersionFor("vsn3"))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))

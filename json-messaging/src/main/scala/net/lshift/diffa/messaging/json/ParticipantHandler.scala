@@ -18,8 +18,8 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.DateRangeConstraint
+import scala.collection.JavaConversions._
 
 /**
  * Handler for participants being queried via JSON.
@@ -39,7 +39,8 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
       val resultObj = new JSONArray
       digests foreach (digest => {
         val digestObj = new JSONObject
-        digestObj.put("key", digest.key)
+
+        digestObj.put("attributes", new JSONArray(digest.attributes))
         // TODO [#2]
         //digestObj.put("date", digest.date.toString(JSONEncodingUtils.dateEncoder))
         digestObj.put("lastUpdated", JSONEncodingUtils.maybeDateStr(digest.lastUpdated))

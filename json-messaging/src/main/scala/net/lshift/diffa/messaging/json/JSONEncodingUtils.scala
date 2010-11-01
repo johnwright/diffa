@@ -18,6 +18,7 @@ package net.lshift.diffa.messaging.json
 
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.DateTime
+import org.codehaus.jettison.json.JSONArray
 
 /**
  * Standard utilities for JSON encoding.
@@ -39,6 +40,16 @@ object JSONEncodingUtils {
       case null => null
       case ""   => null
       case _    => JSONEncodingUtils.dateParser.parseDateTime(s)
+    }
+  }
+
+  // TODO I can't believe you have to do this
+  def toList[T](a:JSONArray) : Seq[T] = {
+    if (null == a) {
+      List()
+    }
+    else {
+      for (val i <- 0 to a.length - 1 ) yield a.get(i).asInstanceOf[T]
     }
   }
 }

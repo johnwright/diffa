@@ -16,17 +16,13 @@
 
 package net.lshift.diffa.kernel.participants
 
-import scala.collection.Map
-
 trait CategoryFunction {
 
   def evaluate() : Unit
-
-  def bucketName(categories:Map[String,String]) : String
-
+  def shouldBucket() : Boolean
 }
 
 class DateCategoryFunction extends CategoryFunction {
   def evaluate() = ()
-  def bucketName(categories:Map[String,String]) = ""
+  def shouldBucket() = true
 }

@@ -31,12 +31,12 @@ trait VersionCorrelationStore {
   /**
    * Stores the details of an upstream version.
    */
-  def storeUpstreamVersion(id:VersionID, categories:Map[String,String], lastUpdated:DateTime, vsn:String):Correlation
+  def storeUpstreamVersion(id:VersionID, attributes:Map[String,String], lastUpdated:DateTime, vsn:String):Correlation
 
   /**
    * Stores the details of a downstream version.
    */
-  def storeDownstreamVersion(id:VersionID, categories:Map[String,String], lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
+  def storeDownstreamVersion(id:VersionID, attributes:Map[String,String], lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
 
   /**
    * Retrieves all of the unmatched version that have been stored.
