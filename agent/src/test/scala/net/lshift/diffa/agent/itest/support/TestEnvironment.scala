@@ -23,6 +23,8 @@ import net.lshift.diffa.kernel.util.Placeholders
 import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
 import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 import scala.collection.Map
+import collection.mutable.HashMap
+
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
  * various parts, along with convenience methods for making the configuration valid.
@@ -49,6 +51,10 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
   val upstream = new UpstreamMemoryParticipant(versionScheme.upstreamVersionGen)
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
+
+  // Categories
+  val categories = HashMap("bizDate" -> "date")
+
   // Participants' RPC server setup
   Participants.startUpstreamServer(usPort, upstream)
   Participants.startDownstreamServer(dsPort, downstream)
@@ -57,7 +63,7 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort, contentType, null, true)
   configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort, contentType, null, true)
-  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
+  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1", categories)
 
   // Participants' RPC client setup
   val upstreamClient:UpstreamParticipant = new UpstreamParticipantRestClient("http://localhost:" + usPort)

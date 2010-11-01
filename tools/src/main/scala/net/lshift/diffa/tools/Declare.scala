@@ -19,6 +19,8 @@ package net.lshift.diffa.tools
 import client.ConfigurationRestClient
 import org.apache.commons.cli.{CommandLine, Option}
 import net.lshift.diffa.kernel.client.ConfigurationClient
+import collection.mutable.HashMap
+import collection.mutable.Map
 
 /**
  * Utility class for declaring a differencing configuration.
@@ -32,6 +34,7 @@ object Declare extends DiffaTool {
   options.addOption(new Option("downstreamUrl", true, "the url of the downstream participant"))
   options.addOption(new Option("versionPolicy", true, "the version policy (same or correlated) to use"))
   options.addOption(new Option("matchTimeout", true, "timeout before raising matching alerts"))
+  options.addOption(new Option("categories", true, "the categories that this pair should report on"))
 
   // TODO This should really be passed through from the CLI, but ATM the only serialization
   // Diffa supports is JSOn anyway
@@ -56,7 +59,7 @@ object Declare extends DiffaTool {
     if (tryDeclareParticipant(line, configClient, "downstreamName", "downstreamUrl")) hasDeclared = true
 
     // Try declaring the pair
-    if (hasAllOptions(line, "pairGroup", "pairKey", "versionPolicy", "upstreamName", "downstreamName")) {
+    if (hasAllOptions(line, "pairGroup", "pairKey", "versionPolicy", "upstreamName", "downstreamName","categories")) {
       val group = line.getOptionValue("pairGroup")
       val pairKey = line.getOptionValue("pairKey")
       val versionPolicy = line.getOptionValue("versionPolicy")
@@ -69,7 +72,7 @@ object Declare extends DiffaTool {
         }
 
       println("Declaring pair: " + group + "." + pairKey + " -> (" + upstreamName + " <= {" + versionPolicy + "} => " + downstreamName + ")")
-      configClient.declarePair(pairKey, versionPolicy, matchTimeout, upstreamName, downstreamName, group)
+      configClient.declarePair(pairKey, versionPolicy, matchTimeout, upstreamName, downstreamName, group, parseCategories(line))
       hasDeclared = true
     }
 
@@ -78,6 +81,19 @@ object Declare extends DiffaTool {
       printUsage
       System.exit(1)
     }
+  }
+
+  def parseCategories(line:CommandLine) : Map[String,String] = {
+    val cats = new HashMap[String,String]
+    val categories = line.getOptionValues("categories")
+    categories.foreach(s => {
+      var parts = s.split(":")
+      cats(parts(0)) = parts(1)
+    })
+    if (cats.isEmpty) {
+      throw new RuntimeException("No categories defined")
+    }
+    cats
   }
 
   protected def tryDeclareParticipant(line:CommandLine, configClient:ConfigurationClient, nameKey:String, urlKey:String) = {

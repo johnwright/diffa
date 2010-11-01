@@ -36,7 +36,8 @@ class DigestBuilderTest {
   
   @Test
   def shouldNotBucketIndividualVersions {
-    val builder = new DigestBuilder(IndividualGranularity)
+//    val builder = new DigestBuilder(IndividualGranularity)
+    val builder = new DigestBuilder(new DateCategoryFunction)
 
     builder.add(VersionID(pair, "id1"), categories, JUL_9_2010_1, "vsn1")
     //builder.add(VersionID(pair, "id1"), JUL_9_2010_1, JUL_9_2010_1, "vsn1")
@@ -51,7 +52,8 @@ class DigestBuilderTest {
 
   @Test
   def shouldBucketByDay {
-    val builder = new DigestBuilder(DayGranularity)
+    //val builder = new DigestBuilder(DayGranularity)
+    val builder = new DigestBuilder(new DateCategoryFunction)
 
     builder.add(VersionID(pair, "id1"), categories, JUL_8_2010_1, "vsn1")
     //builder.add(VersionID(pair, "id1"), JUL_8_2010_1, JUL_8_2010_1, "vsn1")
@@ -71,7 +73,8 @@ class DigestBuilderTest {
 
   @Test
   def shouldBucketByMonth {
-    val builder = new DigestBuilder(MonthGranularity)
+    val builder = new DigestBuilder(new DateCategoryFunction)
+    //val builder = new DigestBuilder(MonthGranularity)
 
     builder.add(VersionID(pair, "id1"), categories, JUL_8_2010_1, "vsn1")
     //builder.add(VersionID(pair, "id1"), JUL_8_2010_1, JUL_8_2010_1, "vsn1")
@@ -93,7 +96,8 @@ class DigestBuilderTest {
 
   @Test
   def shouldBucketByYear {
-    val builder = new DigestBuilder(YearGranularity)
+    val builder = new DigestBuilder(new DateCategoryFunction)
+    //val builder = new DigestBuilder(YearGranularity)
 
     builder.add(VersionID(pair, "id0"), categories, JUN_6_2009_1, "vsn0")
     //builder.add(VersionID(pair, "id0"), JUN_6_2009_1, JUN_6_2009_1, "vsn0")
