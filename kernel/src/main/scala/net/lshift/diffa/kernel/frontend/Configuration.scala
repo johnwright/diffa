@@ -22,11 +22,13 @@ import net.lshift.diffa.kernel.matching.MatchingManager
 import net.lshift.diffa.kernel.differencing.SessionManager
 import net.lshift.diffa.kernel.actors.PairActorSupervisor
 import net.lshift.diffa.kernel.util.MissingObjectException
+import net.lshift.diffa.kernel.participants.InboundEndpointManager
 
 class Configuration(val configStore: ConfigStore,
                     val matchingManager: MatchingManager,
                     val supervisor:PairActorSupervisor,
-                    val sessionManager: SessionManager) {
+                    val sessionManager: SessionManager,
+                    val inboundManager: InboundEndpointManager) {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -38,11 +40,13 @@ class Configuration(val configStore: ConfigStore,
   def createOrUpdateEndpoint(endpoint: Endpoint) = {
     log.debug("Processing endpoint declare/update request: " +  endpoint.name)
     configStore.createOrUpdateEndpoint(endpoint)
+    inboundManager.onEndpointAvailable(endpoint)
   }
 
   def deleteEndpoint(name: String) = {
     log.debug("Processing endpoint delete request: " + name)
     configStore.deleteEndpoint(name)
+    inboundManager.onEndpointRemoved(name)
   }
 
   def listEndpoints: Seq[Endpoint] = {
