@@ -1,0 +1,39 @@
+\chapter{Transports}
+
+\section{Introduction}
+
+Diffa supports the notion of pluggable transports. This is designed to facilitate a layered approach for participants to communicate with the agent. The agent's kernel presents a high level frontend interface that custom transports can bind to and provide connectivity to participants.
+
+There are built in transports, such as the default JSON over HTTP transport, which are booted using the plugin mechanism.
+
+The following is a list of the currently known trasnport mechanisms.
+
+\begin{itemize}
+	\item JSON over HTTP;
+\end{itemize}
+
+\section{Boot Process}
+
+Each transport is defined in its own module. Diffa utilizes the Spring mechanism that loads resources from the classpath according to a pattern. The agent's application context perfroms a search for context files following the convention diffa-messaging-*.xml:
+
+\begin{lstlisting}
+<import resource="classpath*:conf/diffa-messaging-*.xml"/>
+\end{lstlisting}
+
+This scans for any diffa-messaging-*.xml file on the classpath and initializes all of the beans configured within each context. It is then the responsibility of the implementation to register a handler with the agent's participant factory (for outbound comminication) and a protocol mapper for the transport at handler (for inbound comminication).
+
+\subsection{ParticipantFactory}
+
+The ParticipantFactory is a central component of the agent that gives kernel components the ability to create stubs in order to communicate with remote participants in a generic fashion. Each transport is responsible for registering a ParticipantProtocolFactory (see the API) with the ParticipantFactory. 
+
+\subsection{ProtocolMapper}
+
+The ProtocolMapper is a component that maps inbound URLs and contentTypes to specific ProtocolHandlers for processing incoming requests.
+
+\subsection{InboundEndpointManager}
+
+Some transports require participant specific inbound endpoints, such as per-participant inbound message queues in AMQP or JMS. The InboundEndpointManager is a central component of the agent that manages InboundEndpointFactory instances. The InboundEndpointManager is aware of the agent's lifecyle and delegates the creation to of proxies to the appropriate InboundEndpointFactory as and when endpoints become available or get removed.
+
+\section{JSON over HTTP}
+
+This is built into Diffa and provides a simple RESTful-ish communication channel using JSON serialization.
