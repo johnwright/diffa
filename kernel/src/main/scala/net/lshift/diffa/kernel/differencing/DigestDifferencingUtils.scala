@@ -58,6 +58,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
+        result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)  
 //        gran match {
 //          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
 //          case _                     => result += deepestQueryAction(label, gran)
@@ -70,7 +71,7 @@ object DigestDifferencingUtils {
 
   private def indexByIdentifier(hs:Seq[VersionDigest]) = {
     val res = new HashMap[String, VersionDigest]
-    //hs.foreach(d => res(d.key) = d)
+    hs.foreach(d => res(d.attributes.reduceLeft(_+_)) = d)
 
     res
   }

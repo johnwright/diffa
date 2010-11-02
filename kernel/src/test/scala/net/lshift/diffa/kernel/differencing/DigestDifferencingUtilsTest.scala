@@ -75,7 +75,7 @@ class DigestDifferencingUtilsTest {
   @Test
   def shouldReportMissingIndividualVersionsInFirstList {
     val a = Seq()
-    val b = Seq(VersionDigest(Seq("id1"), JAN_1_2010, "v1"))
+    val b = Seq(VersionDigest(Seq(JAN_1_2010.toString), JAN_1_2010, "v1"))
     //val b = Seq(VersionDigest("id1", JAN_1_2010, JAN_1_2010, "v1"))
 
     val actions = DigestDifferencingUtils.differenceDigests(a, b, IndividualGranularity)
