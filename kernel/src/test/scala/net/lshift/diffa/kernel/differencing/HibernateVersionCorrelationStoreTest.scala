@@ -25,6 +25,7 @@ import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.events._
 import scala.collection.Map
 import collection.mutable.{HashMap, ListBuffer}
+import net.lshift.diffa.kernel.participants.DateCategoryFunction
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -36,6 +37,11 @@ class HibernateVersionCorrelationStoreTest {
   private val pair = "pair"
   private val otherPair = "other-pair"
   private val categories = new HashMap[String,String]
+
+  protected val yearly = DateCategoryFunction()
+  protected val monthly = DateCategoryFunction()
+  protected val daily = DateCategoryFunction()
+  protected val individual = DateCategoryFunction()
   
   @Before
   def cleanupStore {
@@ -154,7 +160,7 @@ class HibernateVersionCorrelationStoreTest {
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, true), corr)
 
     val collector = new Collector
-    store.queryUpstreams(pair, List(DateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    store.queryUpstreams(pair, List(SimpleDateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(
       List(UpstreamPairChangeEvent(VersionID(pair, "id7"), categories, DEC_1_2009, "upstreamVsn-id7")),
       //List(UpstreamPairChangeEvent(VersionID(pair, "id7"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id7")),
@@ -170,7 +176,7 @@ class HibernateVersionCorrelationStoreTest {
     store.clearUpstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
-    store.queryUpstreams(pair, List(DateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    store.queryUpstreams(pair, List(SimpleDateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(0, collector.upstreamObjs.size)
   }
 
@@ -185,7 +191,7 @@ class HibernateVersionCorrelationStoreTest {
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, true), corr)
 
     val collector = new Collector
-    val digests = store.queryDownstreams(pair, List(DateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
+    val digests = store.queryDownstreams(pair, List(SimpleDateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), categories, DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       //List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
@@ -201,7 +207,7 @@ class HibernateVersionCorrelationStoreTest {
     store.clearDownstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
-    store.queryDownstreams(pair, List(DateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
+    store.queryDownstreams(pair, List(SimpleDateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(0, collector.downstreamObjs.size)
   }
 
@@ -213,7 +219,7 @@ class HibernateVersionCorrelationStoreTest {
     //store.storeUpstreamVersion(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7")
 
     val collector = new Collector
-    val digests = store.queryUpstreams(pair, List(DateRangeConstraint(DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectUpstream)
+    val digests = store.queryUpstreams(pair, List(SimpleDateRangeConstraint(DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectUpstream)
     assertEquals(
       List(UpstreamPairChangeEvent(VersionID(pair, "id7"), categories, DEC_2_2009, "upstreamVsn-id7")),
       //List(UpstreamPairChangeEvent(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7")),
@@ -228,7 +234,7 @@ class HibernateVersionCorrelationStoreTest {
     //store.storeUpstreamVersion(VersionID(pair, "id7"), DEC_2_2009,DEC_2_2009, "upstreamVsn-id7")
 
     val collector = new Collector
-    val digests = store.queryUpstreams(pair, List(DateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    val digests = store.queryUpstreams(pair, List(SimpleDateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(
       //List(UpstreamPairChangeEvent(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6")),
       List(UpstreamPairChangeEvent(VersionID(pair, "id6"), categories, DEC_1_2009, "upstreamVsn-id6")),
@@ -243,7 +249,7 @@ class HibernateVersionCorrelationStoreTest {
     //store.storeDownstreamVersion(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
 
     val collector = new Collector
-    val digests = store.queryDownstreams(pair, List(DateRangeConstraint(DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectDownstream)
+    val digests = store.queryDownstreams(pair, List(SimpleDateRangeConstraint(DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectDownstream)
     assertEquals(
       //List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), categories, DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
@@ -258,7 +264,7 @@ class HibernateVersionCorrelationStoreTest {
     //store.storeDownstreamVersion(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
 
     val collector = new Collector
-    val digests = store.queryDownstreams(pair, List(DateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
+    val digests = store.queryDownstreams(pair, List(SimpleDateRangeConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(
       //List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")),
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), categories, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")),

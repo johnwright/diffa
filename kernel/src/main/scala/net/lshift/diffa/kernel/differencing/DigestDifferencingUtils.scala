@@ -26,7 +26,7 @@ import scala.collection.Map
  * Utility methods for differencing sequences of digests.
  */
 object DigestDifferencingUtils {
-  def differenceDigests(ds1:Seq[VersionDigest], ds2:Seq[VersionDigest], gran:RangeGranularity):Seq[DifferenceOutcome] = {
+  def differenceDigests(ds1:Seq[VersionDigest], ds2:Seq[VersionDigest], constraints:Seq[QueryConstraint]):Seq[DifferenceOutcome] = {
     val result = new ListBuffer[DifferenceOutcome]
     val ds1Ids = indexByIdentifier(ds1)
     val ds2Ids = indexByIdentifier(ds2)
@@ -40,14 +40,14 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        gran match {
-          case IndividualGranularity =>
-            result += VersionMismatch(label, attributes, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.digest, otherDigest)
-          case _ => otherDigest match {
-            case null => result += deepestQueryAction(label, gran)
-            case _ => result += deeperQueryAction(label, gran)
-          }
-        }
+//        gran match {
+//          case IndividualGranularity =>
+//            result += VersionMismatch(label, attributes, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.digest, otherDigest)
+//          case _ => otherDigest match {
+//            case null => result += deepestQueryAction(label, gran)
+//            case _ => result += deeperQueryAction(label, gran)
+//          }
+//        }
       }
     }}
 
@@ -58,10 +58,10 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        gran match {
-          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
-          case _                     => result += deepestQueryAction(label, gran)
-        }
+//        gran match {
+//          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
+//          case _                     => result += deepestQueryAction(label, gran)
+//        }
       }
     }}
 
@@ -76,15 +76,17 @@ object DigestDifferencingUtils {
   }
   private def deepestQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    QueryAction(start, end, IndividualGranularity)
+    QueryAction(DateRangeConstraint(null,null, DateCategoryFunction()))
+    //QueryAction(start, end, IndividualGranularity)
   }
   private def deeperQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    QueryAction(start, end, currentGran match {
-      case YearGranularity => MonthGranularity
-      case MonthGranularity => DayGranularity
-      case DayGranularity => IndividualGranularity
-    })
+    QueryAction(DateRangeConstraint(null,null,DateCategoryFunction()))
+//    QueryAction(start, end, currentGran match {
+//      case YearGranularity => MonthGranularity
+//      case MonthGranularity => DayGranularity
+//      case DayGranularity => IndividualGranularity
+//    })
   }
 
   private val yearParser = DateTimeFormat.forPattern("yyyy")
@@ -120,5 +122,5 @@ object DigestDifferencingUtils {
 }
 
 abstract class DifferenceOutcome
-case class QueryAction(start:DateTime, end:DateTime, gran:RangeGranularity) extends DifferenceOutcome
+case class QueryAction(constraint:RangeQueryConstraint) extends DifferenceOutcome
 case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String) extends DifferenceOutcome

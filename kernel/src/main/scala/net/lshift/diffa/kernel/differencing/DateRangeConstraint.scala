@@ -17,22 +17,21 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.{Interval, DateTime}
-import net.lshift.diffa.kernel.participants.RangeQueryConstraint
+import net.lshift.diffa.kernel.participants.{CategoryFunction, DateCategoryFunction, RangeQueryConstraint}
 
-/**
- *  Selects an entity based on whether it exists between a given start and end date.
- */
-case class DateRangeConstraint(start:DateTime, end:DateTime) extends RangeQueryConstraint {
+
+// TODO [#2]
+case class SimpleDateRangeConstraint(start:DateTime, end:DateTime) extends RangeQueryConstraint {
 
   def category = "date"
-  def function = "DATE_RANGE"
+  def function : CategoryFunction = new DateCategoryFunction // TODO should probably be an object, not an instance
   def values = List[String](start.toString, end.toString)
 
   private val interval = if (start != null && end != null) {
-      new Interval(start, end)
-    } else {
-      null
-    }
+    new Interval(start, end)
+  } else {
+    null
+  }
 
   /**
    * Determine whether the selector contains the given date. This will return true if the date is between
@@ -53,6 +52,23 @@ case class DateRangeConstraint(start:DateTime, end:DateTime) extends RangeQueryC
     }
   }
 
+}
+/**
+ *  Selects an entity based on whether it exists between a given start and end date.
+ */
+case class DateRangeConstraint(override val start:DateTime, override val end:DateTime, f:CategoryFunction)
+        extends SimpleDateRangeConstraint(start, end) {
+
+  override def function = f
+  override def category = "date"
+  override def values = List[String](start.toString, end.toString)
+
+  //def this(start:DateTime, end:DateTime) = this(start,end, DateCategoryFunction())
+
+
+
+
+
   /**
    * Intersect the selector with the given date range
    */
@@ -67,7 +83,7 @@ case class DateRangeConstraint(start:DateTime, end:DateTime) extends RangeQueryC
       case (_, null) => other.end
       case _ => if (other.end.compareTo(this.end) < 0) other.end else this.end
     }
-    DateRangeConstraint(lowerBound, upperBound)
+    DateRangeConstraint(lowerBound, upperBound, other.function)
   }
 }
 
@@ -75,5 +91,5 @@ object DateRangeConstraint {
   /**
    * Starting point date constraint that accepts any date (ie, it has no bounds).
    */
-  val any = DateRangeConstraint(null, null)
+  val any = DateRangeConstraint(null, null, DateCategoryFunction())
 }

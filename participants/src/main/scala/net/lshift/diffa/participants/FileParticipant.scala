@@ -17,13 +17,13 @@
 package net.lshift.diffa.participants
 
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{DigestBuilder, DateRangeConstraint}
 import org.apache.commons.io.IOUtils
 import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.messaging.json.ChangesRestClient
 import java.io.{Closeable, FileInputStream, File}
-import net.lshift.diffa.kernel.participants.{QueryConstraint, ActionResult, RangeGranularity}
+import net.lshift.diffa.kernel.participants.{QueryConstraint, ActionResult}
 import collection.mutable.{HashMap, ListBuffer}
+import net.lshift.diffa.kernel.differencing.SimpleDateRangeConstraint
 
 /**
  * Basic functionality requried for a file-based participant.
@@ -40,7 +40,7 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
 
     // TODO [#2] This date constraint is hard coded -> it should come out of the QueryConstraint
     val now = new DateTime
-    val constraint = DateRangeConstraint(now, now)
+    val constraint = SimpleDateRangeConstraint(now, now)
     val files = new ListBuffer[File]
 
     DirWalker.walk(dir,

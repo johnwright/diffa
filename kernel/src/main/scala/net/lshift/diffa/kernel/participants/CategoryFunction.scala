@@ -22,7 +22,7 @@ trait CategoryFunction {
   def shouldBucket() : Boolean
 }
 
-class DateCategoryFunction extends CategoryFunction {
+case class DateCategoryFunction() extends CategoryFunction {
   def evaluate() = ()
   def shouldBucket() = true
 }

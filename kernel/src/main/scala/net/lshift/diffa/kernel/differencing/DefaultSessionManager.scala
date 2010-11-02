@@ -23,9 +23,9 @@ import org.joda.time.DateTime
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
-import net.lshift.diffa.kernel.participants.{Participant, ParticipantFactory, ParticipantType}
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, PairActor}
 import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
+import net.lshift.diffa.kernel.participants.{DateCategoryFunction, Participant, ParticipantFactory, ParticipantType}
 
 /**
  * Standard implementation of the SessionManager.
@@ -270,7 +270,7 @@ class DefaultSessionManager(
       case 0  => config.listGroups.flatMap(g => g.pairs.map(p => p.key))
       case _  => scope.includedPairs
     }
-    pairs.foreach(pairKey => pairPolicyClient.syncPair(pairKey,List(DateRangeConstraint(start, end)), listener))
+    pairs.foreach(pairKey => pairPolicyClient.syncPair(pairKey,List(DateRangeConstraint(start, end, DateCategoryFunction())), listener))
   }
 
   def forEachSession(id:VersionID, f: Function1[SessionCache,Any]) = {

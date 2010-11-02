@@ -25,8 +25,8 @@ package net.lshift.diffa.kernel.participants
  */
 trait QueryConstraint {
   def category:String
-  def function:String
+  def function:CategoryFunction
   def values:Seq[String]
 }
-case class ListQueryConstraint(category:String, function:String, values:Seq[String]) extends QueryConstraint
+case class ListQueryConstraint(category:String, function:CategoryFunction, values:Seq[String]) extends QueryConstraint
 trait RangeQueryConstraint extends QueryConstraint

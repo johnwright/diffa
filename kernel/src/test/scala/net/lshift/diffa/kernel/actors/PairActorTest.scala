@@ -21,10 +21,10 @@ import org.easymock.EasyMock._
 import org.junit.Assert._
 import net.lshift.diffa.kernel.differencing._
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant, ParticipantFactory}
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import collection.mutable.HashMap
+import net.lshift.diffa.kernel.participants.{DateCategoryFunction, DownstreamParticipant, UpstreamParticipant, ParticipantFactory}
 
 class PairActorTest {
 
@@ -39,7 +39,7 @@ class PairActorTest {
   pair.upstream = upstream
   pair.downstream = downstream
 
-  val dates = List(DateRangeConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1)))
+  val dates = List(DateRangeConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1), DateCategoryFunction()))
   //val dates = DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1))
 
   val us = createStrictMock("upstreamParticipant", classOf[UpstreamParticipant])

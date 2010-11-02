@@ -84,39 +84,29 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
    */
   protected abstract class SyncStrategy {
     def syncHalf(pairKey:String, constraints:Seq[QueryConstraint], p:Participant) {
-      val syncActions = new Queue[QueryAction]
 
-      // TODO [#2] refactor this
-      val s = new DateTime
-      val e = new DateTime
+      val usDigests = p.queryDigests(constraints)
+      val cachedDigests = getDigests(pairKey, constraints)
 
-      syncActions += QueryAction(s, e, YearGranularity)
+      DigestDifferencingUtils.differenceDigests(usDigests, cachedDigests, constraints).foreach(o => o match {
+        case newAction:QueryAction => // Go directly to go, do not collect 200 //syncActions += newAction
+        case mm:VersionMismatch => handleMismatch(pairKey, mm)
+      })
 
-      while (syncActions.length > 0) {
-        val action = syncActions.dequeue
-        // TODO [#2] hardcoded category and function
-        // TODO [#2] granularity of action not taken into account
-        val constraint = DateRangeConstraint(s,e)
-        val usDigests = p.queryDigests(List(constraint))
-        val cachedDigests = getDigests(pairKey, List(constraint), action.gran)
-
-        DigestDifferencingUtils.differenceDigests(usDigests, cachedDigests, action.gran).foreach(o => o match {
-          case newAction:QueryAction => syncActions += newAction
-          case mm:VersionMismatch => handleMismatch(pairKey, mm)
-        })
-      }
     }
 
-    def getDigests(pairKey:String, constraints:Seq[QueryConstraint], gran:RangeGranularity):Seq[VersionDigest]
+    def getDigests(pairKey:String, constraints:Seq[QueryConstraint]):Seq[VersionDigest]
     def handleMismatch(pairKey:String, vm:VersionMismatch)
   }
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
-    def getDigests(pairKey:String, constraints:Seq[QueryConstraint], gran:RangeGranularity) = {
-      val aggregator = new Aggregator(gran)
+
+    def getDigests(pairKey:String, constraints:Seq[QueryConstraint]) = {
+      val aggregator = new Aggregator()
       store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
       aggregator.digests
     }
+
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
@@ -129,7 +119,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     }
   }
 
-  protected class Aggregator(val gran:RangeGranularity) {
+  protected class Aggregator() {
     val builder = new DigestBuilder(new DateCategoryFunction)
 
     def collectUpstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, vsn:String) =

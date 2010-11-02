@@ -37,8 +37,8 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore, listener:Differenci
   private class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant, val l:DifferencingListener)
       extends SyncStrategy {
     
-    def getDigests(pairKey:String, constraints:Seq[QueryConstraint], gran:RangeGranularity) = {
-      val aggregator = new Aggregator(gran)
+    def getDigests(pairKey:String, constraints:Seq[QueryConstraint]) = {
+      val aggregator = new Aggregator()
       store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
       aggregator.digests
     }
