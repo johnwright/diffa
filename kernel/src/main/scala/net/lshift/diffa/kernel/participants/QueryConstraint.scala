@@ -29,10 +29,24 @@ trait QueryConstraint {
   def category:String
   def function:CategoryFunction
   def values:Seq[String]
-
-  def nextQueryAction(partition:String) : QueryAction = {
-    function.evaluate(partition)
-  }
+  def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction]
 }
-case class ListQueryConstraint(category:String, function:CategoryFunction, values:Seq[String]) extends QueryConstraint
-trait RangeQueryConstraint extends QueryConstraint
+
+case class BaseQueryConstraint(category:String,function:CategoryFunction,values:Seq[String]) extends QueryConstraint {
+  // TODO [#2] unit test
+  def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] = {
+    function.evaluate(partition) match {
+      case None    => None
+      case Some(x) => {
+        if (empty || x.next.isInstanceOf[IndividualCategoryFunction]) {          
+          Some(EntityQueryAction(BaseQueryConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction(), x.toSeq)))
+        }
+        else {
+          Some(AggregateQueryAction(BaseQueryConstraint(BaseQueryConstraint.this.category, x.next, x.toSeq)))
+        }
+      }
+    }
+  }  
+}
+case class ListQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v)
+case class RangeQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v)

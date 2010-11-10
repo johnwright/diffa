@@ -68,6 +68,19 @@ object DigestDifferencingUtils {
     val ds1Ids = indexByAttributeValues(ds1)
     val ds2Ids = indexByAttributeValues(ds2)
 
+    def evaluate(partition:String) = {
+      if ("2010-07-08" == partition || "2010-07" == partition || "2010" == partition) {
+        val empty = ds1.isEmpty || ds2.isEmpty
+        constraints(0).nextQueryAction(partition, empty) match {
+          case None    => // Should pre-empt full query
+          case Some(x) => results += x
+        }
+      }
+      else {
+        throw new RuntimeException("Should not really go here")
+      }
+    }
+
     ds1Ids.foreach { case (label, ds1Digest) => {
       val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
         case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest, hs2Digest.lastUpdated)
@@ -83,6 +96,9 @@ object DigestDifferencingUtils {
 //            case _ => result += deeperQueryAction(label, gran)
 //          }
 //        }
+        
+        val partition = ds1Digest.attributes(0)
+        evaluate(partition)
       }
     }}
 
@@ -94,22 +110,11 @@ object DigestDifferencingUtils {
 
       if (!otherMatches) {
 
-        //println(label)
-        //println(hs2Digest)
+//        println(label)
+//        println(hs2Digest)
 
         val partition = hs2Digest.attributes(0)
-
-        if ("2010-07-08" == partition) {
-          results += constraints(0).nextQueryAction(partition)
-        }
-        else {
-          results += EntityQueryAction(constraints(0))
-        }
-
-
-
-
-
+        evaluate(partition)
 
 //        result += VersionMismatch(label, resolve(hs2Digest), hs2Digest.lastUpdated, null, hs2Digest.digest)  
 //        gran match {

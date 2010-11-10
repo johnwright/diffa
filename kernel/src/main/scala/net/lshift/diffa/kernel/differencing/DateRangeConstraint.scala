@@ -18,13 +18,12 @@ package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.{Interval, DateTime}
 import org.joda.time.format.DateTimeFormat
-import net.lshift.diffa.kernel.participants.{EntityQueryAction, DailyCategoryFunction, CategoryFunction, RangeQueryConstraint}
+import net.lshift.diffa.kernel.participants._
 // TODO [#2]
-case class SimpleDateRangeConstraint(start:DateTime, end:DateTime) extends RangeQueryConstraint {
+case class SimpleDateRangeConstraint(start:DateTime, end:DateTime)
+  extends RangeQueryConstraint("date", DateCategoryFunction(), List[String](start.toString, end.toString)) {
 
-  def category = "date"
-  def function : CategoryFunction = DailyCategoryFunction() // TODO should probably be an object, not an instance
-  def values = List[String](start.toString, end.toString)
+
 
   private val interval = if (start != null && end != null) {
     new Interval(start, end)
@@ -55,12 +54,12 @@ case class SimpleDateRangeConstraint(start:DateTime, end:DateTime) extends Range
 /**
  *  Selects an entity based on whether it exists between a given start and end date.
  */
-case class DateRangeConstraint(override val start:DateTime, override val end:DateTime, f:CategoryFunction)
+case class DateRangeConstraint(override val start:DateTime, override val end:DateTime, override val f:CategoryFunction)
         extends SimpleDateRangeConstraint(start, end) {
 
-  override def function = f
-  override def category = "date"
-  override def values = List[String](start.toString, end.toString)
+//  override def function = f
+//  override def category = "date"
+//  override def values = List[String](start.toString, end.toString)
 
   //def this(start:DateTime, end:DateTime) = this(start,end, DateCategoryFunction())
 
