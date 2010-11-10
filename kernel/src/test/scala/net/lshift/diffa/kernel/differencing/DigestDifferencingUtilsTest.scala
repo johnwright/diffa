@@ -50,7 +50,7 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldReportNothingOnMatchingEmptyLists {
-    val actions = DigestDifferencingUtils.differenceDigests(Seq(), Seq(), resolve, IndividualGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(Seq(), Seq(), resolve, IndividualGranularity)
     assertEquals(0, actions.length)
   }
 
@@ -63,7 +63,7 @@ class DigestDifferencingUtilsTest {
                 EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
     //val b = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "h1"), Digest("id2", JAN_1_2010, JAN_1_2010, "h2"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, IndividualGranularity)
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
     assertEquals(0, actions.length)
   }
 
@@ -76,7 +76,7 @@ class DigestDifferencingUtilsTest {
                 EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
     //val b = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "h1"), Digest("id2", JAN_1_2010, JAN_1_2010, "h2"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, IndividualGranularity)
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
     assertEquals(0, actions.length)
   }
 
@@ -90,7 +90,7 @@ class DigestDifferencingUtilsTest {
       HashMap("bizDate" -> d.attributes(0))
     }
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, r, IndividualGranularity)
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, r, IndividualGranularity)
 
     val attributes = HashMap("bizDate" -> JAN_1_2010.toString())
 
@@ -104,7 +104,7 @@ class DigestDifferencingUtilsTest {
     //val a = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "v1"))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, IndividualGranularity)
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
     assertEquals(HashSet(VersionMismatch("id1",  __attributes, JAN_1_2010, "v1", null)), HashSet(actions: _*))
     //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", null)), HashSet(actions: _*))
   }
@@ -116,7 +116,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v2"))
     //val b = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "v2"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, IndividualGranularity)
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
     assertEquals(HashSet(VersionMismatch("id1",  __attributes, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
     //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
   }
@@ -127,7 +127,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(AggregateDigest(Seq("2010-07-08"), JUL_8_2010, "v1"))
     //val b = Seq(Digest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, DayGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, DayGranularity)
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), in))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JUL_8_2010, endOfDay(JUL_8_2010), IndividualGranularity)), HashSet(actions: _*))
   }
@@ -138,7 +138,7 @@ class DigestDifferencingUtilsTest {
     //val a = Seq(Digest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, DayGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, DayGranularity)
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), in))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JUL_8_2010, endOfDay(JUL_8_2010), IndividualGranularity)), HashSet(actions: _*))
   }
@@ -150,7 +150,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(AggregateDigest(Seq("2010-07-08"), JUL_8_2010, "v2"))
     //val b = Seq(Digest("2010-07-08", JUL_8_2010, JUL_8_2010, "v2"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, DayGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, DayGranularity)
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), in))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JUL_8_2010, endOfDay(JUL_8_2010), IndividualGranularity)), HashSet(actions: _*))
   }
@@ -161,7 +161,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(AggregateDigest(Seq("2010-07"), JUL_1_2010, "v1"))
     //val b = Seq(Digest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, MonthGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, MonthGranularity)
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JUL_1_2010, endOfDay(JUL_31_2010), in))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JUL_1_2010, endOfDay(JUL_31_2010), IndividualGranularity)), HashSet(actions: _*))
   }
@@ -172,7 +172,7 @@ class DigestDifferencingUtilsTest {
     //val a = Seq(Digest("2010-07", JUL_1_2010, JUL_1_2010, "v1"))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, MonthGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, MonthGranularity)
     //assertEquals(HashSet(QueryAction(JUL_1_2010, endOfDay(JUL_31_2010), IndividualGranularity)), HashSet(actions: _*))
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JUL_1_2010, endOfDay(JUL_31_2010), in))), HashSet(actions: _*))
   }
@@ -184,7 +184,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(AggregateDigest(Seq("2010-07"), JUL_1_2010, "v2"))
     //val b = Seq(Digest("2010-07", JUL_1_2010, JUL_1_2010, "v2"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, MonthGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, MonthGranularity)
     assertEquals(HashSet(AggregateQueryAction(DateRangeConstraint(JUL_1_2010, endOfDay(JUL_31_2010), day))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JUL_1_2010, endOfDay(JUL_31_2010), DayGranularity)), HashSet(actions: _*))
   }
@@ -195,7 +195,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(AggregateDigest(Seq("2010"), JAN_1_2010, "v1"))
     //val b = Seq(Digest("2010", JAN_1_2010, JAN_1_2010, "v1"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, YearGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, YearGranularity)
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010), in))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), IndividualGranularity)), HashSet(actions: _*))
   }
@@ -206,7 +206,7 @@ class DigestDifferencingUtilsTest {
     val a = Seq(AggregateDigest(Seq("2010"), JAN_1_2010, "v1"))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, YearGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, YearGranularity)
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010), in))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), IndividualGranularity)), HashSet(actions: _*))
   }
@@ -218,7 +218,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(AggregateDigest(Seq("2010"), JAN_1_2010, "v2"))
     //val b = Seq(Digest("2010", JAN_1_2010, JAN_1_2010, "v2"))
 
-    val actions = DigestDifferencingUtils.differenceDigests(a, b, resolve, YearGranularity)
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, YearGranularity)
     assertEquals(HashSet(AggregateQueryAction(DateRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010), month))), HashSet(actions: _*))
     //assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), MonthGranularity)), HashSet(actions: _*))
   }

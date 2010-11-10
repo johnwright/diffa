@@ -58,13 +58,15 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
   /**
    * Retrieves the bucketed digests for all version objects that have been provided.
    */
-  def digests:Seq[Digest] = {
+  def digests:Seq[AggregateDigest] = {
     if (categoryFunction.shouldBucket) {
       versions
     } else {
       // Digest the buckets
       digestBuckets.values.map(b => b.toDigest).toList
     }
+    // TODO [#2] fix
+    Seq[AggregateDigest]()
   }
 
   private class Bucket(val categoryNames:Seq[String]) {

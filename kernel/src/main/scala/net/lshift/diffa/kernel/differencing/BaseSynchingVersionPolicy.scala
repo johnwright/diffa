@@ -86,27 +86,32 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     def syncHalf(pairKey:String, constraints:Seq[QueryConstraint], p:Participant) {
 
       val usDigests = p.queryAggregateDigests(constraints)
-      val cachedDigests = getDigests(pairKey, constraints)
+      val cachedAggregates = getAggregates(pairKey, constraints)
 
       def resolve(d:Digest) = new HashMap[String,String]
 
-      DigestDifferencingUtils.differenceDigests(usDigests, cachedDigests, resolve, constraints).foreach(o => o match {
+      DigestDifferencingUtils.differenceAggregates(usDigests, cachedAggregates, resolve, constraints).foreach(o => o match {
         case newAction:QueryAction => // Go directly to go, do not collect 200 //syncActions += newAction
-        case mm:VersionMismatch => handleMismatch(pairKey, mm)
+        // Unreachable code: case mm:VersionMismatch => handleMismatch(pairKey, mm)
       })
 
     }
 
-    def getDigests(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Digest]
+    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
+    def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
     def handleMismatch(pairKey:String, vm:VersionMismatch)
   }
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
 
-    def getDigests(pairKey:String, constraints:Seq[QueryConstraint]) = {
+    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {
       val aggregator = new Aggregator()
       store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
       aggregator.digests
+    }
+
+    def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
+      null
     }
 
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
@@ -129,6 +134,6 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     def collectDownstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, uvsn:String, dvsn:String) =
       builder.add(id, attributes, lastUpdate, dvsn)
 
-    def digests:Seq[Digest] = builder.digests
+    def digests:Seq[AggregateDigest] = builder.digests
   }
 }
