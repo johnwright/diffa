@@ -127,7 +127,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   }
 
   protected class Aggregator() {
-    val builder = new DigestBuilder(new DateCategoryFunction)
+    val builder = new DigestBuilder(DailyCategoryFunction())
 
     def collectUpstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, vsn:String) =
       builder.add(id, attributes, lastUpdate, vsn)

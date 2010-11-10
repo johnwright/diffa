@@ -59,10 +59,10 @@ abstract class AbstractPolicyTest {
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)
   def VersionsFromStore[T](vals:T*) = Seq[T](vals:_*)
 
-  protected val yearly = DateCategoryFunction()
-  protected val monthly = DateCategoryFunction()
-  protected val daily = DateCategoryFunction()
-  protected val individual = DateCategoryFunction()
+  protected val yearly = YearlyCategoryFunction()
+  protected val monthly = MonthlyCategoryFunction()
+  protected val daily = DailyCategoryFunction()
+  protected val individual = DailyCategoryFunction()
 
   @Test
   def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatch {

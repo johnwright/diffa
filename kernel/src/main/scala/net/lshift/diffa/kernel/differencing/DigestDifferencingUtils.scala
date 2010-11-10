@@ -64,11 +64,9 @@ object DigestDifferencingUtils {
                            ds2:Seq[AggregateDigest],
                            resolve:Digest => Map[String,String],
                            constraints:Seq[QueryConstraint]) : Seq[QueryAction] = {
-    val result = new ListBuffer[QueryAction]
+    val results = new ListBuffer[QueryAction]
     val ds1Ids = indexByAttributeValues(ds1)
     val ds2Ids = indexByAttributeValues(ds2)
-
-    //val attributes:HashMap[String,String] = null
 
     ds1Ids.foreach { case (label, ds1Digest) => {
       val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
@@ -95,6 +93,24 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
+
+        //println(label)
+        //println(hs2Digest)
+
+        val partition = hs2Digest.attributes(0)
+
+        if ("2010-07-08" == partition) {
+          results += constraints(0).nextQueryAction(partition)
+        }
+        else {
+          results += EntityQueryAction(constraints(0))
+        }
+
+
+
+
+
+
 //        result += VersionMismatch(label, resolve(hs2Digest), hs2Digest.lastUpdated, null, hs2Digest.digest)  
 //        gran match {
 //          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
@@ -103,7 +119,7 @@ object DigestDifferencingUtils {
       }
     }}
 
-    result
+    results
   }
 
   private def indexById(hs:Seq[EntityVersion]) = {
@@ -118,12 +134,12 @@ object DigestDifferencingUtils {
   }
   private def deepestQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    EntityQueryAction(DateRangeConstraint(null,null, DateCategoryFunction()))
+    EntityQueryAction(DateRangeConstraint(null,null, DailyCategoryFunction()))
     //QueryAction(start, end, IndividualGranularity)
   }
   private def deeperQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    AggregateQueryAction(DateRangeConstraint(null,null,DateCategoryFunction()))
+    AggregateQueryAction(DateRangeConstraint(null,null,DailyCategoryFunction()))
 //    QueryAction(start, end, currentGran match {
 //      case YearGranularity => MonthGranularity
 //      case MonthGranularity => DayGranularity
@@ -131,9 +147,11 @@ object DigestDifferencingUtils {
 //    })
   }
 
+  // KEEP
   private val yearParser = DateTimeFormat.forPattern("yyyy")
   private val yearMonthParser = DateTimeFormat.forPattern("yyyy-MM")
   private val yearMonthDayParser = DateTimeFormat.forPattern("yyyy-MM-dd")
+  // DON"T KEEP
   private def dateRangeForKey(key:String, gran:RangeGranularity) = {
     val (startDay, endDay) = gran match {
       case YearGranularity => {
@@ -162,9 +180,3 @@ object DigestDifferencingUtils {
     }
   }
 }
-
-abstract class DifferenceOutcome
-abstract class QueryAction extends DifferenceOutcome
-case class AggregateQueryAction(constraint:RangeQueryConstraint) extends QueryAction
-case class EntityQueryAction(constraint:RangeQueryConstraint) extends QueryAction
-case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String) extends DifferenceOutcome

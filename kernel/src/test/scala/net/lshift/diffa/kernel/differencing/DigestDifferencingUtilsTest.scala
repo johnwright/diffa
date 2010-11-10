@@ -33,10 +33,11 @@ class DigestDifferencingUtilsTest {
   
   // TODO [#2] factor these crufty granularities out
 
-  val in = DateCategoryFunction()
-  val day = DateCategoryFunction()
-  val month = DateCategoryFunction()
-  val year = DateCategoryFunction()
+  val in = DailyCategoryFunction()
+
+  val day = DailyCategoryFunction()
+  val month = MonthlyCategoryFunction()
+  val year = YearlyCategoryFunction()
 
 
   val IndividualGranularity = Seq(DateRangeConstraint(null, null, in))
@@ -118,11 +119,11 @@ class DigestDifferencingUtilsTest {
   def shouldRequestIndividualOnMissingDayVersionsInFirstList {
     val a = Seq()
     val b = Seq(AggregateDigest(Seq("2010-07-08"), JUL_8_2010, "v1"))
-    //val b = Seq(Digest("2010-07-08", JUL_8_2010, JUL_8_2010, "v1"))
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, DayGranularity)
+    val constraints = Seq(DateRangeConstraint(null,null,DateCategoryFunction()))
+    
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, constraints)
     assertEquals(HashSet(EntityQueryAction(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), in))), HashSet(actions: _*))
-    //assertEquals(HashSet(QueryAction(JUL_8_2010, endOfDay(JUL_8_2010), IndividualGranularity)), HashSet(actions: _*))
   }
 
   @Test

@@ -14,25 +14,9 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.participants
+package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.DateTime
+import scala.collection.Map
 
-/**
- * Contains
- *
- * - The name of the category
- * - A well known function name to apply in the participant
- * - EITHER a list of values OR a range of values TO apply
- */
-trait QueryConstraint {
-  def category:String
-  def function:CategoryFunction
-  def values:Seq[String]
-
-  def nextQueryAction(partition:String) : QueryAction = {
-    function.evaluate(partition)
-  }
-}
-case class ListQueryConstraint(category:String, function:CategoryFunction, values:Seq[String]) extends QueryConstraint
-trait RangeQueryConstraint extends QueryConstraint
+case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String)

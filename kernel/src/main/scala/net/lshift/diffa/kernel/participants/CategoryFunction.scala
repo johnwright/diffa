@@ -16,14 +16,39 @@
 
 package net.lshift.diffa.kernel.participants
 
+import org.joda.time.format.DateTimeFormat
+import net.lshift.diffa.kernel.differencing.DateRangeConstraint
+
 // TODO [#2] How does this function know what argument type it can work with?
 trait CategoryFunction {
 
-  def evaluate() : Unit
+  def evaluate(partition:String) : QueryAction
   def shouldBucket() : Boolean
 }
 
-case class DateCategoryFunction() extends CategoryFunction {
-  def evaluate() = ()
+case class DateCategoryFunction extends CategoryFunction {
+
+  def evaluate(partition:String) = {
+    val point = DateTimeFormat.forPattern("yyyy-MM-dd").parseDateTime(partition).toLocalDate
+    val (start,end) = (point,point)
+    val (s,e) = (start.toDateTimeAtStartOfDay, end.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
+    EntityQueryAction(DateRangeConstraint(s,e,DailyCategoryFunction()))
+  }
+
+  def shouldBucket() = true
+}
+
+case class DailyCategoryFunction() extends CategoryFunction {
+  def evaluate(partition:String) = null
+  def shouldBucket() = true
+}
+
+case class MonthlyCategoryFunction() extends CategoryFunction {
+  def evaluate(partition:String) = null
+  def shouldBucket() = true
+}
+
+case class YearlyCategoryFunction() extends CategoryFunction {
+  def evaluate(partition:String) = null
   def shouldBucket() = true
 }

@@ -17,14 +17,13 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.{Interval, DateTime}
-import net.lshift.diffa.kernel.participants.{CategoryFunction, DateCategoryFunction, RangeQueryConstraint}
-
-
+import org.joda.time.format.DateTimeFormat
+import net.lshift.diffa.kernel.participants.{EntityQueryAction, DailyCategoryFunction, CategoryFunction, RangeQueryConstraint}
 // TODO [#2]
 case class SimpleDateRangeConstraint(start:DateTime, end:DateTime) extends RangeQueryConstraint {
 
   def category = "date"
-  def function : CategoryFunction = new DateCategoryFunction // TODO should probably be an object, not an instance
+  def function : CategoryFunction = DailyCategoryFunction() // TODO should probably be an object, not an instance
   def values = List[String](start.toString, end.toString)
 
   private val interval = if (start != null && end != null) {
@@ -65,10 +64,6 @@ case class DateRangeConstraint(override val start:DateTime, override val end:Dat
 
   //def this(start:DateTime, end:DateTime) = this(start,end, DateCategoryFunction())
 
-
-
-
-
   /**
    * Intersect the selector with the given date range
    */
@@ -91,5 +86,5 @@ object DateRangeConstraint {
   /**
    * Starting point date constraint that accepts any date (ie, it has no bounds).
    */
-  val any = DateRangeConstraint(null, null, DateCategoryFunction())
+  val any = DateRangeConstraint(null, null, DailyCategoryFunction())
 }

@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.events._
 import scala.collection.Map
 import collection.mutable.{HashMap, ListBuffer}
-import net.lshift.diffa.kernel.participants.DateCategoryFunction
+import net.lshift.diffa.kernel.participants.{DailyCategoryFunction, MonthlyCategoryFunction, YearlyCategoryFunction, DateCategoryFunction}
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -38,10 +38,10 @@ class HibernateVersionCorrelationStoreTest {
   private val otherPair = "other-pair"
   private val categories = new HashMap[String,String]
 
-  protected val yearly = DateCategoryFunction()
-  protected val monthly = DateCategoryFunction()
-  protected val daily = DateCategoryFunction()
-  protected val individual = DateCategoryFunction()
+  protected val yearly = YearlyCategoryFunction()
+  protected val monthly = MonthlyCategoryFunction()
+  protected val daily = DailyCategoryFunction()
+  protected val individual = DailyCategoryFunction()
   
   @Before
   def cleanupStore {
