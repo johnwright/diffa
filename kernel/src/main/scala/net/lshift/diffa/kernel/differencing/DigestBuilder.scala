@@ -29,7 +29,7 @@ import scala.collection.Map
  */
 class DigestBuilder(val categoryFunction:CategoryFunction) {
   private val digestBuckets = new HashMap[String, Bucket]
-  private val versions = new ListBuffer[VersionDigest]
+  private val versions = new ListBuffer[Digest]
 
   /**
    * Adds a new version into the builder.
@@ -41,7 +41,7 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
     val label = attributes.keySet.reduceLeft(_ + "_" + _)
     val categoryNames = attributes.keySet.toSeq
     if (!categoryFunction.shouldBucket) {      
-      versions += VersionDigest(categoryNames, lastUpdated, vsn)
+      versions += AggregateDigest(categoryNames, lastUpdated, vsn)
     } else {
       val bucket = digestBuckets.get(label) match {
         case None => {
@@ -58,7 +58,7 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
   /**
    * Retrieves the bucketed digests for all version objects that have been provided.
    */
-  def digests:Seq[VersionDigest] = {
+  def digests:Seq[Digest] = {
     if (categoryFunction.shouldBucket) {
       versions
     } else {
@@ -76,6 +76,6 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
       theDigest.update(vsnBytes, 0, vsnBytes.length)
     }
 
-    def toDigest = VersionDigest(categoryNames, null, new String(Hex.encodeHex(theDigest.digest())))
+    def toDigest = AggregateDigest(categoryNames, null, new String(Hex.encodeHex(theDigest.digest())))
   }
 }

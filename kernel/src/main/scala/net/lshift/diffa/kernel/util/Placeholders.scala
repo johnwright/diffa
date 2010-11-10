@@ -20,7 +20,7 @@ import org.joda.time.DateTime
 
 object Placeholders {
 
-  // TODO To avoid having to change the VersionDigest in order to supply the lastUpdate
+  // TODO To avoid having to change the Digest in order to supply the lastUpdate
   // for now just use a timestamp, but this is probably wrong
   def dummyLastUpdated = new DateTime
 

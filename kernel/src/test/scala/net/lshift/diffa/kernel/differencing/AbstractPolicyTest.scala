@@ -68,24 +68,24 @@ abstract class AbstractPolicyTest {
   def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatch {
     // Expect only a top-level sync between the pairs
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
-    expectUpstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
+    expectUpstreamAggregateSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
       DigestsFromParticipant(
-        VersionDigest(Seq("2009"), null, DigestUtils.md5Hex("vsn1")),
-        //VersionDigest("2009", START_2009, null, DigestUtils.md5Hex("vsn1")),
-        VersionDigest(Seq("2010"), null, DigestUtils.md5Hex("vsn2"))),
-        //VersionDigest("2010", START_2010, null, DigestUtils.md5Hex("vsn2"))),
+        AggregateDigest(Seq("2009"), null, DigestUtils.md5Hex("vsn1")),
+        //Digest("2009", START_2009, null, DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(Seq("2010"), null, DigestUtils.md5Hex("vsn2"))),
+        //Digest("2010", START_2010, null, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1"),
         //UpstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1"),
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2")))
         //UpstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2")))
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
-    expectDownstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
+    expectDownstreamAggregateSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
       DigestsFromParticipant(
-        VersionDigest(Seq("2009"),  null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        //VersionDigest("2009", START_2009, null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        VersionDigest(Seq("2010"), null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
-        //VersionDigest("2010", START_2010, null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
+        AggregateDigest(Seq("2009"),  null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        //Digest("2009", START_2009, null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        AggregateDigest(Seq("2010"), null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
+        //Digest("2010", START_2010, null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
         //DownstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
@@ -105,13 +105,13 @@ abstract class AbstractPolicyTest {
   def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipant {
     val timestamp = new DateTime()
     // Expect only a top-level sync between the pairs
-    expectUpstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
+    expectUpstreamAggregateSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
-        //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
-        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
-        //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+        AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
+        //Digest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+        //Digest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1"),
         //UpstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1"),
@@ -119,46 +119,46 @@ abstract class AbstractPolicyTest {
         //UpstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2"),
         UpstreamVersion(VersionID(abPair, "id3"), categories, JUL_8_2010_1, "vsn3")))
         //UpstreamVersion(VersionID(abPair, "id3"), JUL_8_2010_1, JUL_8_2010_1, "vsn3")))
-    expectUpstreamSync(abPair, List(DateRangeConstraint(START_2010, END_2010, monthly)),
+    expectUpstreamAggregateSync(abPair, List(DateRangeConstraint(START_2010, END_2010, monthly)),
     //expectUpstreamSync(abPair, DateConstraint(START_2010, END_2010), MonthGranularity,
       DigestsFromParticipant(
-        VersionDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
-        //VersionDigest("2010-07", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+        AggregateDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+        //Digest("2010-07", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2"),
         //UpstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2"),
         UpstreamVersion(VersionID(abPair, "id3"), categories, JUL_8_2010_1, "vsn3")))
         //UpstreamVersion(VersionID(abPair, "id3"), JUL_8_2010_1, JUL_8_2010_1, "vsn3")))
-    expectUpstreamSync(abPair, List(DateRangeConstraint(JUL_2010, END_JUL_2010, daily)),
+    expectUpstreamAggregateSync(abPair, List(DateRangeConstraint(JUL_2010, END_JUL_2010, daily)),
     //expectUpstreamSync(abPair, DateConstraint(JUL_2010, END_JUL_2010), DayGranularity,
       DigestsFromParticipant(
-        VersionDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
-        //VersionDigest("2010-07-08", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
+        AggregateDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
+        //Digest("2010-07-08", JUL_8_2010_1, JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2"),
         //UpstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2"),
         UpstreamVersion(VersionID(abPair, "id3"), categories, JUL_8_2010_1, "vsn3")))
         //UpstreamVersion(VersionID(abPair, "id3"), JUL_8_2010_1, JUL_8_2010_1, "vsn3")))
-    expectUpstreamSync(abPair, List(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), individual)),
+    expectUpstreamEntitySync(abPair, List(DateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), individual)),
     //expectUpstreamSync(abPair, DateConstraint(JUL_8_2010, endOfDay(JUL_8_2010)), IndividualGranularity,
       DigestsFromParticipant(
-        VersionDigest(Seq("id2"), JUL_8_2010_1, "vsn2new"),
-        //VersionDigest("id2", JUL_8_2010_1, JUL_8_2010_1, "vsn2new"),
-        VersionDigest(Seq("id4"), JUL_8_2010_1, "vsn4")),
-        //VersionDigest("id4", JUL_8_2010_1, JUL_8_2010_1, "vsn4")),
+        EntityVersion("id2", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, "vsn2new"),
+        //Digest("id2", JUL_8_2010_1, JUL_8_2010_1, "vsn2new"),
+        EntityVersion("id4", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, "vsn4")),
+        //Digest("id4", JUL_8_2010_1, JUL_8_2010_1, "vsn4")),
       VersionsFromStore(
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2"),
         //UpstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2"),
         UpstreamVersion(VersionID(abPair, "id3"), categories, JUL_8_2010_1, "vsn3")))
         //UpstreamVersion(VersionID(abPair, "id3"), JUL_8_2010_1, JUL_8_2010_1, "vsn3")))
 
-    expectDownstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
+    expectDownstreamAggregateSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
-        //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
+        AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        //Digest("2009", START_2009, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
+        //Digest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
         //DownstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
@@ -190,25 +190,25 @@ abstract class AbstractPolicyTest {
   def shouldReportMismatchesReportedByUnderlyingStore {
     val timestamp = new DateTime()
     // Expect only a top-level sync between the pairs
-    expectUpstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
+    expectUpstreamAggregateSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
     //expectUpstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
-        //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
-        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
-        //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2"))),
+        AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
+        //Digest("2009", START_2009, START_2009, DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
+        //Digest("2010", START_2010, START_2010, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         //UpstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1"),
         UpstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1"),
         UpstreamVersion(VersionID(abPair, "id2"), categories, JUL_8_2010_1, "vsn2")))
         //UpstreamVersion(VersionID(abPair, "id2"), JUL_8_2010_1, JUL_8_2010_1, "vsn2")))
-    expectDownstreamSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
+    expectDownstreamAggregateSync(abPair, List(DateRangeConstraint(START_2009, END_2010, yearly)),
     //expectDownstreamSync(abPair, DateConstraint(START_2009, END_2010), YearGranularity,
       DigestsFromParticipant(
-        VersionDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
-        //VersionDigest("2009", START_2009, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
-        VersionDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
-        //VersionDigest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
+        AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
+        //Digest("2009", START_2009, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
+        AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
+        //Digest("2010", START_2010, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
       VersionsFromStore(
         DownstreamVersion(VersionID(abPair, "id1"), categories, JUN_6_2009_1, "vsn1a", downstreamVersionFor("vsn1a")),
         //DownstreamVersion(VersionID(abPair, "id1"), JUN_6_2009_1, JUN_6_2009_1, "vsn1a", downstreamVersionFor("vsn1a")),
@@ -340,13 +340,24 @@ abstract class AbstractPolicyTest {
     }
   }
 
-  protected def expectUpstreamSync(pair:String, constraints:Seq[QueryConstraint] ,partResp:Seq[VersionDigest], storeResp:Seq[UpstreamVersion]) {
-    expect(usMock.queryDigests(constraints)).andReturn(partResp)
+  protected def expectUpstreamAggregateSync(pair:String, constraints:Seq[QueryConstraint] ,partResp:Seq[AggregateDigest], storeResp:Seq[UpstreamVersion]) {
+    expect(usMock.queryAggregateDigests(constraints)).andReturn(partResp)
     store.queryUpstreams(EasyMock.eq(pair), EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(storeResp))
   }
-  protected def expectDownstreamSync(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[VersionDigest], storeResp:Seq[DownstreamVersion]) {
-    expect(dsMock.queryDigests(constraints)).andReturn(partResp)
+  protected def expectDownstreamAggregateSync(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[AggregateDigest], storeResp:Seq[DownstreamVersion]) {
+    expect(dsMock.queryAggregateDigests(constraints)).andReturn(partResp)
+    store.queryDownstreams(EasyMock.eq(pair), EasyMock.eq(constraints), anyUnitF5)
+      expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
+  }
+  // TODO [#2] these copy and pasted expectations could do with some refactoring
+  protected def expectUpstreamEntitySync(pair:String, constraints:Seq[QueryConstraint] ,partResp:Seq[EntityVersion], storeResp:Seq[UpstreamVersion]) {
+    expect(usMock.queryEntityVersions(constraints)).andReturn(partResp)
+    store.queryUpstreams(EasyMock.eq(pair), EasyMock.eq(constraints), anyUnitF4)
+      expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(storeResp))
+  }
+  protected def expectDownstreamEntitySync(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[EntityVersion], storeResp:Seq[DownstreamVersion]) {
+    expect(dsMock.queryEntityVersions(constraints)).andReturn(partResp)
     store.queryDownstreams(EasyMock.eq(pair), EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
   }

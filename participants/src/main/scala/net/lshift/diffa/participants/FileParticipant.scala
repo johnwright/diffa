@@ -35,7 +35,9 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
   val watcher = new DirWatcher(dir, onFileChange)
   val changesClient = new ChangesRestClient(agentRoot)
 
-  def queryDigests(constraints:Seq[QueryConstraint]) = {
+  def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
+
+  def queryAggregateDigests(constraints:Seq[QueryConstraint]) = {
     // old: def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
 
     // TODO [#2] This date constraint is hard coded -> it should come out of the QueryConstraint

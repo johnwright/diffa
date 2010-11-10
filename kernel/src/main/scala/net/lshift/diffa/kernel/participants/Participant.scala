@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.participants
 
-import org.joda.time.DateTime
 import java.io.Closeable
 
 /**
@@ -30,11 +29,18 @@ trait Participant extends Closeable
    * functions that are embodied in each QueryConstraint. Note that when no QueryConstraint is specified, i.e.
    * an empty list is passed in, the entire data set of the participant will be returned.
    */
-  def queryDigests(constraints:Seq[QueryConstraint]) : Seq[VersionDigest]
+  def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
 
   /**
-   * This invokes a request against the participant for the the named action and supplies it with the id entity
-   * for which the action should be executed on. 
+   * Retrieves details about a participant's native versions at the level of individual entities. The participant
+   * is expected to filter their data based on the provided constraints. Note that when no QueryConstraint is specified, i.e.
+   * an empty list is passed in, the entire data set of the participant will be returned.
+   */
+  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
+
+  /**
+   *  This invokes a request against the participant for the the named action and supplies it with the id entity
+   * for which the action should be executed on.
    */
   def invoke(actionId:String, entityId:String) : ActionResult
   /**

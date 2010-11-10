@@ -16,6 +16,7 @@
 
 package net.lshift.diffa.kernel.participants
 
+// TODO [#2] How does this function know what argument type it can work with?
 trait CategoryFunction {
 
   def evaluate() : Unit

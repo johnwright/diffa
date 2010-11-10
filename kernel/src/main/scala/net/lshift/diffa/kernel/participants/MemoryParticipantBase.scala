@@ -27,8 +27,10 @@ import collection.mutable.HashMap
 class MemoryParticipantBase(nativeVsnGen: String => String) {
   protected val entities = new HashMap[String, TestEntity]
 
+  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = null
+
   //def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
-  def queryDigests(constraints:Seq[QueryConstraint]) : Seq[VersionDigest] = {
+  def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
     // Filter on date interval & sort entries by ID into a list
 //    val start = new DateTime
 //    val end = new DateTime

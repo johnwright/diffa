@@ -45,8 +45,9 @@ class DigestBuilderTest {
     //builder.add(VersionID(pair, "id2"), JUL_9_2010_1, JUL_9_2010_1, "vsn2")
 
     assertEquals(
-      HashSet(VersionDigest(Seq("id1"), JUL_9_2010_1, "vsn1"), VersionDigest(Seq("id2"), JUL_9_2010_1, "vsn2")),
-      //HashSet(VersionDigest("id1", JUL_9_2010_1, JUL_9_2010_1, "vsn1"), VersionDigest("id2", JUL_9_2010_1, JUL_9_2010_1, "vsn2")),
+      HashSet(EntityVersion("id1", Seq(JUL_9_2010_1.toString), JUL_9_2010_1, "vsn1"),
+              EntityVersion("id2", Seq(JUL_9_2010_1.toString), JUL_9_2010_1, "vsn2")),
+      //HashSet(Digest("id1", JUL_9_2010_1, JUL_9_2010_1, "vsn1"), Digest("id2", JUL_9_2010_1, JUL_9_2010_1, "vsn2")),
       HashSet(builder.digests: _*))
   }
 
@@ -64,10 +65,10 @@ class DigestBuilderTest {
 
     assertEquals(
       HashSet(
-        VersionDigest(Seq("2010-07-08"), null, DigestUtils.md5Hex("vsn1" + "vsn2")),
-        //VersionDigest("2010-07-08", JUL_8_2010, null, DigestUtils.md5Hex("vsn1" + "vsn2")),
-        VersionDigest(Seq("2010-07-09"), null, DigestUtils.md5Hex("vsn3"))),
-        //VersionDigest("2010-07-09", JUL_9_2010, null, DigestUtils.md5Hex("vsn3"))),
+        AggregateDigest(Seq("2010-07-08"), null, DigestUtils.md5Hex("vsn1" + "vsn2")),
+        //Digest("2010-07-08", JUL_8_2010, null, DigestUtils.md5Hex("vsn1" + "vsn2")),
+        AggregateDigest(Seq("2010-07-09"), null, DigestUtils.md5Hex("vsn3"))),
+        //Digest("2010-07-09", JUL_9_2010, null, DigestUtils.md5Hex("vsn3"))),
       HashSet(builder.digests: _*))
   }
 
@@ -87,10 +88,10 @@ class DigestBuilderTest {
 
     assertEquals(
       HashSet(
-        VersionDigest(Seq("2010-07"), null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3")),
-        //VersionDigest("2010-07", JUL_2010, null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3")),
-        VersionDigest(Seq("2010-08)"), null, DigestUtils.md5Hex("vsn4"))),
-        //VersionDigest("2010-08", AUG_2010, null, DigestUtils.md5Hex("vsn4"))),
+        AggregateDigest(Seq("2010-07"), null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3")),
+        //Digest("2010-07", JUL_2010, null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3")),
+        AggregateDigest(Seq("2010-08)"), null, DigestUtils.md5Hex("vsn4"))),
+        //Digest("2010-08", AUG_2010, null, DigestUtils.md5Hex("vsn4"))),
       HashSet(builder.digests: _*))
   }
 
@@ -116,12 +117,12 @@ class DigestBuilderTest {
 
     assertEquals(
       HashSet(
-        VersionDigest(Seq("2009"), null, DigestUtils.md5Hex("vsn0")),
-        //VersionDigest("2009", START_2009, null, DigestUtils.md5Hex("vsn0")),
-        VersionDigest(Seq("2010"), null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3" + "vsn4")),
-        //VersionDigest("2010", START_2010, null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3" + "vsn4")),
-        VersionDigest(Seq("2011"), null, DigestUtils.md5Hex("vsn5" + "vsn6"))),
-        //VersionDigest("2011", START_2011, null, DigestUtils.md5Hex("vsn5" + "vsn6"))),
+        AggregateDigest(Seq("2009"), null, DigestUtils.md5Hex("vsn0")),
+        //Digest("2009", START_2009, null, DigestUtils.md5Hex("vsn0")),
+        AggregateDigest(Seq("2010"), null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3" + "vsn4")),
+        //Digest("2010", START_2010, null, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3" + "vsn4")),
+        AggregateDigest(Seq("2011"), null, DigestUtils.md5Hex("vsn5" + "vsn6"))),
+        //Digest("2011", START_2011, null, DigestUtils.md5Hex("vsn5" + "vsn6"))),
       HashSet(builder.digests: _*))
   }
 }

@@ -25,8 +25,11 @@ import scala.collection.JavaConversions._
  * Handler for participants being queried via JSON.
  */
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
+
+  // TODO [#2] remember to implement "query_entity_versions"
+
   protected val commonEndpoints = Map(
-    "query_digests" -> defineRpc((s:String) => s)(req => {
+    "query_aggregate_digests" -> defineRpc((s:String) => s)(req => {
       val reqObj = new JSONObject(req)
 
       // TODO [#2] parse properly
@@ -34,7 +37,7 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
 //        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("start")),
 //        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("end")),
 //        decodeGranularity(reqObj.getString("granularity")))
-      val digests = participant.queryDigests(List(DateRangeConstraint.any))
+      val digests = participant.queryAggregateDigests(List(DateRangeConstraint.any))
 
       val resultObj = new JSONArray
       digests foreach (digest => {

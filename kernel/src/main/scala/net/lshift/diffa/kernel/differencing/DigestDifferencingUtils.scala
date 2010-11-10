@@ -26,12 +26,16 @@ import scala.collection.Map
  * Utility methods for differencing sequences of digests.
  */
 object DigestDifferencingUtils {
-  def differenceDigests(ds1:Seq[VersionDigest], ds2:Seq[VersionDigest], constraints:Seq[QueryConstraint]):Seq[DifferenceOutcome] = {
-    val result = new ListBuffer[DifferenceOutcome]
-    val ds1Ids = indexByIdentifier(ds1)
-    val ds2Ids = indexByIdentifier(ds2)
 
-    val attributes:HashMap[String,String] = null
+  def differenceDigests(ds1:Seq[Digest],
+                        ds2:Seq[Digest],
+                        resolve:Digest => Map[String,String],
+                        constraints:Seq[QueryConstraint]) : Seq[DifferenceOutcome] = {
+    val result = new ListBuffer[DifferenceOutcome]
+    val ds1Ids = indexByAttributeValues(ds1)
+    val ds2Ids = indexByAttributeValues(ds2)
+
+    //val attributes:HashMap[String,String] = null
 
     ds1Ids.foreach { case (label, ds1Digest) => {
       val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
@@ -58,7 +62,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)  
+        result += VersionMismatch(label, resolve(hs2Digest), hs2Digest.lastUpdated, null, hs2Digest.digest)  
 //        gran match {
 //          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
 //          case _                     => result += deepestQueryAction(label, gran)
@@ -69,20 +73,20 @@ object DigestDifferencingUtils {
     result
   }
 
-  private def indexByIdentifier(hs:Seq[VersionDigest]) = {
-    val res = new HashMap[String, VersionDigest]
+  private def indexByAttributeValues(hs:Seq[Digest]) = {
+    val res = new HashMap[String, Digest]
     hs.foreach(d => res(d.attributes.reduceLeft(_+_)) = d)
 
     res
   }
   private def deepestQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    QueryAction(DateRangeConstraint(null,null, DateCategoryFunction()))
+    EntityQueryAction(DateRangeConstraint(null,null, DateCategoryFunction()))
     //QueryAction(start, end, IndividualGranularity)
   }
   private def deeperQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    QueryAction(DateRangeConstraint(null,null,DateCategoryFunction()))
+    AggregateQueryAction(DateRangeConstraint(null,null,DateCategoryFunction()))
 //    QueryAction(start, end, currentGran match {
 //      case YearGranularity => MonthGranularity
 //      case MonthGranularity => DayGranularity
@@ -123,5 +127,7 @@ object DigestDifferencingUtils {
 }
 
 abstract class DifferenceOutcome
-case class QueryAction(constraint:RangeQueryConstraint) extends DifferenceOutcome
+abstract class QueryAction extends DifferenceOutcome
+case class AggregateQueryAction(constraint:RangeQueryConstraint) extends QueryAction
+case class EntityQueryAction(constraint:RangeQueryConstraint) extends QueryAction
 case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String) extends DifferenceOutcome

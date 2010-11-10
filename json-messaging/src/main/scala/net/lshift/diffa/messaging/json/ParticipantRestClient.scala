@@ -25,8 +25,10 @@ import collection.mutable.HashMap
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
+  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = null
+
   // old: override def queryDigests(start:DateTime, end:DateTime, granularity:RangeGranularity) = {
-  override def queryDigests(constraints:Seq[QueryConstraint]) : Seq[VersionDigest] = {
+  override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
     val requestObj = new JSONObject
     // TODO [#2]
     //requestObj.put("start", start.toString(JSONEncodingUtils.dateEncoder))
@@ -38,7 +40,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
         val jsonDigests = new JSONArray(r)
         (0 until jsonDigests.length).map(i => {
           val digestObj = jsonDigests.getJSONObject(i)
-          VersionDigest(
+          AggregateDigest(
             // TODO [#2]
             //digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
             JSONEncodingUtils.toList(digestObj.getJSONArray("attributes")),

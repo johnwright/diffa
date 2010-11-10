@@ -35,14 +35,16 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
     new DownstreamParticipant() {
       def generateVersion(entityBody:String) = null
       def invoke(actionId:String, entityId:String)  = null
-      def queryDigests(constraints:Seq[QueryConstraint]) = null
+      def queryAggregateDigests(constraints:Seq[QueryConstraint]) = null
+      def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
       def retrieveContent(id:String) = null
       def close() = ()
     }
   }
   def createUpstreamParticipant(address:String, protocol:String) = {
     new UpstreamParticipant() {
-      def queryDigests(constraints:Seq[QueryConstraint]) = null
+      def queryAggregateDigests(constraints:Seq[QueryConstraint]) = null
+      def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
       def invoke(actionId:String, entityId:String)  = null
       def retrieveContent(id:String) = null
       def close() = ()

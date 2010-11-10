@@ -17,11 +17,11 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events._
-import collection.mutable.Queue
 import net.lshift.diffa.kernel.participants._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.Map
+import collection.mutable.{HashMap, Queue}
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -85,17 +85,19 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   protected abstract class SyncStrategy {
     def syncHalf(pairKey:String, constraints:Seq[QueryConstraint], p:Participant) {
 
-      val usDigests = p.queryDigests(constraints)
+      val usDigests = p.queryAggregateDigests(constraints)
       val cachedDigests = getDigests(pairKey, constraints)
 
-      DigestDifferencingUtils.differenceDigests(usDigests, cachedDigests, constraints).foreach(o => o match {
+      def resolve(d:Digest) = new HashMap[String,String]
+
+      DigestDifferencingUtils.differenceDigests(usDigests, cachedDigests, resolve, constraints).foreach(o => o match {
         case newAction:QueryAction => // Go directly to go, do not collect 200 //syncActions += newAction
         case mm:VersionMismatch => handleMismatch(pairKey, mm)
       })
 
     }
 
-    def getDigests(pairKey:String, constraints:Seq[QueryConstraint]):Seq[VersionDigest]
+    def getDigests(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Digest]
     def handleMismatch(pairKey:String, vm:VersionMismatch)
   }
 
@@ -127,6 +129,6 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     def collectDownstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, uvsn:String, dvsn:String) =
       builder.add(id, attributes, lastUpdate, dvsn)
 
-    def digests:Seq[VersionDigest] = builder.digests
+    def digests:Seq[Digest] = builder.digests
   }
 }

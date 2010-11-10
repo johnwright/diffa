@@ -30,4 +30,11 @@ import org.joda.time.DateTime
  *
  */
 // TODO [#2] Update the documentation based on the final implementation
-case class VersionDigest(attributes:Seq[String], lastUpdated:DateTime, digest:String)
+trait Digest {
+  def attributes:Seq[String]
+  def lastUpdated:DateTime
+  def digest:String
+}
+
+case class AggregateDigest(attributes:Seq[String], lastUpdated:DateTime, digest:String) extends Digest
+case class EntityVersion(id:String, attributes:Seq[String], lastUpdated:DateTime, digest:String) extends Digest
