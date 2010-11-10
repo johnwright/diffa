@@ -107,13 +107,11 @@ class DigestDifferencingUtilsTest {
   @Test
   def shouldReportMismatchedIndividualVersions {
     val a = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v1"))
-    //val a = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "v1"))
     val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v2"))
-    //val b = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "v2"))
 
-    val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
-    assertEquals(HashSet(VersionMismatch("id1",  __attributes, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
-    //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, bizDateMapper, IndividualGranularity)
+    val attributes = HashMap("bizDate" -> JAN_1_2010.toString())
+    assertEquals(HashSet(VersionMismatch("id1",  attributes, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
   }
 
   @Test

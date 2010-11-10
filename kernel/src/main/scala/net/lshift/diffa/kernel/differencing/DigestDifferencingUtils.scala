@@ -42,7 +42,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, resolve(ds1Digest), ds1Digest.lastUpdated, ds1Digest.digest, null)
+        result += VersionMismatch(label, resolve(ds1Digest), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
       }
     }}
 
