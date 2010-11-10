@@ -48,6 +48,10 @@ class DigestDifferencingUtilsTest {
     new HashMap[String,String]
   }
 
+  def bizDateMapper(d: Digest) = {
+    HashMap("bizDate" -> d.attributes(0))
+  }
+
   @Test
   def shouldReportNothingOnMatchingEmptyLists {
     val actions = DigestDifferencingUtils.differenceAggregates(Seq(), Seq(), resolve, IndividualGranularity)
@@ -84,29 +88,20 @@ class DigestDifferencingUtilsTest {
   def shouldReportMissingIndividualVersionsInFirstList {
     val a = Seq()
     val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v1"))
-    //val b = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "v1"))
 
-    def r(d:Digest) = {
-      HashMap("bizDate" -> d.attributes(0))
-    }
-
-    val actions = DigestDifferencingUtils.differenceEntities(a, b, r, IndividualGranularity)
-
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, bizDateMapper, IndividualGranularity)
     val attributes = HashMap("bizDate" -> JAN_1_2010.toString())
-
     assertEquals(HashSet(VersionMismatch("id1", attributes, JAN_1_2010, null, "v1")), HashSet(actions: _*))
-    //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, null, "v1")), HashSet(actions: _*))
   }
   
   @Test
   def shouldReportMissingIndividualVersionsInSecondList {
     val a = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v1"))
-    //val a = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "v1"))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
-    assertEquals(HashSet(VersionMismatch("id1",  __attributes, JAN_1_2010, "v1", null)), HashSet(actions: _*))
-    //assertEquals(HashSet(VersionMismatch("id1", JAN_1_2010, JAN_1_2010, "v1", null)), HashSet(actions: _*))
+    val actions = DigestDifferencingUtils.differenceEntities(a, b, bizDateMapper, IndividualGranularity)
+    val attributes = HashMap("bizDate" -> JAN_1_2010.toString())
+    assertEquals(HashSet(VersionMismatch("id1", attributes, JAN_1_2010, "v1", null)), HashSet(actions: _*))
   }
 
   @Test

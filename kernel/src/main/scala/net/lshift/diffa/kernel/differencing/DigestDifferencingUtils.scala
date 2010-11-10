@@ -42,14 +42,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-//        gran match {
-//          case IndividualGranularity =>
-//            result += VersionMismatch(label, attributes, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.digest, otherDigest)
-//          case _ => otherDigest match {
-//            case null => result += deepestQueryAction(label, gran)
-//            case _ => result += deeperQueryAction(label, gran)
-//          }
-//        }
+        result += VersionMismatch(label, resolve(ds1Digest), ds1Digest.lastUpdated, ds1Digest.digest, null)
       }
     }}
 
@@ -61,10 +54,6 @@ object DigestDifferencingUtils {
 
       if (!otherMatches) {
         result += VersionMismatch(label, resolve(hs2Digest), hs2Digest.lastUpdated, null, hs2Digest.digest)
-//        gran match {
-//          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
-//          case _                     => result += deepestQueryAction(label, gran)
-//        }
       }
     }}
 
