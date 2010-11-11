@@ -139,12 +139,12 @@ object DigestDifferencingUtils {
   }
   private def deepestQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    EntityQueryAction(DateRangeConstraint(null,null, DailyCategoryFunction()))
+    EntityQueryAction(DateConstraint(null,null, DailyCategoryFunction()))
     //QueryAction(start, end, IndividualGranularity)
   }
   private def deeperQueryAction(key:String, currentGran:RangeGranularity) = {
     val (start, end) = dateRangeForKey(key, currentGran)
-    AggregateQueryAction(DateRangeConstraint(null,null,DailyCategoryFunction()))
+    AggregateQueryAction(DateConstraint(null,null,DailyCategoryFunction()))
 //    QueryAction(start, end, currentGran match {
 //      case YearGranularity => MonthGranularity
 //      case MonthGranularity => DayGranularity
@@ -152,11 +152,11 @@ object DigestDifferencingUtils {
 //    })
   }
 
-  // KEEP
+  // DON"T KEEP
   private val yearParser = DateTimeFormat.forPattern("yyyy")
   private val yearMonthParser = DateTimeFormat.forPattern("yyyy-MM")
   private val yearMonthDayParser = DateTimeFormat.forPattern("yyyy-MM-dd")
-  // DON"T KEEP
+
   private def dateRangeForKey(key:String, gran:RangeGranularity) = {
     val (startDay, endDay) = gran match {
       case YearGranularity => {

@@ -39,7 +39,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     sessionFactory.withSession(s => {
       val saveable = queryCurrentCorrelation(s, id) match {
 
-        case None => Correlation(null, id.pairKey, id.id, attributes, lastUpdated, timestamp, vsn, null, null, false)
+        case None => Correlation(null, id.pairKey, id.id, attributes, null, lastUpdated, timestamp, vsn, null, null, false)
         case Some(c:Correlation) => {
           c.upstreamVsn = vsn
           updateMatchedState(c)
@@ -56,7 +56,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     val timestamp = new DateTime()
     sessionFactory.withSession(s => {
       val saveable = queryCurrentCorrelation(s, id) match {
-        case None => Correlation(null, id.pairKey, id.id, attributes, lastUpdated, timestamp, null, uvsn, dvsn, false)
+        case None => Correlation(null, id.pairKey, id.id, null, attributes, lastUpdated, timestamp, null, uvsn, dvsn, false)
         case Some(c:Correlation) => {
           c.downstreamUVsn = uvsn
           c.downstreamDVsn = dvsn
@@ -72,7 +72,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
 
   def unmatchedVersions(pairKey:String, constraints:Seq[QueryConstraint]) = {
     sessionFactory.withSession(s => {
-      val criteria = criteriaForDateRange(s, pairKey, constraints)
+      val criteria = buildCriteria(s, pairKey, constraints)
       criteria.add(Restrictions.eq("isMatched", false))
 
       criteria.list.map { i => i.asInstanceOf[Correlation] }
@@ -139,33 +139,32 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
 
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
     sessionFactory.withSession(s => {
-      val criteria = criteriaForDateRange(s, pairKey, constraints)
+      val criteria = buildCriteria(s, pairKey, constraints)
       criteria.add(Restrictions.isNotNull("upstreamVsn"))
       criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
-        handler(VersionID(c.pairing, c.id), c.attributes, c.lastUpdate, c.upstreamVsn)
+        handler(VersionID(c.pairing, c.id), c.upstreamAttributes, c.lastUpdate, c.upstreamVsn)
       })
     })
   }
 
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
     sessionFactory.withSession(s => {
-      val criteria = criteriaForDateRange(s, pairKey, constraints)
+      val criteria = buildCriteria(s, pairKey, constraints)
       criteria.add(Restrictions.or(Restrictions.isNotNull("downstreamUVsn"), Restrictions.isNotNull("downstreamDVsn")))
       criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
-        handler(VersionID(c.pairing, c.id), c.attributes, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
+        handler(VersionID(c.pairing, c.id), c.downstreamAttributes, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
       })
     })
   }
 
-  private def queryCurrentCorrelation(s:Session, id:VersionID):Option[Correlation] =
-    singleQueryOpt(s, "currentCorrelation", Map("key" -> id.pairKey, "id" -> id.id))
-  private def updateMatchedState(c:Correlation) = {
-    c.isMatched = (c.upstreamVsn == c.downstreamUVsn)
-    c
-  }
-  private def criteriaForDateRange(s:Session, pairKey:String, constraints:Seq[QueryConstraint]) = {
+  private def buildCriteria(s:Session, pairKey:String, constraints:Seq[QueryConstraint]) = {
     val criteria = s.createCriteria(classOf[Correlation])
     criteria.add(Restrictions.eq("pairing", pairKey))
+
+
+
+
+
 //    if (dateRange.start != null) {
 //      criteria.add(Restrictions.ge("date", dateRange.start))
 //    }
@@ -176,4 +175,13 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
 
     criteria
   }
+
+  private def queryCurrentCorrelation(s:Session, id:VersionID):Option[Correlation] =
+    singleQueryOpt(s, "currentCorrelation", Map("key" -> id.pairKey, "id" -> id.id))
+
+  private def updateMatchedState(c:Correlation) = {
+    c.isMatched = (c.upstreamVsn == c.downstreamUVsn)
+    c
+  }
+
 }
