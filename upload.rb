@@ -15,7 +15,7 @@ gh = Net::GitHub::Upload.new(
   :token => token
 )
 
-zip_link = gh.upload(
+zip_link = gh.replace(
   :repos => repos,
   :file  => zip_package,
   :description => "Standalone Diffa agent - build ##{build_number}"
@@ -23,7 +23,7 @@ zip_link = gh.upload(
 
 puts "Succesfully uploaded #{zip_package} build number #{build_number} to #{zip_link}" 
 
-war_link = gh.upload(
+war_link = gh.replace(
   :repos => repos,
   :file  => war_package,
   :description => "Diffa war archive - build ##{build_number}"
