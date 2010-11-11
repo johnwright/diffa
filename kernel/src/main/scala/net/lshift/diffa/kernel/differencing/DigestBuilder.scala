@@ -18,18 +18,20 @@ package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.DateTime
 import java.security.MessageDigest
-import collection.mutable.{ListBuffer, HashMap}
+import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.apache.commons.codec.binary.Hex
-import scala.collection.Map
+import collection.Map
+import scala.collection.JavaConversions._
+import net.jcip.annotations.NotThreadSafe
 
 /**
  * Utility class for building version digests from a sequence of versions.
  */
-class DigestBuilder(val categoryFunction:CategoryFunction) {
-  private val digestBuckets = new HashMap[String, Bucket]
-  private val versions = new ListBuffer[Digest]
+class DigestBuilder(val function:CategoryFunction) {
+  val digestBuckets = new java.util.TreeMap[String,Bucket]()
+  val versions = new ListBuffer[EntityVersion]
 
   /**
    * Adds a new version into the builder.
@@ -38,20 +40,23 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
     = add(id.id, attributes, lastUpdated, vsn)
 
   def add(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsn:String) {
-    val label = attributes.keySet.reduceLeft(_ + "_" + _)
-    val categoryNames = attributes.keySet.toSeq
-    if (!categoryFunction.shouldBucket) {      
-      versions += AggregateDigest(categoryNames, lastUpdated, vsn)
-    } else {
+
+    if (function.shouldBucket) {
+
+      val partitionedValues = attributes.values.map(function.partition(_))
+      val label = partitionedValues.reduceLeft(_ + "_" + _)
+
       val bucket = digestBuckets.get(label) match {
-        case None => {
-          val newBucket = new Bucket(categoryNames)
-          digestBuckets(label) = newBucket
+        case null => {
+          val newBucket = new Bucket(label, partitionedValues.toSeq)
+          digestBuckets.put(label, newBucket)
           newBucket
         }
-        case Some(b) => b
+        case b    => b
       }
       bucket.add(vsn)
+    } else {
+      versions += EntityVersion(id, attributes.values.toSeq, lastUpdated, vsn)
     }
   }
 
@@ -59,25 +64,40 @@ class DigestBuilder(val categoryFunction:CategoryFunction) {
    * Retrieves the bucketed digests for all version objects that have been provided.
    */
   def digests:Seq[AggregateDigest] = {
-    if (categoryFunction.shouldBucket) {
-      versions
-    } else {
+    if (function.shouldBucket) {
       // Digest the buckets
       digestBuckets.values.map(b => b.toDigest).toList
+    } else {
+      Seq()
     }
-    // TODO [#2] fix
-    Seq[AggregateDigest]()
   }
 
-  private class Bucket(val categoryNames:Seq[String]) {
-    private val digestAlgorithm = "MD5"
-    private val theDigest =  MessageDigest.getInstance(digestAlgorithm)
 
-    def add(vsn:String) = {
-      val vsnBytes = vsn.getBytes("UTF-8")
-      theDigest.update(vsnBytes, 0, vsnBytes.length)
-    }
-
-    def toDigest = AggregateDigest(categoryNames, null, new String(Hex.encodeHex(theDigest.digest())))
-  }
 }
+
+class Bucket(val name: String, val attributes: Seq[String]) {
+  private val digestAlgorithm = "MD5"
+  private val messageDigest = MessageDigest.getInstance(digestAlgorithm)
+  private var digest:String = null
+
+  @NotThreadSafe
+  def add(vsn: String) = {
+    if (digest != null) {
+      throw new SealedBucketException(vsn, name)
+    }
+    val vsnBytes = vsn.getBytes("UTF-8")
+    messageDigest.update(vsnBytes, 0, vsnBytes.length)
+  }
+
+  @NotThreadSafe
+  def toDigest = {
+    if (digest == null) {
+      digest = new String(Hex.encodeHex(messageDigest.digest()))
+    }
+    AggregateDigest(attributes, null, digest)
+  }
+
+}
+
+class SealedBucketException(vsn:String, name:String) extends Exception(vsn + " -> " + name)
+

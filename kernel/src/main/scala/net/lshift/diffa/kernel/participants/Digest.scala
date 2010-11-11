@@ -30,6 +30,7 @@ import org.joda.time.DateTime
  *
  */
 // TODO [#2] Update the documentation based on the final implementation
+// TODO [#2] Does this trait ever get used?
 trait Digest {
   def attributes:Seq[String]
   def lastUpdated:DateTime
