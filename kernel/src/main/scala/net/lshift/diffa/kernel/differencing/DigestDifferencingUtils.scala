@@ -152,7 +152,7 @@ object DigestDifferencingUtils {
 //    })
   }
 
-  // DON"T KEEP
+  // TODO [#2] DON"T KEEP
   private val yearParser = DateTimeFormat.forPattern("yyyy")
   private val yearMonthParser = DateTimeFormat.forPattern("yyyy-MM")
   private val yearMonthDayParser = DateTimeFormat.forPattern("yyyy-MM-dd")

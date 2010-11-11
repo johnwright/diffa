@@ -182,7 +182,7 @@ abstract class AbstractPolicyTest {
         andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, List(SimpleDateConstraint(START_2009, END_2010)), usMock, dsMock, nullListener)
+    policy.difference(abPair, List(DateConstraint(START_2009, END_2010, YearlyCategoryFunction())), usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -227,7 +227,7 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.difference(abPair, List(SimpleDateConstraint(START_2009, END_2010)), usMock, dsMock, listener)
+    policy.difference(abPair, List(DateConstraint(START_2009, END_2010, YearlyCategoryFunction())), usMock, dsMock, listener)
     verifyAll
   }
 
