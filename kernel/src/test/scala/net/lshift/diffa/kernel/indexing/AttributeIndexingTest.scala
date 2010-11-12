@@ -29,12 +29,16 @@ class AttributeIndexingTest {
   @Test
   def basic = {
     val indexer = new DefaultAttributeIndexer(dir)
-    val bizDate = new DateTime(1875, 7, 13, 12, 0, 0, 0).toString()
-    val toIndex = Seq(Indexable("id1", Map( "bizDate" -> bizDate )))
+    val bizDate = new DateTime(1875, 7, 13, 12, 0, 0, 0)
+    val toIndex = Seq(Indexable("id1", Map( "bizDate" -> bizDate.toString )))
     indexer.index(toIndex)
     val byId = indexer.query("id", "id1")
     assertEquals(1, byId.length)    
     assertEquals("id1", byId(0).id)
-    assertEquals(bizDate, byId(0).terms("bizDate"))    
+    assertEquals(bizDate.toString(), byId(0).terms("bizDate"))
+    val byRange1 = indexer.rangeQuery("bizDate", bizDate.minusDays(1).toString(), bizDate.plusDays(1).toString())
+    assertEquals(1, byRange1.length)
+    val byRange2 = indexer.rangeQuery("bizDate", bizDate.plusDays(1).toString(), bizDate.plusYears(1).toString())
+    assertEquals(0, byRange2.length)
   }
 }
