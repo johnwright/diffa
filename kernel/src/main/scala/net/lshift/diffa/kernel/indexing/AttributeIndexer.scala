@@ -25,7 +25,7 @@ import org.apache.lucene.index.{Term, IndexWriter}
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import collection.mutable.HashMap
-import org.apache.lucene.search.{TermRangeQuery, TermQuery, IndexSearcher}
+import org.apache.lucene.search.{Query, TermRangeQuery, TermQuery, IndexSearcher}
 
 trait AttributeIndexer {
   def query(key:String, value:String) : Seq[Indexable]
@@ -35,34 +35,19 @@ trait AttributeIndexer {
 
 case class Indexable(id:String, terms:Map[String,String])
 
-class DefaultAttributeIndexer(index:Directory) extends AttributeIndexer
-  with Closeable {
+class DefaultAttributeIndexer(index:Directory) extends AttributeIndexer with Closeable {
 
   val analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
   val maxHits = 10
 
-  def query(key:String, value:String) = {
+  def query(key:String, value:String) = executeQuery(new TermQuery(new Term(key, value)))
+  
+  def rangeQuery(key:String, lower:String, upper:String) = executeQuery(new TermRangeQuery(key, lower, upper, true, true))
 
-    val query = new TermQuery(new Term(key, value))
+  def executeQuery(query:Query) = {
     val searcher = new IndexSearcher(index, false)
     val hits = searcher.search(query, maxHits)
-
-    hits.scoreDocs.map(d => {
-      val doc = searcher.doc(d.doc)
-      val fields = doc.getFields
-      val terms = new HashMap[String,String]
-      fields.filter(_.name != "id").foreach(f => terms(f.name) = f.stringValue)
-      Indexable(doc.get("id"), terms)
-    })
-  }
-
-  def rangeQuery(key:String, lower:String, upper:String) = {
-
-    val query = new TermRangeQuery(key, lower, upper, true, true)
-    val searcher = new IndexSearcher(index, false)
-    val hits = searcher.search(query, maxHits)
-
     hits.scoreDocs.map(d => {
       val doc = searcher.doc(d.doc)
       val fields = doc.getFields
