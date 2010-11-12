@@ -19,18 +19,22 @@ package net.lshift.diffa.kernel.indexing
 import org.junit.Test
 import org.junit.Assert._
 import org.apache.lucene.store.RAMDirectory
+import scala.collection.Map
+import org.joda.time.DateTime
 
 class AttributeIndexingTest {
 
   val dir = new RAMDirectory()
-  val field = "title"
-
 
   @Test
   def basic = {
-    val indexer = new DefaultAttributeIndexer(dir, field)
-    indexer.index("foo bar")    
-    assertEquals("foo bar", indexer.query("foo"))
-    indexer.close
+    val indexer = new DefaultAttributeIndexer(dir)
+    val bizDate = new DateTime(1875, 7, 13, 12, 0, 0, 0).toString()
+    val toIndex = Seq(Indexable("id1", Map( "bizDate" -> bizDate )))
+    indexer.index(toIndex)
+    val byId = indexer.query("id", "id1")
+    assertEquals(1, byId.length)    
+    assertEquals("id1", byId(0).id)
+    assertEquals(bizDate, byId(0).terms("bizDate"))    
   }
 }

@@ -18,46 +18,58 @@ package net.lshift.diffa.kernel.indexing
 
 import org.apache.lucene.store.Directory
 import org.apache.lucene.util.Version
-import org.apache.lucene.search.{IndexSearcher, TopScoreDocCollector}
-import org.apache.lucene.queryParser.QueryParser
 import java.io.Closeable
 import org.apache.lucene.document.{Field, Document}
-import org.apache.lucene.index.IndexWriter
 import org.apache.lucene.analysis.standard.StandardAnalyzer
+import org.apache.lucene.search.{TermQuery, IndexSearcher}
+import org.apache.lucene.index.{Term, IndexWriter}
+import scala.collection.Map
+import scala.collection.JavaConversions._
+import collection.mutable.HashMap
 
 trait AttributeIndexer {
-  def query(key:String) : String
-  def index(value:String) : Unit
+  def query(key:String, value:String) : Seq[Indexable]
+  def index(indexables:Seq[Indexable]) : Unit
 }
 
-class DefaultAttributeIndexer(index:Directory,field:String) extends AttributeIndexer
+case class Indexable(id:String, terms:Map[String,String])
+
+class DefaultAttributeIndexer(index:Directory) extends AttributeIndexer
   with Closeable {
 
   val analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
-  val parser = new QueryParser(Version.LUCENE_CURRENT, field, analyzer)
-  val hitsPerPage = 10
+  val maxHits = 10
 
-  val collector = TopScoreDocCollector.create(hitsPerPage, true)
+  def query(key:String, value:String) = {
 
-  def query(key:String) = {
-    val query = parser.parse(key)
-    val searcher = new IndexSearcher(index, true)
-    searcher.search(query, collector)
-    val hits = collector.topDocs().scoreDocs
-    val doc = searcher.doc(hits(0).doc)
-    doc.get(field)
+    val query = new TermQuery(new Term(key, value))
+    val searcher = new IndexSearcher(index, false)
+    val hits = searcher.search(query, maxHits)
+
+    hits.scoreDocs.map(d => {
+      val doc = searcher.doc(d.doc)
+      val fields = doc.getFields
+      val terms = new HashMap[String,String]
+      fields.filter(_.name != "id").foreach(f => terms(f.name) = f.stringValue)
+      Indexable(doc.get("id"), terms)
+    })
   }
 
-  def index(value:String) = {
-    val doc = new Document()
-    doc.add(new Field(field, value, Field.Store.YES, Field.Index.ANALYZED))
-    writer.addDocument(doc)
-    writer.close
+  def index(indexables:Seq[Indexable]) = {
+    indexables.foreach(x => {
+      x.terms.foreach(t => {
+        val doc = new Document()
+        doc.add(new Field("id", x.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+        doc.add(new Field(t._1, t._2, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+        writer.addDocument(doc)
+      })
+    })    
+    writer.commit
   }
 
   def close = {
-    //writer.close
+    writer.close
     //searcher.close
   }
 }
