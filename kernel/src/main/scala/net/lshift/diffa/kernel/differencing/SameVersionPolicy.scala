@@ -49,7 +49,7 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
       store.queryDownstreams(pairKey, constraints).map(x => {
-        EntityVersion(x.id, x.downstreamAttributes.values.toSeq, x.lastUpdate, x.downstreamUVsn)
+        EntityVersion(x.id, x.downstreamAttributes.values.toSeq, x.lastUpdate, x.downstreamDVsn)
       })
     }
 
