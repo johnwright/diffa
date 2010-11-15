@@ -67,5 +67,10 @@ trait VersionCorrelationStore {
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler)
+
+
+  // TODO [#2] Document and test
+  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
 }
 

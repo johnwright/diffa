@@ -64,21 +64,17 @@ object DigestDifferencingUtils {
                            ds2:Seq[AggregateDigest],
                            resolve:Digest => Map[String,String],
                            constraints:Seq[QueryConstraint]) : Seq[QueryAction] = {
+    var preemptVersionQuery = false
     val results = new ListBuffer[QueryAction]
     val ds1Ids = indexByAttributeValues(ds1)
     val ds2Ids = indexByAttributeValues(ds2)
 
     def evaluate(partition:String) = {
-      if ("2010-07-08" == partition || "2010-07" == partition || "2010" == partition) {
         val empty = ds1.isEmpty || ds2.isEmpty
         constraints(0).nextQueryAction(partition, empty) match {
-          case None    => // Should pre-empt full query
+          case None    => preemptVersionQuery = true
           case Some(x) => results += x
         }
-      }
-      else {
-        throw new RuntimeException("Should not really go here")
-      }
     }
 
     ds1Ids.foreach { case (label, ds1Digest) => {
@@ -124,7 +120,13 @@ object DigestDifferencingUtils {
       }
     }}
 
-    results
+    if (preemptVersionQuery) {
+      // TODO [#2] does not expand to multiple constraints yet
+      List(EntityQueryAction(constraints(0)))  
+    }
+    else {
+      results
+    }
   }
 
   private def indexById(hs:Seq[EntityVersion]) = {

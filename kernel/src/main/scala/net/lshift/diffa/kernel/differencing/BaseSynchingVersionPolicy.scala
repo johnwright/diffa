@@ -22,11 +22,15 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.Map
 import collection.mutable.{HashMap, Queue}
+import net.lshift.diffa.kernel.config.ConfigStore
+import scala.collection.JavaConversions._
 
 /**
  * Standard behaviours supported by synchronising version policies.
  */
-abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, listener:DifferencingListener)
+abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
+                                         listener:DifferencingListener,
+                                         configStore:ConfigStore)
     extends VersionPolicy {
   protected val alerter = Alerter.forClass(getClass)
 
@@ -85,16 +89,26 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   protected abstract class SyncStrategy {
     def syncHalf(pairKey:String, constraints:Seq[QueryConstraint], p:Participant) {
 
-      val usDigests = p.queryAggregateDigests(constraints)
+      def resolve(d:Digest) = {
+        val pair = configStore.getPair(pairKey)
+        val categoryValues = pair.categories.keys.toList
+        (categoryValues, d.attributes).zip.toMap
+      }
+
+      val remoteDigests = p.queryAggregateDigests(constraints)
       val cachedAggregates = getAggregates(pairKey, constraints)
 
-      def resolve(d:Digest) = new HashMap[String,String]
-
-      DigestDifferencingUtils.differenceAggregates(usDigests, cachedAggregates, resolve, constraints).foreach(o => o match {
-        case newAction:QueryAction => // Go directly to go, do not collect 200 //syncActions += newAction
-        // Unreachable code: case mm:VersionMismatch => handleMismatch(pairKey, mm)
+      DigestDifferencingUtils.differenceAggregates(remoteDigests, cachedAggregates, resolve, constraints).foreach(o => o match {
+        case a:AggregateQueryAction => syncHalf(pairKey, Seq(a.constraint), p)
+        case e:EntityQueryAction    => {
+          val narrowed = Seq(e.constraint)
+          val remoteVersions = p.queryEntityVersions(narrowed)
+          val cachedVersions = getEntities(pairKey, narrowed)
+          DigestDifferencingUtils.differenceEntities(remoteVersions, cachedVersions, resolve, narrowed).foreach(handleMismatch(pairKey, _)
+          )
+        }
       })
-
+      
     }
 
     def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
@@ -105,13 +119,16 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
   protected class UpstreamSyncStrategy extends SyncStrategy {
 
     def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      val aggregator = new Aggregator()
+      // TODO [#2] This won't work with multiple constraints -> bug
+      val aggregator = new Aggregator(constraints(0).function)
       store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
       aggregator.digests
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      null
+      store.queryUpstreams(pairKey, constraints).map(x => {
+        EntityVersion(x.id, x.upstreamAttributes.values.toSeq, x.lastUpdate, x.upstreamVsn)
+      })
     }
 
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
@@ -126,8 +143,8 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore, list
     }
   }
 
-  protected class Aggregator() {
-    val builder = new DigestBuilder(DailyCategoryFunction())
+  protected class Aggregator(val function:CategoryFunction) {
+    val builder = new DigestBuilder(function)
 
     def collectUpstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, vsn:String) =
       builder.add(id, attributes, lastUpdate, vsn)

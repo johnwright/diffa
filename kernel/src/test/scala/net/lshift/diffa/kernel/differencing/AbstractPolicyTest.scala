@@ -28,6 +28,8 @@ import net.lshift.diffa.kernel.events._
 import org.junit.Test
 import collection.mutable.HashMap
 import collection.mutable.Map
+import net.lshift.diffa.kernel.config.ConfigStore
+import scala.collection.JavaConversions._
 
 /**
  * Base class for the various policy tests.
@@ -48,12 +50,17 @@ abstract class AbstractPolicyTest {
   EasyMock.checkOrder(store, false)   // Store doesn't care about order
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
+  val configStore = createStrictMock("configStore", classOf[ConfigStore])
   val abPair = "A-B"
 
   val categories = new HashMap[String,String]
+  val pair = new net.lshift.diffa.kernel.config.Pair()
+  pair.categories = Map("bizDate" -> "date")
 
-  protected def replayAll = replay(usMock, dsMock, store, listener)
-  protected def verifyAll = verify(usMock, dsMock, store, listener)
+  expect(configStore.getPair(abPair)).andReturn(pair).anyTimes
+
+  protected def replayAll = replay(usMock, dsMock, store, listener, configStore)
+  protected def verifyAll = verify(usMock, dsMock, store, listener, configStore)
 
   // Make declaring of sequences of specific types clearer
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)
@@ -360,5 +367,18 @@ abstract class AbstractPolicyTest {
     expect(dsMock.queryEntityVersions(constraints)).andReturn(partResp)
     store.queryDownstreams(EasyMock.eq(pair), EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
+  }
+  protected def expectDownstreamEntitySync2(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[EntityVersion], storeResp:Seq[DownstreamVersion]) {
+    expect(dsMock.queryEntityVersions(constraints)).andReturn(partResp)
+    val correlations = storeResp.map(r => {
+      val c = new Correlation()      
+      c.id = r.id.id
+      c.downstreamAttributes = r.categories
+      c.lastUpdate = r.lastUpdate
+      c.downstreamDVsn = r.dsvn
+      c
+    })
+
+    expect(store.queryDownstreams(EasyMock.eq(pair), EasyMock.eq(constraints))).andReturn(correlations)
   }
 }

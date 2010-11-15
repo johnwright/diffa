@@ -140,24 +140,31 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
       }
     })
   }
-
-  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
+  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
     sessionFactory.withSession(s => {
       val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.UPSTREAM)
       criteria.add(Restrictions.isNotNull("upstreamVsn"))
-      criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
-        handler(VersionID(c.pairing, c.id), c.upstreamAttributes, c.lastUpdate, c.upstreamVsn)
-      })
+      criteria.list.map(x => x.asInstanceOf[Correlation]).toSeq
+    })
+  }
+
+  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
+    sessionFactory.withSession(s => {
+      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.DOWNSTREAM)
+      criteria.add(Restrictions.or(Restrictions.isNotNull("downstreamUVsn"), Restrictions.isNotNull("downstreamDVsn")))
+      criteria.list.map(x => x.asInstanceOf[Correlation]).toSeq
+    })
+  }
+
+  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
+    queryUpstreams(pairKey, constraints).foreach(c => {
+      handler(VersionID(c.pairing, c.id), c.upstreamAttributes, c.lastUpdate, c.upstreamVsn)
     })
   }
 
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
-    sessionFactory.withSession(s => {
-      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.DOWNSTREAM)
-      criteria.add(Restrictions.or(Restrictions.isNotNull("downstreamUVsn"), Restrictions.isNotNull("downstreamDVsn")))
-      criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
-        handler(VersionID(c.pairing, c.id), c.downstreamAttributes, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
-      })
+    queryDownstreams(pairKey, constraints).foreach(c => {
+      handler(VersionID(c.pairing, c.id), c.downstreamAttributes, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }
 

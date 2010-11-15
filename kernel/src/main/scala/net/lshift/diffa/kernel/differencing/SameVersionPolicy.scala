@@ -20,6 +20,7 @@ package net.lshift.diffa.kernel.differencing
 import java.lang.String
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
+import net.lshift.diffa.kernel.config.ConfigStore
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -29,8 +30,8 @@ import net.lshift.diffa.kernel.events._
  * Compliance with this policy could also be achieved by the downstream simply recording the versions of received
  * upstream events.
  */
-class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener)
-    extends BaseSynchingVersionPolicy(store, listener) {
+class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener, configStore:ConfigStore)
+    extends BaseSynchingVersionPolicy(store, listener, configStore:ConfigStore) {
 
   def synchroniseParticipants(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
@@ -40,13 +41,18 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
     def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      val aggregator = new Aggregator()
+      // TODO [#2] this is a big bug as it won't work with multiple constraints
+      val aggregator = new Aggregator(constraints(0).function)
       store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
       aggregator.digests
     }
+
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      null
+      store.queryDownstreams(pairKey, constraints).map(x => {
+        EntityVersion(x.id, x.downstreamAttributes.values.toSeq, x.lastUpdate, x.downstreamUVsn)
+      })
     }
+
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>

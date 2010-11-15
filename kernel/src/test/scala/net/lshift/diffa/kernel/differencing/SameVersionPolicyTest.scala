@@ -31,7 +31,7 @@ import org.apache.commons.codec.digest.DigestUtils
  * Test cases for the same version policy.
  */
 class SameVersionPolicyTest extends AbstractPolicyTest {
-  val policy = new SameVersionPolicy(store, listener)
+  val policy = new SameVersionPolicy(store, listener, configStore)
 
   def downstreamVersionFor(v:String) = v
 

@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.config.ConfigStore
 
 /**
  * Version policy where two events are considered the same based on the downstream reporting the same upstream
@@ -25,8 +26,10 @@ import net.lshift.diffa.kernel.participants._
  * and matching recovery will require messages to be reprocessed via a differencing back-channel to determine
  * whether they are identical.
  */
-class CorrelatedVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener)
-    extends BaseSynchingVersionPolicy(store, listener) {
+class CorrelatedVersionPolicy(store:VersionCorrelationStore,
+                              listener:DifferencingListener,
+                              configStore:ConfigStore)
+    extends BaseSynchingVersionPolicy(store, listener, configStore) {
 
   def synchroniseParticipants(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
@@ -38,13 +41,16 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore, listener:Differenci
       extends SyncStrategy {
     
     def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      val aggregator = new Aggregator()
+      // TODO [#2] this is a big bug as it won't work with multiple constraints
+      val aggregator = new Aggregator(constraints(0).function)
       store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      null
+      store.queryDownstreams(pairKey, constraints).map(x => {
+        EntityVersion(x.id, x.downstreamAttributes.values.toSeq, x.lastUpdate, x.downstreamDVsn)
+      })
     }
 
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {

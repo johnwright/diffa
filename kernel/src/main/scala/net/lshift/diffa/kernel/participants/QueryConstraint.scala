@@ -60,3 +60,10 @@ case class RangeQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) ext
 case class NoConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  NoConstraint(category,function)
 }
+
+/**
+ * Utility builders
+ */
+object EasyConstraints {
+  def dateRangeConstaint(start:DateTime, end:DateTime, f:CategoryFunction) = RangeQueryConstraint("date", f, Seq(start.toString(), end.toString()))
+}
