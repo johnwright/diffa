@@ -32,21 +32,31 @@ trait QueryConstraint {
   def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction]
 }
 
-case class BaseQueryConstraint(category:String,function:CategoryFunction,values:Seq[String]) extends QueryConstraint {
+abstract case class BaseQueryConstraint(category:String,function:CategoryFunction,values:Seq[String]) extends QueryConstraint {
+
+  def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) : BaseQueryConstraint
+
   // TODO [#2] unit test
   def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] = {
     function.evaluate(partition) match {
       case None    => None
       case Some(x) => {
         if (empty || x.next.isInstanceOf[IndividualCategoryFunction]) {          
-          Some(EntityQueryAction(BaseQueryConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction(), x.toSeq)))
+          Some(EntityQueryAction(nextConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction(), x.toSeq)))
         }
         else {
-          Some(AggregateQueryAction(BaseQueryConstraint(BaseQueryConstraint.this.category, x.next, x.toSeq)))
+          Some(AggregateQueryAction(nextConstraint(BaseQueryConstraint.this.category, x.next, x.toSeq)))
         }
       }
     }
   }  
 }
-case class ListQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v)
-case class RangeQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v)
+case class ListQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v) {
+  def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  ListQueryConstraint(category,function,values)
+}
+case class RangeQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v) {
+  def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  RangeQueryConstraint(category,function,values)
+}
+case class NoConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
+  def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  NoConstraint(category,function)
+}

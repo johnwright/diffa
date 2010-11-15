@@ -41,11 +41,11 @@ class DigestDifferencingUtilsTest {
   val year = YearlyCategoryFunction()
 
   def dateRangeConstraint(start:DateTime, end:DateTime, f:CategoryFunction) = {
-    BaseQueryConstraint("date", f, Seq(start.toString,end.toString))
+    RangeQueryConstraint("date", f, Seq(start.toString,end.toString))
   }
 
   def dateRangeConstraint(f:CategoryFunction) = {
-    BaseQueryConstraint("date", f, Seq())
+    RangeQueryConstraint("date", f, Seq())
   }
 
   val IndividualGranularity = Seq(dateRangeConstraint(IndividualCategoryFunction()))
@@ -128,7 +128,7 @@ class DigestDifferencingUtilsTest {
     val a = Seq()
     val b = Seq(AggregateDigest(Seq("2010-07-08"), JUL_8_2010, "v1"))
 
-    val constraints = Seq(BaseQueryConstraint("date", DailyCategoryFunction(), Seq()))
+    val constraints = Seq(RangeQueryConstraint("date", DailyCategoryFunction(), Seq()))
 
     val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, constraints)
     assertEquals(HashSet(EntityQueryAction(dateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010),IndividualCategoryFunction()))), HashSet(actions: _*))

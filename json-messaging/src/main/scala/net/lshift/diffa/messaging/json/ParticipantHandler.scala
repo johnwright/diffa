@@ -37,7 +37,7 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
 //        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("end")),
 //        decodeGranularity(reqObj.getString("granularity")))
 
-      val digests = participant.queryAggregateDigests(Seq(RangeConstraint.anyDate))      
+      val digests = participant.queryAggregateDigests(Seq(NoConstraint("date", DailyCategoryFunction())))      
 
       val resultObj = new JSONArray
       digests foreach (digest => {

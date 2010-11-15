@@ -20,7 +20,9 @@ import java.lang.String
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import net.lshift.diffa.kernel.util.SessionHelper._
-import net.lshift.diffa.kernel.participants.QueryConstraint // for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.indexing.{Indexable, AttributeIndexer}
+import net.lshift.diffa.kernel.participants._
+// for 'SessionFactory.withSession'
 import org.hibernate.criterion.{Restrictions, Order}
 import org.hibernate.{Session, SessionFactory}
 import net.lshift.diffa.kernel.events.VersionID
@@ -30,7 +32,7 @@ import scala.collection.Map
 /**
  * Hibernate backed implementation of the Version Correlation store.
  */
-class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
+class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val indexer:AttributeIndexer)
     extends VersionCorrelationStore
     with HibernateQueryUtils {
 
@@ -48,6 +50,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
       }
 
       s.save(saveable)
+      indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, id.id, attributes)))
       saveable
     })
   }
@@ -66,13 +69,14 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
       }
 
       s.save(saveable)
+      indexer.index(Seq(Indexable(ParticipantType.DOWNSTREAM, id.id, attributes)))
       saveable
     })
   }
 
   def unmatchedVersions(pairKey:String, constraints:Seq[QueryConstraint]) = {
     sessionFactory.withSession(s => {
-      val criteria = buildCriteria(s, pairKey, constraints)
+      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.UPSTREAM, ParticipantType.DOWNSTREAM)
       criteria.add(Restrictions.eq("isMatched", false))
 
       criteria.list.map { i => i.asInstanceOf[Correlation] }
@@ -139,7 +143,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
 
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
     sessionFactory.withSession(s => {
-      val criteria = buildCriteria(s, pairKey, constraints)
+      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.UPSTREAM)
       criteria.add(Restrictions.isNotNull("upstreamVsn"))
       criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
         handler(VersionID(c.pairing, c.id), c.upstreamAttributes, c.lastUpdate, c.upstreamVsn)
@@ -149,7 +153,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
 
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
     sessionFactory.withSession(s => {
-      val criteria = buildCriteria(s, pairKey, constraints)
+      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.DOWNSTREAM)
       criteria.add(Restrictions.or(Restrictions.isNotNull("downstreamUVsn"), Restrictions.isNotNull("downstreamDVsn")))
       criteria.list.map(item => item.asInstanceOf[Correlation]).foreach(c => {
         handler(VersionID(c.pairing, c.id), c.downstreamAttributes, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
@@ -157,11 +161,23 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory)
     })
   }
 
-  private def buildCriteria(s:Session, pairKey:String, constraints:Seq[QueryConstraint]) = {
+  private def buildCriteria(s:Session, pairKey:String, constraints:Seq[QueryConstraint], upOrDown:ParticipantType.ParticipantType*) = {
     val criteria = s.createCriteria(classOf[Correlation])
     criteria.add(Restrictions.eq("pairing", pairKey))
 
 
+
+    val indexMatches = constraints.foldLeft(List[Indexable]()) ((a:List[Indexable], x:QueryConstraint) => {
+      x match {
+        case r:NoConstraint         => a
+        //case r:RangeQueryConstraint => a ::: indexer.rangeQuery(upOrDown, x.category, x.values(0), x.values(1)).toList
+        case r:RangeQueryConstraint => upOrDown.foldLeft(a) ((_a,y) => {_a ::: indexer.rangeQuery(y, x.category, x.values(0), x.values(1)).toList})
+        case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
+      }
+
+    })
+
+    indexMatches.foreach(x => criteria.add(Restrictions.eq("id", x.id)))
 
 
 
