@@ -165,30 +165,16 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
     val criteria = s.createCriteria(classOf[Correlation])
     criteria.add(Restrictions.eq("pairing", pairKey))
 
-
-
     val indexMatches = constraints.foldLeft(List[Indexable]()) ((a:List[Indexable], x:QueryConstraint) => {
       x match {
         case r:NoConstraint         => a
-        //case r:RangeQueryConstraint => a ::: indexer.rangeQuery(upOrDown, x.category, x.values(0), x.values(1)).toList
         case r:RangeQueryConstraint => upOrDown.foldLeft(a) ((_a,y) => {_a ::: indexer.rangeQuery(y, x.category, x.values(0), x.values(1)).toList})
         case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
       }
-
     })
 
     indexMatches.foreach(x => criteria.add(Restrictions.eq("id", x.id)))
-
-
-
-//    if (dateRange.start != null) {
-//      criteria.add(Restrictions.ge("date", dateRange.start))
-//    }
-//    if (dateRange.end != null) {
-//      criteria.add(Restrictions.le("date", dateRange.end))
-//    }
-    criteria.addOrder(Order.asc("id"));
-
+    criteria.addOrder(Order.asc("id"))
     criteria
   }
 

@@ -49,10 +49,7 @@ class HibernateVersionCorrelationStoreTest {
   @Before
   def cleanupStore {
     val s = HibernateVersionCorrelationStoreTest.sessionFactory.openSession
-    //s.createCriteria(classOf[Pair]).list.foreach(p => s.delete(p))
-    //s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[Correlation]).list.foreach(p => s.delete(p))
-    //s.createQuery("delete from Correlation").executeUpdate
     s.flush
     s.close
     HibernateVersionCorrelationStoreTest.indexer.reset
