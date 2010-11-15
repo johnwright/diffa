@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, PairDef, PairGroup}
 import net.lshift.diffa.kernel.client.ConfigurationClient
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.Map
+import scala.collection.JavaConversions.asMap
 
 class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")
@@ -39,7 +40,7 @@ class ConfigurationRestClient(serverRootUrl:String)
 
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int, upstreamName: String,
                   downstreamName: String, groupKey: String, categories:Map[String,String]) = {
-    val p = new PairDef(pairKey, versionPolicyName, matchingTimeout, upstreamName, downstreamName, groupKey, categories)
+    val p = new PairDef(pairKey, versionPolicyName, matchingTimeout, upstreamName, downstreamName, groupKey, asMap(categories))
     create("pairs", p)
     p
   }

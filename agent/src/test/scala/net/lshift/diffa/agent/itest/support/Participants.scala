@@ -21,11 +21,15 @@ import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamPart
 import net.lshift.diffa.participants.ParticipantRpcServer
 import concurrent.SyncVar
 import net.lshift.diffa.messaging.json.{DownstreamParticipantHandler, UpstreamParticipantHandler}
+import org.slf4j.LoggerFactory
 
 /**
  * Helper object for creation of HTTP/protobuf RPC chain for remote-controlling participants
  */
 object Participants {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   def startUpstreamServer(port:Int, upstream:UpstreamParticipant) =
     forkServer(port, new UpstreamParticipantHandler(upstream))
 
@@ -38,7 +42,15 @@ object Participants {
     val startupSync = new SyncVar[Boolean]
     new Thread {
       override def run = {
-        server.start
+        try {
+          server.start
+        }
+        catch {
+          case x:Exception => {
+            log.error("Cannot start server on port: " + port)
+            throw x
+          }
+        }
         startupSync.set(true)
       }
     }.start

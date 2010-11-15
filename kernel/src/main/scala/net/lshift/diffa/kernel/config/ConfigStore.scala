@@ -84,7 +84,7 @@ case class PairDef(
   @BeanProperty var upstreamName: String,
   @BeanProperty var downstreamName: String,
   @BeanProperty var groupKey: String,
-  @BeanProperty var categories: Map[String,String]) {
+  @BeanProperty var categories: java.util.Map[String,String]) {
 
   def this() = this(null, null, null.asInstanceOf[Int], null, null, null, null)
 }

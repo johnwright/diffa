@@ -39,7 +39,7 @@ class HibernateConfigStoreTest {
   val PAIR_KEY = "TEST_PAIR"
   val CATEGORY_NAME = "bizDate"
   val CATEGORY_TYPE = "date"
-  val CATEGORIES = HashMap(CATEGORY_NAME -> CATEGORY_TYPE)
+  val CATEGORIES = asMap(HashMap(CATEGORY_NAME -> CATEGORY_TYPE))
   val PAIR_DEF = new PairDef(PAIR_KEY, VP_NAME, MATCHING_TIMEOUT, UPSTREAM_EP.name,
     DOWNSTREAM_EP.name, GROUP_KEY, CATEGORIES)
 
