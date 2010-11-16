@@ -20,7 +20,7 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.frontend.Changes
 import org.codehaus.jettison.json.JSONObject
 import net.lshift.diffa.kernel.events.{UpstreamChangeEvent, DownstreamChangeEvent, DownstreamCorrelatedChangeEvent}
-import collection.mutable.HashMap
+import collection.mutable.{ListBuffer, HashMap}
 
 /**
  * JSON protocol handler for change requests.
@@ -33,9 +33,12 @@ class ChangesHandler(val frontend:Changes) extends AbstractJSONHandler {
       val jObj = new JSONObject(s)
       val endpoint = jObj.getString("endpoint")
       val id = jObj.getString("id")
-      //val date = JSONEncodingUtils.dateParser.parseDateTime(jObj.getString("date"))
-      // TODO [#2] parse attributes
-      val attributes = Seq()
+      // TODO This should be in the JSONEncodingUtil
+      val attributes = new ListBuffer[String]
+      val attributeArray = jObj.getJSONArray("attributes")
+      for (val i <- 0 to attributeArray.length - 1) {
+        attributes += attributeArray.getString(i)
+      }
       val lastUpdated = JSONEncodingUtils.maybeParseableDate(jObj.optString("lastUpdated"))
 
       val evt = jObj.getString("type") match {
