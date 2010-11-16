@@ -38,7 +38,7 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
 
   // TODO [#2] unit test
   def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] = {
-    function.evaluate(partition) match {
+    function.descend(partition) match {
       case None    => None
       case Some(x) => {
         if (empty || x.next.isInstanceOf[IndividualCategoryFunction]) {          

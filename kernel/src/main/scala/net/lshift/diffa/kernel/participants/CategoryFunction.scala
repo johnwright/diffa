@@ -18,30 +18,46 @@ package net.lshift.diffa.kernel.participants
 
 import org.joda.time.LocalDate
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat, DateTimeFormat}
-// TODO [#2] How does this function know what argument type it can work with?
 
 case class IntermediateResult(lower:AnyRef, upper:AnyRef, next:CategoryFunction) {
   def toSeq : Seq[String] = Seq(lower.toString, upper.toString)
 }
 
+/**
+ * This is a function definition that can:
+ * - Given a value in a given domain, it can determine what partition that value belongs to
+ * - Given the value of a paritition, it can determine what the relevant upper and lower bounds are for
+ *   any further introspection.
+ */
 trait CategoryFunction {
 
-  def evaluate(partition:String) : Option[IntermediateResult]
+  /**
+   * Given the name of a valid partition, return the lower and upper bounds of any necessary deeper descent.
+   * The function to delegate the deeper descent to is returned as part of the result.
+   */
+  def descend(partition:String) : Option[IntermediateResult]
+
+  /**
+   * Indicates whether this function supports bucketing.
+   */
   def shouldBucket() : Boolean
-  def partition(value:String) : String
+
+  /**
+   * Given a particular value from the value domain (encoded as a string), returns the name of the partition it
+   * belongs to.
+   */
+  def parentPartition(value:String) : String
 }
 
 /**
- * A special type of function that indicates that no further
- * partitioning should take place.
- * TODO [#2] Can this be an object rather than an instance?
+ * A special type of function that indicates that no further partitioning should take place.
+ *
  */
+//TODO [#2] Can this be an object rather than an instance?
 case class IndividualCategoryFunction extends CategoryFunction {
-  def evaluate(partition:String) = None
+  def descend(partition:String) = None
   def shouldBucket() = false
-  def partition(value:String) = {
-    value
-  }
+  def parentPartition(value:String) = value
 }
 
 abstract case class DateCategoryFunction extends CategoryFunction {
@@ -52,7 +68,7 @@ abstract case class DateCategoryFunction extends CategoryFunction {
   def next:CategoryFunction
   def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
 
-  def evaluate(partition:String) = {
+  def descend(partition:String) = {
     val point = pattern.parseDateTime(partition).toLocalDate
     val (upper,lower) = pointToBounds(point)
     val (start,end) = align(upper,lower)
@@ -63,24 +79,33 @@ abstract case class DateCategoryFunction extends CategoryFunction {
 
   def shouldBucket() = true
 
-  override def partition(value:String) = {
+  override def parentPartition(value:String) = {
     val date = iso.parseDateTime(value)
     pattern.print(date)
   }
 }
 
+/**
+ * This function partitions by whole days.
+ */
 case class DailyCategoryFunction() extends DateCategoryFunction {
   def pattern = DateTimeFormat.forPattern("yyyy-MM-dd")
   def next = IndividualCategoryFunction()
   def pointToBounds(point:LocalDate) = (point,point)
 }
 
+/**
+ * This function partitions by whole calendar months.
+ */
 case class MonthlyCategoryFunction() extends DateCategoryFunction {
   def pattern = DateTimeFormat.forPattern("yyyy-MM")
   def next = DailyCategoryFunction()
   def pointToBounds(point:LocalDate) = (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
 }
 
+/**
+ * This function partitions by whole years.
+ */
 case class YearlyCategoryFunction() extends DateCategoryFunction {
   def pattern = DateTimeFormat.forPattern("yyyy")
   def next = MonthlyCategoryFunction()

@@ -49,7 +49,7 @@ class DigestBuilder(val function:CategoryFunction) {
 
     if (function.shouldBucket) {
 
-      val partitionedValues = attributes.map(function.partition(_))
+      val partitionedValues = attributes.map(function.parentPartition(_))
       val label = partitionedValues.reduceLeft(_ + "_" + _)
 
       val bucket = digestBuckets.get(label) match {
