@@ -34,7 +34,7 @@ class ChangesHandler(val frontend:Changes) extends AbstractJSONHandler {
       val endpoint = jObj.getString("endpoint")
       val id = jObj.getString("id")
       //val date = JSONEncodingUtils.dateParser.parseDateTime(jObj.getString("date"))
-      // TODO [#2] parse categories
+      // TODO [#2] parse categories      
       val categories = new HashMap[String,String]
       val lastUpdated = JSONEncodingUtils.maybeParseableDate(jObj.optString("lastUpdated"))
 

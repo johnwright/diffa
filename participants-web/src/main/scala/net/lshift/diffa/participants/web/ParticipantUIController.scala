@@ -81,8 +81,8 @@ class ParticipantUIController(upstream:UpstreamWebParticipant, downstream:Downst
     }
 
     partId match {
-      case "upstream"   => upstream.addEntity(entityId, new HashMap[String,String], lastUpdatedDate, body)
-      case "downstream" => downstream.addEntity(entityId, new HashMap[String,String], lastUpdatedDate, body)
+      case "upstream"   => upstream.addEntity(entityId, HashMap("bizDate" -> lastUpdatedDate.toString()), lastUpdatedDate, body)
+      case "downstream" => downstream.addEntity(entityId, HashMap("bizDate" -> lastUpdatedDate.toString()), lastUpdatedDate, body)
     }
 
     "json/empty"

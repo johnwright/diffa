@@ -30,8 +30,7 @@ class ChangesRestClient(serverRootUrl:String)
     val jsonEvt = new JSONObject
     jsonEvt.put("endpoint", evt.endpoint)
     jsonEvt.put("id", evt.id)
-    // TODO [#2]
-    //jsonEvt.put("date", evt.date.toString(JSONEncodingUtils.dateEncoder))
+    jsonEvt.put("categories", evt.categories)
     jsonEvt.put("lastUpdated", JSONEncodingUtils.maybeDateStr(evt.lastUpdate))
     evt match {
       case us:UpstreamChangeEvent =>

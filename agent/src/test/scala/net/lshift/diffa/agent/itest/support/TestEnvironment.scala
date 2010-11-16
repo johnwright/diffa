@@ -24,6 +24,7 @@ import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRe
 import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 import scala.collection.Map
 import collection.mutable.HashMap
+import org.joda.time.DateTime
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -96,6 +97,10 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
           versionForUpstream(content), versionForDownstream(content)))
     }
   }
+
+  // TODO Maybe this can be accomplished using an implicit definition somewhere
+  def bizDate(d:DateTime) = Map("bizDate" -> d.toString())
+  
 }
 
 abstract class VersionScheme {

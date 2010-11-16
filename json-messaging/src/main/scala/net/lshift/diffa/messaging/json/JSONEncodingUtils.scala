@@ -26,12 +26,16 @@ import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONObject, JSONArray}
 import scala.collection.JavaConversions.asList
+import org.slf4j.LoggerFactory
 
 /**
  * Standard utilities for JSON encoding.
  */
 
 object JSONEncodingUtils {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   val dateEncoder = ISODateTimeFormat.dateTime
   val dateParser = ISODateTimeFormat.dateTimeParser
 
@@ -69,7 +73,10 @@ object JSONEncodingUtils {
     deserializeDigests(wire, false).asInstanceOf[Seq[AggregateDigest]]
   }
 
-  def deserializeDigests(wire:String, readIdField:Boolean) : Seq[Digest] = {
+  private def deserializeDigests(wire:String, readIdField:Boolean) : Seq[Digest] = {
+
+    log.debug("Attempting to deserialize: " + wire)
+    
     val buffer = ListBuffer[Digest]()
     val digestArray = new JSONArray(wire)
     for (val i <- 0 to digestArray.length - 1 ) {
@@ -93,6 +100,7 @@ object JSONEncodingUtils {
   }
 
   def serializeDigests(digests:Seq[Digest]) : String = {
+    log.debug("About to serialize: " + digests)
     val digestArray = new JSONArray
     digests.foreach(d => {
       val digestObject = new JSONObject
@@ -106,7 +114,9 @@ object JSONEncodingUtils {
       digestObject.put("digest", d.digest)
       digestArray.put(digestObject)
     })
-    digestArray.toString
+    val wire = digestArray.toString
+    log.debug("Writing to wire: " + wire)
+    wire
   }
 
   // TODO I can't believe you have to do this

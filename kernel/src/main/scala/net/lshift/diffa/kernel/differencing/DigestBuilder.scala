@@ -25,11 +25,15 @@ import org.apache.commons.codec.binary.Hex
 import collection.Map
 import scala.collection.JavaConversions._
 import net.jcip.annotations.NotThreadSafe
+import org.slf4j.LoggerFactory
 
 /**
  * Utility class for building version digests from a sequence of versions.
  */
 class DigestBuilder(val function:CategoryFunction) {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   val digestBuckets = new java.util.TreeMap[String,Bucket]()
   val versions = new ListBuffer[EntityVersion]
 
@@ -41,6 +45,8 @@ class DigestBuilder(val function:CategoryFunction) {
 
   def add(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsn:String) {
 
+    log.debug("Adding to bucket [" + function + "]: " + id + ", " + attributes + ", " + lastUpdated + ", " + vsn)
+
     if (function.shouldBucket) {
 
       val partitionedValues = attributes.values.map(function.partition(_))
@@ -48,7 +54,7 @@ class DigestBuilder(val function:CategoryFunction) {
 
       val bucket = digestBuckets.get(label) match {
         case null => {
-          val newBucket = new Bucket(label, partitionedValues.toSeq)
+          val newBucket = new Bucket(label, partitionedValues.toSeq, lastUpdated)
           digestBuckets.put(label, newBucket)
           newBucket
         }
@@ -75,7 +81,7 @@ class DigestBuilder(val function:CategoryFunction) {
 
 }
 
-class Bucket(val name: String, val attributes: Seq[String]) {
+class Bucket(val name: String, val attributes: Seq[String], val lastUpdated:DateTime) {
   private val digestAlgorithm = "MD5"
   private val messageDigest = MessageDigest.getInstance(digestAlgorithm)
   private var digest:String = null
@@ -94,7 +100,7 @@ class Bucket(val name: String, val attributes: Seq[String]) {
     if (digest == null) {
       digest = new String(Hex.encodeHex(messageDigest.digest()))
     }
-    AggregateDigest(attributes, null, digest)
+    AggregateDigest(attributes, lastUpdated, digest)
   }
 
 }

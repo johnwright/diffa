@@ -19,6 +19,7 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import scala.collection.JavaConversions._
+import JSONEncodingUtils._
 
 /**
  * Handler for participants being queried via JSON.
@@ -28,33 +29,8 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
   // TODO [#2] remember to implement "query_entity_versions"
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> defineRpc((s:String) => s)(req => {
-      val reqObj = new JSONObject(req)
-
-      // TODO [#2] parse properly
-//      val digests = participant.queryDigests(
-//        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("start")),
-//        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("end")),
-//        decodeGranularity(reqObj.getString("granularity")))
-
-      val digests = participant.queryAggregateDigests(Seq(NoConstraint("date", DailyCategoryFunction())))      
-
-      val resultObj = new JSONArray
-      digests foreach (digest => {
-        val digestObj = new JSONObject
-
-
-
-        //digestObj.put("attributes", new JSONArray(digest.attributes))
-
-        // TODO [#2]
-        //digestObj.put("date", digest.date.toString(JSONEncodingUtils.dateEncoder))
-        digestObj.put("lastUpdated", JSONEncodingUtils.maybeDateStr(digest.lastUpdated))
-        digestObj.put("digest", digest.digest)
-        resultObj.put(digestObj)
-      })
-      resultObj.toString
-    }),
+    "query_aggregate_digests" -> ? (wire => serializeDigests(participant.queryAggregateDigests(deserialize(wire)))),
+    "query_entity_versions" -> ? (wire => serializeDigests(participant.queryEntityVersions(deserialize(wire)))),
     "invoke" -> defineRpc((s:String) => s)(r => {
       val request = new JSONObject(r)
       val result = participant.invoke(request.getString("actionId"),request.getString("entityId"))
@@ -72,6 +48,8 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
       responseObj.toString
     })
   )
+
+  private def ? (f:String => String) = defineRpc((s:String) => s)(f(_))
 
   private def decodeGranularity(gran:String) = {
     gran match {

@@ -20,18 +20,32 @@ import scala.collection.Map
 
 import org.joda.time.DateTime
 import collection.mutable.HashMap
+import net.lshift.diffa.kernel.differencing.DigestBuilder
+import org.slf4j.LoggerFactory
 
 /**
  * Base class for test participants.
  */
 class MemoryParticipantBase(nativeVsnGen: String => String) {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   protected val entities = new HashMap[String, TestEntity]
 
-  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = null
+  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
+    log.debug("Running version query: " + constraints)
+    val constrained = constrainEntities(constraints)
+    constrained.map(e => EntityVersion(e.id,e.categories.values.toSeq, e.lastUpdated,nativeVsnGen(e.body)))
+  }
 
-  //def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
   def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    // Filter on date interval & sort entries by ID into a list
+    log.debug("Running aggregate query: " + constraints)
+    val constrained = constrainEntities(constraints)
+    val b = new DigestBuilder(constraints(0).function)
+    constrained foreach (ent => b.add(ent.id, ent.categories, ent.lastUpdated, nativeVsnGen(ent.body)))
+    val digests = b.digests
+    log.debug("Returning digests: " + digests)
+    digests
 //    val start = new DateTime
 //    val end = new DateTime
 //    val interval = new Interval(start, end)
@@ -44,9 +58,12 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
 //    sortedEntities foreach (ent => b.add(ent.id, ent.date, ent.lastUpdated, nativeVsnGen(ent.body)))
 //
 //    b.digests
+  }
 
-    // TODO (#2) Deliberately return null
-    null
+  def constrainEntities(constraints:Seq[QueryConstraint]) = {
+    // Filter on date interval & sort entries by ID into a list
+    val entitiesInRange = entities.values.filter(e => true).toList
+    entitiesInRange.sort(_.id < _.id)
   }
 
   def retrieveContent(identifier: String) = entities.get(identifier) match {
