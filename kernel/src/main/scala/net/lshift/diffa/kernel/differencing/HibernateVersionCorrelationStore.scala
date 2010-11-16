@@ -45,12 +45,15 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
         case Some(c:Correlation) => {
           c.upstreamVsn = vsn
           updateMatchedState(c)
+          c.downstreamAttributes = attributes
+          c.lastUpdate = lastUpdated
+          c.timestamp = timestamp
           c
         }
       }
 
       s.save(saveable)
-      log.debug("Saving upstream attributes: " + attributes)
+      log.debug(id.id + ") Saving upstream attributes: " + attributes)
       indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, id.id, attributes)))
       saveable
     })
@@ -64,13 +67,16 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
         case Some(c:Correlation) => {
           c.downstreamUVsn = uvsn
           c.downstreamDVsn = dvsn
+          c.downstreamAttributes = attributes
+          c.lastUpdate = lastUpdated
+          c.timestamp = timestamp
           updateMatchedState(c)
           c
         }
       }
 
       s.save(saveable)
-      log.debug("Saving upstream attributes: " + attributes)
+      log.debug(id.id + ") Saving downstream attributes: " + attributes)
       indexer.index(Seq(Indexable(ParticipantType.DOWNSTREAM, id.id, attributes)))
       saveable
     })
