@@ -20,12 +20,34 @@ import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.participants.{YearlyCategoryFunction, IndividualCategoryFunction}
+import net.lshift.diffa.kernel.participants._
 
 class SerializationTest {
 
   @Test
-  def roundTrip = {
+  def aggregateDigestRoundTrip() = {
+    val d1 = AggregateDigest(Seq("foo","bar"), new DateTime, "digest1")
+    val d2 = AggregateDigest(Seq("baz","who"), new DateTime, "digest2")
+    val serialized = JSONEncodingUtils.serializeDigests(Seq(d1,d2))
+    val deserialized = JSONEncodingUtils.deserializeAggregateDigest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(2, deserialized.length)
+    (Seq(d1,d2), deserialized).zip.foreach(x=> compareDigests(x._1,x._2))
+  }
+
+  @Test
+  def entityVersionRoundTrip() = {
+    val v1 = EntityVersion("id1", Seq("foo","bar"), new DateTime, "digest1")
+    val v2 = EntityVersion("id2", Seq("baz","who"), new DateTime, "digest2")
+    val serialized = JSONEncodingUtils.serializeDigests(Seq(v1,v2))
+    val deserialized = JSONEncodingUtils.deserializeEntityVersions(serialized)
+    assertNotNull(deserialized)
+    assertEquals(2, deserialized.length)
+    (Seq(v1,v2), deserialized).zip.foreach(x=> compareVersions(x._1,x._2))
+  }
+
+  @Test
+  def queryConstraintRoundTrip = {
     val start1 = new DateTime()
     val end1 = new DateTime()
     val function1 = IndividualCategoryFunction()
@@ -40,6 +62,25 @@ class SerializationTest {
     assertEquals(2, deserialized.length)
     assertEquals(constraint1, deserialized(0))
     assertEquals(constraint2, deserialized(1))
+  }
 
+  @Test
+  def emptyList = {
+    val serialized = JSONEncodingUtils.serialize(Seq())
+    val deserialized = JSONEncodingUtils.deserialize(serialized)
+    assertNotNull(deserialized)
+    assertEquals(0, deserialized.length)
+  }
+
+  def compareDigests(expected:Digest, actual:Digest) = {
+    // TODO Date comparison currnently fails because the chronology is wrong
+    assertEquals(expected.lastUpdated.getMillis, actual.lastUpdated.getMillis)
+    assertEquals(expected.digest, actual.digest)
+    (expected.attributes, actual.attributes).zip.foreach(x=> assertEquals(x._1,x._2))
+  }
+
+  def compareVersions(expected:EntityVersion, actual:EntityVersion) = {
+    assertEquals(expected.id, actual.id)
+    compareDigests(expected, actual)
   }
 }

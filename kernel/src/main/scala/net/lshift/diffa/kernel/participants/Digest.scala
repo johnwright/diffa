@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.DateTime
+import reflect.BeanProperty
 
 /**
  * Describes a digest of version information. For an individual entity, the digest should be the version content and the
@@ -30,12 +31,25 @@ import org.joda.time.DateTime
  *
  */
 // TODO [#2] Update the documentation based on the final implementation
-// TODO [#2] Does this trait ever get used?
 trait Digest {
   def attributes:Seq[String]
   def lastUpdated:DateTime
   def digest:String
 }
 
-case class AggregateDigest(attributes:Seq[String], lastUpdated:DateTime, digest:String) extends Digest
-case class EntityVersion(id:String, attributes:Seq[String], lastUpdated:DateTime, digest:String) extends Digest
+case class AggregateDigest(
+  @BeanProperty var attributes:Seq[String],
+  @BeanProperty var lastUpdated:DateTime,
+  @BeanProperty var digest:String) extends Digest {
+
+  def this() = this(null, null, null)
+}
+
+case class EntityVersion(
+  @BeanProperty var id:String,
+  @BeanProperty var attributes:Seq[String],
+  @BeanProperty var lastUpdated:DateTime,
+  @BeanProperty var digest:String) extends Digest {
+
+  def this() = this(null, null, null,null)
+}

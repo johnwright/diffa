@@ -19,36 +19,24 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import collection.mutable.HashMap
+import JSONEncodingUtils._
 
 /**
  * Rest client for participant communication.
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
-  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = null
+  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
+    executeRpc("query_entity_versions", serialize(constraints)) match {
+      case Some(r) => deserializeEntityVersions(r)
+      case None    => Seq()
+    }
+  }
 
-  // old: override def queryDigests(start:DateTime, end:DateTime, granularity:RangeGranularity) = {
   override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    val requestObj = new JSONObject
-    // TODO [#2]
-    //requestObj.put("start", start.toString(JSONEncodingUtils.dateEncoder))
-    //requestObj.put("end", end.toString(JSONEncodingUtils.dateEncoder))
-    //requestObj.put("granularity", jsonGranularity(granularity))
-
-    executeRpc("query_digests", requestObj.toString) match {
-      case Some(r) => {
-        val jsonDigests = new JSONArray(r)
-        (0 until jsonDigests.length).map(i => {
-          val digestObj = jsonDigests.getJSONObject(i)
-          AggregateDigest(
-            // TODO [#2]
-            //digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
-            JSONEncodingUtils.toList(digestObj.getJSONArray("attributes")),
-            JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")),
-            digestObj.getString("digest"))
-        }).toList
-      }
-      case None => List()
+    executeRpc("query_aggregate_digests", serialize(constraints)) match {
+      case Some(r) => deserializeAggregateDigest(r)
+      case None    => Seq()
     }
   }
 

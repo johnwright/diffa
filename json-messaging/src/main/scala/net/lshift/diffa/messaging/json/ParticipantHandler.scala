@@ -43,7 +43,10 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
       digests foreach (digest => {
         val digestObj = new JSONObject
 
-        digestObj.put("attributes", new JSONArray(digest.attributes))
+
+
+        //digestObj.put("attributes", new JSONArray(digest.attributes))
+
         // TODO [#2]
         //digestObj.put("date", digest.date.toString(JSONEncodingUtils.dateEncoder))
         digestObj.put("lastUpdated", JSONEncodingUtils.maybeDateStr(digest.lastUpdated))

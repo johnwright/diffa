@@ -18,13 +18,14 @@ package net.lshift.diffa.messaging.json
 
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.DateTime
-import org.codehaus.jettison.json.JSONArray
 import org.codehaus.jackson.map.ser.CustomSerializerFactory
 import org.codehaus.jackson.map._
 import deser.{StdDeserializerProvider, CustomDeserializerFactory}
 import org.codehaus.jackson.{JsonToken, JsonParser, JsonGenerator}
-import net.lshift.diffa.kernel.participants.{RangeQueryConstraint, CategoryFunction, QueryConstraint}
 import collection.mutable.ListBuffer
+import net.lshift.diffa.kernel.participants._
+import org.codehaus.jettison.json.{JSONObject, JSONArray}
+import scala.collection.JavaConversions.asList
 
 /**
  * Standard utilities for JSON encoding.
@@ -59,6 +60,54 @@ object JSONEncodingUtils {
 
   def serialize(constraints:Seq[QueryConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
   def deserialize(wire:String) : Seq[QueryConstraint]= mapper.readValue(wire, classOf[Array[QueryConstraint]])
+
+  def deserializeEntityVersions(wire:String) : Seq[EntityVersion] = {
+    deserializeDigests(wire, true).asInstanceOf[Seq[EntityVersion]]
+  }
+
+  def deserializeAggregateDigest(wire:String) : Seq[AggregateDigest] = {
+    deserializeDigests(wire, false).asInstanceOf[Seq[AggregateDigest]]
+  }
+
+  def deserializeDigests(wire:String, readIdField:Boolean) : Seq[Digest] = {
+    val buffer = ListBuffer[Digest]()
+    val digestArray = new JSONArray(wire)
+    for (val i <- 0 to digestArray.length - 1 ) {
+      val jsonObject = digestArray.getJSONObject(i)
+      val attributeArray = jsonObject.getJSONArray("attributes")
+      val attributes = ListBuffer[String]()
+      for (val i <- 0 to attributeArray.length - 1 ) {
+        attributes += attributeArray.getString(i)
+      }
+      val lastUpdated = maybeParseableDate(jsonObject.getString("lastUpdated"))
+      val digest = jsonObject.getString("digest")
+      if (readIdField) {
+        val id = jsonObject.getString("id")
+        buffer += EntityVersion(id,attributes,lastUpdated,digest)
+      }
+      else {
+        buffer += AggregateDigest(attributes,lastUpdated,digest)
+      }
+    }
+    buffer
+  }
+
+  def serializeDigests(digests:Seq[Digest]) : String = {
+    val digestArray = new JSONArray
+    digests.foreach(d => {
+      val digestObject = new JSONObject
+
+      if (d.isInstanceOf[EntityVersion]) {
+        digestObject.put("id", d.asInstanceOf[EntityVersion].id)
+      }
+
+      digestObject.put("attributes", asList(d.attributes))
+      digestObject.put("lastUpdated", d.lastUpdated)
+      digestObject.put("digest", d.digest)
+      digestArray.put(digestObject)
+    })
+    digestArray.toString
+  }
 
   // TODO I can't believe you have to do this
   def toList[T](a:JSONArray) : Seq[T] = {
