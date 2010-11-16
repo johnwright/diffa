@@ -26,20 +26,20 @@ import scala.collection.Map
 abstract class ChangeEvent {
   def endpoint:String
   def id:String
-  def categories:Map[String,String]
+  def attributes:Seq[String]
   def lastUpdate:DateTime
 }
 
 /**
  * Event indicating that a change has occurred within an upstream system.
  */
-case class UpstreamChangeEvent(endpoint:String, id:String, categories:Map[String,String], lastUpdate:DateTime, vsn:String)
+case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent
 
 /**
  * Event indicating that a change has occurred within a downsteam system.
  */
-case class DownstreamChangeEvent(endpoint:String, id:String, categories:Map[String,String], lastUpdate:DateTime, vsn:String)
+case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent
 
 /**
@@ -47,5 +47,5 @@ case class DownstreamChangeEvent(endpoint:String, id:String, categories:Map[Stri
  * change indicates that the change occurring in the downstream did not result in the same content being at the
  * downstream, but provides details on correlating the version information between the systems.
  */
-case class DownstreamCorrelatedChangeEvent(endpoint:String, id:String, categories:Map[String,String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
+case class DownstreamCorrelatedChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
   extends ChangeEvent

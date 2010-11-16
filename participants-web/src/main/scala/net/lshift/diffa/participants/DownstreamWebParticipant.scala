@@ -31,16 +31,16 @@ class DownstreamWebParticipant(epName:String, val agentRoot:String)
     extends DownstreamMemoryParticipant(DigestUtils.md5Hex, DigestUtils.md5Hex)
     with WebParticipant {
 
-  override def addEntity(id: String, categories:Map[String,String], lastUpdated: DateTime, body: String) = {
-    super.addEntity(id, categories, lastUpdated, body)
+  override def addEntity(id: String, attributes:Seq[String], lastUpdated: DateTime, body: String) = {
+    super.addEntity(id, attributes, lastUpdated, body)
 
-    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, categories, lastUpdated, dvsnGen(body)))
+    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, attributes, lastUpdated, dvsnGen(body)))
   }
 
 
   override def removeEntity(id: String) = {
     super.removeEntity(id)
 
-    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, new HashMap[String,String], new DateTime, null))
+    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, Seq(), new DateTime, null))
   }
 }

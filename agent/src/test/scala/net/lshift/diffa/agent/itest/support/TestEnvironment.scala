@@ -83,24 +83,25 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, categories:Map[String,String], content:String) = {
-    upstream.addEntity(id, categories, Placeholders.dummyLastUpdated, content)
-    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, categories, Placeholders.dummyLastUpdated, versionForUpstream(content)))
+  def addAndNotifyUpstream(id:String, attributes:Seq[String], content:String) = {
+    upstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
+    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, attributes, Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, categories:Map[String,String], content:String) = {
-    downstream.addEntity(id, categories, Placeholders.dummyLastUpdated, content)
+  def addAndNotifyDownstream(id:String, attributes:Seq[String], content:String) = {
+    downstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, categories, Placeholders.dummyLastUpdated, versionForDownstream(content)))
+        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, attributes, Placeholders.dummyLastUpdated, versionForDownstream(content)))
       case CorrelatedVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, categories, Placeholders.dummyLastUpdated,
+        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, attributes, Placeholders.dummyLastUpdated,
           versionForUpstream(content), versionForDownstream(content)))
     }
   }
 
   // TODO Maybe this can be accomplished using an implicit definition somewhere
   def bizDate(d:DateTime) = Map("bizDate" -> d.toString())
-  
+  def bizDateValues(d:DateTime) = Seq(d.toString())
+
 }
 
 abstract class VersionScheme {

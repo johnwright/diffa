@@ -161,14 +161,14 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
     queryUpstreams(pairKey, constraints).foreach(c => {
       log.debug("Passing off to handler: " + c)
-      handler(VersionID(c.pairing, c.id), c.upstreamAttributes, c.lastUpdate, c.upstreamVsn)
+      handler(VersionID(c.pairing, c.id), c.upstreamAttributes.values.toSeq, c.lastUpdate, c.upstreamVsn)
     })
   }
 
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
     queryDownstreams(pairKey, constraints).foreach(c => {
       log.debug("Passing off to handler: " + c)
-      handler(VersionID(c.pairing, c.id), c.downstreamAttributes, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
+      handler(VersionID(c.pairing, c.id), c.downstreamAttributes.values.toSeq, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }
 

@@ -40,16 +40,16 @@ class DigestBuilder(val function:CategoryFunction) {
   /**
    * Adds a new version into the builder.
    */
-  def add(id:VersionID, attributes:Map[String,String], lastUpdated:DateTime, vsn:String) : Unit 
+  def add(id:VersionID, attributes:Seq[String], lastUpdated:DateTime, vsn:String) : Unit
     = add(id.id, attributes, lastUpdated, vsn)
 
-  def add(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsn:String) {
+  def add(id:String, attributes:Seq[String], lastUpdated:DateTime, vsn:String) {
 
     log.debug("Adding to bucket [" + function + "]: " + id + ", " + attributes + ", " + lastUpdated + ", " + vsn)
 
     if (function.shouldBucket) {
 
-      val partitionedValues = attributes.values.map(function.partition(_))
+      val partitionedValues = attributes.map(function.partition(_))
       val label = partitionedValues.reduceLeft(_ + "_" + _)
 
       val bucket = digestBuckets.get(label) match {
@@ -62,7 +62,7 @@ class DigestBuilder(val function:CategoryFunction) {
       }
       bucket.add(vsn)
     } else {
-      versions += EntityVersion(id, attributes.values.toSeq, lastUpdated, vsn)
+      versions += EntityVersion(id, attributes.toSeq, lastUpdated, vsn)
     }
   }
 

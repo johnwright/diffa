@@ -103,7 +103,7 @@ class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient
           responseObj.getString("id"),
           // TODO [#2]
           //JSONEncodingUtils.dateParser.parseDateTime(responseObj.getString("date")),
-          new HashMap[String,String],
+          Seq(),
           responseObj.getString("uvsn"), responseObj.getString("dvsn"))
       }
     }

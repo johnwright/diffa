@@ -25,8 +25,8 @@ import net.lshift.diffa.kernel.participants.QueryConstraint
  * Store used for caching version correlation information between a pair of participants.
  */
 trait VersionCorrelationStore {
-  type UpstreamVersionHandler = Function4[VersionID, Map[String,String], DateTime, String, Unit]
-  type DownstreamVersionHandler = Function5[VersionID, Map[String,String], DateTime, String, String, Unit]
+  type UpstreamVersionHandler = Function4[VersionID, Seq[String], DateTime, String, Unit]
+  type DownstreamVersionHandler = Function5[VersionID, Seq[String], DateTime, String, String, Unit]
 
   /**
    * Stores the details of an upstream version.

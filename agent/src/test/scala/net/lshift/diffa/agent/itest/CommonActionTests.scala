@@ -39,7 +39,7 @@ trait CommonActionTests {
   @Test
   def invokeAction = {
     val entityId = "abc"
-    env.upstream.addEntity(entityId, env.bizDate(yesterday), yesterday, "abcdef")
+    env.upstream.addEntity(entityId, env.bizDateValues(yesterday), yesterday, "abcdef")
     //env.upstream.addEntity(entityId, yesterday, yesterday, "abcdef")
     val pairKey = env.pairKey
     val actionId = "resend"    

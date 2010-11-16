@@ -39,18 +39,22 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
    * version correlation store.
    */
   def onChange(evt: PairChangeEvent) = {
+
+    val pair = configStore.getPair(evt.id.pairKey)
+    val categories = pair.schematize(evt.attributes)
+
     val corr = evt match {
-      case UpstreamPairChangeEvent(id, date, lastUpdate, vsn) => vsn match {
+      case UpstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
         case null => store.clearUpstreamVersion(id)
-        case _    => store.storeUpstreamVersion(id, date, maybe(lastUpdate), vsn)
+        case _    => store.storeUpstreamVersion(id, categories, maybe(lastUpdate), vsn)
       }
-      case DownstreamPairChangeEvent(id, date, lastUpdate, vsn) => vsn match {
+      case DownstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
         case null => store.clearDownstreamVersion(id)
-        case _    => store.storeDownstreamVersion(id, date, maybe(lastUpdate), vsn, vsn)
+        case _    => store.storeDownstreamVersion(id, categories, maybe(lastUpdate), vsn, vsn)
       }
-      case DownstreamCorrelatedPairChangeEvent(id, date, lastUpdate, uvsn, dvsn) => (uvsn, dvsn) match {
+      case DownstreamCorrelatedPairChangeEvent(id, _, lastUpdate, uvsn, dvsn) => (uvsn, dvsn) match {
         case (null, null) => store.clearDownstreamVersion(id)
-        case _            => store.storeDownstreamVersion(id, date, maybe(lastUpdate), uvsn, dvsn)
+        case _            => store.storeDownstreamVersion(id, categories, maybe(lastUpdate), uvsn, dvsn)
       }
     }
 
@@ -91,8 +95,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
 
       def resolve(d:Digest) = {
         val pair = configStore.getPair(pairKey)
-        val categoryValues = pair.categories.keys.toList
-        (categoryValues, d.attributes).zip.toMap
+        pair.schematize(d.attributes)
       }
 
       val remoteDigests = p.queryAggregateDigests(constraints)
@@ -146,9 +149,9 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
   protected class Aggregator(val function:CategoryFunction) {
     val builder = new DigestBuilder(function)
 
-    def collectUpstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, vsn:String) =
+    def collectUpstream(id:VersionID, attributes:Seq[String], lastUpdate:DateTime, vsn:String) =
       builder.add(id, attributes, lastUpdate, vsn)
-    def collectDownstream(id:VersionID, attributes:Map[String,String], lastUpdate:DateTime, uvsn:String, dvsn:String) =
+    def collectDownstream(id:VersionID, attributes:Seq[String], lastUpdate:DateTime, uvsn:String, dvsn:String) =
       builder.add(id, attributes, lastUpdate, dvsn)
 
     def digests:Seq[AggregateDigest] = builder.digests

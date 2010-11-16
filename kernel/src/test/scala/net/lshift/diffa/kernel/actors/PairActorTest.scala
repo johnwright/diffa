@@ -86,10 +86,9 @@ class PairActorTest {
   @Test
   def propagateChange = {
     val id = VersionID(pairKey, "foo")
-    val categories = new HashMap[String,String]()
     val lastUpdate = new DateTime()
     val vsn = "foobar"
-    val event = UpstreamPairChangeEvent(id, categories, lastUpdate, vsn)
+    val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
     
     expect(versionPolicy.onChange(event))
     replay(versionPolicy)

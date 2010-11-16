@@ -28,6 +28,6 @@ class UpstreamFileParticipant(epName:String, root:String, agentRoot:String) exte
     with UpstreamParticipant {
 
   protected def onFileChange(f: File) = {
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), categoriesFor(f), dateFor(f), versionFor(f)))
+    changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), attributesFor(f), dateFor(f), versionFor(f)))
   }
 }

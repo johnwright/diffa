@@ -26,7 +26,7 @@ class DownstreamMemoryParticipant(val uvsnGen: String => String, val dvsnGen: St
 
   def generateVersion(entityBody: String) = {
     entities.values.toList.find(ent => entityBody.equals(ent.body)) match {
-      case Some(entity) => ProcessingResponse(entity.id, entity.categories, uvsnGen(entity.body), dvsnGen(entity.body))
+      case Some(entity) => ProcessingResponse(entity.id, entity.attributes, uvsnGen(entity.body), dvsnGen(entity.body))
       case None => null
     }
   }

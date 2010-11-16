@@ -35,14 +35,14 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     log.debug("Running version query: " + constraints)
     val constrained = constrainEntities(constraints)
-    constrained.map(e => EntityVersion(e.id,e.categories.values.toSeq, e.lastUpdated,nativeVsnGen(e.body)))
+    constrained.map(e => EntityVersion(e.id,e.attributes, e.lastUpdated,nativeVsnGen(e.body)))
   }
 
   def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
     log.debug("Running aggregate query: " + constraints)
     val constrained = constrainEntities(constraints)
     val b = new DigestBuilder(constraints(0).function)
-    constrained foreach (ent => b.add(ent.id, ent.categories, ent.lastUpdated, nativeVsnGen(ent.body)))
+    constrained foreach (ent => b.add(ent.id, ent.attributes, ent.lastUpdated, nativeVsnGen(ent.body)))
     val digests = b.digests
     log.debug("Returning digests: " + digests)
     digests
@@ -83,8 +83,8 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
     }
   }
   
-  def addEntity(id: String, categories:Map[String,String], lastUpdated:DateTime, body: String): Unit = {
-    entities += ((id, TestEntity(id, categories, lastUpdated, body)))
+  def addEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String): Unit = {
+    entities += ((id, TestEntity(id, attributes, lastUpdated, body)))
   }
 
   def removeEntity(id:String) {
@@ -98,4 +98,4 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   def close() = entities.clear
 }
 
-case class TestEntity(id: String, categories:Map[String,String], lastUpdated:DateTime, body: String)
+case class TestEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String)

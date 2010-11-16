@@ -88,7 +88,7 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
 
   protected def idFor(f:File) = f.getAbsolutePath.substring(rootDir.getAbsolutePath.length)
   // TODO [#2]
-  protected def categoriesFor(f:File) = new HashMap[String,String]
+  protected def attributesFor(f:File) = Seq()
   protected def dateFor(f:File) = new DateTime(f.lastModified)
   protected def versionFor(f:File) = DigestUtils.md5Hex(new FileInputStream(f))
 }

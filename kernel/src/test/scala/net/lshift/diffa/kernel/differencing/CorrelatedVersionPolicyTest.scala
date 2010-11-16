@@ -117,20 +117,20 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     // We should see id3 re-run through the system, and id4 be removed
     expect(usMock.retrieveContent("id3")).andReturn("content3")
-    expect(dsMock.generateVersion("content3")).andReturn(ProcessingResponse("id3", bizDate(JUL_8_2010_1), "vsn3", downstreamVersionFor("vsn3")))
+    expect(dsMock.generateVersion("content3")).andReturn(ProcessingResponse("id3", bizDateSeq(JUL_8_2010_1), "vsn3", downstreamVersionFor("vsn3")))
     //expect(dsMock.generateVersion("content3")).andReturn(ProcessingResponse("id3", JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3")))
-    expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), bizDate(JUL_8_2010_1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
+    expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), bizDateMap(JUL_8_2010_1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
     //expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), JUL_8_2010_1, JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
-      andReturn(Correlation(null, abPair, "id3", null, bizDate(JUL_8_2010_1), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
+      andReturn(Correlation(null, abPair, "id3", null, bizDateMap(JUL_8_2010_1), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
       //andReturn(Correlation(null, abPair, "id3", JUL_8_2010_1, JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
     expect(store.clearDownstreamVersion(VersionID(abPair, "id4"))).
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
     expect(usMock.retrieveContent("id5")).andReturn("content5")
-    expect(dsMock.generateVersion("content5")).andReturn(ProcessingResponse("id5", bizDate(JUL_8_2010_1), "vsn5a", downstreamVersionFor("vsn5a")))
+    expect(dsMock.generateVersion("content5")).andReturn(ProcessingResponse("id5", bizDateSeq(JUL_8_2010_1), "vsn5a", downstreamVersionFor("vsn5a")))
     //expect(dsMock.generateVersion("content5")).andReturn(ProcessingResponse("id5", JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a")))
-    expect(store.storeDownstreamVersion(VersionID(abPair, "id5"), bizDate(JUL_8_2010_1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
+    expect(store.storeDownstreamVersion(VersionID(abPair, "id5"), bizDateMap(JUL_8_2010_1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
     //expect(store.storeDownstreamVersion(VersionID(abPair, "id5"), JUL_8_2010_1, JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
-        andReturn(Correlation(null, abPair, "id3", null, bizDate(JUL_8_2010_1), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
+        andReturn(Correlation(null, abPair, "id3", null, bizDateMap(JUL_8_2010_1), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
         //andReturn(Correlation(null, abPair, "id3", JUL_8_2010_1, JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should still see an unmatched version check
@@ -195,7 +195,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     // We should see id3 re-run through the system, but not be stored since the version on the downstream is different
     expect(usMock.retrieveContent("id3")).andReturn("content3a")
-    expect(dsMock.generateVersion("content3a")).andReturn(ProcessingResponse("id3", bizDate(JUL_8_2010_1), "vsn3a", downstreamVersionFor("vsn3a")))
+    expect(dsMock.generateVersion("content3a")).andReturn(ProcessingResponse("id3", bizDateSeq(JUL_8_2010_1), "vsn3a", downstreamVersionFor("vsn3a")))
     //expect(dsMock.generateVersion("content3a")).andReturn(ProcessingResponse("id3", JUL_8_2010_1, "vsn3a", downstreamVersionFor("vsn3a")))
 
     // We should see a difference being generated

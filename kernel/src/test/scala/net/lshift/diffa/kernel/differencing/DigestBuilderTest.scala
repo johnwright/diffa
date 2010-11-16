@@ -33,7 +33,7 @@ class DigestBuilderTest {
   val pair = "A-B"
   val categories = new HashMap[String,String]
 
-  def add(b:DigestBuilder, v:VersionID, d:DateTime, s:String) = b.add(v, Map("bizDate" -> d.toString()), d, s)
+  def add(b:DigestBuilder, v:VersionID, d:DateTime, s:String) = b.add(v, Seq(d.toString()), d, s)
 
   @Test
   def shouldNotBucketIndividualVersions {

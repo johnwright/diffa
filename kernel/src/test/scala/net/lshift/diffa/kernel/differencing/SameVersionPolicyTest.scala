@@ -101,9 +101,9 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
         //DownstreamVersion(VersionID(abPair, "id4"), JUL_8_2010_1, JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4"))))
 
     // We should see id3 be updated, and id4 be removed
-    expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), bizDate(JUL_8_2010_1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
+    expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), bizDateMap(JUL_8_2010_1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
     //expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), JUL_8_2010_1, JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
-      andReturn(Correlation(null, abPair, "id3", null, bizDate(JUL_8_2010_1),JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
+      andReturn(Correlation(null, abPair, "id3", null, bizDateMap(JUL_8_2010_1),JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
       //andReturn(Correlation(null, abPair, "id3", JUL_8_2010_1,JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
     expect(store.clearDownstreamVersion(VersionID(abPair, "id4"))).
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))

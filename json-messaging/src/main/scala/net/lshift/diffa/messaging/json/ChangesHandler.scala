@@ -34,15 +34,15 @@ class ChangesHandler(val frontend:Changes) extends AbstractJSONHandler {
       val endpoint = jObj.getString("endpoint")
       val id = jObj.getString("id")
       //val date = JSONEncodingUtils.dateParser.parseDateTime(jObj.getString("date"))
-      // TODO [#2] parse categories      
-      val categories = new HashMap[String,String]
+      // TODO [#2] parse attributes
+      val attributes = Seq()
       val lastUpdated = JSONEncodingUtils.maybeParseableDate(jObj.optString("lastUpdated"))
 
       val evt = jObj.getString("type") match {
-        case "upstream" => new UpstreamChangeEvent(endpoint, id, categories, lastUpdated, jObj.optString("vsn", null))
-        case "downstream-same" => new DownstreamChangeEvent(endpoint, id, categories, lastUpdated, jObj.optString("vsn", null))
+        case "upstream" => new UpstreamChangeEvent(endpoint, id, attributes, lastUpdated, jObj.optString("vsn", null))
+        case "downstream-same" => new DownstreamChangeEvent(endpoint, id, attributes, lastUpdated, jObj.optString("vsn", null))
         case "downstream-correlated" =>
-          new DownstreamCorrelatedChangeEvent(endpoint, id, categories, lastUpdated, jObj.optString("uvsn", null), jObj.optString("dvsn", null))
+          new DownstreamCorrelatedChangeEvent(endpoint, id, attributes, lastUpdated, jObj.optString("uvsn", null), jObj.optString("dvsn", null))
       }
 
       frontend.onChange(evt)
