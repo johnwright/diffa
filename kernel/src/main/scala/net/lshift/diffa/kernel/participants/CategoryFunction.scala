@@ -17,8 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.LocalDate
-import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
-
+import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat, DateTimeFormat}
 // TODO [#2] How does this function know what argument type it can work with?
 
 case class IntermediateResult(lower:AnyRef, upper:AnyRef, next:CategoryFunction) {
@@ -45,74 +44,45 @@ case class IndividualCategoryFunction extends CategoryFunction {
   }
 }
 
-// TODO [#2] Potentially deprecate this function
-case class DateCategoryFunction extends CategoryFunction {
+abstract case class DateCategoryFunction extends CategoryFunction {
+
+  protected val iso = ISODateTimeFormat.dateTime()
+
+  def pattern:DateTimeFormatter
+  def next:CategoryFunction
+  def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
 
   def evaluate(partition:String) = {
-    val point = DateTimeFormat.forPattern("yyyy-MM-dd").parseDateTime(partition).toLocalDate
-    val (start,end) = (point,point)
-    val (s,e) = align(start,end)//(start.toDateTimeAtStartOfDay, end.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
-    Some(IntermediateResult(s, e, DateCategoryFunction()))
+    val point = pattern.parseDateTime(partition).toLocalDate
+    val (upper,lower) = pointToBounds(point)
+    val (start,end) = align(upper,lower)
+    Some(IntermediateResult(start,end, next))
   }
 
   def align(s:LocalDate, e:LocalDate) = (s.toDateTimeAtStartOfDay, e.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
 
   def shouldBucket() = true
-  def partition(value:String) = value
+
+  override def partition(value:String) = {
+    val date = iso.parseDateTime(value)
+    pattern.print(date)
+  }
 }
 
 case class DailyCategoryFunction() extends DateCategoryFunction {
-  override def evaluate(partition:String) = {
-    val point = DateTimeFormat.forPattern("yyyy-MM-dd").parseDateTime(partition).toLocalDate
-    val (start,end) = (point,point)
-    val (s,e) = align(start,end)
-    Some(IntermediateResult(s, e, IndividualCategoryFunction()))
-  }
-
-  override def shouldBucket() = true
-
-  override def partition(value:String) = {
-    val fmt = ISODateTimeFormat.dateTime()
-    val date = fmt.parseDateTime(value)
-    val formatter = DateTimeFormat.forPattern("yyyy-MM-dd")
-    formatter.print(date)
-  }
+  def pattern = DateTimeFormat.forPattern("yyyy-MM-dd")
+  def next = IndividualCategoryFunction()
+  def pointToBounds(point:LocalDate) = (point,point)
 }
 
 case class MonthlyCategoryFunction() extends DateCategoryFunction {
-
-  val formatter = DateTimeFormat.forPattern("yyyy-MM")
-  val iso = ISODateTimeFormat.dateTime()
-
-  override def evaluate(partition:String) = {
-    val point = formatter.parseDateTime(partition).toLocalDate
-    val (start,end) = (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
-    val (s,e) = align(start,end)
-    Some(IntermediateResult(s, e, DailyCategoryFunction()))
-  }
-
-  override def shouldBucket() = true
-  override def partition(value:String) = {
-    val date = iso.parseDateTime(value)
-    formatter.print(date)
-  }
+  def pattern = DateTimeFormat.forPattern("yyyy-MM")
+  def next = DailyCategoryFunction()
+  def pointToBounds(point:LocalDate) = (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
 }
 
 case class YearlyCategoryFunction() extends DateCategoryFunction {
-
-  val formatter = DateTimeFormat.forPattern("yyyy")
-  val iso = ISODateTimeFormat.dateTime()
-
-  override def evaluate(partition:String) = {
-    val point = formatter.parseDateTime(partition).toLocalDate
-    val (start,end) = (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
-    val (s,e) = align(start,end)
-    Some(IntermediateResult(s, e, MonthlyCategoryFunction()))
-  }
-
-  override def shouldBucket() = true
-  override def partition(value:String) = {
-    val date = iso.parseDateTime(value)
-    formatter.print(date)
-  }
+  def pattern = DateTimeFormat.forPattern("yyyy")
+  def next = MonthlyCategoryFunction()
+  def pointToBounds(point:LocalDate) = (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
 }
