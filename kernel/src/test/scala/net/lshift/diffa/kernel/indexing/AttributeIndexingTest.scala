@@ -28,13 +28,13 @@ class AttributeIndexingTest {
   val dir = new RAMDirectory()
 
   @Test
-  def basic = {
+  def basicDate = {
     val indexer = new DefaultAttributeIndexer(dir)
     val bizDate = new DateTime(1875, 7, 13, 12, 0, 0, 0)
     val toIndex = Seq(Indexable(ParticipantType.UPSTREAM, "id1", Map( "bizDate" -> bizDate.toString )))
     indexer.index(toIndex)
     val byId = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
-    assertEquals(1, byId.length)    
+    assertEquals(1, byId.length)
     assertEquals("id1", byId(0).id)
     assertEquals(bizDate.toString(), byId(0).terms("bizDate"))
     val byRange1 = indexer.rangeQuery(ParticipantType.UPSTREAM, "bizDate", bizDate.minusDays(1).toString(), bizDate.plusDays(1).toString())
@@ -43,5 +43,17 @@ class AttributeIndexingTest {
     assertEquals(0, byRange2.length)
     val byRange3 = indexer.rangeQuery(ParticipantType.DOWNSTREAM, "bizDate", bizDate.minusDays(1).toString(), bizDate.plusDays(1).toString())
     assertEquals(0, byRange3.length)
+  }
+
+  @Test
+  def deletions = {
+    val indexer = new DefaultAttributeIndexer(dir)
+    indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, "id1",Map( "foo" -> "bar") )))
+    val byId1 = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
+    assertEquals(1, byId1.length)
+    assertEquals("id1", byId1(0).id)
+    indexer.deleteAttribute(ParticipantType.UPSTREAM, "id1")
+    val byId2 = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
+    assertEquals(0, byId2.length)    
   }
 }
