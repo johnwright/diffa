@@ -40,7 +40,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
   def shouldUpdateDownstreamVersionsWhenStoreIsOutOfDateWithDownstreamParticipant {
     val timestamp = new DateTime()
     // Expect only a top-level sync for the upstream, but a full sync for the downstream
-    expectUpstreamAggregateSync(abPair, List(dateRangeConstaint(START_2009, END_2010, yearly)),
+    expectUpstreamAggregateSync(abPair, Seq(unconstrainedDate(YearlyCategoryFunction())),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
@@ -48,7 +48,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
         Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2")))
 
-    expectDownstreamAggregateSync(abPair, List(dateRangeConstaint(START_2009, END_2010, yearly)),
+    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
@@ -83,11 +83,11 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(dateRangeConstaint(START_2009, END_2010, yearly))))).
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction()))))).
         andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, List(dateRangeConstaint(START_2009, END_2010, yearly)), usMock, dsMock, nullListener)
+    policy.difference(abPair, usMock, dsMock, nullListener)
     verifyAll
   }
 }

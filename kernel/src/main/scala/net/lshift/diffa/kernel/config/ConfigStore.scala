@@ -17,9 +17,9 @@
 package net.lshift.diffa.kernel.config
 
 import reflect.BeanProperty
-import java.util.{Set, HashSet}
-import scala.collection.Map
+import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.participants.{QueryConstraint, YearlyCategoryFunction}
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -75,6 +75,15 @@ case class Pair(
   def schematize(runtimeValues:Seq[String]) = {
     val staticValues = categories.keys.toList
     (staticValues, runtimeValues).zip.toMap
+  }
+
+  /**
+   * Returns a set of the coarsest unbound query constraints for
+   * each of the category types that has been configured for this pair.
+   */
+  // TODO [#151] Infer this from the category types
+  def defaultConstraints() : Seq[QueryConstraint] = {
+    Seq(unconstrainedDate(YearlyCategoryFunction()))
   }
 }
 

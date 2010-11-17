@@ -20,8 +20,6 @@ import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
-import scala.collection.Map
-import collection.mutable.{HashMap, Queue}
 import net.lshift.diffa.kernel.config.ConfigStore
 import scala.collection.JavaConversions._
 
@@ -72,7 +70,10 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
     }
   }
 
-  def difference(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def difference(pairKey: String, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+    val pair = configStore.getPair(pairKey)
+    val constraints = pair.defaultConstraints
+
     synchroniseParticipants(pairKey, constraints, us, ds, l)
 
     // Run a query for mismatched versions, and report each one

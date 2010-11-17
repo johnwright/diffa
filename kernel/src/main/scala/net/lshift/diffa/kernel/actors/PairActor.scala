@@ -19,9 +19,9 @@ package net.lshift.diffa.kernel.actors
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.differencing.{DifferencingListener, VersionPolicy}
-import se.scalablesolutions.akka.actor.{ActorRef, ActorRegistry, Actor}
+import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
 import net.jcip.annotations.ThreadSafe
-import net.lshift.diffa.kernel.participants.{QueryConstraint, DownstreamParticipant, UpstreamParticipant}
+import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -37,16 +37,15 @@ class PairActor(val pairKey:String,
 
   def receive = {
     case ChangeMessage(event)               => policy.onChange(event)
-    case DifferenceMessage(constraints, listener) => {
-      logger.debug("Running difference report for: " + constraints)
-      val sync = policy.difference(pairKey, constraints, us, ds, listener)
+    case DifferenceMessage(listener) => {
+      val sync = policy.difference(pairKey, us, ds, listener)
       self.reply(sync)
     }
   }
 }
 
 case class ChangeMessage(event:PairChangeEvent)
-case class DifferenceMessage(constraints:Seq[QueryConstraint], listener:DifferencingListener)
+case class DifferenceMessage(listener:DifferencingListener)
 
 /**
  * This is a thread safe entry point to an underlying version policy.
@@ -62,7 +61,7 @@ trait PairPolicyClient {
   /**
    * Runs a syncing difference report on the underlying policy implementation in a thread safe way.
    */
-  def syncPair(pairKey:String, constraints:Seq[QueryConstraint], listener:DifferencingListener) : Boolean
+  def syncPair(pairKey:String, listener:DifferencingListener) : Boolean
 }
 
 class DefaultPairPolicyClient extends PairPolicyClient {
@@ -71,8 +70,8 @@ class DefaultPairPolicyClient extends PairPolicyClient {
 
   def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id.pairKey) ! ChangeMessage(event)
 
-  def syncPair(pairKey:String, constraints:Seq[QueryConstraint], listener:DifferencingListener) = {
-    val result = findActor(pairKey) !! DifferenceMessage(constraints, listener)
+  def syncPair(pairKey:String, listener:DifferencingListener) = {
+    val result = findActor(pairKey) !! DifferenceMessage(listener)
     result match {
       case Some(b) => b.asInstanceOf[Boolean]
       case None => {

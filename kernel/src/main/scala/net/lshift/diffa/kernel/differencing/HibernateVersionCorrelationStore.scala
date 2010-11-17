@@ -183,8 +183,11 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
 
     val indexMatches = constraints.foldLeft(List[Indexable]()) ((a:List[Indexable], x:QueryConstraint) => {
       x match {
-        case r:NoConstraint         => a
-        case r:RangeQueryConstraint => upOrDown.foldLeft(a) ((_a,y) => {_a ::: indexer.rangeQuery(y, x.category, x.values(0), x.values(1)).toList})
+        case r:NoConstraint                  => a
+        case u:UnboundedRangeQueryConstraint => a
+        case r:RangeQueryConstraint          => {
+          upOrDown.foldLeft(a) ((_a,y) => {_a ::: indexer.rangeQuery(y, x.category, x.values(0), x.values(1)).toList})
+        }
         case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
       }
     })

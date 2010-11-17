@@ -88,6 +88,13 @@ case class RangeQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) ext
 }
 
 /**
+ * This represents an unbounded range constraint, that, when narrowed, turns into a regular RangeQueryConstraint.
+ */
+case class UnboundedRangeQueryConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
+  def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  RangeQueryConstraint(category,function, values)
+}
+
+/**
  * This represents an unbounded constraint.
  */
 case class NoConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
@@ -99,4 +106,5 @@ case class NoConstraint(c:String, f:CategoryFunction) extends BaseQueryConstrain
  */
 object EasyConstraints {
   def dateRangeConstaint(start:DateTime, end:DateTime, f:CategoryFunction) = RangeQueryConstraint("date", f, Seq(start.toString(), end.toString()))
+  def unconstrainedDate(f:CategoryFunction) = UnboundedRangeQueryConstraint("date", f)
 }

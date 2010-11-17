@@ -23,7 +23,6 @@ import net.lshift.diffa.kernel.differencing._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
-import collection.mutable.HashMap
 import net.lshift.diffa.kernel.participants._
 
 class PairActorTest {
@@ -38,8 +37,6 @@ class PairActorTest {
   pair.versionPolicyName = policyName
   pair.upstream = upstream
   pair.downstream = downstream
-
-  val dates = List(DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1), DailyCategoryFunction()))
 
   val us = createStrictMock("upstreamParticipant", classOf[UpstreamParticipant])
   val ds = createStrictMock("downstreamParticipant", classOf[DownstreamParticipant])
@@ -76,10 +73,10 @@ class PairActorTest {
   def runDifference = {
     val id = VersionID(pairKey, "foo")
 
-    expect(versionPolicy.difference(pairKey, dates, us, ds, listener)).andReturn(true)
+    expect(versionPolicy.difference(pairKey, us, ds, listener)).andReturn(true)
     replay(versionPolicy)
 
-    assertTrue(client.syncPair(pairKey, dates, listener))
+    assertTrue(client.syncPair(pairKey, listener))
   }
 
   @Test

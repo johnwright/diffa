@@ -23,7 +23,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
-import net.lshift.diffa.kernel.actors.{DefaultPairPolicyClient, PairPolicyClient}
+import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
 
 /**
@@ -120,9 +120,8 @@ class DefaultSessionManagerTest {
 
   def expectForPair(p:String)  = {
     val p1 = EasyMock.eq(p)
-    val p2 = isA(classOf[Seq[DateConstraint]])
-    val p3 = isA(classOf[DifferencingListener])
-    expect(pairPolicyClient.syncPair(p1, p2, p3)).andReturn(true).atLeastOnce
+    val p2 = isA(classOf[DifferencingListener])
+    expect(pairPolicyClient.syncPair(p1, p2)).andReturn(true).atLeastOnce
     replay(pairPolicyClient)
   }
 

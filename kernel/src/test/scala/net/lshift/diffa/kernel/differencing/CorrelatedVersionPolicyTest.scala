@@ -20,13 +20,11 @@ import org.easymock.EasyMock._
 import org.junit.Test
 import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.util.DateUtils._
-import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 import org.joda.time.DateTime
-import org.easymock.{IAnswer, EasyMock}
+import org.easymock.EasyMock
 import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
-import scala.collection.mutable.Map
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 
 /**
@@ -45,7 +43,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
   def shouldUpdateDownstreamVersionsWhenStoreIsOutOfDateWithDownstreamParticipant {
     val timestamp = new DateTime()
     // Expect only a top-level sync for the upstream, but a full sync for the downstream
-    expectUpstreamAggregateSync(abPair, List(dateRangeConstaint(START_2009, END_2010, YearlyCategoryFunction())),
+    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
@@ -53,7 +51,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2")))
 
-    expectDownstreamAggregateSync(abPair, List(dateRangeConstaint(START_2009, END_2010,YearlyCategoryFunction())),
+    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
@@ -99,18 +97,18 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         andReturn(Correlation(null, abPair, "id3", null, bizDateMap(JUL_8_2010_1), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(dateRangeConstaint(START_2009, END_2010, YearlyCategoryFunction()) )))).
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction()) )))).
         andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, List(dateRangeConstaint(START_2009, END_2010, YearlyCategoryFunction())) , usMock, dsMock, nullListener)
+    policy.difference(abPair, usMock, dsMock, nullListener)
     verifyAll
   }
 
   @Test
   def shouldGenerateADifferenceWhenDownstreamResyncFails {
     // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(abPair, List(dateRangeConstaint(START_2009, END_2010, YearlyCategoryFunction())),
+    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
@@ -118,7 +116,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2")))
 
-    expectDownstreamAggregateSync(abPair, List(dateRangeConstaint(START_2009, END_2010, YearlyCategoryFunction())),
+    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
@@ -148,11 +146,11 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3")); expectLastCall
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(dateRangeConstaint(START_2009, END_2010, YearlyCategoryFunction()))))).
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction()))))).
         andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, List(dateRangeConstaint(START_2009, END_2010, YearlyCategoryFunction())), usMock, dsMock, listener)
+    policy.difference(abPair, usMock, dsMock, listener)
     verifyAll
   }
 }
