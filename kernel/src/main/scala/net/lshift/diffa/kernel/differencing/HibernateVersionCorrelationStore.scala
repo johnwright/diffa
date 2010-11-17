@@ -101,18 +101,20 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
         }
         case Some(c:Correlation) => {
           c.upstreamVsn = null
+          var correlation:Correlation = null
           if (c.downstreamUVsn == null && c.downstreamDVsn == null) {
             // No versions at all. We can remove the entity
             s.delete(c)
 
             // Generate a new matched correlation detail
-            Correlation.asDeleted(c.pairing, c.id, timestamp)
+            correlation = Correlation.asDeleted(c.pairing, c.id, timestamp)
           } else {
             updateMatchedState(c)
             s.save(c)
-
-            c
+            correlation = c
           }
+          indexer.deleteAttribute(ParticipantType.UPSTREAM,id.id)
+          correlation
         }
       }
     })
@@ -127,6 +129,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
           Correlation.asDeleted(id.pairKey, id.id, timestamp)
         }
         case Some(c:Correlation) => {
+          var correlation:Correlation = null
           c.downstreamUVsn = null
           c.downstreamDVsn = null
           if (c.upstreamVsn == null) {
@@ -134,13 +137,14 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
             s.delete(c)
 
             // Generate a new matched correlation detail
-            Correlation.asDeleted(c.pairing, c.id, timestamp)
+            correlation = Correlation.asDeleted(c.pairing, c.id, timestamp)
           } else {
             updateMatchedState(c)
             s.save(c)
-
-            c
+            correlation = c
           }
+          indexer.deleteAttribute(ParticipantType.DOWNSTREAM,id.id)
+          correlation
         }
       }
     })

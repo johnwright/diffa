@@ -36,6 +36,7 @@ import scala.collection.JavaConversions._
 
 class HibernateVersionCorrelationStoreTest {
   private val store = HibernateVersionCorrelationStoreTest.store
+  private val indexer = HibernateVersionCorrelationStoreTest.indexer
 
   private val pair = "pair"
   private val otherPair = "other-pair"
@@ -138,9 +139,13 @@ class HibernateVersionCorrelationStoreTest {
   def deletingSource = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
     store.storeUpstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")
+
+    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 2)
+
     val corr = store.clearUpstreamVersion(VersionID(pair, "id6"))
 
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
+    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 1)
 
     val collector = new Collector
     store.queryUpstreams(pair, List(SimpleDateConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
@@ -164,9 +169,13 @@ class HibernateVersionCorrelationStoreTest {
   def deletingDest = {
     store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")
+
+    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 2)
+
     val corr = store.clearDownstreamVersion(VersionID(pair, "id6"))
 
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
+    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 1)
 
     val collector = new Collector
     val digests = store.queryDownstreams(pair, List(SimpleDateConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
@@ -272,6 +281,12 @@ class HibernateVersionCorrelationStoreTest {
   def unknownCorrelationShouldNotBeRetrievable = {
     val corr = store.retrieveCurrentCorrelation(VersionID(pair, "id99-missing"))
     assertEquals(None, corr)
+  }
+
+  def assertIndexState(upOrDown: ParticipantType.ParticipantType, key: String, value: String, expect: Int) = {
+    val indexables = indexer.query(upOrDown, key, value)
+    assertNotNull(indexables)
+    assertEquals(expect, indexables.length)
   }
 
   private def assertCorrelationEquals(expected:Correlation, actual:Correlation) {

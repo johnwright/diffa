@@ -35,6 +35,7 @@ trait AttributeIndexer {
   def rangeQuery(upOrDown:ParticipantType.ParticipantType, key:String, lower:String, upper:String) : Seq[Indexable]
   def index(indexables:Seq[Indexable]) : Unit
   def reset() : Unit
+  def deleteAttribute(upOrDown:ParticipantType.ParticipantType, id:String) : Unit
 }
 
 case class Indexable(upOrDown:ParticipantType.ParticipantType, id:String, terms:Map[String,String])
@@ -83,9 +84,16 @@ class DefaultAttributeIndexer(index:Directory) extends AttributeIndexer with Clo
     writer.commit
   }
 
+  def deleteAttribute(upOrDown:ParticipantType.ParticipantType, id:String) = {
+    log.debug("[ " + upOrDown + "] Deleting attribute: " + id)
+    val filter = new QueryWrapperFilter(new TermQuery(new Term("type", upOrDown.toString())))
+    val query = new FilteredQuery(new TermQuery(new Term("id", id)), filter)
+    writer.deleteDocuments(query)
+    writer.commit    
+  }
+
   def close = {
     writer.close
-    //searcher.close
   }
 
   def reset() = writer.deleteAll
