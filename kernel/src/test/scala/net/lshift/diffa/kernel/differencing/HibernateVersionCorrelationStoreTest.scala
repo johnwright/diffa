@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.events._
 import collection.mutable.{ListBuffer, HashMap}
 import scala.collection.Map
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.indexing.DefaultAttributeIndexer
+import net.lshift.diffa.kernel.indexing.LuceneAttributeIndexer
 import org.apache.lucene.store.RAMDirectory
 import scala.collection.JavaConversions._
 
@@ -327,6 +327,6 @@ object HibernateVersionCorrelationStoreTest {
           setProperty("hibernate.hbm2ddl.auto", "create-drop")
 
   val sessionFactory = config.buildSessionFactory
-  val indexer = new DefaultAttributeIndexer(new RAMDirectory)
+  val indexer = new LuceneAttributeIndexer(new RAMDirectory)
   val store = new HibernateVersionCorrelationStore(sessionFactory, indexer)
 }

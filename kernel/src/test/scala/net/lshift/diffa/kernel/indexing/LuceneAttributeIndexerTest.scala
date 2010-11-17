@@ -23,13 +23,13 @@ import scala.collection.Map
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants.ParticipantType
 
-class AttributeIndexingTest {
+class LuceneAttributeIndexerTest {
 
   val dir = new RAMDirectory()
 
   @Test
   def basicDate = {
-    val indexer = new DefaultAttributeIndexer(dir)
+    val indexer = new LuceneAttributeIndexer(dir)
     val bizDate = new DateTime(1875, 7, 13, 12, 0, 0, 0)
     val toIndex = Seq(Indexable(ParticipantType.UPSTREAM, "id1", Map( "bizDate" -> bizDate.toString )))
     indexer.index(toIndex)
@@ -47,7 +47,7 @@ class AttributeIndexingTest {
 
   @Test
   def deletions = {
-    val indexer = new DefaultAttributeIndexer(dir)
+    val indexer = new LuceneAttributeIndexer(dir)
     indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, "id1",Map( "foo" -> "bar") )))
     val byId1 = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
     assertEquals(1, byId1.length)
