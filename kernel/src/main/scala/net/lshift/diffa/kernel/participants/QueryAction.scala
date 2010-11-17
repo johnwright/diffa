@@ -16,6 +16,17 @@
 
 package net.lshift.diffa.kernel.participants
 
+/**
+ * Specifies the next action to take when building a digest tree.
+ */
 trait QueryAction
+
+/**
+ * The next action should still be an aggregating action
+ */
 case class AggregateQueryAction(constraint:QueryConstraint) extends QueryAction
+
+/**
+ * The next action should query on an individual level
+ */
 case class EntityQueryAction(constraint:QueryConstraint) extends QueryAction

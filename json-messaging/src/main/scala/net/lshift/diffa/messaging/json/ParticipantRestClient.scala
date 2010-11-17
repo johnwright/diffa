@@ -18,8 +18,8 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
-import collection.mutable.HashMap
 import JSONEncodingUtils._
+import collection.mutable.{ListBuffer, HashMap}
 
 /**
  * Rest client for participant communication.
@@ -89,12 +89,14 @@ class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient
       case None    => null
       case Some(r) => {
         val responseObj = new JSONObject(r)
-
+        val attributes = new ListBuffer[String]
+        val attributeArray = responseObj.getJSONArray("attributes")
+        for (val i <- 0 to attributeArray.length - 1) {
+          attributes += attributeArray.getString(i)
+        }
         ProcessingResponse(
           responseObj.getString("id"),
-          // TODO [#2]
-          //JSONEncodingUtils.dateParser.parseDateTime(responseObj.getString("date")),
-          Seq(),
+          attributes,
           responseObj.getString("uvsn"), responseObj.getString("dvsn"))
       }
     }

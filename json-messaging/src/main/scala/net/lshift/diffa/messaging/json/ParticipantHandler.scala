@@ -26,8 +26,6 @@ import JSONEncodingUtils._
  */
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
-  // TODO [#2] remember to implement "query_entity_versions"
-
   protected val commonEndpoints = Map(
     "query_aggregate_digests" -> ? (wire => serializeDigests(participant.queryAggregateDigests(deserialize(wire)))),
     "query_entity_versions" -> ? (wire => serializeDigests(participant.queryEntityVersions(deserialize(wire)))),
@@ -51,14 +49,6 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
 
   private def ? (f:String => String) = defineRpc((s:String) => s)(f(_))
 
-  private def decodeGranularity(gran:String) = {
-    gran match {
-      case "individual" => IndividualGranularity
-      case "day" => DayGranularity
-      case "month" => MonthGranularity
-      case "year" => YearGranularity
-    }
-  }
 }
 
 class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
@@ -71,8 +61,7 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
 
       val responseObj = new JSONObject
       responseObj.put("id", response.id)
-      // TODO [#2]
-      //responseObj.put("date", response.date.toString(JSONEncodingUtils.dateEncoder))
+      responseObj.put("attributes", asList(response.attributes))
       responseObj.put("uvsn", response.uvsn)
       responseObj.put("dvsn", response.dvsn)
       responseObj.toString

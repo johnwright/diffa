@@ -30,16 +30,6 @@ import org.joda.time.DateTime
  */
 class DigestDifferencingUtilsTest {
 
-  val __attributes = new HashMap[String,String]
-  
-  // TODO [#2] factor these crufty granularities out
-
-  val in = DailyCategoryFunction()
-
-  val day = DailyCategoryFunction()
-  val month = MonthlyCategoryFunction()
-  val year = YearlyCategoryFunction()
-
   def dateRangeConstraint(start:DateTime, end:DateTime, f:CategoryFunction) = {
     RangeQueryConstraint("date", f, Seq(start.toString,end.toString))
   }
@@ -71,10 +61,8 @@ class DigestDifferencingUtilsTest {
   def shouldReportNothingOnMatchingNonEmptyLists {
     val a = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "h1"),
                 EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
-    //val a = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "h1"), Digest("id2", JAN_1_2010, JAN_1_2010, "h2"))
     val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "h1"),
                 EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
-    //val b = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "h1"), Digest("id2", JAN_1_2010, JAN_1_2010, "h2"))
 
     val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
     assertEquals(0, actions.length)
@@ -84,10 +72,8 @@ class DigestDifferencingUtilsTest {
   def shouldReportNothingOnMatchingNonEmptyListsEvenWhenTheirOrderDiffers {
     val a = Seq(EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"),
                 EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "h1"))
-    //val a = Seq(Digest("id2", JAN_1_2010, JAN_1_2010, "h2"), Digest("id1", JAN_1_2010, JAN_1_2010, "h1"))
     val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "h1"),
                 EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
-    //val b = Seq(Digest("id1", JAN_1_2010, JAN_1_2010, "h1"), Digest("id2", JAN_1_2010, JAN_1_2010, "h2"))
 
     val actions = DigestDifferencingUtils.differenceEntities(a, b, resolve, IndividualGranularity)
     assertEquals(0, actions.length)
@@ -198,12 +184,10 @@ class DigestDifferencingUtilsTest {
 
     val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, constraints)
     assertEquals(HashSet(EntityQueryAction(dateRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010), IndividualCategoryFunction()))), HashSet(actions: _*))
-    //assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), IndividualGranularity)), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestIndividualOnMissingYearVersionsInSecondList {
-    //val a = Seq(Digest("2010", JAN_1_2010, JAN_1_2010, "v1"))
     val a = Seq(AggregateDigest(Seq("2010"), JAN_1_2010, "v1"))
     val b = Seq()
 
@@ -211,20 +195,16 @@ class DigestDifferencingUtilsTest {
 
     val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, constraints)
     assertEquals(HashSet(EntityQueryAction(dateRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010), IndividualCategoryFunction()))), HashSet(actions: _*))
-    //assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), IndividualGranularity)), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestMonthOnMismatchedYearVersions {
     val a = Seq(AggregateDigest(Seq("2010"), JAN_1_2010, "v1"))
-    //val a = Seq(Digest("2010", JAN_1_2010, JAN_1_2010, "v1"))
     val b = Seq(AggregateDigest(Seq("2010"), JAN_1_2010, "v2"))
-    //val b = Seq(Digest("2010", JAN_1_2010, JAN_1_2010, "v2"))
 
     val constraints = Seq(dateRangeConstraint(YearlyCategoryFunction()))
 
     val actions = DigestDifferencingUtils.differenceAggregates(a, b, resolve, constraints)
     assertEquals(HashSet(AggregateQueryAction(dateRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010), MonthlyCategoryFunction()))), HashSet(actions: _*))
-    //assertEquals(HashSet(QueryAction(JAN_1_2010, endOfDay(DEC_31_2010), MonthGranularity)), HashSet(actions: _*))
   }
 }

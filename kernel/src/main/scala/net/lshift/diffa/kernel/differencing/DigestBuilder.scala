@@ -22,7 +22,6 @@ import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.apache.commons.codec.binary.Hex
-import collection.Map
 import scala.collection.JavaConversions._
 import net.jcip.annotations.NotThreadSafe
 import org.slf4j.LoggerFactory
