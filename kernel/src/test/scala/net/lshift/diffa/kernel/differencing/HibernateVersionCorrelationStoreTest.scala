@@ -60,9 +60,7 @@ class HibernateVersionCorrelationStoreTest {
 
   @Test
   def matchedPairs = {
-    //store.storeUpstreamVersion(VersionID(pair, "id1"), DEC_31_2009, DEC_31_2009, "upstreamVsn")
     store.storeUpstreamVersion(VersionID(pair, "id1"), categories, DEC_31_2009, "upstreamVsn")
-    //store.storeDownstreamVersion(VersionID(pair, "id1"), DEC_31_2009, DEC_31_2009, "upstreamVsn", "downstreamVsn")
     store.storeDownstreamVersion(VersionID(pair, "id1"), categories, DEC_31_2009, "upstreamVsn", "downstreamVsn")
 
     val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date", DailyCategoryFunction())))
@@ -73,54 +71,42 @@ class HibernateVersionCorrelationStoreTest {
   def unmatchedPairFromUpstream = {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id2"), categories, DEC_31_2009, "upstreamVsn")
-    //store.storeUpstreamVersion(VersionID(pair, "id2"), DEC_31_2009, DEC_31_2009, "upstreamVsn")
 
     val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date", DailyCategoryFunction())))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id2", categories, categories, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
-    //assertCorrelationEquals(Correlation(null, pair, "id2", DEC_31_2009, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
 
   @Test
   def unmatchPairFromUpstreamShouldBeIndicatedInReturnValue {
     val timestamp = new DateTime()
-    //val corr = store.storeUpstreamVersion(VersionID(pair, "id2"), DEC_31_2009, DEC_31_2009, "upstreamVsn")
     val corr = store.storeUpstreamVersion(VersionID(pair, "id2"), categories, DEC_31_2009, "upstreamVsn")
     assertCorrelationEquals(Correlation(null, pair, "id2", categories, categories, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), corr)
-    //assertCorrelationEquals(Correlation(null, pair, "id2", DEC_31_2009, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), corr)
   }
 
   @Test
   def unmatchedPairFromDownstream = {
     val timestamp = new DateTime()
-    //store.storeDownstreamVersion(VersionID(pair, "id3"), DEC_31_2009, DEC_31_2009, "upstreamVsn", "downstreamVsn")
     store.storeDownstreamVersion(VersionID(pair, "id3"), categories, DEC_31_2009, "upstreamVsn", "downstreamVsn")
 
     val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date", DailyCategoryFunction())))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id3", categories, categories, DEC_31_2009, timestamp,  null, "upstreamVsn", "downstreamVsn", false), unmatched(0))
-    //assertCorrelationEquals(Correlation(null, pair, "id3", DEC_31_2009, DEC_31_2009, timestamp,  null, "upstreamVsn", "downstreamVsn", false), unmatched(0))
   }
 
   @Test
   def unmatchedPairFromDownstreamShouldBeIndicatedInReturnValue {
     val timestamp = new DateTime()
     val corr = store.storeDownstreamVersion(VersionID(pair, "id3"), categories, DEC_31_2009, "upstreamVsn", "downstreamVsn")
-    //val corr = store.storeDownstreamVersion(VersionID(pair, "id3"), DEC_31_2009, DEC_31_2009, "upstreamVsn", "downstreamVsn")
-    //assertCorrelationEquals(Correlation(null, pair, "id3", DEC_31_2009, DEC_31_2009, timestamp, null, "upstreamVsn", "downstreamVsn", false), corr)
     assertCorrelationEquals(Correlation(null, pair, "id3", categories, categories, DEC_31_2009, timestamp, null, "upstreamVsn", "downstreamVsn", false), corr)
   }
 
   @Test
   def matchedPairsAfterChanges = {
     store.storeUpstreamVersion(VersionID(pair, "id4"), categories, DEC_31_2009, "upstreamVsnA")
-    //store.storeUpstreamVersion(VersionID(pair, "id4"), DEC_31_2009, DEC_31_2009, "upstreamVsnA")
     store.storeUpstreamVersion(VersionID(pair, "id4"), categories, DEC_31_2009, "upstreamVsnB")
-    //store.storeUpstreamVersion(VersionID(pair, "id4"), DEC_31_2009, DEC_31_2009, "upstreamVsnB")
     store.storeDownstreamVersion(VersionID(pair, "id4"), categories, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
-    //store.storeDownstreamVersion(VersionID(pair, "id4"), DEC_31_2009, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
     store.storeDownstreamVersion(VersionID(pair, "id4"), categories, DEC_31_2009, "upstreamVsnB", "downstreamVsnB")
-    //store.storeDownstreamVersion(VersionID(pair, "id4"), DEC_31_2009, DEC_31_2009, "upstreamVsnB", "downstreamVsnB")
 
     val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date", DailyCategoryFunction())))
     assertEquals(0, unmatched.size)
@@ -130,38 +116,28 @@ class HibernateVersionCorrelationStoreTest {
   def unmatchedPairsAfterChanges = {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id5"), categories,DEC_31_2009, "upstreamVsnA")
-    //store.storeUpstreamVersion(VersionID(pair, "id5"), DEC_31_2009,DEC_31_2009, "upstreamVsnA")
     store.storeDownstreamVersion(VersionID(pair, "id5"), categories, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
-    //store.storeDownstreamVersion(VersionID(pair, "id5"), DEC_31_2009, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
     store.storeUpstreamVersion(VersionID(pair, "id5"), categories, DEC_31_2009, "upstreamVsnB")
-    //store.storeUpstreamVersion(VersionID(pair, "id5"), DEC_31_2009, DEC_31_2009, "upstreamVsnB")
 
     val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date", DailyCategoryFunction())))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id5", categories, categories, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), unmatched(0))
-    //assertCorrelationEquals(Correlation(null, pair, "id5", DEC_31_2009, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), unmatched(0))
   }
 
   @Test
   def unmatchedPairsAfterChangesShouldBeIndicatedInReturnValue = {
     val timestamp = new DateTime()
-    //store.storeUpstreamVersion(VersionID(pair, "id5"), DEC_31_2009, DEC_31_2009, "upstreamVsnA")
     store.storeUpstreamVersion(VersionID(pair, "id5"), categories, DEC_31_2009, "upstreamVsnA")
     store.storeDownstreamVersion(VersionID(pair, "id5"), categories, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
-    //store.storeDownstreamVersion(VersionID(pair, "id5"), DEC_31_2009, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
-    //val corr = store.storeUpstreamVersion(VersionID(pair, "id5"), DEC_31_2009, DEC_31_2009, "upstreamVsnB")
     val corr = store.storeUpstreamVersion(VersionID(pair, "id5"), categories, DEC_31_2009, "upstreamVsnB")
 
     assertCorrelationEquals(Correlation(null, pair, "id5", categories, categories, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), corr)
-    //assertCorrelationEquals(Correlation(null, pair, "id5", DEC_31_2009, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), corr)
   }
 
   @Test
   def deletingSource = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
-    //store.storeUpstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6")
     store.storeUpstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")
-    //store.storeUpstreamVersion(VersionID(pair, "id7"), DEC_1_2009,DEC_1_2009, "upstreamVsn-id7")
     val corr = store.clearUpstreamVersion(VersionID(pair, "id6"))
 
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
@@ -170,16 +146,13 @@ class HibernateVersionCorrelationStoreTest {
     store.queryUpstreams(pair, List(SimpleDateConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(
       List(UpstreamPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")),
-      //List(UpstreamPairChangeEvent(VersionID(pair, "id7"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id7")),
       collector.upstreamObjs.toList)
   }
 
   @Test
   def deletingSourceThatIsMatched = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), categories, DEC_1_2009, "upstreamVsn-id6")
-    //store.storeUpstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id6"), categories, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
-    //store.storeDownstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.clearUpstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
@@ -190,9 +163,7 @@ class HibernateVersionCorrelationStoreTest {
   @Test
   def deletingDest = {
     store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
-    //store.storeDownstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")
-    //store.storeDownstreamVersion(VersionID(pair, "id7"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")
     val corr = store.clearDownstreamVersion(VersionID(pair, "id6"))
 
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
@@ -201,16 +172,13 @@ class HibernateVersionCorrelationStoreTest {
     val digests = store.queryDownstreams(pair, List(SimpleDateConstraint(DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
-      //List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       collector.downstreamObjs.toList)
   }
 
   @Test
   def deletingDestThatIsMatched = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), categories, DEC_1_2009, "upstreamVsn-id6")
-    //store.storeUpstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id6"), categories, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
-    //store.storeDownstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.clearDownstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
@@ -221,29 +189,23 @@ class HibernateVersionCorrelationStoreTest {
   @Test
   def queryUpstreamRangeExcludesEarlier = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), Map("bizDate" -> DEC_1_2009.toString()), DEC_1_2009, "upstreamVsn-id6")
-    //store.storeUpstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6")
     store.storeUpstreamVersion(VersionID(pair, "id7"), Map("bizDate" -> DEC_2_2009.toString()), DEC_2_2009, "upstreamVsn-id7")
-    //store.storeUpstreamVersion(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7")
 
     val collector = new Collector
     val digests = store.queryUpstreams(pair, List(NamedSimpleDateConstraint("bizDate", DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectUpstream)
     assertEquals(
       List(UpstreamPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")),
-      //List(UpstreamPairChangeEvent(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7")),
       collector.upstreamObjs.toList)
   }
 
   @Test
   def queryUpstreamRangeExcludesLater = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), Map("bizDate" -> DEC_1_2009.toString()), DEC_1_2009, "upstreamVsn-id6")
-    //store.storeUpstreamVersion(VersionID(pair, "id6"), DEC_1_2009,DEC_1_2009, "upstreamVsn-id6")
     store.storeUpstreamVersion(VersionID(pair, "id7"), Map("bizDate" -> DEC_2_2009.toString()), DEC_2_2009, "upstreamVsn-id7")
-    //store.storeUpstreamVersion(VersionID(pair, "id7"), DEC_2_2009,DEC_2_2009, "upstreamVsn-id7")
 
     val collector = new Collector
     val digests = store.queryUpstreams(pair, List(NamedSimpleDateConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(
-      //List(UpstreamPairChangeEvent(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6")),
       List(UpstreamPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")),
       collector.upstreamObjs.toList)
   }
@@ -251,14 +213,11 @@ class HibernateVersionCorrelationStoreTest {
   @Test
   def queryDownstreamRangeExcludesEarlier = {
     store.storeDownstreamVersion(VersionID(pair, "id6"), Map("bizDate" -> DEC_1_2009.toString()), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
-    //store.storeDownstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id7"), Map("bizDate" -> DEC_2_2009.toString()), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
-    //store.storeDownstreamVersion(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
 
     val collector = new Collector
     val digests = store.queryDownstreams(pair, List(NamedSimpleDateConstraint("bizDate", DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectDownstream)
     assertEquals(
-      //List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       collector.downstreamObjs.toList)
   }
@@ -266,14 +225,11 @@ class HibernateVersionCorrelationStoreTest {
   @Test
   def queryDownstreamRangeExcludesLater = {
     store.storeDownstreamVersion(VersionID(pair, "id6"), Map("bizDate" -> DEC_1_2009.toString()), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
-    //store.storeDownstreamVersion(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id7"), Map("bizDate" -> DEC_2_2009.toString()), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
-    //store.storeDownstreamVersion(VersionID(pair, "id7"), DEC_2_2009, DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
 
     val collector = new Collector
     val digests = store.queryDownstreams(pair, List(NamedSimpleDateConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(
-      //List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")),
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")),
       collector.downstreamObjs.toList)
   }
@@ -282,12 +238,10 @@ class HibernateVersionCorrelationStoreTest {
   def storedUpstreamShouldBeRetrievable = {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id23"), categories, DEC_1_2009, "upstreamVsn-id23")
-    //store.storeUpstreamVersion(VersionID(pair, "id23"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id23")
     val corr = store.retrieveCurrentCorrelation(VersionID(pair, "id23")).getOrElse(null)
 
     assertCorrelationEquals(
       Correlation(null, pair, "id23", categories, null, DEC_1_2009, timestamp, "upstreamVsn-id23", null, null, false),
-      //Correlation(null, pair, "id23", DEC_1_2009, DEC_1_2009, timestamp, "upstreamVsn-id23", null, null, false),
       corr)
   }
 
@@ -295,12 +249,10 @@ class HibernateVersionCorrelationStoreTest {
   def storedDownstreamShouldBeRetrievable = {
     val timestamp = new DateTime()
     store.storeDownstreamVersion(VersionID(pair, "id23"), categories, DEC_1_2009, "upstreamVsn-id23", "downstreamVsn-id23")
-    //store.storeDownstreamVersion(VersionID(pair, "id23"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id23", "downstreamVsn-id23")
     val corr = store.retrieveCurrentCorrelation(VersionID(pair, "id23")).getOrElse(null)
 
     assertCorrelationEquals(
       Correlation(null, pair, "id23", null, categories, DEC_1_2009, timestamp, null, "upstreamVsn-id23", "downstreamVsn-id23", false),
-      //Correlation(null, pair, "id23", DEC_1_2009, DEC_1_2009, timestamp, null, "upstreamVsn-id23", "downstreamVsn-id23", false),
       corr)
   }
 
@@ -308,14 +260,11 @@ class HibernateVersionCorrelationStoreTest {
   def storedMatchShouldBeRetrievable = {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id23"), categories, DEC_1_2009, "upstreamVsn-id23")
-    //store.storeUpstreamVersion(VersionID(pair, "id23"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id23")
     store.storeDownstreamVersion(VersionID(pair, "id23"), categories, DEC_1_2009, "upstreamVsn-id23", "downstreamVsn-id23")
-    //store.storeDownstreamVersion(VersionID(pair, "id23"), DEC_1_2009, DEC_1_2009, "upstreamVsn-id23", "downstreamVsn-id23")
     val corr = store.retrieveCurrentCorrelation(VersionID(pair, "id23")).getOrElse(null)
 
     assertCorrelationEquals(
       Correlation(null, pair, "id23", categories, categories, DEC_1_2009, timestamp, "upstreamVsn-id23", "upstreamVsn-id23", "downstreamVsn-id23", true),
-      //Correlation(null, pair, "id23", DEC_1_2009, DEC_1_2009, timestamp, "upstreamVsn-id23", "upstreamVsn-id23", "downstreamVsn-id23", true),
       corr)
   }
 

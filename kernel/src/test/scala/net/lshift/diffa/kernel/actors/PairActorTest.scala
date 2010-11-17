@@ -40,7 +40,6 @@ class PairActorTest {
   pair.downstream = downstream
 
   val dates = List(DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1), DailyCategoryFunction()))
-  //val dates = DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1))
 
   val us = createStrictMock("upstreamParticipant", classOf[UpstreamParticipant])
   val ds = createStrictMock("downstreamParticipant", classOf[DownstreamParticipant])
