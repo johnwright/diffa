@@ -40,8 +40,8 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
   }
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
-    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      // TODO [#2] this is a big bug as it won't work with multiple constraints
+    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {      
+      assert(constraints.length < 2, "See ticket #148")
       val aggregator = new Aggregator(constraints(0).function)
       store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
       aggregator.digests

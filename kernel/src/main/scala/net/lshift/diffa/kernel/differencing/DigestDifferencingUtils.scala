@@ -62,6 +62,7 @@ object DigestDifferencingUtils {
                            ds2:Seq[AggregateDigest],
                            resolve:Digest => Map[String,String],
                            constraints:Seq[QueryConstraint]) : Seq[QueryAction] = {
+    assert(constraints.length < 2, "See ticket #148")
     var preemptVersionQuery = false
     val results = new ListBuffer[QueryAction]
     val ds1Ids = indexByAttributeValues(ds1)
@@ -82,6 +83,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
+        assert(ds1Digest.attributes.length < 2, "See ticket #148")
         val partition = ds1Digest.attributes(0)
         evaluate(partition)
       }
@@ -94,6 +96,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
+        assert(hs2Digest.attributes.length < 2, "See ticket #148")
         val partition = hs2Digest.attributes(0)
         evaluate(partition)
       }

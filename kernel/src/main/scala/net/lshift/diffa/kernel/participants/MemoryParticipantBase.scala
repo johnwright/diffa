@@ -33,12 +33,14 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   protected val entities = new HashMap[String, TestEntity]
 
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
+    assert(constraints.length < 2, "See ticket #148")
     log.trace("Running version query: " + constraints)
     val constrained = constrainEntities(constraints)
     constrained.map(e => EntityVersion(e.id,e.attributes, e.lastUpdated,nativeVsnGen(e.body)))
   }
 
   def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
+    assert(constraints.length < 2, "See ticket #148")
     log.trace("Running aggregate query: " + constraints)
     val constrained = constrainEntities(constraints)
     val b = new DigestBuilder(constraints(0).function)

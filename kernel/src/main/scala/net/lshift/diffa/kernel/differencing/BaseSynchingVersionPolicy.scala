@@ -121,8 +121,8 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
 
-    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      // TODO [#2] This won't work with multiple constraints -> bug
+    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {      
+      assert(constraints.length < 2, "See ticket #148")
       val aggregator = new Aggregator(constraints(0).function)
       store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
       aggregator.digests
