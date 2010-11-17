@@ -53,7 +53,6 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
       }
 
       s.save(saveable)
-      log.debug(id.id + ") Saving upstream attributes: " + attributes)
       indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, id.id, attributes)))
       saveable
     })
@@ -76,7 +75,6 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
       }
 
       s.save(saveable)
-      log.debug(id.id + ") Saving downstream attributes: " + attributes)
       indexer.index(Seq(Indexable(ParticipantType.DOWNSTREAM, id.id, attributes)))
       saveable
     })
@@ -86,7 +84,6 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
     sessionFactory.withSession(s => {
       val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.UPSTREAM, ParticipantType.DOWNSTREAM)
       criteria.add(Restrictions.eq("isMatched", false))
-
       criteria.list.map { i => i.asInstanceOf[Correlation] }
     })
   }
@@ -166,14 +163,12 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
 
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
     queryUpstreams(pairKey, constraints).foreach(c => {
-      log.debug("Passing off to handler: " + c)
       handler(VersionID(c.pairing, c.id), c.upstreamAttributes.values.toSeq, c.lastUpdate, c.upstreamVsn)
     })
   }
 
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
     queryDownstreams(pairKey, constraints).foreach(c => {
-      log.debug("Passing off to handler: " + c)
       handler(VersionID(c.pairing, c.id), c.downstreamAttributes.values.toSeq, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }

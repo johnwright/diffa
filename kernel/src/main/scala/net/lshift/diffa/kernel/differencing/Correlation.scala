@@ -28,7 +28,6 @@ case class Correlation(
   @BeanProperty var oid:java.lang.Integer,
   @BeanProperty var pairing:String,
   @BeanProperty var id:String,
-  // TODO [#2] the attributes go into the index, not the DB
   var upstreamAttributes:Map[String,String],
   var downstreamAttributes:Map[String,String],
   @BeanProperty var lastUpdate:DateTime,

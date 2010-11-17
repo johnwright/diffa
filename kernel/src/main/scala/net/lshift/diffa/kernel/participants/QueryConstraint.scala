@@ -26,9 +26,30 @@ import org.joda.time.DateTime
  * - EITHER a list of values OR a range of values TO apply
  */
 trait QueryConstraint {
+
+  /**
+   * The name of the catgory to constrain entities or aggregates by.
+   */
   def category:String
+
+  /**
+   * The function that peforms narrowing
+   */
   def function:CategoryFunction
+
+  /**
+   *  Either a range or a list of values to form a constraint predicate with.
+   */
   def values:Seq[String]
+
+  /**
+   * Depending on:
+   *
+   * - The name of a valid partition with the specified value range
+   * - Whether or not a parition is being requested where one of the digest sequences is empty
+   *
+   * return a finer grained query to execute.
+   */
   def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction]
 }
 
@@ -36,7 +57,6 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
 
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) : BaseQueryConstraint
 
-  // TODO [#2] unit test
   def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] = {
     function.descend(partition) match {
       case None    => None
@@ -51,18 +71,31 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
     }
   }  
 }
+
+/**
+ * This type of constraint is to be interpreted as a set of values to constain with.
+ */
 case class ListQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v) {
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  ListQueryConstraint(category,function,values)
 }
+
+/**
+ * This type of constraint is to be interpreted as a value range - the sequence of values contains the
+ * upper and lower bounds of the constraint.
+ */
 case class RangeQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v) {
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  RangeQueryConstraint(category,function,values)
 }
+
+/**
+ * This represents an unbounded constraint.
+ */
 case class NoConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  NoConstraint(category,function)
 }
 
 /**
- * Utility builders
+ *   Utility builders
  */
 object EasyConstraints {
   def dateRangeConstaint(start:DateTime, end:DateTime, f:CategoryFunction) = RangeQueryConstraint("date", f, Seq(start.toString(), end.toString()))

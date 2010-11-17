@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.kernel.participants
 
-import org.joda.time.LocalDate
-import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat, DateTimeFormat}
-
+/**
+ * This is a struct for desceding partition requests. 
+ */
 case class IntermediateResult(lower:AnyRef, upper:AnyRef, next:CategoryFunction) {
   def toSeq : Seq[String] = Seq(lower.toString, upper.toString)
 }
@@ -58,56 +58,4 @@ case class IndividualCategoryFunction extends CategoryFunction {
   def descend(partition:String) = None
   def shouldBucket() = false
   def parentPartition(value:String) = value
-}
-
-abstract case class DateCategoryFunction extends CategoryFunction {
-
-  protected val iso = ISODateTimeFormat.dateTime()
-
-  def pattern:DateTimeFormatter
-  def next:CategoryFunction
-  def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
-
-  def descend(partition:String) = {
-    val point = pattern.parseDateTime(partition).toLocalDate
-    val (upper,lower) = pointToBounds(point)
-    val (start,end) = align(upper,lower)
-    Some(IntermediateResult(start,end, next))
-  }
-
-  def align(s:LocalDate, e:LocalDate) = (s.toDateTimeAtStartOfDay, e.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
-
-  def shouldBucket() = true
-
-  override def parentPartition(value:String) = {
-    val date = iso.parseDateTime(value)
-    pattern.print(date)
-  }
-}
-
-/**
- * This function partitions by whole days.
- */
-case class DailyCategoryFunction() extends DateCategoryFunction {
-  def pattern = DateTimeFormat.forPattern("yyyy-MM-dd")
-  def next = IndividualCategoryFunction()
-  def pointToBounds(point:LocalDate) = (point,point)
-}
-
-/**
- * This function partitions by whole calendar months.
- */
-case class MonthlyCategoryFunction() extends DateCategoryFunction {
-  def pattern = DateTimeFormat.forPattern("yyyy-MM")
-  def next = DailyCategoryFunction()
-  def pointToBounds(point:LocalDate) = (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
-}
-
-/**
- * This function partitions by whole years.
- */
-case class YearlyCategoryFunction() extends DateCategoryFunction {
-  def pattern = DateTimeFormat.forPattern("yyyy")
-  def next = MonthlyCategoryFunction()
-  def pointToBounds(point:LocalDate) = (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
 }

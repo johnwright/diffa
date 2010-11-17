@@ -33,35 +33,22 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   protected val entities = new HashMap[String, TestEntity]
 
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    log.debug("Running version query: " + constraints)
+    log.trace("Running version query: " + constraints)
     val constrained = constrainEntities(constraints)
     constrained.map(e => EntityVersion(e.id,e.attributes, e.lastUpdated,nativeVsnGen(e.body)))
   }
 
   def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    log.debug("Running aggregate query: " + constraints)
+    log.trace("Running aggregate query: " + constraints)
     val constrained = constrainEntities(constraints)
     val b = new DigestBuilder(constraints(0).function)
     constrained foreach (ent => b.add(ent.id, ent.attributes, ent.lastUpdated, nativeVsnGen(ent.body)))
-    val digests = b.digests
-    log.debug("Returning digests: " + digests)
-    digests
-//    val start = new DateTime
-//    val end = new DateTime
-//    val interval = new Interval(start, end)
-//    val entitiesInRange = entities.values.filter(ent => interval.contains(ent.date)).toList
-//    val sortedEntities = entitiesInRange.sort(_.id < _.id)
-//
-//    // Create buckets
-//    // TODO (#2)  fake granularity
-//    val b = new DigestBuilder(IndividualGranularity)
-//    sortedEntities foreach (ent => b.add(ent.id, ent.date, ent.lastUpdated, nativeVsnGen(ent.body)))
-//
-//    b.digests
+    b.digests
   }
 
   def constrainEntities(constraints:Seq[QueryConstraint]) = {
     // Filter on date interval & sort entries by ID into a list
+    // TODO [#2] this is not really constraining yet
     val entitiesInRange = entities.values.filter(e => true).toList
     entitiesInRange.sort(_.id < _.id)
   }

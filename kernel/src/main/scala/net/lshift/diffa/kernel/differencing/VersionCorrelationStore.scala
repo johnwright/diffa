@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ *  Copyright (C) 2010 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,9 +68,14 @@ trait VersionCorrelationStore {
    */
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler)
 
-
-  // TODO [#2] Document and test
+  /**
+   * Queries for all upstream versions for the given pair based on the given constraints.
+   */
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
+
+  /**
+   * Queries for all downstream versions for the given pair based on the given constraints.
+   */
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
 }
 

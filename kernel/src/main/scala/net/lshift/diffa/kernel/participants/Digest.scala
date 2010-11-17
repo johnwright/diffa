@@ -20,23 +20,39 @@ import org.joda.time.DateTime
 import reflect.BeanProperty
 
 /**
- * Describes a digest of version information. For an individual entity, the digest should be the version content and the
- * date should be the timestamp of the entity. For an aggregate entity, the digest should be the hashed aggregate of the
- * child entities within the given time range, and the date can be any representative time within the time period. The
- * key is generally ignored in the case of aggregates, but it is suggested that a readable variant of the date is used
- * to enhance understanding when reading digest lists.
+ * Describes a digest of version information, or the actual version itself.
+ *
+ * For an individual entity, the digest should be the version content and the
+ * date should be the timestamp of the entity.
+ *
+ * For an aggregate entity, the digest should be the hashed aggregate of the
+ * child entities within the given value range.
  *
  * The convention for the order is the lexiographical order of the declared categories of the pairing that this
  * digest is linked to. 
  *
  */
-// TODO [#2] Update the documentation based on the final implementation
 trait Digest {
+
+  /**
+   * A sequence of partition attributes in the order of the per-pair key names that they correspond to.
+   */
   def attributes:Seq[String]
+
+  /**
+   * A timestamp of the last time a digest was changed - as reported by the participant.
+   */
   def lastUpdated:DateTime
+
+  /**
+   * The actual digest to perform comparisons with.
+   */
   def digest:String
 }
 
+/**
+ *   A digest of aggregated versions.
+ */
 case class AggregateDigest(
   @BeanProperty var attributes:Seq[String],
   @BeanProperty var lastUpdated:DateTime,
@@ -45,6 +61,9 @@ case class AggregateDigest(
   def this() = this(null, null, null)
 }
 
+/**
+ * The version digest an individual entity.
+ */
 case class EntityVersion(
   @BeanProperty var id:String,
   @BeanProperty var attributes:Seq[String],
