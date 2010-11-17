@@ -17,7 +17,6 @@
 package net.lshift.diffa.kernel.events
 
 import org.joda.time.DateTime
-import scala.collection.Map
 
 /**
  * Base inherited by the various types of events.

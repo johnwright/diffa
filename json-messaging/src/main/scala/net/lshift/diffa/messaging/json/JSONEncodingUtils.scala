@@ -155,16 +155,16 @@ class QueryConstraintDeserializer extends JsonDeserializer[QueryConstraint] {
     if(parser.getCurrentToken == JsonToken.START_OBJECT) {
       parser.nextToken
       val label = parser.getText
-      asserFieldName(parser, "category")
+      assertFieldName(parser, "category")
       parser.nextToken
       category = parser.getText
       parser.nextToken
-      asserFieldName(parser, "function")
+      assertFieldName(parser, "function")
       parser.nextToken
       val functionName = parser.getText
       function = Class.forName(functionName).newInstance.asInstanceOf[CategoryFunction]
       parser.nextToken
-      asserFieldName(parser, "values")
+      assertFieldName(parser, "values")
       parser.nextToken
       if(parser.getCurrentToken == JsonToken.START_ARRAY) {
         parser.nextToken
@@ -184,10 +184,13 @@ class QueryConstraintDeserializer extends JsonDeserializer[QueryConstraint] {
     RangeQueryConstraint(category, function, buffer)
   }
 
-  def asserFieldName(parser:JsonParser, expectation:String) = {
+  def assertFieldName(parser:JsonParser, expectation:String) = {
     if (parser.getText != expectation) {
-      throw new RuntimeException("Unexpected field name: " + parser.getText + "; expected: " + expectation)
+      throw new UnexpectedFieldException(parser.getText, expectation)
     }
   }
 
 }
+
+class UnexpectedFieldException(actual:String, expectation:String)
+  extends Exception("Unexpected field name: " + actual + "; expected: " + expectation)

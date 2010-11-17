@@ -22,7 +22,7 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 
-class SerializationTest {
+class JSONEncodingUtilsTest {
 
   @Test
   def aggregateDigestRoundTrip() = {

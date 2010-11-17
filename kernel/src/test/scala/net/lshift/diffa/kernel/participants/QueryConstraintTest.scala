@@ -57,13 +57,13 @@ class QueryConstraintTest {
 }
 
 case class FirstCategoryFunction(lower:String,upper:String) extends CategoryFunction {
-  def parentPartition(value:String) = null
+  def owningPartition(value:String) = null
   def shouldBucket() = false
   def descend(partition:String) = Some(IntermediateResult(lower, upper, IndividualCategoryFunction()))
 }
 
 case class SecondCategoryFunction(lower:String,upper:String) extends CategoryFunction {
-  def parentPartition(value:String) = null
+  def owningPartition(value:String) = null
   def shouldBucket() = false
   def descend(partition:String) = Some(IntermediateResult(lower, upper, FirstCategoryFunction(lower,upper)))
 }

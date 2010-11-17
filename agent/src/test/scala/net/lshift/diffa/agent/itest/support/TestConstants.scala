@@ -17,7 +17,6 @@
 package net.lshift.diffa.agent.itest.support
 
 import org.joda.time.DateTime
-import collection.mutable.HashMap
 
 /**
  * Useful constants for use in test cases.

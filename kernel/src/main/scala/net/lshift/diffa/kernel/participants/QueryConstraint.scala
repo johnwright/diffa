@@ -73,7 +73,7 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
 }
 
 /**
- * This type of constraint is to be interpreted as a set of values to constain with.
+ * This type of constraint is to be interpreted as a set of values to constrain with.
  */
 case class ListQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v) {
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  ListQueryConstraint(category,function,values)

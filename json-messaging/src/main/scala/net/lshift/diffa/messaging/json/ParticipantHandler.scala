@@ -27,8 +27,8 @@ import JSONEncodingUtils._
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> ? (wire => serializeDigests(participant.queryAggregateDigests(deserialize(wire)))),
-    "query_entity_versions" -> ? (wire => serializeDigests(participant.queryEntityVersions(deserialize(wire)))),
+    "query_aggregate_digests" -> skeleton(wire => serializeDigests(participant.queryAggregateDigests(deserialize(wire)))),
+    "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(deserialize(wire)))),
     "invoke" -> defineRpc((s:String) => s)(r => {
       val request = new JSONObject(r)
       val result = participant.invoke(request.getString("actionId"),request.getString("entityId"))
@@ -47,7 +47,7 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     })
   )
 
-  private def ? (f:String => String) = defineRpc((s:String) => s)(f(_))
+  private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
 
 }
 

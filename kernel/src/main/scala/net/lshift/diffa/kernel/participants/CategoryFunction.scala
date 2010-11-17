@@ -46,7 +46,7 @@ trait CategoryFunction {
    * Given a particular value from the value domain (encoded as a string), returns the name of the partition it
    * belongs to.
    */
-  def parentPartition(value:String) : String
+  def owningPartition(value:String) : String
 }
 
 /**
@@ -57,5 +57,5 @@ trait CategoryFunction {
 case class IndividualCategoryFunction extends CategoryFunction {
   def descend(partition:String) = None
   def shouldBucket() = false
-  def parentPartition(value:String) = value
+  def owningPartition(value:String) = value
 }

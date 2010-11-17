@@ -38,7 +38,7 @@ abstract case class DateCategoryFunction extends CategoryFunction {
 
   def shouldBucket() = true
 
-  override def parentPartition(value:String) = {
+  override def owningPartition(value:String) = {
     val date = isoFormat.parseDateTime(value)
     pattern.print(date)
   }

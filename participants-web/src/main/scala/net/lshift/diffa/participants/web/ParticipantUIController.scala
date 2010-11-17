@@ -24,7 +24,6 @@ import net.lshift.diffa.participants.{DownstreamWebParticipant, UpstreamWebParti
 import org.joda.time.format.ISODateTimeFormat
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.context.{ApplicationContext, ApplicationContextAware}
-import collection.mutable.HashMap
 
 /**
  * Controller for participant functionality.
