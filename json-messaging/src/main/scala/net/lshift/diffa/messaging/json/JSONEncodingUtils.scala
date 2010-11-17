@@ -118,16 +118,7 @@ object JSONEncodingUtils {
     log.debug("Writing to wire: " + wire)
     wire
   }
-
-  // TODO I can't believe you have to do this
-  def toList[T](a:JSONArray) : Seq[T] = {
-    if (null == a) {
-      List()
-    }
-    else {
-      for (val i <- 0 to a.length - 1 ) yield a.get(i).asInstanceOf[T]
-    }
-  }
+  
 }
 
 class QueryConstraintSerializer extends JsonSerializer[QueryConstraint] {
