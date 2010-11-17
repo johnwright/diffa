@@ -69,15 +69,6 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
       case None    => null
     }
   }
-
-  private def jsonGranularity(gran:RangeGranularity) = {
-    gran match {
-      case IndividualGranularity => "individual"
-      case DayGranularity => "day"
-      case MonthGranularity => "month"
-      case YearGranularity => "year"
-    }
-  }
 }
 
 /**

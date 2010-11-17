@@ -16,8 +16,6 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
 import scala.collection.Map
@@ -84,15 +82,6 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-//        gran match {
-//          case IndividualGranularity =>
-//            result += VersionMismatch(label, attributes, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.digest, otherDigest)
-//          case _ => otherDigest match {
-//            case null => result += deepestQueryAction(label, gran)
-//            case _ => result += deeperQueryAction(label, gran)
-//          }
-//        }
-        
         val partition = ds1Digest.attributes(0)
         evaluate(partition)
       }
@@ -105,18 +94,8 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-
-//        println(label)
-//        println(hs2Digest)
-
         val partition = hs2Digest.attributes(0)
         evaluate(partition)
-
-//        result += VersionMismatch(label, resolve(hs2Digest), hs2Digest.lastUpdated, null, hs2Digest.digest)  
-//        gran match {
-//          case IndividualGranularity => result += VersionMismatch(label, attributes, hs2Digest.lastUpdated, null, hs2Digest.digest)
-//          case _                     => result += deepestQueryAction(label, gran)
-//        }
       }
     }}
 
@@ -139,51 +118,5 @@ object DigestDifferencingUtils {
     hs.foreach(d => res(d.attributes.reduceLeft(_+_)) = d)
     res
   }
-  private def deepestQueryAction(key:String, currentGran:RangeGranularity) = {
-    val (start, end) = dateRangeForKey(key, currentGran)
-    EntityQueryAction(DateConstraint(null,null, DailyCategoryFunction()))
-    //QueryAction(start, end, IndividualGranularity)
-  }
-  private def deeperQueryAction(key:String, currentGran:RangeGranularity) = {
-    val (start, end) = dateRangeForKey(key, currentGran)
-    AggregateQueryAction(DateConstraint(null,null,DailyCategoryFunction()))
-//    QueryAction(start, end, currentGran match {
-//      case YearGranularity => MonthGranularity
-//      case MonthGranularity => DayGranularity
-//      case DayGranularity => IndividualGranularity
-//    })
-  }
 
-  // TODO [#2] DON"T KEEP
-  private val yearParser = DateTimeFormat.forPattern("yyyy")
-  private val yearMonthParser = DateTimeFormat.forPattern("yyyy-MM")
-  private val yearMonthDayParser = DateTimeFormat.forPattern("yyyy-MM-dd")
-
-  private def dateRangeForKey(key:String, gran:RangeGranularity) = {
-    val (startDay, endDay) = gran match {
-      case YearGranularity => {
-        val point = yearParser.parseDateTime(key).toLocalDate
-        (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
-      }
-      case MonthGranularity => {
-        val point = yearMonthParser.parseDateTime(key).toLocalDate
-        (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
-      }
-      case DayGranularity => {
-        val point = yearMonthDayParser.parseDateTime(key).toLocalDate
-        (point, point)
-      }
-    }
-
-    (startDay.toDateTimeAtStartOfDay, endDay.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
-  }
-
-  private def latestOf(d1:DateTime, d2:DateTime) = {
-    (d1, d2) match {
-      case (null, null) => new DateTime
-      case (_, null)    => d1
-      case (null, _)    => d2
-      case _            => if (d1.isAfter(d2)) d1 else d2
-    }
-  }
 }
