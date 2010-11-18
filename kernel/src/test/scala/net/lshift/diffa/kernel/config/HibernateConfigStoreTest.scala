@@ -22,8 +22,9 @@ import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.{Test, Before}
-import collection.mutable.HashMap
+import scala.collection.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.util.Conversions._
 
 class HibernateConfigStoreTest {
   private val configStore: ConfigStore = HibernateConfigStoreTest.configStore
@@ -39,7 +40,7 @@ class HibernateConfigStoreTest {
   val PAIR_KEY = "TEST_PAIR"
   val CATEGORY_NAME = "bizDate"
   val CATEGORY_TYPE = "date"
-  val CATEGORIES = asMap(HashMap(CATEGORY_NAME -> CATEGORY_TYPE))
+  val CATEGORIES = Map(CATEGORY_NAME -> CATEGORY_TYPE)
   val PAIR_DEF = new PairDef(PAIR_KEY, VP_NAME, MATCHING_TIMEOUT, UPSTREAM_EP.name,
     DOWNSTREAM_EP.name, GROUP_KEY, CATEGORIES)
 

@@ -20,6 +20,8 @@ import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.YearlyCategoryFunction
 import net.lshift.diffa.kernel.participants.EasyConstraints._
+import scala.collection.Map
+import net.lshift.diffa.kernel.util.Conversions._
 
 class PairTest {
 
@@ -28,4 +30,22 @@ class PairTest {
     var pair = new Pair()
     assertEquals(Seq(unconstrainedDate(YearlyCategoryFunction())), pair.defaultConstraints)    
   }
+
+  @Test
+  def schematize() = {
+    val categoryMap = Map("xyz_attribute" -> "type_of_xyz",
+                          "abc_attribute" -> "type_of_abc",
+                          "def_attribute" -> "type_of_def")
+
+    val rightOrder = Seq("abc_value","def_value", "xyz_value")
+
+    val schematized = Map("xyz_attribute" -> "xyz_value",
+                          "abc_attribute" -> "abc_value",
+                          "def_attribute" -> "def_value")
+
+    var pair = new Pair{categories = categoryMap}
+    assertEquals(schematized, pair.schematize(rightOrder))
+  }
+
+
 }

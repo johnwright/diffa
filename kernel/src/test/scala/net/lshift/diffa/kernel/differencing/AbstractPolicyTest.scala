@@ -32,6 +32,7 @@ import collection.mutable.Map
 import net.lshift.diffa.kernel.config.ConfigStore
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
+import net.lshift.diffa.kernel.util.Conversions._
 
 /**
  * Base class for the various policy tests.

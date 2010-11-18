@@ -63,7 +63,7 @@ case class Pair(
   @BeanProperty var group: PairGroup,
   @BeanProperty var versionPolicyName: String,
   @BeanProperty var matchingTimeout: Int,
-  @BeanProperty var categories: java.util.Map[String,String]) {
+  @BeanProperty var categories: java.util.SortedMap[String,String]) {
 
   def this() = this(null, null, null, null, null, Pair.NO_MATCHING, null)
 
@@ -73,7 +73,7 @@ case class Pair(
    * are not transmitted over the wire.
    */
   def schematize(runtimeValues:Seq[String]) = {
-    val staticValues = categories.keys.toList
+    val staticValues = categories.keySet.toList
     (staticValues, runtimeValues).zip.toMap
   }
 
@@ -104,7 +104,7 @@ case class PairDef(
   @BeanProperty var upstreamName: String,
   @BeanProperty var downstreamName: String,
   @BeanProperty var groupKey: String,
-  @BeanProperty var categories: java.util.Map[String,String]) {
+  @BeanProperty var categories: java.util.SortedMap[String,String]) {
 
   def this() = this(null, null, null.asInstanceOf[Int], null, null, null, null)
 }
