@@ -29,7 +29,7 @@ class QueryConstraintTest {
     val queryAction = constaint.nextQueryAction("bar", false).get
 
     assertEquals(
-      EntityQueryAction(ListQueryConstraint("foo", IndividualCategoryFunction(), Seq("abc", "def"))),
+      EntityQueryAction(ListQueryConstraint("foo", IndividualCategoryFunction, Seq("abc", "def"))),
       queryAction)
   }
 
@@ -51,7 +51,7 @@ class QueryConstraintTest {
     val queryAction1 = constaint.nextQueryAction("bar", true).get
 
     assertEquals(
-      EntityQueryAction(ListQueryConstraint("foo", IndividualCategoryFunction(), Seq("abc", "def"))),
+      EntityQueryAction(ListQueryConstraint("foo", IndividualCategoryFunction, Seq("abc", "def"))),
       queryAction1)
   }
 }
@@ -59,11 +59,13 @@ class QueryConstraintTest {
 case class FirstCategoryFunction(lower:String,upper:String) extends CategoryFunction {
   def owningPartition(value:String) = null
   def shouldBucket() = false
-  def descend(partition:String) = Some(IntermediateResult(lower, upper, IndividualCategoryFunction()))
+  def descend(partition:String) = Some(IntermediateResult(lower, upper, IndividualCategoryFunction))
+  def name = null
 }
 
 case class SecondCategoryFunction(lower:String,upper:String) extends CategoryFunction {
   def owningPartition(value:String) = null
   def shouldBucket() = false
   def descend(partition:String) = Some(IntermediateResult(lower, upper, FirstCategoryFunction(lower,upper)))
+  def name = null
 }

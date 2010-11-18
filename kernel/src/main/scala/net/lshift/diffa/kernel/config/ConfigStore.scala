@@ -83,7 +83,7 @@ case class Pair(
    */
   // TODO [#151] Infer this from the category types
   def defaultConstraints() : Seq[QueryConstraint] = {
-    Seq(unconstrainedDate(YearlyCategoryFunction()))
+    Seq(unconstrainedDate(YearlyCategoryFunction))
   }
 }
 

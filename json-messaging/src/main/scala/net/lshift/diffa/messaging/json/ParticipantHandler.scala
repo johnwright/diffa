@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import scala.collection.JavaConversions._
 import JSONEncodingUtils._
+import net.lshift.diffa.kernel.frontend.ConstraintRegistry
 
 /**
  * Handler for participants being queried via JSON.
@@ -27,8 +28,8 @@ import JSONEncodingUtils._
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton(wire => serializeDigests(participant.queryAggregateDigests(deserialize(wire)))),
-    "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(deserialize(wire)))),
+    "query_aggregate_digests" -> skeleton(wire => serializeDigests(participant.queryAggregateDigests(unpack(wire)))),
+    "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(unpack(wire)))),
     "invoke" -> defineRpc((s:String) => s)(r => {
       val request = new JSONObject(r)
       val result = participant.invoke(request.getString("actionId"),request.getString("entityId"))
@@ -46,6 +47,8 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
       responseObj.toString
     })
   )
+
+  private def unpack(wire:String) = deserialize(wire).map(ConstraintRegistry.resolve(_))
 
   private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
 

@@ -70,10 +70,10 @@ abstract class AbstractPolicyTest {
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)
   def VersionsFromStore[T](vals:T*) = Seq[T](vals:_*)
 
-  protected val yearly = YearlyCategoryFunction()
-  protected val monthly = MonthlyCategoryFunction()
-  protected val daily = DailyCategoryFunction()
-  protected val individual = IndividualCategoryFunction()
+  protected val yearly = YearlyCategoryFunction
+  protected val monthly = MonthlyCategoryFunction
+  protected val daily = DailyCategoryFunction
+  protected val individual = IndividualCategoryFunction
   
   def Up(v:VersionID, d:DateTime, s:String) = UpstreamVersion(v, Seq(d.toString()), d, s)
   def Down(v:VersionID, d:DateTime, s1:String, s2:String) = DownstreamVersion(v, Seq(d.toString()), d, s1, s2)
@@ -84,14 +84,14 @@ abstract class AbstractPolicyTest {
   @Test
   def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatch {
     // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
+    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), null, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), null, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2")))
-    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
+    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"),  null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         AggregateDigest(Seq("2010"), null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
@@ -100,7 +100,7 @@ abstract class AbstractPolicyTest {
         DownstreamVersion(VersionID(abPair, "id2"), bizDateSeq(JUL_8_2010_1), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction()))))).
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction))))).
         andReturn(Seq())
     replayAll
 
@@ -112,7 +112,7 @@ abstract class AbstractPolicyTest {
   def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipant {
     val timestamp = new DateTime()
     // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
+    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
@@ -140,7 +140,7 @@ abstract class AbstractPolicyTest {
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2"),
         Up(VersionID(abPair, "id3"), JUL_8_2010_1, "vsn3")))
 
-    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
+    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
@@ -157,7 +157,7 @@ abstract class AbstractPolicyTest {
       andReturn(Correlation(null, abPair, "id4", bizDateMap(JUL_8_2010_1), null, JUL_8_2010_1, timestamp, downstreamVersionFor("vsn2"), null, null, false))
 
     // Don't report any unmatched versions
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction()))))).
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction))))).
         andReturn(Seq())
     replayAll
 
@@ -169,14 +169,14 @@ abstract class AbstractPolicyTest {
   def shouldReportMismatchesReportedByUnderlyingStore {
     val timestamp = new DateTime()
     // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
+    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2")))
-    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction())),
+    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
@@ -185,7 +185,7 @@ abstract class AbstractPolicyTest {
         Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2a", downstreamVersionFor("vsn2a"))))
 
     // If the version check returns mismatches, we should see differences generated
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction()))))).
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction))))).
         andReturn(Seq(
           Correlation(null, abPair, "id1", bizDateMap(JUN_6_2009_1), categories, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
           Correlation(null, abPair, "id2", bizDateMap(JUL_8_2010_1), categories, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))

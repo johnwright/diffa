@@ -17,6 +17,10 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.frontend.WireConstraint
+import net.lshift.diffa.kernel.frontend.WireConstraint._
+import scala.collection.Map
+import scala.collection.JavaConversions._
 
 /**
  * Contains
@@ -51,6 +55,11 @@ trait QueryConstraint {
    * return a finer grained query to execute.
    */
   def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction]
+
+  /**
+   *  Returns a simplified representation of this constraint that is suitable for packing
+   */
+  def wireFormat : WireConstraint
 }
 
 abstract case class BaseQueryConstraint(category:String,function:CategoryFunction,values:Seq[String]) extends QueryConstraint {
@@ -61,8 +70,8 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
     function.descend(partition) match {
       case None    => None
       case Some(x) => {
-        if (empty || x.next.isInstanceOf[IndividualCategoryFunction]) {          
-          Some(EntityQueryAction(nextConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction(), x.toSeq)))
+        if (empty || x.next == IndividualCategoryFunction) {
+          Some(EntityQueryAction(nextConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction, x.toSeq)))
         }
         else {
           Some(AggregateQueryAction(nextConstraint(BaseQueryConstraint.this.category, x.next, x.toSeq)))
@@ -73,10 +82,13 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
 }
 
 /**
- * This type of constraint is to be interpreted as a set of values to constrain with.
+ *  This type of constraint is to be interpreted as a set of values to constrain with.
  */
 case class ListQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v) {
+
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  ListQueryConstraint(category,function,values)
+
+  def wireFormat() = listConstraint(category, function, values)
 }
 
 /**
@@ -84,20 +96,27 @@ case class ListQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) exte
  * upper and lower bounds of the constraint.
  */
 case class RangeQueryConstraint(c:String, f:CategoryFunction, v:Seq[String]) extends BaseQueryConstraint(c,f,v) {
+
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  RangeQueryConstraint(category,function,values)
+
+  def wireFormat() = rangeConstraint(category, function, values(0), values(1))
+}
+
+abstract case class NonValueConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
+  def wireFormat() = unbounded(category, function)
 }
 
 /**
  * This represents an unbounded range constraint, that, when narrowed, turns into a regular RangeQueryConstraint.
  */
-case class UnboundedRangeQueryConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
+case class UnboundedRangeQueryConstraint(override val c:String, override val f:CategoryFunction) extends NonValueConstraint(c,f) {
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  RangeQueryConstraint(category,function, values)
 }
 
 /**
  * This represents an unbounded constraint.
  */
-case class NoConstraint(c:String, f:CategoryFunction) extends BaseQueryConstraint(c,f,Seq()) {
+case class NoConstraint(override val c:String, override val f:CategoryFunction) extends NonValueConstraint(c,f) {
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) =  NoConstraint(category,function)
 }
 

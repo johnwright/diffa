@@ -17,9 +17,9 @@
 package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
-import org.codehaus.jettison.json.{JSONArray, JSONObject}
+import org.codehaus.jettison.json.JSONObject
 import JSONEncodingUtils._
-import collection.mutable.{ListBuffer, HashMap}
+import collection.mutable.ListBuffer
 
 /**
  * Rest client for participant communication.
@@ -27,14 +27,14 @@ import collection.mutable.{ListBuffer, HashMap}
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
   override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    executeRpc("query_entity_versions", serialize(constraints)) match {
+    executeRpc("query_entity_versions", pack(constraints)) match {
       case Some(r) => deserializeEntityVersions(r)
       case None    => Seq()
     }
   }
 
   override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    executeRpc("query_aggregate_digests", serialize(constraints)) match {
+    executeRpc("query_aggregate_digests", pack(constraints)) match {
       case Some(r) => deserializeAggregateDigest(r)
       case None    => Seq()
     }
@@ -69,6 +69,8 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
       case None    => null
     }
   }
+
+  private def pack(seq:Seq[QueryConstraint]) = serialize(seq.map(_.wireFormat))
 }
 
 /**

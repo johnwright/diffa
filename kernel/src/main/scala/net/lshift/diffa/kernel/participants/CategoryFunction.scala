@@ -32,6 +32,11 @@ case class IntermediateResult(lower:AnyRef, upper:AnyRef, next:CategoryFunction)
 trait CategoryFunction {
 
   /**
+   * The external name of this function.
+   */
+  def name : String
+
+  /**
    * Given the name of a valid partition, return the lower and upper bounds of any necessary deeper descent.
    * The function to delegate the deeper descent to is returned as part of the result.
    *
@@ -56,8 +61,8 @@ trait CategoryFunction {
  * A special type of function that indicates that no further partitioning should take place.
  *
  */
-//TODO [#2] Can this be an object rather than an instance?
-case class IndividualCategoryFunction extends CategoryFunction {
+object IndividualCategoryFunction extends CategoryFunction {
+  def name = "individual"
   def descend(partition:String) = None
   def shouldBucket() = false
   def owningPartition(value:String) = value

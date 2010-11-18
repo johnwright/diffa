@@ -47,26 +47,29 @@ abstract case class DateCategoryFunction extends CategoryFunction {
 /**
  * This function partitions by whole days.
  */
-case class DailyCategoryFunction() extends DateCategoryFunction {
+object DailyCategoryFunction extends DateCategoryFunction {
+  def name = "daily"
   def pattern = DateTimeFormat.forPattern("yyyy-MM-dd")
-  def next = IndividualCategoryFunction()
+  def next = IndividualCategoryFunction
   def pointToBounds(point:LocalDate) = (point,point)
 }
 
 /**
  * This function partitions by whole calendar months.
  */
-case class MonthlyCategoryFunction() extends DateCategoryFunction {
+object MonthlyCategoryFunction extends DateCategoryFunction {
+  def name = "monthly"
   def pattern = DateTimeFormat.forPattern("yyyy-MM")
-  def next = DailyCategoryFunction()
+  def next = DailyCategoryFunction
   def pointToBounds(point:LocalDate) = (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
 }
 
 /**
  * This function partitions by whole years.
  */
-case class YearlyCategoryFunction() extends DateCategoryFunction {
+object YearlyCategoryFunction extends DateCategoryFunction {
+  def name = "yearly"
   def pattern = DateTimeFormat.forPattern("yyyy")
-  def next = MonthlyCategoryFunction()
+  def next = MonthlyCategoryFunction
   def pointToBounds(point:LocalDate) = (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
 }

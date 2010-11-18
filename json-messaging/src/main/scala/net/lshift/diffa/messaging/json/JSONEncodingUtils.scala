@@ -27,11 +27,11 @@ import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONObject, JSONArray}
 import scala.collection.JavaConversions.asList
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.frontend.WireConstraint
 
 /**
  * Standard utilities for JSON encoding.
  */
-
 object JSONEncodingUtils {
 
   val log = LoggerFactory.getLogger(getClass)
@@ -39,13 +39,7 @@ object JSONEncodingUtils {
   val dateEncoder = ISODateTimeFormat.dateTime
   val dateParser = ISODateTimeFormat.dateTimeParser
 
-  val serializationFactory = new CustomSerializerFactory()
-  serializationFactory.addGenericMapping(classOf[QueryConstraint], new QueryConstraintSerializer())
-  val deserializationFactory = new CustomDeserializerFactory()
-  deserializationFactory.addSpecificMapping(classOf[QueryConstraint], new QueryConstraintDeserializer())
   val mapper = new ObjectMapper
-  mapper.setSerializerFactory(serializationFactory)
-  mapper.setDeserializerProvider(new StdDeserializerProvider(deserializationFactory))
 
   def maybeDateStr(date:DateTime) = {
     date match {
@@ -62,8 +56,8 @@ object JSONEncodingUtils {
     }
   }
 
-  def serialize(constraints:Seq[QueryConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
-  def deserialize(wire:String) : Seq[QueryConstraint]= mapper.readValue(wire, classOf[Array[QueryConstraint]])
+  def serialize(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
+  def deserialize(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])
 
   def deserializeEntityVersions(wire:String) : Seq[EntityVersion] = {
     deserializeDigests(wire, true).asInstanceOf[Seq[EntityVersion]]
@@ -120,68 +114,3 @@ object JSONEncodingUtils {
   }
   
 }
-
-class QueryConstraintSerializer extends JsonSerializer[QueryConstraint] {
-
-  def serialize(constraint: QueryConstraint, jgen: JsonGenerator, provider: SerializerProvider) = {
-    jgen.writeStartObject
-    jgen.writeFieldName("category")
-    jgen.writeString(constraint.category)
-    jgen.writeFieldName("function")
-    jgen.writeString(constraint.function.getClass.getName)
-    jgen.writeArrayFieldStart("values")
-    constraint.values.foreach(jgen.writeString(_))    
-    jgen.writeEndArray
-    jgen.writeEndObject
-  }
-}
-
-class QueryConstraintDeserializer extends JsonDeserializer[QueryConstraint] {
-  def deserialize(parser: JsonParser, ctxt: DeserializationContext) = {
-
-    var category:String = null
-    var function:CategoryFunction = null
-    val buffer = new ListBuffer[String]
-
-    if(parser.getCurrentToken == JsonToken.START_OBJECT) {
-      parser.nextToken
-      val label = parser.getText
-      assertFieldName(parser, "category")
-      parser.nextToken
-      category = parser.getText
-      parser.nextToken
-      assertFieldName(parser, "function")
-      parser.nextToken
-      val functionName = parser.getText
-      function = Class.forName(functionName).newInstance.asInstanceOf[CategoryFunction]
-      parser.nextToken
-      assertFieldName(parser, "values")
-      parser.nextToken
-      if(parser.getCurrentToken == JsonToken.START_ARRAY) {
-        parser.nextToken
-        while (parser.getCurrentToken != JsonToken.END_ARRAY) {
-          buffer += parser.getText
-          parser.nextToken
-        }
-      }
-    }
-
-    parser.nextToken
-
-    if(parser.getCurrentToken != JsonToken.END_OBJECT) {
-      throw new RuntimeException("Wrong token: " + parser.getCurrentToken)      
-    }
-
-    RangeQueryConstraint(category, function, buffer)
-  }
-
-  def assertFieldName(parser:JsonParser, expectation:String) = {
-    if (parser.getText != expectation) {
-      throw new UnexpectedFieldException(parser.getText, expectation)
-    }
-  }
-
-}
-
-class UnexpectedFieldException(actual:String, expectation:String)
-  extends Exception("Unexpected field name: " + actual + "; expected: " + expectation)

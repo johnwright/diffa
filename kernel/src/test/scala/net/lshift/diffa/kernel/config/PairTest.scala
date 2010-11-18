@@ -28,7 +28,7 @@ class PairTest {
   @Test
   def defaultConstraints() = {
     var pair = new Pair()
-    assertEquals(Seq(unconstrainedDate(YearlyCategoryFunction())), pair.defaultConstraints)    
+    assertEquals(Seq(unconstrainedDate(YearlyCategoryFunction)), pair.defaultConstraints)
   }
 
   @Test

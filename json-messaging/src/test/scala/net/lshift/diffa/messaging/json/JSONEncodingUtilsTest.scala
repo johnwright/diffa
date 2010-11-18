@@ -21,6 +21,9 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.frontend.WireConstraint
+import scala.collection.Map
+import scala.collection.JavaConversions._
 
 class JSONEncodingUtilsTest {
 
@@ -48,14 +51,15 @@ class JSONEncodingUtilsTest {
 
   @Test
   def queryConstraintRoundTrip = {
-    val start1 = new DateTime()
-    val end1 = new DateTime()
-    val function1 = IndividualCategoryFunction()
-    val start2 = new DateTime()
-    val end2 = new DateTime()
-    val function2 = YearlyCategoryFunction()
-    val constraint1 = dateRangeConstaint(start1, end1, function1)
-    val constraint2 = dateRangeConstaint(start2, end2, function2)
+
+    val constraint1 = new WireConstraint("foo", Map("upper" -> "abc",
+                                                    "lower" -> "def",
+                                                    "function" -> "xyz"), Seq("a","b","c"))
+
+    val constraint2 = new WireConstraint("bar", Map("upper" -> "qed",
+                                                    "lower" -> "fud",
+                                                    "function" -> "yes"), Seq("x","y"))
+
     val serialized = JSONEncodingUtils.serialize(Seq(constraint1, constraint2))
     val deserialized = JSONEncodingUtils.deserialize(serialized)
     assertNotNull(deserialized)
