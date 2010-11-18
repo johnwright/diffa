@@ -48,12 +48,24 @@ class LuceneAttributeIndexerTest {
   @Test
   def deletions = {
     val indexer = new LuceneAttributeIndexer(dir)
-    indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, "id1",Map( "foo" -> "bar") )))
-    val byId1 = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
-    assertEquals(1, byId1.length)
-    assertEquals("id1", byId1(0).id)
+    addToIndex(indexer, "id1", "foo", "bar")
     indexer.deleteAttribute(ParticipantType.UPSTREAM, "id1")
     val byId2 = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
     assertEquals(0, byId2.length)    
+  }
+
+  @Test
+  def updateIndex = {
+    val indexer = new LuceneAttributeIndexer(dir)
+    addToIndex(indexer, "id1", "foo", "bar")
+    addToIndex(indexer, "id1", "foo", "baz")
+  }
+
+  def addToIndex(indexer:AttributeIndexer, id:String, key:String, value:String) = {
+    indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, id , Map(key -> value) )))
+    val byId1 = indexer.query(ParticipantType.UPSTREAM, "id", id)
+    assertEquals(1, byId1.length)
+    assertEquals(id, byId1(0).id)
+    assertEquals(value, byId1(0).terms(key))
   }
 }

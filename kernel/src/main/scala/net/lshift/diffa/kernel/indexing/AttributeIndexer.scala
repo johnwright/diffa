@@ -108,7 +108,7 @@ class LuceneAttributeIndexer(index:Directory) extends AttributeIndexer with Clos
         doc.add(new Field("id", x.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
         doc.add(new Field("type", x.upOrDown.toString(), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
         doc.add(new Field(term, value, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
-        writer.addDocument(doc)
+        writer.updateDocument(new Term("id", x.id), doc)
       }}
     })
     writer.commit
