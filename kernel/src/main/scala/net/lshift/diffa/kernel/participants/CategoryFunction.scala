@@ -34,6 +34,9 @@ trait CategoryFunction {
   /**
    * Given the name of a valid partition, return the lower and upper bounds of any necessary deeper descent.
    * The function to delegate the deeper descent to is returned as part of the result.
+   *
+   * If this function returns None, then no more finer grained paritioning is possible.
+   * This occurs for example when trying to descend using a category function for an individual entity.   
    */
   def descend(partition:String) : Option[IntermediateResult]
 
