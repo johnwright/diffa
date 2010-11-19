@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ *  Copyright (C) 2010 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package net.lshift.diffa.kernel.config
 
 import reflect.BeanProperty
-import java.util.{Set, HashSet}
+import net.lshift.diffa.kernel.participants.EasyConstraints._
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.participants.{QueryConstraint, YearlyCategoryFunction}
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -60,9 +62,29 @@ case class Pair(
   @BeanProperty var downstream: Endpoint,
   @BeanProperty var group: PairGroup,
   @BeanProperty var versionPolicyName: String,
-  @BeanProperty var matchingTimeout: Int) {
+  @BeanProperty var matchingTimeout: Int,
+  @BeanProperty var categories: java.util.SortedMap[String,String]) {
 
-  def this() = this(null, null, null, null, null, Pair.NO_MATCHING)
+  def this() = this(null, null, null, null, null, Pair.NO_MATCHING, null)
+
+  /**
+   * Fuses a list of runtime attributes together with their
+   * static schema bound keys because the static attributes
+   * are not transmitted over the wire.
+   */
+  def schematize(runtimeValues:Seq[String]) = {
+    val staticValues = categories.keySet.toList
+    (staticValues, runtimeValues).zip.toMap
+  }
+
+  /**
+   * Returns a set of the coarsest unbound query constraints for
+   * each of the category types that has been configured for this pair.
+   */
+  // TODO [#151] Infer this from the category types
+  def defaultConstraints() : Seq[QueryConstraint] = {
+    Seq(unconstrainedDate(YearlyCategoryFunction))
+  }
 }
 
 object Pair {
@@ -81,9 +103,10 @@ case class PairDef(
   @BeanProperty var matchingTimeout: Int,
   @BeanProperty var upstreamName: String,
   @BeanProperty var downstreamName: String,
-  @BeanProperty var groupKey: String) {
+  @BeanProperty var groupKey: String,
+  @BeanProperty var categories: java.util.SortedMap[String,String]) {
 
-  def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
+  def this() = this(null, null, null.asInstanceOf[Int], null, null, null, null)
 }
 
 case class User(@BeanProperty var name: String,

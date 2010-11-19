@@ -32,9 +32,9 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
     // Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
     // which would create an infinite loop in computing the hashCode of pairs and groups
-    s.createQuery("DELETE FROM Pair WHERE upstream = :endpoint OR downstream = :endpoint").
-            setEntity("endpoint", endpoint).executeUpdate
-    
+    s.createQuery("FROM Pair WHERE upstream = :endpoint OR downstream = :endpoint").
+            setEntity("endpoint", endpoint).list.foreach(x => s.delete(x))
+
     s.delete(endpoint)
   })
 
@@ -46,7 +46,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
     val group = getGroup(s, p.groupKey)
-    val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout)
+    val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout, p.categories)
     s.saveOrUpdate(toUpdate)
   })
 
@@ -62,7 +62,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
     // Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
     // which would create an infinite loop in computing the hashCode of pairs and groups
-    s.createQuery("DELETE FROM Pair WHERE group = :group").setEntity("group", group).executeUpdate
+    s.createQuery("FROM Pair WHERE group = :group").setEntity("group", group).list.foreach(x => s.delete(x))
 
     s.delete(group)
   })

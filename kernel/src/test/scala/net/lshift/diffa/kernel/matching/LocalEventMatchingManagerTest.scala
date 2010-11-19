@@ -25,8 +25,8 @@ import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Pair}
  * Test cases for the LocalEventMatchingManager.
  */
 class LocalEventMatchingManagerTest {
-  val pair1 = new Pair("pair1", null, null, null, null, 10)
-  val pair2 = new Pair("pair2", null, null, null, null, 5)
+  val pair1 = new Pair("pair1", null, null, null, null, 10, null)
+  val pair2 = new Pair("pair2", null, null, null, null, 5, null)
 
   val configStore = createStrictMock(classOf[ConfigStore])
   expect(configStore.getPair("pair1")).andStubReturn(pair1)
@@ -49,7 +49,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldReturnAMatcherForAPairKeyLaterIntroduced {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2))
+    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2, null))
     replay(configStore)
 
     matchingManager.onUpdatePair("pair3")
@@ -59,7 +59,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldNotReturnAMatcherForARemovedPair {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2))
+    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2, null))
     replay(configStore)
 
     matchingManager.onUpdatePair("pair3")
@@ -80,7 +80,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldApplyListenersToNewMatchers {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2))
+    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2, null))
     replay(configStore)
 
     val l1 = createStrictMock(classOf[MatchingStatusListener])

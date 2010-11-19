@@ -18,32 +18,18 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONArray, JSONObject}
-import org.joda.time.DateTime
+import scala.collection.JavaConversions._
+import JSONEncodingUtils._
+import net.lshift.diffa.kernel.frontend.ConstraintRegistry
 
 /**
  * Handler for participants being queried via JSON.
  */
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
+
   protected val commonEndpoints = Map(
-    "query_digests" -> defineRpc((s:String) => s)(req => {
-      val reqObj = new JSONObject(req)
-
-      val digests = participant.queryDigests(
-        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("start")),
-        JSONEncodingUtils.dateParser.parseDateTime(reqObj.getString("end")),
-        decodeGranularity(reqObj.getString("granularity")))
-
-      val resultObj = new JSONArray
-      digests foreach (digest => {
-        val digestObj = new JSONObject
-        digestObj.put("key", digest.key)
-        digestObj.put("date", digest.date.toString(JSONEncodingUtils.dateEncoder))
-        digestObj.put("lastUpdated", JSONEncodingUtils.maybeDateStr(digest.lastUpdated))
-        digestObj.put("digest", digest.digest)
-        resultObj.put(digestObj)
-      })
-      resultObj.toString
-    }),
+    "query_aggregate_digests" -> skeleton(wire => serializeDigests(participant.queryAggregateDigests(unpack(wire)))),
+    "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(unpack(wire)))),
     "invoke" -> defineRpc((s:String) => s)(r => {
       val request = new JSONObject(r)
       val result = participant.invoke(request.getString("actionId"),request.getString("entityId"))
@@ -62,14 +48,10 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     })
   )
 
-  private def decodeGranularity(gran:String) = {
-    gran match {
-      case "individual" => IndividualGranularity
-      case "day" => DayGranularity
-      case "month" => MonthGranularity
-      case "year" => YearGranularity
-    }
-  }
+  private def unpack(wire:String) = deserialize(wire).map(ConstraintRegistry.resolve(_))
+
+  private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
+
 }
 
 class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
@@ -82,7 +64,7 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
 
       val responseObj = new JSONObject
       responseObj.put("id", response.id)
-      responseObj.put("date", response.date.toString(JSONEncodingUtils.dateEncoder))
+      responseObj.put("attributes", asList(response.attributes))
       responseObj.put("uvsn", response.uvsn)
       responseObj.put("dvsn", response.dvsn)
       responseObj.toString

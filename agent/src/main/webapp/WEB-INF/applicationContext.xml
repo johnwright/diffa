@@ -56,6 +56,7 @@
         <bean class="net.lshift.diffa.kernel.differencing.SameVersionPolicy">
             <constructor-arg ref="versionCorrelationStore" />
             <constructor-arg ref="sessionManager" />
+            <constructor-arg ref="diffaConfigStore" />
           </bean>
       </list>
     </property>
@@ -70,6 +71,7 @@
         <bean class="net.lshift.diffa.kernel.differencing.CorrelatedVersionPolicy">
           <constructor-arg ref="versionCorrelationStore" />
           <constructor-arg ref="sessionManager" />
+          <constructor-arg ref="diffaConfigStore" />
         </bean>
       </list>
     </property>
@@ -259,7 +261,22 @@
     <constructor-arg index="0" ref="diffaSessionFactory" />
   </bean>
   <bean id="versionCorrelationStore" class="net.lshift.diffa.kernel.differencing.HibernateVersionCorrelationStore">
-    <constructor-arg index="0" ref="diffaSessionFactory" />
+    <constructor-arg ref="diffaSessionFactory" />
+    <constructor-arg ref="attributeIndexer" />
+  </bean>
+
+  <!--
+    ===========
+      Indexing
+    ===========
+  -->
+
+  <bean id="attributeIndexer" class="net.lshift.diffa.kernel.indexing.LuceneAttributeIndexer">
+    <constructor-arg>
+        <bean class="org.apache.lucene.store.MMapDirectory">
+            <constructor-arg><value>${index.dir}</value></constructor-arg>
+        </bean>
+    </constructor-arg>
   </bean>
 
   <!--

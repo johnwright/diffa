@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ *  Copyright (C) 2010 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.participants
+package net.lshift.diffa.kernel.util
 
-/**
- * Defines the granularity at which versions should be aggregated into digests.  
- */
-abstract class RangeGranularity
-object IndividualGranularity extends RangeGranularity
-object DayGranularity extends RangeGranularity
-object MonthGranularity extends RangeGranularity
-object YearGranularity extends RangeGranularity
+import scala.collection.Map
 
+object Conversions {
+
+  implicit def toTreeMap[K,V](map:Map[K,V]) = {
+    val treeMap = new java.util.TreeMap[K,V]
+    map.foreach{case (k,v) => treeMap.put(k,v)}
+    treeMap
+  }
+}

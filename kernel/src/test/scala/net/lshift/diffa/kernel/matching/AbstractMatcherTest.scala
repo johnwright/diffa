@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.events.{DownstreamPairChangeEvent, UpstreamPairCh
 import org.joda.time.DateTime
 import org.junit.Assert._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import collection.mutable.HashMap
 
 /**
  * Standard tests for a matcher.
@@ -71,8 +72,8 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
 
-    analyser.onChange(new UpstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
-    analyser.onChange(new DownstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackB)
+    analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
     mb.receiveWithin(1000) {
       case TIMEOUT => fail("Failed to recieve a matched pair event")
@@ -99,10 +100,10 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
 
-    analyser.onChange(new UpstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
-    analyser.onChange(new DownstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackB)
-    analyser.onChange(new UpstreamPairChangeEvent(id2, new DateTime, new DateTime, "vsnAAAB"), ackCallbackA)
-    analyser.onChange(new DownstreamPairChangeEvent(id2, new DateTime, new DateTime, "vsnAAAB"), ackCallbackB)
+    analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
+    analyser.onChange(new UpstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAB"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAB"), ackCallbackB)
 
     mb.receiveWithin(1000) {
       case TIMEOUT => fail("Failed to recieve first matched pair event")
@@ -125,7 +126,7 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
 
-    analyser.onChange(new UpstreamPairChangeEvent(id2, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
     mb.receiveWithin(10000) {
       case TIMEOUT => fail("Failed to recieve a expired upstream event")
@@ -148,9 +149,9 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
 
-    analyser.onChange(new UpstreamPairChangeEvent(id2, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
-    analyser.onChange(new UpstreamPairChangeEvent(id3, new DateTime, new DateTime, "vsnAAAB"), ackCallbackA)
-    analyser.onChange(new UpstreamPairChangeEvent(id4, new DateTime, new DateTime, "vsnAAAC"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id3, Seq(), new DateTime, "vsnAAAB"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id4, Seq(), new DateTime, "vsnAAAC"), ackCallbackA)
 
     mb.receiveWithin(10000) {
       case TIMEOUT => fail("Failed to recieve first expired upstream event")
@@ -177,7 +178,7 @@ abstract class AbstractMatcherTest {
       }
     })
 
-    analyser.onChange(new DownstreamPairChangeEvent(id3, new DateTime, new DateTime, "vsnAAAA"), ackCallbackB)
+    analyser.onChange(new DownstreamPairChangeEvent(id3, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
     mb.receiveWithin(2000) {
       case TIMEOUT => fail("Failed to recieve a expired downstream event")
@@ -200,9 +201,9 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
 
-    slowAnalyser.onChange(new DownstreamPairChangeEvent(id4, new DateTime, new DateTime, "vsnAAAA"), ackCallbackB)
+    slowAnalyser.onChange(new DownstreamPairChangeEvent(id4, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
     Thread.sleep(1000)
-    slowAnalyser.onChange(new UpstreamPairChangeEvent(id4, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
+    slowAnalyser.onChange(new UpstreamPairChangeEvent(id4, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
     mb.receiveWithin(5000) {
       case TIMEOUT =>
@@ -221,9 +222,9 @@ abstract class AbstractMatcherTest {
       }
     })
 
-    slowAnalyser.onChange(new UpstreamPairChangeEvent(id5, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
+    slowAnalyser.onChange(new UpstreamPairChangeEvent(id5, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     Thread.sleep(1000)
-    slowAnalyser.onChange(new DownstreamPairChangeEvent(id5, new DateTime, new DateTime, "vsnAAAA"), ackCallbackB)
+    slowAnalyser.onChange(new DownstreamPairChangeEvent(id5, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
     mb.receiveWithin(5000) {
       case TIMEOUT =>
@@ -242,8 +243,8 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
 
-    analyser.onChange(new UpstreamPairChangeEvent(id6, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
-    analyser.onChange(new DownstreamPairChangeEvent(idB6, new DateTime, new DateTime, "vsnAAAA"), ackCallbackB)
+    analyser.onChange(new UpstreamPairChangeEvent(id6, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(idB6, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
     mb.receiveWithin(2000) {
       case TIMEOUT =>
@@ -262,8 +263,8 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
 
-    analyser.onChange(new UpstreamPairChangeEvent(id7, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
-    analyser.onChange(new DownstreamPairChangeEvent(id7, new DateTime, new DateTime, "vsnBBBB"), ackCallbackB)
+    analyser.onChange(new UpstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnBBBB"), ackCallbackB)
 
     mb.receiveWithin(2000) {
       case TIMEOUT =>
@@ -273,29 +274,29 @@ abstract class AbstractMatcherTest {
 
   @Test
   def addedUpstreamObjectsShouldBeMarkedAsInProgressIfTheyArentMatchedOrExpired {
-    analyser.onChange(new UpstreamPairChangeEvent(id1, new DateTime, new DateTime,"vsnAAAA"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime,"vsnAAAA"), ackCallbackA)
     assertTrue(analyser.isVersionIDActive(id1))
   }
 
   @Test
   def multipleAddedUpstreamObjectsShouldBeMarkedAsInProgressIfOnlySomeAreMatchedOrExpired {
-    analyser.onChange(new UpstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
-    analyser.onChange(new UpstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAB"), ackCallbackA)
-    analyser.onChange(new DownstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAB"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     assertTrue(analyser.isVersionIDActive(id1))
   }
 
 
   @Test
   def addedDownstreamObjectsShouldBeMarkedAsInProgressIfTheyArentMatchedOrExpired {
-    analyser.onChange(new DownstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     assertTrue(analyser.isVersionIDActive(id1))
   }
 
   @Test
   def addedObjectsShouldNotBeMarkedAsInProgressIfTheyAreMatched {
-    analyser.onChange(new UpstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
-    analyser.onChange(new DownstreamPairChangeEvent(id1, new DateTime, new DateTime, "vsnAAAA"), ackCallbackB)
+    analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
     assertFalse(analyser.isVersionIDActive(id1))
   }
 
@@ -307,7 +308,7 @@ abstract class AbstractMatcherTest {
       def onPaired(id: VersionID, vsn:String) = null
       def onDownstreamExpired(id: VersionID, vsn:String) = null
     })
-    analyser.onChange(new UpstreamPairChangeEvent(id7, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new UpstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
     mb.receiveWithin(5000) {
       case TIMEOUT => fail("Should have received expiry event")
@@ -325,7 +326,7 @@ abstract class AbstractMatcherTest {
       def onDownstreamExpired(id: VersionID, vsn:String) = mb.send(new Object)
     })
 
-    analyser.onChange(new DownstreamPairChangeEvent(id7, new DateTime, new DateTime, "vsnAAAA"), ackCallbackA)
+    analyser.onChange(new DownstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
     mb.receiveWithin(2000) {
       case TIMEOUT => fail("Should have received expiry event")

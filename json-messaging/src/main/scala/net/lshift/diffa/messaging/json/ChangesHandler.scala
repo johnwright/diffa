@@ -16,9 +16,11 @@
 
 package net.lshift.diffa.messaging.json
 
+
 import net.lshift.diffa.kernel.frontend.Changes
 import org.codehaus.jettison.json.JSONObject
 import net.lshift.diffa.kernel.events.{UpstreamChangeEvent, DownstreamChangeEvent, DownstreamCorrelatedChangeEvent}
+import collection.mutable.{ListBuffer, HashMap}
 
 /**
  * JSON protocol handler for change requests.
@@ -31,14 +33,19 @@ class ChangesHandler(val frontend:Changes) extends AbstractJSONHandler {
       val jObj = new JSONObject(s)
       val endpoint = jObj.getString("endpoint")
       val id = jObj.getString("id")
-      val date = JSONEncodingUtils.dateParser.parseDateTime(jObj.getString("date"))
+      // TODO This should be in the JSONEncodingUtil
+      val attributes = new ListBuffer[String]
+      val attributeArray = jObj.getJSONArray("attributes")
+      for (val i <- 0 to attributeArray.length - 1) {
+        attributes += attributeArray.getString(i)
+      }
       val lastUpdated = JSONEncodingUtils.maybeParseableDate(jObj.optString("lastUpdated"))
 
       val evt = jObj.getString("type") match {
-        case "upstream" => new UpstreamChangeEvent(endpoint, id, date, lastUpdated, jObj.optString("vsn", null))
-        case "downstream-same" => new DownstreamChangeEvent(endpoint, id, date, lastUpdated, jObj.optString("vsn", null))
+        case "upstream" => new UpstreamChangeEvent(endpoint, id, attributes, lastUpdated, jObj.optString("vsn", null))
+        case "downstream-same" => new DownstreamChangeEvent(endpoint, id, attributes, lastUpdated, jObj.optString("vsn", null))
         case "downstream-correlated" =>
-          new DownstreamCorrelatedChangeEvent(endpoint, id, date, lastUpdated, jObj.optString("uvsn", null), jObj.optString("dvsn", null))
+          new DownstreamCorrelatedChangeEvent(endpoint, id, attributes, lastUpdated, jObj.optString("uvsn", null), jObj.optString("dvsn", null))
       }
 
       frontend.onChange(evt)

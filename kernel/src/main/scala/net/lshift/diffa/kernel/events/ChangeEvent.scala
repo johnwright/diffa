@@ -25,20 +25,20 @@ import org.joda.time.DateTime
 abstract class ChangeEvent {
   def endpoint:String
   def id:String
-  def date:DateTime
+  def attributes:Seq[String]
   def lastUpdate:DateTime
 }
 
 /**
  * Event indicating that a change has occurred within an upstream system.
  */
-case class UpstreamChangeEvent(val endpoint:String, val id:String, val date:DateTime, val lastUpdate:DateTime, val vsn:String)
+case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent
 
 /**
  * Event indicating that a change has occurred within a downsteam system.
  */
-case class DownstreamChangeEvent(val endpoint:String, val id:String, val date:DateTime, val lastUpdate:DateTime, val vsn:String)
+case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent
 
 /**
@@ -46,5 +46,5 @@ case class DownstreamChangeEvent(val endpoint:String, val id:String, val date:Da
  * change indicates that the change occurring in the downstream did not result in the same content being at the
  * downstream, but provides details on correlating the version information between the systems.
  */
-case class DownstreamCorrelatedChangeEvent(val endpoint:String, val id:String, val date:DateTime, val lastUpdate:DateTime, val upstreamVsn:String, val downstreamVsn:String)
+case class DownstreamCorrelatedChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
   extends ChangeEvent

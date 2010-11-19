@@ -28,13 +28,22 @@
 
     <property name="pairing" type="string" not-null="true" />
     <property name="id" type="string" column="entity_id" not-null="true" />
-    <property name="date" type="org.joda.time.contrib.hibernate.PersistentDateTime" column="tx_date" not-null="true" />
     <property name="lastUpdate" type="org.joda.time.contrib.hibernate.PersistentDateTime" column="last_update" not-null="true" />
     <property name="timestamp" type="org.joda.time.contrib.hibernate.PersistentDateTime" column="agent_timestamp" not-null="true" />     
     <property name="upstreamVsn" type="string" column="upstream_vsn" />
     <property name="downstreamUVsn" type="string" column="downstream_usvn" />
     <property name="downstreamDVsn" type="string" column="downstream_dvsn" />
     <property name="isMatched" type="boolean" column="is_matched" />
+    <map name="upstreamAttributes" table="upstream_attributes" lazy="false" cascade="all">
+       <key column="id"/>
+       <index column="name" type="string"/>
+       <element column="value" type="string"/>
+    </map>
+    <map name="downstreamAttributes" table="downstream_attributes" lazy="false" cascade="all">
+       <key column="id"/>
+       <index column="name" type="string"/>
+       <element column="value" type="string"/>
+    </map>
   </class>
 
   <query name="currentCorrelation">

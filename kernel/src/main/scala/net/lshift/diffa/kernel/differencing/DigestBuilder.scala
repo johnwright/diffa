@@ -18,80 +18,91 @@ package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.DateTime
 import java.security.MessageDigest
-import collection.mutable.{ListBuffer, HashMap}
+import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.apache.commons.codec.binary.Hex
-import net.lshift.diffa.kernel.util.DateUtils._
+import scala.collection.JavaConversions._
+import net.jcip.annotations.NotThreadSafe
+import org.slf4j.LoggerFactory
 
 /**
  * Utility class for building version digests from a sequence of versions.
  */
-class DigestBuilder(val gran:RangeGranularity) {
-  private val digestBuckets = new HashMap[String, Bucket]
-  private val versions = new ListBuffer[VersionDigest]
+class DigestBuilder(val function:CategoryFunction) {
+
+  val log = LoggerFactory.getLogger(getClass)
+
+  val digestBuckets = new java.util.TreeMap[String,Bucket]()
+  val versions = new ListBuffer[EntityVersion]
 
   /**
    * Adds a new version into the builder.
    */
-  def add(id:VersionID, date:DateTime, lastUpdated:DateTime, vsn:String):Unit = add(id.id, date, lastUpdated, vsn)
-  def add(id:String, date:DateTime, lastUpdated:DateTime, vsn:String) {
-      if (!isBucketing) {
-      versions += VersionDigest(id, date, lastUpdated, vsn)
-    } else {
-      val bucketName = buildBucketName(date)
-      val bucket = digestBuckets.get(bucketName) match {
-        case None => {
-          val newBucket = new Bucket(bucketName, normaliseDate(date))
-          digestBuckets(bucketName) = newBucket
+  def add(id:VersionID, attributes:Seq[String], lastUpdated:DateTime, vsn:String) : Unit
+    = add(id.id, attributes, lastUpdated, vsn)
+
+  def add(id:String, attributes:Seq[String], lastUpdated:DateTime, vsn:String) {
+
+    log.debug("Adding to bucket [" + function + "]: " + id + ", " + attributes + ", " + lastUpdated + ", " + vsn)
+
+    if (function.shouldBucket) {
+
+      val partitionedValues = attributes.map(function.owningPartition(_))
+      val label = partitionedValues.reduceLeft(_ + "_" + _)
+
+      val bucket = digestBuckets.get(label) match {
+        case null => {
+          val newBucket = new Bucket(label, partitionedValues.toSeq, lastUpdated)
+          digestBuckets.put(label, newBucket)
           newBucket
         }
-        case Some(b) => b
+        case b    => b
       }
       bucket.add(vsn)
+    } else {
+      versions += EntityVersion(id, attributes.toSeq, lastUpdated, vsn)
     }
   }
 
   /**
    * Retrieves the bucketed digests for all version objects that have been provided.
    */
-  def digests:Seq[VersionDigest] = {
-    if (!isBucketing) {
-      versions
-    } else {
+  def digests:Seq[AggregateDigest] = {
+    if (function.shouldBucket) {
       // Digest the buckets
       digestBuckets.values.map(b => b.toDigest).toList
+    } else {
+      Seq()
     }
   }
 
-  /**
-   * Don't bucket for individual versions.
-   */
-  private def isBucketing = gran != IndividualGranularity
 
-  /**
-   * Generates a name for a bucket based on a date.
-   */
-  private def buildBucketName(date:DateTime) = gran match {
-    case DayGranularity   => date.toString("yyyy-MM-dd")
-    case MonthGranularity => date.toString("yyyy-MM")
-    case YearGranularity  => date.toString("yyyy")
-  }
-  private def normaliseDate(date:DateTime) = gran match {
-    case DayGranularity   => startOfDay(date)
-    case MonthGranularity => startOfDay(date).withDayOfMonth(1)
-    case YearGranularity => startOfDay(date).withDayOfYear(1)
-  }
-
-  private class Bucket(val name:String, val date:DateTime) {
-    private val digestAlgorithm = "MD5"
-    private val digest =  MessageDigest.getInstance(digestAlgorithm)
-
-    def add(vsn:String) = {
-      val vsnBytes = vsn.getBytes("UTF-8")
-      digest.update(vsnBytes, 0, vsnBytes.length)
-    }
-
-    def toDigest = VersionDigest(name, date, null, new String(Hex.encodeHex(digest.digest)))
-  }
 }
+
+class Bucket(val name: String, val attributes: Seq[String], val lastUpdated:DateTime) {
+  private val digestAlgorithm = "MD5"
+  private val messageDigest = MessageDigest.getInstance(digestAlgorithm)
+  private var digest:String = null
+
+  @NotThreadSafe
+  def add(vsn: String) = {
+    if (digest != null) {
+      throw new SealedBucketException(vsn, name)
+    }
+    val vsnBytes = vsn.getBytes("UTF-8")
+    messageDigest.update(vsnBytes, 0, vsnBytes.length)
+  }
+
+  @NotThreadSafe
+  def toDigest = {
+    if (digest == null) {
+      digest = new String(Hex.encodeHex(messageDigest.digest()))
+    }
+    AggregateDigest(attributes, lastUpdated, digest)
+  }
+
+}
+
+class SealedBucketException(vsn:String, name:String) extends Exception(vsn + " -> " + name)
+

@@ -25,6 +25,13 @@
     </layout>
   </appender>
 
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>target/diffa-test.log</file>
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <Pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</Pattern>
+    </layout>
+  </appender>
+
   <logger name="org.hibernate" level="WARN" />
 
   <!--
@@ -38,6 +45,7 @@
 
   <root level="debug">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="FILE" />
   </root>
 
 </configuration>

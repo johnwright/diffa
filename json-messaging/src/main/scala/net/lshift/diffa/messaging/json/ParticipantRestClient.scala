@@ -16,32 +16,27 @@
 
 package net.lshift.diffa.messaging.json
 
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
-import org.codehaus.jettison.json.{JSONArray, JSONObject}
+import org.codehaus.jettison.json.JSONObject
+import JSONEncodingUtils._
+import collection.mutable.ListBuffer
 
 /**
  * Rest client for participant communication.
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
-  override def queryDigests(start:DateTime, end:DateTime, granularity:RangeGranularity) = {
-    val requestObj = new JSONObject
-    requestObj.put("start", start.toString(JSONEncodingUtils.dateEncoder))
-    requestObj.put("end", end.toString(JSONEncodingUtils.dateEncoder))
-    requestObj.put("granularity", jsonGranularity(granularity))
+  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
+    executeRpc("query_entity_versions", pack(constraints)) match {
+      case Some(r) => deserializeEntityVersions(r)
+      case None    => Seq()
+    }
+  }
 
-    executeRpc("query_digests", requestObj.toString) match {
-      case Some(r) => {
-        val jsonDigests = new JSONArray(r)
-        (0 until jsonDigests.length).map(i => {
-          val digestObj = jsonDigests.getJSONObject(i)
-          VersionDigest(
-            digestObj.getString("key"), JSONEncodingUtils.dateParser.parseDateTime(digestObj.getString("date")),
-            JSONEncodingUtils.maybeParseableDate(digestObj.optString("lastUpdated")), digestObj.getString("digest"))
-        }).toList
-      }
-      case None => List()
+  override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
+    executeRpc("query_aggregate_digests", pack(constraints)) match {
+      case Some(r) => deserializeAggregateDigest(r)
+      case None    => Seq()
     }
   }
 
@@ -75,14 +70,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     }
   }
 
-  private def jsonGranularity(gran:RangeGranularity) = {
-    gran match {
-      case IndividualGranularity => "individual"
-      case DayGranularity => "day"
-      case MonthGranularity => "month"
-      case YearGranularity => "year"
-    }
-  }
+  private def pack(seq:Seq[QueryConstraint]) = serialize(seq.map(_.wireFormat))
 }
 
 /**
@@ -103,9 +91,14 @@ class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient
       case None    => null
       case Some(r) => {
         val responseObj = new JSONObject(r)
-
+        val attributes = new ListBuffer[String]
+        val attributeArray = responseObj.getJSONArray("attributes")
+        for (val i <- 0 to attributeArray.length - 1) {
+          attributes += attributeArray.getString(i)
+        }
         ProcessingResponse(
-          responseObj.getString("id"), JSONEncodingUtils.dateParser.parseDateTime(responseObj.getString("date")),
+          responseObj.getString("id"),
+          attributes,
           responseObj.getString("uvsn"), responseObj.getString("dvsn"))
       }
     }

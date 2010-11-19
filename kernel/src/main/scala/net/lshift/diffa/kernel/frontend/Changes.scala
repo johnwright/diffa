@@ -39,10 +39,10 @@ class Changes(val config:ConfigStore,
 
     config.getPairsForEndpoint(evt.endpoint).foreach(pair => {
       val pairEvt = evt match {
-        case UpstreamChangeEvent(_, id, date, lastUpdate, vsn) => UpstreamPairChangeEvent(VersionID(pair.key, id), date, lastUpdate, vsn)
-        case DownstreamChangeEvent(_, id, date, lastUpdate, vsn) => DownstreamPairChangeEvent(VersionID(pair.key, id), date, lastUpdate, vsn)
-        case DownstreamCorrelatedChangeEvent(_, id, date, lastUpdate, uvsn, dvsn) =>
-          DownstreamCorrelatedPairChangeEvent(VersionID(pair.key, id), date, lastUpdate, uvsn, dvsn)
+        case UpstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(VersionID(pair.key, id), attributes, lastUpdate, vsn)
+        case DownstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(VersionID(pair.key, id), attributes, lastUpdate, vsn)
+        case DownstreamCorrelatedChangeEvent(_, id, attributes, lastUpdate, uvsn, dvsn) =>
+          DownstreamCorrelatedPairChangeEvent(VersionID(pair.key, id), attributes, lastUpdate, uvsn, dvsn)
       }
 
       // TODO: Write a test to enforce that the matching manager processes first. This is necessary to ensure

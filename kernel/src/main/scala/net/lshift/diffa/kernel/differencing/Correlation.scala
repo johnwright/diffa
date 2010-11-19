@@ -18,14 +18,18 @@ package net.lshift.diffa.kernel.differencing
 
 import reflect.BeanProperty
 import org.joda.time.DateTime
+import scala.collection.Map
+import scala.collection.JavaConversions.MapWrapper
+import scala.collection.JavaConversions.asMap
+import collection.mutable.HashMap
 
 // Base type for upstream and downstream correlations allowing pairs to be managed
 case class Correlation(
   @BeanProperty var oid:java.lang.Integer,
   @BeanProperty var pairing:String,
   @BeanProperty var id:String,
-  // TODO (#2) Generalize the date to a category string
-  @BeanProperty var date:DateTime,
+  var upstreamAttributes:Map[String,String],
+  var downstreamAttributes:Map[String,String],
   @BeanProperty var lastUpdate:DateTime,
   @BeanProperty var timestamp:DateTime,
   @BeanProperty var upstreamVsn:String,
@@ -33,10 +37,36 @@ case class Correlation(
   @BeanProperty var downstreamDVsn:String,
   @BeanProperty var isMatched:java.lang.Boolean
 ) {
-  def this() = this(null, null, null, null, null, null, null, null, null, null)
+  def this() = this(null, null, null, null, null, null, null, null, null, null, null)
+
+  // Allocate these in the constructor because of NPE when Hibernate starts mapping this stuff 
+  if (upstreamAttributes == null) upstreamAttributes = new HashMap[String,String]
+  if (downstreamAttributes == null) downstreamAttributes = new HashMap[String,String]
+
+  // TODO [#2] Can these proxies not be members of this class instead of being created on the stack?
+  def getDownstreamAttributes() : java.util.Map[String,String] = {
+    if (downstreamAttributes != null) {
+      new MapWrapper[String,String](downstreamAttributes)
+    } else {
+      null
+    }
+  }
+
+  def getUpstreamAttributes() : java.util.Map[String,String] = {
+    if (upstreamAttributes != null) {
+      new MapWrapper[String,String](upstreamAttributes)
+    } else {
+      null
+    }
+  }
+
+
+  def setUpstreamAttributes(a:java.util.Map[String,String]) : Unit = upstreamAttributes = asMap(a)
+  def setDownstreamAttributes(a:java.util.Map[String,String]) : Unit = downstreamAttributes = asMap(a)
+  
 }
 
 object Correlation {
   def asDeleted(pairing:String, id:String, lastUpdate:DateTime) =
-    Correlation(null, pairing, id, null, lastUpdate, new DateTime, null, null, null, true)
+    Correlation(null, pairing, id, null, null, lastUpdate, new DateTime, null, null, null, true)
 }

@@ -22,6 +22,9 @@ import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.{Test, Before}
+import scala.collection.Map
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.util.Conversions._
 
 class HibernateConfigStoreTest {
   private val configStore: ConfigStore = HibernateConfigStoreTest.configStore
@@ -35,8 +38,11 @@ class HibernateConfigStoreTest {
   val MATCHING_TIMEOUT = 120
   val VP_NAME_ALT = "TEST_VPNAME_ALT"
   val PAIR_KEY = "TEST_PAIR"
+  val CATEGORY_NAME = "bizDate"
+  val CATEGORY_TYPE = "date"
+  val CATEGORIES = Map(CATEGORY_NAME -> CATEGORY_TYPE)
   val PAIR_DEF = new PairDef(PAIR_KEY, VP_NAME, MATCHING_TIMEOUT, UPSTREAM_EP.name,
-    DOWNSTREAM_EP.name, GROUP_KEY)
+    DOWNSTREAM_EP.name, GROUP_KEY, CATEGORIES)
 
   val GROUP_KEY_ALT = "TEST_GROUP2"
   val UPSTREAM_RENAMED = "TEST_UPSTREAM_RENAMED"
@@ -55,9 +61,9 @@ class HibernateConfigStoreTest {
   @Before
   def setUp: Unit = {
     val s = HibernateConfigStoreTest.sessionFactory.openSession
-    Seq("Pair", "PairGroup", "Endpoint") foreach (tableName => {
-      s.createQuery("DELETE FROM " + tableName).executeUpdate
-    })
+    s.createCriteria(classOf[Pair]).list.foreach(p => s.delete(p))
+    s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
+    s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
     s.flush
     s.close
   }
@@ -133,7 +139,7 @@ class HibernateConfigStoreTest {
     }
 
     configStore.createOrUpdatePair(new PairDef(PAIR_RENAMED, VP_NAME_ALT, Pair.NO_MATCHING,
-      DOWNSTREAM_EP.name, UPSTREAM_EP.name, GROUP_KEY_ALT))
+      DOWNSTREAM_EP.name, UPSTREAM_EP.name, GROUP_KEY_ALT, CATEGORIES))
     
     val retrieved = configStore.getPair(PAIR_RENAMED)
     assertEquals(PAIR_RENAMED, retrieved.key)
@@ -222,13 +228,13 @@ class HibernateConfigStoreTest {
       // TODO: We should probably get an exception indicating that the constraint was null, not that the object
       //       we're linking to is missing.
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, null, DOWNSTREAM_EP.name, GROUP_KEY))
+      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, null, DOWNSTREAM_EP.name, GROUP_KEY, CATEGORIES))
     }
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, UPSTREAM_EP.name, null, GROUP_KEY))
+      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, UPSTREAM_EP.name, null, GROUP_KEY, CATEGORIES))
     }
     expectMissingObject("group") {
-      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, UPSTREAM_EP.name, DOWNSTREAM_EP.name, null))
+      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, UPSTREAM_EP.name, DOWNSTREAM_EP.name, null, CATEGORIES))
     }
   }
 
@@ -252,7 +258,7 @@ class HibernateConfigStoreTest {
     configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
     configStore.createOrUpdateGroup(new PairGroup(GROUP_KEY))
     configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME_ALT, Pair.NO_MATCHING,
-                                               UPSTREAM_EP.name, DOWNSTREAM_EP.name, GROUP_KEY))
+                                               UPSTREAM_EP.name, DOWNSTREAM_EP.name, GROUP_KEY, CATEGORIES))
 
     val res = configStore.getPairsForEndpoint(UPSTREAM_EP.name)
     assertEquals(1, res.length)
@@ -265,11 +271,19 @@ class HibernateConfigStoreTest {
     configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
     configStore.createOrUpdateGroup(new PairGroup(GROUP_KEY))
     configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME_ALT, Pair.NO_MATCHING,
-                                               UPSTREAM_EP.name, DOWNSTREAM_EP.name, GROUP_KEY))
+                                               UPSTREAM_EP.name, DOWNSTREAM_EP.name, GROUP_KEY, CATEGORIES))
 
     val res = configStore.getPairsForEndpoint(DOWNSTREAM_EP.name)
     assertEquals(1, res.length)
     assertEquals(PAIR_KEY, res(0).key)
+  }
+
+  @Test
+  def testCategories = {
+    declareAll
+    val pair = configStore.getPair(PAIR_KEY)
+    assertNotNull(pair.categories)
+    assertEquals(CATEGORY_TYPE, pair.categories(CATEGORY_NAME))
   }
 
   @Test

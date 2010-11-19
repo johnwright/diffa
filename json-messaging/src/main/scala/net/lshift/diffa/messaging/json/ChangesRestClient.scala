@@ -19,6 +19,7 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.client.ChangesClient
 import net.lshift.diffa.kernel.events.{UpstreamChangeEvent, DownstreamChangeEvent, DownstreamCorrelatedChangeEvent, ChangeEvent}
 import org.codehaus.jettison.json.JSONObject
+import scala.collection.JavaConversions.asList
 
 /**
  * JSON-over-REST client for the changes endpoint.
@@ -30,7 +31,7 @@ class ChangesRestClient(serverRootUrl:String)
     val jsonEvt = new JSONObject
     jsonEvt.put("endpoint", evt.endpoint)
     jsonEvt.put("id", evt.id)
-    jsonEvt.put("date", evt.date.toString(JSONEncodingUtils.dateEncoder))
+    jsonEvt.put("attributes", asList(evt.attributes))
     jsonEvt.put("lastUpdated", JSONEncodingUtils.maybeDateStr(evt.lastUpdate))
     evt match {
       case us:UpstreamChangeEvent =>

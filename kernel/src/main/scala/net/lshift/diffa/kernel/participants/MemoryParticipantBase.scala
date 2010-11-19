@@ -16,28 +16,43 @@
 
 package net.lshift.diffa.kernel.participants
 
+import scala.collection.Map
+
+import org.joda.time.DateTime
 import collection.mutable.HashMap
-import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.differencing.DigestBuilder
-import org.joda.time.{Interval, DateTime}
+import org.slf4j.LoggerFactory
 
 /**
  * Base class for test participants.
  */
 class MemoryParticipantBase(nativeVsnGen: String => String) {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   protected val entities = new HashMap[String, TestEntity]
 
-  def queryDigests(start: DateTime, end: DateTime, granularity: RangeGranularity) = {
-    // Filter on date interval & sort entries by ID into a list
-    val interval = new Interval(start, end)
-    val entitiesInRange = entities.values.filter(ent => interval.contains(ent.date)).toList
-    val sortedEntities = entitiesInRange.sort(_.id < _.id)
+  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
+    assert(constraints.length < 2, "See ticket #148")
+    log.trace("Running version query: " + constraints)
+    val constrained = constrainEntities(constraints)
+    constrained.map(e => EntityVersion(e.id,e.attributes, e.lastUpdated,nativeVsnGen(e.body)))
+  }
 
-    // Create buckets
-    val b = new DigestBuilder(granularity)
-    sortedEntities foreach (ent => b.add(ent.id, ent.date, ent.lastUpdated, nativeVsnGen(ent.body)))
-
+  def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
+    assert(constraints.length < 2, "See ticket #148")
+    log.trace("Running aggregate query: " + constraints)
+    val constrained = constrainEntities(constraints)
+    val b = new DigestBuilder(constraints(0).function)
+    constrained foreach (ent => b.add(ent.id, ent.attributes, ent.lastUpdated, nativeVsnGen(ent.body)))
     b.digests
+  }
+
+  def constrainEntities(constraints:Seq[QueryConstraint]) = {
+    // Filter on date interval & sort entries by ID into a list
+    // TODO [#2] this is not really constraining yet
+    val entitiesInRange = entities.values.filter(e => true).toList
+    entitiesInRange.sort(_.id < _.id)
   }
 
   def retrieveContent(identifier: String) = entities.get(identifier) match {
@@ -56,9 +71,9 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
       case _        => ActionResult("error", "Unknown action:" + actionId)
     }
   }
-
-  def addEntity(id: String, date: DateTime, lastUpdated:DateTime, body: String): Unit = {
-    entities += ((id, TestEntity(id, date, lastUpdated, body)))
+  
+  def addEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String): Unit = {
+    entities += ((id, TestEntity(id, attributes, lastUpdated, body)))
   }
 
   def removeEntity(id:String) {
@@ -72,4 +87,4 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   def close() = entities.clear
 }
 
-case class TestEntity(id: String, date: DateTime, lastUpdated:DateTime, body: String)
+case class TestEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String)

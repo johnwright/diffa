@@ -20,6 +20,7 @@ package net.lshift.diffa.kernel.differencing
 import java.lang.String
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
+import net.lshift.diffa.kernel.config.ConfigStore
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -29,26 +30,34 @@ import net.lshift.diffa.kernel.events._
  * Compliance with this policy could also be achieved by the downstream simply recording the versions of received
  * upstream events.
  */
-class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener)
-    extends BaseSynchingVersionPolicy(store, listener) {
+class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener, configStore:ConfigStore)
+    extends BaseSynchingVersionPolicy(store, listener, configStore:ConfigStore) {
 
-  def synchroniseParticipants(pairKey: String, dates: DateConstraint, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def synchroniseParticipants(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pairKey, dates, us)
-    (new DownstreamSameSyncStrategy).syncHalf(pairKey, dates, ds)
+    (new UpstreamSyncStrategy).syncHalf(pairKey, constraints, us)
+    (new DownstreamSameSyncStrategy).syncHalf(pairKey, constraints, ds)
   }
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
-    def getDigests(pairKey:String, dates:DateConstraint, gran:RangeGranularity) = {
-      val aggregator = new Aggregator(gran)
-      store.queryDownstreams(pairKey, dates, aggregator.collectDownstream)
+    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {      
+      assert(constraints.length < 2, "See ticket #148")
+      val aggregator = new Aggregator(constraints(0).function)
+      store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
       aggregator.digests
     }
+
+    def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
+      store.queryDownstreams(pairKey, constraints).map(x => {
+        EntityVersion(x.id, x.downstreamAttributes.values.toSeq, x.lastUpdate, x.downstreamDVsn)
+      })
+    }
+
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
-        case VersionMismatch(id, date, lastUpdated, partVsn, _) =>
+        case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            store.storeDownstreamVersion(VersionID(pairKey, id), date, lastUpdated, partVsn, partVsn)
+            store.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn)
           } else {
             store.clearDownstreamVersion(VersionID(pairKey, id))
           }

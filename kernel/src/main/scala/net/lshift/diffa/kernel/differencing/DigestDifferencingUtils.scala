@@ -16,106 +16,110 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
+import scala.collection.Map
 
 /**
  * Utility methods for differencing sequences of digests.
  */
 object DigestDifferencingUtils {
-  def differenceDigests(ds1:Seq[VersionDigest], ds2:Seq[VersionDigest], gran:RangeGranularity):Seq[DifferenceOutcome] = {
-    val result = new ListBuffer[DifferenceOutcome]
-    val ds1Ids = indexByIdentifier(ds1)
-    val ds2Ids = indexByIdentifier(ds2)
 
-    ds1Ids.foreach { case (id, ds1Digest) => {
-      val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(id) match {
+  def differenceEntities(ds1:Seq[EntityVersion],
+                         ds2:Seq[EntityVersion],
+                         resolve:Digest => Map[String,String],
+                         constraints:Seq[QueryConstraint]) : Seq[VersionMismatch] = {
+    val result = new ListBuffer[VersionMismatch]
+    val ds1Ids = indexById(ds1)
+    val ds2Ids = indexById(ds2)
+
+    ds1Ids.foreach { case (label, ds1Digest) => {
+      val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
         case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest, hs2Digest.lastUpdated)
         case None => (false, null, null)
       }
 
       if (!otherMatches) {
-        gran match {
-          case IndividualGranularity =>
-            result += VersionMismatch(id, latestOf(ds1Digest.lastUpdated, otherDigestUpdated), ds1Digest.date, ds1Digest.digest, otherDigest)
-          case _ => otherDigest match {
-            case null => result += deepestQueryAction(id, gran)
-            case _ => result += deeperQueryAction(id, gran)
-          }
-        }
+        result += VersionMismatch(label, resolve(ds1Digest), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
       }
     }}
 
-    ds2Ids.foreach { case (id, hs2Digest) => {
-      val otherMatches = ds1Ids.remove(id) match {
+    ds2Ids.foreach { case (label, hs2Digest) => {
+      val otherMatches = ds1Ids.remove(label) match {
         case None => false
         case _    => true    // No need to compare, since we did that above
       }
 
       if (!otherMatches) {
-        gran match {
-          case IndividualGranularity => result += VersionMismatch(id, hs2Digest.date, hs2Digest.lastUpdated, null, hs2Digest.digest)
-          case _                     => result += deepestQueryAction(id, gran)
-        }
+        result += VersionMismatch(label, resolve(hs2Digest), hs2Digest.lastUpdated, null, hs2Digest.digest)
       }
     }}
 
     result
   }
 
-  private def indexByIdentifier(hs:Seq[VersionDigest]) = {
-    val res = new HashMap[String, VersionDigest]
-    hs.foreach(d => res(d.key) = d)
+  def differenceAggregates(ds1:Seq[AggregateDigest],
+                           ds2:Seq[AggregateDigest],
+                           resolve:Digest => Map[String,String],
+                           constraints:Seq[QueryConstraint]) : Seq[QueryAction] = {
+    assert(constraints.length < 2, "See ticket #148")
+    var preemptVersionQuery = false
+    val results = new ListBuffer[QueryAction]
+    val ds1Ids = indexByAttributeValues(ds1)
+    val ds2Ids = indexByAttributeValues(ds2)
 
+    def evaluate(partition:String) = {
+        val empty = ds1.isEmpty || ds2.isEmpty
+        constraints(0).nextQueryAction(partition, empty) match {
+          case None    => preemptVersionQuery = true
+          case Some(x) => results += x
+        }
+    }
+
+    ds1Ids.foreach { case (label, ds1Digest) => {
+      val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
+        case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest, hs2Digest.lastUpdated)
+        case None => (false, null, null)
+      }
+
+      if (!otherMatches) {
+        assert(ds1Digest.attributes.length < 2, "See ticket #148")
+        val partition = ds1Digest.attributes(0)
+        evaluate(partition)
+      }
+    }}
+
+    ds2Ids.foreach { case (label, hs2Digest) => {
+      val otherMatches = ds1Ids.remove(label) match {
+        case None => false
+        case _    => true    // No need to compare, since we did that above
+      }
+
+      if (!otherMatches) {
+        assert(hs2Digest.attributes.length < 2, "See ticket #148")
+        val partition = hs2Digest.attributes(0)
+        evaluate(partition)
+      }
+    }}
+
+    if (preemptVersionQuery) {
+      // TODO [#2] does not expand to multiple constraints yet
+      List(EntityQueryAction(constraints(0)))  
+    }
+    else {
+      results
+    }
+  }
+
+  private def indexById(hs:Seq[EntityVersion]) = {
+    val res = new HashMap[String, EntityVersion]
+    hs.foreach(d => res(d.id) = d)
     res
   }
-  private def deepestQueryAction(key:String, currentGran:RangeGranularity) = {
-    val (start, end) = dateRangeForKey(key, currentGran)
-    QueryAction(start, end, IndividualGranularity)
-  }
-  private def deeperQueryAction(key:String, currentGran:RangeGranularity) = {
-    val (start, end) = dateRangeForKey(key, currentGran)
-    QueryAction(start, end, currentGran match {
-      case YearGranularity => MonthGranularity
-      case MonthGranularity => DayGranularity
-      case DayGranularity => IndividualGranularity
-    })
+  private def indexByAttributeValues(hs:Seq[Digest]) = {
+    val res = new HashMap[String, Digest]
+    hs.foreach(d => res(d.attributes.reduceLeft(_+_)) = d)
+    res
   }
 
-  private val yearParser = DateTimeFormat.forPattern("yyyy")
-  private val yearMonthParser = DateTimeFormat.forPattern("yyyy-MM")
-  private val yearMonthDayParser = DateTimeFormat.forPattern("yyyy-MM-dd")
-  private def dateRangeForKey(key:String, gran:RangeGranularity) = {
-    val (startDay, endDay) = gran match {
-      case YearGranularity => {
-        val point = yearParser.parseDateTime(key).toLocalDate
-        (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
-      }
-      case MonthGranularity => {
-        val point = yearMonthParser.parseDateTime(key).toLocalDate
-        (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
-      }
-      case DayGranularity => {
-        val point = yearMonthDayParser.parseDateTime(key).toLocalDate
-        (point, point)
-      }
-    }
-
-    (startDay.toDateTimeAtStartOfDay, endDay.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
-  }
-
-  private def latestOf(d1:DateTime, d2:DateTime) = {
-    (d1, d2) match {
-      case (null, null) => new DateTime
-      case (_, null)    => d1
-      case (null, _)    => d2
-      case _            => if (d1.isAfter(d2)) d1 else d2
-    }
-  }
 }
-
-abstract class DifferenceOutcome
-case class QueryAction(val start:DateTime, val end:DateTime, gran:RangeGranularity) extends DifferenceOutcome
-case class VersionMismatch(val id:String, val date:DateTime, val lastUpdated:DateTime, val vsnA:String, val vsnB:String) extends DifferenceOutcome

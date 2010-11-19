@@ -21,9 +21,9 @@ import org.easymock.EasyMock._
 import org.junit.Assert._
 import net.lshift.diffa.kernel.differencing._
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant, ParticipantFactory}
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
+import net.lshift.diffa.kernel.participants._
 
 class PairActorTest {
 
@@ -37,8 +37,6 @@ class PairActorTest {
   pair.versionPolicyName = policyName
   pair.upstream = upstream
   pair.downstream = downstream
-
-  val dates = DateConstraint(new DateTime().minusHours(1), new DateTime().plusHours(1))
 
   val us = createStrictMock("upstreamParticipant", classOf[UpstreamParticipant])
   val ds = createStrictMock("downstreamParticipant", classOf[DownstreamParticipant])
@@ -75,19 +73,18 @@ class PairActorTest {
   def runDifference = {
     val id = VersionID(pairKey, "foo")
 
-    expect(versionPolicy.difference(pairKey, dates, us, ds, listener)).andReturn(true)
+    expect(versionPolicy.difference(pairKey, us, ds, listener)).andReturn(true)
     replay(versionPolicy)
 
-    assertTrue(client.syncPair(pairKey, dates, listener))
+    assertTrue(client.syncPair(pairKey, listener))
   }
 
   @Test
   def propagateChange = {
     val id = VersionID(pairKey, "foo")
-    val date = new DateTime()
     val lastUpdate = new DateTime()
     val vsn = "foobar"
-    val event = UpstreamPairChangeEvent(id, date, lastUpdate, vsn)
+    val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
     
     expect(versionPolicy.onChange(event))
     replay(versionPolicy)

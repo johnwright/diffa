@@ -16,13 +16,15 @@
 
 package net.lshift.diffa.agent.itest.support
 
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent}
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
 import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
 import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
+import scala.collection.Map
+import collection.mutable.HashMap
+import org.joda.time.DateTime
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -50,6 +52,10 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
   val upstream = new UpstreamMemoryParticipant(versionScheme.upstreamVersionGen)
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
+
+  // Categories
+  val categories = HashMap("bizDate" -> "date")
+
   // Participants' RPC server setup
   Participants.startUpstreamServer(usPort, upstream)
   Participants.startDownstreamServer(dsPort, downstream)
@@ -58,7 +64,7 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort, contentType, null, true)
   configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort, contentType, null, true)
-  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
+  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1", categories)
 
   // Participants' RPC client setup
   val upstreamClient:UpstreamParticipant = new UpstreamParticipantRestClient("http://localhost:" + usPort)
@@ -77,20 +83,25 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, date:DateTime, content:String) = {
-    upstream.addEntity(id, date, Placeholders.dummyLastUpdated, content)
-    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, date, Placeholders.dummyLastUpdated, versionForUpstream(content)))
+  def addAndNotifyUpstream(id:String, attributes:Seq[String], content:String) = {
+    upstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
+    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, attributes, Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, date:DateTime, content:String) = {
-    downstream.addEntity(id, date, Placeholders.dummyLastUpdated, content)
+  def addAndNotifyDownstream(id:String, attributes:Seq[String], content:String) = {
+    downstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, date, Placeholders.dummyLastUpdated, versionForDownstream(content)))
+        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, attributes, Placeholders.dummyLastUpdated, versionForDownstream(content)))
       case CorrelatedVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, date, Placeholders.dummyLastUpdated,
+        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, attributes, Placeholders.dummyLastUpdated,
           versionForUpstream(content), versionForDownstream(content)))
     }
   }
+
+  // TODO Maybe this can be accomplished using an implicit definition somewhere
+  def bizDate(d:DateTime) = Map("bizDate" -> d.toString())
+  def bizDateValues(d:DateTime) = Seq(d.toString())
+
 }
 
 abstract class VersionScheme {
