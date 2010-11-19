@@ -28,3 +28,6 @@ tools/target/*
 /*.ipr
 /*.7z
 /*.tmproj
+*/logs/
+/logs/
+akka.log
