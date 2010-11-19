@@ -67,5 +67,7 @@ class LuceneAttributeIndexerTest {
     assertEquals(1, byId1.length)
     assertEquals(id, byId1(0).id)
     assertEquals(value, byId1(0).terms(key))
+    val byId2 = indexer.query(ParticipantType.DOWNSTREAM, "id", id)
+    assertEquals(0, byId2.length)
   }
 }
