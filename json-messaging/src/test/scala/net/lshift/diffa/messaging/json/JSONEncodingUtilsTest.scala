@@ -21,9 +21,9 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.frontend.WireConstraint
 import scala.collection.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.frontend.{WireEvent, WireConstraint}
 
 class JSONEncodingUtilsTest {
 
@@ -74,6 +74,15 @@ class JSONEncodingUtilsTest {
     val deserialized = JSONEncodingUtils.deserialize(serialized)
     assertNotNull(deserialized)
     assertEquals(0, deserialized.length)
+  }
+
+  @Test
+  def wireEventRoundTrip = {
+    val event = WireEvent("baz", Map("foo" -> "bar"), List("a", "b", "c"))
+    val serialized = JSONEncodingUtils.serializeEvent(event)
+    val deserialized = JSONEncodingUtils.deserializeEvent(serialized)
+    assertNotNull(deserialized)
+    assertEquals(event, deserialized)
   }
 
   def compareDigests(expected:Digest, actual:Digest) = {

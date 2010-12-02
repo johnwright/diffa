@@ -27,7 +27,7 @@ import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONObject, JSONArray}
 import scala.collection.JavaConversions.asList
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.frontend.WireConstraint
+import net.lshift.diffa.kernel.frontend.{WireEvent, WireConstraint}
 
 /**
  * Standard utilities for JSON encoding.
@@ -66,6 +66,9 @@ object JSONEncodingUtils {
   def deserializeAggregateDigest(wire:String) : Seq[AggregateDigest] = {
     deserializeDigests(wire, false).asInstanceOf[Seq[AggregateDigest]]
   }
+
+  def deserializeEvent(wire:String) : WireEvent = mapper.readValue(wire, classOf[WireEvent])
+  def serializeEvent(event:WireEvent) = mapper.writeValueAsString(event)
 
   private def deserializeDigests(wire:String, readIdField:Boolean) : Seq[Digest] = {
 

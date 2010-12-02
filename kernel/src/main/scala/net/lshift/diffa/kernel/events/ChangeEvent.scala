@@ -27,19 +27,24 @@ abstract class ChangeEvent {
   def id:String
   def attributes:Seq[String]
   def lastUpdate:DateTime
+  def eventType:String
 }
 
 /**
  * Event indicating that a change has occurred within an upstream system.
  */
 case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
-  extends ChangeEvent
+  extends ChangeEvent {
+  def eventType = "upstream"
+}
 
 /**
  * Event indicating that a change has occurred within a downsteam system.
  */
 case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
-  extends ChangeEvent
+  extends ChangeEvent {
+  def eventType = "downstream-same"
+}
 
 /**
  * Event indicating that a correlatable change has occurred within a downstream system. A correlatable downstream
@@ -47,4 +52,6 @@ case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[Stri
  * downstream, but provides details on correlating the version information between the systems.
  */
 case class DownstreamCorrelatedChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
-  extends ChangeEvent
+  extends ChangeEvent {
+  def eventType = "downstream-correlated"
+}
