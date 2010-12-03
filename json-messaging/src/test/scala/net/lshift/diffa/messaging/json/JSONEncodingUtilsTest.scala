@@ -103,6 +103,15 @@ class JSONEncodingUtilsTest {
     assertEquals(id, deserialized)
   }
 
+  @Test
+  def bodyRequestRoundTrip = {
+    val id = "foobar"
+    val serialized = JSONEncodingUtils.serializeEntityBodyRequest(id)
+    val deserialized = JSONEncodingUtils.deserializeEntityBodyRequest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(id, deserialized)
+  }
+
   def compareDigests(expected:Digest, actual:Digest) = {
     // TODO Date comparison currnently fails because the chronology is wrong
     assertEquals(expected.lastUpdated.getMillis, actual.lastUpdated.getMillis)

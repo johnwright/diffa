@@ -60,6 +60,8 @@ object JSONEncodingUtils {
   def deserializeEntityContent(wire:String) = deserializeSimpleMap(wire, "content")
   def serializeEntityContentRequest(id:String) = serializeSimpleMap(id, "id")
   def deserializeEntityContentRequest(wire:String) = deserializeSimpleMap(wire, "id")
+  def serializeEntityBodyRequest(body:String) = serializeSimpleMap(body, "entityBody")
+  def deserializeEntityBodyRequest(wire:String) = deserializeSimpleMap(wire, "entityBody")
 
   def serialize(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
   def deserialize(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])

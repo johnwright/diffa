@@ -55,8 +55,7 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
 
   override protected val endpoints = commonEndpoints ++ Map(
     "generate_version" -> defineRpc((s:String) => s)(req => {
-      val reqObj = new JSONObject(req)
-      val response = downstream.generateVersion(reqObj.getString("entityBody"))
+      val response = downstream.generateVersion(deserializeEntityBodyRequest(req))
 
       val responseObj = new JSONObject
       responseObj.put("id", response.id)

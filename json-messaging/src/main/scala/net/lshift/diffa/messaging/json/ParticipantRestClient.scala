@@ -79,11 +79,8 @@ class UpstreamParticipantRestClient(root:String) extends ParticipantRestClient(r
  */
 class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient(root)
         with DownstreamParticipant {
-  override def generateVersion(entityBody: String): ProcessingResponse = {
-    val requestObj = new JSONObject
-    requestObj.put("entityBody", entityBody)
-
-    executeRpc("generate_version", requestObj.toString) match {
+  override def generateVersion(entityBody: String): ProcessingResponse = {    
+    executeRpc("generate_version", serializeEntityBodyRequest(entityBody)) match {
       case None    => null
       case Some(r) => {
         val responseObj = new JSONObject(r)
