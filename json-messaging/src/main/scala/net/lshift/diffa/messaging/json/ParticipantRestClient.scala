@@ -46,12 +46,11 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
 
     executeRpc("retrieve_content", requestObj.toString) match {
       case Some(r) => {
-        val jsonResponse = new JSONObject(r)
-        val s = jsonResponse.optString("content")
-        if (s.equals("")) {
+        val content = JSONEncodingUtils.deserializeEntityContent(r)
+        if (content.equals("")) {
           log.warn("Returning default value for id: " + identifier)
         }
-        s
+        content
       }
       case None => ""
     }

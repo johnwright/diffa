@@ -56,6 +56,14 @@ object JSONEncodingUtils {
     }
   }
 
+  def serializeEntityContent(content:String) = {
+    val node = mapper.createObjectNode
+    node.put("content", content)
+    node.toString()
+  }
+
+  def deserializeEntityContent(wire:String) = mapper.readTree(wire).get("content").getTextValue
+
   def serialize(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
   def deserialize(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])
 

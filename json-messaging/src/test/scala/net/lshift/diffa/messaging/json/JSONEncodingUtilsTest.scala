@@ -85,6 +85,21 @@ class JSONEncodingUtilsTest {
     assertEquals(event, deserialized)
   }
 
+  @Test
+  def contentRoundTrip = {
+    val content = "foobar"
+    val serialized = JSONEncodingUtils.serializeEntityContent(content)
+    val deserialized = JSONEncodingUtils.deserializeEntityContent(serialized)
+    assertNotNull(deserialized)
+    assertEquals(content, deserialized)
+  }
+
+  @Test
+  def idRequestRoundTrip = {
+    
+    ()
+  }
+
   def compareDigests(expected:Digest, actual:Digest) = {
     // TODO Date comparison currnently fails because the chronology is wrong
     assertEquals(expected.lastUpdated.getMillis, actual.lastUpdated.getMillis)
