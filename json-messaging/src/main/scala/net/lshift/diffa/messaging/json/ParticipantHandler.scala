@@ -38,9 +38,8 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
       json.put("output", result.output)
       json.toString
     }),
-    "retrieve_content" -> defineRpc((s:String) => s)(req => {
-      val reqObj = new JSONObject(req)
-      val content = participant.retrieveContent(reqObj.getString("id"))
+    "retrieve_content" -> defineRpc((s:String) => s)(req => {      
+      val content = participant.retrieveContent(deserializeEntityContentRequest(req))
       JSONEncodingUtils.serializeEntityContent(content)
     })
   )

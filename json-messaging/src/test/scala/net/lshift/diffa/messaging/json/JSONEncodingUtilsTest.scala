@@ -96,8 +96,11 @@ class JSONEncodingUtilsTest {
 
   @Test
   def idRequestRoundTrip = {
-    
-    ()
+    val id = "foobar"
+    val serialized = JSONEncodingUtils.serializeEntityContentRequest(id)
+    val deserialized = JSONEncodingUtils.deserializeEntityContentRequest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(id, deserialized)
   }
 
   def compareDigests(expected:Digest, actual:Digest) = {

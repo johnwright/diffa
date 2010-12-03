@@ -40,13 +40,10 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     }
   }
 
-  override def retrieveContent(identifier: String): String = {
-    val requestObj = new JSONObject
-    requestObj.put("id", identifier)
-
-    executeRpc("retrieve_content", requestObj.toString) match {
+  override def retrieveContent(identifier: String): String = {    
+    executeRpc("retrieve_content", serializeEntityContentRequest(identifier)) match {
       case Some(r) => {
-        val content = JSONEncodingUtils.deserializeEntityContent(r)
+        val content = deserializeEntityContent(r)
         if (content.equals("")) {
           log.warn("Returning default value for id: " + identifier)
         }
