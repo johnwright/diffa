@@ -23,7 +23,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import scala.collection.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.frontend.{WireEvent, WireConstraint}
+import net.lshift.diffa.kernel.frontend.{WireResponse, WireEvent, WireConstraint}
 
 class JSONEncodingUtilsTest {
 
@@ -110,6 +110,15 @@ class JSONEncodingUtilsTest {
     val deserialized = JSONEncodingUtils.deserializeEntityBodyRequest(serialized)
     assertNotNull(deserialized)
     assertEquals(id, deserialized)
+  }
+
+  @Test
+  def wireResponseRoundTrip = {
+    val response = WireResponse("foobar", "up", "down", List("a", "b", "c"))
+    val serialized = JSONEncodingUtils.serializeWireResponse(response)
+    val deserialized = JSONEncodingUtils.deserializeWireResponse(serialized)
+    assertNotNull(deserialized)
+    assertEquals(response, deserialized)
   }
 
   def compareDigests(expected:Digest, actual:Digest) = {

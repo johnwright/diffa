@@ -18,8 +18,8 @@ package net.lshift.diffa.participants
 
 import java.lang.String
 import java.io.File
-import net.lshift.diffa.kernel.participants.{ProcessingResponse, DownstreamParticipant}
-import net.lshift.diffa.kernel.events.{VersionID, DownstreamChangeEvent}
+import net.lshift.diffa.kernel.participants.DownstreamParticipant
+import net.lshift.diffa.kernel.events.DownstreamChangeEvent
 
 /**
  * Downstream participant implementation backed off the filesystem.

@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.JSONObject
 import JSONEncodingUtils._
 import collection.mutable.ListBuffer
+import net.lshift.diffa.kernel.frontend.WireResponse._
 
 /**
  * Rest client for participant communication.
@@ -82,18 +83,7 @@ class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient
   override def generateVersion(entityBody: String): ProcessingResponse = {    
     executeRpc("generate_version", serializeEntityBodyRequest(entityBody)) match {
       case None    => null
-      case Some(r) => {
-        val responseObj = new JSONObject(r)
-        val attributes = new ListBuffer[String]
-        val attributeArray = responseObj.getJSONArray("attributes")
-        for (val i <- 0 to attributeArray.length - 1) {
-          attributes += attributeArray.getString(i)
-        }
-        ProcessingResponse(
-          responseObj.getString("id"),
-          attributes,
-          responseObj.getString("uvsn"), responseObj.getString("dvsn"))
-      }
+      case Some(r) => fromWire(deserializeWireResponse(r))
     }
   }
 }

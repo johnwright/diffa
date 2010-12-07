@@ -21,6 +21,7 @@ import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import scala.collection.JavaConversions._
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.ConstraintRegistry
+import net.lshift.diffa.kernel.frontend.WireResponse._
 
 /**
  * Handler for participants being queried via JSON.
@@ -56,13 +57,7 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
   override protected val endpoints = commonEndpoints ++ Map(
     "generate_version" -> defineRpc((s:String) => s)(req => {
       val response = downstream.generateVersion(deserializeEntityBodyRequest(req))
-
-      val responseObj = new JSONObject
-      responseObj.put("id", response.id)
-      responseObj.put("attributes", asList(response.attributes))
-      responseObj.put("uvsn", response.uvsn)
-      responseObj.put("dvsn", response.dvsn)
-      responseObj.toString
+      serializeWireResponse(toWire(response))
     })
   )
 }
