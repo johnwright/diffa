@@ -17,7 +17,6 @@
 package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
-import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import scala.collection.JavaConversions._
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.ConstraintRegistry
@@ -33,12 +32,10 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(unpack(wire)))),
     "invoke" -> defineRpc((s:String) => s)(r => {
       val request = deserializeActionRequest(r)
-      val result = participant.invoke(request.actionId, request.entityId)
-      serializeActionResult(result)      
+      serializeActionResult(participant.invoke(request.actionId, request.entityId))
     }),
     "retrieve_content" -> defineRpc((s:String) => s)(req => {      
-      val content = participant.retrieveContent(deserializeEntityContentRequest(req))
-      JSONEncodingUtils.serializeEntityContent(content)
+      serializeEntityContent(participant.retrieveContent(deserializeEntityContentRequest(req)))
     })
   )
 
