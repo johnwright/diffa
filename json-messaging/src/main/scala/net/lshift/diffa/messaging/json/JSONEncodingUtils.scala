@@ -56,11 +56,13 @@ object JSONEncodingUtils {
     }
   }
 
-  def serializeEntityContent(content:String) = serializeSimpleMap(content, "content")
+  def serializeSimpleMessage(content:String) = serializeSimpleMap("message", content)
+
+  def serializeEntityContent(content:String) = serializeSimpleMap("content", content)
   def deserializeEntityContent(wire:String) = deserializeSimpleMap(wire, "content")
-  def serializeEntityContentRequest(id:String) = serializeSimpleMap(id, "id")
+  def serializeEntityContentRequest(id:String) = serializeSimpleMap("id", id)
   def deserializeEntityContentRequest(wire:String) = deserializeSimpleMap(wire, "id")
-  def serializeEntityBodyRequest(body:String) = serializeSimpleMap(body, "entityBody")
+  def serializeEntityBodyRequest(body:String) = serializeSimpleMap("entityBody", body)
   def deserializeEntityBodyRequest(wire:String) = deserializeSimpleMap(wire, "entityBody")
 
   def deserializeWireResponse(wire:String) = mapper.readValue(wire, classOf[WireResponse])
@@ -135,7 +137,7 @@ object JSONEncodingUtils {
 
   private def deserializeSimpleMap(wire:String, id:String) = mapper.readTree(wire).get(id).getTextValue
 
-  private def serializeSimpleMap(content:String, id:String) = {
+  private def serializeSimpleMap(id:String, content:String) = {
     val node = mapper.createObjectNode
     node.put(id, content)
     node.toString()
