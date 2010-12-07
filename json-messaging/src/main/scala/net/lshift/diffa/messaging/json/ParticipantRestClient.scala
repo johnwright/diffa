@@ -21,6 +21,7 @@ import org.codehaus.jettison.json.JSONObject
 import JSONEncodingUtils._
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.frontend.WireResponse._
+import net.lshift.diffa.kernel.frontend.{ActionInvocation, InvocationResult}
 
 /**
  * Rest client for participant communication.
@@ -54,15 +55,9 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     }
   }
 
-  override def invoke(actionId:String, entityId:String) : ActionResult = {
-    val request = new JSONObject
-    request.put("actionId", actionId)
-    request.put("entityId", entityId)
-    executeRpc("invoke", request.toString) match {
-      case Some(r) => {
-        val json = new JSONObject(r)
-        ActionResult(json.getString("result"),json.getString("output"))
-      }
+  override def invoke(actionId:String, entityId:String) : InvocationResult = {
+    executeRpc("invoke", serializeActionRequest(ActionInvocation(actionId, entityId))) match {
+      case Some(r) => deserializeActionResult(r)
       case None    => null
     }
   }

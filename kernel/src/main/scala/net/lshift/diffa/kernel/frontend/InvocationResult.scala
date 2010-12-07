@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.participants
+package net.lshift.diffa.kernel.frontend
 
 import reflect.BeanProperty
 
 /**
  * This encapsulates the result of invoking an action against a participant
  */
-case class ActionResult (
+case class InvocationResult (
   @BeanProperty var result:String,
   @BeanProperty var output:String) {
 

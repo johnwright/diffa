@@ -20,7 +20,7 @@ import support.TestEnvironment
 import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.kernel.client.ActionRequest
+import net.lshift.diffa.kernel.client.ActionableRequest
 
 trait CommonActionTests {
 
@@ -42,7 +42,7 @@ trait CommonActionTests {
     env.upstream.addEntity(entityId, env.bizDateValues(yesterday), yesterday, "abcdef")
     val pairKey = env.pairKey
     val actionId = "resend"    
-    val request = ActionRequest(pairKey, actionId, entityId)
+    val request = ActionableRequest(pairKey, actionId, entityId)
     val response = env.actionsClient.invoke(request)
     assertNotNull(response)
     assertEquals("success", response.result)    

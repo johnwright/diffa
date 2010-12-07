@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import collection.mutable.HashMap
 import net.lshift.diffa.kernel.differencing.DigestBuilder
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.frontend.InvocationResult
 
 /**
  * Base class for test participants.
@@ -60,15 +61,15 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
     case None => null
   }
 
-  def invoke(actionId:String, entityId:String) : ActionResult = {
+  def invoke(actionId:String, entityId:String) : InvocationResult = {
     actionId match {
       case "resend" => {
         entities.contains(entityId) match {
-          case true  => ActionResult("success", entities(entityId).toString)
-          case false => ActionResult("error", "Unknown Entity:" + entityId)
+          case true  => InvocationResult("success", entities(entityId).toString)
+          case false => InvocationResult("error", "Unknown Entity:" + entityId)
         }
       }
-      case _        => ActionResult("error", "Unknown action:" + actionId)
+      case _        => InvocationResult("error", "Unknown action:" + actionId)
     }
   }
   

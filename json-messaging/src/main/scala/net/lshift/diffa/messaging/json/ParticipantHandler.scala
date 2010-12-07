@@ -32,12 +32,9 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     "query_aggregate_digests" -> skeleton(wire => serializeDigests(participant.queryAggregateDigests(unpack(wire)))),
     "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(unpack(wire)))),
     "invoke" -> defineRpc((s:String) => s)(r => {
-      val request = new JSONObject(r)
-      val result = participant.invoke(request.getString("actionId"),request.getString("entityId"))
-      val json = new JSONObject
-      json.put("result", result.result)
-      json.put("output", result.output)
-      json.toString
+      val request = deserializeActionRequest(r)
+      val result = participant.invoke(request.actionId, request.entityId)
+      serializeActionResult(result)      
     }),
     "retrieve_content" -> defineRpc((s:String) => s)(req => {      
       val content = participant.retrieveContent(deserializeEntityContentRequest(req))

@@ -27,7 +27,7 @@ import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONObject, JSONArray}
 import scala.collection.JavaConversions.asList
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.frontend.{WireResponse, WireEvent, WireConstraint}
+import net.lshift.diffa.kernel.frontend._
 
 /**
  * Standard utilities for JSON encoding.
@@ -65,6 +65,11 @@ object JSONEncodingUtils {
 
   def deserializeWireResponse(wire:String) = mapper.readValue(wire, classOf[WireResponse])
   def serializeWireResponse(response:WireResponse) = mapper.writeValueAsString(response)
+
+  def deserializeActionResult(wire:String) = mapper.readValue(wire, classOf[InvocationResult])
+  def serializeActionResult(response:InvocationResult) = mapper.writeValueAsString(response)
+  def deserializeActionRequest(wire:String) = mapper.readValue(wire, classOf[ActionInvocation])
+  def serializeActionRequest(response:ActionInvocation) = mapper.writeValueAsString(response)
 
   def serialize(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
   def deserialize(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])

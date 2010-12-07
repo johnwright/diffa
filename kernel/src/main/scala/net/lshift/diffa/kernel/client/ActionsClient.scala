@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.client
 
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.participants.ActionResult
+import net.lshift.diffa.kernel.frontend.InvocationResult
 
 
 /**
@@ -33,11 +33,11 @@ trait ActionsClient {
   /**
    * Invokes an action against a pairing
    */
-  def invoke(request:ActionRequest) : ActionResult
+  def invoke(request:ActionableRequest) : InvocationResult
   
 }
 
-case class ActionRequest (
+case class ActionableRequest (
   @BeanProperty var pairKey:String,
   @BeanProperty var actionId:String,
   @BeanProperty var entityId:String) {
