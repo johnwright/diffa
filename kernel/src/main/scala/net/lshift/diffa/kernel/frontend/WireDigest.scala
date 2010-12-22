@@ -42,7 +42,7 @@ object WireDigest {
 
   val dateParser = ISODateTimeFormat.dateTimeParser
 
-  def digest(d:Digest) = {
+  def toWire(d:Digest) = {
     val base = collection.immutable.Map(
       LAST_UPDATED -> d.lastUpdated.toString(),
       DIGEST -> d.digest

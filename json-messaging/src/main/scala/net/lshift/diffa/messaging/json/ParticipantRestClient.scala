@@ -27,19 +27,11 @@ import net.lshift.diffa.kernel.frontend.{WireDigest, ActionInvocation, Invocatio
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
-  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    executeRpc("query_entity_versions", pack(constraints)) match {
-      case Some(r) => unpack(deserializeDigests(r))
-      case None    => Seq()
-    }
-  }
+  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
+    = queryDigests(constraints, "query_entity_versions")
 
-  override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    executeRpc("query_aggregate_digests", pack(constraints)) match {
-      case Some(r) => unpack(deserializeDigests(r))
-      case None    => Seq()
-    }
-  }
+  override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
+    = queryDigests(constraints, "query_aggregate_digests")
 
   override def retrieveContent(identifier: String): String = {    
     executeRpc("retrieve_content", serializeEntityContentRequest(identifier)) match {
@@ -58,6 +50,13 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     executeRpc("invoke", serializeActionRequest(ActionInvocation(actionId, entityId))) match {
       case Some(r) => deserializeActionResult(r)
       case None    => null
+    }
+  }
+
+  private def queryDigests[T <: Digest](constraints:Seq[QueryConstraint], endpoint:String) : Seq[T] = {
+    executeRpc(endpoint, pack(constraints)) match {
+      case Some(r) => unpack(deserializeDigests(r))
+      case None    => Seq()
     }
   }
 

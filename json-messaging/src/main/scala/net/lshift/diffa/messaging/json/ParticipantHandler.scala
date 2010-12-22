@@ -21,7 +21,7 @@ import scala.collection.JavaConversions._
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.ConstraintRegistry
 import net.lshift.diffa.kernel.frontend.WireResponse._
-import net.lshift.diffa.kernel.frontend.WireDigest._
+import net.lshift.diffa.kernel.frontend.WireDigest
 
 /**
  * Handler for participants being queried via JSON.
@@ -42,7 +42,7 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
 
   private def unpack(wire:String) = deserialize(wire).map(ConstraintRegistry.resolve(_))
 
-  private def pack(digests:Seq[Digest]) = digests.map(digest(_))
+  private def pack(digests:Seq[Digest]) = digests.map(WireDigest.toWire(_))
 
   private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
 
