@@ -34,7 +34,7 @@
     <jetty.version>7.1.6.v20100715</jetty.version>
     <rabbitmq.version>1.8.0</rabbitmq.version>
     <jersey.version>1.4-ea06</jersey.version>
-    <jackson.version>1.6.2</jackson.version>
+    <jackson.version>1.6.4</jackson.version>
     <lucene.version>3.0.2</lucene.version>
   </properties>
     
