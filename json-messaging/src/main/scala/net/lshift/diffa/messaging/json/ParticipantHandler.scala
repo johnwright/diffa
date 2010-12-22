@@ -19,9 +19,9 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import scala.collection.JavaConversions._
 import JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.ConstraintRegistry
-import net.lshift.diffa.kernel.frontend.WireResponse._
-import net.lshift.diffa.kernel.frontend.WireDigest
+import net.lshift.diffa.kernel.frontend.wire.ConstraintRegistry
+import net.lshift.diffa.kernel.frontend.wire.WireResponse._
+import net.lshift.diffa.kernel.frontend.wire.WireDigest
 
 /**
  * Handler for participants being queried via JSON.

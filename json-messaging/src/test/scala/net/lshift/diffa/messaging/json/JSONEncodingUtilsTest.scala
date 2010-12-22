@@ -23,8 +23,8 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import scala.collection.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.frontend._
-import net.lshift.diffa.kernel.frontend.WireDigest._
+import net.lshift.diffa.kernel.frontend.wire._
+import net.lshift.diffa.kernel.frontend.wire.WireDigest._
 
 class JSONEncodingUtilsTest {
 

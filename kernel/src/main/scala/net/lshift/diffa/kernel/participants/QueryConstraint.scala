@@ -17,8 +17,8 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.frontend.WireConstraint
-import net.lshift.diffa.kernel.frontend.WireConstraint._
+import net.lshift.diffa.kernel.frontend.wire.WireConstraint
+import net.lshift.diffa.kernel.frontend.wire.WireConstraint._
 import scala.collection.Map
 import scala.collection.JavaConversions._
 

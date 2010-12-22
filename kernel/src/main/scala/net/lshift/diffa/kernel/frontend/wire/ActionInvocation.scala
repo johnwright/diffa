@@ -1,3 +1,5 @@
+package net.lshift.diffa.kernel.frontend.wire
+
 /**
  * Copyright (C) 2010 LShift Ltd.
  *
@@ -14,16 +16,14 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.frontend
-
 import reflect.BeanProperty
 
 /**
- * This encapsulates the result of invoking an action against a participant
+ * This is the wire format for invoking an action against a participant
  */
-case class InvocationResult (
-  @BeanProperty var result:String,
-  @BeanProperty var output:String) {
+case class ActionInvocation (
+  @BeanProperty var actionId:String,
+  @BeanProperty var entityId:String) {
 
   def this() = this(null, null)
 

@@ -19,8 +19,8 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import JSONEncodingUtils._
 import collection.mutable.ListBuffer
-import net.lshift.diffa.kernel.frontend.WireResponse._
-import net.lshift.diffa.kernel.frontend.{WireDigest, ActionInvocation, InvocationResult}
+import net.lshift.diffa.kernel.frontend.wire.WireResponse._
+import net.lshift.diffa.kernel.frontend.wire.{WireDigest, ActionInvocation, InvocationResult}
 
 /**
  * Rest client for participant communication.

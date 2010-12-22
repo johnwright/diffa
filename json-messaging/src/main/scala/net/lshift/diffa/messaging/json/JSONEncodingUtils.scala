@@ -17,7 +17,7 @@
 package net.lshift.diffa.messaging.json
 
 import org.codehaus.jackson.map.ObjectMapper
-import net.lshift.diffa.kernel.frontend._
+import net.lshift.diffa.kernel.frontend.wire._
 
 /**
  * Standard utilities for JSON encoding.

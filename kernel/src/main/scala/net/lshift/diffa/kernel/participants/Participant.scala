@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import java.io.Closeable
-import net.lshift.diffa.kernel.frontend.InvocationResult
+import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
 /**
  * Trait supported by various RPC bindings providing communications with participants.

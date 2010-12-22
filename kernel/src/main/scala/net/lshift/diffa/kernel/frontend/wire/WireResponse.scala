@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.frontend
+package net.lshift.diffa.kernel.frontend.wire
 
 import reflect.BeanProperty
 import java.util.List

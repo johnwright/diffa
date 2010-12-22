@@ -19,7 +19,7 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.frontend.Changes
 import JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.EventRegistry._
+import net.lshift.diffa.kernel.frontend.wire.EventRegistry._
 
 /**
  * JSON protocol handler for change requests.

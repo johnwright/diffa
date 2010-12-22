@@ -22,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient, Actionable}
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
-import net.lshift.diffa.kernel.frontend.InvocationResult
+import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
 @Path("/actions")
 @Component

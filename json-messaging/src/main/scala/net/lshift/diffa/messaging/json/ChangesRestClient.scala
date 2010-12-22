@@ -19,7 +19,7 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.client.ChangesClient
 import net.lshift.diffa.kernel.events.{UpstreamChangeEvent, DownstreamChangeEvent, DownstreamCorrelatedChangeEvent, ChangeEvent}
 import JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.WireEvent._
+import net.lshift.diffa.kernel.frontend.wire.WireEvent._
 
 /**
  * JSON-over-REST client for the changes endpoint.

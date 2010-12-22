@@ -22,7 +22,7 @@ import org.joda.time.DateTime
 import collection.mutable.HashMap
 import net.lshift.diffa.kernel.differencing.DigestBuilder
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.frontend.InvocationResult
+import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
 /**
  * Base class for test participants.

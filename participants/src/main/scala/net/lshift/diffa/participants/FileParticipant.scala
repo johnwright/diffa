@@ -25,7 +25,7 @@ import collection.mutable.{HashMap, ListBuffer}
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.differencing.DigestBuilder
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.frontend.InvocationResult
+import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
 /**
  * Basic functionality requried for a file-based participant.
