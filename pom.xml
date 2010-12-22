@@ -34,7 +34,7 @@
     <jetty.version>7.1.6.v20100715</jetty.version>
     <rabbitmq.version>1.8.0</rabbitmq.version>
     <jersey.version>1.4-ea06</jersey.version>
-    <jackson.version>1.5.6</jackson.version>
+    <jackson.version>1.6.2</jackson.version>
     <lucene.version>3.0.2</lucene.version>
   </properties>
     
@@ -174,6 +174,16 @@
       <groupId>se.scalablesolutions.akka</groupId>
       <artifactId>akka-core_2.8.0</artifactId>
       <version>0.10</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-mapper-asl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.codehaus.jackson</groupId>
+          <artifactId>jackson-core-asl</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>net.jcip</groupId>

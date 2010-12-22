@@ -21,6 +21,7 @@ import scala.collection.JavaConversions._
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.ConstraintRegistry
 import net.lshift.diffa.kernel.frontend.WireResponse._
+import net.lshift.diffa.kernel.frontend.WireDigest._
 
 /**
  * Handler for participants being queried via JSON.
@@ -28,8 +29,8 @@ import net.lshift.diffa.kernel.frontend.WireResponse._
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton(wire => serializeDigests(participant.queryAggregateDigests(unpack(wire)))),
-    "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(unpack(wire)))),
+    "query_aggregate_digests" -> skeleton(wire => serializeDigests(pack(participant.queryAggregateDigests(unpack(wire))))),
+    "query_entity_versions" -> skeleton(wire => serializeDigests(pack(participant.queryEntityVersions(unpack(wire))))),
     "invoke" -> defineRpc((s:String) => s)(r => {
       val request = deserializeActionRequest(r)
       serializeActionResult(participant.invoke(request.actionId, request.entityId))
@@ -40,6 +41,8 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
   )
 
   private def unpack(wire:String) = deserialize(wire).map(ConstraintRegistry.resolve(_))
+
+  private def pack(digests:Seq[Digest]) = digests.map(digest(_))
 
   private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
 

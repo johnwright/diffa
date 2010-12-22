@@ -24,29 +24,24 @@ import net.lshift.diffa.kernel.participants._
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend._
+import net.lshift.diffa.kernel.frontend.WireDigest._
 
 class JSONEncodingUtilsTest {
 
+  def time() = new DateTime().toString()
+
   @Test
   def aggregateDigestRoundTrip() = {
-    val d1 = AggregateDigest(Seq("foo","bar"), new DateTime, "digest1")
-    val d2 = AggregateDigest(Seq("baz","who"), new DateTime, "digest2")
-    val serialized = JSONEncodingUtils.serializeDigests(Seq(d1,d2))
-    val deserialized = JSONEncodingUtils.deserializeAggregateDigest(serialized)
-    assertNotNull(deserialized)
-    assertEquals(2, deserialized.length)
-    (Seq(d1,d2), deserialized).zip.foreach(x=> compareDigests(x._1,x._2))
+    val d1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1"), Seq("foo","bar"))
+    val d2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2"), Seq("baz","who"))
+    digestRoundTrip(d1,d2)
   }
 
   @Test
   def entityVersionRoundTrip() = {
-    val v1 = EntityVersion("id1", Seq("foo","bar"), new DateTime, "digest1")
-    val v2 = EntityVersion("id2", Seq("baz","who"), new DateTime, "digest2")
-    val serialized = JSONEncodingUtils.serializeDigests(Seq(v1,v2))
-    val deserialized = JSONEncodingUtils.deserializeEntityVersions(serialized)
-    assertNotNull(deserialized)
-    assertEquals(2, deserialized.length)
-    (Seq(v1,v2), deserialized).zip.foreach(x=> compareVersions(x._1,x._2))
+    val v1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1", "id" -> "id1"), Seq("foo","bar"))
+    val v2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2", "id" -> "id2"), Seq("baz","who"))
+    digestRoundTrip(v1,v2)
   }
 
   @Test
@@ -139,15 +134,21 @@ class JSONEncodingUtilsTest {
     assertEquals(response, deserialized)
   }
 
-  def compareDigests(expected:Digest, actual:Digest) = {
-    // TODO Date comparison currnently fails because the chronology is wrong
-    assertEquals(expected.lastUpdated.getMillis, actual.lastUpdated.getMillis)
-    assertEquals(expected.digest, actual.digest)
-    (expected.attributes, actual.attributes).zip.foreach(x=> assertEquals(x._1,x._2))
+  def digestRoundTrip(d1:WireDigest, d2:WireDigest) = {
+    val serialized = JSONEncodingUtils.serializeDigests(Seq(d1,d2))
+    val deserialized = JSONEncodingUtils.deserializeDigests(serialized)
+    assertNotNull(deserialized)
+    assertEquals(2, deserialized.length)
+    (Seq(d1,d2), deserialized).zip.foreach(x=> compareDigests(x._1,x._2))
   }
 
-  def compareVersions(expected:EntityVersion, actual:EntityVersion) = {
-    assertEquals(expected.id, actual.id)
-    compareDigests(expected, actual)
+  def compareDigests(expected:WireDigest, actual:WireDigest) = {
+    assertEquals(expected.metadata(LAST_UPDATED), actual.metadata(LAST_UPDATED))
+    assertEquals(expected.metadata(DIGEST), actual.metadata(DIGEST))
+    (expected.attributes, actual.attributes).zip.foreach(x=> assertEquals(x._1,x._2))
+    if (expected.metadata.containsKey(ID)) {
+      assertEquals(expected.metadata(ID), actual.metadata(ID))
+    }
   }
+
 }

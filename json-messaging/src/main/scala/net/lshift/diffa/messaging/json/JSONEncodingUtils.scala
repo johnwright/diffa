@@ -18,10 +18,7 @@ package net.lshift.diffa.messaging.json
 
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.DateTime
-import org.codehaus.jackson.map.ser.CustomSerializerFactory
-import org.codehaus.jackson.map._
-import deser.{StdDeserializerProvider, CustomDeserializerFactory}
-import org.codehaus.jackson.{JsonToken, JsonParser, JsonGenerator}
+import org.codehaus.jackson.map.ObjectMapper
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.participants._
 import org.codehaus.jettison.json.{JSONObject, JSONArray}
@@ -76,17 +73,23 @@ object JSONEncodingUtils {
   def serialize(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
   def deserialize(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])
 
-  def deserializeEntityVersions(wire:String) : Seq[EntityVersion] = {
-    deserializeDigests(wire, true).asInstanceOf[Seq[EntityVersion]]
-  }
+  def deserializeDigests(wire:String) : Seq[WireDigest] = mapper.readValue(wire, classOf[Array[WireDigest]])
+  def serializeDigests(digests:Seq[WireDigest]) : String = mapper.writeValueAsString(digests.toArray)
 
-  def deserializeAggregateDigest(wire:String) : Seq[AggregateDigest] = {
-    deserializeDigests(wire, false).asInstanceOf[Seq[AggregateDigest]]
-  }
+//  @Deprecated
+//  def deserializeEntityVersions(wire:String) : Seq[EntityVersion] = {
+//    deserializeDigests(wire, true).asInstanceOf[Seq[EntityVersion]]
+//  }
+//
+//  @Deprecated
+//  def deserializeAggregateDigest(wire:String) : Seq[AggregateDigest] = {
+//    deserializeDigests(wire, false).asInstanceOf[Seq[AggregateDigest]]
+//  }
 
   def deserializeEvent(wire:String) : WireEvent = mapper.readValue(wire, classOf[WireEvent])
   def serializeEvent(event:WireEvent) = mapper.writeValueAsString(event)
 
+  @Deprecated
   private def deserializeDigests(wire:String, readIdField:Boolean) : Seq[Digest] = {
 
     log.debug("Attempting to deserialize: " + wire)
@@ -113,25 +116,25 @@ object JSONEncodingUtils {
     buffer
   }
 
-  def serializeDigests(digests:Seq[Digest]) : String = {
-    log.debug("About to serialize: " + digests)
-    val digestArray = new JSONArray
-    digests.foreach(d => {
-      val digestObject = new JSONObject
-
-      if (d.isInstanceOf[EntityVersion]) {
-        digestObject.put("id", d.asInstanceOf[EntityVersion].id)
-      }
-
-      digestObject.put("attributes", asList(d.attributes))
-      digestObject.put("lastUpdated", d.lastUpdated)
-      digestObject.put("digest", d.digest)
-      digestArray.put(digestObject)
-    })
-    val wire = digestArray.toString
-    log.debug("Writing to wire: " + wire)
-    wire
-  }
+//  def __serializeDigests(digests:Seq[Digest]) : String = {
+//    log.debug("About to serialize: " + digests)
+//    val digestArray = new JSONArray
+//    digests.foreach(d => {
+//      val digestObject = new JSONObject
+//
+//      if (d.isInstanceOf[EntityVersion]) {
+//        digestObject.put("id", d.asInstanceOf[EntityVersion].id)
+//      }
+//
+//      digestObject.put("attributes", asList(d.attributes))
+//      digestObject.put("lastUpdated", d.lastUpdated)
+//      digestObject.put("digest", d.digest)
+//      digestArray.put(digestObject)
+//    })
+//    val wire = digestArray.toString
+//    log.debug("Writing to wire: " + wire)
+//    wire
+//  }
 
   // Internal plumbing
 

@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.participants._
 import JSONEncodingUtils._
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.frontend.WireResponse._
-import net.lshift.diffa.kernel.frontend.{ActionInvocation, InvocationResult}
+import net.lshift.diffa.kernel.frontend.{WireDigest, ActionInvocation, InvocationResult}
 
 /**
  * Rest client for participant communication.
@@ -29,14 +29,14 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
 
   override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     executeRpc("query_entity_versions", pack(constraints)) match {
-      case Some(r) => deserializeEntityVersions(r)
+      case Some(r) => unpack(deserializeDigests(r))
       case None    => Seq()
     }
   }
 
   override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
     executeRpc("query_aggregate_digests", pack(constraints)) match {
-      case Some(r) => deserializeAggregateDigest(r)
+      case Some(r) => unpack(deserializeDigests(r))
       case None    => Seq()
     }
   }
@@ -62,6 +62,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
   }
 
   private def pack(seq:Seq[QueryConstraint]) = serialize(seq.map(_.wireFormat))
+  private def unpack[T](seq:Seq[WireDigest]) = seq.map(WireDigest.fromWire(_).asInstanceOf[T])
 }
 
 /**
