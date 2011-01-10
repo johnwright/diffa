@@ -17,11 +17,14 @@
 -->
 
 <beans xmlns="http://www.springframework.org/schema/beans"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
         http://www.springframework.org/schema/security
-        http://www.springframework.org/schema/security/spring-security-2.0.1.xsd">
+        http://www.springframework.org/schema/security/spring-security-2.0.1.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
   <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
     <property name="properties">
@@ -31,12 +34,12 @@
     </property>
   </bean>
 
-  <bean id="configClient" class="net.lshift.diffa.tools.client.ConfigurationRestClient">
-      <constructor-arg>
-          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-            <property name="jndiName" value="java:comp/env/agentUrl"/>
-          </bean>
-      </constructor-arg>
+  <bean id="configClient" class="net.lshift.diffa.util.SpringConfigurationRestClient">
+    <constructor-arg>
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName" value="java:comp/env/agentUrl"/>
+      </bean>
+    </constructor-arg>
   </bean>
 
   <bean id="declareGroup" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
@@ -79,7 +82,7 @@
 
   <bean id="declarePair" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient"/>
-    <property name="targetMethod" value="declarePair"/>
+    <property name="targetMethod" value="declarePairSpring"/>
     <property name="arguments">
       <list>
         <value>${demo.pair.key}</value>
@@ -88,6 +91,9 @@
         <value>${demo.upstreamName}</value>
         <value>${demo.downstreamName}</value>
         <value>${demo.group}</value>
+        <util:map map-class="java.util.TreeMap">
+          <entry key="DUMMY_KEY" value="DUMMY_VALUE" />
+        </util:map>
       </list>
     </property>
   </bean>
