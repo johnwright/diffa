@@ -23,10 +23,10 @@ import java.net.{HttpURLConnection, URL}
 class SpringConfigTest {
 
   @Test
-  def testHttpResponseOK {
+  def demoAppShouldRespondOK {
     val url = new URL("http://localhost:19293/participant-demo/")
     val responseCode = url.openConnection match {
-      case conn: HttpURLConnection => conn.getResponseCode()
+      case conn: HttpURLConnection => conn.getResponseCode
     }
     assertEquals("Participants app did not respond OK", 200, responseCode)
   }
