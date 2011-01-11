@@ -81,10 +81,5 @@
     <url-pattern>/</url-pattern>
   </servlet-mapping>
 
-  <env-entry>
-    <env-entry-name>agentUrl</env-entry-name>
-    <env-entry-type>java.lang.String</env-entry-type>
-    <env-entry-value>http://localhost:19093/diffa-agent</env-entry-value>
-  </env-entry>
 </web-app>
 

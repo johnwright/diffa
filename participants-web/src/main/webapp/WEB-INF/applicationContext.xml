@@ -35,11 +35,7 @@
   </bean>
 
   <bean id="configClient" class="net.lshift.diffa.util.SpringConfigurationRestClient">
-    <constructor-arg>
-      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-        <property name="jndiName" value="java:comp/env/agentUrl"/>
-      </bean>
-    </constructor-arg>
+    <constructor-arg value="${demo.agentUrl}" />
   </bean>
 
   <bean id="declareGroup" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
@@ -100,19 +96,11 @@
 
   <bean id="upstreamPart" class="net.lshift.diffa.participants.UpstreamWebParticipant">
     <constructor-arg value="a" />
-    <constructor-arg>
-      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-        <property name="jndiName" value="java:comp/env/agentUrl"/>
-      </bean>
-    </constructor-arg>
+    <constructor-arg value="${demo.agentUrl}" />
   </bean>
   <bean id="downstreamPart" class="net.lshift.diffa.participants.DownstreamWebParticipant">
     <constructor-arg value="b" />
-    <constructor-arg>
-      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-        <property name="jndiName" value="java:comp/env/agentUrl"/>
-      </bean>
-    </constructor-arg>
+    <constructor-arg value="${demo.agentUrl}" />
   </bean>
 
   <bean id="upstreamRequestHandler" class="net.lshift.diffa.participants.web.ParticipantRequestHandler">

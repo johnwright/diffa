@@ -75,6 +75,11 @@
       <version>2.5</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -115,6 +120,10 @@
               <name>demo.basedir</name>
               <value>${basedir}</value>
             </systemProperty>
+            <systemProperty>
+              <name>demo.agentUrl</name>
+              <value>http://localhost:19093/diffa-agent</value>
+            </systemProperty>
           </systemProperties>
           <connectors>
             <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
@@ -139,8 +148,24 @@
               <goal>run</goal>
             </goals>
             <configuration>
+              <jettyConfig>${basedir}/src/test/conf/jetty-test.xml</jettyConfig>
+              <webAppXml>${basedir}/src/test/conf/jetty-env.xml</webAppXml>
               <scanIntervalSeconds>0</scanIntervalSeconds>
               <daemon>true</daemon>
+              <systemProperties>
+                <systemProperty>
+                  <name>demo.basedir</name>
+                  <value>${basedir}</value>
+                </systemProperty>
+                <systemProperty>
+                  <name>diffa.maildir</name>
+                  <value>${basedir}/../agent/target/messages</value>
+                </systemProperty>
+                <systemProperty>
+                  <name>demo.agentUrl</name>
+                  <value>http://localhost:19293/diffa-agent</value>
+                </systemProperty>
+              </systemProperties>
             </configuration>
           </execution>
           <execution>
