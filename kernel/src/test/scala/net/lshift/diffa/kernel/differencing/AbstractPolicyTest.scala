@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,19 +120,19 @@ abstract class AbstractPolicyTest {
         Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2"),
         Up(VersionID(abPair, "id3"), JUL_8_2010_1, "vsn3")))
-    expectUpstreamAggregateSync(abPair, List(dateRangeConstaint(START_2010, END_2010, monthly)),
+    expectUpstreamAggregateSync(abPair, List(dateRangeConstraint(START_2010, END_2010, monthly)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
       VersionsFromStore(
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2"),
         Up(VersionID(abPair, "id3"), JUL_8_2010_1, "vsn3")))
-    expectUpstreamAggregateSync(abPair, List(dateRangeConstaint(JUL_2010, END_JUL_2010, daily)),
+    expectUpstreamAggregateSync(abPair, List(dateRangeConstraint(JUL_2010, END_JUL_2010, daily)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
       VersionsFromStore(
         Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2"),
         Up(VersionID(abPair, "id3"), JUL_8_2010_1, "vsn3")))
-    expectUpstreamEntitySync(abPair, List(dateRangeConstaint(JUL_8_2010, endOfDay(JUL_8_2010), individual)),
+    expectUpstreamEntitySync(abPair, List(dateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), individual)),
       DigestsFromParticipant(
         EntityVersion("id2", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, "vsn2new"),
         EntityVersion("id4", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, "vsn4")),

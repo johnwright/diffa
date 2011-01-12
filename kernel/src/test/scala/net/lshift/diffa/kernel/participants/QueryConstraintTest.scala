@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ class QueryConstraintTest {
   @Test
   def shouldQueryForEntities = {
 
-    val constaint = ListQueryConstraint("foo", FirstCategoryFunction("abc", "def"), Seq())
-    val queryAction = constaint.nextQueryAction("bar", false).get
+    val constraint = ListQueryConstraint("foo", FirstCategoryFunction("abc", "def"), Seq())
+    val queryAction = constraint.nextQueryAction("bar", false).get
 
     assertEquals(
       EntityQueryAction(ListQueryConstraint("foo", IndividualCategoryFunction, Seq("abc", "def"))),
@@ -36,8 +36,8 @@ class QueryConstraintTest {
   @Test
   def shouldQueryForAggregates = {
 
-    val constaint = ListQueryConstraint("foo", SecondCategoryFunction("abc", "def"), Seq())
-    val queryAction1 = constaint.nextQueryAction("bar", false).get
+    val constraint = ListQueryConstraint("foo", SecondCategoryFunction("abc", "def"), Seq())
+    val queryAction1 = constraint.nextQueryAction("bar", false).get
 
     assertEquals(
       AggregateQueryAction(ListQueryConstraint("foo", FirstCategoryFunction("abc", "def"), Seq("abc", "def"))),
@@ -47,8 +47,8 @@ class QueryConstraintTest {
   @Test
   def shouldQueryForEntitiesWhenEmpty = {
 
-    val constaint = ListQueryConstraint("foo", SecondCategoryFunction("abc", "def"), Seq())
-    val queryAction1 = constaint.nextQueryAction("bar", true).get
+    val constraint = ListQueryConstraint("foo", SecondCategoryFunction("abc", "def"), Seq())
+    val queryAction1 = constraint.nextQueryAction("bar", true).get
 
     assertEquals(
       EntityQueryAction(ListQueryConstraint("foo", IndividualCategoryFunction, Seq("abc", "def"))),
