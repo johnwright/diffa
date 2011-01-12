@@ -26,7 +26,7 @@ abstract case class IntegerCategoryFunction extends CategoryFunction {
 
   def owningPartition(value: String) =
     try {
-      parseInt(value) / denominator toString
+      denominator * (parseInt(value) / denominator) toString
     }
     catch {
       case e: NumberFormatException => throw new InvalidCategoryException(e)

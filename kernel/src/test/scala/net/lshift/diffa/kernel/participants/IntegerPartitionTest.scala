@@ -23,24 +23,23 @@ class IntegerPartitionTest {
 
   @Test
   def tensPartition {
-    assertEquals("12", TensCategoryFunction.owningPartition("123"))
-    assertEquals("1", TensCategoryFunction.owningPartition("12"))
+    assertEquals("120", TensCategoryFunction.owningPartition("123"))
+    assertEquals("10", TensCategoryFunction.owningPartition("12"))
     assertEquals("0", TensCategoryFunction.owningPartition("1"))
   }
 
   @Test
   def hundredsPartition {
-    assertEquals("12", HundredsCategoryFunction.owningPartition("1234"))
-    assertEquals("1", HundredsCategoryFunction.owningPartition("123"))
+    assertEquals("1200", HundredsCategoryFunction.owningPartition("1234"))
+    assertEquals("100", HundredsCategoryFunction.owningPartition("123"))
     assertEquals("0", HundredsCategoryFunction.owningPartition("12"))
     assertEquals("0", HundredsCategoryFunction.owningPartition("1"))
-
   }
 
   @Test
   def thousandsPartition {
-    assertEquals("12", ThousandsCategoryFunction.owningPartition("12345"))
-    assertEquals("1", ThousandsCategoryFunction.owningPartition("1234"))
+    assertEquals("12000", ThousandsCategoryFunction.owningPartition("12345"))
+    assertEquals("1000", ThousandsCategoryFunction.owningPartition("1234"))
     assertEquals("0", ThousandsCategoryFunction.owningPartition("123"))
     assertEquals("0", ThousandsCategoryFunction.owningPartition("12"))
     assertEquals("0", ThousandsCategoryFunction.owningPartition("1"))
