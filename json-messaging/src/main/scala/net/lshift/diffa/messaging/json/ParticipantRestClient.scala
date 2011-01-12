@@ -17,60 +17,50 @@
 package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
-import org.codehaus.jettison.json.JSONObject
 import JSONEncodingUtils._
-import collection.mutable.ListBuffer
+import net.lshift.diffa.kernel.frontend.wire.WireResponse._
+import net.lshift.diffa.kernel.frontend.wire.{WireDigest, ActionInvocation, InvocationResult}
 
 /**
  * Rest client for participant communication.
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
-  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    executeRpc("query_entity_versions", pack(constraints)) match {
-      case Some(r) => deserializeEntityVersions(r)
-      case None    => Seq()
-    }
-  }
+  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
+    = queryDigests(constraints, "query_entity_versions")
 
-  override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    executeRpc("query_aggregate_digests", pack(constraints)) match {
-      case Some(r) => deserializeAggregateDigest(r)
-      case None    => Seq()
-    }
-  }
+  override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
+    = queryDigests(constraints, "query_aggregate_digests")
 
-  override def retrieveContent(identifier: String): String = {
-    val requestObj = new JSONObject
-    requestObj.put("id", identifier)
-
-    executeRpc("retrieve_content", requestObj.toString) match {
+  override def retrieveContent(identifier: String): String = {    
+    executeRpc("retrieve_content", serializeEntityContentRequest(identifier)) match {
       case Some(r) => {
-        val jsonResponse = new JSONObject(r)
-        val s = jsonResponse.optString("content")
-        if (s.equals("")) {
+        val content = deserializeEntityContent(r)
+        if (content.equals("")) {
           log.warn("Returning default value for id: " + identifier)
         }
-        s
+        content
       }
       case None => ""
     }
   }
 
-  override def invoke(actionId:String, entityId:String) : ActionResult = {
-    val request = new JSONObject
-    request.put("actionId", actionId)
-    request.put("entityId", entityId)
-    executeRpc("invoke", request.toString) match {
-      case Some(r) => {
-        val json = new JSONObject(r)
-        ActionResult(json.getString("result"),json.getString("output"))
-      }
+  override def invoke(actionId:String, entityId:String) : InvocationResult = {
+    executeRpc("invoke", serializeActionRequest(ActionInvocation(actionId, entityId))) match {
+      case Some(r) => deserializeActionResult(r)
       case None    => null
     }
   }
 
+  private def queryDigests[T <: Digest](constraints:Seq[QueryConstraint], endpoint:String) : Seq[T] = {
+    executeRpc(endpoint, pack(constraints)) match {
+      case Some(r) => unpack(deserializeDigests(r))
+      case None    => Seq()
+    }
+  }
+
   private def pack(seq:Seq[QueryConstraint]) = serialize(seq.map(_.wireFormat))
+  private def unpack[T](seq:Seq[WireDigest]) = seq.map(WireDigest.fromWire(_).asInstanceOf[T])
 }
 
 /**
@@ -83,24 +73,10 @@ class UpstreamParticipantRestClient(root:String) extends ParticipantRestClient(r
  */
 class DownstreamParticipantRestClient(root:String) extends ParticipantRestClient(root)
         with DownstreamParticipant {
-  override def generateVersion(entityBody: String): ProcessingResponse = {
-    val requestObj = new JSONObject
-    requestObj.put("entityBody", entityBody)
-
-    executeRpc("generate_version", requestObj.toString) match {
+  override def generateVersion(entityBody: String): ProcessingResponse = {    
+    executeRpc("generate_version", serializeEntityBodyRequest(entityBody)) match {
       case None    => null
-      case Some(r) => {
-        val responseObj = new JSONObject(r)
-        val attributes = new ListBuffer[String]
-        val attributeArray = responseObj.getJSONArray("attributes")
-        for (val i <- 0 to attributeArray.length - 1) {
-          attributes += attributeArray.getString(i)
-        }
-        ProcessingResponse(
-          responseObj.getString("id"),
-          attributes,
-          responseObj.getString("uvsn"), responseObj.getString("dvsn"))
-      }
+      case Some(r) => fromWire(deserializeWireResponse(r))
     }
   }
 }

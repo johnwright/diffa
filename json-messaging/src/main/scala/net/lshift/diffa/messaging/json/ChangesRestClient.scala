@@ -18,8 +18,8 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.client.ChangesClient
 import net.lshift.diffa.kernel.events.{UpstreamChangeEvent, DownstreamChangeEvent, DownstreamCorrelatedChangeEvent, ChangeEvent}
-import org.codehaus.jettison.json.JSONObject
-import scala.collection.JavaConversions.asList
+import JSONEncodingUtils._
+import net.lshift.diffa.kernel.frontend.wire.WireEvent._
 
 /**
  * JSON-over-REST client for the changes endpoint.
@@ -27,24 +27,14 @@ import scala.collection.JavaConversions.asList
 class ChangesRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "changes/")
         with ChangesClient {
+
   def onChangeEvent(evt:ChangeEvent) {
-    val jsonEvt = new JSONObject
-    jsonEvt.put("endpoint", evt.endpoint)
-    jsonEvt.put("id", evt.id)
-    jsonEvt.put("attributes", asList(evt.attributes))
-    jsonEvt.put("lastUpdated", JSONEncodingUtils.maybeDateStr(evt.lastUpdate))
-    evt match {
-      case us:UpstreamChangeEvent =>
-        jsonEvt.put("type", "upstream")
-        jsonEvt.put("vsn", us.vsn)
-      case ds:DownstreamChangeEvent =>
-        jsonEvt.put("type", "downstream-same")
-        jsonEvt.put("vsn", ds.vsn)
-      case dsc:DownstreamCorrelatedChangeEvent =>
-        jsonEvt.put("type", "downstream-correlated")
-        jsonEvt.put("uvsn", dsc.upstreamVsn)
-        jsonEvt.put("dvsn", dsc.downstreamVsn)
+    val wire = evt match {
+      case us:UpstreamChangeEvent => toWire(us)
+      case ds:DownstreamChangeEvent => toWire(ds)
+      case dsc:DownstreamCorrelatedChangeEvent => toWire(dsc)
     }
-    submit("", jsonEvt.toString)
+    submit("", serializeEvent(wire))
   }
+  
 }

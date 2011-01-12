@@ -217,7 +217,7 @@
     <constructor-arg ref="changeEventClient"/>
     <constructor-arg ref="matchingManager"/>
   </bean>
-  <bean id="actionsFrontend" class="net.lshift.diffa.kernel.frontend.ActionsProxy">
+  <bean id="actionsFrontend" class="net.lshift.diffa.kernel.frontend.wire.ActionsProxy">
     <constructor-arg ref="diffaConfigStore"/>
     <constructor-arg ref="participantFactory" />
   </bean>

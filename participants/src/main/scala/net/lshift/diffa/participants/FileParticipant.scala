@@ -25,6 +25,7 @@ import collection.mutable.{HashMap, ListBuffer}
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.differencing.DigestBuilder
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
 /**
  * Basic functionality requried for a file-based participant.
@@ -77,10 +78,10 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
     IOUtils.toString(new FileInputStream(path))
   }
 
-  def invoke(actionId:String, entityId:String) : ActionResult = {
+  def invoke(actionId:String, entityId:String) : InvocationResult = {
     actionId match {
-      case "resend" => ActionResult("error", "Unknown Entity:" + entityId)
-      case _        => ActionResult("error", "Unknown action:" + actionId)
+      case "resend" => InvocationResult("error", "Unknown Entity:" + entityId)
+      case _        => InvocationResult("error", "Unknown action:" + actionId)
     }
   }
 

@@ -17,10 +17,11 @@
 package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
-import org.codehaus.jettison.json.{JSONArray, JSONObject}
 import scala.collection.JavaConversions._
 import JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.ConstraintRegistry
+import net.lshift.diffa.kernel.frontend.wire.ConstraintRegistry
+import net.lshift.diffa.kernel.frontend.wire.WireResponse._
+import net.lshift.diffa.kernel.frontend.wire.WireDigest
 
 /**
  * Handler for participants being queried via JSON.
@@ -28,27 +29,20 @@ import net.lshift.diffa.kernel.frontend.ConstraintRegistry
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton(wire => serializeDigests(participant.queryAggregateDigests(unpack(wire)))),
-    "query_entity_versions" -> skeleton(wire => serializeDigests(participant.queryEntityVersions(unpack(wire)))),
+    "query_aggregate_digests" -> skeleton(wire => serializeDigests(pack(participant.queryAggregateDigests(unpack(wire))))),
+    "query_entity_versions" -> skeleton(wire => serializeDigests(pack(participant.queryEntityVersions(unpack(wire))))),
     "invoke" -> defineRpc((s:String) => s)(r => {
-      val request = new JSONObject(r)
-      val result = participant.invoke(request.getString("actionId"),request.getString("entityId"))
-      val json = new JSONObject
-      json.put("result", result.result)
-      json.put("output", result.output)
-      json.toString
+      val request = deserializeActionRequest(r)
+      serializeActionResult(participant.invoke(request.actionId, request.entityId))
     }),
-    "retrieve_content" -> defineRpc((s:String) => s)(req => {
-      val reqObj = new JSONObject(req)
-      val content = participant.retrieveContent(reqObj.getString("id"))
-
-      val responseObj = new JSONObject
-      responseObj.put("content", content)
-      responseObj.toString
+    "retrieve_content" -> defineRpc((s:String) => s)(req => {      
+      serializeEntityContent(participant.retrieveContent(deserializeEntityContentRequest(req)))
     })
   )
 
   private def unpack(wire:String) = deserialize(wire).map(ConstraintRegistry.resolve(_))
+
+  private def pack(digests:Seq[Digest]) = digests.map(WireDigest.toWire(_))
 
   private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
 
@@ -59,15 +53,8 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
 
   override protected val endpoints = commonEndpoints ++ Map(
     "generate_version" -> defineRpc((s:String) => s)(req => {
-      val reqObj = new JSONObject(req)
-      val response = downstream.generateVersion(reqObj.getString("entityBody"))
-
-      val responseObj = new JSONObject
-      responseObj.put("id", response.id)
-      responseObj.put("attributes", asList(response.attributes))
-      responseObj.put("uvsn", response.uvsn)
-      responseObj.put("dvsn", response.dvsn)
-      responseObj.toString
+      val response = downstream.generateVersion(deserializeEntityBodyRequest(req))
+      serializeWireResponse(toWire(response))
     })
   )
 }

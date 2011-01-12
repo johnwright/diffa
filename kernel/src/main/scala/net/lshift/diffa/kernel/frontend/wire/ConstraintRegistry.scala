@@ -1,3 +1,5 @@
+package net.lshift.diffa.kernel.frontend.wire
+
 /**
  * Copyright (C) 2010 LShift Ltd.
  *
@@ -13,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.kernel.frontend
 
 import net.lshift.diffa.kernel.participants._
 import scala.collection.JavaConversions._

@@ -19,10 +19,10 @@ package net.lshift.diffa.agent.rest
 import javax.ws.rs._
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
-import net.lshift.diffa.kernel.client.{ActionRequest, ActionsClient, Actionable}
+import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient, Actionable}
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
-import net.lshift.diffa.kernel.participants.ActionResult
+import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
 @Path("/actions")
 @Component
@@ -50,8 +50,8 @@ class ActionsResource extends AbstractRestResource {
   ))
   def invokeAction(@PathParam("pairId") pairId:String,
                    @PathParam("actionId") actionId:String,
-                   @PathParam("entityId") entityId:String) : ActionResult = {
-    maybe( (x:String) => proxy.invoke(ActionRequest(x, actionId, entityId)), pairId )
+                   @PathParam("entityId") entityId:String) : InvocationResult = {
+    maybe( (x:String) => proxy.invoke(ActionableRequest(x, actionId, entityId)), pairId )
   }
 
 }

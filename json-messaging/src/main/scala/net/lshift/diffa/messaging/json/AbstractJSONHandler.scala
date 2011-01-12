@@ -19,7 +19,7 @@ package net.lshift.diffa.messaging.json
 import org.apache.commons.io.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 import org.apache.http.HttpStatus
-import org.codehaus.jettison.json.JSONObject
+import JSONEncodingUtils._
 import net.lshift.diffa.kernel.protocol.{ProtocolHandler, TransportRequest, TransportResponse}
 
 /**
@@ -67,11 +67,7 @@ abstract class AbstractJSONHandler extends ProtocolHandler {
     }
   }
 
-  private def buildError(errorMsg:String):Array[Byte] = {
-    val errorObj = new JSONObject
-    errorObj.put("message", errorMsg)
-    errorObj.toString.getBytes("UTF-8")
-  }
+  private def buildError(errorMsg:String):Array[Byte] = serializeSimpleMessage(errorMsg).getBytes("UTF-8")
 
   /**
    * Curries a given function into a callable handler that takes a request and writes out data for a response.

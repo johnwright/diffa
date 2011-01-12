@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.tools.client
 
-import net.lshift.diffa.kernel.client.{ActionRequest, Actionable, ActionsClient}
+import net.lshift.diffa.kernel.client.{ActionableRequest, Actionable, ActionsClient}
 import net.lshift.diffa.messaging.json.AbstractRestClient
-import net.lshift.diffa.kernel.participants.ActionResult
+import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
 class ActionsRestClient(serverRootUrl:String)
         extends AbstractRestClient(serverRootUrl, "rest/actions/")
@@ -29,10 +29,10 @@ class ActionsRestClient(serverRootUrl:String)
     rpc(pairKey, t)    
   }
 
-  def invoke(req:ActionRequest) : ActionResult = {
+  def invoke(req:ActionableRequest) : InvocationResult = {
     val path = req.pairKey + "/" + req.actionId + "/" + req.entityId
     val p = resource.path(path)
-    val response = p.post(classOf[ActionResult])
+    val response = p.post(classOf[InvocationResult])
     response
   }
 }

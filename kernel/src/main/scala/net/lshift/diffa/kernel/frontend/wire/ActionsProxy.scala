@@ -1,3 +1,5 @@
+package net.lshift.diffa.kernel.frontend.wire
+
 /**
  * Copyright (C) 2010 LShift Ltd.
  *
@@ -14,11 +16,9 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.frontend
-
-import net.lshift.diffa.kernel.client.{ActionRequest, Actionable, ActionsClient}
 import net.lshift.diffa.kernel.config.ConfigStore
-import net.lshift.diffa.kernel.participants.{ParticipantFactory, ActionResult}
+import net.lshift.diffa.kernel.participants.ParticipantFactory
+import net.lshift.diffa.kernel.client.{ActionableRequest, Actionable, ActionsClient}
 
 /**
  * This is a conduit to the actions that are provided by participants
@@ -33,7 +33,7 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
     withValidPair(pairKey, resend)
   }
 
-  def invoke(request:ActionRequest) : ActionResult = {
+  def invoke(request:ActionableRequest) : InvocationResult = {
 
     def result() = {
       val pair = config.getPair(request.pairKey)
@@ -42,7 +42,7 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
       participant.invoke(request.actionId, request.entityId)
     }
     
-    withValidRequest(request, result)
+    withValidPair(request.pairKey, result)
   }
 
   def withValidPair[T](pair:String, f: () => T) = {
@@ -50,8 +50,4 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
     f()
   }
 
-  def withValidRequest[T](request:ActionRequest, f: () => T) = {
-    config.getPair(request.pairKey)
-    f()
-  }
 }

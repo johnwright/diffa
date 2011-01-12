@@ -21,32 +21,27 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.frontend.WireConstraint
 import scala.collection.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.frontend.wire._
+import net.lshift.diffa.kernel.frontend.wire.WireDigest._
 
 class JSONEncodingUtilsTest {
 
+  def time() = new DateTime().toString()
+
   @Test
   def aggregateDigestRoundTrip() = {
-    val d1 = AggregateDigest(Seq("foo","bar"), new DateTime, "digest1")
-    val d2 = AggregateDigest(Seq("baz","who"), new DateTime, "digest2")
-    val serialized = JSONEncodingUtils.serializeDigests(Seq(d1,d2))
-    val deserialized = JSONEncodingUtils.deserializeAggregateDigest(serialized)
-    assertNotNull(deserialized)
-    assertEquals(2, deserialized.length)
-    (Seq(d1,d2), deserialized).zip.foreach(x=> compareDigests(x._1,x._2))
+    val d1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1"), Seq("foo","bar"))
+    val d2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2"), Seq("baz","who"))
+    digestRoundTrip(d1,d2)
   }
 
   @Test
   def entityVersionRoundTrip() = {
-    val v1 = EntityVersion("id1", Seq("foo","bar"), new DateTime, "digest1")
-    val v2 = EntityVersion("id2", Seq("baz","who"), new DateTime, "digest2")
-    val serialized = JSONEncodingUtils.serializeDigests(Seq(v1,v2))
-    val deserialized = JSONEncodingUtils.deserializeEntityVersions(serialized)
-    assertNotNull(deserialized)
-    assertEquals(2, deserialized.length)
-    (Seq(v1,v2), deserialized).zip.foreach(x=> compareVersions(x._1,x._2))
+    val v1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1", "id" -> "id1"), Seq("foo","bar"))
+    val v2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2", "id" -> "id2"), Seq("baz","who"))
+    digestRoundTrip(v1,v2)
   }
 
   @Test
@@ -76,15 +71,84 @@ class JSONEncodingUtilsTest {
     assertEquals(0, deserialized.length)
   }
 
-  def compareDigests(expected:Digest, actual:Digest) = {
-    // TODO Date comparison currnently fails because the chronology is wrong
-    assertEquals(expected.lastUpdated.getMillis, actual.lastUpdated.getMillis)
-    assertEquals(expected.digest, actual.digest)
-    (expected.attributes, actual.attributes).zip.foreach(x=> assertEquals(x._1,x._2))
+  @Test
+  def wireEventRoundTrip = {
+    val event = WireEvent("baz", Map("foo" -> "bar"), List("a", "b", "c"))
+    val serialized = JSONEncodingUtils.serializeEvent(event)
+    val deserialized = JSONEncodingUtils.deserializeEvent(serialized)
+    assertNotNull(deserialized)
+    assertEquals(event, deserialized)
   }
 
-  def compareVersions(expected:EntityVersion, actual:EntityVersion) = {
-    assertEquals(expected.id, actual.id)
-    compareDigests(expected, actual)
+  @Test
+  def contentRoundTrip = {
+    val content = "foobar"
+    val serialized = JSONEncodingUtils.serializeEntityContent(content)
+    val deserialized = JSONEncodingUtils.deserializeEntityContent(serialized)
+    assertNotNull(deserialized)
+    assertEquals(content, deserialized)
   }
+
+  @Test
+  def idRequestRoundTrip = {
+    val id = "foobar"
+    val serialized = JSONEncodingUtils.serializeEntityContentRequest(id)
+    val deserialized = JSONEncodingUtils.deserializeEntityContentRequest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(id, deserialized)
+  }
+
+  @Test
+  def bodyRequestRoundTrip = {
+    val id = "foobar"
+    val serialized = JSONEncodingUtils.serializeEntityBodyRequest(id)
+    val deserialized = JSONEncodingUtils.deserializeEntityBodyRequest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(id, deserialized)
+  }
+
+  @Test
+  def wireResponseRoundTrip = {
+    val response = WireResponse("foobar", "up", "down", List("a", "b", "c"))
+    val serialized = JSONEncodingUtils.serializeWireResponse(response)
+    val deserialized = JSONEncodingUtils.deserializeWireResponse(serialized)
+    assertNotNull(deserialized)
+    assertEquals(response, deserialized)
+  }
+
+  @Test
+  def actionRequestRoundTrip = {
+    val response = ActionInvocation("foo","bar")
+    val serialized = JSONEncodingUtils.serializeActionRequest(response)
+    val deserialized = JSONEncodingUtils.deserializeActionRequest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(response, deserialized)
+  }
+
+  @Test
+  def actionResponseRoundTrip = {
+    val response = InvocationResult("foo","bar")
+    val serialized = JSONEncodingUtils.serializeActionResult(response)
+    val deserialized = JSONEncodingUtils.deserializeActionResult(serialized)
+    assertNotNull(deserialized)
+    assertEquals(response, deserialized)
+  }
+
+  def digestRoundTrip(d1:WireDigest, d2:WireDigest) = {
+    val serialized = JSONEncodingUtils.serializeDigests(Seq(d1,d2))
+    val deserialized = JSONEncodingUtils.deserializeDigests(serialized)
+    assertNotNull(deserialized)
+    assertEquals(2, deserialized.length)
+    (Seq(d1,d2), deserialized).zip.foreach(x=> compareDigests(x._1,x._2))
+  }
+
+  def compareDigests(expected:WireDigest, actual:WireDigest) = {
+    assertEquals(expected.metadata(LAST_UPDATED), actual.metadata(LAST_UPDATED))
+    assertEquals(expected.metadata(DIGEST), actual.metadata(DIGEST))
+    (expected.attributes, actual.attributes).zip.foreach(x=> assertEquals(x._1,x._2))
+    if (expected.metadata.containsKey(ID)) {
+      assertEquals(expected.metadata(ID), actual.metadata(ID))
+    }
+  }
+
 }
