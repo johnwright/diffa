@@ -90,7 +90,7 @@
           <Call name="load">
             <Arg>
               <New class="java.io.FileReader">
-                <Arg type="java.lang.String"><SystemProperty name="demo.basedir"/>/../agent/target/test-classes/diffa.itest.properties</Arg>
+                <Arg type="java.lang.String"><SystemProperty name="demo.basedir"/>/../agent/src/test/resources/diffa.itest.properties</Arg>
               </New>
             </Arg>
           </Call>
