@@ -66,19 +66,13 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
 
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) : BaseQueryConstraint
 
-  def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] = {
-    function.descend(partition) match {
-      case None    => None
-      case Some(x) => {
-        if (empty || x.next == IndividualCategoryFunction) {
-          Some(EntityQueryAction(nextConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction, x.toSeq)))
-        }
-        else {
-          Some(AggregateQueryAction(nextConstraint(BaseQueryConstraint.this.category, x.next, x.toSeq)))
-        }
-      }
+  def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] =
+    function.descend(partition) map { intermediateResult =>
+      if (empty || intermediateResult.next == IndividualCategoryFunction)
+        EntityQueryAction(nextConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction, intermediateResult.toSeq))
+      else
+        AggregateQueryAction(nextConstraint(BaseQueryConstraint.this.category, intermediateResult.next, intermediateResult.toSeq))
     }
-  }  
 }
 
 /**
