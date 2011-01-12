@@ -45,6 +45,18 @@ class IntegerPartitionTest {
     assertEquals("0", ThousandsCategoryFunction.owningPartition("1"))
   }
 
+  @Test
+  def descendFromHundredsPartition {
+    assertEquals(Some(IntermediateResult("100", "199", TensCategoryFunction)),
+                 HundredsCategoryFunction.descend("100"))
+  }
+
+  @Test
+  def descendFromThousandsPartition {
+    assertEquals(Some(IntermediateResult("1000", "1999", HundredsCategoryFunction)),
+                 ThousandsCategoryFunction.descend("1000"))
+  }
+
   @Test(expected=classOf[InvalidCategoryException])
   def shouldThrowInvalidCategoryExceptionIfValueIsNotInteger {
     TensCategoryFunction.owningPartition("NOT_AN_INTEGER")

@@ -34,8 +34,8 @@ abstract case class IntegerCategoryFunction extends CategoryFunction {
 
   def descend(partition: String) = {
     // TODO
-    val start = "0"
-    val end = "1"
+    val start = partition
+    val end = (parseInt(partition) + denominator - 1).toString
     Some(IntermediateResult(start, end, next))
   }
 }
