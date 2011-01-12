@@ -38,10 +38,14 @@ abstract case class DateCategoryFunction extends CategoryFunction {
 
   def shouldBucket() = true
 
-  override def owningPartition(value:String) = {
-    val date = isoFormat.parseDateTime(value)
-    pattern.print(date)
-  }
+  override def owningPartition(value:String) =
+    try {
+      val date = isoFormat.parseDateTime(value)
+      pattern.print(date)
+    }
+    catch {
+      case e: IllegalArgumentException => throw new InvalidCategoryException(e)
+    }
 }
 
 /**

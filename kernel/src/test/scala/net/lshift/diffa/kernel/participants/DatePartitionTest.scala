@@ -29,4 +29,10 @@ class DatePartitionTest {
     val partition = function.owningPartition(date.toString)
     assertEquals("1998", partition)
   }
+
+  @Test(expected=classOf[InvalidCategoryException])
+  def shouldThrowInvalidCategoryExceptionIfValueIsNotDate {
+    DailyCategoryFunction.owningPartition("NOT_A_DATE")
+  }
+
 }
