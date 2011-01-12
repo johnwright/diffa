@@ -46,4 +46,9 @@ class IntegerPartitionTest {
     assertEquals("0", ThousandsCategoryFunction.owningPartition("1"))
   }
 
+  @Test(expected=classOf[InvalidCategoryException])
+  def shouldThrowInvalidCategoryExceptionIfValueIsNotInteger {
+    TensCategoryFunction.owningPartition("NOT_AN_INTEGER")
+  }
+
 }

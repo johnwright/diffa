@@ -24,7 +24,13 @@ abstract case class IntegerCategoryFunction extends CategoryFunction {
 
   def shouldBucket = true
 
-  def owningPartition(value: String) = parseInt(value) / denominator toString
+  def owningPartition(value: String) =
+    try {
+      parseInt(value) / denominator toString
+    }
+    catch {
+      case e: NumberFormatException => throw new InvalidCategoryException(e)
+    }
 
   def descend(partition: String) = {
     // TODO
@@ -32,7 +38,6 @@ abstract case class IntegerCategoryFunction extends CategoryFunction {
     val end = "1"
     Some(IntermediateResult(start, end, next))
   }
-
 }
 
 object TensCategoryFunction extends IntegerCategoryFunction {
