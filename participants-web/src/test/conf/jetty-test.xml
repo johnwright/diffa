@@ -42,7 +42,7 @@
 
   <New class="org.eclipse.jetty.webapp.WebAppContext">
     <Arg><Ref id="contexts" /></Arg>
-    <Arg><SystemProperty name="demo.basedir"/>/../agent/target/diffa-agent-0.9-SNAPSHOT.war</Arg>
+    <Arg><SystemProperty name="demo.basedir"/>/target/diffa-agent.war</Arg>
     <Arg>/diffa-agent</Arg>
 
     <Set name="ConfigurationClasses">
