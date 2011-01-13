@@ -2,10 +2,11 @@ package net.lshift.diffa.messaging.amqp
 
 import com.rabbitmq.client.Channel
 import org.slf4j.LoggerFactory
-import java.io.Closeable
 import com.rabbitmq.messagepatterns.unicast.{Message, ChannelSetupListener, Connector, Factory}
+import java.io.{ByteArrayInputStream, Closeable}
+import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 
-class AmqpRpcServer(connector: Connector, queueName: String, handler: RpcRequestHandler)
+class AmqpRpcServer(connector: Connector, queueName: String, handler: ProtocolHandler)
   extends Closeable {
 
   private val log = LoggerFactory.getLogger(getClass)
@@ -40,24 +41,21 @@ class AmqpRpcServer(connector: Connector, queueName: String, handler: RpcRequest
           val msg = messaging.receive(receiveTimeout)
           if (msg != null) {
             messaging.ack(msg)
-            val methodName = Option(msg.getProperties.getHeaders.get(AmqpRpc.methodHeader))
+            val methodName = Option(msg.getProperties.getHeaders.get(AmqpRpc.endpointHeader))
               .map(_.toString).getOrElse("")
-            val argument = new String(msg.getBody, AmqpRpc.encoding)
 
             val replyHeaders = new java.util.HashMap[String, Object]
-            replyHeaders.put(AmqpRpc.methodHeader, methodName)
+            replyHeaders.put(AmqpRpc.endpointHeader, methodName)
 
-            val response = try {
-              handler.handleRequest(methodName, argument)
-            } catch {
-              case e: Exception =>
-                replyHeaders.put(AmqpRpc.exceptionMessageHeader,
-                                 "%s: %s".format(e.getClass.getName, e.getMessage))
-                ""
-            }
+            val request = new TransportRequest(methodName, new ByteArrayInputStream(msg.getBody))
+            val response = new AmqpTransportResponse
+
+            handler.handleRequest(request, response)
+            replyHeaders.put(AmqpRpc.statusCodeHeader, response.status.asInstanceOf[AnyRef])
+
             val reply = msg.createReply()
             reply.getProperties.setHeaders(replyHeaders)
-            reply.setBody(response.getBytes(AmqpRpc.encoding))
+            reply.setBody(response.os.toByteArray)
             messaging.send(reply)
           }
         } catch {

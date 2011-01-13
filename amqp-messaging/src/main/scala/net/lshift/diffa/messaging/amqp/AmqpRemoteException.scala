@@ -1,11 +1,11 @@
 package net.lshift.diffa.messaging.amqp
 
-case class AmqpRemoteException(methodName: String,
-                               exceptionMessage: String)
-  extends Exception {
+case class AmqpRemoteException(endpoint: String,
+                               statusCode: Int)
+  extends RuntimeException {
 
-  override def getMessage = exceptionMessage
+  override def getMessage = "Received error code [%s] from call to RPC endpoint [%s]"
+    .format(statusCode, endpoint)
 
-  override def toString = "Exception thrown calling RPC method [%s]: %s"
-    .format(methodName, exceptionMessage)
+  override def toString = getMessage
 }

@@ -28,27 +28,30 @@ class AmqpRpcClient(connector: Connector, queueName: String)
     m
   }
 
-  def call(methodName: String, argument: String, timeout: Long = defaultTimeout) = {
+  def call(endpoint: String, payload: String, timeout: Long = defaultTimeout) = {
     val msg = messaging.createMessage()
     msg.setRoutingKey(queueName)
     if (replyQueueName.isEmpty)
       throw new IllegalStateException("Reply queue not set up!")
+
     msg.setReplyTo(replyQueueName.get)
     val headers = new java.util.HashMap[String, Object]
-    headers.put(AmqpRpc.methodHeader, methodName)
+    headers.put(AmqpRpc.endpointHeader, endpoint)
     msg.getProperties.setHeaders(headers)
-    msg.setBody(argument.getBytes(AmqpRpc.encoding))
+    msg.setBody(payload.getBytes(AmqpRpc.encoding))
     messaging.send(msg)
 
     val reply = messaging.receive(timeout)
     if (reply == null)
-      // TODO TimeoutException
-      throw new IOException("AMQP RPC timeout")
+      throw new ReceiveTimeoutException(timeout)
 
-    val exceptionMessage = Option(reply.getProperties.getHeaders.get(AmqpRpc.exceptionMessageHeader))
-    if (exceptionMessage.isDefined) {
-      throw new AmqpRemoteException(methodName,
-                                    exceptionMessage.map(_.toString).getOrElse(""))
+    val statusCode = try {
+      reply.getProperties.getHeaders.get(AmqpRpc.statusCodeHeader).toString.toInt
+    } catch {
+      case e => throw new MissingResponseCodeException(e)
+    }
+    if (statusCode != AmqpRpc.defaultStatusCode) {
+      throw new AmqpRemoteException(endpoint, statusCode)
     } else {
       new String(reply.getBody, AmqpRpc.encoding)
     }
