@@ -17,7 +17,6 @@
 package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
-import scala.collection.JavaConversions._
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.wire.ConstraintRegistry
 import net.lshift.diffa.kernel.frontend.wire.WireResponse._
@@ -29,22 +28,32 @@ import net.lshift.diffa.kernel.frontend.wire.WireDigest
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton(wire => serializeDigests(pack(participant.queryAggregateDigests(unpack(wire))))),
-    "query_entity_versions" -> skeleton(wire => serializeDigests(pack(participant.queryEntityVersions(unpack(wire))))),
-    "invoke" -> defineRpc((s:String) => s)(r => {
-      val request = deserializeActionRequest(r)
-      serializeActionResult(participant.invoke(request.actionId, request.entityId))
-    }),
-    "retrieve_content" -> defineRpc((s:String) => s)(req => {      
-      serializeEntityContent(participant.retrieveContent(deserializeEntityContentRequest(req)))
-    })
+    "query_aggregate_digests" -> skeleton((constraintsFromWire _)
+                                           andThen (participant.queryAggregateDigests _)
+                                           andThen (digestsToWire _)
+                                           andThen (serializeDigests _)),
+
+    "query_entity_versions" -> skeleton((constraintsFromWire _)
+                                         andThen (participant.queryEntityVersions _)
+                                         andThen (digestsToWire _)
+                                         andThen (serializeDigests _)),
+
+    "invoke" -> skeleton((deserializeActionRequest _)
+                          andThen (req => participant.invoke(req.actionId, req.entityId))
+                          andThen (serializeActionResult _)),
+
+    "retrieve_content" -> skeleton((deserializeEntityContentRequest _)
+                                    andThen (participant.retrieveContent _)
+                                    andThen (serializeEntityContent _))
   )
 
-  private def unpack(wire:String) = deserialize(wire).map(ConstraintRegistry.resolve(_))
+  private def constraintsFromWire(wire:String) =
+    deserialize(wire).map(ConstraintRegistry.resolve(_))
 
-  private def pack(digests:Seq[Digest]) = digests.map(WireDigest.toWire(_))
+  private def digestsToWire(digests:Seq[Digest]) =
+    digests.map(WireDigest.toWire _)
 
-  private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
+  private def skeleton (f:String => String) = defineRpc(identity)(f(_))
 
 }
 
@@ -52,7 +61,7 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
         extends ParticipantHandler(downstream) {
 
   override protected val endpoints = commonEndpoints ++ Map(
-    "generate_version" -> defineRpc((s:String) => s)(req => {
+    "generate_version" -> defineRpc(identity)(req => {
       val response = downstream.generateVersion(deserializeEntityBodyRequest(req))
       serializeWireResponse(toWire(response))
     })
