@@ -108,35 +108,35 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
   @Test
   def shouldGenerateADifferenceWhenDownstreamResyncFails {
     // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
+    expectUpstreamAggregateSync(List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
-        Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
-        Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2")))
+        Up("id1", JUN_6_2009_1, "vsn1"),
+        Up("id2", JUL_8_2010_1, "vsn2")))
 
-    expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
+    expectDownstreamAggregateSync(List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamAggregateSync(abPair, List(dateRangeConstraint(START_2010, END_2010, MonthlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
-    expectDownstreamAggregateSync(abPair, List(dateRangeConstraint(JUL_2010, END_JUL_2010,DailyCategoryFunction)),
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
+    expectDownstreamAggregateSync(List(dateRangeConstraint(JUL_2010, END_JUL_2010,DailyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamEntitySync2(abPair, List(dateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), IndividualCategoryFunction)),
       DigestsFromParticipant(
         EntityVersion("id2", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, downstreamVersionFor("vsn2")),
         EntityVersion("id3", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, downstreamVersionFor("vsn3"))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2"))))
 
     // We should see id3 re-run through the system, but not be stored since the version on the downstream is different
     expect(usMock.retrieveContent("id3")).andReturn("content3a")
