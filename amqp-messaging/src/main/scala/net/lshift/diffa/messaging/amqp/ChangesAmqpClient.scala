@@ -8,16 +8,12 @@ import net.lshift.diffa.messaging.json.JSONEncodingUtils._
 
 class ChangesAmqpClient(connector: Connector,
                         queueName: String,
-                        defaultTimeout: Long)
+                        timeout: Long)
 
   extends AmqpRpcClient(connector, queueName)
   with ChangesClient {
 
   def onChangeEvent(evt: ChangeEvent) {
-    onChangeEvent(evt, defaultTimeout)
-  }
-
-  def onChangeEvent(evt: ChangeEvent, timeout: Long) {
     val wire = evt match {
       case us: UpstreamChangeEvent              => WireEvent.toWire(us)
       case ds: DownstreamChangeEvent            => WireEvent.toWire(ds)
