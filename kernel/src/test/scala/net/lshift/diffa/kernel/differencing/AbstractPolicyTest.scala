@@ -228,6 +228,40 @@ abstract class AbstractPolicyTest {
   }
 
   @Test
+  def shouldReportMismatchesReportedByUnderlyingStoreForIntegerCategories {
+    pair.categories = Map("someInt" -> "int")
+    val timestamp = new DateTime()
+    // Expect only a top-level sync between the pairs
+    expectUpstreamAggregateSync(List(unconstrainedInt(ThousandsCategoryFunction)),
+      DigestsFromParticipant(
+        AggregateDigest(Seq("1000"), JUN_6_2009_1, DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(Seq("2000"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2"))),
+      VersionsFromStore(
+        Up("id1", 1234, "vsn1"),
+        Up("id2", 2345, "vsn2")))
+    expectDownstreamAggregateSync(List(unconstrainedInt(ThousandsCategoryFunction)),
+      DigestsFromParticipant(
+        AggregateDigest(Seq("1000"), JUN_6_2009_1, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
+        AggregateDigest(Seq("2000"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
+      VersionsFromStore(
+        Down("id1", 1234, "vsn1a", downstreamVersionFor("vsn1a")),
+        Down("id2", 2345, "vsn2a", downstreamVersionFor("vsn2a"))))
+
+    // If the version check returns mismatches, we should see differences generated
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedInt(ThousandsCategoryFunction))))).
+        andReturn(Seq(
+          Correlation(null, abPair, "id1", Map("someInt" -> "1234"), categories, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
+          Correlation(null, abPair, "id2", Map("someInt" -> "2345"), categories, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
+    listener.onMismatch(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", "vsn1a"); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", "vsn2a"); expectLastCall
+
+    replayAll
+
+    policy.difference(abPair, usMock, dsMock, listener)
+    verifyAll
+  }
+
+  @Test
   def shouldStoreUpstreamChangesToCorrelationStoreAndNotifySessionManagerForQuasiLiveDate {
     val lastUpdate = Some(JUL_8_2010_2)
     storeUpstreamChanges(categories, lastUpdate)
