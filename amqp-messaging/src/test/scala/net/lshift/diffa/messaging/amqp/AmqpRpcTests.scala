@@ -38,7 +38,7 @@ class AmqpRpcTests {
   }
 
   @Test
-  def exceptions() {
+  def receiveErrorCode() {
     val queueName = "testQueue"
     val holder = new ConnectorHolder(connectionFactory)
 
@@ -67,7 +67,23 @@ class AmqpRpcTests {
   }
 
   @Test
-  def bogusRequest() {
-    fail
+  def emptyResponse() {
+    val queueName = "testQueue"
+    val holder = new ConnectorHolder(connectionFactory)
+
+    val server = new AmqpRpcServer(holder.connector, queueName, new ProtocolHandler {
+      val contentType = "text/plain"
+
+      def handleRequest(req: TransportRequest, res: TransportResponse) = true
+    })
+
+    val client = new AmqpRpcClient(holder.connector, queueName)
+
+    server.start()
+    assertEquals("", client.call("foo", "bar", 1000))
+
+    server.close()
+    client.close()
+    holder.close()
   }
 }
