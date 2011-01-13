@@ -21,7 +21,6 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.Map
 import net.lshift.diffa.kernel.util.Conversions._
-import java.util.TreeMap
 import net.lshift.diffa.kernel.participants.{ThousandsCategoryFunction, YearlyCategoryFunction}
 
 class PairTest {
