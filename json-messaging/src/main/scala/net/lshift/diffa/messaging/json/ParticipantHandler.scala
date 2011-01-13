@@ -18,9 +18,8 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
 import JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.wire.ConstraintRegistry
 import net.lshift.diffa.kernel.frontend.wire.WireResponse._
-import net.lshift.diffa.kernel.frontend.wire.WireDigest
+import net.lshift.diffa.kernel.frontend.wire.{WireConstraint, ConstraintRegistry, WireDigest}
 
 /**
  * Handler for participants being queried via JSON.
@@ -28,12 +27,14 @@ import net.lshift.diffa.kernel.frontend.wire.WireDigest
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton((constraintsFromWire _)
+    "query_aggregate_digests" -> skeleton((deserializeConstraints _)
+                                           andThen (constraintsFromWire _)
                                            andThen (participant.queryAggregateDigests _)
                                            andThen (digestsToWire _)
                                            andThen (serializeDigests _)),
 
-    "query_entity_versions" -> skeleton((constraintsFromWire _)
+    "query_entity_versions" -> skeleton((deserializeConstraints _)
+                                         andThen (constraintsFromWire _)
                                          andThen (participant.queryEntityVersions _)
                                          andThen (digestsToWire _)
                                          andThen (serializeDigests _)),
@@ -47,13 +48,12 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
                                     andThen (serializeEntityContent _))
   )
 
-  private def constraintsFromWire(wire:String) =
-    deserialize(wire).map(ConstraintRegistry.resolve(_))
+  private def constraintsFromWire(wire: Seq[WireConstraint]) =
+    wire.map(ConstraintRegistry.resolve _)
 
-  private def digestsToWire(digests:Seq[Digest]) =
+  private def digestsToWire(digests: Seq[Digest]) =
     digests.map(WireDigest.toWire _)
 
-  private def skeleton (f:String => String) = defineRpc(identity)(f(_))
 
 }
 
@@ -61,10 +61,10 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
         extends ParticipantHandler(downstream) {
 
   override protected val endpoints = commonEndpoints ++ Map(
-    "generate_version" -> defineRpc(identity)(req => {
-      val response = downstream.generateVersion(deserializeEntityBodyRequest(req))
-      serializeWireResponse(toWire(response))
-    })
+    "generate_version" -> skeleton((deserializeEntityBodyRequest _)
+                                    andThen (downstream.generateVersion _)
+                                    andThen (toWire _)
+                                    andThen (serializeWireResponse _))
   )
 }
 

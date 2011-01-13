@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ *  Copyright (C) 2010 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,15 +84,8 @@ abstract class AbstractJSONHandler extends ProtocolHandler {
     }
   }
 
-  protected def defineOnewayRpc[T](requestDecoder:String => T)(f: T => Unit):RequestHandler = {
-    (request: TransportRequest, response: TransportResponse) => {
-      val bytes = IOUtils.toString(request.is, "UTF-8")
-      f(requestDecoder(bytes))
-      response.withOutputStream(os => {
-        os.write("{}".getBytes("UTF-8"))
-      })
-
-      true
-    }
-  }
+  /**
+   * Creates an RPC handler with default (do-nothing) request decoding.
+   */
+  protected def skeleton (f:String => String) = defineRpc(identity)(f(_))
 }

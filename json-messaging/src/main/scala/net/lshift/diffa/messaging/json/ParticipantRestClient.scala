@@ -59,7 +59,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     }
   }
 
-  private def pack(seq:Seq[QueryConstraint]) = serialize(seq.map(_.wireFormat))
+  private def pack(seq:Seq[QueryConstraint]) = serializeConstraints(seq.map(_.wireFormat))
   private def unpack[T](seq:Seq[WireDigest]) = seq.map(WireDigest.fromWire(_).asInstanceOf[T])
 }
 
