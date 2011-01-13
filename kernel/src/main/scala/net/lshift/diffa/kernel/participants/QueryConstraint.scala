@@ -120,4 +120,5 @@ case class NoConstraint(override val c:String, override val f:CategoryFunction) 
 object EasyConstraints {
   def dateRangeConstraint(start:DateTime, end:DateTime, f:CategoryFunction) = RangeQueryConstraint("date", f, Seq(start.toString(), end.toString()))
   def unconstrainedDate(f:CategoryFunction) = UnboundedRangeQueryConstraint("date", f)
+  def unconstrainedInt(f: CategoryFunction) = UnboundedRangeQueryConstraint("int", f)
 }

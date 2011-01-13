@@ -42,9 +42,11 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
     def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {      
       assert(constraints.length < 2, "See ticket #148")
-      val aggregator = new Aggregator(constraints(0).function)
-      store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
-      aggregator.digests
+      constraints flatMap { constraint =>
+        val aggregator = new Aggregator(constraint.function)
+        store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
+        aggregator.digests
+      }
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
