@@ -46,6 +46,12 @@ class IntegerPartitionTest {
   }
 
   @Test
+  def descendFromTensPartition {
+    assertEquals(Some(IntermediateResult("10", "19", IndividualCategoryFunction)),
+                 TensCategoryFunction.descend("10"))
+  }
+
+  @Test
   def descendFromHundredsPartition {
     assertEquals(Some(IntermediateResult("100", "199", TensCategoryFunction)),
                  HundredsCategoryFunction.descend("100"))
