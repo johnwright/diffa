@@ -37,7 +37,7 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
     val parsedPartition = parseInt(partition)
     if (parsedPartition % denominator > 0)
       // TODO formalise this with its own exception type
-      throw new RuntimeException("Partition "+partition+" does not match denominator "+denominator)
+      throw new IllegalArgumentException("Partition "+partition+" does not match denominator "+denominator)
     val start = partition
     val end = (parsedPartition + denominator - 1).toString
     Some(IntermediateResult(start, end, next))

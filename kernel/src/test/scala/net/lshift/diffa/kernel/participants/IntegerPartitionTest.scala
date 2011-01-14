@@ -89,4 +89,9 @@ class IntegerPartitionTest {
     TensCategoryFunction.owningPartition("NOT_AN_INTEGER")
   }
 
+  @Test(expected=classOf[IllegalArgumentException])
+  def descendShouldThrowIllegalArgumentExceptionIfPartitionValueIsInvalid {
+    TensCategoryFunction.descend("123")
+  }
+
 }
