@@ -18,6 +18,9 @@ package net.lshift.diffa.kernel.participants
 
 import org.junit.Test
 import org.junit.Assert._
+import org.hamcrest.CoreMatchers._
+
+import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 
 class IntegerPartitionTest {
 
@@ -47,8 +50,20 @@ class IntegerPartitionTest {
 
   @Test
   def arbitraryPartition {
-    object ArbitraryCategoryFunction extends IntegerCategoryFunction("1337s", 1337, IndividualCategoryFunction)
+    object ArbitraryCategoryFunction extends IntegerCategoryFunction(1337) {
+      def name = "arbitrary-1337"
+      def next = IndividualCategoryFunction
+    }
     assertEquals("2674", ArbitraryCategoryFunction.owningPartition("3456"))
+  }
+
+  @Test
+  def autoDescendingIntegerCategoryFunction {
+    def binaryCategoryFunction(denom: Int) = AutoDescendingIntegerCategoryFunction(denom, 2)
+    val myBinaryCategoryFunction = binaryCategoryFunction(128)
+    assertEquals("256", myBinaryCategoryFunction.owningPartition("300"))
+    assertEquals(Some(IntermediateResult("256", "383", binaryCategoryFunction(64))),
+                 myBinaryCategoryFunction.descend("256"))
   }
 
   @Test

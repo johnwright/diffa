@@ -33,6 +33,7 @@ import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.config.Pair
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.participants.EasyConstraints._
+import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import net.lshift.diffa.kernel.util.Conversions._
 
 /**

@@ -31,6 +31,7 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.util.Conversions._
+import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 
 /**
  * Test cases for the correlated version policy test.

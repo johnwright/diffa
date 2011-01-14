@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.participants
 /**
  * This is a struct for descending partition requests.
  */
-case class IntermediateResult(lower:AnyRef, upper:AnyRef, next:CategoryFunction) {
+case class IntermediateResult(lower:Any, upper:Any, next:CategoryFunction) {
   def toSeq : Seq[String] = Seq(lower.toString, upper.toString)
 }
 

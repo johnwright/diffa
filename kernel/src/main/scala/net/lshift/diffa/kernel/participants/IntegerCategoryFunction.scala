@@ -18,8 +18,10 @@ package net.lshift.diffa.kernel.participants
 
 import java.lang.Integer.parseInt
 
-case class IntegerCategoryFunction(name: String, denominator: Int, next: CategoryFunction)
-  extends CategoryFunction {
+abstract case class IntegerCategoryFunction(denominator: Int) extends CategoryFunction {
+
+  def name: String
+  def next: CategoryFunction
 
   def shouldBucket = true
 
@@ -32,14 +34,30 @@ case class IntegerCategoryFunction(name: String, denominator: Int, next: Categor
     }
 
   def descend(partition: String) = {
+    val parsedPartition = parseInt(partition)
+    if (parsedPartition % denominator > 0)
+      // TODO formalise this with its own exception type
+      throw new RuntimeException("Partition "+partition+" does not match denominator "+denominator)
     val start = partition
-    val end = (parseInt(partition) + denominator - 1).toString
+    val end = (parsedPartition + denominator - 1).toString
     Some(IntermediateResult(start, end, next))
   }
 }
 
-object TensCategoryFunction extends IntegerCategoryFunction("tens", 10, IndividualCategoryFunction)
+object IntegerCategoryFunction {
+  def AutoDescendingIntegerCategoryFunction(denominator: Int, factor: Int): IntegerCategoryFunction =
+    new IntegerCategoryFunction(denominator) {
+      def name = denominator.toString + "s"
+      def next = {
+        val nextDenominator = denominator / factor
+        if (nextDenominator <= 1)
+          IndividualCategoryFunction
+        else
+          AutoDescendingIntegerCategoryFunction(denominator/factor, factor)
+      }
+    }
 
-object HundredsCategoryFunction extends IntegerCategoryFunction("hundreds", 100, TensCategoryFunction)
-
-object ThousandsCategoryFunction extends IntegerCategoryFunction("thousands", 1000, HundredsCategoryFunction)
+  def TensCategoryFunction = AutoDescendingIntegerCategoryFunction(10, 10)
+  def HundredsCategoryFunction = AutoDescendingIntegerCategoryFunction(100, 10)
+  def ThousandsCategoryFunction = AutoDescendingIntegerCategoryFunction(1000, 10)
+}

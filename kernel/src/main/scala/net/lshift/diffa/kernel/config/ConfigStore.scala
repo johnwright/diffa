@@ -19,7 +19,8 @@ package net.lshift.diffa.kernel.config
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.{ThousandsCategoryFunction, QueryConstraint, YearlyCategoryFunction}
+import net.lshift.diffa.kernel.participants.{QueryConstraint, YearlyCategoryFunction}
+import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.{TreeMap, SortedMap}
 
 trait ConfigStore {
