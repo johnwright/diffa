@@ -139,6 +139,7 @@ abstract class AbstractPolicyTest {
 
   @Test
   def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipant {
+    pair.categories = Map("bizDate" -> "date")
     val timestamp = new DateTime()
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(List(unconstrainedDate(YearlyCategoryFunction)),
@@ -187,6 +188,64 @@ abstract class AbstractPolicyTest {
 
     // Don't report any unmatched versions
     expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedDate(YearlyCategoryFunction))))).
+        andReturn(Seq())
+    replayAll
+
+    policy.difference(abPair, usMock, dsMock, nullListener)
+    verifyAll
+  }
+
+  @Test
+  def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipantForIntegerCategories {
+    pair.categories = Map("someInt" -> "int")
+    val timestamp = new DateTime()
+    // Expect only a top-level sync between the pairs
+    expectUpstreamAggregateSync(List(unconstrainedInt(ThousandsCategoryFunction)),
+      DigestsFromParticipant(
+        AggregateDigest(Seq("1000"), START_2009, DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(Seq("2000"), START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+      VersionsFromStore(
+        Up("id1", 1234, "vsn1"),
+        Up("id2", 2345, "vsn2"),
+        Up("id3", 2345, "vsn3")))
+    expectUpstreamAggregateSync(List(intRangeConstraint(2000, 2999, HundredsCategoryFunction)),
+      DigestsFromParticipant(
+        AggregateDigest(Seq("2300"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
+      VersionsFromStore(
+        Up("id2", 2345, "vsn2"),
+        Up("id3", 2345, "vsn3")))
+    expectUpstreamAggregateSync(List(intRangeConstraint(2300, 2399, TensCategoryFunction)),
+      DigestsFromParticipant(
+        AggregateDigest(Seq("2340"), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
+      VersionsFromStore(
+        Up("id2", 2345, "vsn2"),
+        Up("id3", 2345, "vsn3")))
+    expectUpstreamEntitySync(List(intRangeConstraint(2340, 2349, IndividualCategoryFunction)),
+      DigestsFromParticipant(
+        EntityVersion("id2", Seq("2345"), JUL_8_2010_1, "vsn2new"),
+        EntityVersion("id4", Seq("2345"), JUL_8_2010_1, "vsn4")),
+      VersionsFromStore(
+        Up("id2", 2345, "vsn2"),
+        Up("id3", 2345, "vsn3")))
+
+    expectDownstreamAggregateSync(List(unconstrainedInt(ThousandsCategoryFunction)),
+      DigestsFromParticipant(
+        AggregateDigest(Seq("1000"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        AggregateDigest(Seq("2000"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
+      VersionsFromStore(
+        Down("id1", 1234, "vsn1", downstreamVersionFor("vsn1")),
+        Down("id2", 2345, "vsn2", downstreamVersionFor("vsn2"))))
+
+    // The policy should update the version for id2, remove id3 and add id4
+    expect(store.storeUpstreamVersion(VersionID(abPair, "id2"), Map("someInt" -> "2345"), JUL_8_2010_1, "vsn2new")).
+      andReturn(Correlation(null, abPair, "id3", Map("someInt" -> "2345"), null, JUL_8_2010_1, timestamp, "vsn2new", "vsn2", downstreamVersionFor("vsn2"), false))
+    expect(store.clearUpstreamVersion(VersionID(abPair, "id3"))).
+      andReturn(Correlation.asDeleted(abPair, "id3", new DateTime))
+    expect(store.storeUpstreamVersion(VersionID(abPair, "id4"), Map("someInt" -> "2345"), JUL_8_2010_1, "vsn4")).
+      andReturn(Correlation(null, abPair, "id4", Map("someInt" -> "2345"), null, JUL_8_2010_1, timestamp, downstreamVersionFor("vsn2"), null, null, false))
+
+    // Don't report any unmatched versions
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(Seq(unconstrainedInt(ThousandsCategoryFunction))))).
         andReturn(Seq())
     replayAll
 
