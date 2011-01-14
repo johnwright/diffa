@@ -307,17 +307,35 @@ abstract class AbstractPolicyTest {
     verifyAll
   }
 
-  @Test
-  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager {
-    val timestamp = new DateTime()
-    expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), bizDateMap(JUL_8_2010_2), JUL_8_2010_2, "vsn1", "vsn1")).
-      andReturn(Correlation(null, abPair, "id1", bizDateMap(JUL_8_2010_2), categories, JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
+  protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+    categories: Map[String, String],
+    attributes: Seq[String],
+    downstreamAttributes: Map[String, String]
+  ) {
+    pair.categories = categories
+    val timestamp = new DateTime
+    expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn1")).
+      andReturn(Correlation(null, abPair, "id1", downstreamAttributes, categories, JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
     listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1"); expectLastCall
     replayAll
 
-    policy.onChange(DownstreamPairChangeEvent(VersionID(abPair, "id1"), bizDateSeq(JUL_8_2010_2), JUL_8_2010_2, "vsn1"))
+    policy.onChange(DownstreamPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1"))
     verifyAll
   }
+
+  @Test
+  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
+    shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+      categories = Map("bizDate" -> "date"),
+      attributes = bizDateSeq(JUL_8_2010_2),
+      downstreamAttributes = bizDateMap(JUL_8_2010_2))
+
+  @Test
+  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
+    shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+      categories = Map("someInt" -> "int"),
+      attributes = Seq("1234"),
+      downstreamAttributes = Map("someInt" -> "1234"))
 
   @Test
   def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager {
