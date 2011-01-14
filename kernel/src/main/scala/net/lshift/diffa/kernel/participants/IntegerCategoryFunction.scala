@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.participants
 
 import java.lang.Integer.parseInt
 
-abstract case class IntegerCategoryFunction(denominator: Int) extends CategoryFunction {
+abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunction {
 
   def name: String
   def next: CategoryFunction
@@ -45,8 +45,8 @@ abstract case class IntegerCategoryFunction(denominator: Int) extends CategoryFu
 }
 
 object IntegerCategoryFunction {
-  def AutoDescendingIntegerCategoryFunction(denominator: Int, factor: Int): IntegerCategoryFunction =
-    new IntegerCategoryFunction(denominator) {
+  case class AutoDescendingIntegerCategoryFunction(denominator: Int, factor: Int)
+    extends IntegerCategoryFunction(denominator) {
       def name = denominator.toString + "s"
       def next = {
         val nextDenominator = denominator / factor
@@ -55,9 +55,9 @@ object IntegerCategoryFunction {
         else
           AutoDescendingIntegerCategoryFunction(denominator/factor, factor)
       }
-    }
+  }
 
-  def TensCategoryFunction = AutoDescendingIntegerCategoryFunction(10, 10)
-  def HundredsCategoryFunction = AutoDescendingIntegerCategoryFunction(100, 10)
-  def ThousandsCategoryFunction = AutoDescendingIntegerCategoryFunction(1000, 10)
+  lazy val TensCategoryFunction = AutoDescendingIntegerCategoryFunction(10, 10)
+  lazy val HundredsCategoryFunction = AutoDescendingIntegerCategoryFunction(100, 10)
+  lazy val ThousandsCategoryFunction = AutoDescendingIntegerCategoryFunction(1000, 10)
 }
