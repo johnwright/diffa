@@ -87,23 +87,21 @@ abstract class AbstractPolicyTest {
       categories: Map[String, String],
       constraints: Seq[UnboundedRangeQueryConstraint],
       attributes: (Seq[String], Seq[String]),
-      upstreamVersions: (UpstreamVersion, UpstreamVersion),
-      downstreamVersions: (DownstreamVersion, DownstreamVersion)) {
+      values: (Any, Any)) {
     pair.categories = categories
     val (attribute1, attribute2) = attributes
-    val (upstreamVersion1, upstreamVersion2) = upstreamVersions
-    val (downstreamVersion1, downstreamVersion2) = downstreamVersions
+    val (value1, value2) = values
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(constraints,
-      DigestsFromParticipant(
-        AggregateDigest(attribute1, null, DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(attribute2, null, DigestUtils.md5Hex("vsn2"))),
-      VersionsFromStore(upstreamVersion1, upstreamVersion2))
+      DigestsFromParticipant(AggregateDigest(attribute1, null, DigestUtils.md5Hex("vsn1")),
+                             AggregateDigest(attribute2, null, DigestUtils.md5Hex("vsn2"))),
+      VersionsFromStore(Up("id1", value1, "vsn1"), Up("id2", value2, "vsn2")))
     expectDownstreamAggregateSync(constraints,
       DigestsFromParticipant(
         AggregateDigest(attribute1,  null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         AggregateDigest(attribute2, null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
-      VersionsFromStore(downstreamVersion1, downstreamVersion2))
+      VersionsFromStore(Down("id1", value1, "vsn1", downstreamVersionFor("vsn1")),
+                        Down("id2", value2, "vsn2", downstreamVersionFor("vsn2"))))
 
     // We should still see an unmatched version check
     expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(constraints))).andReturn(Seq())
@@ -119,11 +117,7 @@ abstract class AbstractPolicyTest {
       categories = Map("bizDate" -> "date"),
       constraints = List(unconstrainedDate(YearlyCategoryFunction)),
       attributes = (Seq("2009"), Seq("2010")),
-      upstreamVersions = (Up("id1", JUN_6_2009_1, "vsn1"),
-                          Up("id2", JUL_8_2010_1, "vsn2")),
-      downstreamVersions = (Down("id1", JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
-                            Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")))
-    )
+      values = (JUN_6_2009_1, JUL_8_2010_1))
 
   @Test
   def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatchForIntegerCategories =
@@ -131,11 +125,7 @@ abstract class AbstractPolicyTest {
       categories = Map("someInt" -> "int"),
       constraints = List(unconstrainedInt(ThousandsCategoryFunction)),
       attributes = (Seq("1000"), Seq("2000")),
-      upstreamVersions = (Up("id1", 1234, "vsn1"),
-                          Up("id2", 2345, "vsn2")),
-      downstreamVersions = (Down("id1", 1234, "vsn1", downstreamVersionFor("vsn1")),
-                            Down("id2", 2345, "vsn2", downstreamVersionFor("vsn2")))
-    )
+      values= (1234, 2345))
 
   protected def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipant(
     categories: Map[String, String],
@@ -232,27 +222,26 @@ abstract class AbstractPolicyTest {
     categories: Map[String, String],
     constraints: Seq[UnboundedRangeQueryConstraint],
     attributes: (Seq[String], Seq[String]),
-    upstreamVersions: (UpstreamVersion, UpstreamVersion),
-    downstreamVersions: (DownstreamVersion, DownstreamVersion),
+    values: (Any, Any),
     upstreamAttributes: (Map[String, String], Map[String, String])
   ) {
     pair.categories = categories
     val timestamp = new DateTime
     val (attribute1, attribute2) = attributes
-    val (upstreamVersion1, upstreamVersion2) = upstreamVersions
-    val (downstreamVersion1, downstreamVersion2) = downstreamVersions
+    val (value1, value2) = values
     val (upstreamAttributes1, upstreamAttributes2) = upstreamAttributes
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(constraints,
       DigestsFromParticipant(
         AggregateDigest(attribute1, START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(attribute2, START_2010, DigestUtils.md5Hex("vsn2"))),
-      VersionsFromStore(upstreamVersion1, upstreamVersion2))
+      VersionsFromStore(Up("id1", value1, "vsn1"), Up("id2", value2, "vsn2")))
     expectDownstreamAggregateSync(constraints,
       DigestsFromParticipant(
         AggregateDigest(attribute1, START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
         AggregateDigest(attribute2, START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
-      VersionsFromStore(downstreamVersion1, downstreamVersion2))
+      VersionsFromStore(Down("id1", value1, "vsn1a", downstreamVersionFor("vsn1a")),
+                        Down("id2", value2, "vsn2a", downstreamVersionFor("vsn2a"))))
 
     // If the version check returns mismatches, we should see differences generated
     expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(constraints))).andReturn(Seq(
@@ -273,10 +262,7 @@ abstract class AbstractPolicyTest {
       categories = Map("bizDate" -> "date"),
       constraints = Seq(unconstrainedDate(YearlyCategoryFunction)),
       attributes = (Seq("2009"), Seq("2010")),
-      upstreamVersions = (Up("id1", JUN_6_2009_1, "vsn1"),
-                          Up("id2", JUL_8_2010_1, "vsn2")),
-      downstreamVersions = (Down("id1", JUN_6_2009_1, "vsn1a", downstreamVersionFor("vsn1a")),
-                            Down("id2", JUL_8_2010_1, "vsn2a", downstreamVersionFor("vsn2a"))),
+      values = (JUN_6_2009_1, JUL_8_2010_1),
       upstreamAttributes = (bizDateMap(JUN_6_2009_1), bizDateMap(JUL_8_2010_1)))
 
   @Test
@@ -285,9 +271,7 @@ abstract class AbstractPolicyTest {
       categories = Map("someInt" -> "int"),
       constraints = Seq(unconstrainedInt(ThousandsCategoryFunction)),
       attributes = (Seq("1000"), Seq("2000")),
-      upstreamVersions = (Up("id1", 1234, "vsn1"), Up("id2", 2345, "vsn2")),
-      downstreamVersions = (Down("id1", 1234, "vsn1a", downstreamVersionFor("vsn1a")),
-                            Down("id2", 2345, "vsn2a", downstreamVersionFor("vsn2a"))),
+      values = (1234, 2345),
       upstreamAttributes = (Map("someInt" -> "1234"), Map("someInt" -> "2345"))
     )
 
