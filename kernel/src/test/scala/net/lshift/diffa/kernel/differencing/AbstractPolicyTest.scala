@@ -367,18 +367,35 @@ abstract class AbstractPolicyTest {
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> "1234"))
 
-
-  @Test
-  def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream {
-    val timestamp = new DateTime()
-    expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), bizDateMap(JUL_8_2010_2), JUL_8_2010_2, "vsn1", "vsn2")).
-      andReturn(Correlation(null, abPair, "id1", null, bizDateMap(JUL_8_2010_2), JUL_8_2010_2, timestamp, "vsn1", "vsn1", "vsn2", true))
+  protected def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
+    categories: Map[String, String],
+    attributes: Seq[String],
+    downstreamAttributes: Map[String, String]
+  ) {
+    pair.categories = categories
+    val timestamp = new DateTime
+    expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn2")).
+      andReturn(Correlation(null, abPair, "id1", null, downstreamAttributes, JUL_8_2010_2, timestamp, "vsn1", "vsn1", "vsn2", true))
     listener.onMatch(VersionID(abPair, "id1"), "vsn1"); expectLastCall
     replayAll
 
-    policy.onChange(DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), bizDateSeq(JUL_8_2010_2), JUL_8_2010_2, "vsn1", "vsn2"))
+    policy.onChange(DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1", "vsn2"))
     verifyAll
   }
+
+  @Test
+  def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstreamForDateCategories =
+    shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
+      categories = Map("bizDate" -> "date"),
+      attributes = bizDateSeq(JUL_8_2010_2),
+      downstreamAttributes = bizDateMap(JUL_8_2010_2))
+
+  @Test
+  def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstreamForIntegerCategories =
+    shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
+      categories = Map("someInt" -> "int"),
+      attributes = Seq("1234"),
+      downstreamAttributes = Map("someInt" -> "1234"))
 
 
   //
