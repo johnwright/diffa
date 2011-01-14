@@ -8,8 +8,6 @@ import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, Pr
 
 class AmqpRpcTests {
 
-  val connectionFactory = new ConnectionFactory()
-
   def extract(req: TransportRequest): (String, String) = {
     (req.endpoint, IOUtils.toString(req.is))
   }
@@ -17,7 +15,7 @@ class AmqpRpcTests {
   @Test
   def pingPong() {
     val queueName = "testQueue"
-    val holder = new ConnectorHolder(connectionFactory)
+    val holder = new ConnectorHolder()
 
     val server = new AmqpRpcServer(holder.connector, queueName, new ProtocolHandler {
       val contentType = "text/plain"
@@ -40,7 +38,7 @@ class AmqpRpcTests {
   @Test
   def receiveErrorCode() {
     val queueName = "testQueue"
-    val holder = new ConnectorHolder(connectionFactory)
+    val holder = new ConnectorHolder()
 
     val server = new AmqpRpcServer(holder.connector, queueName, new ProtocolHandler {
       val contentType = "text/plain"
@@ -69,7 +67,7 @@ class AmqpRpcTests {
   @Test
   def emptyResponse() {
     val queueName = "testQueue"
-    val holder = new ConnectorHolder(connectionFactory)
+    val holder = new ConnectorHolder()
 
     val server = new AmqpRpcServer(holder.connector, queueName, new ProtocolHandler {
       val contentType = "text/plain"
