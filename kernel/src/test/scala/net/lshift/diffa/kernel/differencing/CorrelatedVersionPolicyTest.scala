@@ -16,16 +16,20 @@
 
 package net.lshift.diffa.kernel.differencing
 
+import java.lang.String
+import scala.collection.mutable.Map
+
 import org.easymock.EasyMock._
 import org.junit.Test
-import net.lshift.diffa.kernel.util.Dates._
-import net.lshift.diffa.kernel.util.DateUtils._
 import org.joda.time.DateTime
 import org.easymock.EasyMock
 import org.apache.commons.codec.digest.DigestUtils
+
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.participants.EasyConstraints._
+import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.DateUtils._
 
 /**
  * Test cases for the correlated version policy test.
@@ -48,41 +52,41 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex("vsn1")),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
-        Up(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1"),
-        Up(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2")))
+        Up("id1", JUN_6_2009_1, "vsn1"),
+        Up("id2", JUL_8_2010_1, "vsn2")))
 
     expectDownstreamAggregateSync(abPair, List(unconstrainedDate(YearlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2009"), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
         AggregateDigest(Seq("2010"), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
-        Down(VersionID(abPair, "id4"), JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
-        Down(VersionID(abPair, "id5"), JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id1", JUN_6_2009_1, "vsn1", downstreamVersionFor("vsn1")),
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamAggregateSync(abPair, List(dateRangeConstraint(START_2010, END_2010, MonthlyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
-        Down(VersionID(abPair, "id4"), JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
-        Down(VersionID(abPair, "id5"), JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamAggregateSync(abPair, List(dateRangeConstraint(JUL_2010, END_JUL_2010, DailyCategoryFunction)),
       DigestsFromParticipant(
         AggregateDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
-        Down(VersionID(abPair, "id4"), JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
-        Down(VersionID(abPair, "id5"), JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamEntitySync2(abPair, List(dateRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010), IndividualCategoryFunction)),
       DigestsFromParticipant(
         EntityVersion("id2", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, downstreamVersionFor("vsn2")),
         EntityVersion("id3", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, downstreamVersionFor("vsn3")),
         EntityVersion("id5", Seq(JUL_8_2010_1.toString), JUL_8_2010_1, downstreamVersionFor("vsn5a"))),
       VersionsFromStore(
-        Down(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
-        Down(VersionID(abPair, "id4"), JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
-        Down(VersionID(abPair, "id5"), JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id2", JUL_8_2010_1, "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", JUL_8_2010_1, "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", JUL_8_2010_1, "vsn5", downstreamVersionFor("vsn5"))))
 
     // We should see id3 re-run through the system, and id4 be removed
     expect(usMock.retrieveContent("id3")).andReturn("content3")
