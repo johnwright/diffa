@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ case class UpstreamPairChangeEvent(id:VersionID, attributes:Seq[String], lastUpd
   extends PairChangeEvent
 
 /**
- * Event indicating that a change has occurred within a downsteam system.
+ * Event indicating that a change has occurred within a downstream system.
  */
 case class DownstreamPairChangeEvent(id:VersionID, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends PairChangeEvent
