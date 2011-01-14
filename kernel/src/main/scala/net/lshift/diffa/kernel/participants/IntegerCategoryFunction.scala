@@ -18,9 +18,8 @@ package net.lshift.diffa.kernel.participants
 
 import java.lang.Integer.parseInt
 
-abstract case class IntegerCategoryFunction extends CategoryFunction {
-  val denominator: Int
-  def next: CategoryFunction
+case class IntegerCategoryFunction(name: String, denominator: Int, next: CategoryFunction)
+  extends CategoryFunction {
 
   def shouldBucket = true
 
@@ -33,27 +32,14 @@ abstract case class IntegerCategoryFunction extends CategoryFunction {
     }
 
   def descend(partition: String) = {
-    // TODO
     val start = partition
     val end = (parseInt(partition) + denominator - 1).toString
     Some(IntermediateResult(start, end, next))
   }
 }
 
-object TensCategoryFunction extends IntegerCategoryFunction {
-  def name = "tens"
-  val denominator = 10
-  def next = IndividualCategoryFunction
-}
+object TensCategoryFunction extends IntegerCategoryFunction("tens", 10, IndividualCategoryFunction)
 
-object HundredsCategoryFunction extends IntegerCategoryFunction {
-  def name = "hundreds"
-  val denominator = 100
-  def next = TensCategoryFunction
-}
+object HundredsCategoryFunction extends IntegerCategoryFunction("hundreds", 100, TensCategoryFunction)
 
-object ThousandsCategoryFunction extends IntegerCategoryFunction {
-  def name = "thousands"
-  val denominator = 1000
-  def next = HundredsCategoryFunction
-}
+object ThousandsCategoryFunction extends IntegerCategoryFunction("thousands", 1000, HundredsCategoryFunction)

@@ -46,6 +46,12 @@ class IntegerPartitionTest {
   }
 
   @Test
+  def arbitraryPartition {
+    object ArbitraryCategoryFunction extends IntegerCategoryFunction("1337s", 1337, IndividualCategoryFunction)
+    assertEquals("2674", ArbitraryCategoryFunction.owningPartition("3456"))
+  }
+
+  @Test
   def descendFromTensPartition {
     assertEquals(Some(IntermediateResult("10", "19", IndividualCategoryFunction)),
                  TensCategoryFunction.descend("10"))
