@@ -47,6 +47,10 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
 object IntegerCategoryFunction {
   case class AutoDescendingIntegerCategoryFunction(denominator: Int, factor: Int)
     extends IntegerCategoryFunction(denominator) {
+
+      if (denominator % factor > 0)
+        throw new IllegalArgumentException(factor+" is not a factor of "+denominator)
+
       def name = denominator.toString + "s"
       def next = {
         val nextDenominator = denominator / factor

@@ -94,4 +94,9 @@ class IntegerPartitionTest {
     TensCategoryFunction.descend("123")
   }
 
+  @Test(expected=classOf[IllegalArgumentException])
+  def autoDescendingIntegerCategoryShouldThrowIllegalArgumentExceptionIfInstantiatedWithInvalidArgs {
+    new AutoDescendingIntegerCategoryFunction(100, 3) // 3 is not a factor of 100
+  }
+
 }
