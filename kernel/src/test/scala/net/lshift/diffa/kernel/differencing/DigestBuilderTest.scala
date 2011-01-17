@@ -33,11 +33,13 @@ class DigestBuilderTest {
   val pair = "A-B"
   val categories = new HashMap[String,String]
 
-  def add(b:DigestBuilder, v:VersionID, d:DateTime, s:String) = b.add(v, Seq(d.toString()), d, s)
+  def withBucketing(cf:CategoryFunction) = Map("bizDate" -> cf)
+
+  def add(b:DigestBuilder, v:VersionID, d:DateTime, s:String) = b.add(v, Map("bizDate" -> d.toString()), d, s)
 
   @Test
   def shouldNotBucketIndividualVersions {
-    val builder = new DigestBuilder(IndividualCategoryFunction)
+    val builder = new DigestBuilder(withBucketing(IndividualCategoryFunction))
 
     add(builder, VersionID(pair, "id1"), JUL_9_2010_1, "vsn1")
     add(builder, VersionID(pair, "id2"), JUL_9_2010_1, "vsn2")
@@ -50,7 +52,7 @@ class DigestBuilderTest {
 
   @Test
   def shouldBucketByDay {
-    val builder = new DigestBuilder(DailyCategoryFunction)
+    val builder = new DigestBuilder(withBucketing(DailyCategoryFunction))
 
     add(builder, VersionID(pair, "id1"), JUL_8_2010_1, "vsn1")
     add(builder, VersionID(pair, "id2"), JUL_8_2010_2, "vsn2")
@@ -68,7 +70,7 @@ class DigestBuilderTest {
 
   @Test
   def shouldBucketByMonth {
-    val builder = new DigestBuilder(MonthlyCategoryFunction)
+    val builder = new DigestBuilder(withBucketing(MonthlyCategoryFunction))
 
     add(builder, VersionID(pair, "id1"), JUL_8_2010_1, "vsn1")
     add(builder, VersionID(pair, "id2"), JUL_8_2010_2, "vsn2")
@@ -85,7 +87,7 @@ class DigestBuilderTest {
 
   @Test
   def shouldBucketByYear {
-    val builder = new DigestBuilder(YearlyCategoryFunction)
+    val builder = new DigestBuilder(withBucketing(YearlyCategoryFunction))
 
     add(builder, VersionID(pair, "id0"), JUN_6_2009_1, "vsn0")
     add(builder, VersionID(pair, "id1"), JUL_8_2010_1, "vsn1")
@@ -111,7 +113,7 @@ class DigestBuilderTest {
    */
   @Test
   def sealedBuckets = {
-    val builder = new DigestBuilder(YearlyCategoryFunction)
+    val builder = new DigestBuilder(withBucketing(YearlyCategoryFunction))
     add(builder, VersionID(pair, "id0"), JUN_6_2009_1, "vsn0")
     builder.digests.foreach(_.digest)
     try {

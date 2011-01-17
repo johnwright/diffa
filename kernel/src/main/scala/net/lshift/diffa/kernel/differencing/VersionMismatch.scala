@@ -17,6 +17,5 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.DateTime
-import scala.collection.Map
 
 case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String)

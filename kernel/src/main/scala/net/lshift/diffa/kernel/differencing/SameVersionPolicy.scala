@@ -20,7 +20,7 @@ package net.lshift.diffa.kernel.differencing
 import java.lang.String
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
-import net.lshift.diffa.kernel.config.ConfigStore
+import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -33,23 +33,22 @@ import net.lshift.diffa.kernel.config.ConfigStore
 class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener, configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(store, listener, configStore:ConfigStore) {
 
-  def synchroniseParticipants(pairKey: String, constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def synchroniseParticipants(pair: Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pairKey, constraints, us)
-    (new DownstreamSameSyncStrategy).syncHalf(pairKey, constraints, ds)
+    (new UpstreamSyncStrategy).syncHalf(pair, bucketing, constraints, us)
+    (new DownstreamSameSyncStrategy).syncHalf(pair, bucketing, constraints, ds)
   }
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
-    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {      
-      assert(constraints.length < 2, "See ticket #148")
-      val aggregator = new Aggregator(constraints(0).function)
+    def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
+      val aggregator = new Aggregator(bucketing)
       store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
       store.queryDownstreams(pairKey, constraints).map(x => {
-        EntityVersion(x.id, x.downstreamAttributes.values.toSeq, x.lastUpdate, x.downstreamDVsn)
+        EntityVersion(x.id, AttributesUtil.toSeq(x.downstreamAttributes.toMap), x.lastUpdate, x.downstreamDVsn)
       })
     }
 

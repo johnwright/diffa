@@ -42,9 +42,6 @@ case class WireConstraint(
     if (attibutes == null) {
       throw new InvalidWireConstraint(this, "missing attibutes")
     }
-    if (!attibutes.containsKey(WireConstraint.FUN)) {
-      throw new InvalidWireConstraint(this, "missing function definition")
-    }
     if (values != null) {
       if (attibutes.containsKey(WireConstraint.LO) || attibutes.containsKey(WireConstraint.HI)) {
         throw new InvalidWireConstraint(this, "contains values AND range")
@@ -59,19 +56,18 @@ case class WireConstraint(
 class InvalidWireConstraint(wire:WireConstraint, s:String) extends Exception(s + ": " + wire)
 
 object WireConstraint {
-  val FUN = "function"
   val LO = "lower"
   val HI = "upper"
 
-  def rangeConstraint(dataType:String, function:CategoryFunction, lower:AnyRef, upper:AnyRef) = {
-    WireConstraint(dataType, scala.collection.Map(FUN -> function.name, LO -> lower.toString(), HI -> upper.toString()), null)
+  def rangeConstraint(dataType:String, lower:AnyRef, upper:AnyRef) = {
+    WireConstraint(dataType, scala.collection.Map(LO -> lower.toString(), HI -> upper.toString()), null)
   }
 
-  def listConstraint(dataType:String, function:CategoryFunction, values:Seq[String]) = {
-    WireConstraint(dataType, scala.collection.Map(FUN -> function.name), values)
+  def listConstraint(dataType:String, values:Seq[String]) = {
+    WireConstraint(dataType, new java.util.HashMap, values)
   }
 
-  def unbounded(dataType:String, function:CategoryFunction) = {
-    WireConstraint(dataType, scala.collection.Map(FUN -> function.name), null)
+  def unbounded(dataType:String) = {
+    WireConstraint(dataType, new java.util.HashMap, null)
   }  
 }

@@ -28,23 +28,23 @@ class WireConstraintTest {
   def rangeToWireAndBack = {
     val start = new DateTime
     val end = new DateTime
-    val constraint = RangeQueryConstraint("date", YearlyCategoryFunction, Seq(start.toString(), end.toString()))
-    val expectation = rangeConstraint("date", YearlyCategoryFunction, start,end)
+    val constraint = RangeQueryConstraint("date", Seq(start.toString(), end.toString()))
+    val expectation = rangeConstraint("date", start,end)
     roundTrip(expectation, constraint)
   }
 
   @Test
   def listToWireAndBack = {
     val list = Seq("1","2","3")
-    val constraint = ListQueryConstraint("date", YearlyCategoryFunction, list)
-    val expectation = listConstraint("date", YearlyCategoryFunction, list)
+    val constraint = ListQueryConstraint("date", list)
+    val expectation = listConstraint("date", list)
     roundTrip(expectation, constraint)
   }
 
   @Test
   def unboundedToWireAndBack = {
-    val constraint = UnboundedRangeQueryConstraint("date", YearlyCategoryFunction)
-    val expectation = unbounded("date", YearlyCategoryFunction)
+    val constraint = UnboundedRangeQueryConstraint("date")
+    val expectation = unbounded("date")
     roundTrip(expectation, constraint)
   }
 

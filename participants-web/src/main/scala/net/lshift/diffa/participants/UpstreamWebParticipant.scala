@@ -32,7 +32,7 @@ class UpstreamWebParticipant(epName:String, val agentRoot:String)
     extends UpstreamMemoryParticipant(DigestUtils.md5Hex)
     with WebParticipant {
 
-  override def addEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String) = {
+  override def addEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String) = {
     super.addEntity(id, attributes, lastUpdated, body)
 
     changesClient.onChangeEvent(UpstreamChangeEvent(epName, id, attributes, lastUpdated, uvsnGen(body)))

@@ -35,22 +35,17 @@ object ConstraintRegistry {
   def resolve(wire:WireConstraint) : QueryConstraint = {
     wire.validate
     if (wire.values != null) {
-      ListQueryConstraint(wire.dataType, resolveConstraint(wire), wire.values)
+      ListQueryConstraint(wire.dataType, wire.values)
     }
     else {
       val lower = wire.attibutes.get(WireConstraint.LO)
       val upper = wire.attibutes.get(WireConstraint.HI)
       if (lower != null && upper != null) {
-        RangeQueryConstraint(wire.dataType, resolveConstraint(wire), Seq(lower,upper))
+        RangeQueryConstraint(wire.dataType, Seq(lower,upper))
       }
       else {
-        UnboundedRangeQueryConstraint(wire.dataType, resolveConstraint(wire))
+        UnboundedRangeQueryConstraint(wire.dataType)
       }
     }
-  }
-
-  private def resolveConstraint(wire:WireConstraint) : CategoryFunction = {
-    val functionName = wire.attibutes.get(WireConstraint.FUN)
-    registry(functionName)
   }
 }
