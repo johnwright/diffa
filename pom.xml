@@ -5,7 +5,7 @@
 
   <groupId>net.lshift.diffa</groupId>
   <artifactId>diffa-parent</artifactId>
-  <version>0.9-SNAPSHOT</version>
+  <version>0.9</version>
 
   <name>LShift Diffa Parent POM</name>
 
