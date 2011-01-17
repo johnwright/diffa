@@ -44,7 +44,7 @@ abstract case class DateCategoryFunction extends CategoryFunction {
       pattern.print(date)
     }
     catch {
-      case e: IllegalArgumentException => throw new InvalidCategoryException(e)
+      case e: IllegalArgumentException => throw new InvalidAttributeValueException("Value is not a date: "+value)
     }
 }
 

@@ -71,4 +71,4 @@ object IndividualCategoryFunction extends CategoryFunction {
 /**
  * Indicates that the chosen category function is not valid for the values being received
  */
-case class InvalidCategoryException(rootCause: RuntimeException) extends RuntimeException
+case class InvalidAttributeValueException(msg: String) extends RuntimeException(msg)

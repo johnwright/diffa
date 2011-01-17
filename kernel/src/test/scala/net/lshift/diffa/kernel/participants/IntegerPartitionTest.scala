@@ -18,34 +18,27 @@ package net.lshift.diffa.kernel.participants
 
 import org.junit.Test
 import org.junit.Assert._
-import org.hamcrest.CoreMatchers._
 
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 
 class IntegerPartitionTest {
 
+  protected val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
+  protected val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
+
   @Test
   def tensPartition {
-    assertEquals("120", TensCategoryFunction.owningPartition("123"))
-    assertEquals("10", TensCategoryFunction.owningPartition("12"))
-    assertEquals("0", TensCategoryFunction.owningPartition("1"))
+    assertEquals("120", tens.owningPartition("123"))
+    assertEquals("10", tens.owningPartition("12"))
+    assertEquals("0", tens.owningPartition("1"))
   }
 
   @Test
   def hundredsPartition {
-    assertEquals("1200", HundredsCategoryFunction.owningPartition("1234"))
-    assertEquals("100", HundredsCategoryFunction.owningPartition("123"))
-    assertEquals("0", HundredsCategoryFunction.owningPartition("12"))
-    assertEquals("0", HundredsCategoryFunction.owningPartition("1"))
-  }
-
-  @Test
-  def thousandsPartition {
-    assertEquals("12000", ThousandsCategoryFunction.owningPartition("12345"))
-    assertEquals("1000", ThousandsCategoryFunction.owningPartition("1234"))
-    assertEquals("0", ThousandsCategoryFunction.owningPartition("123"))
-    assertEquals("0", ThousandsCategoryFunction.owningPartition("12"))
-    assertEquals("0", ThousandsCategoryFunction.owningPartition("1"))
+    assertEquals("1200", hundreds.owningPartition("1234"))
+    assertEquals("100", hundreds.owningPartition("123"))
+    assertEquals("0", hundreds.owningPartition("12"))
+    assertEquals("0", hundreds.owningPartition("1"))
   }
 
   @Test
@@ -59,7 +52,7 @@ class IntegerPartitionTest {
 
   @Test
   def autoDescendingIntegerCategoryFunction {
-    def binaryCategoryFunction(denom: Int) = AutoDescendingIntegerCategoryFunction(denom, 2)
+    def binaryCategoryFunction(denom: Int) = AutoNarrowingIntegerCategoryFunction(denom, 2)
     val myBinaryCategoryFunction = binaryCategoryFunction(128)
     assertEquals("256", myBinaryCategoryFunction.owningPartition("300"))
     assertEquals(Some(IntermediateResult("256", "383", binaryCategoryFunction(64))),
@@ -69,34 +62,28 @@ class IntegerPartitionTest {
   @Test
   def descendFromTensPartition {
     assertEquals(Some(IntermediateResult("10", "19", IndividualCategoryFunction)),
-                 TensCategoryFunction.descend("10"))
+                 tens.descend("10"))
   }
 
   @Test
   def descendFromHundredsPartition {
-    assertEquals(Some(IntermediateResult("100", "199", TensCategoryFunction)),
-                 HundredsCategoryFunction.descend("100"))
+    assertEquals(Some(IntermediateResult("100", "199", tens)),
+                 hundreds.descend("100"))
   }
 
-  @Test
-  def descendFromThousandsPartition {
-    assertEquals(Some(IntermediateResult("1000", "1999", HundredsCategoryFunction)),
-                 ThousandsCategoryFunction.descend("1000"))
-  }
-
-  @Test(expected=classOf[InvalidCategoryException])
+  @Test(expected=classOf[InvalidAttributeValueException])
   def shouldThrowInvalidCategoryExceptionIfValueIsNotInteger {
-    TensCategoryFunction.owningPartition("NOT_AN_INTEGER")
+    tens.owningPartition("NOT_AN_INTEGER")
   }
 
-  @Test(expected=classOf[IllegalArgumentException])
-  def descendShouldThrowIllegalArgumentExceptionIfPartitionValueIsInvalid {
-    TensCategoryFunction.descend("123")
+  @Test(expected=classOf[InvalidAttributeValueException])
+  def descendShouldThrowInvalidAttributeValueExceptionIfPartitionValueIsInvalid {
+    tens.descend("123")
   }
 
   @Test(expected=classOf[IllegalArgumentException])
   def autoDescendingIntegerCategoryShouldThrowIllegalArgumentExceptionIfInstantiatedWithInvalidArgs {
-    new AutoDescendingIntegerCategoryFunction(100, 3) // 3 is not a factor of 100
+    new AutoNarrowingIntegerCategoryFunction(100, 3) // 3 is not a factor of 100
   }
 
 }

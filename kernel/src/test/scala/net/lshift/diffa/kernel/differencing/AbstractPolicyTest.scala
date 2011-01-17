@@ -76,6 +76,10 @@ abstract class AbstractPolicyTest {
   protected val daily = DailyCategoryFunction
   protected val individual = IndividualCategoryFunction
 
+  protected val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
+  protected val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
+  protected val thousands = AutoNarrowingIntegerCategoryFunction(1000, 10)
+
   def Up(id: String, o:Any, s: String): UpstreamVersion = Up(VersionID(abPair, id), o, s)
   def Up(v:VersionID, o:Any, s:String): UpstreamVersion = UpstreamVersion(v, Seq(o.toString()), new DateTime, s)
   def Down(id: String, o:Any, s1: String, s2: String): DownstreamVersion = Down(VersionID(abPair, id), o, s1, s2)
@@ -107,9 +111,9 @@ abstract class AbstractPolicyTest {
 
   val integerCategoryData = PolicyTestData(
     categories = Map("someInt" -> "int"),
-    constraints = Seq(Seq(unconstrainedInt(ThousandsCategoryFunction)),
-                      Seq(intRangeConstraint(2000, 2999, HundredsCategoryFunction)),
-                      Seq(intRangeConstraint(2300, 2399, TensCategoryFunction)),
+    constraints = Seq(Seq(unconstrainedInt(thousands)),
+                      Seq(intRangeConstraint(2000, 2999, hundreds)),
+                      Seq(intRangeConstraint(2300, 2399, tens)),
                       Seq(intRangeConstraint(2340, 2349, IndividualCategoryFunction))),
     attributes = Seq(Seq("1000"), Seq("2000"), Seq("2300"), Seq("2340")),
     downstreamAttributes = Seq(Map("someInt" -> "1234"), Map("someInt" -> "2345")),

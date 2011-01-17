@@ -30,7 +30,7 @@ class DatePartitionTest {
     assertEquals("1998", partition)
   }
 
-  @Test(expected=classOf[InvalidCategoryException])
+  @Test(expected=classOf[InvalidAttributeValueException])
   def shouldThrowInvalidCategoryExceptionIfValueIsNotDate {
     DailyCategoryFunction.owningPartition("NOT_A_DATE")
   }

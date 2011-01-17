@@ -41,7 +41,7 @@ class PairTest {
   @Test
   def defaultConstraintsForPairWithIntCategory = {
     val pair = new Pair(categories=Map("someInt" -> "int"))
-    assertEquals(Seq(unconstrainedInt(ThousandsCategoryFunction)), pair.defaultConstraints)
+    assertEquals(Seq(unconstrainedInt(DefaultIntegerCategoryFunction)), pair.defaultConstraints)
   }
 
   @Test

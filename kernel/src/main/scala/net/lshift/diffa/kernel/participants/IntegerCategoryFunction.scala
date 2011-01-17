@@ -20,7 +20,6 @@ import java.lang.Integer.parseInt
 
 abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunction {
 
-  def name: String
   def next: CategoryFunction
 
   def shouldBucket = true
@@ -30,14 +29,14 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
       denominator * (parseInt(value) / denominator) toString
     }
     catch {
-      case e: NumberFormatException => throw new InvalidCategoryException(e)
+      case e: NumberFormatException => throw new InvalidAttributeValueException("Value is not an integer: "+value)
     }
 
   def descend(partition: String) = {
     val parsedPartition = parseInt(partition)
-    if (parsedPartition % denominator > 0)
-      // TODO formalise this with its own exception type
-      throw new IllegalArgumentException("Partition "+partition+" does not match denominator "+denominator)
+    if (parsedPartition % denominator > 0) {
+      throw new InvalidAttributeValueException("Partition "+partition+" does not match denominator "+denominator)
+    }
     val start = partition
     val end = (parsedPartition + denominator - 1).toString
     Some(IntermediateResult(start, end, next))
@@ -45,23 +44,38 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
 }
 
 object IntegerCategoryFunction {
-  case class AutoDescendingIntegerCategoryFunction(denominator: Int, factor: Int)
+
+  /**
+   * This function partitions by groups of size `denominator`.
+   * When `next` is called, it will return another with the same `factor` and with a `denominator` which is
+   * `factor` times smaller.
+   *
+   * For example:
+   *
+   *     val HundredsCategoryFunction = AutoNarrowingIntegerCategoryFunction(100, 10)
+   *
+   */
+  case class AutoNarrowingIntegerCategoryFunction(denominator: Int, factor: Int)
     extends IntegerCategoryFunction(denominator) {
 
-      if (denominator % factor > 0)
+      if (denominator % factor > 0) {
         throw new IllegalArgumentException(factor+" is not a factor of "+denominator)
+      }
 
       def name = denominator.toString + "s"
       def next = {
         val nextDenominator = denominator / factor
-        if (nextDenominator <= 1)
+        if (nextDenominator <= 1) {
           IndividualCategoryFunction
-        else
-          AutoDescendingIntegerCategoryFunction(denominator/factor, factor)
+        }
+        else {
+          AutoNarrowingIntegerCategoryFunction(nextDenominator, factor)
+        }
       }
   }
 
-  lazy val TensCategoryFunction = AutoDescendingIntegerCategoryFunction(10, 10)
-  lazy val HundredsCategoryFunction = AutoDescendingIntegerCategoryFunction(100, 10)
-  lazy val ThousandsCategoryFunction = AutoDescendingIntegerCategoryFunction(1000, 10)
+  /**
+   * Convenience instance of AutoDescendingIntegerCategory
+   */
+  lazy val DefaultIntegerCategoryFunction = AutoNarrowingIntegerCategoryFunction(1000, 10)
 }

@@ -87,7 +87,7 @@ case class Pair(
   def defaultConstraints() : Seq[QueryConstraint] =
     categories.flatMap({
       case (_, "date") => Some(unconstrainedDate(YearlyCategoryFunction))
-      case (_, "int") => Some(unconstrainedInt(ThousandsCategoryFunction))
+      case (_, "int") => Some(unconstrainedInt(DefaultIntegerCategoryFunction))
       case _ => None
     }).toList
 }
