@@ -23,9 +23,9 @@ import net.lshift.diffa.messaging.json.ChangesRestClient
 import java.io.{Closeable, FileInputStream, File}
 import collection.mutable.{HashMap, ListBuffer}
 import org.joda.time.format.ISODateTimeFormat
-import net.lshift.diffa.kernel.differencing.DigestBuilder
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
+import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
 
 /**
  * Basic functionality requried for a file-based participant.
@@ -42,13 +42,13 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     assert(constraints.length < 2, "See ticket #148")
     val files = queryFiles(constraints(0))
-    files.map(f => EntityVersion(idFor(f), attributesFor(f), dateFor(f), versionFor(f)))
+    files.map(f => EntityVersion(idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
   }
 
-  def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
+  def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
     assert(constraints.length < 2, "See ticket #148")
     val files = queryFiles(constraints(0))
-    val builder = new DigestBuilder(constraints(0).function)
+    val builder = new DigestBuilder(bucketing)
     files.sortBy(_.getAbsolutePath).foreach(f => {
       builder.add(idFor(f), attributesFor(f), dateFor(f), versionFor(f))
     })
@@ -58,7 +58,7 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
   def queryFiles(constraint:QueryConstraint) = {
     val lower = isoFormat.parseDateTime(constraint.values(0))
     val upper = isoFormat.parseDateTime(constraint.values(1))    
-    val dateConstraint = SimpleDateConstraint(lower,upper)
+    val dateConstraint = SimpleDateConstraint("bizDate", lower,upper)
 
     val files = new ListBuffer[File]
 
@@ -96,7 +96,7 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
   protected def onFileChange(f:File)
 
   protected def idFor(f:File) = f.getAbsolutePath.substring(rootDir.getAbsolutePath.length)
-  protected def attributesFor(f:File) = Seq(f.lastModified.toString())
+  protected def attributesFor(f:File) = Map("bizDate" -> f.lastModified.toString())
   protected def dateFor(f:File) = new DateTime(f.lastModified)
   protected def versionFor(f:File) = DigestUtils.md5Hex(new FileInputStream(f))
 }

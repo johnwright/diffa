@@ -22,9 +22,9 @@ import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
 import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
 import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
-import scala.collection.Map
 import collection.mutable.HashMap
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -54,7 +54,7 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
 
 
   // Categories
-  val categories = HashMap("bizDate" -> "date")
+  val categories = Map("bizDate" -> "date")
 
   // Participants' RPC server setup
   Participants.startUpstreamServer(usPort, upstream)
@@ -83,17 +83,17 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, attributes:Seq[String], content:String) = {
+  def addAndNotifyUpstream(id:String, attributes:Map[String, String], content:String) = {
     upstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
-    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, attributes, Placeholders.dummyLastUpdated, versionForUpstream(content)))
+    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, attributes:Seq[String], content:String) = {
+  def addAndNotifyDownstream(id:String, attributes:Map[String, String], content:String) = {
     downstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, attributes, Placeholders.dummyLastUpdated, versionForDownstream(content)))
+        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
       case CorrelatedVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, attributes, Placeholders.dummyLastUpdated,
+        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated,
           versionForUpstream(content), versionForDownstream(content)))
     }
   }

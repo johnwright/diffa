@@ -21,7 +21,7 @@ import net.lshift.diffa.kernel.events.{VersionID, DownstreamChangeEvent}
 import org.joda.time.DateTime
 import org.apache.commons.codec.digest.DigestUtils
 import collection.mutable.HashMap
-import scala.collection.Map
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 /**
  * An implementation of the DownstreamParticipant using the MemoryParticipant base, whereby the body is the version
@@ -34,7 +34,7 @@ class DownstreamWebParticipant(epName:String, val agentRoot:String)
   override def addEntity(id: String, attributes:Map[String, String], lastUpdated: DateTime, body: String) = {
     super.addEntity(id, attributes, lastUpdated, body)
 
-    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, attributes, lastUpdated, dvsnGen(body)))
+    changesClient.onChangeEvent(DownstreamChangeEvent(epName, id, AttributesUtil.toSeq(attributes), lastUpdated, dvsnGen(body)))
   }
 
 

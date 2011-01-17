@@ -55,8 +55,8 @@ class JSONEncodingUtilsTest {
                                                     "lower" -> "fud",
                                                     "function" -> "yes"), Seq("x","y"))
 
-    val serialized = JSONEncodingUtils.serialize(Seq(constraint1, constraint2))
-    val deserialized = JSONEncodingUtils.deserialize(serialized)
+    val serialized = JSONEncodingUtils.serializeQueryConstraints(Seq(constraint1, constraint2))
+    val deserialized = JSONEncodingUtils.deserializeQueryConstraints(serialized)
     assertNotNull(deserialized)
     assertEquals(2, deserialized.length)
     assertEquals(constraint1, deserialized(0))
@@ -65,8 +65,8 @@ class JSONEncodingUtilsTest {
 
   @Test
   def emptyList = {
-    val serialized = JSONEncodingUtils.serialize(Seq())
-    val deserialized = JSONEncodingUtils.deserialize(serialized)
+    val serialized = JSONEncodingUtils.serializeQueryConstraints(Seq())
+    val deserialized = JSONEncodingUtils.deserializeQueryConstraints(serialized)
     assertNotNull(deserialized)
     assertEquals(0, deserialized.length)
   }

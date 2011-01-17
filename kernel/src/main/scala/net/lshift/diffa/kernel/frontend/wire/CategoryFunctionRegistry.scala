@@ -23,7 +23,7 @@ import scala.collection.JavaConversions._
  * Provides a simple registry so that constraints in wire formats can
  * easily get mapped back to their kernel counterparts.
  */
-object ConstraintRegistry {
+object CategoryFunctionRegistry {
 
   val registry = Map(
     IndividualCategoryFunction.name -> IndividualCategoryFunction,
@@ -32,20 +32,5 @@ object ConstraintRegistry {
     YearlyCategoryFunction.name -> YearlyCategoryFunction
   )
 
-  def resolve(wire:WireConstraint) : QueryConstraint = {
-    wire.validate
-    if (wire.values != null) {
-      ListQueryConstraint(wire.dataType, wire.values)
-    }
-    else {
-      val lower = wire.attibutes.get(WireConstraint.LO)
-      val upper = wire.attibutes.get(WireConstraint.HI)
-      if (lower != null && upper != null) {
-        RangeQueryConstraint(wire.dataType, Seq(lower,upper))
-      }
-      else {
-        UnboundedRangeQueryConstraint(wire.dataType)
-      }
-    }
-  }
+  def resolve(fun:String) = registry(fun)
 }

@@ -51,7 +51,7 @@ class WireConstraintTest {
   def roundTrip(expectation:WireConstraint, input:QueryConstraint) = {
     val wire = input.wireFormat
     assertEquals(expectation, wire)
-    val resolved = ConstraintRegistry.resolve(wire)
+    val resolved = wire.toQueryConstraint
     assertEquals(input, resolved)
   }
 }
