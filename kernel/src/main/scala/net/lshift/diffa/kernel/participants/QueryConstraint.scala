@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,12 @@ import scala.collection.JavaConversions._
 trait QueryConstraint {
 
   /**
-   * The name of the catgory to constrain entities or aggregates by.
+   * The name of the category to constrain entities or aggregates by.
    */
   def category:String
 
   /**
-   * The function that peforms narrowing
+   * The function that performs narrowing
    */
   def function:CategoryFunction
 
@@ -50,7 +50,7 @@ trait QueryConstraint {
    * Depending on:
    *
    * - The name of a valid partition with the specified value range
-   * - Whether or not a parition is being requested where one of the digest sequences is empty
+   * - Whether or not a partition is being requested where one of the digest sequences is empty
    *
    * return a finer grained query to execute.
    */
@@ -66,19 +66,13 @@ abstract case class BaseQueryConstraint(category:String,function:CategoryFunctio
 
   def nextConstraint(category:String,function:CategoryFunction,values:Seq[String]) : BaseQueryConstraint
 
-  def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] = {
-    function.descend(partition) match {
-      case None    => None
-      case Some(x) => {
-        if (empty || x.next == IndividualCategoryFunction) {
-          Some(EntityQueryAction(nextConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction, x.toSeq)))
-        }
-        else {
-          Some(AggregateQueryAction(nextConstraint(BaseQueryConstraint.this.category, x.next, x.toSeq)))
-        }
-      }
+  def nextQueryAction(partition:String, empty:Boolean) : Option[QueryAction] =
+    function.descend(partition) map { intermediateResult =>
+      if (empty || intermediateResult.next == IndividualCategoryFunction)
+        EntityQueryAction(nextConstraint(BaseQueryConstraint.this.category, IndividualCategoryFunction, intermediateResult.toSeq))
+      else
+        AggregateQueryAction(nextConstraint(BaseQueryConstraint.this.category, intermediateResult.next, intermediateResult.toSeq))
     }
-  }  
 }
 
 /**
@@ -124,6 +118,10 @@ case class NoConstraint(override val c:String, override val f:CategoryFunction) 
  *   Utility builders
  */
 object EasyConstraints {
-  def dateRangeConstaint(start:DateTime, end:DateTime, f:CategoryFunction) = RangeQueryConstraint("date", f, Seq(start.toString(), end.toString()))
-  def unconstrainedDate(f:CategoryFunction) = UnboundedRangeQueryConstraint("date", f)
+  def dateRangeConstraint(start: DateTime, end: DateTime, f: CategoryFunction) =
+    RangeQueryConstraint("date", f, Seq(start.toString, end.toString))
+  def intRangeConstraint(start: Int, end: Int, f: CategoryFunction) =
+    RangeQueryConstraint("int", f, Seq(start.toString, end.toString))
+  def unconstrainedDate(f: CategoryFunction) = UnboundedRangeQueryConstraint("date", f)
+  def unconstrainedInt(f: CategoryFunction) = UnboundedRangeQueryConstraint("int", f)
 }

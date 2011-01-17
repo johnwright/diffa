@@ -111,7 +111,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
           DigestDifferencingUtils.differenceEntities(remoteVersions, cachedVersions, resolve, narrowed).foreach(handleMismatch(pairKey, _))
         }
       })
-      
+
     }
 
     def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
@@ -121,11 +121,13 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
 
-    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]) = {      
+    def getAggregates(pairKey:String, constraints:Seq[QueryConstraint]): Seq[AggregateDigest] = {
       assert(constraints.length < 2, "See ticket #148")
-      val aggregator = new Aggregator(constraints(0).function)
-      store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
-      aggregator.digests
+      constraints flatMap { constraint =>
+        val aggregator = new Aggregator(constraint.function)
+        store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
+        aggregator.digests
+      }
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,16 @@
 package net.lshift.diffa.kernel.participants
 
 /**
- * This is a struct for desceding partition requests. 
+ * This is a struct for descending partition requests.
  */
-case class IntermediateResult(lower:AnyRef, upper:AnyRef, next:CategoryFunction) {
+case class IntermediateResult(lower:Any, upper:Any, next:CategoryFunction) {
   def toSeq : Seq[String] = Seq(lower.toString, upper.toString)
 }
 
 /**
  * This is a function definition that can:
  * - Given a value in a given domain, it can determine what partition that value belongs to
- * - Given the value of a paritition, it can determine what the relevant upper and lower bounds are for
+ * - Given the value of a partition, it can determine what the relevant upper and lower bounds are for
  *   any further introspection.
  */
 trait CategoryFunction {
@@ -40,7 +40,7 @@ trait CategoryFunction {
    * Given the name of a valid partition, return the lower and upper bounds of any necessary deeper descent.
    * The function to delegate the deeper descent to is returned as part of the result.
    *
-   * If this function returns None, then no more finer grained paritioning is possible.
+   * If this function returns None, then no more finer grained partitioning is possible.
    * This occurs for example when trying to descend using a category function for an individual entity.   
    */
   def descend(partition:String) : Option[IntermediateResult]
@@ -67,3 +67,8 @@ object IndividualCategoryFunction extends CategoryFunction {
   def shouldBucket() = false
   def owningPartition(value:String) = value
 }
+
+/**
+ * Indicates that the chosen category function is not valid for the values being received
+ */
+case class InvalidAttributeValueException(msg: String) extends RuntimeException(msg)
