@@ -213,13 +213,6 @@
     </Set>
 
     <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
-      <Arg></Arg>
-      <Arg>agentUrl</Arg>
-      <Arg type="java.lang.String">http://localhost:7654</Arg>
-      <Arg type="boolean">true</Arg>
-    </New>
-
-    <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
       <Arg>demoProperties</Arg>
       <Arg>
         <New class="java.util.Properties">

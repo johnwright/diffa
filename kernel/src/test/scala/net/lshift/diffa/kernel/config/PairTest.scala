@@ -18,17 +18,30 @@ package net.lshift.diffa.kernel.config
 
 import org.junit.Test
 import org.junit.Assert._
-import net.lshift.diffa.kernel.participants.YearlyCategoryFunction
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.Map
 import net.lshift.diffa.kernel.util.Conversions._
+import net.lshift.diffa.kernel.participants.YearlyCategoryFunction
+import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 
 class PairTest {
 
   @Test
-  def defaultConstraints() = {
-    var pair = new Pair()
+  def defaultConstraintsForPairWithNoCategory = {
+    val pair = new Pair()
+    assertEquals(Seq(), pair.defaultConstraints)
+  }
+
+  @Test
+  def defaultConstraintsForPairWithDateCategory = {
+    val pair = new Pair(categories=Map("bizDate" -> "date"))
     assertEquals(Seq(unconstrainedDate(YearlyCategoryFunction)), pair.defaultConstraints)
+  }
+
+  @Test
+  def defaultConstraintsForPairWithIntCategory = {
+    val pair = new Pair(categories=Map("someInt" -> "int"))
+    assertEquals(Seq(unconstrainedInt(DefaultIntegerCategoryFunction)), pair.defaultConstraints)
   }
 
   @Test
