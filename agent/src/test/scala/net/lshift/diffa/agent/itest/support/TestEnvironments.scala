@@ -20,6 +20,15 @@ package net.lshift.diffa.agent.itest.support
  * Static set of environments that can be used in integration test cases.
  */
 object TestEnvironments {
-  lazy val abSame = new TestEnvironment("abSame", 20094, 20095, SameVersionScheme)
-  lazy val abCorrelated = new TestEnvironment("abCorrelated", 20194, 20195, CorrelatedVersionScheme)
+  lazy val abSame =
+    new TestEnvironment("abSame", new HttpParticipants(20094, 20095), SameVersionScheme)
+
+  lazy val abCorrelated =
+    new TestEnvironment("abCorrelated", new HttpParticipants(20194, 20195), CorrelatedVersionScheme)
+
+  lazy val abSameAmqp =
+    new TestEnvironment("abSameAmqp", new AmqpParticipants("participant-us-same", "participant-ds-same"), SameVersionScheme)
+
+  lazy val abCorrelatedAmqp =
+    new TestEnvironment("abCorrelatedAmqp", new AmqpParticipants("participant-us-correlated", "participant-ds-correlated"), CorrelatedVersionScheme)
 }

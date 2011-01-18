@@ -26,5 +26,6 @@ import net.lshift.diffa.agent.itest.support.TestEnvironments
 class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
     with CommonDifferenceTests
     with CommonActionTests {
+  
   val env = TestEnvironments.abCorrelated
 }

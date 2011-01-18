@@ -15,7 +15,7 @@ class AmqpRpcServer(connector: Connector, queueName: String, handler: ProtocolHa
   val stopTimeout = 10000
 
   private val queueIsDurable = true
-  private val queueIsExclusive = true
+  private val queueIsExclusive = false
   private val queueIsAutoDelete = false
 
   @volatile private var running = false
@@ -41,13 +41,17 @@ class AmqpRpcServer(connector: Connector, queueName: String, handler: ProtocolHa
           val msg = messaging.receive(receiveTimeout)
           if (msg != null) {
             messaging.ack(msg)
-            val methodName = Option(msg.getProperties.getHeaders.get(AmqpRpc.endpointHeader))
+            val endpoint = Option(msg.getProperties.getHeaders.get(AmqpRpc.endpointHeader))
               .map(_.toString).getOrElse("")
 
             val replyHeaders = new java.util.HashMap[String, Object]
-            replyHeaders.put(AmqpRpc.endpointHeader, methodName)
+            replyHeaders.put(AmqpRpc.endpointHeader, endpoint)
 
-            val request = new TransportRequest(methodName, new ByteArrayInputStream(msg.getBody))
+            if (log.isDebugEnabled) {
+              log.debug("%s: %s".format(endpoint, new String(msg.getBody)))
+            }
+
+            val request = new TransportRequest(endpoint, new ByteArrayInputStream(msg.getBody))
             val response = new AmqpTransportResponse
 
             handler.handleRequest(request, response)

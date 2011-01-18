@@ -34,6 +34,7 @@
     <dbcp.version>1.2.2</dbcp.version>
     <jetty.version>7.1.6.v20100715</jetty.version>
     <rabbitmq.version>1.8.0</rabbitmq.version>
+    <commons.io.version>1.4</commons.io.version>
     <jersey.version>1.4-ea06</jersey.version>
     <jackson.version>1.6.4</jackson.version>
     <lucene.version>3.0.2</lucene.version>
@@ -194,7 +195,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>1.4</version>
+      <version>${commons.io.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>

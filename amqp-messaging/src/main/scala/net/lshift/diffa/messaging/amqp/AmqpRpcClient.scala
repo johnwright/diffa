@@ -3,11 +3,14 @@ package net.lshift.diffa.messaging.amqp
 import com.rabbitmq.messagepatterns.unicast.{ChannelSetupListener, Connector, Factory}
 import com.rabbitmq.client.Channel
 import java.io.{Closeable, IOException}
+import org.slf4j.LoggerFactory
 
 class AmqpRpcClient(connector: Connector, queueName: String)
   extends Closeable {
 
   val defaultTimeout = 30000
+
+  private val log = LoggerFactory.getLogger(getClass)
 
   private var replyQueueName: Option[String] = None
 
@@ -29,6 +32,10 @@ class AmqpRpcClient(connector: Connector, queueName: String)
   }
 
   def call(endpoint: String, payload: String, timeout: Long = defaultTimeout) = {
+    if (log.isDebugEnabled) {
+      log.debug("%s: %s".format(endpoint, payload))
+    }
+
     val msg = messaging.createMessage()
     msg.setRoutingKey(queueName)
     if (replyQueueName.isEmpty)

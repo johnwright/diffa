@@ -17,7 +17,7 @@ abstract class ParticipantAmqpClient(connector: Connector,
      andThen (serializeConstraints _)
      andThen (call("query_aggregate_digests", _, timeout))
      andThen (deserializeDigests _)
-     andThen (digestsFromWire _)
+     andThen (digestsFromWire[Seq[AggregateDigest]]_)
      apply (constraints)
   )
 
@@ -26,7 +26,7 @@ abstract class ParticipantAmqpClient(connector: Connector,
      andThen (serializeConstraints _)
      andThen (call("query_entity_versions", _, timeout))
      andThen (deserializeDigests _)
-     andThen (digestsFromWire _)
+     andThen (digestsFromWire[Seq[EntityVersion]] _)
      apply (constraints)
   )
 
@@ -59,7 +59,7 @@ class DownstreamParticipantAmqpClient(connector: Connector,
   with DownstreamParticipant {
 
   def generateVersion(entityBody: String): ProcessingResponse = (
-    (serializeEntityContentRequest _)
+    (serializeEntityBodyRequest _)
      andThen (call("generate_version", _, timeout))
      andThen (deserializeWireResponse _)
      andThen (WireResponse.fromWire _)

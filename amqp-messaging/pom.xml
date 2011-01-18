@@ -26,21 +26,32 @@
       <artifactId>diffa-json-messaging</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>amqp-client</artifactId>
-      <version>1.8.0</version>
-    </dependency>
+
     <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>rabbitmq-messagepatterns</artifactId>
       <version>0.1.3</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.rabbitmq</groupId>
+          <artifactId>amqp-client</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- The Rabbit client jars will be supplied by the container -->
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+      <version>${rabbitmq.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

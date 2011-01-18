@@ -6,7 +6,7 @@ Diffa supports the notion of pluggable transports. This is designed to facilitat
 
 There are built in transports, such as the default JSON over HTTP transport, which are booted using the plugin mechanism.
 
-The following is a list of the currently known trasnport mechanisms.
+The following is a list of the currently known transport mechanisms.
 
 \begin{itemize}
 	\item JSON over HTTP;
@@ -37,3 +37,7 @@ Some transports require participant specific inbound endpoints, such as per-part
 \section{JSON over HTTP}
 
 This is built into Diffa and provides a simple RESTful-ish communication channel using JSON serialization.
+
+\section{JSON over AMQP}
+
+Optionally, Diffa can use AMQP for communication of changes and between participants.
