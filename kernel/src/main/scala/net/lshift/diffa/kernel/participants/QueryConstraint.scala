@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,6 +84,9 @@ case class NoConstraint(override val c:String) extends NonValueConstraint(c) {
  *   Utility builders
  */
 object EasyConstraints {
-  def dateRangeConstaint(start:DateTime, end:DateTime) = RangeQueryConstraint("bizDate", Seq(start.toString(), end.toString()))
-  def unconstrainedDate = UnboundedRangeQueryConstraint("bizDate")
+  def dateRangeConstraint(cat:String, start:DateTime, end:DateTime) = RangeQueryConstraint(cat, Seq(start.toString(), end.toString()))
+  def unconstrainedDate(cat:String) = UnboundedRangeQueryConstraint(cat)
+  
+  def intRangeConstraint(cat:String, start: Int, end: Int) = RangeQueryConstraint(cat, Seq(start.toString, end.toString))
+  def unconstrainedInt(cat:String) = UnboundedRangeQueryConstraint(cat)
 }

@@ -20,6 +20,8 @@ import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, YearlyCategoryFunction}
+import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
+import java.util.{TreeMap, SortedMap}
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -57,15 +59,15 @@ case class Endpoint(
 }
 
 case class Pair(
-  @BeanProperty var key: String,
-  @BeanProperty var upstream: Endpoint,
-  @BeanProperty var downstream: Endpoint,
-  @BeanProperty var group: PairGroup,
-  @BeanProperty var versionPolicyName: String,
-  @BeanProperty var matchingTimeout: Int,
-  @BeanProperty var categories: java.util.SortedMap[String,String]) {
+  @BeanProperty var key: String = null,
+  @BeanProperty var upstream: Endpoint = null,
+  @BeanProperty var downstream: Endpoint = null,
+  @BeanProperty var group: PairGroup = null,
+  @BeanProperty var versionPolicyName: String = null,
+  @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
+  @BeanProperty var categories: SortedMap[String,String] = new TreeMap[String, String]) {
 
-  def this() = this(null, null, null, null, null, Pair.NO_MATCHING, null)
+  def this() = this(null, null, null, null, null, Pair.NO_MATCHING, new TreeMap[String, String])
 
   /**
    * Fuses a list of runtime attributes together with their
@@ -78,17 +80,22 @@ case class Pair(
   }
 
   def defaultBucketing() : Map[String, CategoryFunction] = {
-    Map("bizDate" -> YearlyCategoryFunction)
+    categories.map {
+      case (name, "date") => name -> YearlyCategoryFunction
+      case (name, "int") => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+    }.toMap
   }
 
   /**
    * Returns a set of the coarsest unbound query constraints for
    * each of the category types that has been configured for this pair.
    */
-  // TODO [#151] Infer this from the category types
-  def defaultConstraints() : Seq[QueryConstraint] = {
-    Seq(unconstrainedDate)
-  }
+  def defaultConstraints() : Seq[QueryConstraint] =
+    categories.flatMap({
+      case (name, "date") => Some(unconstrainedDate(name))
+      case (name, "int") => Some(unconstrainedInt(name))
+      case _ => None
+    }).toList
 }
 
 object Pair {

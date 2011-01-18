@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ class DefaultSessionManagerTest {
   }
 
   @Test
-  def shouldHandleExpiryOfAnEventThatisNotCurrentlyPending {
+  def shouldHandleExpiryOfAnEventThatIsNotCurrentlyPending {
     // This will frequently occur when a repair action occurs. A miscellaneous downstream will be seen, which the
     // correlation store will immediately match, but the EventMatcher will see as expiring.
 

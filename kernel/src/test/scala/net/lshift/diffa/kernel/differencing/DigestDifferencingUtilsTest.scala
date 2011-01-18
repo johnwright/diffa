@@ -38,7 +38,7 @@ class DigestDifferencingUtilsTest {
     RangeQueryConstraint("bizDate", Seq())
   }
 
-  val unconstrained = EasyConstraints.unconstrainedDate
+  val unconstrained = EasyConstraints.unconstrainedDate("bizDate")
   val dateOnlyAttrs = Seq("bizDate")
 
   def resolve(d:Digest) = {

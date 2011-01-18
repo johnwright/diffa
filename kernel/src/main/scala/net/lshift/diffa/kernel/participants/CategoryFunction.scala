@@ -24,7 +24,7 @@ case class IntermediateResult(constraint:QueryConstraint, next:CategoryFunction)
 /**
  * This is a function definition that can:
  * - Given a value in a given domain, it can determine what partition that value belongs to
- * - Given the value of a paritition, it can determine what the relevant upper and lower bounds are for
+ * - Given the value of a partition, it can determine what the relevant upper and lower bounds are for
  *   any further introspection.
  */
 trait CategoryFunction {
@@ -71,3 +71,8 @@ object IndividualCategoryFunction extends CategoryFunction {
   def shouldBucket() = false
   def owningPartition(value:String) = value
 }
+
+/**
+ * Indicates that the chosen category function is not valid for the values being received
+ */
+case class InvalidAttributeValueException(msg: String) extends RuntimeException(msg)
