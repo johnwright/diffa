@@ -88,7 +88,7 @@
         <value>${demo.downstreamName}</value>
         <value>${demo.group}</value>
         <util:map map-class="java.util.TreeMap">
-          <entry key="DUMMY_KEY" value="DUMMY_VALUE" />
+          <entry key="bizDate" value="date" />
         </util:map>
       </list>
     </property>
