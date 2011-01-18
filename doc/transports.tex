@@ -10,6 +10,20 @@ The following is a list of the currently known transport mechanisms.
 
 \begin{itemize}
 	\item JSON over HTTP;
+	\item JSON over AMQP.
+\end{itemize}
+
+\section{JSON over HTTP}
+
+This is built into Diffa and provides a simple RESTful-ish communication channel using JSON serialization.
+
+\section{JSON over AMQP}
+
+Optionally, Diffa can use AMQP for communication of change events and between participants.
+
+\begin{itemize}
+    \item Include the diff-amqp-messaging jar with your application
+    \item Make a com.rabbitmq.client.ConnectionFactory available via JNDI under the name amqp/ConnectionFactory
 \end{itemize}
 
 \section{Boot Process}
@@ -34,10 +48,3 @@ The ProtocolMapper is a component that maps inbound URLs and contentTypes to spe
 
 Some transports require participant specific inbound endpoints, such as per-participant inbound message queues in AMQP or JMS. The InboundEndpointManager is a central component of the agent that manages InboundEndpointFactory instances. The InboundEndpointManager is aware of the agent's lifecyle and delegates the creation to of proxies to the appropriate InboundEndpointFactory as and when endpoints become available or get removed.
 
-\section{JSON over HTTP}
-
-This is built into Diffa and provides a simple RESTful-ish communication channel using JSON serialization.
-
-\section{JSON over AMQP}
-
-Optionally, Diffa can use AMQP for communication of changes and between participants.
