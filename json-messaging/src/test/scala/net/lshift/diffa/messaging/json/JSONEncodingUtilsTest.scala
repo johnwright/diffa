@@ -31,6 +31,15 @@ class JSONEncodingUtilsTest {
   def time() = new DateTime().toString()
 
   @Test
+  def wireAggregateRequestRoundTrip() = {
+    val r1 = WireAggregateRequest(
+      Map("some_key" -> "some_value", "id" -> "1000s"),
+          Seq(
+            new WireConstraint("foo", Map("upper" -> "abc", "lower" -> "def"), Seq("a","b","c")),
+            new WireConstraint("bar", Map("upper" -> "123", "lower" -> "456"), Seq("1","2","3"))))
+    requestRoundTrip(r1)
+  }
+  @Test
   def aggregateDigestRoundTrip() = {
     val d1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1"), Seq("foo","bar"))
     val d2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2"), Seq("baz","who"))
@@ -55,8 +64,8 @@ class JSONEncodingUtilsTest {
                                                     "lower" -> "fud",
                                                     "function" -> "yes"), Seq("x","y"))
 
-    val serialized = JSONEncodingUtils.serialize(Seq(constraint1, constraint2))
-    val deserialized = JSONEncodingUtils.deserialize(serialized)
+    val serialized = JSONEncodingUtils.serializeQueryConstraints(Seq(constraint1, constraint2))
+    val deserialized = JSONEncodingUtils.deserializeQueryConstraints(serialized)
     assertNotNull(deserialized)
     assertEquals(2, deserialized.length)
     assertEquals(constraint1, deserialized(0))
@@ -65,8 +74,8 @@ class JSONEncodingUtilsTest {
 
   @Test
   def emptyList = {
-    val serialized = JSONEncodingUtils.serialize(Seq())
-    val deserialized = JSONEncodingUtils.deserialize(serialized)
+    val serialized = JSONEncodingUtils.serializeQueryConstraints(Seq())
+    val deserialized = JSONEncodingUtils.deserializeQueryConstraints(serialized)
     assertNotNull(deserialized)
     assertEquals(0, deserialized.length)
   }
@@ -151,4 +160,10 @@ class JSONEncodingUtilsTest {
     }
   }
 
+  def requestRoundTrip(r1:WireAggregateRequest) = {
+    val serialized = JSONEncodingUtils.serializeWireAggregateRequest(r1)
+    val deserialized = JSONEncodingUtils.deserializeWireAggregateRequest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(r1, deserialized)
+  }
 }

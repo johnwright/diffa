@@ -22,7 +22,7 @@ import java.lang.String
 import net.lshift.diffa.kernel.events.{VersionID, UpstreamChangeEvent}
 import org.apache.commons.codec.digest.DigestUtils
 import collection.mutable.HashMap
-import scala.collection.Map
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 /**
  * An implementation of the UpstreamParticipant using the MemoryParticipant base, whereby the body is the version
@@ -32,10 +32,10 @@ class UpstreamWebParticipant(epName:String, val agentRoot:String)
     extends UpstreamMemoryParticipant(DigestUtils.md5Hex)
     with WebParticipant {
 
-  override def addEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String) = {
+  override def addEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String) = {
     super.addEntity(id, attributes, lastUpdated, body)
 
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, id, attributes, lastUpdated, uvsnGen(body)))
+    changesClient.onChangeEvent(UpstreamChangeEvent(epName, id, AttributesUtil.toSeq(attributes), lastUpdated, uvsnGen(body)))
   }
 
 

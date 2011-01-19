@@ -19,7 +19,7 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import scala.collection.JavaConversions._
 import JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.wire.ConstraintRegistry
+import net.lshift.diffa.kernel.frontend.wire.CategoryFunctionRegistry
 import net.lshift.diffa.kernel.frontend.wire.WireResponse._
 import net.lshift.diffa.kernel.frontend.wire.WireDigest
 
@@ -29,8 +29,14 @@ import net.lshift.diffa.kernel.frontend.wire.WireDigest
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton(wire => serializeDigests(pack(participant.queryAggregateDigests(unpack(wire))))),
-    "query_entity_versions" -> skeleton(wire => serializeDigests(pack(participant.queryEntityVersions(unpack(wire))))),
+    "query_aggregate_digests" -> skeleton(wire => {
+      val request = deserializeWireAggregateRequest(wire)
+      val buckets = request.buckets.map { case (name, value) => name -> CategoryFunctionRegistry.resolve(value) }.toMap
+      val constraints = request.constraints.map(c => c.toQueryConstraint )
+
+      serializeDigests(pack(participant.queryAggregateDigests(buckets, constraints)))
+    }),
+    "query_entity_versions" -> skeleton(wire => serializeDigests(pack(participant.queryEntityVersions(unpackQueryConstraint(wire))))),
     "invoke" -> defineRpc((s:String) => s)(r => {
       val request = deserializeActionRequest(r)
       serializeActionResult(participant.invoke(request.actionId, request.entityId))
@@ -40,7 +46,7 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     })
   )
 
-  private def unpack(wire:String) = deserialize(wire).map(ConstraintRegistry.resolve(_))
+  private def unpackQueryConstraint(wire:String) = deserializeQueryConstraints(wire).map(_.toQueryConstraint)
 
   private def pack(digests:Seq[Digest]) = digests.map(WireDigest.toWire(_))
 

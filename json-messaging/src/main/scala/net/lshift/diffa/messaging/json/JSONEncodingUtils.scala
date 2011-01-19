@@ -45,8 +45,11 @@ object JSONEncodingUtils {
   def deserializeActionRequest(wire:String) = mapper.readValue(wire, classOf[ActionInvocation])
   def serializeActionRequest(response:ActionInvocation) = mapper.writeValueAsString(response)
 
-  def serialize(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
-  def deserialize(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])
+  def serializeQueryConstraints(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
+  def deserializeQueryConstraints(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])
+
+  def serializeWireAggregateRequest(req:WireAggregateRequest) : String = mapper.writeValueAsString(req)
+  def deserializeWireAggregateRequest(wire:String) : WireAggregateRequest = mapper.readValue(wire, classOf[WireAggregateRequest])
 
   def deserializeDigests(wire:String) : Seq[WireDigest] = mapper.readValue(wire, classOf[Array[WireDigest]])
   def serializeDigests(digests:Seq[WireDigest]) : String = mapper.writeValueAsString(digests.toArray)

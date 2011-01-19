@@ -18,16 +18,15 @@ package net.lshift.diffa.kernel.differencing
 
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
-import scala.collection.Map
 
 /**
  * Utility methods for differencing sequences of digests.
  */
 object DigestDifferencingUtils {
 
-  def differenceEntities(ds1:Seq[EntityVersion],
+  def differenceEntities(attrNames:Seq[String],
+                         ds1:Seq[EntityVersion],
                          ds2:Seq[EntityVersion],
-                         resolve:Digest => Map[String,String],
                          constraints:Seq[QueryConstraint]) : Seq[VersionMismatch] = {
     val result = new ListBuffer[VersionMismatch]
     val ds1Ids = indexById(ds1)
@@ -40,7 +39,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, resolve(ds1Digest), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
+        result += VersionMismatch(label, AttributesUtil.toMap(attrNames, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
       }
     }}
 
@@ -51,7 +50,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, resolve(hs2Digest), hs2Digest.lastUpdated, null, hs2Digest.digest)
+        result += VersionMismatch(label, AttributesUtil.toMap(attrNames, hs2Digest.attributes), hs2Digest.lastUpdated, null, hs2Digest.digest)
       }
     }}
 
@@ -60,19 +59,39 @@ object DigestDifferencingUtils {
 
   def differenceAggregates(ds1:Seq[AggregateDigest],
                            ds2:Seq[AggregateDigest],
-                           resolve:Digest => Map[String,String],
+                           bucketing:Map[String, CategoryFunction],
                            constraints:Seq[QueryConstraint]) : Seq[QueryAction] = {
-    assert(constraints.length < 2, "See ticket #148")
     var preemptVersionQuery = false
     val results = new ListBuffer[QueryAction]
     val ds1Ids = indexByAttributeValues(ds1)
     val ds2Ids = indexByAttributeValues(ds2)
 
-    def evaluate(partition:String) = {
+    def evaluate(partitions:Map[String, String]) = {
         val empty = ds1.isEmpty || ds2.isEmpty
-        constraints(0).nextQueryAction(partition, empty) match {
-          case None    => preemptVersionQuery = true
-          case Some(x) => results += x
+
+        val nextConstraints = constraints.map(c => {
+          // Narrow the constraints for those that we had partitions for. Non-bucketing constraints stay the same.
+          if (bucketing.contains(c.category)) {
+            val partition = partitions(c.category)
+
+            bucketing(c.category).constrain(c.category, partition)
+          } else {
+            c
+          }
+        })
+        val nextBuckets = new HashMap[String, CategoryFunction]
+        bucketing.foreach { case (attrName, bucket) => {
+          bucket.descend match {
+            case None =>    // Do nothing - we won't bucket on this next time
+            case Some(IndividualCategoryFunction) => // No more bucketing on this attribute
+            case Some(fun) => nextBuckets(attrName) = fun
+          }
+        }}
+
+        if (nextBuckets.size > 0 && !empty) {
+          results += AggregateQueryAction(nextBuckets.toMap, nextConstraints)
+        } else {
+          results += EntityQueryAction(nextConstraints)
         }
     }
 
@@ -83,9 +102,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        assert(ds1Digest.attributes.length < 2, "See ticket #148")
-        val partition = ds1Digest.attributes(0)
-        evaluate(partition)
+        evaluate(AttributesUtil.toMap(bucketing.keys, ds1Digest.attributes))
       }
     }}
 
@@ -96,17 +113,13 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        assert(hs2Digest.attributes.length < 2, "See ticket #148")
-        val partition = hs2Digest.attributes(0)
-        evaluate(partition)
+        evaluate(AttributesUtil.toMap(bucketing.keys, hs2Digest.attributes))
       }
     }}
 
     if (preemptVersionQuery) {
-      // TODO [#2] does not expand to multiple constraints yet
-      List(EntityQueryAction(constraints(0)))  
-    }
-    else {
+      List(EntityQueryAction(constraints))
+    } else {
       results
     }
   }

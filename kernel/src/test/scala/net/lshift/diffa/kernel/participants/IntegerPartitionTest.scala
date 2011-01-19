@@ -45,7 +45,7 @@ class IntegerPartitionTest {
   def arbitraryPartition {
     object ArbitraryCategoryFunction extends IntegerCategoryFunction(1337) {
       def name = "arbitrary-1337"
-      def next = IndividualCategoryFunction
+      def descend = Some(IndividualCategoryFunction)
     }
     assertEquals("2674", ArbitraryCategoryFunction.owningPartition("3456"))
   }
@@ -55,20 +55,21 @@ class IntegerPartitionTest {
     def binaryCategoryFunction(denom: Int) = AutoNarrowingIntegerCategoryFunction(denom, 2)
     val myBinaryCategoryFunction = binaryCategoryFunction(128)
     assertEquals("256", myBinaryCategoryFunction.owningPartition("300"))
-    assertEquals(Some(IntermediateResult("256", "383", binaryCategoryFunction(64))),
-                 myBinaryCategoryFunction.descend("256"))
+    assertEquals(RangeQueryConstraint("someInt", Seq("256", "383")),
+                 myBinaryCategoryFunction.constrain("someInt", "256"))
+    assertEquals(Some(binaryCategoryFunction(64)), myBinaryCategoryFunction.descend)
   }
 
   @Test
   def descendFromTensPartition {
-    assertEquals(Some(IntermediateResult("10", "19", IndividualCategoryFunction)),
-                 tens.descend("10"))
+    assertEquals(Some(IndividualCategoryFunction), tens.descend)
+    assertEquals(RangeQueryConstraint("someInt", Seq("10", "19")), tens.constrain("someInt", "10"))
   }
 
   @Test
   def descendFromHundredsPartition {
-    assertEquals(Some(IntermediateResult("100", "199", tens)),
-                 hundreds.descend("100"))
+    assertEquals(Some(tens), hundreds.descend)
+    assertEquals(RangeQueryConstraint("someInt2", Seq("100", "199")), hundreds.constrain("someInt2", "100"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])
@@ -78,7 +79,7 @@ class IntegerPartitionTest {
 
   @Test(expected=classOf[InvalidAttributeValueException])
   def descendShouldThrowInvalidAttributeValueExceptionIfPartitionValueIsInvalid {
-    tens.descend("123")
+    tens.constrain("someInt3", "123")
   }
 
   @Test(expected=classOf[IllegalArgumentException])

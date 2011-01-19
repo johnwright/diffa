@@ -24,14 +24,15 @@ abstract case class DateCategoryFunction extends CategoryFunction {
   protected val isoFormat = ISODateTimeFormat.dateTime()
 
   def pattern:DateTimeFormatter
-  def next:CategoryFunction
+  def descend:Option[CategoryFunction]
   def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
 
-  def descend(partition:String) = {
+  def constrain(categoryName:String, partition:String) = {
     val point = pattern.parseDateTime(partition).toLocalDate
     val (upper,lower) = pointToBounds(point)
     val (start,end) = align(upper,lower)
-    Some(IntermediateResult(start,end, next))
+
+    new RangeQueryConstraint(categoryName, Seq(start.toString, end.toString))
   }
 
   def align(s:LocalDate, e:LocalDate) = (s.toDateTimeAtStartOfDay, e.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
@@ -54,7 +55,7 @@ abstract case class DateCategoryFunction extends CategoryFunction {
 object DailyCategoryFunction extends DateCategoryFunction {
   def name = "daily"
   def pattern = DateTimeFormat.forPattern("yyyy-MM-dd")
-  def next = IndividualCategoryFunction
+  def descend = Some(IndividualCategoryFunction)
   def pointToBounds(point:LocalDate) = (point,point)
 }
 
@@ -64,7 +65,7 @@ object DailyCategoryFunction extends DateCategoryFunction {
 object MonthlyCategoryFunction extends DateCategoryFunction {
   def name = "monthly"
   def pattern = DateTimeFormat.forPattern("yyyy-MM")
-  def next = DailyCategoryFunction
+  def descend = Some(DailyCategoryFunction)
   def pointToBounds(point:LocalDate) = (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
 }
 
@@ -74,6 +75,6 @@ object MonthlyCategoryFunction extends DateCategoryFunction {
 object YearlyCategoryFunction extends DateCategoryFunction {
   def name = "yearly"
   def pattern = DateTimeFormat.forPattern("yyyy")
-  def next = MonthlyCategoryFunction
+  def descend = Some(MonthlyCategoryFunction)
   def pointToBounds(point:LocalDate) = (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
 }

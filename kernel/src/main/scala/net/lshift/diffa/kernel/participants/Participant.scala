@@ -30,7 +30,7 @@ trait Participant extends Closeable
    * functions that are embodied in each QueryConstraint. Note that when no QueryConstraint is specified, i.e.
    * an empty list is passed in, the entire data set of the participant will be returned.
    */
-  def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
+  def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
 
   /**
    * Retrieves details about a participant's native versions at the level of individual entities. The participant

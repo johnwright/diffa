@@ -17,6 +17,8 @@
 package net.lshift.diffa.kernel.participants
 
 import java.lang.String
+import net.lshift.diffa.kernel.differencing.AttributesUtil
+
 /**
  * Downstream participant stub for use in test cases.
  */
@@ -26,7 +28,7 @@ class DownstreamMemoryParticipant(val uvsnGen: String => String, val dvsnGen: St
 
   def generateVersion(entityBody: String) = {
     entities.values.toList.find(ent => entityBody.equals(ent.body)) match {
-      case Some(entity) => ProcessingResponse(entity.id, entity.attributes, uvsnGen(entity.body), dvsnGen(entity.body))
+      case Some(entity) => ProcessingResponse(entity.id, AttributesUtil.toSeq(entity.attributes), uvsnGen(entity.body), dvsnGen(entity.body))
       case None => null
     }
   }

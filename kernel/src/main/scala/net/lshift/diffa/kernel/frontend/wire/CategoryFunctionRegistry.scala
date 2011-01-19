@@ -1,7 +1,5 @@
-package net.lshift.diffa.kernel.frontend.wire
-
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +14,9 @@ package net.lshift.diffa.kernel.frontend.wire
  * limitations under the License.
  */
 
+package net.lshift.diffa.kernel.frontend.wire
+
+
 import net.lshift.diffa.kernel.participants._
 import scala.collection.JavaConversions._
 
@@ -23,34 +24,21 @@ import scala.collection.JavaConversions._
  * Provides a simple registry so that constraints in wire formats can
  * easily get mapped back to their kernel counterparts.
  */
-object ConstraintRegistry {
+object CategoryFunctionRegistry {
+  val ThousandsIntegerCategoryFunction = IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction(1000, 10)
+  val HundredsIntegerCategoryFunction = IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction(100, 10)
+  val TensIntegerCategoryFunction = IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction(10, 10)
 
   val registry = Map(
     IndividualCategoryFunction.name -> IndividualCategoryFunction,
     DailyCategoryFunction.name -> DailyCategoryFunction,
     MonthlyCategoryFunction.name -> MonthlyCategoryFunction,
-    YearlyCategoryFunction.name -> YearlyCategoryFunction
+    YearlyCategoryFunction.name -> YearlyCategoryFunction,
+
+    ThousandsIntegerCategoryFunction.name -> ThousandsIntegerCategoryFunction,
+    HundredsIntegerCategoryFunction.name -> HundredsIntegerCategoryFunction,
+    TensIntegerCategoryFunction.name -> TensIntegerCategoryFunction
   )
 
-  def resolve(wire:WireConstraint) : QueryConstraint = {
-    wire.validate
-    if (wire.values != null) {
-      ListQueryConstraint(wire.dataType, resolveConstraint(wire), wire.values)
-    }
-    else {
-      val lower = wire.attibutes.get(WireConstraint.LO)
-      val upper = wire.attibutes.get(WireConstraint.HI)
-      if (lower != null && upper != null) {
-        RangeQueryConstraint(wire.dataType, resolveConstraint(wire), Seq(lower,upper))
-      }
-      else {
-        UnboundedRangeQueryConstraint(wire.dataType, resolveConstraint(wire))
-      }
-    }
-  }
-
-  private def resolveConstraint(wire:WireConstraint) : CategoryFunction = {
-    val functionName = wire.attibutes.get(WireConstraint.FUN)
-    registry(functionName)
-  }
+  def resolve(fun:String) = registry(fun)
 }

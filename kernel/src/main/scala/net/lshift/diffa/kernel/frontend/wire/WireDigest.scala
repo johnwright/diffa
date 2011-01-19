@@ -18,9 +18,9 @@ package net.lshift.diffa.kernel.frontend.wire
 
 import reflect.BeanProperty
 import scala.collection.JavaConversions._
-import scala.collection.Map
 import net.lshift.diffa.kernel.participants.{Digest, EntityVersion, AggregateDigest}
 import org.joda.time.format.ISODateTimeFormat
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 /**
  * This is a structure that is straightforward to pack and unpack onto and off a wire that

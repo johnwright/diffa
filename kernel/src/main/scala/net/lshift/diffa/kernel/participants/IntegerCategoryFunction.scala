@@ -20,8 +20,6 @@ import java.lang.Integer.parseInt
 
 abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunction {
 
-  def next: CategoryFunction
-
   def shouldBucket = true
 
   def owningPartition(value: String) =
@@ -32,14 +30,14 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
       case e: NumberFormatException => throw new InvalidAttributeValueException("Value is not an integer: "+value)
     }
 
-  def descend(partition: String) = {
+  def constrain(categoryName:String, partition: String) = {
     val parsedPartition = parseInt(partition)
     if (parsedPartition % denominator > 0) {
       throw new InvalidAttributeValueException("Partition "+partition+" does not match denominator "+denominator)
     }
     val start = partition
     val end = (parsedPartition + denominator - 1).toString
-    Some(IntermediateResult(start, end, next))
+    RangeQueryConstraint(categoryName, Seq(start, end))
   }
 }
 
@@ -63,13 +61,13 @@ object IntegerCategoryFunction {
       }
 
       def name = denominator.toString + "s"
-      def next = {
+      def descend = {
         val nextDenominator = denominator / factor
         if (nextDenominator <= 1) {
-          IndividualCategoryFunction
+          Some(IndividualCategoryFunction)
         }
         else {
-          AutoNarrowingIntegerCategoryFunction(nextDenominator, factor)
+          Some(AutoNarrowingIntegerCategoryFunction(nextDenominator, factor))
         }
       }
   }

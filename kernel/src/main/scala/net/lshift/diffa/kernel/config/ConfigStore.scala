@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.config
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.{QueryConstraint, YearlyCategoryFunction}
+import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, YearlyCategoryFunction}
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.{TreeMap, SortedMap}
 
@@ -79,15 +79,21 @@ case class Pair(
     (staticValues, runtimeValues).zip.toMap
   }
 
+  def defaultBucketing() : Map[String, CategoryFunction] = {
+    categories.map {
+      case (name, "date") => name -> YearlyCategoryFunction
+      case (name, "int") => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+    }.toMap
+  }
+
   /**
    * Returns a set of the coarsest unbound query constraints for
    * each of the category types that has been configured for this pair.
    */
-  // TODO [#151] Infer this from the category types
   def defaultConstraints() : Seq[QueryConstraint] =
     categories.flatMap({
-      case (_, "date") => Some(unconstrainedDate(YearlyCategoryFunction))
-      case (_, "int") => Some(unconstrainedInt(DefaultIntegerCategoryFunction))
+      case (name, "date") => Some(unconstrainedDate(name))
+      case (name, "int") => Some(unconstrainedInt(name))
       case _ => None
     }).toList
 }
