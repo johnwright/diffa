@@ -19,6 +19,9 @@ package net.lshift.diffa.messaging.amqp
 import org.junit.Assert._
 import org.junit.Test
 
+/**
+ * Test cases for the AmqpQueueUrl class.
+ */
 class AmqpQueueUrlTests {
 
   @Test

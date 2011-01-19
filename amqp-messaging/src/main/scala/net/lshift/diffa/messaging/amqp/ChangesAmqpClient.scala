@@ -22,12 +22,11 @@ import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.frontend.wire.WireEvent
 import net.lshift.diffa.messaging.json.JSONEncodingUtils._
 
-// TODO rename to ChangesAmqpProducer
 class ChangesAmqpClient(connector: Connector,
                         queueName: String,
                         timeout: Long)
 
-  extends AmqpRpcClient(connector, queueName)
+  extends AmqpProducer(connector, queueName)
   with ChangesClient {
 
   def onChangeEvent(evt: ChangeEvent) {
@@ -36,6 +35,6 @@ class ChangesAmqpClient(connector: Connector,
       case ds: DownstreamChangeEvent            => WireEvent.toWire(ds)
       case dsc: DownstreamCorrelatedChangeEvent => WireEvent.toWire(dsc)
     }
-    call("changes", serializeEvent(wire), timeout)
+    send(serializeEvent(wire))
   }
 }
