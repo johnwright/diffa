@@ -10,10 +10,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>diffa-amqp-messaging</artifactId>
-
-  <properties>
-    <spring.amqp.version>1.0.0.M2</spring.amqp.version>
-  </properties>
+  <name>LShift Diffa AMQP Messaging Support</name>
 
   <dependencies>
     <dependency>
@@ -86,11 +83,4 @@
     </plugins>
   </build>
 
-  <!--repositories>
-    <repository>
-      <id>repository.springframework.maven.milestone</id>
-      <name>Spring Framework Maven Milestone Repository</name>
-      <url>http://maven.springframework.org/milestone</url>
-    </repository>
-  </repositories-->
 </project>
