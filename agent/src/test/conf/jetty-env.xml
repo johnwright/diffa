@@ -84,7 +84,6 @@
     </Arg>
   </New>
   <New id="amqpcf" class="org.eclipse.jetty.plus.jndi.Resource">
-    <!--Arg></Arg-->
     <Arg>amqp/connectionFactory</Arg>
     <Arg>
       <New class="com.rabbitmq.client.ConnectionFactory">
