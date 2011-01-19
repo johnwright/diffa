@@ -40,13 +40,19 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
   val isoFormat = ISODateTimeFormat.dateTime()
 
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    assert(constraints.length < 2, "See ticket #148")
+    // Validate the constraints
+    assert(constraints.length == 1, "FileParticipant requires a single constraint")
+    assert(constraints(0).category == "bizDate", "FileParticipant can only constrain on bizDate")
+
     val files = queryFiles(constraints(0))
     files.map(f => EntityVersion(idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
   }
 
   def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    assert(constraints.length < 2, "See ticket #148")
+    // Validate the constraints
+    assert(constraints.length == 1, "FileParticipant requires a single constraint")
+    assert(constraints(0).category == "bizDate", "FileParticipant can only constrain on bizDate")
+    
     val files = queryFiles(constraints(0))
     val builder = new DigestBuilder(bucketing)
     files.sortBy(_.getAbsolutePath).foreach(f => {

@@ -31,6 +31,15 @@ class JSONEncodingUtilsTest {
   def time() = new DateTime().toString()
 
   @Test
+  def wireAggregateRequestRoundTrip() = {
+    val r1 = WireAggregateRequest(
+      Map("lastUpdated" -> "Yearly", "id" -> "1000s"),
+          Seq(
+            new WireConstraint("foo", Map("upper" -> "abc", "lower" -> "def"), Seq("a","b","c")),
+            new WireConstraint("bar", Map("upper" -> "123", "lower" -> "456"), Seq("1","2","3"))))
+    requestRoundTrip(r1)
+  }
+  @Test
   def aggregateDigestRoundTrip() = {
     val d1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1"), Seq("foo","bar"))
     val d2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2"), Seq("baz","who"))
@@ -151,4 +160,10 @@ class JSONEncodingUtilsTest {
     }
   }
 
+  def requestRoundTrip(r1:WireAggregateRequest) = {
+    val serialized = JSONEncodingUtils.serializeWireAggregateRequest(r1)
+    val deserialized = JSONEncodingUtils.deserializeWireAggregateRequest(serialized)
+    assertNotNull(deserialized)
+    assertEquals(r1, deserialized)
+  }
 }
