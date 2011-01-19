@@ -34,7 +34,7 @@
     <constructor-arg ref="protocolMapper" />
     <constructor-arg ref="participantFactory" />
     <constructor-arg ref="changesFrontend" />
-    <constructor-arg>${diffa.amqp.rpc.timeout}</constructor-arg>
+    <constructor-arg value="${diffa.amqp.rpc.timeout}" />
   </bean>
   
 </beans>
