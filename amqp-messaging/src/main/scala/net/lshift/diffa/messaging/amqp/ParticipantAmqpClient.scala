@@ -1,3 +1,19 @@
+/**
+ * Copyright (C) 2010-2011 LShift Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package net.lshift.diffa.messaging.amqp
 
 import com.rabbitmq.messagepatterns.unicast.Connector
@@ -5,6 +21,9 @@ import net.lshift.diffa.messaging.json.JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.wire.{ActionInvocation, InvocationResult, WireDigest, WireResponse}
 import net.lshift.diffa.kernel.participants._
 
+/**
+ * Base class for RPC clients used for participant communication using JSON over AMQP.
+ */
 abstract class ParticipantAmqpClient(connector: Connector,
                                      queueName: String,
                                      timeout: Long)
@@ -51,6 +70,9 @@ abstract class ParticipantAmqpClient(connector: Connector,
     digests.map(WireDigest.fromWire _).asInstanceOf[T]
 }
 
+/**
+ * RPC client wrapper for a DownstreamParticipant using JSON over AMQP.
+ */
 class DownstreamParticipantAmqpClient(connector: Connector,
                                       queueName: String,
                                       timeout: Long)
@@ -67,6 +89,9 @@ class DownstreamParticipantAmqpClient(connector: Connector,
   )
 }
 
+/**
+ * RPC client wrapper for an UpstreamParticipant using JSON over AMQP.
+ */
 class UpstreamParticipantAmqpClient(connector: Connector,
                                     queueName: String,
                                     timeout: Long)
