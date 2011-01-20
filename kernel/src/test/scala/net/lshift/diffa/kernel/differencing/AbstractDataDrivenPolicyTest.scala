@@ -320,6 +320,43 @@ object AbstractDataDrivenPolicyTest {
         )))
     )))
 
+  @DataPoint def integersAndDatesScenario = Scenario(
+    Pair(key = "ab", categories = Map("bizDate" -> "date", "someInt" -> "int")),
+    AggregateTx(Map("bizDate" -> yearly, "someInt" -> thousands), Seq(unbounded("bizDate"), unbounded("someInt")), Seq(
+      Bucket("2010_1000", Map("bizDate" -> "2010", "someInt" -> "1000"),
+        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(range("bizDate", START_2010, END_2010), range("someInt", 1000, 1999)), Seq(
+          Bucket("2010-07_1200", Map("bizDate" -> "2010-07", "someInt" -> "1200"),
+            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(range("bizDate", JUL_2010, END_JUL_2010), range("someInt", 1200, 1299)), Seq(
+              Bucket("2010-07-08_1230", Map("bizDate" -> "2010-07-08", "someInt" -> "1230"),
+                EntityTx(Seq(range("bizDate", JUL_8_2010, END_JUL_8_2010), range("someInt", 1230, 1239)), Seq(
+                  Vsn("id1", Map("bizDate" -> JUL_8_2010_1, "someInt" -> 1234), "vsn1"),
+                  Vsn("id2", Map("bizDate" -> JUL_8_2010_2, "someInt" -> 1235), "vsn2")
+                ))),
+              Bucket("2010-07-09_1240", Map("bizDate" -> "2010-07-09", "someInt" -> "1240"),
+                EntityTx(Seq(range("bizDate", JUL_9_2010, END_JUL_9_2010), range("someInt", 1240, 1249)), Seq(
+                  Vsn("id3", Map("bizDate" -> JUL_9_2010_1, "someInt" -> 1245), "vsn3")
+                )))
+            ))),
+          Bucket("2010-08_1300", Map("bizDate" -> "2010-08", "someInt" -> "1300"),
+            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(range("bizDate", AUG_2010, END_AUG_2010), range("someInt", 1300, 1399)), Seq(
+              Bucket("2010-08-02_1350", Map("bizDate" -> "2010-08-02", "someInt" -> "1350"),
+                EntityTx(Seq(range("bizDate", AUG_11_2010, END_AUG_11_2010), range("someInt", 1350, 1359)), Seq(
+                  Vsn("id4", Map("bizDate" -> AUG_11_2010_1, "someInt" -> 1357), "vsn4")
+                )))
+            )))
+        ))),
+      Bucket("2011_2000", Map("bizDate" -> "2011", "someInt" -> "2000"),
+        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(range("bizDate", START_2011, END_2011), range("someInt", 2000, 2999)), Seq(
+          Bucket("2011-01_2300", Map("bizDate" -> "2011-01", "someInt" -> "2300"),
+            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(range("bizDate", JAN_2011, END_JAN_2011), range("someInt", 2300, 2399)), Seq(
+              Bucket("2011-01-20_2340", Map("bizDate" -> "2011-01-20", "someInt" -> "2340"),
+                EntityTx(Seq(range("bizDate", JAN_20_2011, END_JAN_20_2011), range("someInt", 2340, 2349)), Seq(
+                  Vsn("id5", Map("bizDate" -> JAN_20_2011_1, "someInt" -> 2345), "vsn5")
+                )))
+            )))
+        )))
+    )))
+
   
   //
   // Aliases
