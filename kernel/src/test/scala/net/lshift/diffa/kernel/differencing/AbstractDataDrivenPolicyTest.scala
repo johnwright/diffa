@@ -5,6 +5,7 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import org.junit.runner.RunWith
 import net.lshift.diffa.kernel.util.Dates._
 import org.junit.experimental.theories.{Theory, Theories, DataPoint}
@@ -35,44 +36,43 @@ abstract class AbstractDataDrivenPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
   val configStore = createStrictMock("configStore", classOf[ConfigStore])
-  val abPair = "A-B"
 
-  val emptyCategories:Map[String,String] = Map()
-  val pair = new Pair(key=abPair, categories=Map("bizDate" -> "date"))
-
-  expect(configStore.getPair(abPair)).andReturn(pair).anyTimes
-  replay(configStore)
-
-  protected def replayAll = replay(usMock, dsMock, store, listener)
-  protected def verifyAll = verify(usMock, dsMock, store, listener, configStore)
+  protected def replayAll = replay(configStore, usMock, dsMock, store, listener)
+  protected def verifyAll = verify(configStore, usMock, dsMock, store, listener, configStore)
 
   /**
    * Run the scenario with the top levels matching. The policy should not progress any further than the top level.
    */
   @Theory
-  def shouldStopAtTopLevelWhenTopLevelBucketsMatch(scenario:AggregateTx) {
-    expectUpstreamAggregateSync(scenario.bucketing, scenario.constraints, scenario.respBuckets, scenario.respBuckets)
-    expectDownstreamAggregateSync(scenario.bucketing, scenario.constraints, scenario.respBuckets, scenario.respBuckets)
+  def shouldStopAtTopLevelWhenTopLevelBucketsMatch(scenario:Scenario) {
+    setupStubs(scenario)
+
+    expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
+    expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(scenario.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, usMock, dsMock, nullListener)
+    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
     verifyAll
   }
 
-  protected def expectUpstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
+  protected def setupStubs(scenario:Scenario) {
+    expect(configStore.getPair(scenario.pair.key)).andReturn(scenario.pair).anyTimes
+  }
+
+  protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                             partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
     expect(usMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantResponse(partResp))
-    store.queryUpstreams(EasyMock.eq(abPair), EasyMock.eq(constraints), anyUnitF4)
-      expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(storeResp))
+    store.queryUpstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints), anyUnitF4)
+      expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(pair, storeResp))
   }
-  protected def expectDownstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
+  protected def expectDownstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                               partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
     expect(dsMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantResponse(partResp))
-    store.queryDownstreams(EasyMock.eq(abPair), EasyMock.eq(constraints), anyUnitF5)
-      expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
+    store.queryDownstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints), anyUnitF5)
+      expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(pair, storeResp))
   }
 
   protected def participantResponse(buckets:Seq[Bucket]) =
@@ -99,19 +99,19 @@ abstract class AbstractDataDrivenPolicyTest {
     def answerEntities(entities:Seq[Vsn], cb:T):Unit
   }
 
-  protected case class UpstreamVersionAnswer(res:Seq[Bucket])
+  protected case class UpstreamVersionAnswer(pair:Pair, res:Seq[Bucket])
       extends VersionAnswer[Function4[VersionID, Map[String, String], DateTime, String, Unit]] {
     def answerEntities(entities:Seq[Vsn], cb:Function4[VersionID, Map[String, String], DateTime, String, Unit]) {
       entities.foreach { case Vsn(name, attributes, vsn) =>
-        cb(VersionID(abPair, name), attributes.map { case (k, v) => k -> v.toString }.toMap, new DateTime, vsn)
+        cb(VersionID(pair.key, name), attributes.map { case (k, v) => k -> v.toString }.toMap, new DateTime, vsn)
       }
     }
   }
-  protected case class DownstreamVersionAnswer(res:Seq[Bucket])
+  protected case class DownstreamVersionAnswer(pair:Pair, res:Seq[Bucket])
       extends VersionAnswer[Function5[VersionID, Map[String, String], DateTime, String, String, Unit]] {
     def answerEntities(entities:Seq[Vsn], cb:Function5[VersionID, Map[String, String], DateTime, String, String, Unit]) {
       entities.foreach { case Vsn(name, attributes, vsn) =>
-        cb(VersionID(abPair, name), attributes.map { case (k, v) => k -> v.toString }.toMap, new DateTime, vsn, vsn)
+        cb(VersionID(pair.key, name), attributes.map { case (k, v) => k -> v.toString }.toMap, new DateTime, vsn, vsn)
       }
     }
   }
@@ -122,7 +122,8 @@ object AbstractDataDrivenPolicyTest {
   // Scenarios
   //
 
-  @DataPoint def datesOnlyScenario =
+  @DataPoint def datesOnlyScenario = Scenario(
+    Pair(key = "ab", categories = Map("bizDate" -> "date")),
     AggregateTx(Map("bizDate" -> yearly), Seq(unbounded("bizDate")), Seq(
       Bucket("2010", Map("bizDate" -> "2010"), DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3"),
         AggregateTx(Map("bizDate" -> monthly), Seq(range("bizDate", START_2010, END_2010)), Seq(
@@ -155,7 +156,43 @@ object AbstractDataDrivenPolicyTest {
                 )))
             )))
         )))
-    ))
+    )))
+
+  @DataPoint def integersOnlyScenario = Scenario(
+    Pair(key = "bc", categories = Map("someInt" -> "int")),
+    AggregateTx(Map("someInt" -> thousands), Seq(unbounded("someInt")), Seq(
+      Bucket("1000", Map("someInt" -> "1000"), DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3"),
+        AggregateTx(Map("someInt" -> hundreds), Seq(range("someInt", 1000, 1999)), Seq(
+          Bucket("1200", Map("someInt" -> "1200"), DigestUtils.md5Hex("vsn1" + "vsn2"),
+            AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 1200, 1299)), Seq(
+              Bucket("1230", Map("someInt" -> "1230"), DigestUtils.md5Hex("vsn1"),
+                EntityTx(Seq(range("someInt", 1230, 1239)), Seq(
+                  Vsn("id1", Map("someInt" -> 1234), "vsn1")
+                ))),
+              Bucket("1240", Map("someInt" -> "1240"), DigestUtils.md5Hex("vsn2"),
+                EntityTx(Seq(range("someInt", 1240, 1249)), Seq(
+                  Vsn("id2", Map("someInt" -> 1245), "vsn2")
+                )))
+            ))),
+          Bucket("1300", Map("someInt" -> "1300"), DigestUtils.md5Hex("vsn3"),
+            AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 1300, 1399)), Seq(
+              Bucket("1350", Map("someInt" -> "1350"), DigestUtils.md5Hex("vsn3"),
+                EntityTx(Seq(range("someInt", 1350, 1359)), Seq(
+                  Vsn("id3", Map("someInt" -> 1357), "vsn3")
+                )))
+            )))
+        ))),
+      Bucket("2000", Map("someInt" -> "2000"), DigestUtils.md5Hex("vsn4"),
+        AggregateTx(Map("someInt" -> hundreds), Seq(range("someInt", 2000, 2999)), Seq(
+          Bucket("2300", Map("someInt" -> "2300"), DigestUtils.md5Hex("vsn4"),
+            AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 2300, 2399)), Seq(
+              Bucket("2340", Map("someInt" -> "2340"), DigestUtils.md5Hex("vsn4"),
+                EntityTx(Seq(range("someInt", 2340, 2349)), Seq(
+                  Vsn("id4", Map("someInt" -> 2345), "vsn4")
+                )))
+            )))
+        )))
+    )))
 
   
   //
@@ -167,18 +204,24 @@ object AbstractDataDrivenPolicyTest {
   val daily = DailyCategoryFunction
   val individual = IndividualCategoryFunction
 
+  val thousands = AutoNarrowingIntegerCategoryFunction(1000, 10)
+  val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
+  val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
+
   def unbounded(n:String) = UnboundedRangeQueryConstraint(n)
-  def range(n:String, lower:AnyRef, upper:AnyRef) = RangeQueryConstraint(n, Seq(lower.toString, upper.toString))
+  def range(n:String, lower:Any, upper:Any) = RangeQueryConstraint(n, Seq(lower.toString, upper.toString))
 
 
   //
   // Type Definitions
   //
 
+  case class Scenario(pair:Pair, tx:AggregateTx)
+
   class Tx
   case class AggregateTx(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], respBuckets:Seq[Bucket]) extends Tx
   case class EntityTx(constraints:Seq[QueryConstraint], entities:Seq[Vsn]) extends Tx
 
   case class Bucket(name:String, attrs:Map[String, String], vsn:String, nextTx:Tx)
-  case class Vsn(id:String, attrs:Map[String, AnyRef], vsn:String)
+  case class Vsn(id:String, attrs:Map[String, Any], vsn:String)
 }
