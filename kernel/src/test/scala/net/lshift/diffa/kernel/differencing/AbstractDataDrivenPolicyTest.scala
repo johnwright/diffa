@@ -71,18 +71,14 @@ abstract class AbstractDataDrivenPolicyTest {
 
     expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
     scenario.tx.respBuckets.foreach(b => {
-      val allVersions = allChildVersions(b)
-      
-      expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, allVersions, Seq())
-      expectUpstreamEntityStore(scenario.pair, allVersions)
+      expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
+      expectUpstreamEntityStore(scenario.pair, b.allVsns)
     })
 
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
     scenario.tx.respBuckets.foreach(b => {
-      val allVersions = allChildVersions(b)
-
-      expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, allVersions, Seq())
-      expectDownstreamEntityStore(scenario.pair, allVersions)
+      expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
+      expectDownstreamEntityStore(scenario.pair, b.allVsns)
     })
 
     // We should still see an unmatched version check
@@ -92,6 +88,11 @@ abstract class AbstractDataDrivenPolicyTest {
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
     verifyAll
   }
+
+
+  //
+  // Helpers
+  //
 
   protected def setupStubs(scenario:Scenario) {
     expect(configStore.getPair(scenario.pair.key)).andReturn(scenario.pair).anyTimes
@@ -145,13 +146,6 @@ abstract class AbstractDataDrivenPolicyTest {
   protected def participantEntityResponse(entities:Seq[Vsn]):Seq[EntityVersion] =
     entities.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.strAttrs), e.lastUpdated, e.vsn))
 
-  protected def allChildVersions(bucket:Bucket):Seq[Vsn] = allChildVersions(Seq(bucket))
-  protected def allChildVersions(buckets:Seq[Bucket]):Seq[Vsn] =
-    buckets.flatMap(b => b.nextTx match {
-      case a:AggregateTx => allChildVersions(a.respBuckets)
-      case e:EntityTx => e.entities
-    })
-
   protected abstract class VersionAnswer[T] extends IAnswer[Unit] {
     def res:Seq[Bucket]
 
@@ -159,8 +153,8 @@ abstract class AbstractDataDrivenPolicyTest {
       val args = EasyMock.getCurrentArguments
       val cb = args(2).asInstanceOf[T]
 
-      // We need to work through each bucket and its children.
-      answerEntities(allChildVersions(res), cb)
+      // Answer with entities from each bucket's children
+      answerEntities(res.flatMap(b => b.allVsns), cb)
     }
 
     def answerEntities(entities:Seq[Vsn], cb:T):Unit
@@ -188,32 +182,32 @@ object AbstractDataDrivenPolicyTest {
   @DataPoint def datesOnlyScenario = Scenario(
     Pair(key = "ab", categories = Map("bizDate" -> "date")),
     AggregateTx(Map("bizDate" -> yearly), Seq(unbounded("bizDate")), Seq(
-      Bucket("2010", Map("bizDate" -> "2010"), DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3"),
+      Bucket("2010", Map("bizDate" -> "2010"),
         AggregateTx(Map("bizDate" -> monthly), Seq(range("bizDate", START_2010, END_2010)), Seq(
-          Bucket("2010-07", Map("bizDate" -> "2010-07"), DigestUtils.md5Hex("vsn1" + "vsn2"),
+          Bucket("2010-07", Map("bizDate" -> "2010-07"),
             AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", JUL_2010, END_JUL_2010)), Seq(
-              Bucket("2010-07-08", Map("bizDate" -> "2010-07-08"), DigestUtils.md5Hex("vsn1"),
+              Bucket("2010-07-08", Map("bizDate" -> "2010-07-08"),
                 EntityTx(Seq(range("bizDate", JUL_8_2010, END_JUL_8_2010)), Seq(
                   Vsn("id1", Map("bizDate" -> JUL_8_2010_1), "vsn1")
                 ))),
-              Bucket("2010-07-09", Map("bizDate" -> "2010-07-09"), DigestUtils.md5Hex("vsn2"),
+              Bucket("2010-07-09", Map("bizDate" -> "2010-07-09"),
                 EntityTx(Seq(range("bizDate", JUL_9_2010, END_JUL_9_2010)), Seq(
                   Vsn("id2", Map("bizDate" -> JUL_8_2010_2), "vsn2")
                 )))
             ))),
-          Bucket("2010-08", Map("bizDate" -> "2010-08"), DigestUtils.md5Hex("vsn3"),
+          Bucket("2010-08", Map("bizDate" -> "2010-08"),
             AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", AUG_2010, END_AUG_2010)), Seq(
-              Bucket("2010-08-02", Map("bizDate" -> "2010-08-02"), DigestUtils.md5Hex("vsn3"),
+              Bucket("2010-08-02", Map("bizDate" -> "2010-08-02"),
                 EntityTx(Seq(range("bizDate", AUG_11_2010, END_AUG_11_2010)), Seq(
                   Vsn("id3", Map("bizDate" -> AUG_11_2010_1), "vsn3")
                 )))
             )))
         ))),
-      Bucket("2011", Map("bizDate" -> "2011"), DigestUtils.md5Hex("vsn4"),
+      Bucket("2011", Map("bizDate" -> "2011"),
         AggregateTx(Map("bizDate" -> monthly), Seq(range("bizDate", START_2011, END_2011)), Seq(
-          Bucket("2011-01", Map("bizDate" -> "2011-01"), DigestUtils.md5Hex("vsn4"),
+          Bucket("2011-01", Map("bizDate" -> "2011-01"),
             AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", JAN_2011, END_JAN_2011)), Seq(
-              Bucket("2011-01-20", Map("bizDate" -> "2011-01-20"), DigestUtils.md5Hex("vsn4"),
+              Bucket("2011-01-20", Map("bizDate" -> "2011-01-20"),
                 EntityTx(Seq(range("bizDate", JAN_20_2011, END_JAN_20_2011)), Seq(
                   Vsn("id4", Map("bizDate" -> JAN_20_2011_1), "vsn4")
                 )))
@@ -224,32 +218,32 @@ object AbstractDataDrivenPolicyTest {
   @DataPoint def integersOnlyScenario = Scenario(
     Pair(key = "bc", categories = Map("someInt" -> "int")),
     AggregateTx(Map("someInt" -> thousands), Seq(unbounded("someInt")), Seq(
-      Bucket("1000", Map("someInt" -> "1000"), DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3"),
+      Bucket("1000", Map("someInt" -> "1000"),
         AggregateTx(Map("someInt" -> hundreds), Seq(range("someInt", 1000, 1999)), Seq(
-          Bucket("1200", Map("someInt" -> "1200"), DigestUtils.md5Hex("vsn1" + "vsn2"),
+          Bucket("1200", Map("someInt" -> "1200"),
             AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 1200, 1299)), Seq(
-              Bucket("1230", Map("someInt" -> "1230"), DigestUtils.md5Hex("vsn1"),
+              Bucket("1230", Map("someInt" -> "1230"),
                 EntityTx(Seq(range("someInt", 1230, 1239)), Seq(
                   Vsn("id1", Map("someInt" -> 1234), "vsn1")
                 ))),
-              Bucket("1240", Map("someInt" -> "1240"), DigestUtils.md5Hex("vsn2"),
+              Bucket("1240", Map("someInt" -> "1240"),
                 EntityTx(Seq(range("someInt", 1240, 1249)), Seq(
                   Vsn("id2", Map("someInt" -> 1245), "vsn2")
                 )))
             ))),
-          Bucket("1300", Map("someInt" -> "1300"), DigestUtils.md5Hex("vsn3"),
+          Bucket("1300", Map("someInt" -> "1300"),
             AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 1300, 1399)), Seq(
-              Bucket("1350", Map("someInt" -> "1350"), DigestUtils.md5Hex("vsn3"),
+              Bucket("1350", Map("someInt" -> "1350"),
                 EntityTx(Seq(range("someInt", 1350, 1359)), Seq(
                   Vsn("id3", Map("someInt" -> 1357), "vsn3")
                 )))
             )))
         ))),
-      Bucket("2000", Map("someInt" -> "2000"), DigestUtils.md5Hex("vsn4"),
+      Bucket("2000", Map("someInt" -> "2000"),
         AggregateTx(Map("someInt" -> hundreds), Seq(range("someInt", 2000, 2999)), Seq(
-          Bucket("2300", Map("someInt" -> "2300"), DigestUtils.md5Hex("vsn4"),
+          Bucket("2300", Map("someInt" -> "2300"),
             AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 2300, 2399)), Seq(
-              Bucket("2340", Map("someInt" -> "2340"), DigestUtils.md5Hex("vsn4"),
+              Bucket("2340", Map("someInt" -> "2340"),
                 EntityTx(Seq(range("someInt", 2340, 2349)), Seq(
                   Vsn("id4", Map("someInt" -> 2345), "vsn4")
                 )))
@@ -281,11 +275,18 @@ object AbstractDataDrivenPolicyTest {
 
   case class Scenario(pair:Pair, tx:AggregateTx)
 
-  abstract class Tx { def constraints:Seq[QueryConstraint] }
-  case class AggregateTx(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], respBuckets:Seq[Bucket]) extends Tx
-  case class EntityTx(constraints:Seq[QueryConstraint], entities:Seq[Vsn]) extends Tx
+  abstract class Tx { def constraints:Seq[QueryConstraint]; def allVsns:Seq[Vsn] }
+  case class AggregateTx(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], respBuckets:Seq[Bucket]) extends Tx {
+    lazy val allVsns = respBuckets.flatMap(b => b.allVsns)
+  }
+  case class EntityTx(constraints:Seq[QueryConstraint], entities:Seq[Vsn]) extends Tx {
+    lazy val allVsns = entities
+  }
 
-  case class Bucket(name:String, attrs:Map[String, String], vsn:String, nextTx:Tx)
+  case class Bucket(name:String, attrs:Map[String, String], nextTx:Tx) {
+    lazy val allVsns = nextTx.allVsns
+    lazy val vsn = DigestUtils.md5Hex(allVsns.map(v => v.vsn).foldLeft("")(_ + _))
+  }
   case class Vsn(id:String, attrs:Map[String, Any], vsn:String) {
     def strAttrs = attrs.map { case (k, v) => k -> v.toString }.toMap
     lazy val lastUpdated = new DateTime
