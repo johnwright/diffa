@@ -17,14 +17,14 @@ package net.lshift.diffa.kernel.participants
 
 import org.joda.time.{Interval, DateTime}
 
-case class DateConstraint(start:DateTime, end:DateTime, override val f:CategoryFunction)
-  extends RangeQueryConstraint("date", f, Seq(start.toString(), end.toString()))
+case class DateConstraint(cat:String, start:DateTime, end:DateTime)
+  extends RangeQueryConstraint(cat, Seq(start.toString(), end.toString()))
 
 case class NamedSimpleDateConstraint(cat:String, start:DateTime, end:DateTime)
-  extends RangeQueryConstraint(cat, DailyCategoryFunction, Seq(start.toString(), end.toString()))
+  extends RangeQueryConstraint(cat, Seq(start.toString(), end.toString()))
 
-case class SimpleDateConstraint(override val start:DateTime, override val end:DateTime)
-  extends DateConstraint(start, end, DailyCategoryFunction) {
+case class SimpleDateConstraint(override val cat:String, override val start:DateTime, override val end:DateTime)
+  extends DateConstraint(cat, start, end) {
 
   @Deprecated
   private val interval = if (start != null && end != null) {

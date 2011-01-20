@@ -20,6 +20,7 @@ import java.lang.String
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant}
 import java.io.File
 import net.lshift.diffa.kernel.events.UpstreamChangeEvent
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 /**
  * Upstream participant implementation backed off the filesystem.
@@ -28,6 +29,6 @@ class UpstreamFileParticipant(epName:String, root:String, agentRoot:String) exte
     with UpstreamParticipant {
 
   protected def onFileChange(f: File) = {
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), attributesFor(f), dateFor(f), versionFor(f)))
+    changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
   }
 }

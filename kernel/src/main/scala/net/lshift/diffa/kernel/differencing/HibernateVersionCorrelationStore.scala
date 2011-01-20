@@ -27,7 +27,6 @@ import org.hibernate.criterion.{Restrictions, Order}
 import org.hibernate.{Session, SessionFactory}
 import net.lshift.diffa.kernel.events.VersionID
 import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
-import scala.collection.Map
 
 /**
  * Hibernate backed implementation of the Version Correlation store.
@@ -166,13 +165,13 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
 
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
     queryUpstreams(pairKey, constraints).foreach(c => {
-      handler(VersionID(c.pairing, c.id), c.upstreamAttributes.values.toSeq, c.lastUpdate, c.upstreamVsn)
+      handler(VersionID(c.pairing, c.id), c.upstreamAttributes.toMap, c.lastUpdate, c.upstreamVsn)
     })
   }
 
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
     queryDownstreams(pairKey, constraints).foreach(c => {
-      handler(VersionID(c.pairing, c.id), c.downstreamAttributes.values.toSeq, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
+      handler(VersionID(c.pairing, c.id), c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }
 

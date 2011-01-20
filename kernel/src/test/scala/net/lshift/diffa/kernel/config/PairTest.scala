@@ -23,6 +23,7 @@ import scala.collection.Map
 import net.lshift.diffa.kernel.util.Conversions._
 import net.lshift.diffa.kernel.participants.YearlyCategoryFunction
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
+import java.util.TreeMap
 
 class PairTest {
 
@@ -35,13 +36,13 @@ class PairTest {
   @Test
   def defaultConstraintsForPairWithDateCategory = {
     val pair = new Pair(categories=Map("bizDate" -> "date"))
-    assertEquals(Seq(unconstrainedDate(YearlyCategoryFunction)), pair.defaultConstraints)
+    assertEquals(Seq(unconstrainedDate("bizDate")), pair.defaultConstraints)
   }
 
   @Test
   def defaultConstraintsForPairWithIntCategory = {
     val pair = new Pair(categories=Map("someInt" -> "int"))
-    assertEquals(Seq(unconstrainedInt(DefaultIntegerCategoryFunction)), pair.defaultConstraints)
+    assertEquals(Seq(unconstrainedInt("someInt")), pair.defaultConstraints)
   }
 
   @Test

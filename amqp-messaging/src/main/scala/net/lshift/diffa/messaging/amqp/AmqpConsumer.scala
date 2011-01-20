@@ -110,9 +110,9 @@ class AmqpConsumer(connector: Connector,
   def close() {
     if (running) {
       messaging.cancel()
+      messaging.close()
       running = false
     }
     worker.join(stopTimeout)
-    messaging.close()
   }
 }

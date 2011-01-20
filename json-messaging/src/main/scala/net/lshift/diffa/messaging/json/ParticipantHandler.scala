@@ -18,8 +18,10 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
 import JSONEncodingUtils._
+import net.lshift.diffa.kernel.frontend.wire.CategoryFunctionRegistry
 import net.lshift.diffa.kernel.frontend.wire.WireResponse._
-import net.lshift.diffa.kernel.frontend.wire.{WireConstraint, ConstraintRegistry, WireDigest}
+import net.lshift.diffa.kernel.frontend.wire.{WireConstraint, WireDigest}
+import scala.collection.JavaConversions._
 
 /**
  * Handler for participants being queried via JSON.
@@ -27,13 +29,18 @@ import net.lshift.diffa.kernel.frontend.wire.{WireConstraint, ConstraintRegistry
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton((deserializeConstraints _)
-                                           andThen (constraintsFromWire _)
-                                           andThen (participant.queryAggregateDigests _)
+    "query_aggregate_digests" -> skeleton((deserializeWireAggregateRequest _)
+                                           andThen { req =>
+                                             val constraints = constraintsFromWire(req.constraints)
+                                             val buckets = req.buckets.map { case (name, value) =>
+                                               name -> CategoryFunctionRegistry.resolve(value)
+                                             }.toMap
+                                             participant.queryAggregateDigests(buckets, constraints)
+                                           }
                                            andThen (digestsToWire _)
                                            andThen (serializeDigests _)),
 
-    "query_entity_versions" -> skeleton((deserializeConstraints _)
+    "query_entity_versions" -> skeleton((deserializeQueryConstraints _)
                                          andThen (constraintsFromWire _)
                                          andThen (participant.queryEntityVersions _)
                                          andThen (digestsToWire _)
@@ -46,14 +53,30 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     "retrieve_content" -> skeleton((deserializeEntityContentRequest _)
                                     andThen (participant.retrieveContent _)
                                     andThen (serializeEntityContent _))
+/*
+
+    "query_aggregate_digests" -> skeleton(wire => {
+      val request = deserializeWireAggregateRequest(wire)
+      val buckets = request.buckets.map { case (name, value) => name -> CategoryFunctionRegistry.resolve(value) }.toMap
+      val constraints = request.constraints.map(c => c.toQueryConstraint )
+
+      serializeDigests(digestsToWire(participant.queryAggregateDigests(buckets, constraints)))
+    }),
+    "query_entity_versions" -> skeleton(wire => serializeDigests(digestsToWire(participant.queryEntityVersions(constraintsFromWire(wire))))),
+    "invoke" -> defineRpc((s:String) => s)(r => {
+      val request = deserializeActionRequest(r)
+      serializeActionResult(participant.invoke(request.actionId, request.entityId))
+    }),
+    "retrieve_content" -> defineRpc((s:String) => s)(req => {      
+      serializeEntityContent(participant.retrieveContent(deserializeEntityContentRequest(req)))
+    })*/
   )
 
   private def constraintsFromWire(wire: Seq[WireConstraint]) =
-    wire.map(ConstraintRegistry.resolve _)
-
+    wire.map(_.toQueryConstraint)
+  
   private def digestsToWire(digests: Seq[Digest]) =
     digests.map(WireDigest.toWire _)
-
 
 }
 

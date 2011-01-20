@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,14 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import org.joda.time.DateTime
+/**
+ * Utility for working with attribute maps.
+ */
+object AttributesUtil {
+  def toSeq(attrs:Map[String, String]):Seq[String] = {
+    attrs.toSeq.sortBy { case (name, value) => name }.map { case (name, value) => value }
+  }
 
-case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String)
+  def toMap(keys:Iterable[String], attrs:Iterable[String]):Map[String, String] = toMap(keys.toSeq, attrs.toSeq)
+  def toMap(keys:Seq[String], attrs:Seq[String]):Map[String, String] = (keys.sorted, attrs).zip.toMap
+}

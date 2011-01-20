@@ -19,18 +19,27 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.participants._
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.wire.WireResponse._
-import net.lshift.diffa.kernel.frontend.wire.{WireDigest, ActionInvocation, InvocationResult}
+import net.lshift.diffa.kernel.frontend.wire.{WireDigest, ActionInvocation, InvocationResult, WireAggregateRequest}
+import scala.collection.JavaConversions._
 
 /**
  * Rest client for participant communication.
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
 
-  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
-    = queryDigests(constraints, "query_entity_versions")
+  override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
+    executeRpc("query_entity_versions", pack(constraints)) match {
+      case Some(r) => unpack(deserializeDigests(r))
+      case None    => Seq()
+    }
+  }
 
-  override def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
-    = queryDigests(constraints, "query_aggregate_digests")
+  override def queryAggregateDigests(buckets:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
+    executeRpc("query_aggregate_digests", pack(buckets, constraints)) match {
+      case Some(r) => unpack(deserializeDigests(r))
+      case None    => Seq()
+    }
+  }
 
   override def retrieveContent(identifier: String): String = {    
     executeRpc("retrieve_content", serializeEntityContentRequest(identifier)) match {
@@ -52,14 +61,12 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     }
   }
 
-  private def queryDigests[T <: Digest](constraints:Seq[QueryConstraint], endpoint:String) : Seq[T] = {
-    executeRpc(endpoint, pack(constraints)) match {
-      case Some(r) => unpack(deserializeDigests(r))
-      case None    => Seq()
-    }
+  private def pack(seq:Seq[QueryConstraint]) = serializeQueryConstraints(seq.map(_.wireFormat))
+  private def pack(buckets:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
+    val wireBuckets = buckets.map { case (name, cf) => name -> cf.name }.toMap
+    serializeWireAggregateRequest(WireAggregateRequest(wireBuckets, constraints.map(_.wireFormat).toList))
   }
-
-  private def pack(seq:Seq[QueryConstraint]) = serializeConstraints(seq.map(_.wireFormat))
+  
   private def unpack[T](seq:Seq[WireDigest]) = seq.map(WireDigest.fromWire(_).asInstanceOf[T])
 }
 

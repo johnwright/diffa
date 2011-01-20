@@ -18,8 +18,9 @@ package net.lshift.diffa.messaging.amqp
 
 import com.rabbitmq.messagepatterns.unicast.Connector
 import net.lshift.diffa.messaging.json.JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.wire.{ActionInvocation, InvocationResult, WireDigest, WireResponse}
+import net.lshift.diffa.kernel.frontend.wire.{ActionInvocation, InvocationResult, WireAggregateRequest, WireDigest, WireResponse}
 import net.lshift.diffa.kernel.participants._
+import scala.collection.JavaConversions._
 
 /**
  * Base class for RPC clients used for participant communication using JSON over AMQP.
@@ -31,18 +32,20 @@ abstract class ParticipantAmqpClient(connector: Connector,
   extends AmqpRpcClient(connector, queueName)
   with Participant {
 
-  def queryAggregateDigests(constraints: Seq[QueryConstraint]): Seq[AggregateDigest] = (
-    (constraintsToWire _)
-     andThen (serializeConstraints _)
-     andThen (call("query_aggregate_digests", _, timeout))
-     andThen (deserializeDigests _)
-     andThen (digestsFromWire[Seq[AggregateDigest]]_)
-     apply (constraints)
-  )
+  def queryAggregateDigests(buckets: Map[String, CategoryFunction], constraints: Seq[QueryConstraint]): Seq[AggregateDigest] = {
+    val wireBuckets = buckets.map { case (name, cf) => name -> cf.name }.toMap
+    val wireConstraints = constraints.map(_.wireFormat).toList
+
+    ((serializeWireAggregateRequest _)
+      andThen (call("query_aggregate_digests", _, timeout))
+      andThen (deserializeDigests _)
+      andThen (digestsFromWire[Seq[AggregateDigest]]_)
+      apply (WireAggregateRequest(wireBuckets, wireConstraints)))
+  }
 
   def queryEntityVersions(constraints: Seq[QueryConstraint]): Seq[EntityVersion] = (
     (constraintsToWire _)
-     andThen (serializeConstraints _)
+     andThen (serializeQueryConstraints _)
      andThen (call("query_entity_versions", _, timeout))
      andThen (deserializeDigests _)
      andThen (digestsFromWire[Seq[EntityVersion]] _)

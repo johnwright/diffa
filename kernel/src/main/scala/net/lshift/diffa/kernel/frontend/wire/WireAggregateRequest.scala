@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.kernel.frontend.wire
 
-import org.joda.time.DateTime
+import reflect.BeanProperty
+import java.util.Map
+import java.util.List
 
-case class VersionMismatch(id:String, attributes:Map[String,String], lastUpdated:DateTime, vsnA:String, vsnB:String)
+/**
+ * On-the-wire representation of an aggregate request.
+ */
+case class WireAggregateRequest(
+  @BeanProperty var buckets:Map[String, String],
+  @BeanProperty var constraints:List[WireConstraint]
+) {
+  def this() = this(null, null)
+}

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory
 /**
  * Utility class for building version digests from a sequence of versions.
  */
-class DigestBuilder(val function:CategoryFunction) {
+class DigestBuilder(val functions:Map[String, CategoryFunction]) {
 
   val log = LoggerFactory.getLogger(getClass)
 
@@ -39,21 +39,20 @@ class DigestBuilder(val function:CategoryFunction) {
   /**
    * Adds a new version into the builder.
    */
-  def add(id:VersionID, attributes:Seq[String], lastUpdated:DateTime, vsn:String) : Unit
+  def add(id:VersionID, attributes:Map[String, String], lastUpdated:DateTime, vsn:String) : Unit
     = add(id.id, attributes, lastUpdated, vsn)
 
-  def add(id:String, attributes:Seq[String], lastUpdated:DateTime, vsn:String) {
+  def add(id:String, attributes:Map[String, String], lastUpdated:DateTime, vsn:String) {
 
-    log.debug("Adding to bucket [" + function + "]: " + id + ", " + attributes + ", " + lastUpdated + ", " + vsn)
+    log.debug("Adding to bucket: " + id + ", " + attributes + ", " + lastUpdated + ", " + vsn)
 
-    if (function.shouldBucket) {
-
-      val partitionedValues = attributes.map(function.owningPartition(_))
-      val label = partitionedValues.reduceLeft(_ + "_" + _)
+    if (shouldBucket) {
+      val partitions:Map[String, String] = bucketingFunctions.map { case (attrName, function) => attrName -> function.owningPartition(attributes(attrName)) }
+      val label = partitions.values.reduceLeft(_ + "_" + _)
 
       val bucket = digestBuckets.get(label) match {
         case null => {
-          val newBucket = new Bucket(label, partitionedValues.toSeq, lastUpdated)
+          val newBucket = new Bucket(label, partitions, lastUpdated)
           digestBuckets.put(label, newBucket)
           newBucket
         }
@@ -61,7 +60,7 @@ class DigestBuilder(val function:CategoryFunction) {
       }
       bucket.add(vsn)
     } else {
-      versions += EntityVersion(id, attributes.toSeq, lastUpdated, vsn)
+      versions += EntityVersion(id, AttributesUtil.toSeq(attributes), lastUpdated, vsn)
     }
   }
 
@@ -69,7 +68,7 @@ class DigestBuilder(val function:CategoryFunction) {
    * Retrieves the bucketed digests for all version objects that have been provided.
    */
   def digests:Seq[AggregateDigest] = {
-    if (function.shouldBucket) {
+    if (shouldBucket) {
       // Digest the buckets
       digestBuckets.values.map(b => b.toDigest).toList
     } else {
@@ -77,10 +76,12 @@ class DigestBuilder(val function:CategoryFunction) {
     }
   }
 
-
+  private lazy val bucketingFunctions:Map[String, CategoryFunction] =
+    functions.filter { case (attrName, function) => function.shouldBucket }
+  private lazy val shouldBucket = bucketingFunctions.size > 0
 }
 
-class Bucket(val name: String, val attributes: Seq[String], val lastUpdated:DateTime) {
+class Bucket(val name: String, val attributes: Map[String, String], val lastUpdated:DateTime) {
   private val digestAlgorithm = "MD5"
   private val messageDigest = MessageDigest.getInstance(digestAlgorithm)
   private var digest:String = null
@@ -99,7 +100,7 @@ class Bucket(val name: String, val attributes: Seq[String], val lastUpdated:Date
     if (digest == null) {
       digest = new String(Hex.encodeHex(messageDigest.digest()))
     }
-    AggregateDigest(attributes, lastUpdated, digest)
+    AggregateDigest(AttributesUtil.toSeq(attributes), lastUpdated, digest)
   }
 
 }

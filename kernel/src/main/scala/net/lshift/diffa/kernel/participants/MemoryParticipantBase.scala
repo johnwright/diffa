@@ -16,13 +16,11 @@
 
 package net.lshift.diffa.kernel.participants
 
-import scala.collection.Map
-
 import org.joda.time.DateTime
 import collection.mutable.HashMap
-import net.lshift.diffa.kernel.differencing.DigestBuilder
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
+import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
 
 /**
  * Base class for test participants.
@@ -34,17 +32,15 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   protected val entities = new HashMap[String, TestEntity]
 
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    assert(constraints.length < 2, "See ticket #148")
     log.trace("Running version query: " + constraints)
     val constrained = constrainEntities(constraints)
-    constrained.map(e => EntityVersion(e.id,e.attributes, e.lastUpdated,nativeVsnGen(e.body)))
+    constrained.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.attributes), e.lastUpdated,nativeVsnGen(e.body)))
   }
 
-  def queryAggregateDigests(constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    assert(constraints.length < 2, "See ticket #148")
+  def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
     log.trace("Running aggregate query: " + constraints)
     val constrained = constrainEntities(constraints)
-    val b = new DigestBuilder(constraints(0).function)
+    val b = new DigestBuilder(bucketing)
     constrained foreach (ent => b.add(ent.id, ent.attributes, ent.lastUpdated, nativeVsnGen(ent.body)))
     b.digests
   }
@@ -73,7 +69,7 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
     }
   }
   
-  def addEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String): Unit = {
+  def addEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String): Unit = {
     entities += ((id, TestEntity(id, attributes, lastUpdated, body)))
   }
 
@@ -88,4 +84,4 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   def close() = entities.clear
 }
 
-case class TestEntity(id: String, attributes:Seq[String], lastUpdated:DateTime, body: String)
+case class TestEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String)

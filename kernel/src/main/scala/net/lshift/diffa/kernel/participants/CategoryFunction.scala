@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2011 LShift Ltd.
+ * Copyright (C) 2010 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@
 package net.lshift.diffa.kernel.participants
 
 /**
- * This is a struct for descending partition requests.
+ * This is a struct for desceding partition requests. 
  */
-case class IntermediateResult(lower:Any, upper:Any, next:CategoryFunction) {
-  def toSeq : Seq[String] = Seq(lower.toString, upper.toString)
-}
+case class IntermediateResult(constraint:QueryConstraint, next:CategoryFunction)
 
 /**
  * This is a function definition that can:
@@ -37,13 +35,18 @@ trait CategoryFunction {
   def name : String
 
   /**
-   * Given the name of a valid partition, return the lower and upper bounds of any necessary deeper descent.
-   * The function to delegate the deeper descent to is returned as part of the result.
+   * Descends into a more fine-grained partitioning mechanism.
    *
    * If this function returns None, then no more finer grained partitioning is possible.
    * This occurs for example when trying to descend using a category function for an individual entity.   
    */
-  def descend(partition:String) : Option[IntermediateResult]
+  def descend : Option[CategoryFunction]
+
+  /**
+   * Given the name of a valid partition, return a query constraint that will constrain a request to including
+   * only data that exists with the partition.
+   */
+  def constrain(categoryName:String, partition:String) : QueryConstraint
 
   /**
    * Indicates whether this function supports bucketing.
@@ -63,7 +66,8 @@ trait CategoryFunction {
  */
 object IndividualCategoryFunction extends CategoryFunction {
   def name = "individual"
-  def descend(partition:String) = None
+  def descend = None
+  def constrain(categoryName:String, partition:String) = new ListQueryConstraint(categoryName, Seq(partition))
   def shouldBucket() = false
   def owningPartition(value:String) = value
 }

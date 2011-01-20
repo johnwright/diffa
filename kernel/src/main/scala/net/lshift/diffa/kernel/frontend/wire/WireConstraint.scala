@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.frontend.wire
 import java.util.Map
 import java.util.List
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.participants.CategoryFunction
+import net.lshift.diffa.kernel.participants._
 import scala.collection.JavaConversions._
 
 /**
@@ -27,7 +27,7 @@ import scala.collection.JavaConversions._
  */
 case class WireConstraint(
   @BeanProperty var dataType:String,
-  @BeanProperty var attibutes:Map[String,String],
+  @BeanProperty var attributes:Map[String,String],
   @BeanProperty var values:List[String]) {
   
   def this() = this(null,null,null)
@@ -39,19 +39,33 @@ case class WireConstraint(
     if (dataType == null) {
       throw new InvalidWireConstraint(this, "missing datatype")
     }
-    if (attibutes == null) {
-      throw new InvalidWireConstraint(this, "missing attibutes")
-    }
-    if (!attibutes.containsKey(WireConstraint.FUN)) {
-      throw new InvalidWireConstraint(this, "missing function definition")
+    if (attributes == null) {
+      throw new InvalidWireConstraint(this, "missing attributes")
     }
     if (values != null) {
-      if (attibutes.containsKey(WireConstraint.LO) || attibutes.containsKey(WireConstraint.HI)) {
+      if (attributes.containsKey(WireConstraint.LO) || attributes.containsKey(WireConstraint.HI)) {
         throw new InvalidWireConstraint(this, "contains values AND range")
       }
     }
-    else if (((!attibutes.containsKey(WireConstraint.LO) && attibutes.containsKey(WireConstraint.HI)))) {
+    else if (((!attributes.containsKey(WireConstraint.LO) && attributes.containsKey(WireConstraint.HI)))) {
         throw new InvalidWireConstraint(this, "incomplete bounds")
+    }
+  }
+
+  def toQueryConstraint = {
+    validate
+    if (values != null) {
+      ListQueryConstraint(dataType, values)
+    }
+    else {
+      val lower = attributes.get(WireConstraint.LO)
+      val upper = attributes.get(WireConstraint.HI)
+      if (lower != null && upper != null) {
+        RangeQueryConstraint(dataType, Seq(lower,upper))
+      }
+      else {
+        UnboundedRangeQueryConstraint(dataType)
+      }
     }
   }
 }
@@ -59,19 +73,18 @@ case class WireConstraint(
 class InvalidWireConstraint(wire:WireConstraint, s:String) extends Exception(s + ": " + wire)
 
 object WireConstraint {
-  val FUN = "function"
   val LO = "lower"
   val HI = "upper"
 
-  def rangeConstraint(dataType:String, function:CategoryFunction, lower:AnyRef, upper:AnyRef) = {
-    WireConstraint(dataType, scala.collection.Map(FUN -> function.name, LO -> lower.toString(), HI -> upper.toString()), null)
+  def rangeConstraint(dataType:String, lower:AnyRef, upper:AnyRef) = {
+    WireConstraint(dataType, scala.collection.Map(LO -> lower.toString(), HI -> upper.toString()), null)
   }
 
-  def listConstraint(dataType:String, function:CategoryFunction, values:Seq[String]) = {
-    WireConstraint(dataType, scala.collection.Map(FUN -> function.name), values)
+  def listConstraint(dataType:String, values:Seq[String]) = {
+    WireConstraint(dataType, new java.util.HashMap, values)
   }
 
-  def unbounded(dataType:String, function:CategoryFunction) = {
-    WireConstraint(dataType, scala.collection.Map(FUN -> function.name), null)
+  def unbounded(dataType:String) = {
+    WireConstraint(dataType, new java.util.HashMap, null)
   }  
 }

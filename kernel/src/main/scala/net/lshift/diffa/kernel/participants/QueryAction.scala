@@ -23,10 +23,13 @@ trait QueryAction
 
 /**
  * The next action should still be an aggregating action
+ * @param bucketing the names of the bucketing functions to apply on attributes. Any attribute not named should not
+ *                  be bucketed
+ * @param constraints the constraints to apply to the aggregation
  */
-case class AggregateQueryAction(constraint:QueryConstraint) extends QueryAction
+case class AggregateQueryAction(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) extends QueryAction
 
 /**
  * The next action should query on an individual level
  */
-case class EntityQueryAction(constraint:QueryConstraint) extends QueryAction
+case class EntityQueryAction(constraints:Seq[QueryConstraint]) extends QueryAction
