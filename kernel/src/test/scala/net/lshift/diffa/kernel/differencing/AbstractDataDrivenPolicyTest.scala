@@ -29,6 +29,9 @@ abstract class AbstractDataDrivenPolicyTest {
   // The various mocks for listeners and participants
   val usMock = createStrictMock("us", classOf[UpstreamParticipant])
   val dsMock = createStrictMock("ds", classOf[DownstreamParticipant])
+  EasyMock.checkOrder(usMock, false)   // Not all participant operations are going to be strictly ordered
+  EasyMock.checkOrder(dsMock, false)   // Not all participant operations are going to be strictly ordered
+
   val nullListener = new NullDifferencingListener
 
   val store = createStrictMock("versionStore", classOf[VersionCorrelationStore])
@@ -58,25 +61,96 @@ abstract class AbstractDataDrivenPolicyTest {
     verifyAll
   }
 
+  /**
+   * Run the scenario with the store not any content for either half. Policy should run top-level, then jump directly
+   * to the individual level.
+   */
+  @Theory
+  def shouldJumpToLowestLevelsStraightAfterTopWhenStoreIsEmpty(scenario:Scenario) {
+    setupStubs(scenario)
+
+    expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
+    scenario.tx.respBuckets.foreach(b => {
+      val allVersions = allChildVersions(b)
+      
+      expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, allVersions, Seq())
+      expectUpstreamEntityStore(scenario.pair, allVersions)
+    })
+
+    expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
+    scenario.tx.respBuckets.foreach(b => {
+      val allVersions = allChildVersions(b)
+
+      expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, allVersions, Seq())
+      expectDownstreamEntityStore(scenario.pair, allVersions)
+    })
+
+    // We should still see an unmatched version check
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    replayAll
+
+    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
+    verifyAll
+  }
+
   protected def setupStubs(scenario:Scenario) {
     expect(configStore.getPair(scenario.pair.key)).andReturn(scenario.pair).anyTimes
   }
 
   protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                             partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
-    expect(usMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantResponse(partResp))
+    expect(usMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantDigestResponse(partResp))
     store.queryUpstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(pair, storeResp))
   }
   protected def expectDownstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                               partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
-    expect(dsMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantResponse(partResp))
+    expect(dsMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantDigestResponse(partResp))
     store.queryDownstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(pair, storeResp))
   }
 
-  protected def participantResponse(buckets:Seq[Bucket]) =
+  protected def expectUpstreamEntitySync(pair:Pair, constraints:Seq[QueryConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
+    expect(usMock.queryEntityVersions(constraints)).andReturn(participantEntityResponse(partResp))
+    val correlations = storeResp.map(v=> {
+      Correlation(id = v.id, upstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, upstreamVsn = v.vsn)
+    })
+
+    expect(store.queryUpstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints))).andReturn(correlations)
+  }
+  protected def expectDownstreamEntitySync(pair:Pair, constraints:Seq[QueryConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
+    expect(dsMock.queryEntityVersions(constraints)).andReturn(participantEntityResponse(partResp))
+    val correlations = storeResp.map(v=> {
+      Correlation(id = v.id, downstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, downstreamDVsn = v.vsn)
+    })
+
+    expect(store.queryDownstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints))).andReturn(correlations)
+  }
+
+  protected def expectUpstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
+    entities.foreach(v => {
+      expect(store.storeUpstreamVersion(VersionID(pair.key, v.id), v.strAttrs, v.lastUpdated, v.vsn)).
+        andReturn(Correlation(null, pair.key, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, null, null))
+    })
+  }
+  protected def expectDownstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
+    entities.foreach(v => {
+      expect(store.storeDownstreamVersion(VersionID(pair.key, v.id), v.strAttrs, v.lastUpdated, v.vsn, v.vsn)).
+        andReturn(Correlation(null, pair.key, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, null, v.vsn, v.vsn))
+    })
+  }
+
+  protected def participantDigestResponse(buckets:Seq[Bucket]):Seq[AggregateDigest] =
     buckets.map(b => AggregateDigest(AttributesUtil.toSeq(b.attrs), new DateTime, b.vsn))
+  protected def participantEntityResponse(entities:Seq[Vsn]):Seq[EntityVersion] =
+    entities.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.strAttrs), e.lastUpdated, e.vsn))
+
+  protected def allChildVersions(bucket:Bucket):Seq[Vsn] = allChildVersions(Seq(bucket))
+  protected def allChildVersions(buckets:Seq[Bucket]):Seq[Vsn] =
+    buckets.flatMap(b => b.nextTx match {
+      case a:AggregateTx => allChildVersions(a.respBuckets)
+      case e:EntityTx => e.entities
+    })
 
   protected abstract class VersionAnswer[T] extends IAnswer[Unit] {
     def res:Seq[Bucket]
@@ -86,14 +160,7 @@ abstract class AbstractDataDrivenPolicyTest {
       val cb = args(2).asInstanceOf[T]
 
       // We need to work through each bucket and its children.
-      answerBuckets(res, cb)
-    }
-
-    def answerBuckets(buckets:Seq[Bucket], cb:T) {
-      buckets.foreach(b => b.nextTx match {
-        case entityTx:EntityTx => answerEntities(entityTx.entities, cb)
-        case aggregateTx:AggregateTx => answerBuckets(aggregateTx.respBuckets, cb)
-      })
+      answerEntities(allChildVersions(res), cb)
     }
 
     def answerEntities(entities:Seq[Vsn], cb:T):Unit
@@ -102,17 +169,13 @@ abstract class AbstractDataDrivenPolicyTest {
   protected case class UpstreamVersionAnswer(pair:Pair, res:Seq[Bucket])
       extends VersionAnswer[Function4[VersionID, Map[String, String], DateTime, String, Unit]] {
     def answerEntities(entities:Seq[Vsn], cb:Function4[VersionID, Map[String, String], DateTime, String, Unit]) {
-      entities.foreach { case Vsn(name, attributes, vsn) =>
-        cb(VersionID(pair.key, name), attributes.map { case (k, v) => k -> v.toString }.toMap, new DateTime, vsn)
-      }
+      entities.foreach(v => cb(VersionID(pair.key, v.id), v.strAttrs, v.lastUpdated, v.vsn))
     }
   }
   protected case class DownstreamVersionAnswer(pair:Pair, res:Seq[Bucket])
       extends VersionAnswer[Function5[VersionID, Map[String, String], DateTime, String, String, Unit]] {
     def answerEntities(entities:Seq[Vsn], cb:Function5[VersionID, Map[String, String], DateTime, String, String, Unit]) {
-      entities.foreach { case Vsn(name, attributes, vsn) =>
-        cb(VersionID(pair.key, name), attributes.map { case (k, v) => k -> v.toString }.toMap, new DateTime, vsn, vsn)
-      }
+      entities.foreach(v => cb(VersionID(pair.key, v.id), v.strAttrs, v.lastUpdated, v.vsn, v.vsn))
     }
   }
 }
@@ -218,10 +281,13 @@ object AbstractDataDrivenPolicyTest {
 
   case class Scenario(pair:Pair, tx:AggregateTx)
 
-  class Tx
+  abstract class Tx { def constraints:Seq[QueryConstraint] }
   case class AggregateTx(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], respBuckets:Seq[Bucket]) extends Tx
   case class EntityTx(constraints:Seq[QueryConstraint], entities:Seq[Vsn]) extends Tx
 
   case class Bucket(name:String, attrs:Map[String, String], vsn:String, nextTx:Tx)
-  case class Vsn(id:String, attrs:Map[String, Any], vsn:String)
+  case class Vsn(id:String, attrs:Map[String, Any], vsn:String) {
+    def strAttrs = attrs.map { case (k, v) => k -> v.toString }.toMap
+    lazy val lastUpdated = new DateTime
+  }
 }
