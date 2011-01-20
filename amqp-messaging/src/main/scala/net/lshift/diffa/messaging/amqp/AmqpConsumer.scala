@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ *  Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,19 @@ package net.lshift.diffa.messaging.amqp
 
 import com.rabbitmq.messagepatterns.unicast.{ChannelSetupListener, Connector, Factory, ReceivedMessage}
 import org.slf4j.LoggerFactory
-import com.rabbitmq.client.Channel
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 import java.io.{OutputStream, ByteArrayInputStream, Closeable}
+import com.rabbitmq.client.{ShutdownSignalException, Channel}
 
 
 /**
  * AMQP message consumer. Uses a ProtocolHandler to process messages as TransportRequests,
  * and produces no response.
  */
-class AmqpConsumer(connector: Connector, queueName: String, handler: ProtocolHandler)
+class AmqpConsumer(connector: Connector,
+                   queueName: String,
+                   endpointMapper: EndpointMapper,
+                   handler: ProtocolHandler)
   extends Closeable {
 
   protected val log = LoggerFactory.getLogger(getClass)
@@ -54,7 +57,6 @@ class AmqpConsumer(connector: Connector, queueName: String, handler: ProtocolHan
     m
   }
 
-  // TODO handle shutdown signal
   val worker = new Thread(new Runnable {
     def run {
       while (running) {
@@ -66,22 +68,38 @@ class AmqpConsumer(connector: Connector, queueName: String, handler: ProtocolHan
             handleMessage(msg)
           }
         } catch {
-          case e: Exception => log.error("Failed to handle request: " + e.getMessage, e)
+          case s: ShutdownSignalException =>
+            log.info("Received shutdown signal, shutting down...")
+            running = false
+            close()
+            log.info("Shutdown complete.")
+          case e: Exception =>
+            log.error("Failed to handle request: " + e.getMessage, e)
         }
       }
     }
   })
 
   protected def handleMessage(msg: ReceivedMessage) {
-    // N.B. default endpoint is the queue name
-    val request = new TransportRequest(queueName, new ByteArrayInputStream(msg.getBody))
-    // pass in a do-nothing response
-    val response = new TransportResponse {
-      def setStatusCode(status: Int) {}
-      def withOutputStream(f:(OutputStream) => Unit) {}
-    }
+    val endpoint = endpointMapper(msg)
+    val request = new TransportRequest(endpoint, new ByteArrayInputStream(msg.getBody))
+    val response = createResponse()
     handler.handleRequest(request, response)
+    postHandle(msg, request, response)
   }
+
+  /**
+   * Creates a do-nothing response by default.
+   */
+  protected def createResponse() = new TransportResponse {
+    def setStatusCode(status: Int) {}
+    def withOutputStream(f:(OutputStream) => Unit) {}
+  }
+
+  /**
+   * Does nothing by default.
+   */
+  protected def postHandle(msg: ReceivedMessage, request: TransportRequest, response: TransportResponse) {}
 
   def start() {
     messaging.init()
@@ -90,8 +108,10 @@ class AmqpConsumer(connector: Connector, queueName: String, handler: ProtocolHan
   }
 
   def close() {
-    messaging.cancel()
-    running = false
+    if (running) {
+      messaging.cancel()
+      running = false
+    }
     worker.join(stopTimeout)
     messaging.close()
   }

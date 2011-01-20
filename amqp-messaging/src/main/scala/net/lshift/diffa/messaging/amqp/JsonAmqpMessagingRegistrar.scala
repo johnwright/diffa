@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ *  Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,19 @@
 package net.lshift.diffa.messaging.amqp
 
 import net.lshift.diffa.kernel.frontend.Changes
-import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.messaging.json.ChangesHandler
+import net.lshift.diffa.kernel.participants.{InboundEndpointFactory, InboundEndpointManager, ParticipantFactory}
+import net.lshift.diffa.kernel.config.Endpoint
+import collection.mutable.ListBuffer
+import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
 
 /**
  * Utility class responsible for registering JSON over AMQP protocol support with necessary factories
  * and request handlers.
  */
 class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
+                                 inboundEndpointManager: InboundEndpointManager,
                                  protocolMapper: ProtocolMapper,
                                  participantFactory: ParticipantFactory,
                                  changes: Changes,
@@ -35,7 +39,28 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
   val factory = new JsonAmqpParticipantProtocolFactory(connectorHolder, timeoutMillis)
   participantFactory.registerFactory(factory)
 
-  // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
-  // application/json are decoded by our ChangesHandler.
-  protocolMapper.registerHandler("changes", new ChangesHandler(changes))
+  // Register the inbound changes handler
+  inboundEndpointManager.registerFactory(new InboundEndpointFactory {
+
+    val consumers = new ListBuffer[AmqpConsumer]
+
+    // handler only has one endpoint, called "changes"
+    object ChangesEndpointMapper extends EndpointMapper {
+      def apply(msg: ReceivedMessage) = "changes"
+    }
+
+    def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =
+      contentType == "application/json" && inboundUrl.startsWith("amqp://")
+
+    def ensureEndpointReceiver(e: Endpoint) {
+      val c = new AmqpConsumer(connectorHolder.connector,
+                               AmqpQueueUrl.parse(e.inboundUrl).queue,
+                               ChangesEndpointMapper,
+                               new ChangesHandler(changes))
+      consumers += c
+      c.start()
+    }
+
+    def endpointGone(key: String) {}
+  })
 }

@@ -43,28 +43,33 @@ abstract class AbstractJSONHandler extends ProtocolHandler {
         try {
           handler(request, response)
         } catch {
-          case ex => {
-            log.error("Request failed", ex)
-
-            response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-            val errorMsg = ex.getMessage match {
-              case null => ex.getClass.getName
-              case m    => m
-            }
-            response.withOutputStream(os => os.write(buildError(errorMsg)))
-
-            true
-          }
+          case ex: Exception => handleError(ex, response)
         }
-      case None => {
-        log.error("No request handler for endpoint " + request.endpoint)
-
-        response.setStatusCode(HttpStatus.SC_BAD_REQUEST)
-        response.withOutputStream(os => os.write(buildError("No request handler for endpoint " + request.endpoint)))
-
-        true
-      }
+      case None =>
+        handleMissingEndpoint(request, response)
     }
+  }
+
+  protected def handleError(ex: Exception, response: TransportResponse): Boolean = {
+    log.error("Request failed", ex)
+
+    response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+    val errorMsg = ex.getMessage match {
+      case null => ex.getClass.getName
+      case m    => m
+    }
+    response.withOutputStream(os => os.write(buildError(errorMsg)))
+
+    true
+  }
+
+  protected def handleMissingEndpoint(request: TransportRequest, response: TransportResponse): Boolean = {
+    log.error("No request handler for endpoint " + request.endpoint)
+
+    response.setStatusCode(HttpStatus.SC_BAD_REQUEST)
+    response.withOutputStream(os => os.write(buildError("No request handler for endpoint " + request.endpoint)))
+
+    true
   }
 
   private def buildError(errorMsg:String):Array[Byte] = serializeSimpleMessage(errorMsg).getBytes("UTF-8")

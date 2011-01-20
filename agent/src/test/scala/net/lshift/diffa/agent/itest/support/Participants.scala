@@ -33,9 +33,7 @@ trait Participants {
 
   val downstreamUrl: String
 
-  val upstreamInboundUrl: String
-
-  val downstreamInboundUrl: String
+  val inboundUrl: String
 
   def startUpstreamServer(upstream: UpstreamParticipant): Unit
 
@@ -55,9 +53,7 @@ class HttpParticipants(usPort: Int, dsPort: Int) extends Participants {
 
   val downstreamUrl = "http://localhost:" + dsPort
 
-  val upstreamInboundUrl = null
-
-  val downstreamInboundUrl = null
+  val inboundUrl = null
 
   def startUpstreamServer(upstream: UpstreamParticipant) =
     forkServer(usPort, new UpstreamParticipantHandler(upstream))
@@ -94,33 +90,35 @@ class HttpParticipants(usPort: Int, dsPort: Int) extends Participants {
   lazy val downstreamClient = new DownstreamParticipantRestClient(downstreamUrl)
 }
 
-case class AmqpParticipants(usQueue: String, dsQueue: String) extends Participants {
+case class AmqpParticipants(connectorHolder: ConnectorHolder,
+                            usQueue: String,
+                            dsQueue: String,
+                            inboundQueue: String) extends Participants {
 
   private val timeout = 10000
-
-  private val holder = new ConnectorHolder()
 
   private var usServer: Option[AmqpRpcServer] = None
   private var dsServer: Option[AmqpRpcServer] = None
 
   val upstreamUrl = AmqpQueueUrl(usQueue).toString
   val downstreamUrl = AmqpQueueUrl(dsQueue).toString
-  val upstreamInboundUrl = null// TODO
-  val downstreamInboundUrl = null// TODO
+  val inboundUrl = AmqpQueueUrl(inboundQueue).toString
 
   def startUpstreamServer(upstream: UpstreamParticipant) = {
-    val server = new AmqpRpcServer(holder.connector, usQueue, new UpstreamParticipantHandler(upstream))
+    val server = new AmqpRpcServer(connectorHolder.connector, usQueue, new UpstreamParticipantHandler(upstream))
     server.start()
     usServer = Some(server)
   }
 
   def startDownstreamServer(downstream: DownstreamParticipant) = {
-    val server = new AmqpRpcServer(holder.connector, dsQueue, new DownstreamParticipantHandler(downstream))
+    val server = new AmqpRpcServer(connectorHolder.connector, dsQueue, new DownstreamParticipantHandler(downstream))
     server.start()
     dsServer = Some(server)
   }
 
-  lazy val upstreamClient = new UpstreamParticipantAmqpClient(holder.connector, usQueue, timeout)
+  lazy val upstreamClient =
+    new UpstreamParticipantAmqpClient(connectorHolder.connector, usQueue, timeout)
 
-  lazy val downstreamClient = new DownstreamParticipantAmqpClient(holder.connector, dsQueue, timeout)
+  lazy val downstreamClient =
+    new DownstreamParticipantAmqpClient(connectorHolder.connector, dsQueue, timeout)
 }

@@ -19,36 +19,39 @@ package net.lshift.diffa.messaging.amqp
 import com.rabbitmq.client.Channel
 import org.slf4j.LoggerFactory
 import java.io.{ByteArrayInputStream, Closeable}
-import net.lshift.diffa.kernel.protocol.{TransportRequest, ProtocolHandler}
 import com.rabbitmq.messagepatterns.unicast.{ReceivedMessage, ChannelSetupListener, Connector, Factory}
+import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 
 /**
  * Server for RPC-style communication over AMQP.
  */
 class AmqpRpcServer(connector: Connector, queueName: String, handler: ProtocolHandler)
-  extends AmqpConsumer(connector, queueName, handler) {
+  extends AmqpConsumer(connector, queueName, RpcEndpointMapper, handler) {
   
-  override protected def handleMessage(msg: ReceivedMessage) {
-    val endpoint = Option(msg.getProperties.getHeaders.get(AmqpRpc.endpointHeader))
-      .map(_.toString).getOrElse("")
-
+  override protected def createResponse() = new AmqpTransportResponse()
+  
+  override protected def postHandle(msg: ReceivedMessage, request: TransportRequest, response: TransportResponse) {
     val replyHeaders = new java.util.HashMap[String, Object]
-    replyHeaders.put(AmqpRpc.endpointHeader, endpoint)
-
-    if (log.isDebugEnabled) {
-      log.debug("%s: %s".format(endpoint, new String(msg.getBody)))
+    replyHeaders.put(AmqpRpc.endpointHeader, request.endpoint)
+    
+    val (status, body) = response match {
+      case r: AmqpTransportResponse => (r.status, r.os.toByteArray)
+      case _                        => (AmqpRpc.defaultStatusCode, new Array[Byte](0))
     }
-
-    val request = new TransportRequest(endpoint, new ByteArrayInputStream(msg.getBody))
-    val response = new AmqpTransportResponse
-
-    handler.handleRequest(request, response)
-    replyHeaders.put(AmqpRpc.statusCodeHeader, response.status.asInstanceOf[AnyRef])
-
+    replyHeaders.put(AmqpRpc.statusCodeHeader, status.asInstanceOf[AnyRef])
+    
     val reply = msg.createReply()
     reply.getProperties.setHeaders(replyHeaders)
-    reply.setBody(response.os.toByteArray)
+    reply.setBody(body)
     messaging.send(reply)
   }
 
+}
+
+object RpcEndpointMapper extends EndpointMapper {
+  
+  def apply(msg: ReceivedMessage) = {
+    Option(msg.getProperties.getHeaders.get(AmqpRpc.endpointHeader))
+      .map(_.toString).getOrElse("")
+  }
 }

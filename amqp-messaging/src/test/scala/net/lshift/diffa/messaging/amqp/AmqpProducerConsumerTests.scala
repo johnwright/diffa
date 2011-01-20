@@ -21,6 +21,7 @@ import org.junit.Assert._
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
+import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
 
 /**
  * Test cases for fire-and-forget AMQP messaging.
@@ -34,7 +35,10 @@ class AmqpProducerConsumerTests {
     val queueName = "testQueue"
     val holder = new ConnectorHolder()
 
-    val consumer = new AmqpConsumer(holder.connector, queueName, new ProtocolHandler {
+    val consumer = new AmqpConsumer(holder.connector,
+                                    queueName,
+                                    new EndpointMapper { def apply(msg: ReceivedMessage) = "" },
+                                    new ProtocolHandler {
       val contentType = "text/plain"
 
       def handleRequest(req: TransportRequest, res: TransportResponse) = {

@@ -21,6 +21,7 @@ import net.lshift.diffa.kernel.client.ChangesClient
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.frontend.wire.WireEvent
 import net.lshift.diffa.messaging.json.JSONEncodingUtils._
+import org.slf4j.LoggerFactory
 
 class ChangesAmqpClient(connector: Connector,
                         queueName: String,
@@ -29,12 +30,18 @@ class ChangesAmqpClient(connector: Connector,
   extends AmqpProducer(connector, queueName)
   with ChangesClient {
 
+  private val log = LoggerFactory.getLogger(getClass)
+
   def onChangeEvent(evt: ChangeEvent) {
     val wire = evt match {
       case us: UpstreamChangeEvent              => WireEvent.toWire(us)
       case ds: DownstreamChangeEvent            => WireEvent.toWire(ds)
       case dsc: DownstreamCorrelatedChangeEvent => WireEvent.toWire(dsc)
     }
-    send(serializeEvent(wire))
+    val payload = serializeEvent(wire)
+    if (log.isDebugEnabled) {
+      log.debug("onChangeEvent: %s".format(payload))
+    }
+    send(payload)
   }
 }
