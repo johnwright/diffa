@@ -118,6 +118,34 @@ abstract class AbstractDataDrivenPolicyTest {
     verifyAll
   }
 
+  /**
+   * Scenario with the store being out-of-date for a downstream leaf-node.
+   */
+  @Theory
+  def shouldCorrectOutOfDateDownstreamEntity(scenario:Scenario) {
+    setupStubs(scenario)
+
+    // Expect only a top-level sync on the upstream
+    expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
+
+    // Alter the version of the first entity in the downstream tree, then expect traversal to it
+    val updated = scenario.tx.alterFirstVsn("newVsn1")
+    traverseFirstBranch(updated, scenario.tx) {
+      case (tx1:AggregateTx, tx2:AggregateTx) =>
+        expectDownstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
+      case (tx1:EntityTx, tx2:EntityTx) =>
+        expectDownstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+    }
+    expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn))
+
+    // We should still see an unmatched version check
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    replayAll
+
+    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
+    verifyAll
+  }
+
 
   //
   // Helpers
