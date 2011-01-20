@@ -53,23 +53,6 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
     "retrieve_content" -> skeleton((deserializeEntityContentRequest _)
                                     andThen (participant.retrieveContent _)
                                     andThen (serializeEntityContent _))
-/*
-
-    "query_aggregate_digests" -> skeleton(wire => {
-      val request = deserializeWireAggregateRequest(wire)
-      val buckets = request.buckets.map { case (name, value) => name -> CategoryFunctionRegistry.resolve(value) }.toMap
-      val constraints = request.constraints.map(c => c.toQueryConstraint )
-
-      serializeDigests(digestsToWire(participant.queryAggregateDigests(buckets, constraints)))
-    }),
-    "query_entity_versions" -> skeleton(wire => serializeDigests(digestsToWire(participant.queryEntityVersions(constraintsFromWire(wire))))),
-    "invoke" -> defineRpc((s:String) => s)(r => {
-      val request = deserializeActionRequest(r)
-      serializeActionResult(participant.invoke(request.actionId, request.entityId))
-    }),
-    "retrieve_content" -> defineRpc((s:String) => s)(req => {      
-      serializeEntityContent(participant.retrieveContent(deserializeEntityContentRequest(req)))
-    })*/
   )
 
   private def constraintsFromWire(wire: Seq[WireConstraint]) =
