@@ -44,7 +44,7 @@ abstract class AbstractDataDrivenPolicyTest {
   protected def verifyAll = verify(configStore, usMock, dsMock, store, listener, configStore)
 
   /**
-   * Run the scenario with the top levels matching. The policy should not progress any further than the top level.
+   * Scenario with the top levels matching. The policy should not progress any further than the top level.
    */
   @Theory
   def shouldStopAtTopLevelWhenTopLevelBucketsMatch(scenario:Scenario) {
@@ -62,7 +62,7 @@ abstract class AbstractDataDrivenPolicyTest {
   }
 
   /**
-   * Run the scenario with the store not any content for either half. Policy should run top-level, then jump directly
+   * Scenario with the store not any content for either half. Policy should run top-level, then jump directly
    * to the individual level.
    */
   @Theory
@@ -80,6 +80,35 @@ abstract class AbstractDataDrivenPolicyTest {
       expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
       expectDownstreamEntityStore(scenario.pair, b.allVsns)
     })
+
+    // We should still see an unmatched version check
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    replayAll
+
+    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
+    verifyAll
+  }
+
+  /**
+   * Scenario with the store being out-of-date for a upstream leaf-node.
+   */
+  @Theory
+  def shouldCorrectOutOfDateUpstreamEntity(scenario:Scenario) {
+    setupStubs(scenario)
+
+    // Alter the version of the first entity in the upstream tree, then expect traversal to it
+    val updated = scenario.tx.alterFirstVsn("newVsn1")
+
+    traverseFirstBranch(updated, scenario.tx) {
+      case (tx1:AggregateTx, tx2:AggregateTx) =>
+        expectUpstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
+      case (tx1:EntityTx, tx2:EntityTx) =>
+        expectUpstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+    }
+    expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn))
+
+    // Expect only a top-level sync on the downstream
+    expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
     // We should still see an unmatched version check
     expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
@@ -172,6 +201,17 @@ abstract class AbstractDataDrivenPolicyTest {
       entities.foreach(v => cb(VersionID(pair.key, v.id), v.strAttrs, v.lastUpdated, v.vsn, v.vsn))
     }
   }
+
+  def traverseFirstBranch(tx1:Tx, tx2:Tx)(cb:((Tx, Tx) => Unit)) {
+      cb(tx1, tx2)
+
+      (tx1, tx2) match {
+        case (atx1:AggregateTx, atx2:AggregateTx) => traverseFirstBranch(atx1.respBuckets(0).nextTx, atx2.respBuckets(0).nextTx)(cb)
+        case (atx1:AggregateTx, _) => traverseFirstBranch(atx1.respBuckets(0).nextTx, null)(cb)
+        case (_, atx2:AggregateTx) => traverseFirstBranch(null, atx2.respBuckets(0).nextTx)(cb)
+        case _ => 
+      }
+    }
 }
 object AbstractDataDrivenPolicyTest {
 
@@ -188,18 +228,19 @@ object AbstractDataDrivenPolicyTest {
             AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", JUL_2010, END_JUL_2010)), Seq(
               Bucket("2010-07-08", Map("bizDate" -> "2010-07-08"),
                 EntityTx(Seq(range("bizDate", JUL_8_2010, END_JUL_8_2010)), Seq(
-                  Vsn("id1", Map("bizDate" -> JUL_8_2010_1), "vsn1")
+                  Vsn("id1", Map("bizDate" -> JUL_8_2010_1), "vsn1"),
+                  Vsn("id2", Map("bizDate" -> JUL_8_2010_2), "vsn2")
                 ))),
               Bucket("2010-07-09", Map("bizDate" -> "2010-07-09"),
                 EntityTx(Seq(range("bizDate", JUL_9_2010, END_JUL_9_2010)), Seq(
-                  Vsn("id2", Map("bizDate" -> JUL_8_2010_2), "vsn2")
+                  Vsn("id3", Map("bizDate" -> JUL_9_2010_1), "vsn3")
                 )))
             ))),
           Bucket("2010-08", Map("bizDate" -> "2010-08"),
             AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", AUG_2010, END_AUG_2010)), Seq(
               Bucket("2010-08-02", Map("bizDate" -> "2010-08-02"),
                 EntityTx(Seq(range("bizDate", AUG_11_2010, END_AUG_11_2010)), Seq(
-                  Vsn("id3", Map("bizDate" -> AUG_11_2010_1), "vsn3")
+                  Vsn("id4", Map("bizDate" -> AUG_11_2010_1), "vsn4")
                 )))
             )))
         ))),
@@ -209,7 +250,7 @@ object AbstractDataDrivenPolicyTest {
             AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", JAN_2011, END_JAN_2011)), Seq(
               Bucket("2011-01-20", Map("bizDate" -> "2011-01-20"),
                 EntityTx(Seq(range("bizDate", JAN_20_2011, END_JAN_20_2011)), Seq(
-                  Vsn("id4", Map("bizDate" -> JAN_20_2011_1), "vsn4")
+                  Vsn("id5", Map("bizDate" -> JAN_20_2011_1), "vsn5")
                 )))
             )))
         )))
@@ -275,20 +316,47 @@ object AbstractDataDrivenPolicyTest {
 
   case class Scenario(pair:Pair, tx:AggregateTx)
 
-  abstract class Tx { def constraints:Seq[QueryConstraint]; def allVsns:Seq[Vsn] }
+  abstract class Tx {
+    def constraints:Seq[QueryConstraint]
+    def allVsns:Seq[Vsn]
+    def alterFirstVsn(newVsn:String):Tx
+    def firstVsn:Vsn
+    def toString(indent:Int):String
+  }
   case class AggregateTx(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], respBuckets:Seq[Bucket]) extends Tx {
     lazy val allVsns = respBuckets.flatMap(b => b.allVsns)
+
+    def alterFirstVsn(newVsn:String) =
+      AggregateTx(bucketing, constraints, respBuckets(0).alterFirstVsn(newVsn) +: respBuckets.drop(1))
+    def firstVsn = respBuckets(0).nextTx.firstVsn
+
+    def toString(indent:Int) = (" " * indent) + "AggregateTx(" + bucketing + ", " + constraints + ")\n" + respBuckets.map(b => b.toString(indent + 2)).foldLeft("")(_ + _)
   }
   case class EntityTx(constraints:Seq[QueryConstraint], entities:Seq[Vsn]) extends Tx {
     lazy val allVsns = entities
+
+    def alterFirstVsn(newVsn:String) = EntityTx(constraints, entities(0).alterVsn(newVsn) +: entities.drop(1))
+    def firstVsn = entities(0)
+
+    def toString(indent:Int) = (" " * indent) + "EntityTx(" + constraints + ")\n" + entities.map(e => e.toString(indent + 2)).foldLeft("")(_ + _)
   }
 
   case class Bucket(name:String, attrs:Map[String, String], nextTx:Tx) {
     lazy val allVsns = nextTx.allVsns
     lazy val vsn = DigestUtils.md5Hex(allVsns.map(v => v.vsn).foldLeft("")(_ + _))
+
+    def alterFirstVsn(newVsn:String):Bucket = Bucket(name, attrs, nextTx.alterFirstVsn(newVsn))
+
+    def toString(indent:Int) = (" " * indent) + "Bucket(" + name + ", " + attrs + ", " + vsn + ")\n" + nextTx.toString(indent + 2)
   }
   case class Vsn(id:String, attrs:Map[String, Any], vsn:String) {
     def strAttrs = attrs.map { case (k, v) => k -> v.toString }.toMap
     lazy val lastUpdated = new DateTime
+
+    def alterVsn(newVsn:String) = {
+      Vsn(id, attrs, newVsn)
+    }
+
+    def toString(indent:Int) = (" " * indent) + "Vsn(" + id + ", " + attrs + ", " + vsn + ")\n"
   }
 }
