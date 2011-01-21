@@ -23,8 +23,8 @@ token = ARGV[2]
 
 repos = 'lshift/diffa'
 
-zip_package = Dir['*.zip'].shift
-war_package = Dir['*.war'].shift
+zip_package = Dir['dist/**/*.zip'].shift
+war_package = Dir['agent/**/*.war'].shift
 
 gh = Net::GitHub::Upload.new(
   :login => login,
