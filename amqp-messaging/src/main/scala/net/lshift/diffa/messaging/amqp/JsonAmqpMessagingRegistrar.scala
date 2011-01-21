@@ -21,8 +21,9 @@ import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.messaging.json.ChangesHandler
 import net.lshift.diffa.kernel.participants.{InboundEndpointFactory, InboundEndpointManager, ParticipantFactory}
 import net.lshift.diffa.kernel.config.Endpoint
-import collection.mutable.ListBuffer
+import collection.mutable.HashMap
 import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
+import org.slf4j.LoggerFactory
 
 /**
  * Utility class responsible for registering JSON over AMQP protocol support with necessary factories
@@ -35,6 +36,8 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
                                  changes: Changes,
                                  timeoutMillis: Long) {
 
+  private val log = LoggerFactory.getLogger(getClass)
+
   // Register the outbound participant factory for JSON/AMQP
   val factory = new JsonAmqpParticipantProtocolFactory(connectorHolder, timeoutMillis)
   participantFactory.registerFactory(factory)
@@ -42,7 +45,7 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
   // Register the inbound changes handler
   inboundEndpointManager.registerFactory(new InboundEndpointFactory {
 
-    val consumers = new ListBuffer[AmqpConsumer]
+    val consumers = new HashMap[String, AmqpConsumer]
 
     // handler only has one endpoint, called "changes"
     object ChangesEndpointMapper extends EndpointMapper {
@@ -57,10 +60,18 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
                                AmqpQueueUrl.parse(e.inboundUrl).queue,
                                ChangesEndpointMapper,
                                new ChangesHandler(changes))
-      consumers += c
+      consumers.put(e.name, c)
       c.start()
     }
 
-    def endpointGone(key: String) {}
+    def endpointGone(key: String) {
+      consumers.get(key).map { c =>
+        try {
+          c.close()
+        } catch {
+          case _ => log.error("Unable to shutdown consumer for endpoint name %s".format(key))
+        }
+      }
+    }
   })
 }
