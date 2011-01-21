@@ -57,6 +57,8 @@ object JSONEncodingUtils {
   def deserializeEvent(wire:String) : WireEvent = mapper.readValue(wire, classOf[WireEvent])
   def serializeEvent(event:WireEvent) = mapper.writeValueAsString(event)
 
+  def serializeEmptyResponse() = "{}"
+
   // Internal plumbing
 
   private def deserializeSimpleMap(wire:String, id:String) = mapper.readTree(wire).get(id).getTextValue

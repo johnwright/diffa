@@ -30,7 +30,11 @@ import net.lshift.diffa.kernel.differencing.AttributesUtil
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
  * various parts, along with convenience methods for making the configuration valid.
  */
-class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val versionScheme:VersionScheme) {
+class TestEnvironment(val pairKey: String,
+                      participants: Participants,
+                      changesClientBuilder: TestEnvironment => ChangesClient,
+                      versionScheme: VersionScheme) {
+
   val serverRoot = "http://localhost:19093/diffa-agent"
   val contentType = "application/json"
   val matchingTimeout = 1  // 1 second
@@ -43,7 +47,7 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
   val configurationClient:ConfigurationClient = new ConfigurationRestClient(serverRoot)
   val diffClient:DifferencesClient = new DifferencesRestClient(serverRoot)
   val actionsClient:ActionsClient = new ActionsRestClient(serverRoot)
-  val changesClient:ChangesClient = new ChangesRestClient(serverRoot)
+  val changesClient:ChangesClient = changesClientBuilder(this)
   val usersClient:UsersClient = new UsersRestClient(serverRoot)
 
   // Participants
@@ -57,18 +61,18 @@ class TestEnvironment(val pairKey:String, val usPort:Int, val dsPort:Int, val ve
   val categories = Map("bizDate" -> "date")
 
   // Participants' RPC server setup
-  Participants.startUpstreamServer(usPort, upstream)
-  Participants.startDownstreamServer(dsPort, downstream)
+  participants.startUpstreamServer(upstream)
+  participants.startDownstreamServer(downstream)
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(upstreamEpName, "http://localhost:" + usPort, contentType, null, true)
-  configurationClient.declareEndpoint(downstreamEpName, "http://localhost:" + dsPort, contentType, null, true)
+  configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, true)
+  configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, true)
   configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1", categories)
 
   // Participants' RPC client setup
-  val upstreamClient:UpstreamParticipant = new UpstreamParticipantRestClient("http://localhost:" + usPort)
-  val downstreamClient:DownstreamParticipant = new DownstreamParticipantRestClient("http://localhost:" + dsPort)
+  val upstreamClient: UpstreamParticipant = participants.upstreamClient
+  val downstreamClient: DownstreamParticipant = participants.downstreamClient
 
 
   val username = "foo"

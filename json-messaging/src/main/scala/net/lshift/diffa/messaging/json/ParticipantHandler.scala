@@ -17,11 +17,11 @@
 package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants._
-import scala.collection.JavaConversions._
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.wire.CategoryFunctionRegistry
 import net.lshift.diffa.kernel.frontend.wire.WireResponse._
-import net.lshift.diffa.kernel.frontend.wire.WireDigest
+import net.lshift.diffa.kernel.frontend.wire.{WireConstraint, WireDigest}
+import scala.collection.JavaConversions._
 
 /**
  * Handler for participants being queried via JSON.
@@ -29,28 +29,37 @@ import net.lshift.diffa.kernel.frontend.wire.WireDigest
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton(wire => {
-      val request = deserializeWireAggregateRequest(wire)
-      val buckets = request.buckets.map { case (name, value) => name -> CategoryFunctionRegistry.resolve(value) }.toMap
-      val constraints = request.constraints.map(c => c.toQueryConstraint )
+    "query_aggregate_digests" -> skeleton((deserializeWireAggregateRequest _)
+                                           andThen { req =>
+                                             val constraints = constraintsFromWire(req.constraints)
+                                             val buckets = req.buckets.map { case (name, value) =>
+                                               name -> CategoryFunctionRegistry.resolve(value)
+                                             }.toMap
+                                             participant.queryAggregateDigests(buckets, constraints)
+                                           }
+                                           andThen (digestsToWire _)
+                                           andThen (serializeDigests _)),
 
-      serializeDigests(pack(participant.queryAggregateDigests(buckets, constraints)))
-    }),
-    "query_entity_versions" -> skeleton(wire => serializeDigests(pack(participant.queryEntityVersions(unpackQueryConstraint(wire))))),
-    "invoke" -> defineRpc((s:String) => s)(r => {
-      val request = deserializeActionRequest(r)
-      serializeActionResult(participant.invoke(request.actionId, request.entityId))
-    }),
-    "retrieve_content" -> defineRpc((s:String) => s)(req => {      
-      serializeEntityContent(participant.retrieveContent(deserializeEntityContentRequest(req)))
-    })
+    "query_entity_versions" -> skeleton((deserializeQueryConstraints _)
+                                         andThen (constraintsFromWire _)
+                                         andThen (participant.queryEntityVersions _)
+                                         andThen (digestsToWire _)
+                                         andThen (serializeDigests _)),
+
+    "invoke" -> skeleton((deserializeActionRequest _)
+                          andThen (req => participant.invoke(req.actionId, req.entityId))
+                          andThen (serializeActionResult _)),
+
+    "retrieve_content" -> skeleton((deserializeEntityContentRequest _)
+                                    andThen (participant.retrieveContent _)
+                                    andThen (serializeEntityContent _))
   )
 
-  private def unpackQueryConstraint(wire:String) = deserializeQueryConstraints(wire).map(_.toQueryConstraint)
-
-  private def pack(digests:Seq[Digest]) = digests.map(WireDigest.toWire(_))
-
-  private def skeleton (f:String => String) = defineRpc((s:String) => s)(f(_))
+  private def constraintsFromWire(wire: Seq[WireConstraint]) =
+    wire.map(_.toQueryConstraint)
+  
+  private def digestsToWire(digests: Seq[Digest]) =
+    digests.map(WireDigest.toWire _)
 
 }
 
@@ -58,10 +67,10 @@ class DownstreamParticipantHandler(val downstream:DownstreamParticipant)
         extends ParticipantHandler(downstream) {
 
   override protected val endpoints = commonEndpoints ++ Map(
-    "generate_version" -> defineRpc((s:String) => s)(req => {
-      val response = downstream.generateVersion(deserializeEntityBodyRequest(req))
-      serializeWireResponse(toWire(response))
-    })
+    "generate_version" -> skeleton((deserializeEntityBodyRequest _)
+                                    andThen (downstream.generateVersion _)
+                                    andThen (toWire _)
+                                    andThen (serializeWireResponse _))
   )
 }
 

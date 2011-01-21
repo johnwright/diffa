@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
-
-import net.lshift.diffa.agent.itest.support.TestEnvironments
+package net.lshift.diffa.messaging.amqp
 
 /**
- * Test cases where various differences between a pair of participants are caused, and the agent is invoked
- * to detect and report on them. The participants in this test use the same versioning scheme, and thus will produce
- * the same versions for a given content item.
+ * Constants used by the AMQP messaging components.
  */
-class SameEnvironmentTest extends AbstractEnvironmentTest
-    with CommonDifferenceTests {
-  
-  val env = TestEnvironments.abSame
+object AmqpRpc {
+  val encoding = "UTF-8"
+  val endpointHeader = "rpc-endpoint"
+  val statusCodeHeader = "rpc-status-code"
+  val defaultStatusCode = 200
 }

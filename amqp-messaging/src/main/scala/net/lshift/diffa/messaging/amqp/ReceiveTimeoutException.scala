@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
+package net.lshift.diffa.messaging.amqp
 
-import net.lshift.diffa.agent.itest.support.TestEnvironments
+import java.io.IOException
 
 /**
- * Test cases where various differences between a pair of participants are caused, and the agent is invoked
- * to detect and report on them. The participants in this test use the same versioning scheme, and thus will produce
- * the same versions for a given content item.
+ * Exception thrown when by AMQP RPC clients when a response is not received within a fixed
+ * period of time.
  */
-class SameEnvironmentTest extends AbstractEnvironmentTest
-    with CommonDifferenceTests {
-  
-  val env = TestEnvironments.abSame
+case class ReceiveTimeoutException(timeoutMillis: Long) extends IOException {
+
+  override def getMessage = "Receive timed out after %dms".format(timeoutMillis)
 }

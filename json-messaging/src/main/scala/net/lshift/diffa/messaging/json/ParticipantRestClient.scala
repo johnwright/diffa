@@ -66,6 +66,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     val wireBuckets = buckets.map { case (name, cf) => name -> cf.name }.toMap
     serializeWireAggregateRequest(WireAggregateRequest(wireBuckets, constraints.map(_.wireFormat).toList))
   }
+  
   private def unpack[T](seq:Seq[WireDigest]) = seq.map(WireDigest.fromWire(_).asInstanceOf[T])
 }
 
