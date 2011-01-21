@@ -72,6 +72,7 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
           case _ => log.error("Unable to shutdown consumer for endpoint name %s".format(key))
         }
       }
+      consumers.remove(key)
     }
   })
 }
