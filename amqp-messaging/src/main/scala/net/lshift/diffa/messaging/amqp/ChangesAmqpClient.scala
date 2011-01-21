@@ -23,6 +23,9 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent
 import net.lshift.diffa.messaging.json.JSONEncodingUtils._
 import org.slf4j.LoggerFactory
 
+/**
+ * RPC client wrapper for clients to report change events to the diffa agent using JSON over AMQP.
+ */
 class ChangesAmqpClient(connector: Connector,
                         queueName: String,
                         timeout: Long)
