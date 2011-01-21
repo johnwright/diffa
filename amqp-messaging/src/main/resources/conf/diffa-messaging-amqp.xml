@@ -21,11 +21,11 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
 
-
   <bean id="connectorHolder" class="net.lshift.diffa.messaging.amqp.ConnectorHolder" destroy-method="close">
     <constructor-arg index="0">
       <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-        <property name="jndiName" value="java:comp/env/amqp/connectionFactory"/>
+        <property name="jndiName" value="amqp/connectionFactory"/>
+        <property name="resourceRef" value="true"/>
       </bean>
     </constructor-arg>
   </bean>

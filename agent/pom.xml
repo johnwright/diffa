@@ -111,6 +111,7 @@
       <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-amqp-messaging</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>net.lshift.diffa</groupId>
