@@ -317,7 +317,11 @@
             <exclude>**/.idea/</exclude>            
             <exclude>**/raphael.js/</exclude>            
             <exclude>**/qunit.*</exclude>            
-            <exclude>**/date.js/</exclude>            
+            <exclude>**/grid.css</exclude>
+            <exclude>**/grid24.css</exclude>
+            <exclude>**/jbase.css</exclude>
+            <exclude>**/json2.js</exclude>
+            <exclude>**/date.js/</exclude>
             <exclude>**/jquery*</exclude>            
             <exclude>**/md5-min.js/</exclude>            
             <exclude>**/g.*.js/</exclude>            
