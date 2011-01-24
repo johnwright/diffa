@@ -21,7 +21,7 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, YearlyCategoryFunction}
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
-import java.util.{HashMap, TreeMap, SortedMap}
+import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 trait ConfigStore {
