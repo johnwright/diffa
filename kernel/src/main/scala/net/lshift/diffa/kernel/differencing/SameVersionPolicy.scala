@@ -33,10 +33,10 @@ import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
 class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener, configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(store, listener, configStore:ConfigStore) {
 
-  def synchroniseParticipants(pair: Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def synchroniseParticipants(pair: Pair, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pair, bucketing, constraints, us)
-    (new DownstreamSameSyncStrategy).syncHalf(pair, bucketing, constraints, ds)
+    (new UpstreamSyncStrategy).syncHalf(pair, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
+    (new DownstreamSameSyncStrategy).syncHalf(pair, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
   }
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {

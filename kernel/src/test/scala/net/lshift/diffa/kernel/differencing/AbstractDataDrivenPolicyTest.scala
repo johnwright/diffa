@@ -25,12 +25,10 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import org.junit.runner.RunWith
 import net.lshift.diffa.kernel.util.Dates._
 import org.junit.experimental.theories.{Theory, Theories, DataPoint}
-import net.lshift.diffa.kernel.config.ConfigStore
-import net.lshift.diffa.kernel.config.Pair
-import net.lshift.diffa.kernel.util.Conversions._
 import org.joda.time.DateTime
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID
+import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore, Pair}
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -70,7 +68,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -98,7 +96,7 @@ abstract class AbstractDataDrivenPolicyTest {
     })
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -127,7 +125,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -155,7 +153,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -264,7 +262,9 @@ object AbstractDataDrivenPolicyTest {
   //
 
   @DataPoint def datesOnlyScenario = Scenario(
-    Pair(key = "ab", categories = Map("bizDate" -> "date")),
+    Pair(key = "ab",
+      upstream = new Endpoint(categories = Map("bizDate" -> "date")),
+      downstream = new Endpoint(categories = Map("bizDate" -> "date"))),
     AggregateTx(Map("bizDate" -> yearly), Seq(unbounded("bizDate")),
       Bucket("2010", Map("bizDate" -> "2010"),
         AggregateTx(Map("bizDate" -> monthly), Seq(range("bizDate", START_2010, END_2010)),
@@ -301,7 +301,9 @@ object AbstractDataDrivenPolicyTest {
     ))
 
   @DataPoint def integersOnlyScenario = Scenario(
-    Pair(key = "bc", categories = Map("someInt" -> "int")),
+    Pair(key = "bc",
+      upstream = new Endpoint(categories = Map("someInt" -> "int")),
+      downstream = new Endpoint(categories = Map("someInt" -> "int"))),
     AggregateTx(Map("someInt" -> thousands), Seq(unbounded("someInt")),
       Bucket("1000", Map("someInt" -> "1000"),
         AggregateTx(Map("someInt" -> hundreds), Seq(range("someInt", 1000, 1999)),
@@ -337,7 +339,9 @@ object AbstractDataDrivenPolicyTest {
     ))
 
   @DataPoint def integersAndDatesScenario = Scenario(
-    Pair(key = "ab", categories = Map("bizDate" -> "date", "someInt" -> "int")),
+    Pair(key = "ab",
+      upstream = new Endpoint(categories = Map("bizDate" -> "date", "someInt" -> "int")),
+      downstream = new Endpoint(categories = Map("bizDate" -> "date", "someInt" -> "int"))),
     AggregateTx(Map("bizDate" -> yearly, "someInt" -> thousands), Seq(unbounded("bizDate"), unbounded("someInt")),
       Bucket("2010_1000", Map("bizDate" -> "2010", "someInt" -> "1000"),
         AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(range("bizDate", START_2010, END_2010), range("someInt", 1000, 1999)),

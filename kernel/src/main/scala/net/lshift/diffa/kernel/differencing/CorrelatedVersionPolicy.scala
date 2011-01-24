@@ -31,10 +31,10 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore,
                               configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(store, listener, configStore) {
 
-  def synchroniseParticipants(pair: Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def synchroniseParticipants(pair: Pair, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pair, bucketing, constraints, us)
-    (new DownstreamCorrelatingSyncStrategy(us, ds, l)).syncHalf(pair, bucketing, constraints, ds)
+    (new UpstreamSyncStrategy).syncHalf(pair, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
+    (new DownstreamCorrelatingSyncStrategy(us, ds, l)).syncHalf(pair, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
   }
   
   private class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant, val l:DifferencingListener)

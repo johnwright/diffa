@@ -21,6 +21,7 @@ import org.apache.commons.cli.{CommandLine, Option}
 import net.lshift.diffa.kernel.client.ConfigurationClient
 import collection.mutable.HashMap
 import collection.mutable.Map
+import scala.collection.JavaConversions._
 
 /**
  * Utility class for declaring a differencing configuration.
@@ -34,7 +35,8 @@ object Declare extends DiffaTool {
   options.addOption(new Option("downstreamUrl", true, "the url of the downstream participant"))
   options.addOption(new Option("versionPolicy", true, "the version policy (same or correlated) to use"))
   options.addOption(new Option("matchTimeout", true, "timeout before raising matching alerts"))
-  options.addOption(new Option("categories", true, "the categories that this pair should report on"))
+  options.addOption(new Option("upstreamCategories", true, "the categories that the upstream endpoint should report on"))
+  options.addOption(new Option("downstreamCategories", true, "the categories that the downstream endpoint should report on"))
 
   // TODO This should really be passed through from the CLI, but ATM the only serialization
   // Diffa supports is JSOn anyway
@@ -55,11 +57,11 @@ object Declare extends DiffaTool {
     }
 
     // Try declaring participants
-    if (tryDeclareParticipant(line, configClient, "upstreamName", "upstreamUrl")) hasDeclared = true
-    if (tryDeclareParticipant(line, configClient, "downstreamName", "downstreamUrl")) hasDeclared = true
+    if (tryDeclareParticipant(line, configClient, "upstreamName", "upstreamUrl", "upstreamCategories")) hasDeclared = true
+    if (tryDeclareParticipant(line, configClient, "downstreamName", "downstreamUrl", "downstreamCategories")) hasDeclared = true
 
     // Try declaring the pair
-    if (hasAllOptions(line, "pairGroup", "pairKey", "versionPolicy", "upstreamName", "downstreamName","categories")) {
+    if (hasAllOptions(line, "pairGroup", "pairKey", "versionPolicy", "upstreamName", "downstreamName")) {
       val group = line.getOptionValue("pairGroup")
       val pairKey = line.getOptionValue("pairKey")
       val versionPolicy = line.getOptionValue("versionPolicy")
@@ -72,7 +74,7 @@ object Declare extends DiffaTool {
         }
 
       println("Declaring pair: " + group + "." + pairKey + " -> (" + upstreamName + " <= {" + versionPolicy + "} => " + downstreamName + ")")
-      configClient.declarePair(pairKey, versionPolicy, matchTimeout, upstreamName, downstreamName, group, parseCategories(line))
+      configClient.declarePair(pairKey, versionPolicy, matchTimeout, upstreamName, downstreamName, group)
       hasDeclared = true
     }
 
@@ -84,9 +86,9 @@ object Declare extends DiffaTool {
   }
 
   // TODO [#2] Add unit test for this
-  def parseCategories(line:CommandLine) : Map[String,String] = {
+  def parseCategories(key:String, line:CommandLine) : Map[String,String] = {
     val cats = new HashMap[String,String]
-    val categories = line.getOptionValues("categories")
+    val categories = line.getOptionValues(key)
     categories.foreach(s => {
       var parts = s.split(":")
       cats(parts(0)) = parts(1)
@@ -97,13 +99,14 @@ object Declare extends DiffaTool {
     cats
   }
 
-  protected def tryDeclareParticipant(line:CommandLine, configClient:ConfigurationClient, nameKey:String, urlKey:String) = {
+  protected def tryDeclareParticipant(line:CommandLine, configClient:ConfigurationClient, nameKey:String, urlKey:String, categoryKey:String) = {
     if (hasAllOptions(line, nameKey, urlKey)) {
       val name = line.getOptionValue(nameKey)
       val url = line.getOptionValue(urlKey)
+      val categories = parseCategories(categoryKey, line)
 
       println("Declaring endpoint: " + name + " -> " + url)
-      configClient.declareEndpoint(name, url, contentType, inboundUrl, true)
+      configClient.declareEndpoint(name, url, contentType, inboundUrl, true, categories)
       true
     } else {
       false

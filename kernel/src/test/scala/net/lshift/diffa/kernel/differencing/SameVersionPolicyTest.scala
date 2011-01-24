@@ -27,7 +27,7 @@ import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.util.Dates._
-import net.lshift.diffa.kernel.util.Conversions._
+import scala.collection.JavaConversions._
 
 
 /**
@@ -47,7 +47,8 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     shouldUpdateDownstreamVersionsWhenStoreIsOutOfDateWithDownstreamParticipant(integerCategoryData)
 
   protected def shouldUpdateDownstreamVersionsWhenStoreIsOutOfDateWithDownstreamParticipant(testData: PolicyTestData) {
-    pair.categories = testData.categories
+    pair.upstream.categories = testData.upstreamCategories
+    pair.downstream.categories = testData.downstreamCategories
     val timestamp = new DateTime
     // Expect only a top-level sync for the upstream, but a full sync for the downstream
     expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
@@ -93,7 +94,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.difference(abPair, usMock, dsMock, nullListener)

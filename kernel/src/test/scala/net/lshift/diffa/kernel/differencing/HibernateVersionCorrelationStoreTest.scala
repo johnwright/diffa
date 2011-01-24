@@ -63,7 +63,7 @@ class HibernateVersionCorrelationStoreTest {
     store.storeUpstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn")
     store.storeDownstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(0, unmatched.size)
   }
 
@@ -72,7 +72,7 @@ class HibernateVersionCorrelationStoreTest {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id2"), emptyAttributes, DEC_31_2009, "upstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id2", emptyAttributes, emptyAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
@@ -89,7 +89,7 @@ class HibernateVersionCorrelationStoreTest {
     val timestamp = new DateTime()
     store.storeDownstreamVersion(VersionID(pair, "id3"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id3", emptyAttributes, emptyAttributes, DEC_31_2009, timestamp,  null, "upstreamVsn", "downstreamVsn", false), unmatched(0))
   }
@@ -108,7 +108,7 @@ class HibernateVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id4"), emptyAttributes, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
     store.storeDownstreamVersion(VersionID(pair, "id4"), emptyAttributes, DEC_31_2009, "upstreamVsnB", "downstreamVsnB")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(0, unmatched.size)
   }
 
@@ -119,7 +119,7 @@ class HibernateVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id5"), emptyAttributes, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
     store.storeUpstreamVersion(VersionID(pair, "id5"), emptyAttributes, DEC_31_2009, "upstreamVsnB")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id5", emptyAttributes, emptyAttributes, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), unmatched(0))
   }

@@ -79,9 +79,9 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
     })
   }
 
-  def unmatchedVersions(pairKey:String, constraints:Seq[QueryConstraint]) = {
+  def unmatchedVersions(pairKey:String, usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) = {
     sessionFactory.withSession(s => {
-      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.UPSTREAM, ParticipantType.DOWNSTREAM)
+      val criteria = buildCriteria(s, pairKey, ParticipantType.UPSTREAM -> usConstraints, ParticipantType.DOWNSTREAM -> dsConstraints)
       criteria.add(Restrictions.eq("isMatched", false))
       criteria.list.map { i => i.asInstanceOf[Correlation] }
     })
@@ -149,7 +149,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
   }
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
     sessionFactory.withSession(s => {
-      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.UPSTREAM)
+      val criteria = buildCriteria(s, pairKey, ParticipantType.UPSTREAM -> constraints)
       criteria.add(Restrictions.isNotNull("upstreamVsn"))
       criteria.list.map(x => x.asInstanceOf[Correlation]).toSeq
     })
@@ -157,7 +157,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
 
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
     sessionFactory.withSession(s => {
-      val criteria = buildCriteria(s, pairKey, constraints, ParticipantType.DOWNSTREAM)
+      val criteria = buildCriteria(s, pairKey, ParticipantType.DOWNSTREAM -> constraints)
       criteria.add(Restrictions.or(Restrictions.isNotNull("downstreamUVsn"), Restrictions.isNotNull("downstreamDVsn")))
       criteria.list.map(x => x.asInstanceOf[Correlation]).toSeq
     })
@@ -175,20 +175,17 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
     })
   }
 
-  private def buildCriteria(s:Session, pairKey:String, constraints:Seq[QueryConstraint], upOrDown:ParticipantType.ParticipantType*) = {
+  private def buildCriteria(s:Session, pairKey:String, upOrDown:Tuple2[ParticipantType.ParticipantType, Seq[QueryConstraint]]*) = {
     val criteria = s.createCriteria(classOf[Correlation])
     criteria.add(Restrictions.eq("pairing", pairKey))
 
-    val indexMatches = constraints.foldLeft(List[Indexable]()) ((a:List[Indexable], x:QueryConstraint) => {
-      x match {
-        case r:NoConstraint                  => a
-        case u:UnboundedRangeQueryConstraint => a
-        case r:RangeQueryConstraint          => {
-          upOrDown.foldLeft(a) ((_a,y) => {_a ::: indexer.rangeQuery(y, x.category, x.values(0), x.values(1)).toList})
-        }
-        case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
+    val indexMatches = upOrDown.flatMap { case(partType, constraints) => {
+      constraints.flatMap {
+        case r:NoConstraint                  => Seq()
+        case u:UnboundedRangeQueryConstraint => Seq()
+        case r:RangeQueryConstraint          => indexer.rangeQuery(partType, r.category, r.values(0), r.values(1)).toList
       }
-    })
+    }}
 
     indexMatches.foreach(x => criteria.add(Restrictions.eq("id", x.id)))
     criteria.addOrder(Order.asc("id"))

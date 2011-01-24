@@ -18,31 +18,29 @@ package net.lshift.diffa.kernel.config
 
 import org.junit.Test
 import org.junit.Assert._
+import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
-import scala.collection.Map
-import net.lshift.diffa.kernel.util.Conversions._
-import net.lshift.diffa.kernel.participants.YearlyCategoryFunction
-import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
-import java.util.TreeMap
 
-class PairTest {
-
+/**
+ * Test cases for the Endpoint class.
+ */
+class EndpointTest {
   @Test
-  def defaultConstraintsForPairWithNoCategory = {
-    val pair = new Pair()
-    assertEquals(Seq(), pair.defaultConstraints)
+  def defaultConstraintsForEndpointWithNoCategories = {
+    val ep = new Endpoint()
+    assertEquals(Seq(), ep.defaultConstraints)
+  }
+
+    @Test
+  def defaultConstraintsForEndpointWithDateCategory = {
+    val ep = new Endpoint(categories=Map("bizDate" -> "date"))
+    assertEquals(Seq(unconstrainedDate("bizDate")), ep.defaultConstraints)
   }
 
   @Test
-  def defaultConstraintsForPairWithDateCategory = {
-    val pair = new Pair(categories=Map("bizDate" -> "date"))
-    assertEquals(Seq(unconstrainedDate("bizDate")), pair.defaultConstraints)
-  }
-
-  @Test
-  def defaultConstraintsForPairWithIntCategory = {
-    val pair = new Pair(categories=Map("someInt" -> "int"))
-    assertEquals(Seq(unconstrainedInt("someInt")), pair.defaultConstraints)
+  def defaultConstraintsForEndpointWithIntCategory = {
+    val ep = new Endpoint(categories=Map("someInt" -> "int"))
+    assertEquals(Seq(unconstrainedInt("someInt")), ep.defaultConstraints)
   }
 
   @Test
@@ -57,9 +55,7 @@ class PairTest {
                           "abc_attribute" -> "abc_value",
                           "def_attribute" -> "def_value")
 
-    var pair = new Pair{categories = categoryMap}
-    assertEquals(schematized, pair.schematize(rightOrder))
+    var ep = new Endpoint{categories = categoryMap}
+    assertEquals(schematized, ep.schematize(rightOrder))
   }
-
-
 }

@@ -30,11 +30,9 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.events._
-import net.lshift.diffa.kernel.config.Pair
-import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
-import net.lshift.diffa.kernel.util.Conversions._
+import net.lshift.diffa.kernel.config.{Endpoint, Pair, ConfigStore}
 
 /**
  * Base class for the various policy tests.
@@ -59,7 +57,7 @@ abstract class AbstractPolicyTest {
   val abPair = "A-B"
 
   val emptyCategories:Map[String,String] = Map()
-  val pair = new Pair(key=abPair, categories=Map("bizDate" -> "date"))
+  val pair = new Pair(key=abPair, upstream=new Endpoint(categories=Map("bizDate" -> "date")), downstream=new Endpoint(categories=Map("bizDate" -> "date")))
 
   expect(configStore.getPair(abPair)).andReturn(pair).anyTimes
   replay(configStore)
@@ -89,7 +87,8 @@ abstract class AbstractPolicyTest {
   def bizDateSeq(d:DateTime) = Seq(d.toString())
 
   case class PolicyTestData(
-    categories: Map[String, String],
+    upstreamCategories: Map[String, String],
+    downstreamCategories: Map[String, String],
     bucketing:Seq[Map[String, CategoryFunction]],
     constraints: Seq[Seq[QueryConstraint]],
     attributes: Seq[Seq[String]],
@@ -101,7 +100,8 @@ abstract class AbstractPolicyTest {
   }
 
   val dateCategoryData = PolicyTestData(
-    categories = Map("bizDate" -> "date"),
+    upstreamCategories = Map("bizDate" -> "date"),
+    downstreamCategories = Map("bizDate" -> "date"),
     bucketing = Seq(Map("bizDate" -> YearlyCategoryFunction),
                     Map("bizDate" -> MonthlyCategoryFunction),
                     Map("bizDate" -> DailyCategoryFunction),
@@ -117,7 +117,8 @@ abstract class AbstractPolicyTest {
   )
 
   val integerCategoryData = PolicyTestData(
-    categories = Map("someInt" -> "int"),
+    upstreamCategories = Map("someInt" -> "int"),
+    downstreamCategories = Map("someInt" -> "int"),
     bucketing = Seq(Map("someInt" -> thousands),
                     Map("someInt" -> hundreds),
                     Map("someInt" -> tens),
@@ -155,47 +156,54 @@ abstract class AbstractPolicyTest {
   @Test
   def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
     shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
-      categories = Map("bizDate" -> "date"),
+      upstreamCategories = Map("bizDate" -> "date"),
+      downstreamCategories = Map("bizDate" -> "date"),
       attributes = bizDateSeq(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
   def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
     shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
-      categories = Map("someInt" -> "int"),
+      upstreamCategories = Map("someInt" -> "int"),
+      downstreamCategories = Map("someInt" -> "int"),
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> "1234"))
 
   @Test
   def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
     shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
-      categories = Map("bizDate" -> "date"),
+      upstreamCategories = Map("bizDate" -> "date"),
+      downstreamCategories = Map("bizDate" -> "date"),
       attributes = bizDateSeq(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
   def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
     shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
-      categories = Map("someInt" -> "int"),
+      upstreamCategories = Map("someInt" -> "int"),
+      downstreamCategories = Map("someInt" -> "int"),
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> "1234"))
 
   @Test
   def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstreamForDateCategories =
     shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
-      categories = Map("bizDate" -> "date"),
+      upstreamCategories = Map("bizDate" -> "date"),
+      downstreamCategories = Map("bizDate" -> "date"),
       attributes = bizDateSeq(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
   def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstreamForIntegerCategories =
     shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
-      categories = Map("someInt" -> "int"),
+      upstreamCategories = Map("someInt" -> "int"),
+      downstreamCategories = Map("someInt" -> "int"),
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> "1234"))
 
   protected def shouldReportMismatchesReportedByUnderlyingStore(testData: PolicyTestData) {
-    pair.categories = testData.categories
+    pair.upstream.categories = testData.upstreamCategories
+    pair.downstream.categories = testData.downstreamCategories
     val timestamp = new DateTime
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
@@ -213,7 +221,7 @@ abstract class AbstractPolicyTest {
                         Down("id2", testData.valueKey, testData.values(1), "vsn2a", downstreamVersionFor("vsn2a"))))
 
     // If the version check returns mismatches, we should see differences generated
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
       Correlation(null, abPair, "id1", testData.upstreamAttributes(0), emptyCategories, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
       Correlation(null, abPair, "id2", testData.upstreamAttributes(1), emptyCategories, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
     listener.onMismatch(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", "vsn1a"); expectLastCall
@@ -246,14 +254,16 @@ abstract class AbstractPolicyTest {
   }
 
   protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
-    categories: Map[String, String],
+    upstreamCategories: Map[String, String],
+    downstreamCategories: Map[String, String],
     attributes: Seq[String],
     downstreamAttributes: Map[String, String]
   ) {
-    pair.categories = categories
+    pair.upstream.categories = upstreamCategories
+    pair.downstream.categories = downstreamCategories
     val timestamp = new DateTime
     expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn1")).
-      andReturn(Correlation(null, abPair, "id1", downstreamAttributes, categories, JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
+      andReturn(Correlation(null, abPair, "id1", downstreamAttributes, downstreamCategories, JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
     listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1"); expectLastCall
     replayAll
 
@@ -262,11 +272,13 @@ abstract class AbstractPolicyTest {
   }
 
   protected def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
-    categories: Map[String, String],
+    upstreamCategories: Map[String, String],
+    downstreamCategories: Map[String, String],
     attributes: Seq[String],
     downstreamAttributes: Map[String, String]
   ) {
-    pair.categories = categories
+    pair.upstream.categories = upstreamCategories
+    pair.downstream.categories = downstreamCategories
     val timestamp = new DateTime
     expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn2")).
       andReturn(Correlation(null, abPair, "id1", null, downstreamAttributes, JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
@@ -278,11 +290,13 @@ abstract class AbstractPolicyTest {
   }
 
   protected def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
-    categories: Map[String, String],
+    upstreamCategories: Map[String, String],
+    downstreamCategories: Map[String, String],
     attributes: Seq[String],
     downstreamAttributes: Map[String, String]
   ) {
-    pair.categories = categories
+    pair.upstream.categories = upstreamCategories
+    pair.downstream.categories = downstreamCategories
     val timestamp = new DateTime
     expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn2")).
       andReturn(Correlation(null, abPair, "id1", null, downstreamAttributes, JUL_8_2010_2, timestamp, "vsn1", "vsn1", "vsn2", true))
