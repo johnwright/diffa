@@ -133,22 +133,6 @@ abstract class AbstractPolicyTest {
   )
 
   @Test
-  def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatchForDateCategories =
-    shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatch(dateCategoryData)
-
-  @Test
-  def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatchForIntegerCategories =
-    shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatch(integerCategoryData)
-
-  @Test
-  def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipantForDateCategories =
-    shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipant(dateCategoryData)
-
-  @Test
-  def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipantForIntegerCategories =
-    shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipant(integerCategoryData)
-
-  @Test
   def shouldReportMismatchesReportedByUnderlyingStoreForDateCategories =
     shouldReportMismatchesReportedByUnderlyingStore(dateCategoryData)
 
@@ -209,84 +193,6 @@ abstract class AbstractPolicyTest {
       categories = Map("someInt" -> "int"),
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> "1234"))
-
-  protected def shouldOnlySyncTopLevelsWhenParticipantsAndStoresMatch(testData: PolicyTestData) {
-    pair.categories = testData.categories
-    // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
-      DigestsFromParticipant(AggregateDigest(testData.attributes(0), null, DigestUtils.md5Hex("vsn1")),
-                             AggregateDigest(testData.attributes(1), null, DigestUtils.md5Hex("vsn2"))),
-      VersionsFromStore(Up("id1", testData.valueKey, testData.values(0), "vsn1"), Up("id2", testData.valueKey, testData.values(1), "vsn2")))
-    expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
-      DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0),  null, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        AggregateDigest(testData.attributes(1), null, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
-      VersionsFromStore(Down("id1", testData.valueKey, testData.values(0), "vsn1", downstreamVersionFor("vsn1")),
-                        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
-
-    // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
-    replayAll
-
-    policy.difference(abPair, usMock, dsMock, nullListener)
-    verifyAll
-  }
-  
-  protected def shouldUpdateUpstreamVersionsWhenStoreIsOutOfDateWithUpstreamParticipant(testData: PolicyTestData) {
-    pair.categories = testData.categories
-    val timestamp = new DateTime
-    // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
-      DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), START_2009, DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
-      VersionsFromStore(
-        Up("id1", testData.valueKey, testData.values(0), "vsn1"),
-        Up("id2", testData.valueKey, testData.values(1), "vsn2"),
-        Up("id3", testData.valueKey, testData.values(1), "vsn3")))
-    expectUpstreamAggregateSync(testData.bucketing(1), testData.constraints(1),
-      DigestsFromParticipant(
-        AggregateDigest(testData.attributes(2), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new" + "vsn4"))),
-      VersionsFromStore(
-        Up("id2", testData.valueKey, testData.values(1), "vsn2"),
-        Up("id3", testData.valueKey, testData.values(1), "vsn3")))
-    expectUpstreamAggregateSync(testData.bucketing(2), testData.constraints(2),
-      DigestsFromParticipant(
-        AggregateDigest(testData.attributes(3), JUL_8_2010_1, DigestUtils.md5Hex("vsn2new"  + "vsn4"))),
-      VersionsFromStore(
-        Up("id2", testData.valueKey, testData.values(1), "vsn2"),
-        Up("id3",testData.valueKey,  testData.values(1), "vsn3")))
-    expectUpstreamEntitySync(testData.constraints(3),
-      DigestsFromParticipant(
-        EntityVersion("id2", Seq(testData.values(1).toString), JUL_8_2010_1, "vsn2new"),
-        EntityVersion("id4", Seq(testData.values(1).toString), JUL_8_2010_1, "vsn4")),
-      VersionsFromStore(
-        Up("id2", testData.valueKey, testData.values(1), "vsn2"),
-        Up("id3", testData.valueKey, testData.values(1), "vsn3")))
-
-    expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
-      DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2")))),
-      VersionsFromStore(
-        Down("id1", testData.valueKey, testData.values(0), "vsn1", downstreamVersionFor("vsn1")),
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
-
-    // The policy should update the version for id2, remove id3 and add id4
-    expect(store.storeUpstreamVersion(VersionID(abPair, "id2"), testData.upstreamAttributes(1), JUL_8_2010_1, "vsn2new")).
-      andReturn(Correlation(null, abPair, "id3", testData.upstreamAttributes(1), null, JUL_8_2010_1, timestamp, "vsn2new", "vsn2", downstreamVersionFor("vsn2"), false))
-    expect(store.clearUpstreamVersion(VersionID(abPair, "id3"))).
-      andReturn(Correlation.asDeleted(abPair, "id3", new DateTime))
-    expect(store.storeUpstreamVersion(VersionID(abPair, "id4"), testData.upstreamAttributes(1), JUL_8_2010_1, "vsn4")).
-      andReturn(Correlation(null, abPair, "id4", testData.upstreamAttributes(1), null, JUL_8_2010_1, timestamp, downstreamVersionFor("vsn2"), null, null, false))
-
-    // Don't report any unmatched versions
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
-    replayAll
-
-    policy.difference(abPair, usMock, dsMock, nullListener)
-    verifyAll
-  }
 
   protected def shouldReportMismatchesReportedByUnderlyingStore(testData: PolicyTestData) {
     pair.categories = testData.categories
