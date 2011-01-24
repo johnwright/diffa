@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,5 +26,6 @@ import net.lshift.diffa.agent.itest.support.TestEnvironments
 class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
     with CommonDifferenceTests
     with CommonActionTests {
+  
   val env = TestEnvironments.abCorrelated
 }

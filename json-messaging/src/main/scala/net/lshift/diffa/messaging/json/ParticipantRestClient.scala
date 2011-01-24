@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     val wireBuckets = buckets.map { case (name, cf) => name -> cf.name }.toMap
     serializeWireAggregateRequest(WireAggregateRequest(wireBuckets, constraints.map(_.wireFormat).toList))
   }
+  
   private def unpack[T](seq:Seq[WireDigest]) = seq.map(WireDigest.fromWire(_).asInstanceOf[T])
 }
 

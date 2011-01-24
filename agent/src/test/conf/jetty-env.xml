@@ -1,6 +1,6 @@
 <!--
 
-    Copyright (C) 2010 LShift Ltd.
+    Copyright (C) 2010-2011 LShift Ltd.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -80,6 +80,14 @@
             <Put name="mail.file.dir"><SystemProperty name="diffa.maildir"/></Put>
           </New>
         </Set>
+      </New>
+    </Arg>
+  </New>
+  <New id="amqpcf" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg>amqp/connectionFactory</Arg>
+    <Arg>
+      <New class="com.rabbitmq.client.ConnectionFactory">
+        <Set name="host">localhost</Set>
       </New>
     </Arg>
   </New>

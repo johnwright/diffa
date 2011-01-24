@@ -1,7 +1,5 @@
-package net.lshift.diffa.kernel.frontend.wire
-
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +13,8 @@ package net.lshift.diffa.kernel.frontend.wire
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.kernel.frontend.wire
 
 import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent, ChangeEvent}
 import scala.collection.JavaConversions._

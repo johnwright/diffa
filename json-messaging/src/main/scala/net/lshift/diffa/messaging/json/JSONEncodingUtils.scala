@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,8 @@ object JSONEncodingUtils {
 
   def deserializeEvent(wire:String) : WireEvent = mapper.readValue(wire, classOf[WireEvent])
   def serializeEvent(event:WireEvent) = mapper.writeValueAsString(event)
+
+  def serializeEmptyResponse() = "{}"
 
   // Internal plumbing
 

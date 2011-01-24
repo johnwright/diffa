@@ -6,7 +6,7 @@
   <parent>
     <groupId>net.lshift.diffa</groupId>
     <artifactId>diffa-parent</artifactId>
-    <version>0.9.1-SNAPSHOT</version>
+    <version>0.9.2-SNAPSHOT</version>
   </parent>
 
   <artifactId>diffa-agent</artifactId>
@@ -109,6 +109,12 @@
     </dependency>
     <dependency>
       <groupId>net.lshift.diffa</groupId>
+      <artifactId>diffa-amqp-messaging</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-tools</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -122,6 +128,12 @@
       <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-docgen-maven-plugin</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>amqp-client</artifactId>
+      <version>${rabbitmq.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -168,6 +180,17 @@
             <groupId>net.lshift.javamail</groupId>
             <artifactId>javamail-file-transport</artifactId>
             <version>0.1-SNAPSHOT</version>
+          </dependency>
+          <dependency>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>${rabbitmq.version}</version>
+          </dependency>
+          <!-- needed at runtime by Rabbit MQ client -->
+          <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons.io.version}</version>
           </dependency>
         </dependencies>
 

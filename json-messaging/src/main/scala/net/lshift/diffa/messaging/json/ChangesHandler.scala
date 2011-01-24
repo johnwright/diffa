@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ import net.lshift.diffa.kernel.frontend.wire.EventRegistry._
 class ChangesHandler(val frontend:Changes) extends AbstractJSONHandler {
 
   protected val endpoints = Map(
-    "changes" -> defineOnewayRpc((s:String) => s)(s => frontend.onChange(resolveEvent(deserializeEvent(s))))
+    "changes" -> skeleton((deserializeEvent _)
+                           andThen (resolveEvent _)
+                           andThen (frontend.onChange _)
+                           andThen (_ => serializeEmptyResponse()))
   )
 }
