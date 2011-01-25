@@ -39,8 +39,10 @@ trait VersionCorrelationStore {
 
   /**
    * Retrieves all of the unmatched version that have been stored.
+   * @param usConstraints constraints on the upstream participant's entities
+   * @param dsConstraints constraints on the downstream participant's entities
    */
-  def unmatchedVersions(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def unmatchedVersions(pairKey:String, usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) : Seq[Correlation]
 
   /**
    * Retrieves the current pairing information for the given pairKey/id.

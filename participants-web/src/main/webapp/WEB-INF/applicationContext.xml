@@ -34,7 +34,7 @@
     </property>
   </bean>
 
-  <bean id="configClient" class="net.lshift.diffa.util.SpringConfigurationRestClient">
+  <bean id="configClient" class="net.lshift.diffa.tools.client.ConfigurationRestClient">
     <constructor-arg value="${demo.agentUrl}" />
   </bean>
 
@@ -58,6 +58,9 @@
         <value>${demo.upstream.contentType}</value>
         <value>null</value>
         <value>true</value>
+        <util:map>
+          <entry key="bizDate" value="date" />
+        </util:map>
       </list>
     </property>
   </bean>
@@ -72,13 +75,16 @@
         <value>${demo.downstream.contentType}</value>
         <value>null</value>
         <value>true</value>
+        <util:map>
+          <entry key="bizDate" value="date" />
+        </util:map>
       </list>
     </property>
   </bean>
 
   <bean id="declarePair" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient"/>
-    <property name="targetMethod" value="declarePairSpring"/>
+    <property name="targetMethod" value="declarePair"/>
     <property name="arguments">
       <list>
         <value>${demo.pair.key}</value>
@@ -87,9 +93,6 @@
         <value>${demo.upstreamName}</value>
         <value>${demo.downstreamName}</value>
         <value>${demo.group}</value>
-        <util:map map-class="java.util.TreeMap">
-          <entry key="bizDate" value="date" />
-        </util:map>
       </list>
     </property>
   </bean>

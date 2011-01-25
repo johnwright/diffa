@@ -17,14 +17,13 @@
 package net.lshift.diffa.kernel.client
 
 import net.lshift.diffa.kernel.config.{PairDef, Endpoint, PairGroup}
-import scala.collection.Map
 
 /**
  * Interface supported by clients capable of configuring the diffa agent.
  */
 trait ConfigurationClient {
   def declareGroup(name: String):PairGroup
-  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, online:Boolean) : Endpoint
+  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, online:Boolean, categories:java.util.Map[String,String]) : Endpoint
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int,
-                  upstreamName: String, downstreamName: String, groupKey: String, categories:Map[String,String]):PairDef
+                  upstreamName: String, downstreamName: String, groupKey: String):PairDef
 }

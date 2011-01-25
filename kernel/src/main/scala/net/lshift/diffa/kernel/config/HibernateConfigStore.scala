@@ -46,7 +46,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
     val group = getGroup(s, p.groupKey)
-    val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout, p.categories)
+    val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout)
     s.saveOrUpdate(toUpdate)
   })
 

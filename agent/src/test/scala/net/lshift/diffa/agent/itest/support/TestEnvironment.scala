@@ -25,6 +25,7 @@ import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestCl
 import collection.mutable.HashMap
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.AttributesUtil
+import scala.collection.JavaConversions._
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -66,9 +67,9 @@ class TestEnvironment(val pairKey: String,
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, true)
-  configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, true)
-  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1", categories)
+  configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, true, categories)
+  configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, true, categories)
+  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
 
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
