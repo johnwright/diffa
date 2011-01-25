@@ -34,6 +34,7 @@
     <constructor-arg ref="inboundEndpointManager" />
     <constructor-arg ref="protocolMapper" />
     <constructor-arg ref="participantFactory" />
+    <constructor-arg ref="contentTypeMappingManager" />
     <constructor-arg ref="changesFrontend" />
     <constructor-arg value="${diffa.amqp.rpc.timeout}" />
   </bean>

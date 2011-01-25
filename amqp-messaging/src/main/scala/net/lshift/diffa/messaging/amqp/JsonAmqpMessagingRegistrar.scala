@@ -19,11 +19,11 @@ package net.lshift.diffa.messaging.amqp
 import net.lshift.diffa.kernel.frontend.Changes
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.messaging.json.ChangesHandler
-import net.lshift.diffa.kernel.participants.{InboundEndpointFactory, InboundEndpointManager, ParticipantFactory}
 import net.lshift.diffa.kernel.config.Endpoint
 import collection.mutable.HashMap
 import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.participants.{ContentTypeMappingManager, InboundEndpointFactory, InboundEndpointManager, ParticipantFactory}
 
 /**
  * Utility class responsible for registering JSON over AMQP protocol support with necessary factories
@@ -33,8 +33,9 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
                                  inboundEndpointManager: InboundEndpointManager,
                                  protocolMapper: ProtocolMapper,
                                  participantFactory: ParticipantFactory,
+                                 contentTypeMappingManager: ContentTypeMappingManager,
                                  changes: Changes,
-                                 timeoutMillis: Long) {
+                                 timeoutMillis: Long) {// TODO   extends AgentLifecycleAware {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -53,13 +54,14 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
     }
 
     def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =
-      contentType == "application/json" && inboundUrl.startsWith("amqp://")
+      inboundUrl.startsWith("amqp://") && contentTypeMappingManager.lookup(contentType).isDefined
 
     def ensureEndpointReceiver(e: Endpoint) {
+      val contentTypeMapper = contentTypeMappingManager.lookup(e.contentType).get
       val c = new AmqpConsumer(connectorHolder.connector,
                                AmqpQueueUrl.parse(e.inboundUrl).queue,
                                ChangesEndpointMapper,
-                               new ChangesHandler(changes))
+                               new ChangesHandler(changes, contentTypeMapper))
       consumers.put(e.name, c)
       c.start()
     }

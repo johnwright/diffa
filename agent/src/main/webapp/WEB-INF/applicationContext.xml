@@ -188,6 +188,14 @@
     <constructor-arg ref="diffaConfigStore" />
   </bean>
 
+    <!--
+      ===============================
+        Content Type Mapping Management
+      ===============================
+    -->
+
+  <bean id="contentTypeMappingManager" class="net.lshift.diffa.kernel.participants.ContentTypeMappingManager" />
+
   <!--
     =============
       Supervision
@@ -294,5 +302,5 @@
   -->
 
   <import resource="classpath*:conf/diffa-messaging-*.xml"/>
-  
+
 </beans>
