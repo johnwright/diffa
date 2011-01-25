@@ -61,11 +61,7 @@ class HibernateVersionCorrelationStoreTest {
 
   @Before
   def cleanupStore {
-    val s = HibernateVersionCorrelationStoreTest.sessionFactory.openSession
-    s.createCriteria(classOf[Correlation]).list.foreach(p => s.delete(p))
-    s.flush
-    s.close
-    HibernateVersionCorrelationStoreTest.indexer.reset
+    HibernateVersionCorrelationStoreTest.flushStore
   }
 
   @Test
@@ -366,4 +362,12 @@ object HibernateVersionCorrelationStoreTest {
   val sessionFactory = config.buildSessionFactory
   val indexer = new LuceneAttributeIndexer(new RAMDirectory)
   val store = new HibernateVersionCorrelationStore(sessionFactory, indexer)
+
+  def flushStore = {
+    val s = sessionFactory.openSession
+    s.createCriteria(classOf[Correlation]).list.foreach(p => s.delete(p))
+    s.flush
+    s.close
+    indexer.reset
+  }
 }

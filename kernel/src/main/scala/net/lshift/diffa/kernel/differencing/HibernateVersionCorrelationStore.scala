@@ -188,7 +188,7 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
           if (rangeIndexes.size == 0) {
             criteria.add(Restrictions.sqlRestriction("0 = 1"))   // Force every item to be excluded
           } else {
-            rangeIndexes.foreach(i => criteria.add(Restrictions.eq("id", i.id)))
+            criteria.add(Restrictions.in("id", rangeIndexes.map(i => i.id).toArray.asInstanceOf[Array[AnyRef]]))
           }
         }
         case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")

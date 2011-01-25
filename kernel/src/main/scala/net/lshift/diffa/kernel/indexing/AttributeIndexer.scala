@@ -76,7 +76,7 @@ class LuceneAttributeIndexer(index:Directory) extends AttributeIndexer with Clos
 
   val analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
-  val maxHits = 10
+  val maxHits = 10000
 
   def query(upOrDown:ParticipantType.ParticipantType, key:String, value:String)
     = executeQuery(upOrDown, new TermQuery(new Term(key, value)))

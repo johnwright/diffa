@@ -16,6 +16,7 @@
 
   <properties>
     <buildVersion>${project.version}</buildVersion>    <!-- Can be overridden via -D -->
+    <diffa.perftest>0</diffa.perftest>    <!-- Default to perftesting to be disabled. Use -D to set to 1 to enable -->
   </properties>
 
   <dependencies>
@@ -136,6 +137,10 @@
             <!-- Doesn't yet work because it parallelises the Hibernate tests, which aren't thread safe -->
           <!--<parallel>methods</parallel>
           <threadCount>4</threadCount>-->
+
+          <systemPropertyVariables>
+            <diffa.perftest>${diffa.perftest}</diffa.perftest>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
