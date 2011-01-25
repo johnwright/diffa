@@ -179,15 +179,21 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
     val criteria = s.createCriteria(classOf[Correlation])
     criteria.add(Restrictions.eq("pairing", pairKey))
 
-    val indexMatches = upOrDown.flatMap { case(partType, constraints) => {
-      constraints.flatMap {
-        case r:NoConstraint                  => Seq()
-        case u:UnboundedRangeQueryConstraint => Seq()
-        case r:RangeQueryConstraint          => indexer.rangeQuery(partType, r.category, r.values(0), r.values(1)).toList
+    upOrDown.foreach { case(partType, constraints) => {
+      constraints.foreach {
+        case r:NoConstraint                  =>   // No constraints to add
+        case u:UnboundedRangeQueryConstraint =>   // No constraints to add
+        case r:RangeQueryConstraint          => {
+          val rangeIndexes = indexer.rangeQuery(partType, r.category, r.values(0), r.values(1))
+          if (rangeIndexes.size == 0) {
+            criteria.add(Restrictions.sqlRestriction("0 = 1"))   // Force every item to be excluded
+          } else {
+            rangeIndexes.foreach(i => criteria.add(Restrictions.eq("id", i.id)))
+          }
+        }
       }
     }}
-
-    indexMatches.foreach(x => criteria.add(Restrictions.eq("id", x.id)))
+    
     criteria.addOrder(Order.asc("id"))
     criteria
   }

@@ -28,6 +28,7 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.indexing.LuceneAttributeIndexer
 import org.apache.lucene.store.RAMDirectory
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.participants.EasyConstraints._
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -49,6 +50,15 @@ class HibernateVersionCorrelationStoreTest {
   def bizDateSeq(d:DateTime) = Seq(d.toString())
   def bizDateMap(d:DateTime) = Map("bizDate" -> d.toString())
 
+  def intMap(i:Int) = Map("someInt" -> i.toString())
+
+  private val dateAttributes = bizDateMap(JUL_1_2010_1)
+  private val excludedDateAttributes = bizDateMap(AUG_11_2010_1)
+  private val dateConstraints = Seq(dateRangeConstraint("bizDate", JUL_2010, END_JUL_2010))
+  private val noDateConstraint = Seq(NoConstraint("bizDate"))
+  private val intAttributes = intMap(2500)
+  private val intConstraints = Seq(intRangeConstraint("someInt", 2000, 2999))
+
   @Before
   def cleanupStore {
     val s = HibernateVersionCorrelationStoreTest.sessionFactory.openSession
@@ -68,6 +78,15 @@ class HibernateVersionCorrelationStoreTest {
   }
 
   @Test
+  def constrainedMatchedPairsWithDifferentCategories = {
+    store.storeUpstreamVersion(VersionID(pair, "id1"), dateAttributes, JUL_1_2010_1, "upstreamVsn")
+    store.storeDownstreamVersion(VersionID(pair, "id1"), intAttributes, JUL_1_2010_1, "upstreamVsn", "downstreamVsn")
+
+    val unmatched = store.unmatchedVersions(pair, dateConstraints, intConstraints)
+    assertEquals(0, unmatched.size)
+  }
+
+  @Test
   def unmatchedPairFromUpstream = {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id2"), emptyAttributes, DEC_31_2009, "upstreamVsn")
@@ -75,6 +94,25 @@ class HibernateVersionCorrelationStoreTest {
     val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id2", emptyAttributes, emptyAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
+  }
+
+  @Test
+  def constrainedAndIncludedUnmatchedPairFromUpstream = {
+    val timestamp = new DateTime()
+    store.storeUpstreamVersion(VersionID(pair, "id2"), dateAttributes, DEC_31_2009, "upstreamVsn")
+
+    val unmatched = store.unmatchedVersions(pair, dateConstraints, noDateConstraint)
+    assertEquals(1, unmatched.size)
+    assertCorrelationEquals(Correlation(null, pair, "id2", dateAttributes, emptyAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
+  }
+
+  @Test
+  def constrainedAndExcludedUnmatchedPairFromUpstream = {
+    val timestamp = new DateTime()
+    store.storeUpstreamVersion(VersionID(pair, "id2"), excludedDateAttributes, DEC_31_2009, "upstreamVsn")
+
+    val unmatched = store.unmatchedVersions(pair, dateConstraints, noDateConstraint)
+    assertEquals(0, unmatched.size)
   }
 
   @Test
