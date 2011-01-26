@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, YearlyCategoryFunction}
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
-import java.util.{TreeMap, SortedMap}
+import java.util.HashMap
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -49,26 +50,15 @@ trait ConfigStore {
 }
 
 case class Endpoint(
-  @BeanProperty var name: String,
-  @BeanProperty var url: String,
-  @BeanProperty var contentType: String,
-  @BeanProperty var inboundUrl: String,
-  @BeanProperty var inboundContentType: String,
-  @BeanProperty var online: Boolean) {
+  @BeanProperty var name: String = null,
+  @BeanProperty var url: String = null,
+  @BeanProperty var contentType: String = null,
+  @BeanProperty var inboundUrl: String = null,
+  @BeanProperty var inboundContentType: String = null,
+  @BeanProperty var online: Boolean = false,
+  @BeanProperty var categories: java.util.Map[String,String] = new HashMap[String, String]) {
 
-  def this() = this(null, null, null, null, null, false)
-}
-
-case class Pair(
-  @BeanProperty var key: String = null,
-  @BeanProperty var upstream: Endpoint = null,
-  @BeanProperty var downstream: Endpoint = null,
-  @BeanProperty var group: PairGroup = null,
-  @BeanProperty var versionPolicyName: String = null,
-  @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
-  @BeanProperty var categories: SortedMap[String,String] = new TreeMap[String, String]) {
-
-  def this() = this(null, null, null, null, null, Pair.NO_MATCHING, new TreeMap[String, String])
+  def this() = this(null, null, null, null, null, false, new HashMap[String, String])
 
   /**
    * Fuses a list of runtime attributes together with their
@@ -77,7 +67,7 @@ case class Pair(
    */
   def schematize(runtimeValues:Seq[String]) = {
     val staticValues = categories.keySet.toList
-    (staticValues, runtimeValues).zip.toMap
+    AttributesUtil.toMap(staticValues, runtimeValues)
   }
 
   def defaultBucketing() : Map[String, CategoryFunction] = {
@@ -99,6 +89,17 @@ case class Pair(
     }).toList
 }
 
+case class Pair(
+  @BeanProperty var key: String = null,
+  @BeanProperty var upstream: Endpoint = null,
+  @BeanProperty var downstream: Endpoint = null,
+  @BeanProperty var group: PairGroup = null,
+  @BeanProperty var versionPolicyName: String = null,
+  @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING) {
+
+  def this() = this(null, null, null, null, null, Pair.NO_MATCHING)
+}
+
 object Pair {
   val NO_MATCHING = null.asInstanceOf[Int]
 }
@@ -115,10 +116,9 @@ case class PairDef(
   @BeanProperty var matchingTimeout: Int,
   @BeanProperty var upstreamName: String,
   @BeanProperty var downstreamName: String,
-  @BeanProperty var groupKey: String,
-  @BeanProperty var categories: java.util.SortedMap[String,String]) {
+  @BeanProperty var groupKey: String) {
 
-  def this() = this(null, null, null.asInstanceOf[Int], null, null, null, null)
+  def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
 }
 
 case class User(@BeanProperty var name: String,

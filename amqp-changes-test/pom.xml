@@ -173,13 +173,13 @@
           </systemProperties>
           <connectors>
             <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
-              <port>19093</port>
+              <port>19095</port>
               <maxIdleTime>60000</maxIdleTime>
             </connector>
           </connectors>
           <scanIntervalSeconds>600</scanIntervalSeconds>
           <stopKey>foo</stopKey>
-          <stopPort>19094</stopPort>
+          <stopPort>19096</stopPort>
           <jettyConfig>${basedir}/src/test/conf/jetty.xml</jettyConfig>
           <webAppXml>${basedir}/src/test/conf/jetty-env.xml</webAppXml>
           <webAppConfig>

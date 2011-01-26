@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2011 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,8 @@ import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.util.Dates._
-import net.lshift.diffa.kernel.util.Conversions._
+
+import scala.collection.JavaConversions._
 
 /**
  * Test cases for the correlated version policy test.
@@ -59,7 +60,8 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
   protected def shouldUpdateDownstreamVersionsWhenStoreIsOutOfDateWithDownstreamParticipant(
       testData: PolicyTestData) {
-    pair.categories = testData.categories
+    pair.upstream.categories = testData.upstreamCategories
+    pair.downstream.categories = testData.downstreamCategories
     val timestamp = new DateTime
     // Expect only a top-level sync for the upstream, but a full sync for the downstream
     expectUpstreamAggregateSync(abPair, testData.bucketing(0), testData.constraints(0),
@@ -116,7 +118,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         andReturn(Correlation(null, abPair, "id3", null, testData.downstreamAttributes(1), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.difference(abPair, usMock, dsMock, nullListener)
@@ -124,7 +126,8 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
   }
 
   protected def shouldGenerateADifferenceWhenDownstreamResyncFails(testData: PolicyTestData) {
-    pair.categories = testData.categories
+    pair.upstream.categories = testData.upstreamCategories
+    pair.downstream.categories = testData.downstreamCategories
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
@@ -164,7 +167,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3")); expectLastCall
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.difference(abPair, usMock, dsMock, listener)

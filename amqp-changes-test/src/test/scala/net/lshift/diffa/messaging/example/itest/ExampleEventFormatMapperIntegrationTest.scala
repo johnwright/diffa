@@ -36,7 +36,7 @@ class ExampleEventFormatMapperIntegrationTest {
 
   @Test
   def integrationTest() {
-    val serverRoot = "http://localhost:19093/diffa-agent"
+    val serverRoot = "http://localhost:19095/diffa-agent"
     val diffClient = new DifferencesRestClient(serverRoot)
     val config = new ConfigurationRestClient(serverRoot)
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
     val group = getGroup(s, p.groupKey)
-    val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout, p.categories)
+    val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout)
     s.saveOrUpdate(toUpdate)
   })
 

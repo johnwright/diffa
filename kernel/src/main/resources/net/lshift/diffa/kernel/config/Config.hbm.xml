@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
 
-    Copyright (C) 2010 LShift Ltd.
+    Copyright (C) 2010-2011 LShift Ltd.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,6 +28,11 @@
       <property name="contentType" column="content_type" type="string" not-null="true"/>
       <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
       <property name="online" type="boolean" />
+      <map name="categories" table="category" lazy="false" cascade="all">
+         <key column="id"/>
+         <index column="name" type="string"/>
+         <element column="type" type="string"/>
+     </map>
     </class>
 
     <class name="Pair" table="pair" abstract="false">
@@ -37,11 +42,6 @@
       <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false" />
       <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false" />
       <many-to-one name="group" column="name" class="PairGroup" not-null="true" lazy="false" fetch="join" />
-      <map name="categories" table="category" lazy="false" cascade="all" order-by="name asc" sort="natural">
-         <key column="id"/>
-         <index column="name" type="string"/>
-         <element column="type" type="string"/>
-     </map>
     </class>
 
     <class name="PairGroup" table="pair_group" abstract="false">

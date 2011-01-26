@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,10 @@ trait VersionCorrelationStore {
 
   /**
    * Retrieves all of the unmatched version that have been stored.
+   * @param usConstraints constraints on the upstream participant's entities
+   * @param dsConstraints constraints on the downstream participant's entities
    */
-  def unmatchedVersions(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def unmatchedVersions(pairKey:String, usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) : Seq[Correlation]
 
   /**
    * Retrieves the current pairing information for the given pairKey/id.

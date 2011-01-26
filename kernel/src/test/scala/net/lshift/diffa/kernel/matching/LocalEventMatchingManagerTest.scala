@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Pair}
  * Test cases for the LocalEventMatchingManager.
  */
 class LocalEventMatchingManagerTest {
-  val pair1 = new Pair("pair1", null, null, null, null, 10, null)
-  val pair2 = new Pair("pair2", null, null, null, null, 5, null)
+  val pair1 = new Pair(key = "pair1", matchingTimeout = 10)
+  val pair2 = new Pair(key = "pair2", matchingTimeout = 5)
 
   val configStore = createStrictMock(classOf[ConfigStore])
   expect(configStore.getPair("pair1")).andStubReturn(pair1)
@@ -49,7 +49,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldReturnAMatcherForAPairKeyLaterIntroduced {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2, null))
+    expect(configStore.getPair("pair3")).andStubReturn(new Pair(key = "pair3", matchingTimeout = 2))
     replay(configStore)
 
     matchingManager.onUpdatePair("pair3")
@@ -59,7 +59,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldNotReturnAMatcherForARemovedPair {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2, null))
+    expect(configStore.getPair("pair3")).andStubReturn(new Pair(key = "pair3", matchingTimeout = 2))
     replay(configStore)
 
     matchingManager.onUpdatePair("pair3")
@@ -80,7 +80,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldApplyListenersToNewMatchers {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair("pair3", null, null, null, null, 2, null))
+    expect(configStore.getPair("pair3")).andStubReturn(new Pair(key = "pair3", matchingTimeout = 2))
     replay(configStore)
 
     val l1 = createStrictMock(classOf[MatchingStatusListener])

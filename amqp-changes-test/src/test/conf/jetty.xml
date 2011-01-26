@@ -40,21 +40,5 @@
     </New>
   </Set>
 
-  <Call id="MBeanServer" class="java.lang.management.ManagementFactory" name="getPlatformMBeanServer" />
-
-  <!-- =========================================================== -->
-  <!-- Initialize the Jetty MBean container                        -->
-  <!-- =========================================================== -->
-  <Get id="Container" name="container">
-    <Call name="addEventListener">
-      <Arg>
-        <New class="org.eclipse.jetty.jmx.MBeanContainer">
-          <Arg><Ref id="MBeanServer"/></Arg>
-          <Call name="start" />
-        </New>
-      </Arg>
-    </Call>
-  </Get>
-
 </Configure>
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,17 +25,17 @@ import collection.mutable.HashMap
 
 // Base type for upstream and downstream correlations allowing pairs to be managed
 case class Correlation(
-  @BeanProperty var oid:java.lang.Integer,
-  @BeanProperty var pairing:String,
-  @BeanProperty var id:String,
-  var upstreamAttributes:Map[String,String],
-  var downstreamAttributes:Map[String,String],
-  @BeanProperty var lastUpdate:DateTime,
-  @BeanProperty var timestamp:DateTime,
-  @BeanProperty var upstreamVsn:String,
-  @BeanProperty var downstreamUVsn:String,
-  @BeanProperty var downstreamDVsn:String,
-  @BeanProperty var isMatched:java.lang.Boolean
+  @BeanProperty var oid:java.lang.Integer = null,
+  @BeanProperty var pairing:String = null,
+  @BeanProperty var id:String = null,
+  var upstreamAttributes:Map[String,String] = null,
+  var downstreamAttributes:Map[String,String] = null,
+  @BeanProperty var lastUpdate:DateTime = null,
+  @BeanProperty var timestamp:DateTime = null,
+  @BeanProperty var upstreamVsn:String = null,
+  @BeanProperty var downstreamUVsn:String = null,
+  @BeanProperty var downstreamDVsn:String = null,
+  @BeanProperty var isMatched:java.lang.Boolean = null
 ) {
   def this() = this(null, null, null, null, null, null, null, null, null, null, null)
 
