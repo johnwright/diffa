@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.events._
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.indexing.LuceneAttributeIndexer
+import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.apache.lucene.store.{MMapDirectory, FSDirectory, RAMDirectory}
@@ -35,9 +35,9 @@ import java.io.File
  * Test cases for the Hibernate backed VersionCorrelationStore.
  */
 
-class HibernateVersionCorrelationStoreTest {
-  private val store = HibernateVersionCorrelationStoreTest.store
-  private val indexer = HibernateVersionCorrelationStoreTest.indexer
+class LuceneVersionCorrelationStoreTest {
+  private val store = LuceneVersionCorrelationStoreTest.store
+  private val indexer = LuceneVersionCorrelationStoreTest.indexer
 
   private val pair = "pair"
   private val otherPair = "other-pair"
@@ -62,8 +62,53 @@ class HibernateVersionCorrelationStoreTest {
 
   @Before
   def cleanupStore {
-    HibernateVersionCorrelationStoreTest.flushStore
+    LuceneVersionCorrelationStoreTest.flushStore
   }
+
+    // TODO: Do any of these tests need to be put back against the store directly?
+  /*@Test
+  def basicDate = {
+    val indexer = new LuceneAttributeIndexer(dir)
+    val bizDate = new DateTime(1875, 7, 13, 12, 0, 0, 0)
+    val toIndex = Seq(Indexable(ParticipantType.UPSTREAM, "id1", Map( "bizDate" -> bizDate.toString )))
+    indexer.index(toIndex)
+    val byId = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
+    assertEquals(1, byId.length)
+    assertEquals("id1", byId(0).id)
+    assertEquals(bizDate.toString(), byId(0).terms("bizDate"))
+    val byRange1 = indexer.rangeQuery(ParticipantType.UPSTREAM, "bizDate", bizDate.minusDays(1).toString(), bizDate.plusDays(1).toString())
+    assertEquals(1, byRange1.length)
+    val byRange2 = indexer.rangeQuery(ParticipantType.UPSTREAM, "bizDate", bizDate.plusDays(1).toString(), bizDate.plusYears(1).toString())
+    assertEquals(0, byRange2.length)
+    val byRange3 = indexer.rangeQuery(ParticipantType.DOWNSTREAM, "bizDate", bizDate.minusDays(1).toString(), bizDate.plusDays(1).toString())
+    assertEquals(0, byRange3.length)
+  }
+
+  @Test
+  def deletions = {
+    val indexer = new LuceneAttributeIndexer(dir)
+    addToIndex(indexer, "id1", "foo", "bar")
+    indexer.deleteAttribute(ParticipantType.UPSTREAM, "id1")
+    val byId2 = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
+    assertEquals(0, byId2.length)
+  }
+
+  @Test
+  def updateIndex = {
+    val indexer = new LuceneAttributeIndexer(dir)
+    addToIndex(indexer, "id1", "foo", "bar")
+    addToIndex(indexer, "id1", "foo", "baz")
+  }
+
+  def addToIndex(indexer:AttributeIndexer, id:String, key:String, value:String) = {
+    indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, id , Map(key -> value) )))
+    val byId1 = indexer.query(ParticipantType.UPSTREAM, "id", id)
+    assertEquals(1, byId1.length)
+    assertEquals(id, byId1(0).id)
+    assertEquals(value, byId1(0).terms(key))
+    val byId2 = indexer.query(ParticipantType.DOWNSTREAM, "id", id)
+    assertEquals(0, byId2.length)
+  }*/
 
   @Test
   def matchedPairs = {
@@ -174,12 +219,8 @@ class HibernateVersionCorrelationStoreTest {
     store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
     store.storeUpstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")
 
-//    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 2)
-
     val corr = store.clearUpstreamVersion(VersionID(pair, "id6"))
-
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
-//    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 1)
 
     val collector = new Collector
     store.queryUpstreams(pair, List(SimpleDateConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
@@ -204,12 +245,8 @@ class HibernateVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")
 
-//    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 2)
-
     val corr = store.clearDownstreamVersion(VersionID(pair, "id6"))
-
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
-//    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 1)
 
     val collector = new Collector
     val digests = store.queryDownstreams(pair, List(SimpleDateConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
@@ -317,12 +354,6 @@ class HibernateVersionCorrelationStoreTest {
     assertEquals(None, corr)
   }
 
-//  def assertIndexState(upOrDown: ParticipantType.ParticipantType, key: String, value: String, expect: Int) = {
-//    val indexables = indexer.query(upOrDown, key, value)
-//    assertNotNull(indexables)
-//    assertEquals(expect, indexables.length)
-//  }
-
   private def assertCorrelationEquals(expected:Correlation, actual:Correlation) {
     if (expected == null) {
       assertNull(actual)
@@ -352,16 +383,8 @@ class Collector {
   }
 }
 
-object HibernateVersionCorrelationStoreTest {
-//  private val config = new Configuration().
-//          addResource("net/lshift/diffa/kernel/differencing/Correlations.hbm.xml").
-//          setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-//          setProperty("hibernate.connection.url", "jdbc:derby:target/versionStore;create=true").
-//          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
-//          setProperty("hibernate.hbm2ddl.auto", "create-drop")
-//
-//  val sessionFactory = config.buildSessionFactory
-  val indexer = new LuceneAttributeIndexer(new MMapDirectory(new File("target")))
+object LuceneVersionCorrelationStoreTest {
+  val indexer = new LuceneVersionCorrelationStore(new MMapDirectory(new File("target")))
   val store:VersionCorrelationStore = indexer
 
   def flushStore = {

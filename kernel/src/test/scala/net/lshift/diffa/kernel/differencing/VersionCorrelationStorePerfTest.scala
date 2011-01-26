@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.util.Dates._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events._
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.indexing.{LuceneAttributeIndexer, AttributeIndexer}
+import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 import ch.qos.logback.classic.Level
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 
@@ -32,27 +32,24 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
  * Performance test for the version correlation store.
  */
 
-class HibernateVersionCorrelationStorePerfTest {
+class VersionCorrelationStorePerfTest {
   private def attributes(idx:Int) = Map("bizDate" -> JUL_8_2010_1.plusSeconds(idx).toString()/*, "someInt" -> idx.toString*/)
 
   @Before
   def checkPerformanceTestingEnabled {
     assumeThat(System.getProperty("diffa.perftest"), is(equalTo("1")))
 
-    // Disable the AttributeIndexer logging
-    val attrLogger = LoggerFactory.getLogger(classOf[LuceneAttributeIndexer]).asInstanceOf[ch.qos.logback.classic.Logger]
+    // Disable the VersionCorrelationStore logging
+    val attrLogger = LoggerFactory.getLogger(classOf[LuceneVersionCorrelationStore]).asInstanceOf[ch.qos.logback.classic.Logger]
     attrLogger.setLevel(Level.ERROR)
-
-//    val ctx = LoggerFactory.getILoggerFactory().asInstanceOf[ch.qos.logback.classic.LoggerContext]
-//    ctx.getLogger
   }
 
   @Before
   def cleanupStore {
-    HibernateVersionCorrelationStoreTest.flushStore
+    LuceneVersionCorrelationStoreTest.flushStore
   }
 
-  private val store = HibernateVersionCorrelationStoreTest.store
+  private val store = LuceneVersionCorrelationStoreTest.store
   private val pairKey = "ab"
 
   @Test
