@@ -30,14 +30,17 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.apache.lucene.store.{MMapDirectory, FSDirectory, RAMDirectory}
 import java.io.File
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{Theory, DataPoint, Theories}
+
+// TODO: [#162] Ensure ordering is preserved by id
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
  */
-
+@RunWith(classOf[Theories])
 class LuceneVersionCorrelationStoreTest {
-  private val store = LuceneVersionCorrelationStoreTest.store
-  private val indexer = LuceneVersionCorrelationStoreTest.indexer
+  import LuceneVersionCorrelationStoreTest._
 
   private val pair = "pair"
   private val otherPair = "other-pair"
@@ -48,67 +51,10 @@ class LuceneVersionCorrelationStoreTest {
   protected val daily = DailyCategoryFunction
   protected val individual = DailyCategoryFunction
 
-  def bizDateSeq(d:DateTime) = Seq(d.toString())
-  def bizDateMap(d:DateTime) = Map("bizDate" -> d.toString())
-
-  def intMap(i:Int) = Map("someInt" -> i.toString())
-
-  private val dateAttributes = bizDateMap(JUL_1_2010_1)
-  private val excludedDateAttributes = bizDateMap(AUG_11_2010_1)
-  private val dateConstraints = Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010))
-  private val noDateConstraint = Seq(NoConstraint("bizDate"))
-  private val intAttributes = intMap(2500)
-  private val intConstraints = Seq(intRangeConstraint("someInt", 2000, 2999))
-
   @Before
   def cleanupStore {
-    LuceneVersionCorrelationStoreTest.flushStore
+    flushStore
   }
-
-    // TODO: Do any of these tests need to be put back against the store directly?
-  /*@Test
-  def basicDate = {
-    val indexer = new LuceneAttributeIndexer(dir)
-    val bizDate = new DateTime(1875, 7, 13, 12, 0, 0, 0)
-    val toIndex = Seq(Indexable(ParticipantType.UPSTREAM, "id1", Map( "bizDate" -> bizDate.toString )))
-    indexer.index(toIndex)
-    val byId = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
-    assertEquals(1, byId.length)
-    assertEquals("id1", byId(0).id)
-    assertEquals(bizDate.toString(), byId(0).terms("bizDate"))
-    val byRange1 = indexer.rangeQuery(ParticipantType.UPSTREAM, "bizDate", bizDate.minusDays(1).toString(), bizDate.plusDays(1).toString())
-    assertEquals(1, byRange1.length)
-    val byRange2 = indexer.rangeQuery(ParticipantType.UPSTREAM, "bizDate", bizDate.plusDays(1).toString(), bizDate.plusYears(1).toString())
-    assertEquals(0, byRange2.length)
-    val byRange3 = indexer.rangeQuery(ParticipantType.DOWNSTREAM, "bizDate", bizDate.minusDays(1).toString(), bizDate.plusDays(1).toString())
-    assertEquals(0, byRange3.length)
-  }
-
-  @Test
-  def deletions = {
-    val indexer = new LuceneAttributeIndexer(dir)
-    addToIndex(indexer, "id1", "foo", "bar")
-    indexer.deleteAttribute(ParticipantType.UPSTREAM, "id1")
-    val byId2 = indexer.query(ParticipantType.UPSTREAM, "id", "id1")
-    assertEquals(0, byId2.length)
-  }
-
-  @Test
-  def updateIndex = {
-    val indexer = new LuceneAttributeIndexer(dir)
-    addToIndex(indexer, "id1", "foo", "bar")
-    addToIndex(indexer, "id1", "foo", "baz")
-  }
-
-  def addToIndex(indexer:AttributeIndexer, id:String, key:String, value:String) = {
-    indexer.index(Seq(Indexable(ParticipantType.UPSTREAM, id , Map(key -> value) )))
-    val byId1 = indexer.query(ParticipantType.UPSTREAM, "id", id)
-    assertEquals(1, byId1.length)
-    assertEquals(id, byId1(0).id)
-    assertEquals(value, byId1(0).terms(key))
-    val byId2 = indexer.query(ParticipantType.DOWNSTREAM, "id", id)
-    assertEquals(0, byId2.length)
-  }*/
 
   @Test
   def matchedPairs = {
@@ -138,22 +84,22 @@ class LuceneVersionCorrelationStoreTest {
     assertCorrelationEquals(Correlation(null, pair, "id2", emptyAttributes, emptyAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
 
-  @Test
-  def constrainedAndIncludedUnmatchedPairFromUpstream = {
+  @Theory
+  def constrainedAndIncludedUnmatchedPairFromUpstream(system:AttributeSystem) = {
     val timestamp = new DateTime()
-    store.storeUpstreamVersion(VersionID(pair, "id2"), dateAttributes, DEC_31_2009, "upstreamVsn")
+    store.storeUpstreamVersion(VersionID(pair, "id2"), system.includedAttrs, DEC_31_2009, "upstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, dateConstraints, noDateConstraint)
+    val unmatched = store.unmatchedVersions(pair, system.constraints, noDateConstraint)
     assertEquals(1, unmatched.size)
-    assertCorrelationEquals(Correlation(null, pair, "id2", dateAttributes, emptyAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
+    assertCorrelationEquals(Correlation(null, pair, "id2", system.includedAttrs, emptyAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
 
-  @Test
-  def constrainedAndExcludedUnmatchedPairFromUpstream = {
+  @Theory
+  def constrainedAndExcludedUnmatchedPairFromUpstream(system:AttributeSystem) = {
     val timestamp = new DateTime()
-    store.storeUpstreamVersion(VersionID(pair, "id2"), excludedDateAttributes, DEC_31_2009, "upstreamVsn")
+    store.storeUpstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, dateConstraints, noDateConstraint)
+    val unmatched = store.unmatchedVersions(pair, system.constraints, noDateConstraint)
     assertEquals(0, unmatched.size)
   }
 
@@ -386,6 +332,25 @@ class Collector {
 object LuceneVersionCorrelationStoreTest {
   val indexer = new LuceneVersionCorrelationStore(new MMapDirectory(new File("target")))
   val store:VersionCorrelationStore = indexer
+
+  // Helper methods for various constraint/attribute scenarios
+  def bizDateSeq(d:DateTime) = Seq(d.toString())
+  def bizDateMap(d:DateTime) = Map("bizDate" -> d.toString())
+  def intMap(i:Int) = Map("someInt" -> i.toString())
+
+  // Standard attribute/constraint definitions
+  private val dateAttributes = bizDateMap(JUL_1_2010_1)
+  private val excludedDateAttributes = bizDateMap(AUG_11_2010_1)
+  private val dateConstraints = Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010))
+  private val noDateConstraint = Seq(NoConstraint("bizDate"))
+  private val intAttributes = intMap(2500)
+  private val excludedIntAttributes = intMap(20000)
+  private val intConstraints = Seq(intRangeConstraint("someInt", 2000, 2999))
+
+  // Defines a testable combination of constraints/attributes the store should be able to handle
+  case class AttributeSystem(constraints:Seq[QueryConstraint], includedAttrs:Map[String, String], excludedAttrs:Map[String, String])
+  @DataPoint def dates = AttributeSystem(dateConstraints, dateAttributes, excludedDateAttributes)
+  @DataPoint def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
 
   def flushStore = {
 //    val s = sessionFactory.openSession
