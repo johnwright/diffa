@@ -122,7 +122,7 @@ class LuceneVersionCorrelationStore(index:Directory)
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
     searcher.search(query, idOnlyCollector)
-    idOnlyCollector.allCorrelations(searcher).filter(c => c.upstreamVsn != null)
+    idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.upstreamVsn != null)
   }
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
     val query = queryForPair(pairKey)
@@ -132,7 +132,7 @@ class LuceneVersionCorrelationStore(index:Directory)
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
     searcher.search(query, idOnlyCollector)
-    idOnlyCollector.allCorrelations(searcher).filter(c => c.downstreamUVsn != null)
+    idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.downstreamUVsn != null)
   }
   
   private def queryForId(id:VersionID) = {
@@ -308,6 +308,8 @@ class LuceneVersionCorrelationStore(index:Directory)
         docToCorrelation(doc)
       })
     }
+
+    def allSortedCorrelations(searcher:IndexSearcher) = allCorrelations(searcher).sortBy(c => c.id)
   }
 
   def close = {

@@ -239,6 +239,20 @@ class LuceneVersionCorrelationStoreTest {
       collector.upstreamObjs.toList)
   }
 
+  @Test
+  def queryUpstreamRangeReturnsInIDOrder = {
+    store.storeUpstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")
+    store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
+
+    val collector = new Collector
+    val digests = store.queryUpstreams(pair, List(unconstrainedDate("bizDate")), collector.collectUpstream)
+    assertEquals(
+      List(
+        UpstreamPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6"),
+        UpstreamPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")),
+      collector.upstreamObjs.toList)
+  }
+
   // TODO: Theorise
   @Test
   def queryDownstreamRangeExcludesEarlier = {
@@ -262,6 +276,20 @@ class LuceneVersionCorrelationStoreTest {
     val digests = store.queryDownstreams(pair, List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")),
+      collector.downstreamObjs.toList)
+  }
+
+  @Test
+  def queryDownstreamRangeReturnsInIDOrder = {
+    store.storeDownstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
+    store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
+
+    val collector = new Collector
+    val digests = store.queryDownstreams(pair, List(unconstrainedDate("bizDate")), collector.collectDownstream)
+    assertEquals(
+      List(
+        DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6"),
+        DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       collector.downstreamObjs.toList)
   }
   
