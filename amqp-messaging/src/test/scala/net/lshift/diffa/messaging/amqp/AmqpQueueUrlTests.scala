@@ -96,4 +96,8 @@ class AmqpQueueUrlTests {
                AmqpQueueUrl("test", host = "rabbitserver", port = 9001).toString)
   }
 
+  @Test(expected = classOf[InvalidAmqpQueueUrlException])
+  def failToParseInvalidUrl() {
+    AmqpQueueUrl.parse("http://www.foo.com")
+  }
 }

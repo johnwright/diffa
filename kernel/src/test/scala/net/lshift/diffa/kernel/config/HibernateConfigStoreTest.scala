@@ -35,8 +35,9 @@ class HibernateConfigStoreTest {
   val DS_CATEGORY_NAME = "someInt"
   val DS_CATEGORY_TYPE = "int"
   val DS_CATEGORIES = Map(DS_CATEGORY_NAME -> DS_CATEGORY_TYPE)
-  val UPSTREAM_EP = Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, true, US_CATEGORIES)
-  val DOWNSTREAM_EP = Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, true, DS_CATEGORIES)
+  val UPSTREAM_EP = Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
+  val DOWNSTREAM_EP = Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
+
   val GROUP_KEY = "TEST_GROUP"
   val GROUP = new PairGroup(GROUP_KEY)
   val VP_NAME = "TEST_VPNAME"
@@ -122,7 +123,7 @@ class HibernateConfigStoreTest {
     }
         
     // Change its name
-    configStore.createOrUpdateEndpoint(Endpoint(UPSTREAM_RENAMED, UPSTREAM_EP.url, "application/json", "changes", true))
+    configStore.createOrUpdateEndpoint(Endpoint(UPSTREAM_RENAMED, UPSTREAM_EP.url, "application/json", "changes", "application/json", true))
 
     val retrieved = configStore.getEndpoint(UPSTREAM_RENAMED)
     assertEquals(UPSTREAM_RENAMED, retrieved.name)
@@ -243,7 +244,7 @@ class HibernateConfigStoreTest {
   @Test
   def testRedeclareEndpointSucceeds = {
     configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    configStore.createOrUpdateEndpoint(Endpoint(UPSTREAM_EP.name, "DIFFERENT_URL", "application/json", "changes", false))
+    configStore.createOrUpdateEndpoint(Endpoint(UPSTREAM_EP.name, "DIFFERENT_URL", "application/json", "changes", "application/json", false))
     assertEquals(1, configStore.listEndpoints.length)
     assertEquals("DIFFERENT_URL", configStore.getEndpoint(UPSTREAM_EP.name).url)
   }

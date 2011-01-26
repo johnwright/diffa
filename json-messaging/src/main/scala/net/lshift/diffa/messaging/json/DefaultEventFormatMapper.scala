@@ -16,26 +16,14 @@
 
 package net.lshift.diffa.messaging.json
 
-
-import net.lshift.diffa.kernel.frontend.Changes
-import JSONEncodingUtils._
-import net.lshift.diffa.kernel.frontend.wire.EventRegistry._
 import net.lshift.diffa.kernel.participants.EventFormatMapper
 
 /**
- * Protocol handler for change requests.
+ * Default mapper for events in Diffa's native JSON format.
  */
+class DefaultEventFormatMapper extends EventFormatMapper {
 
-class ChangesHandler(val frontend: Changes,
-                     inboundEndpoint: String,
-                     eventFormatMapper: EventFormatMapper) extends AbstractJSONHandler {
+  val contentType = "application/json"
 
-  override val contentType = eventFormatMapper.contentType
-
-  protected val endpoints = Map(
-    "changes" -> skeleton((eventFormatMapper.map(_: String, inboundEndpoint))
-                           andThen (resolveEvent _)
-                           andThen (frontend.onChange _)
-                           andThen (_ => serializeEmptyResponse()))
-  )
+  def map(event: String, endpoint: String) = JSONEncodingUtils.deserializeEvent(event)
 }

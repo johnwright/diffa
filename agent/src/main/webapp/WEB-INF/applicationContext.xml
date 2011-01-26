@@ -188,6 +188,14 @@
     <constructor-arg ref="diffaConfigStore" />
   </bean>
 
+    <!--
+      ===============================
+        Event Format Mapping Management
+      ===============================
+    -->
+
+  <bean id="eventFormatMapperManager" class="net.lshift.diffa.kernel.participants.EventFormatMapperManager" />
+
   <!--
     =============
       Supervision
@@ -290,5 +298,5 @@
   -->
 
   <import resource="classpath*:conf/diffa-messaging-*.xml"/>
-  
+
 </beans>

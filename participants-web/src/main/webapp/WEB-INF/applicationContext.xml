@@ -57,6 +57,7 @@
         <value>${demo.upstreamUrl}</value>
         <value>${demo.upstream.contentType}</value>
         <value>null</value>
+        <value>null</value>
         <value>true</value>
         <util:map>
           <entry key="bizDate" value="date" />
@@ -73,6 +74,7 @@
         <value>${demo.downstreamName}</value>
         <value>${demo.downstreamUrl}</value>
         <value>${demo.downstream.contentType}</value>
+        <value>null</value>
         <value>null</value>
         <value>true</value>
         <util:map>

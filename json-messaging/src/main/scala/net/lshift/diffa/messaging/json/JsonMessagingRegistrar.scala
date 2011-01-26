@@ -18,7 +18,8 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.kernel.frontend.Changes
-import net.lshift.diffa.kernel.participants.ParticipantFactory
+import net.lshift.diffa.kernel.participants.{EventFormatMapperManager, ParticipantFactory}
+import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 
 /**
  * Utility class responsible for registering the JSON protocol support with necessary factories
@@ -26,13 +27,20 @@ import net.lshift.diffa.kernel.participants.ParticipantFactory
  */
 class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
                              val participantFactory:ParticipantFactory,
-                             val changes:Changes) {
+                             val eventFormatMapperManager:EventFormatMapperManager,
+                             val changes:Changes)
+  extends AgentLifecycleAware {
 
-  // Register the outbound participant factory for JSON/HTTP
   val factory = new JSONRestParticipantProtocolFactory()
-  participantFactory.registerFactory(factory)
 
-  // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
-  // application/json are decoded by our ChangesHandler.
-  protocolMapper.registerHandler("changes", new ChangesHandler(changes))
+  override def onAgentAssemblyCompleted {
+    // Register the outbound participant factory for JSON/HTTP
+    participantFactory.registerFactory(factory)
+
+    // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
+    // application/json are decoded by our ChangesHandler.
+    val changesHandler = new ChangesHandler(changes, "changes", eventFormatMapperManager.lookup("application/json").get)
+    protocolMapper.registerHandler("changes", changesHandler)
+  }
+
 }

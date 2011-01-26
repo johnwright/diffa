@@ -39,12 +39,17 @@ case class AmqpQueueUrl(queue: String,
 object AmqpQueueUrl {
   private val pattern = new Regex("""amqp://(.*?)(:(\d+))?/(.*?)/queues/(.*?)""")
 
-  def parse(url: String) = {
-    val pattern(host, _, port, vHost, queue) = url
-    
-    AmqpQueueUrl(queue,
-                 host,
-                 if (port != null) port.toInt else USE_DEFAULT_PORT,
-                 vHost)
+  def parse(url: String) = url match {
+    case pattern(host, _, port, vHost, queue) =>
+      AmqpQueueUrl(queue,
+                   host,
+                   if (port != null) port.toInt else USE_DEFAULT_PORT,
+                   vHost)
+    case _ =>
+      throw new InvalidAmqpQueueUrlException(url)
   }
+}
+
+case class InvalidAmqpQueueUrlException(url: String) extends RuntimeException {
+  override def getMessage = "The given URL [%s] is not a valid AMQP queue URL".format(url)
 }

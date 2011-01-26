@@ -54,10 +54,11 @@ case class Endpoint(
   @BeanProperty var url: String = null,
   @BeanProperty var contentType: String = null,
   @BeanProperty var inboundUrl: String = null,
+  @BeanProperty var inboundContentType: String = null,
   @BeanProperty var online: Boolean = false,
   @BeanProperty var categories: java.util.Map[String,String] = new HashMap[String, String]) {
 
-  def this() = this(null, null, null, null, false, new HashMap[String, String])
+  def this() = this(null, null, null, null, null, false, new HashMap[String, String])
 
   /**
    * Fuses a list of runtime attributes together with their

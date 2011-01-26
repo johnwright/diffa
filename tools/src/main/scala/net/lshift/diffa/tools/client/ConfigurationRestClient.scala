@@ -32,8 +32,8 @@ class ConfigurationRestClient(serverRootUrl:String)
     g
   }
 
-  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, online:Boolean, categories:java.util.Map[String,String]) = {
-    val e = Endpoint(name, url, contentType, inboundUrl, online, categories)
+  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean, categories:java.util.Map[String,String]) = {
+    val e = Endpoint(name, url, contentType, inboundUrl, inboundContentType, online, categories)
     create("endpoints", e)
     e
   }

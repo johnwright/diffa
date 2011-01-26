@@ -14,36 +14,25 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.amqp
+package net.lshift.diffa.kernel.participants
 
-import java.io.Closeable
+import scala.collection.mutable.HashMap
 import org.slf4j.LoggerFactory
-import com.rabbitmq.messagepatterns.unicast.{Connector, Factory}
 
 /**
- * AMQP message producer.
+ * Provides a registry for EventFormatMapper instances.
  */
-class AmqpProducer(connector: Connector, queueName: String)
-  extends Closeable {
+class EventFormatMapperManager {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  private val sender = {
-    val s = Factory.createSender()
-    s.setConnector(connector)
-    s.setExchangeName("")
-    s.init()
-    s
+  private val mappers = HashMap[String, EventFormatMapper]()
+
+  def registerMapper(mapper: EventFormatMapper) = {
+    log.info("Registered mapper for content type: %s [%s]".format(mapper.contentType, mapper))
+    mappers.put(mapper.contentType, mapper)
   }
 
-  def send(payload: String) {
-    val msg = sender.createMessage()
-    msg.setRoutingKey(queueName)
-    msg.setBody(payload.getBytes(AmqpRpc.encoding))
-    sender.send(msg)
-  }
-
-  def close() {
-    sender.close()
-  }
+  def lookup(contentType: String) =
+    mappers.get(contentType)
 }

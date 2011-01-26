@@ -19,11 +19,12 @@ package net.lshift.diffa.messaging.amqp
 import net.lshift.diffa.kernel.frontend.Changes
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.messaging.json.ChangesHandler
-import net.lshift.diffa.kernel.participants.{InboundEndpointFactory, InboundEndpointManager, ParticipantFactory}
 import net.lshift.diffa.kernel.config.Endpoint
 import collection.mutable.HashMap
 import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.participants.{EventFormatMapperManager, InboundEndpointFactory, InboundEndpointManager, ParticipantFactory}
+import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 
 /**
  * Utility class responsible for registering JSON over AMQP protocol support with necessary factories
@@ -33,46 +34,52 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
                                  inboundEndpointManager: InboundEndpointManager,
                                  protocolMapper: ProtocolMapper,
                                  participantFactory: ParticipantFactory,
+                                 eventFormatMapperManager: EventFormatMapperManager,
                                  changes: Changes,
-                                 timeoutMillis: Long) {
+                                 timeoutMillis: Long)
+  extends AgentLifecycleAware {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  // Register the outbound participant factory for JSON/AMQP
-  val factory = new JsonAmqpParticipantProtocolFactory(connectorHolder, timeoutMillis)
-  participantFactory.registerFactory(factory)
+  override def onAgentAssemblyCompleted {
+    // Register the outbound participant factory for JSON/AMQP
+    val factory = new JsonAmqpParticipantProtocolFactory(connectorHolder, timeoutMillis)
+    participantFactory.registerFactory(factory)
 
-  // Register the inbound changes handler
-  inboundEndpointManager.registerFactory(new InboundEndpointFactory {
+    // Register the inbound changes handler
+    inboundEndpointManager.registerFactory(new InboundEndpointFactory {
 
-    val consumers = new HashMap[String, AmqpConsumer]
+      val consumers = new HashMap[String, AmqpConsumer]
 
-    // handler only has one endpoint, called "changes"
-    object ChangesEndpointMapper extends EndpointMapper {
-      def apply(msg: ReceivedMessage) = "changes"
-    }
-
-    def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =
-      contentType == "application/json" && inboundUrl.startsWith("amqp://")
-
-    def ensureEndpointReceiver(e: Endpoint) {
-      val c = new AmqpConsumer(connectorHolder.connector,
-                               AmqpQueueUrl.parse(e.inboundUrl).queue,
-                               ChangesEndpointMapper,
-                               new ChangesHandler(changes))
-      consumers.put(e.name, c)
-      c.start()
-    }
-
-    def endpointGone(key: String) {
-      consumers.get(key).map { c =>
-        try {
-          c.close()
-        } catch {
-          case _ => log.error("Unable to shutdown consumer for endpoint name %s".format(key))
-        }
+      // handler only has one endpoint, called "changes"
+      object ChangesEndpointMapper extends EndpointMapper {
+        def apply(msg: ReceivedMessage) = "changes"
       }
-      consumers.remove(key)
-    }
-  })
+
+      def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =
+        inboundUrl.startsWith("amqp://") && eventFormatMapperManager.lookup(contentType).isDefined
+
+      def ensureEndpointReceiver(e: Endpoint) {
+        log.info("Starting consumer for endpoint: %s".format(e))
+        val eventFormatMapper = eventFormatMapperManager.lookup(e.inboundContentType).get
+        val c = new AmqpConsumer(connectorHolder.connector,
+                                 AmqpQueueUrl.parse(e.inboundUrl).queue,
+                                 ChangesEndpointMapper,
+                                 new ChangesHandler(changes, e.name, eventFormatMapper))
+        consumers.put(e.name, c)
+        c.start()
+      }
+
+      def endpointGone(key: String) {
+        consumers.get(key).map { c =>
+          try {
+            c.close()
+          } catch {
+            case _ => log.error("Unable to shutdown consumer for endpoint name %s".format(key))
+          }
+        }
+        consumers.remove(key)
+      }
+    })
+  }
 }
