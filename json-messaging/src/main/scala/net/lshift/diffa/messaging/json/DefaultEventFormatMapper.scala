@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.participants
+package net.lshift.diffa.messaging.json
 
-/**
- * Maps data from an arbitrary incoming content type to Diffa's default content type.
- */
-trait ContentTypeMapper {
+import net.lshift.diffa.kernel.participants.EventFormatMapper
 
-  val contentType: String
+class DefaultEventFormatMapper extends EventFormatMapper {
 
-  def map(content: String): String
-}
+  val contentType = "application/json"
 
-/**
- * Default (no-op) content type mapper implementation.
- */
-case class NullContentTypeMapper(contentType: String) extends ContentTypeMapper {
-
-  def map(content: String) = content
+  def map(event: String, endpoint: String) = JSONEncodingUtils.deserializeEvent(event)
 }

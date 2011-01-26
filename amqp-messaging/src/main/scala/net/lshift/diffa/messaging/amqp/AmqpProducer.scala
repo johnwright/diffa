@@ -19,6 +19,7 @@ package net.lshift.diffa.messaging.amqp
 import java.io.Closeable
 import org.slf4j.LoggerFactory
 import com.rabbitmq.client.Channel
+import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.messagepatterns.unicast.{ChannelSetupListener, Connector, Factory}
 
 /**

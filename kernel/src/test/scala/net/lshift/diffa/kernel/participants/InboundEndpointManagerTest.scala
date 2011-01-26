@@ -38,19 +38,19 @@ class InboundEndpointManagerTest {
   @Test
   def shouldIgnoreEndpointWhereNoInboundUrlIsConfigured {
     // TODO [#146] Wire in log verification for this test
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", null, true))
+    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", null, null, true))
   }
 
   @Test
   def shouldHandleEndpointWhereInboundUrlIsNotSupported {
     // TODO [#146] Wire in log verification for this test
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", true))
+    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", "application/foo+json", true))
   }
 
   @Test
   def shouldInformFactoryWhenValidEndpointIsAvailable {
     manager.registerFactory(jsonFactory)
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", true))
+    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", "application/foo+json", true))
 
     assertNotNull(jsonFactory.lastEp)
     assertEquals("e", jsonFactory.lastEp.name)
@@ -59,7 +59,7 @@ class InboundEndpointManagerTest {
   @Test
   def shouldNotInformFactoryWhenEndpointIsNotAcceptable {
     manager.registerFactory(jsonFactory)
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/xml", "amqp:queue.name", true))
+    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/xml", "amqp:queue.name", "application/foo+xml", true))
 
     assertNull(jsonFactory.lastEp)
   }
@@ -68,7 +68,7 @@ class InboundEndpointManagerTest {
   def shouldActivateStoredEndpoint {
     manager.registerFactory(jsonFactory)
 
-    expect(configStore.listEndpoints).andReturn(Seq(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", true)))
+    expect(configStore.listEndpoints).andReturn(Seq(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", "application/foo+json", true)))
     replay(configStore)
 
     manager.onAgentAssemblyCompleted

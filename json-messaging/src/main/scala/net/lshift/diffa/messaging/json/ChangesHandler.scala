@@ -20,20 +20,20 @@ package net.lshift.diffa.messaging.json
 import net.lshift.diffa.kernel.frontend.Changes
 import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.wire.EventRegistry._
-import net.lshift.diffa.kernel.participants.ContentTypeMapper
+import net.lshift.diffa.kernel.participants.EventFormatMapper
 
 /**
- * JSON protocol handler for change requests.
+ * Protocol handler for change requests.
  */
 
 class ChangesHandler(val frontend: Changes,
-                     contentTypeMapper: ContentTypeMapper) extends AbstractJSONHandler {
+                     inboundEndpoint: String,
+                     eventFormatMapper: EventFormatMapper) extends AbstractJSONHandler {
 
-  override val contentType = contentTypeMapper.contentType
+  override val contentType = eventFormatMapper.contentType
 
   protected val endpoints = Map(
-    "changes" -> skeleton((contentTypeMapper.map _)
-                           andThen (deserializeEvent _)
+    "changes" -> skeleton((eventFormatMapper.map(_: String, inboundEndpoint))
                            andThen (resolveEvent _)
                            andThen (frontend.onChange _)
                            andThen (_ => serializeEmptyResponse()))

@@ -53,9 +53,10 @@ case class Endpoint(
   @BeanProperty var url: String,
   @BeanProperty var contentType: String,
   @BeanProperty var inboundUrl: String,
+  @BeanProperty var inboundContentType: String,
   @BeanProperty var online: Boolean) {
 
-  def this() = this(null, null, null, null, false)
+  def this() = this(null, null, null, null, null, false)
 }
 
 case class Pair(

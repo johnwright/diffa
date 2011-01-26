@@ -40,6 +40,7 @@ object AmqpQueueUrl {
   private val pattern = new Regex("""amqp://(.*?)(:(\d+))?/(.*?)/queues/(.*?)""")
 
   def parse(url: String) = {
+    // FIXME need a better error message than MatchError
     val pattern(host, _, port, vHost, queue) = url
     
     AmqpQueueUrl(queue,

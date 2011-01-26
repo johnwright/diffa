@@ -17,16 +17,21 @@
 package net.lshift.diffa.kernel.participants
 
 import scala.collection.mutable.HashMap
+import org.slf4j.LoggerFactory
 
 /**
- * Provides a registry for ContentTypeMapper instances.
+ * Provides a registry for EventFormatMapper instances.
  */
-class ContentTypeMappingManager {
+class EventFormatMapperManager {
 
-  private val mappers = HashMap[String, ContentTypeMapper]()
+  private val log = LoggerFactory.getLogger(getClass)
 
-  def registerMapper(mapper: ContentTypeMapper) =
+  private val mappers = HashMap[String, EventFormatMapper]()
+
+  def registerMapper(mapper: EventFormatMapper) = {
+    log.info("Registered mapper for content type: %s [%s]".format(mapper.contentType, mapper))
     mappers.put(mapper.contentType, mapper)
+  }
 
   def lookup(contentType: String) =
     mappers.get(contentType)

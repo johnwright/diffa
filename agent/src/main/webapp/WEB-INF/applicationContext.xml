@@ -190,11 +190,11 @@
 
     <!--
       ===============================
-        Content Type Mapping Management
+        Event Format Mapping Management
       ===============================
     -->
 
-  <bean id="contentTypeMappingManager" class="net.lshift.diffa.kernel.participants.ContentTypeMappingManager" />
+  <bean id="eventFormatMapperManager" class="net.lshift.diffa.kernel.participants.EventFormatMapperManager" />
 
   <!--
     =============

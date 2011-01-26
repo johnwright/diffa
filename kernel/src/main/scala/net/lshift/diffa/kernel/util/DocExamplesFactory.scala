@@ -27,8 +27,8 @@ import net.lshift.diffa.kernel.util.Conversions._
  * Factory that returns a map of example usages of classes for doc generation.
  */
 class DocExamplesFactory {
-  val up = Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null ,true)
-  val down = Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, true)
+  val up = Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null, null, true)
+  val down = Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, null, true)
   val group = PairGroup("important-group")
   var pair = Pair("pair-id", up, down, group, "correlated", 120, Map("bizDate" -> "date"))
 

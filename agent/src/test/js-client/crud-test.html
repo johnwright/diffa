@@ -51,8 +51,8 @@ const CFG_URL = 'http://localhost:19093/diffa-agent/rest/config/';
 
 test("crud_all", function() {
     const group_def = {key: "TEST_group"};
-    const upstream_def = {name: "TEST_upstream", url: "http://127.0.0.1/1", online: false, contentType: "application/json", inboundUrl: null};
-    const downstream_def = {name: "TEST_downstream", url: "http://127.0.0.1/2", online: false, contentType: "application/json", inboundUrl: null};
+    const upstream_def = {name: "TEST_upstream", url: "http://127.0.0.1/1", online: false, contentType: "application/json", inboundUrl: null, inboundContentType: null};
+    const downstream_def = {name: "TEST_downstream", url: "http://127.0.0.1/2", online: false, contentType: "application/json", inboundUrl: null, inboundContentType: null};
     const pair_def = {
         pairKey: "TEST_pair",
         versionPolicyName: "same",

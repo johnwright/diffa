@@ -103,7 +103,8 @@ object Declare extends DiffaTool {
       val url = line.getOptionValue(urlKey)
 
       println("Declaring endpoint: " + name + " -> " + url)
-      configClient.declareEndpoint(name, url, contentType, inboundUrl, true)
+      // TODO support alternate content type for inbound endpoint
+      configClient.declareEndpoint(name, url, contentType, inboundUrl, contentType, true)
       true
     } else {
       false

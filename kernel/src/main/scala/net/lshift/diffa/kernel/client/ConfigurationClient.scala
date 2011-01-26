@@ -24,7 +24,7 @@ import scala.collection.Map
  */
 trait ConfigurationClient {
   def declareGroup(name: String):PairGroup
-  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, online:Boolean) : Endpoint
+  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean) : Endpoint
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int,
                   upstreamName: String, downstreamName: String, groupKey: String, categories:Map[String,String]):PairDef
 }

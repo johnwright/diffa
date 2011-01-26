@@ -17,7 +17,7 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.kernel.frontend.Changes
-import net.lshift.diffa.kernel.participants.{ContentTypeMappingManager, ParticipantFactory}
+import net.lshift.diffa.kernel.participants.{EventFormatMapperManager, ParticipantFactory}
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 
 /**
@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
  */
 class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
                              val participantFactory:ParticipantFactory,
-                             val contentTypeMappingManager:ContentTypeMappingManager,
+                             val eventFormatMapperManager:EventFormatMapperManager,
                              val changes:Changes)
   extends AgentLifecycleAware {
 
@@ -38,7 +38,7 @@ class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
 
     // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
     // application/json are decoded by our ChangesHandler.
-    val changesHandler = new ChangesHandler(changes, contentTypeMappingManager.lookup("application/json").get)
+    val changesHandler = new ChangesHandler(changes, "changes", eventFormatMapperManager.lookup("application/json").get)
     protocolMapper.registerHandler("changes", changesHandler)
   }
 
