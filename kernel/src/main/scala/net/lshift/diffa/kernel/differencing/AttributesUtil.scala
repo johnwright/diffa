@@ -16,6 +16,9 @@
 
 package net.lshift.diffa.kernel.differencing
 
+import org.joda.time.format.ISODateTimeFormat
+import org.joda.time.DateTimeZone
+
 /**
  * Utility for working with attribute maps.
  */
@@ -26,4 +29,15 @@ object AttributesUtil {
 
   def toMap(keys:Iterable[String], attrs:Iterable[String]):Map[String, String] = toMap(keys.toSeq, attrs.toSeq)
   def toMap(keys:Seq[String], attrs:Seq[String]):Map[String, String] = (keys.sorted, attrs).zip.toMap
+
+  def toTypedMap(schema:Map[String, String], attrs:Seq[String]):Map[String, TypedAttribute] = {
+    (schema.keys.toSeq.sorted, attrs).zip.map { case(name, value) => name -> asTyped(name, value, schema) }.toMap
+  }
+  def asTyped(name:String, value:String, schema:Map[String, String]) = {
+    schema(name) match {
+      case "int"  => IntegerAttribute(Integer.valueOf(value).intValue)
+      case "date" => DateAttribute(ISODateTimeFormat.dateTimeParser.parseDateTime(value)) // TODO: Force Timezone
+      case _      => StringAttribute(value)
+    }
+  }
 }

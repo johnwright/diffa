@@ -100,7 +100,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
         case EntityQueryAction(narrowed)    => {
           val remoteVersions = p.queryEntityVersions(narrowed)
           val cachedVersions = getEntities(pair.key, narrowed)
-          DigestDifferencingUtils.differenceEntities(endpoint.categories.keys.toSeq, remoteVersions, cachedVersions, narrowed).foreach(handleMismatch(pair.key, _))
+          DigestDifferencingUtils.differenceEntities(endpoint.categories.toMap, remoteVersions, cachedVersions, narrowed).foreach(handleMismatch(pair.key, _))
         }
       })
     }

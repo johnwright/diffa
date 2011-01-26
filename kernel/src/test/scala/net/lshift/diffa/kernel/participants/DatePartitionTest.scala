@@ -56,7 +56,7 @@ class DatePartitionTest {
     val expectedStart = new DateTime(1986, 01, 01, 0, 0, 0, 0)
     val expectedEnd = new DateTime(1987, 01, 01, 0, 0, 0, 0).minusMillis(1)
     assertEquals(Some(MonthlyCategoryFunction), YearlyCategoryFunction.descend)
-    assertEquals(RangeQueryConstraint("someDate", Seq(expectedStart.toString, expectedEnd.toString)),
+    assertEquals(DateRangeConstraint("someDate", expectedStart, expectedEnd),
       YearlyCategoryFunction.constrain("someDate", "1986"))
   }
 

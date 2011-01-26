@@ -62,16 +62,16 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
   }
 
   def queryFiles(constraint:QueryConstraint) = {
-    val lower = isoFormat.parseDateTime(constraint.values(0))
-    val upper = isoFormat.parseDateTime(constraint.values(1))    
-    val dateConstraint = SimpleDateConstraint("bizDate", lower,upper)
+    val rangeConstraint = constraint.asInstanceOf[RangeQueryConstraint]
+    val lower = isoFormat.parseDateTime(rangeConstraint.lower)
+    val upper = isoFormat.parseDateTime(rangeConstraint.upper)
 
     val files = new ListBuffer[File]
 
     DirWalker.walk(dir,
       f => {
         val lastModDate = new DateTime(f.lastModified)
-        dateConstraint.contains(lastModDate)
+        ((lower == null || lower.isBefore(lastModDate)) && (upper == null || upper.isAfter(lastModDate)))
       },
       f => {
         files += f

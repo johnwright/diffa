@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.kernel.participants
 
-import org.joda.time.DateTime
+import org.joda.time.{DateTime}
 
-case class VersionMismatch(id:String, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, vsnA:String, vsnB:String)
+/**
+ * A constraint for a date-typed field that should have a <code>cat</code> field with its value between start and
+ * end (inclusive).
+ */
+case class DateRangeConstraint(cat:String, start:DateTime, end:DateTime)
+    extends RangeQueryConstraint(cat, start.toString(), end.toString())

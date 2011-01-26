@@ -20,6 +20,8 @@ import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
+import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute}
+import org.joda.time.{DateTimeZone, DateTime}
 
 /**
  * Test cases for the Endpoint class.
@@ -45,15 +47,15 @@ class EndpointTest {
 
   @Test
   def schematize() = {
-    val categoryMap = Map("xyz_attribute" -> "type_of_xyz",
-                          "abc_attribute" -> "type_of_abc",
-                          "def_attribute" -> "type_of_def")
+    val categoryMap = Map("xyz_attribute" -> "int",
+                          "abc_attribute" -> "date",
+                          "def_attribute" -> "date")
 
-    val rightOrder = Seq("abc_value","def_value", "xyz_value")
+    val rightOrder = Seq("2011-01-26T10:24:00.000Z" /* abc */ ,"2011-01-26T10:36:00.000Z" /* def */, "55" /* xyz */)
 
-    val schematized = Map("xyz_attribute" -> "xyz_value",
-                          "abc_attribute" -> "abc_value",
-                          "def_attribute" -> "def_value")
+    val schematized = Map("xyz_attribute" -> IntegerAttribute(55),
+                          "abc_attribute" -> DateAttribute(new DateTime(2011, 1, 26, 10, 24, 0, 0)),    // TODO: Specify timezone
+                          "def_attribute" -> DateAttribute(new DateTime(2011, 1, 26, 10, 36, 0, 0)))    // TODO: Specify timezone
 
     var ep = new Endpoint{categories = categoryMap}
     assertEquals(schematized, ep.schematize(rightOrder))

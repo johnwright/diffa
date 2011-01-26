@@ -35,9 +35,9 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
     if (parsedPartition % denominator > 0) {
       throw new InvalidAttributeValueException("Partition "+partition+" does not match denominator "+denominator)
     }
-    val start = partition
-    val end = (parsedPartition + denominator - 1).toString
-    RangeQueryConstraint(categoryName, Seq(start, end))
+    val start = parsedPartition
+    val end = (parsedPartition + denominator - 1)
+    IntegerRangeConstraint(categoryName, start, end)
   }
 }
 

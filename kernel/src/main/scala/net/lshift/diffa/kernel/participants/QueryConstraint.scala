@@ -23,10 +23,9 @@ import scala.collection.Map
 import scala.collection.JavaConversions._
 
 /**
- * Contains
- *
- * - The name of the category
- * - EITHER a list of values OR a range of values TO apply
+ * Base type for all query constraints. Enforces that all constraints define the category they are constraining and
+ * an ability to transform to a WireConstraint. Implementations will define any additional parameters to be applied
+ * to the constraint.
  */
 trait QueryConstraint {
 
@@ -36,23 +35,17 @@ trait QueryConstraint {
   def category:String
 
   /**
-   *  Either a range or a list of values to form a constraint predicate with.
-   */
-  def values:Seq[String]
-
-  /**
    *  Returns a simplified representation of this constraint that is suitable for packing
    */
   def wireFormat : WireConstraint
 }
 
-abstract case class BaseQueryConstraint(category:String,values:Seq[String]) extends QueryConstraint {
-}
+abstract case class BaseQueryConstraint(category:String) extends QueryConstraint
 
 /**
  *  This type of constraint is to be interpreted as a set of values to constrain with.
  */
-case class ListQueryConstraint(c:String, v:Seq[String]) extends BaseQueryConstraint(c,v) {
+case class ListQueryConstraint(c:String, values:Seq[String]) extends BaseQueryConstraint(c) {
   def wireFormat() = listConstraint(category, values)
 }
 
@@ -60,11 +53,11 @@ case class ListQueryConstraint(c:String, v:Seq[String]) extends BaseQueryConstra
  * This type of constraint is to be interpreted as a value range - the sequence of values contains the
  * upper and lower bounds of the constraint.
  */
-case class RangeQueryConstraint(c:String, v:Seq[String]) extends BaseQueryConstraint(c,v) {
-  def wireFormat() = rangeConstraint(category, values(0), values(1))
+case class RangeQueryConstraint(c:String, lower:String, upper:String) extends BaseQueryConstraint(c) {
+  def wireFormat() = rangeConstraint(category, lower, upper)
 }
 
-abstract case class NonValueConstraint(c:String) extends BaseQueryConstraint(c,Seq()) {
+abstract case class NonValueConstraint(c:String) extends BaseQueryConstraint(c) {
   def wireFormat() = unbounded(category)
 }
 
@@ -84,9 +77,7 @@ case class NoConstraint(override val c:String) extends NonValueConstraint(c) {
  *   Utility builders
  */
 object EasyConstraints {
-  def dateRangeConstraint(cat:String, start:DateTime, end:DateTime) = RangeQueryConstraint(cat, Seq(start.toString(), end.toString()))
   def unconstrainedDate(cat:String) = UnboundedRangeQueryConstraint(cat)
-  
-  def intRangeConstraint(cat:String, start: Int, end: Int) = RangeQueryConstraint(cat, Seq(start.toString, end.toString))
+
   def unconstrainedInt(cat:String) = UnboundedRangeQueryConstraint(cat)
 }

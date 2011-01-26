@@ -28,7 +28,7 @@ class WireConstraintTest {
   def rangeToWireAndBack = {
     val start = new DateTime
     val end = new DateTime
-    val constraint = RangeQueryConstraint("date", Seq(start.toString(), end.toString()))
+    val constraint = RangeQueryConstraint("date", start.toString(), end.toString())
     val expectation = rangeConstraint("date", start,end)
     roundTrip(expectation, constraint)
   }

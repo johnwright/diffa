@@ -16,6 +16,8 @@
 
   <properties>
     <buildVersion>${project.version}</buildVersion>    <!-- Can be overridden via -D -->
+    <diffa.perftest>0</diffa.perftest>    <!-- Default to perftesting to be disabled. Use -D to set to 1 to enable -->
+    <diffa.perf.versionCount>100</diffa.perf.versionCount>    <!-- Default to loading 100 versions in for performance test -->
   </properties>
 
   <dependencies>
@@ -136,6 +138,11 @@
             <!-- Doesn't yet work because it parallelises the Hibernate tests, which aren't thread safe -->
           <!--<parallel>methods</parallel>
           <threadCount>4</threadCount>-->
+
+          <systemPropertyVariables>
+            <diffa.perftest>${diffa.perftest}</diffa.perftest>
+            <diffa.perf.versionCount>${diffa.perf.versionCount}</diffa.perf.versionCount>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
