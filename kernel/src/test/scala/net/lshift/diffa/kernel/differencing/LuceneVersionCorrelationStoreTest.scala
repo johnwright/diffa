@@ -33,8 +33,6 @@ import java.io.File
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theory, DataPoint, Theories}
 
-// TODO: [#162] Ensure ordering is preserved by id
-
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
  */
