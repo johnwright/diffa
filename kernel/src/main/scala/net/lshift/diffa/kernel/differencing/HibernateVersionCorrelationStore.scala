@@ -163,18 +163,6 @@ class HibernateVersionCorrelationStore(val sessionFactory:SessionFactory, val in
     })
   }
 
-  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler) = {
-    queryUpstreams(pairKey, constraints).foreach(c => {
-      handler(VersionID(c.pairing, c.id), c.upstreamAttributes.toMap, c.lastUpdate, c.upstreamVsn)
-    })
-  }
-
-  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) = {
-    queryDownstreams(pairKey, constraints).foreach(c => {
-      handler(VersionID(c.pairing, c.id), c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
-    })
-  }
-
   private def buildCriteria(s:Session, pairKey:String, upOrDown:Tuple2[ParticipantType.ParticipantType, Seq[QueryConstraint]]*) = {
     val criteria = s.createCriteria(classOf[Correlation])
     criteria.add(Restrictions.eq("pairing", pairKey))

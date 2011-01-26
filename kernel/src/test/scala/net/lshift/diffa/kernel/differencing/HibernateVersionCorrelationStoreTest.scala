@@ -26,9 +26,10 @@ import net.lshift.diffa.kernel.events._
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.indexing.LuceneAttributeIndexer
-import org.apache.lucene.store.RAMDirectory
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
+import org.apache.lucene.store.{MMapDirectory, FSDirectory, RAMDirectory}
+import java.io.File
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -173,12 +174,12 @@ class HibernateVersionCorrelationStoreTest {
     store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
     store.storeUpstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")
 
-    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 2)
+//    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 2)
 
     val corr = store.clearUpstreamVersion(VersionID(pair, "id6"))
 
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
-    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 1)
+//    assertIndexState(ParticipantType.UPSTREAM, "bizDate", DEC_1_2009.toString, 1)
 
     val collector = new Collector
     store.queryUpstreams(pair, List(SimpleDateConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
@@ -203,12 +204,12 @@ class HibernateVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.storeDownstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")
 
-    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 2)
+//    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 2)
 
     val corr = store.clearDownstreamVersion(VersionID(pair, "id6"))
 
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
-    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 1)
+//    assertIndexState(ParticipantType.DOWNSTREAM, "bizDate", DEC_1_2009.toString, 1)
 
     val collector = new Collector
     val digests = store.queryDownstreams(pair, List(SimpleDateConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
@@ -316,11 +317,11 @@ class HibernateVersionCorrelationStoreTest {
     assertEquals(None, corr)
   }
 
-  def assertIndexState(upOrDown: ParticipantType.ParticipantType, key: String, value: String, expect: Int) = {
-    val indexables = indexer.query(upOrDown, key, value)
-    assertNotNull(indexables)
-    assertEquals(expect, indexables.length)
-  }
+//  def assertIndexState(upOrDown: ParticipantType.ParticipantType, key: String, value: String, expect: Int) = {
+//    val indexables = indexer.query(upOrDown, key, value)
+//    assertNotNull(indexables)
+//    assertEquals(expect, indexables.length)
+//  }
 
   private def assertCorrelationEquals(expected:Correlation, actual:Correlation) {
     if (expected == null) {
@@ -352,22 +353,22 @@ class Collector {
 }
 
 object HibernateVersionCorrelationStoreTest {
-  private val config = new Configuration().
-          addResource("net/lshift/diffa/kernel/differencing/Correlations.hbm.xml").
-          setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-          setProperty("hibernate.connection.url", "jdbc:derby:target/versionStore;create=true").
-          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
-          setProperty("hibernate.hbm2ddl.auto", "create-drop")
-
-  val sessionFactory = config.buildSessionFactory
-  val indexer = new LuceneAttributeIndexer(new RAMDirectory)
-  val store = new HibernateVersionCorrelationStore(sessionFactory, indexer)
+//  private val config = new Configuration().
+//          addResource("net/lshift/diffa/kernel/differencing/Correlations.hbm.xml").
+//          setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
+//          setProperty("hibernate.connection.url", "jdbc:derby:target/versionStore;create=true").
+//          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+//          setProperty("hibernate.hbm2ddl.auto", "create-drop")
+//
+//  val sessionFactory = config.buildSessionFactory
+  val indexer = new LuceneAttributeIndexer(new MMapDirectory(new File("target")))
+  val store:VersionCorrelationStore = indexer
 
   def flushStore = {
-    val s = sessionFactory.openSession
-    s.createCriteria(classOf[Correlation]).list.foreach(p => s.delete(p))
-    s.flush
-    s.close
+//    val s = sessionFactory.openSession
+//    s.createCriteria(classOf[Correlation]).list.foreach(p => s.delete(p))
+//    s.flush
+//    s.close
     indexer.reset
   }
 }

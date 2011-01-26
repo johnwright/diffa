@@ -62,12 +62,20 @@ trait VersionCorrelationStore {
   /**
    * Queries for all upstream versions for the given pair based on the given constraints.
    */
-  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler)
+  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler):Unit = {
+    queryUpstreams(pairKey, constraints).foreach(c => {
+      handler(VersionID(c.pairing, c.id), c.upstreamAttributes.toMap, c.lastUpdate, c.upstreamVsn)
+    })
+  }
 
   /**
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
-  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler)
+  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) : Unit = {
+    queryDownstreams(pairKey, constraints).foreach(c => {
+      handler(VersionID(c.pairing, c.id), c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
+    })
+  }
 
   /**
    * Queries for all upstream versions for the given pair based on the given constraints.

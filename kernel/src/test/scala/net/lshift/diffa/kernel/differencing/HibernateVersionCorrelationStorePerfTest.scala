@@ -57,7 +57,7 @@ class HibernateVersionCorrelationStorePerfTest {
 
   @Test
   def canQueryWithLargeNumbersOfMatchingCorrelations() {
-    val vsnCount = 10000
+    val vsnCount = 1000
 
     withTiming("load upstream versions") {
       for (i <- 0 until vsnCount) {
@@ -71,7 +71,7 @@ class HibernateVersionCorrelationStorePerfTest {
       assertEquals(vsnCount, res.length)
     }
 
-    withTiming("load upstream versions") {
+    withTiming("load downstream versions") {
       for (i <- 0 until vsnCount) {
         store.storeDownstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
       }
