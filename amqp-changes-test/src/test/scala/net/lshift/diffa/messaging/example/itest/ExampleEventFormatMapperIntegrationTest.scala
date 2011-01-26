@@ -28,6 +28,9 @@ import net.lshift.diffa.kernel.differencing.MatchState.UNMATCHED
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 
+/**
+ * Integration test for change events over AMQP in an example JSON format.
+ */
 class ExampleEventFormatMapperIntegrationTest {
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)

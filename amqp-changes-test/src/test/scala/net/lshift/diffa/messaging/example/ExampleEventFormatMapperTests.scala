@@ -21,7 +21,7 @@ import org.junit.Test
 import org.apache.commons.io.IOUtils
 
 /**
- * Unit test for example content type mapper.
+ * Unit test for example event format mapper.
  */
 class ExampleEventFormatMapperTests {
 

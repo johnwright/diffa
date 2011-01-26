@@ -18,6 +18,9 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.participants.EventFormatMapper
 
+/**
+ * Default mapper for events in Diffa's native JSON format.
+ */
 class DefaultEventFormatMapper extends EventFormatMapper {
 
   val contentType = "application/json"
