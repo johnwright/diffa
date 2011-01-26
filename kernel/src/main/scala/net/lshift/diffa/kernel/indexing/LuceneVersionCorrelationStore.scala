@@ -154,7 +154,7 @@ class LuceneVersionCorrelationStore(index:Directory)
       case r:NoConstraint                  =>   // No constraints to add
       case u:UnboundedRangeQueryConstraint =>   // No constraints to add
       case r:RangeQueryConstraint          => {
-        query.add(new TermRangeQuery(prefix + r.category, r.values(0), r.values(1), true, true), BooleanClause.Occur.MUST)
+        query.add(new TermRangeQuery(prefix + r.category, r.lower, r.upper, true, true), BooleanClause.Occur.MUST)
       }
       case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
     }

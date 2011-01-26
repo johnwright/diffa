@@ -37,7 +37,7 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
     }
     val start = partition
     val end = (parsedPartition + denominator - 1).toString
-    RangeQueryConstraint(categoryName, Seq(start, end))
+    RangeQueryConstraint(categoryName, start, end)
   }
 }
 

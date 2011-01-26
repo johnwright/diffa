@@ -31,11 +31,7 @@ import org.joda.time.DateTime
 class DigestDifferencingUtilsTest {
 
   def dateRangeConstraint(start:DateTime, end:DateTime) = {
-    RangeQueryConstraint("bizDate", Seq(start.toString,end.toString))
-  }
-
-  def dateRangeConstraint() = {
-    RangeQueryConstraint("bizDate", Seq())
+    RangeQueryConstraint("bizDate", start.toString,end.toString)
   }
 
   val unconstrained = EasyConstraints.unconstrainedDate("bizDate")

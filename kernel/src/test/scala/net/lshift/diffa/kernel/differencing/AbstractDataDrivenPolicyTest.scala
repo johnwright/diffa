@@ -392,7 +392,7 @@ object AbstractDataDrivenPolicyTest {
   val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
 
   def unbounded(n:String) = UnboundedRangeQueryConstraint(n)
-  def range(n:String, lower:Any, upper:Any) = RangeQueryConstraint(n, Seq(lower.toString, upper.toString))
+  def range(n:String, lower:Any, upper:Any) = RangeQueryConstraint(n, lower.toString, upper.toString)
 
 
   //

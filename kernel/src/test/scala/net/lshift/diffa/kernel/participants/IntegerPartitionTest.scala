@@ -55,7 +55,7 @@ class IntegerPartitionTest {
     def binaryCategoryFunction(denom: Int) = AutoNarrowingIntegerCategoryFunction(denom, 2)
     val myBinaryCategoryFunction = binaryCategoryFunction(128)
     assertEquals("256", myBinaryCategoryFunction.owningPartition("300"))
-    assertEquals(RangeQueryConstraint("someInt", Seq("256", "383")),
+    assertEquals(RangeQueryConstraint("someInt", "256", "383"),
                  myBinaryCategoryFunction.constrain("someInt", "256"))
     assertEquals(Some(binaryCategoryFunction(64)), myBinaryCategoryFunction.descend)
   }
@@ -63,13 +63,13 @@ class IntegerPartitionTest {
   @Test
   def descendFromTensPartition {
     assertEquals(Some(IndividualCategoryFunction), tens.descend)
-    assertEquals(RangeQueryConstraint("someInt", Seq("10", "19")), tens.constrain("someInt", "10"))
+    assertEquals(RangeQueryConstraint("someInt", "10", "19"), tens.constrain("someInt", "10"))
   }
 
   @Test
   def descendFromHundredsPartition {
     assertEquals(Some(tens), hundreds.descend)
-    assertEquals(RangeQueryConstraint("someInt2", Seq("100", "199")), hundreds.constrain("someInt2", "100"))
+    assertEquals(RangeQueryConstraint("someInt2", "100", "199"), hundreds.constrain("someInt2", "100"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])

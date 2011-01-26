@@ -61,7 +61,7 @@ case class WireConstraint(
       val lower = attributes.get(WireConstraint.LO)
       val upper = attributes.get(WireConstraint.HI)
       if (lower != null && upper != null) {
-        RangeQueryConstraint(dataType, Seq(lower,upper))
+        RangeQueryConstraint(dataType, lower, upper)
       }
       else {
         UnboundedRangeQueryConstraint(dataType)
