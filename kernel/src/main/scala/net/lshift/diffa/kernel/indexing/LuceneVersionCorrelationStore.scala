@@ -262,9 +262,13 @@ class LuceneVersionCorrelationStore(index:Directory)
   private def docToCorrelation(doc:Document) = {
     Correlation(
       pairing = doc.get("pair"), id = doc.get("id"),
-      upstreamAttributes = findAttributes(doc, "up."), downstreamAttributes = findAttributes(doc, "down."),
-      lastUpdate = parseDate(doc.get("lastUpdated")), timestamp = parseDate(doc.get("timestamp")),
-      upstreamVsn = doc.get("uvsn"), downstreamUVsn = doc.get("duvsn"), downstreamDVsn = doc.get("ddvsn"),
+      upstreamAttributes = findAttributes(doc, "up."),
+      downstreamAttributes = findAttributes(doc, "down."),
+      lastUpdate = parseDate(doc.get("lastUpdated")),
+      timestamp = parseDate(doc.get("timestamp")),
+      upstreamVsn = doc.get("uvsn"),
+      downstreamUVsn = doc.get("duvsn"),
+      downstreamDVsn = doc.get("ddvsn"),
       isMatched = parseBool(doc.get("isMatched"))
     )
   }
