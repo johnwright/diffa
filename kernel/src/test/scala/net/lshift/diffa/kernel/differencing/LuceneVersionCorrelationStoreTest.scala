@@ -103,7 +103,7 @@ class LuceneVersionCorrelationStoreTest {
   }
 
   @Test
-  def unmatchPairFromUpstreamShouldBeIndicatedInReturnValue {
+  def unmatchedPairFromUpstreamShouldBeIndicatedInReturnValue {
     val timestamp = new DateTime()
     val corr = store.storeUpstreamVersion(VersionID(pair, "id2"), emptyAttributes, DEC_31_2009, "upstreamVsn")
     assertCorrelationEquals(Correlation(null, pair, "id2", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), corr)
@@ -211,7 +211,7 @@ class LuceneVersionCorrelationStoreTest {
     assertEquals(0, collector.downstreamObjs.size)
   }
 
-  // TODO: Theorise
+  // TODO: [#164] Theorise
   @Test
   def queryUpstreamRangeExcludesEarlier = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
@@ -224,7 +224,7 @@ class LuceneVersionCorrelationStoreTest {
       collector.upstreamObjs.toList)
   }
 
-  // TODO: Theorise
+  // TODO: [#164] Theorise
   @Test
   def queryUpstreamRangeExcludesLater = {
     store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
@@ -251,7 +251,7 @@ class LuceneVersionCorrelationStoreTest {
       collector.upstreamObjs.toList)
   }
 
-  // TODO: Theorise
+  // TODO: [#164] Theorise
   @Test
   def queryDownstreamRangeExcludesEarlier = {
     store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
@@ -264,7 +264,7 @@ class LuceneVersionCorrelationStoreTest {
       collector.downstreamObjs.toList)
   }
 
-  // TODO: Theorise
+  // TODO: [#164] Theorise
   @Test
   def queryDownstreamRangeExcludesLater = {
     store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
@@ -387,10 +387,6 @@ object LuceneVersionCorrelationStoreTest {
   @DataPoint def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
 
   def flushStore = {
-//    val s = sessionFactory.openSession
-//    s.createCriteria(classOf[Correlation]).list.foreach(p => s.delete(p))
-//    s.flush
-//    s.close
     indexer.reset
   }
 }

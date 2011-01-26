@@ -18,5 +18,9 @@ package net.lshift.diffa.kernel.participants
 
 import org.joda.time.{DateTime}
 
+/**
+ * A constraint for a date-typed field that should have a <code>cat</code> field with its value between start and
+ * end (inclusive).
+ */
 case class DateRangeConstraint(cat:String, start:DateTime, end:DateTime)
     extends RangeQueryConstraint(cat, start.toString(), end.toString())

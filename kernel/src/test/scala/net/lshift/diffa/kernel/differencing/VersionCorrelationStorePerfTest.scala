@@ -33,7 +33,7 @@ import net.lshift.diffa.kernel.participants.DateRangeConstraint
  */
 
 class VersionCorrelationStorePerfTest {
-  private def attributes(idx:Int) = Map("bizDate" -> StringAttribute(JUL_8_2010_1.plusSeconds(idx).toString())/*, "someInt" -> idx.toString*/)
+  private def attributes(idx:Int) = Map("bizDate" -> DateAttribute(JUL_8_2010_1.plusSeconds(idx)), "someInt" -> IntegerAttribute(idx))
 
   @Before
   def checkPerformanceTestingEnabled {
@@ -54,7 +54,7 @@ class VersionCorrelationStorePerfTest {
 
   @Test
   def canQueryWithLargeNumbersOfMatchingCorrelations() {
-    val vsnCount = 1000
+    val vsnCount = Integer.valueOf(System.getProperty("diffa.perf.versionCount", "1000")).intValue
 
     withTiming("load upstream versions") {
       for (i <- 0 until vsnCount) {

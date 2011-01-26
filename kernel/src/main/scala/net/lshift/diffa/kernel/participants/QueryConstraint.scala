@@ -23,10 +23,9 @@ import scala.collection.Map
 import scala.collection.JavaConversions._
 
 /**
- * Contains
- * - The name of the category
- *
- * Subclasses will define any additional parameters to be applied to the constraint.
+ * Base type for all query constraints. Enforces that all constraints define the category they are constraining and
+ * an ability to transform to a WireConstraint. Implementations will define any additional parameters to be applied
+ * to the constraint.
  */
 trait QueryConstraint {
 

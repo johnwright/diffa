@@ -16,5 +16,9 @@
 
 package net.lshift.diffa.kernel.participants
 
+/**
+ * A constraint for an integer-typed field that should have a <code>cat</code> field with its value between start and
+ * end (inclusive).
+ */
 case class IntegerRangeConstraint(cat:String, start:Int, end:Int)
     extends RangeQueryConstraint(cat, start.toString(), end.toString())

@@ -33,6 +33,11 @@ import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, Int
 import org.apache.lucene.document._
 import org.joda.time.{DateTimeZone, DateTime}
 
+/**
+ * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
+ * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
+ * of pair attributes.
+ */
 class LuceneVersionCorrelationStore(index:Directory)
     extends VersionCorrelationStore
     with Closeable {
@@ -41,7 +46,6 @@ class LuceneVersionCorrelationStore(index:Directory)
 
   val analyzer = new StandardAnalyzer(Version.LUCENE_30)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
-  val maxHits = 10000
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.debug("Indexing " + id + " with attributes: " + attributes)
@@ -117,7 +121,8 @@ class LuceneVersionCorrelationStore(index:Directory)
   def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
     val query = queryForPair(pairKey)
     applyConstraints(query, constraints, "up.")
-      // TODO: How do we make sure that only entries with upstreams are returned when constraints are empty?
+      // TODO: There doesn't seem to be a good way to filter for documents that have upstream versions. Currently,
+      // we're having to do it after the documents are loaded.
 
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
@@ -127,7 +132,8 @@ class LuceneVersionCorrelationStore(index:Directory)
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
     val query = queryForPair(pairKey)
     applyConstraints(query, constraints, "down.")
-      // TODO: How do we make sure that only entries with downstreams are returned when constraints are empty?
+      // TODO: There doesn't seem to be a good way to filter for documents that have downstream versions. Currently,
+      // we're having to do it after the documents are loaded.
 
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
