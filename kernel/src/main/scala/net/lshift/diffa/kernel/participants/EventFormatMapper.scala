@@ -1,3 +1,4 @@
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -23,7 +24,18 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent
  */
 trait EventFormatMapper {
 
+  /**
+   * The content type of the incoming event data, typically expressed as a MIME type.
+   */
   val contentType: String
 
+  /**
+   * Maps event data from an incoming content type to Diffa's native format.
+   *
+   * @param event  The incoming event data
+   * @param endpoint  The name of the receiving endpoint. This may be used
+   *                              contextually to reconstruct a WireEvent object.
+   * @return WireEvent instance mapped from the incoming event data.
+   */
   def map(event: String, endpoint: String): WireEvent
 }

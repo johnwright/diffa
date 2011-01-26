@@ -5,12 +5,12 @@
   <parent>
     <artifactId>diffa-parent</artifactId>
     <groupId>net.lshift.diffa</groupId>
-    <version>0.9.1-SNAPSHOT</version>
+    <version>0.9.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>amqp-changes-test</artifactId>
-  <name>LShift AMQP Changes Integration Test</name>
+  <name>LShift Diffa AMQP Changes Integration Test</name>
 
   <dependencies>
     <dependency>

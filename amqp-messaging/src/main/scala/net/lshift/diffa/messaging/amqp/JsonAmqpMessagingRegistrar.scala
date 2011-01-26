@@ -60,7 +60,7 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
         inboundUrl.startsWith("amqp://") && eventFormatMapperManager.lookup(contentType).isDefined
 
       def ensureEndpointReceiver(e: Endpoint) {
-        log.info("ensureEndpointReceiver: " + e)
+        log.info("Starting consumer for endpoint: %s".format(e))
         val eventFormatMapper = eventFormatMapperManager.lookup(e.inboundContentType).get
         val c = new AmqpConsumer(connectorHolder.connector,
                                  AmqpQueueUrl.parse(e.inboundUrl).queue,
