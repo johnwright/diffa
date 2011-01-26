@@ -201,13 +201,13 @@ abstract class AbstractDataDrivenPolicyTest {
 
   protected def expectUpstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
     entities.foreach(v => {
-      expect(store.storeUpstreamVersion(VersionID(pair.key, v.id), v.strAttrs, v.lastUpdated, v.vsn)).
+      expect(store.storeUpstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
         andReturn(Correlation(null, pair.key, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, null, null))
     })
   }
   protected def expectDownstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
     entities.foreach(v => {
-      expect(store.storeDownstreamVersion(VersionID(pair.key, v.id), v.strAttrs, v.lastUpdated, v.vsn, v.vsn)).
+      expect(store.storeDownstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
         andReturn(Correlation(null, pair.key, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, null, v.vsn, v.vsn))
     })
   }
@@ -267,33 +267,33 @@ object AbstractDataDrivenPolicyTest {
       downstream = new Endpoint(categories = Map("bizDate" -> "date"))),
     AggregateTx(Map("bizDate" -> yearly), Seq(unbounded("bizDate")),
       Bucket("2010", Map("bizDate" -> "2010"),
-        AggregateTx(Map("bizDate" -> monthly), Seq(range("bizDate", START_2010, END_2010)),
+        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2010, END_2010)),
           Bucket("2010-07", Map("bizDate" -> "2010-07"),
-            AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", JUL_2010, END_JUL_2010)),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JUL_2010, END_JUL_2010)),
               Bucket("2010-07-08", Map("bizDate" -> "2010-07-08"),
-                EntityTx(Seq(range("bizDate", JUL_8_2010, END_JUL_8_2010)),
+                EntityTx(Seq(dateRange("bizDate", JUL_8_2010, END_JUL_8_2010)),
                   Vsn("id1", Map("bizDate" -> JUL_8_2010_1), "vsn1"),
                   Vsn("id2", Map("bizDate" -> JUL_8_2010_2), "vsn2")
                 )),
               Bucket("2010-07-09", Map("bizDate" -> "2010-07-09"),
-                EntityTx(Seq(range("bizDate", JUL_9_2010, END_JUL_9_2010)),
+                EntityTx(Seq(dateRange("bizDate", JUL_9_2010, END_JUL_9_2010)),
                   Vsn("id3", Map("bizDate" -> JUL_9_2010_1), "vsn3")
                 ))
             )),
           Bucket("2010-08", Map("bizDate" -> "2010-08"),
-            AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", AUG_2010, END_AUG_2010)),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", AUG_2010, END_AUG_2010)),
               Bucket("2010-08-02", Map("bizDate" -> "2010-08-02"),
-                EntityTx(Seq(range("bizDate", AUG_11_2010, END_AUG_11_2010)),
+                EntityTx(Seq(dateRange("bizDate", AUG_11_2010, END_AUG_11_2010)),
                   Vsn("id4", Map("bizDate" -> AUG_11_2010_1), "vsn4")
                 ))
             ))
         )),
       Bucket("2011", Map("bizDate" -> "2011"),
-        AggregateTx(Map("bizDate" -> monthly), Seq(range("bizDate", START_2011, END_2011)),
+        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2011, END_2011)),
           Bucket("2011-01", Map("bizDate" -> "2011-01"),
-            AggregateTx(Map("bizDate" -> daily), Seq(range("bizDate", JAN_2011, END_JAN_2011)),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JAN_2011, END_JAN_2011)),
               Bucket("2011-01-20", Map("bizDate" -> "2011-01-20"),
-                EntityTx(Seq(range("bizDate", JAN_20_2011, END_JAN_20_2011)),
+                EntityTx(Seq(dateRange("bizDate", JAN_20_2011, END_JAN_20_2011)),
                   Vsn("id5", Map("bizDate" -> JAN_20_2011_1), "vsn5")
                 ))
             ))
@@ -306,32 +306,32 @@ object AbstractDataDrivenPolicyTest {
       downstream = new Endpoint(categories = Map("someInt" -> "int"))),
     AggregateTx(Map("someInt" -> thousands), Seq(unbounded("someInt")),
       Bucket("1000", Map("someInt" -> "1000"),
-        AggregateTx(Map("someInt" -> hundreds), Seq(range("someInt", 1000, 1999)),
+        AggregateTx(Map("someInt" -> hundreds), Seq(intRange("someInt", 1000, 1999)),
           Bucket("1200", Map("someInt" -> "1200"),
-            AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 1200, 1299)),
+            AggregateTx(Map("someInt" -> tens), Seq(intRange("someInt", 1200, 1299)),
               Bucket("1230", Map("someInt" -> "1230"),
-                EntityTx(Seq(range("someInt", 1230, 1239)),
+                EntityTx(Seq(intRange("someInt", 1230, 1239)),
                   Vsn("id1", Map("someInt" -> 1234), "vsn1")
                 )),
               Bucket("1240", Map("someInt" -> "1240"),
-                EntityTx(Seq(range("someInt", 1240, 1249)),
+                EntityTx(Seq(intRange("someInt", 1240, 1249)),
                   Vsn("id2", Map("someInt" -> 1245), "vsn2")
                 ))
             )),
           Bucket("1300", Map("someInt" -> "1300"),
-            AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 1300, 1399)),
+            AggregateTx(Map("someInt" -> tens), Seq(intRange("someInt", 1300, 1399)),
               Bucket("1350", Map("someInt" -> "1350"),
-                EntityTx(Seq(range("someInt", 1350, 1359)),
+                EntityTx(Seq(intRange("someInt", 1350, 1359)),
                   Vsn("id3", Map("someInt" -> 1357), "vsn3")
                 ))
             ))
         )),
       Bucket("2000", Map("someInt" -> "2000"),
-        AggregateTx(Map("someInt" -> hundreds), Seq(range("someInt", 2000, 2999)),
+        AggregateTx(Map("someInt" -> hundreds), Seq(intRange("someInt", 2000, 2999)),
           Bucket("2300", Map("someInt" -> "2300"),
-            AggregateTx(Map("someInt" -> tens), Seq(range("someInt", 2300, 2399)),
+            AggregateTx(Map("someInt" -> tens), Seq(intRange("someInt", 2300, 2399)),
               Bucket("2340", Map("someInt" -> "2340"),
-                EntityTx(Seq(range("someInt", 2340, 2349)),
+                EntityTx(Seq(intRange("someInt", 2340, 2349)),
                   Vsn("id4", Map("someInt" -> 2345), "vsn4")
                 ))
             ))
@@ -344,33 +344,33 @@ object AbstractDataDrivenPolicyTest {
       downstream = new Endpoint(categories = Map("bizDate" -> "date", "someInt" -> "int"))),
     AggregateTx(Map("bizDate" -> yearly, "someInt" -> thousands), Seq(unbounded("bizDate"), unbounded("someInt")),
       Bucket("2010_1000", Map("bizDate" -> "2010", "someInt" -> "1000"),
-        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(range("bizDate", START_2010, END_2010), range("someInt", 1000, 1999)),
+        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(dateRange("bizDate", START_2010, END_2010), intRange("someInt", 1000, 1999)),
           Bucket("2010-07_1200", Map("bizDate" -> "2010-07", "someInt" -> "1200"),
-            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(range("bizDate", JUL_2010, END_JUL_2010), range("someInt", 1200, 1299)),
+            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(dateRange("bizDate", JUL_2010, END_JUL_2010), intRange("someInt", 1200, 1299)),
               Bucket("2010-07-08_1230", Map("bizDate" -> "2010-07-08", "someInt" -> "1230"),
-                EntityTx(Seq(range("bizDate", JUL_8_2010, END_JUL_8_2010), range("someInt", 1230, 1239)),
+                EntityTx(Seq(dateRange("bizDate", JUL_8_2010, END_JUL_8_2010), intRange("someInt", 1230, 1239)),
                   Vsn("id1", Map("bizDate" -> JUL_8_2010_1, "someInt" -> 1234), "vsn1"),
                   Vsn("id2", Map("bizDate" -> JUL_8_2010_2, "someInt" -> 1235), "vsn2")
                 )),
               Bucket("2010-07-09_1240", Map("bizDate" -> "2010-07-09", "someInt" -> "1240"),
-                EntityTx(Seq(range("bizDate", JUL_9_2010, END_JUL_9_2010), range("someInt", 1240, 1249)),
+                EntityTx(Seq(dateRange("bizDate", JUL_9_2010, END_JUL_9_2010), intRange("someInt", 1240, 1249)),
                   Vsn("id3", Map("bizDate" -> JUL_9_2010_1, "someInt" -> 1245), "vsn3")
                 ))
             )),
           Bucket("2010-08_1300", Map("bizDate" -> "2010-08", "someInt" -> "1300"),
-            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(range("bizDate", AUG_2010, END_AUG_2010), range("someInt", 1300, 1399)),
+            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(dateRange("bizDate", AUG_2010, END_AUG_2010), intRange("someInt", 1300, 1399)),
               Bucket("2010-08-02_1350", Map("bizDate" -> "2010-08-02", "someInt" -> "1350"),
-                EntityTx(Seq(range("bizDate", AUG_11_2010, END_AUG_11_2010), range("someInt", 1350, 1359)),
+                EntityTx(Seq(dateRange("bizDate", AUG_11_2010, END_AUG_11_2010), intRange("someInt", 1350, 1359)),
                   Vsn("id4", Map("bizDate" -> AUG_11_2010_1, "someInt" -> 1357), "vsn4")
                 ))
             ))
         )),
       Bucket("2011_2000", Map("bizDate" -> "2011", "someInt" -> "2000"),
-        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(range("bizDate", START_2011, END_2011), range("someInt", 2000, 2999)),
+        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(dateRange("bizDate", START_2011, END_2011), intRange("someInt", 2000, 2999)),
           Bucket("2011-01_2300", Map("bizDate" -> "2011-01", "someInt" -> "2300"),
-            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(range("bizDate", JAN_2011, END_JAN_2011), range("someInt", 2300, 2399)),
+            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(dateRange("bizDate", JAN_2011, END_JAN_2011), intRange("someInt", 2300, 2399)),
               Bucket("2011-01-20_2340", Map("bizDate" -> "2011-01-20", "someInt" -> "2340"),
-                EntityTx(Seq(range("bizDate", JAN_20_2011, END_JAN_20_2011), range("someInt", 2340, 2349)),
+                EntityTx(Seq(dateRange("bizDate", JAN_20_2011, END_JAN_20_2011), intRange("someInt", 2340, 2349)),
                   Vsn("id5", Map("bizDate" -> JAN_20_2011_1, "someInt" -> 2345), "vsn5")
                 ))
             ))
@@ -392,7 +392,8 @@ object AbstractDataDrivenPolicyTest {
   val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
 
   def unbounded(n:String) = UnboundedRangeQueryConstraint(n)
-  def range(n:String, lower:Any, upper:Any) = RangeQueryConstraint(n, lower.toString, upper.toString)
+  def dateRange(n:String, lower:DateTime, upper:DateTime) = DateRangeConstraint(n, lower, upper)
+  def intRange(n:String, lower:Int, upper:Int) = IntegerRangeConstraint(n, lower, upper)
 
 
   //
@@ -442,6 +443,7 @@ object AbstractDataDrivenPolicyTest {
     def toString(indent:Int) = (" " * indent) + "Bucket(" + name + ", " + attrs + ", " + vsn + ")\n" + nextTx.toString(indent + 2)
   }
   case class Vsn(id:String, attrs:Map[String, Any], vsn:String) {
+    def typedAttrs = attrs.map { case (k, v) => k -> toTyped(v) }.toMap
     def strAttrs = attrs.map { case (k, v) => k -> v.toString }.toMap
     lazy val lastUpdated = new DateTime
 
@@ -450,5 +452,11 @@ object AbstractDataDrivenPolicyTest {
     }
 
     def toString(indent:Int) = (" " * indent) + "Vsn(" + id + ", " + attrs + ", " + vsn + ")\n"
+
+    def toTyped(v:Any) = v match {
+      case i:Int       => IntegerAttribute(i)
+      case dt:DateTime => DateAttribute(dt)
+      case _           => StringAttribute(v.toString)
+    }
   }
 }

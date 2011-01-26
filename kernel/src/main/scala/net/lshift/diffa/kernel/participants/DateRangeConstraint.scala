@@ -18,6 +18,5 @@ package net.lshift.diffa.kernel.participants
 
 import org.joda.time.{DateTime}
 
-object DateRangeConstraint {
-  def apply(cat:String, start:DateTime, end:DateTime) = RangeQueryConstraint(cat, start.toString(), end.toString())
-}
+case class DateRangeConstraint(cat:String, start:DateTime, end:DateTime)
+    extends RangeQueryConstraint(cat, start.toString(), end.toString())

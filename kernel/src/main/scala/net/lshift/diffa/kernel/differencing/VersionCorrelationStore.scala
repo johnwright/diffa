@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.participants.QueryConstraint
+import org.joda.time.{DateTimeZone, DateTime}
 
 /**
  * Store used for caching version correlation information between a pair of participants.
@@ -30,12 +30,12 @@ trait VersionCorrelationStore {
   /**
    * Stores the details of an upstream version.
    */
-  def storeUpstreamVersion(id:VersionID, attributes:Map[String,String], lastUpdated:DateTime, vsn:String):Correlation
+  def storeUpstreamVersion(id:VersionID, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, vsn:String):Correlation
 
   /**
    * Stores the details of a downstream version.
    */
-  def storeDownstreamVersion(id:VersionID, attributes:Map[String,String], lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
+  def storeDownstreamVersion(id:VersionID, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
 
   /**
    * Retrieves all of the unmatched version that have been stored.
@@ -86,5 +86,14 @@ trait VersionCorrelationStore {
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
   def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
+}
+
+abstract class TypedAttribute { def value:String }
+case class StringAttribute(value:String) extends TypedAttribute
+case class DateAttribute(date:DateTime) extends TypedAttribute {
+  def value = date.withZone(DateTimeZone.UTC).toString()
+}
+case class IntegerAttribute(int:Int) extends TypedAttribute {
+  def value = int.toString
 }
 

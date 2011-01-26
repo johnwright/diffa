@@ -109,13 +109,13 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(usMock.retrieveContent("id3")).andReturn("content3")
     expect(dsMock.generateVersion("content3")).andReturn(ProcessingResponse("id3", Seq(testData.values(1).toString), "vsn3", downstreamVersionFor("vsn3")))
     expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
-      andReturn(Correlation(null, abPair, "id3", null, testData.downstreamAttributes(1), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
+      andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
     expect(store.clearDownstreamVersion(VersionID(abPair, "id4"))).
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
     expect(usMock.retrieveContent("id5")).andReturn("content5")
     expect(dsMock.generateVersion("content5")).andReturn(ProcessingResponse("id5", Seq(testData.values(1).toString), "vsn5a", downstreamVersionFor("vsn5a")))
     expect(store.storeDownstreamVersion(VersionID(abPair, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
-        andReturn(Correlation(null, abPair, "id3", null, testData.downstreamAttributes(1), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
+        andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should still see an unmatched version check
     expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())

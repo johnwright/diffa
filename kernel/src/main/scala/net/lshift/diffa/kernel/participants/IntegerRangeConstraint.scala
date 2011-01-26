@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.kernel.participants
 
-import org.joda.time.DateTime
-
-case class VersionMismatch(id:String, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, vsnA:String, vsnB:String)
+case class IntegerRangeConstraint(cat:String, start:Int, end:Int)
+    extends RangeQueryConstraint(cat, start.toString(), end.toString())

@@ -19,19 +19,19 @@ package net.lshift.diffa.kernel.indexing
 import org.apache.lucene.store.Directory
 import org.apache.lucene.util.Version
 import java.io.Closeable
-import org.apache.lucene.document.{Field, Document}
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import org.apache.lucene.search._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.events.VersionID
-import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{Correlation, VersionCorrelationStore}
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import collection.mutable.{ListBuffer, HashMap}
+import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute, TypedAttribute, Correlation, VersionCorrelationStore}
+import org.apache.lucene.document._
+import org.joda.time.{DateTimeZone, DateTime}
 
 class LuceneVersionCorrelationStore(index:Directory)
     extends VersionCorrelationStore
@@ -43,22 +43,22 @@ class LuceneVersionCorrelationStore(index:Directory)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
   val maxHits = 10000
 
-  def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,String], lastUpdated: DateTime, vsn: String) = {
+  def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.debug("Indexing " + id + " with attributes: " + attributes)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
-      updateField(doc, "uvsn", vsn)
+      updateField(doc, stringField("uvsn", vsn))
     })
   }
 
-  def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, String], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
+  def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
     log.debug("Indexing " + id + " with attributes: " + attributes)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
-      updateField(doc, "duvsn", uvsn)
-      updateField(doc, "ddvsn", dvsn)
+      updateField(doc, stringField("duvsn", uvsn))
+      updateField(doc, stringField("ddvsn", dvsn))
     })
   }
 
@@ -154,7 +154,11 @@ class LuceneVersionCorrelationStore(index:Directory)
       case r:NoConstraint                  =>   // No constraints to add
       case u:UnboundedRangeQueryConstraint =>   // No constraints to add
       case r:RangeQueryConstraint          => {
-        query.add(new TermRangeQuery(prefix + r.category, r.lower, r.upper, true, true), BooleanClause.Occur.MUST)
+        val tq = r match {
+          case DateRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDate(lowerDate), formatDate(upperDate), true, true)
+          case IntegerRangeConstraint(category, lowerInt, upperInt) => NumericRangeQuery.newIntRange(prefix + category, lowerInt, upperInt, true, true)
+        }
+        query.add(tq, BooleanClause.Occur.MUST)
       }
       case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
     }
@@ -192,15 +196,15 @@ class LuceneVersionCorrelationStore(index:Directory)
     // Update the lastUpdated field
     val oldLastUpdate = parseDate(doc.get("lastUpdated"))
     if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
-      updateField(doc, "lastUpdated", lastUpdated.toString, indexed = false)
+      updateField(doc, dateField("lastUpdated", lastUpdated, indexed = false))
     }
 
     // Update the matched status
     val isMatched = doc.get("uvsn") == doc.get("duvsn")
-    updateField(doc, "isMatched", if (isMatched) "1" else "0")
+    updateField(doc, boolField("isMatched", isMatched))
 
     // Update the timestamp
-    updateField(doc, "timestamp", (new DateTime).toString, indexed = false)
+    updateField(doc, dateField("timestamp", new DateTime, indexed = false))
 
     updateDocument(id, doc)
     writer.commit
@@ -214,7 +218,7 @@ class LuceneVersionCorrelationStore(index:Directory)
       case Some(doc) => {
         if (f(doc)) {
           // We want to keep the document. Update match status and write it out
-          updateField(doc, "isMatched", "0")
+          updateField(doc, boolField("isMatched", false))
 
           updateDocument(id, doc)
           writer.commit
@@ -234,10 +238,20 @@ class LuceneVersionCorrelationStore(index:Directory)
   private def updateDocument(id:VersionID, doc:Document) = {
     writer.updateDocument(new Term("pairWithId", id.pairKey + "." + id.id), doc)
   }
-  private def updateField(doc:Document, name:String, value:String, indexed:Boolean = true) = {
-    doc.removeField(name)
-    doc.add(new Field(name, value, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+  private def updateField(doc:Document, field:Fieldable) = {
+    doc.removeField(field.name)
+    doc.add(field)
   }
+  
+  private def stringField(name:String, value:String, indexed:Boolean = true) =
+    new Field(name, value, Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
+  private def dateField(name:String, dt:DateTime, indexed:Boolean = true) =
+    new Field(name, formatDate(dt), Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
+  private def intField(name:String, value:Int, indexed:Boolean = true) =
+    (new NumericField(name, Field.Store.YES, indexed)).setIntValue(value)
+  private def boolField(name:String, value:Boolean, indexed:Boolean = true) =
+    new Field(name, if (value) "1" else "0", Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
+  private def indexConfig(indexed:Boolean) = if (indexed) Field.Index.NOT_ANALYZED_NO_NORMS else Field.Index.NO
 
   private def docToCorrelation(doc:Document) = {
     Correlation(
@@ -249,13 +263,22 @@ class LuceneVersionCorrelationStore(index:Directory)
     )
   }
 
-  private def applyAttributes(doc:Document, prefix:String, attributes:Map[String, String]) = {
-    attributes.foreach { case (k, v) => updateField(doc, prefix + k, v) }
+  private def applyAttributes(doc:Document, prefix:String, attributes:Map[String, TypedAttribute]) = {
+    attributes.foreach { case (k, v) => {
+      val vF = v match {
+        case StringAttribute(s)     => stringField(prefix + k, s)
+        case DateAttribute(dt)      => dateField(prefix + k, dt)
+        case IntegerAttribute(intV) => intField(prefix + k, intV)
+      }
+      updateField(doc, vF)
+    } }
   }
   private def findAttributes(doc:Document, prefix:String) = {
     val attrs = new HashMap[String, String]
     doc.getFields.foreach(f => {
-      if (f.name.startsWith(prefix)) attrs(f.name.substring(prefix.size)) = f.stringValue
+      if (f.name.startsWith(prefix)) {
+        attrs(f.name.substring(prefix.size)) = f.stringValue
+      }
     })
     attrs
   }
@@ -267,6 +290,7 @@ class LuceneVersionCorrelationStore(index:Directory)
       null
     }
   }
+  private def formatDate(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
   private def parseBool(bs:String) = bs != null && bs.equals("1")
 
   private class DocIdOnlyCollector extends Collector {

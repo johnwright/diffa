@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.participants._
  */
 object DigestDifferencingUtils {
 
-  def differenceEntities(attrNames:Seq[String],
+  def differenceEntities(categories:Map[String, String],
                          ds1:Seq[EntityVersion],
                          ds2:Seq[EntityVersion],
                          constraints:Seq[QueryConstraint]) : Seq[VersionMismatch] = {
@@ -39,7 +39,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, AttributesUtil.toMap(attrNames, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
+        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
       }
     }}
 
@@ -50,7 +50,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, AttributesUtil.toMap(attrNames, hs2Digest.attributes), hs2Digest.lastUpdated, null, hs2Digest.digest)
+        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, hs2Digest.attributes), hs2Digest.lastUpdated, null, hs2Digest.digest)
       }
     }}
 

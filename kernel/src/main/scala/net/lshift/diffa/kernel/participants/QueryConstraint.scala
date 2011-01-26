@@ -79,7 +79,6 @@ case class NoConstraint(override val c:String) extends NonValueConstraint(c) {
  */
 object EasyConstraints {
   def unconstrainedDate(cat:String) = UnboundedRangeQueryConstraint(cat)
-  
-  def intRangeConstraint(cat:String, start: Int, end: Int) = RangeQueryConstraint(cat, start.toString, end.toString)
+
   def unconstrainedInt(cat:String) = UnboundedRangeQueryConstraint(cat)
 }

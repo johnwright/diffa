@@ -33,7 +33,7 @@ import net.lshift.diffa.kernel.participants.DateRangeConstraint
  */
 
 class VersionCorrelationStorePerfTest {
-  private def attributes(idx:Int) = Map("bizDate" -> JUL_8_2010_1.plusSeconds(idx).toString()/*, "someInt" -> idx.toString*/)
+  private def attributes(idx:Int) = Map("bizDate" -> StringAttribute(JUL_8_2010_1.plusSeconds(idx).toString())/*, "someInt" -> idx.toString*/)
 
   @Before
   def checkPerformanceTestingEnabled {

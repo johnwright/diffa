@@ -66,7 +66,7 @@ case class Endpoint(
    */
   def schematize(runtimeValues:Seq[String]) = {
     val staticValues = categories.keySet.toList
-    AttributesUtil.toMap(staticValues, runtimeValues)
+    AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
   }
 
   def defaultBucketing() : Map[String, CategoryFunction] = {
