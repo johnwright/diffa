@@ -55,7 +55,7 @@ case class WireConstraint(
   def toQueryConstraint = {
     validate
     if (values != null) {
-      SetQueryConstraint(dataType, values)
+      SetQueryConstraint(dataType, values.toSet)
     }
     else {
       val lower = attributes.get(WireConstraint.LO)
