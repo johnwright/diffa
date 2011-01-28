@@ -13,11 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.differencing;
+
+package net.lshift.diffa.kernel.participants
 
 /**
- * Defines whether a constraint on a category is a range or a list constraint.
+ * This function partitions based on a set of attribute names who individually form single level buckets.
  */
-public enum ConstraintType {
-  RANGE, SET;
+object ByNameCategoryFunction extends CategoryFunction {
+
+  def name = "by name"
+  def shouldBucket() = true
+  def owningPartition(value: String) = value
+  def descend = Some(IndividualCategoryFunction)
+  def constrain(categoryName: String, partition: String) = SetQueryConstraint(categoryName, Set(partition))
+
 }

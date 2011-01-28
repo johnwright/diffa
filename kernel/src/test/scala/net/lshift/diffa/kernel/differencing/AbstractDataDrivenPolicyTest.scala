@@ -263,6 +263,20 @@ object AbstractDataDrivenPolicyTest {
 
   val dateCategoryType = new CategoryType("date", ConstraintType.RANGE)
   val intCategoryType = new CategoryType("int", ConstraintType.RANGE)
+  val setCategoryType = new CategoryType("string", ConstraintType.SET)
+
+  @DataPoint def setOnlyScenario = Scenario(
+    Pair(key = "ab",
+      upstream = new Endpoint(categories = Map("someString" -> setCategoryType)),
+      downstream = new Endpoint(categories = Map("someString" -> setCategoryType))),
+    AggregateTx(Map("someString" -> byName), Seq(unbounded("someString")),
+      Bucket("A", Map("someString" -> "A"),
+        EntityTx(Seq(SetQueryConstraint("someString", Set("A"))),
+          Vsn("id1", Map("someString" -> "A"), "vsn1"),
+          Vsn("id2", Map("someString" -> "A"), "vsn2")
+        )
+      )
+    ))
 
   @DataPoint def datesOnlyScenario = Scenario(
     Pair(key = "ab",
@@ -389,6 +403,8 @@ object AbstractDataDrivenPolicyTest {
   val monthly = MonthlyCategoryFunction
   val daily = DailyCategoryFunction
   val individual = IndividualCategoryFunction
+
+  val byName = ByNameCategoryFunction
 
   val thousands = AutoNarrowingIntegerCategoryFunction(1000, 10)
   val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)

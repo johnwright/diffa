@@ -19,10 +19,11 @@ package net.lshift.diffa.kernel.config
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, YearlyCategoryFunction}
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.{ConstraintType, MatchState, AttributesUtil}
+import net.lshift.diffa.kernel.participants.{ByNameCategoryFunction, CategoryFunction, QueryConstraint, YearlyCategoryFunction}
+import net.lshift.diffa.kernel.participants.UnboundedRangeQueryConstraint
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -87,9 +88,14 @@ case class Endpoint(
   def defaultBucketing() : Map[String, CategoryFunction] = {
     categories.map {
       case (name, categoryType) => {
-        categoryType.dataType match {
-          case "date" => name -> YearlyCategoryFunction
-          case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+        if (categoryType.constraintType == ConstraintType.RANGE) {
+          categoryType.dataType match {
+            case "date" => name -> YearlyCategoryFunction
+            case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+          }
+        }
+        else {
+          name -> ByNameCategoryFunction
         }
       }
     }.toMap
@@ -105,7 +111,10 @@ case class Endpoint(
         categoryType.dataType match {
           case "date" => Some(unconstrainedDate(name))
           case "int"  => Some(unconstrainedInt(name))
-          case _      => None
+          // TODO This requires some attention - basically {unconstrainedInt,unconstrainedDate}
+          // route back to UnboundedRangeQueryConstraint, which makes this case statement redundant
+          // and UnboundedRangeQueryConstraint is not a range query anyway
+          case x      => Some(UnboundedRangeQueryConstraint(name))
         }
       }
     }).toList
