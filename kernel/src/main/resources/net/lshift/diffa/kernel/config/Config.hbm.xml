@@ -28,11 +28,23 @@
       <property name="contentType" column="content_type" type="string" not-null="true"/>
       <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
       <property name="online" type="boolean" />
-      <map name="categories" table="category" lazy="false" cascade="all">
+      <!--map name="categories" table="category" lazy="false" cascade="all">
          <key column="id"/>
          <index column="name" type="string"/>
          <element column="type" type="string"/>
+      </map-->
+      <map name="categories" table="intial_configs" lazy="false" cascade="all">
+        <key column="id"/>
+        <index column="name" type="string"/>
+        <composite-element class="CategoryType" >
+          <property name="initialValue" column="initial_value" type="string" not-null="false"/>
+          <property name="upper" column="upper_bound" type="string" not-null="false"/>
+          <property name="lower" column="lower_bound" type="string" not-null="false"/>
+          <property name="dataType" column="data_type" type="string" not-null="false"/>
+          <property name="constraintType" not-null="true"/>
+        </composite-element>
      </map>
+      <!-- List = absolute list of values; Range: (initial) lower and upper bounds -->
     </class>
 
     <class name="Pair" table="pair" abstract="false">

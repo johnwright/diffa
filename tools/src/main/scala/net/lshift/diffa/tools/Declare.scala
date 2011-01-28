@@ -22,6 +22,8 @@ import net.lshift.diffa.kernel.client.ConfigurationClient
 import collection.mutable.HashMap
 import collection.mutable.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.CategoryType
+import net.lshift.diffa.kernel.differencing.ConstraintType
 
 /**
  * Utility class for declaring a differencing configuration.
@@ -86,12 +88,13 @@ object Declare extends DiffaTool {
   }
 
   // TODO [#2] Add unit test for this
-  def parseCategories(key:String, line:CommandLine) : Map[String,String] = {
-    val cats = new HashMap[String,String]
+  def parseCategories(key:String, line:CommandLine) : Map[String,CategoryType] = {
+    val cats = new HashMap[String,CategoryType]
     val categories = line.getOptionValues(key)
     categories.foreach(s => {
       var parts = s.split(":")
-      cats(parts(0)) = parts(1)
+      // TODO Hardcoded
+      cats(parts(0)) = new CategoryType(parts(1),ConstraintType.RANGE)
     })
     if (cats.isEmpty) {
       throw new RuntimeException("No categories defined")

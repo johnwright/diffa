@@ -22,11 +22,16 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute}
 import org.joda.time.{DateTimeZone, DateTime}
+import net.lshift.diffa.kernel.differencing.{ConstraintType, DateAttribute, StringAttribute, IntegerAttribute}
 
 /**
  * Test cases for the Endpoint class.
  */
 class EndpointTest {
+
+  val dateCategoryType = new CategoryType("date", ConstraintType.RANGE)
+  val intCategoryType = new CategoryType("int", ConstraintType.RANGE)
+
   @Test
   def defaultConstraintsForEndpointWithNoCategories = {
     val ep = new Endpoint()
@@ -35,21 +40,21 @@ class EndpointTest {
 
     @Test
   def defaultConstraintsForEndpointWithDateCategory = {
-    val ep = new Endpoint(categories=Map("bizDate" -> "date"))
+    val ep = new Endpoint(categories=Map("bizDate" -> dateCategoryType))
     assertEquals(Seq(unconstrainedDate("bizDate")), ep.defaultConstraints)
   }
 
   @Test
   def defaultConstraintsForEndpointWithIntCategory = {
-    val ep = new Endpoint(categories=Map("someInt" -> "int"))
+    val ep = new Endpoint(categories=Map("someInt" -> intCategoryType))
     assertEquals(Seq(unconstrainedInt("someInt")), ep.defaultConstraints)
   }
 
   @Test
   def schematize() = {
-    val categoryMap = Map("xyz_attribute" -> "int",
-                          "abc_attribute" -> "date",
-                          "def_attribute" -> "date")
+    val categoryMap = Map("xyz_attribute" -> intCategoryType,
+                          "abc_attribute" -> dateCategoryType,
+                          "def_attribute" -> dateCategoryType)
 
     val rightOrder = Seq("2011-01-26T10:24:00.000Z" /* abc */ ,"2011-01-26T10:36:00.000Z" /* def */, "55" /* xyz */)
 

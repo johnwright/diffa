@@ -18,13 +18,14 @@ package net.lshift.diffa.kernel.differencing
 
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.config.CategoryType
 
 /**
  * Utility methods for differencing sequences of digests.
  */
 object DigestDifferencingUtils {
 
-  def differenceEntities(categories:Map[String, String],
+  def differenceEntities(categories:Map[String, CategoryType],
                          ds1:Seq[EntityVersion],
                          ds2:Seq[EntityVersion],
                          constraints:Seq[QueryConstraint]) : Seq[VersionMismatch] = {
@@ -39,7 +40,9 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
+        // TODO maybe change AttributesUtil
+        val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
+        result += VersionMismatch(label, AttributesUtil.toTypedMap(nameTypeMap, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
       }
     }}
 
@@ -50,7 +53,9 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, hs2Digest.attributes), hs2Digest.lastUpdated, null, hs2Digest.digest)
+        // TODO maybe change AttributesUtil
+        val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
+        result += VersionMismatch(label, AttributesUtil.toTypedMap(nameTypeMap, hs2Digest.attributes), hs2Digest.lastUpdated, null, hs2Digest.digest)
       }
     }}
 

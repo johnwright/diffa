@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, YearlyCategoryFunction}
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
-import net.lshift.diffa.kernel.differencing.AttributesUtil
+import net.lshift.diffa.kernel.differencing.{ConstraintType, MatchState, AttributesUtil}
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -49,6 +49,17 @@ trait ConfigStore {
 
 }
 
+case class CategoryType(
+  @BeanProperty var initialValue: String = null,
+  @BeanProperty var lower: String = null,
+  @BeanProperty var upper: String = null,
+  @BeanProperty var dataType: String = null,
+  @BeanProperty var constraintType: ConstraintType = ConstraintType.RANGE) {
+
+  def this() = this(null, null, null, null, ConstraintType.RANGE)
+  def this(dataType:String,ct:ConstraintType) = this(null, null, null, dataType, ct)
+}
+
 case class Endpoint(
   @BeanProperty var name: String = null,
   @BeanProperty var url: String = null,
@@ -56,9 +67,10 @@ case class Endpoint(
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
   @BeanProperty var online: Boolean = false,
-  @BeanProperty var categories: java.util.Map[String,String] = new HashMap[String, String]) {
+  @BeanProperty var categories: java.util.Map[String,CategoryType] = new HashMap[String, CategoryType]) {
 
-  def this() = this(null, null, null, null, null, false, new HashMap[String, String])
+  //def this() = this(null, null, null, null, null, false, new HashMap[String, String])
+  def this() = this(null, null, null, null, null, false, new HashMap[String, CategoryType])
 
   /**
    * Fuses a list of runtime attributes together with their
@@ -67,13 +79,19 @@ case class Endpoint(
    */
   def schematize(runtimeValues:Seq[String]) = {
     val staticValues = categories.keySet.toList
-    AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
+    // TODO
+    val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
+    AttributesUtil.toTypedMap(nameTypeMap, runtimeValues)
   }
 
   def defaultBucketing() : Map[String, CategoryFunction] = {
     categories.map {
-      case (name, "date") => name -> YearlyCategoryFunction
-      case (name, "int") => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+      case (name, categoryType) => {
+        categoryType.dataType match {
+          case "date" => name -> YearlyCategoryFunction
+          case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+        }
+      }
     }.toMap
   }
 
@@ -83,9 +101,13 @@ case class Endpoint(
    */
   def defaultConstraints() : Seq[QueryConstraint] =
     categories.flatMap({
-      case (name, "date") => Some(unconstrainedDate(name))
-      case (name, "int") => Some(unconstrainedInt(name))
-      case _ => None
+      case (name, categoryType) => {
+        categoryType.dataType match {
+          case "date" => Some(unconstrainedDate(name))
+          case "int"  => Some(unconstrainedInt(name))
+          case _      => None
+        }
+      }
     }).toList
 }
 

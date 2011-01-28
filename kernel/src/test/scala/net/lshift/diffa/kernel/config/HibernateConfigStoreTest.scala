@@ -24,6 +24,7 @@ import org.hibernate.exception.ConstraintViolationException
 import org.junit.{Test, Before}
 import scala.collection.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.differencing.ConstraintType
 
 class HibernateConfigStoreTest {
   private val configStore: ConfigStore = HibernateConfigStoreTest.configStore
@@ -31,12 +32,12 @@ class HibernateConfigStoreTest {
 
   val US_CATEGORY_NAME = "bizDate"
   val US_CATEGORY_TYPE = "date"
-  val US_CATEGORIES = Map(US_CATEGORY_NAME -> US_CATEGORY_TYPE)
+  val US_CATEGORIES = Map(US_CATEGORY_NAME ->  new CategoryType(US_CATEGORY_TYPE, ConstraintType.RANGE))
   val DS_CATEGORY_NAME = "someInt"
   val DS_CATEGORY_TYPE = "int"
-  val DS_CATEGORIES = Map(DS_CATEGORY_NAME -> DS_CATEGORY_TYPE)
-  val UPSTREAM_EP = Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
-  val DOWNSTREAM_EP = Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
+  val DS_CATEGORIES = Map(DS_CATEGORY_NAME ->  new CategoryType(DS_CATEGORY_TYPE, ConstraintType.RANGE))
+  val UPSTREAM_EP = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
+  val DOWNSTREAM_EP = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
 
   val GROUP_KEY = "TEST_GROUP"
   val GROUP = new PairGroup(GROUP_KEY)
@@ -287,8 +288,8 @@ class HibernateConfigStoreTest {
     val pair = configStore.getPair(PAIR_KEY)
     assertNotNull(pair.upstream.categories)
     assertNotNull(pair.downstream.categories)
-    assertEquals(US_CATEGORY_TYPE, pair.upstream.categories(US_CATEGORY_NAME))
-    assertEquals(DS_CATEGORY_TYPE, pair.downstream.categories(DS_CATEGORY_NAME))
+    assertEquals(US_CATEGORY_TYPE, pair.upstream.categories(US_CATEGORY_NAME).dataType)
+    assertEquals(DS_CATEGORY_TYPE, pair.downstream.categories(DS_CATEGORY_NAME).dataType)
   }
 
   @Test
