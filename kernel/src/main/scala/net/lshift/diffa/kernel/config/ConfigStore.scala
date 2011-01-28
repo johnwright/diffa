@@ -51,8 +51,14 @@ trait ConfigStore {
 }
 
 /**
- * This provides various attributes of a category that are necessary for the kernel to be able auto-narrow a category.
+ * This provides various endpoint-specific attributes of a category that are necessary for the kernel
+ * to be able auto-narrow a category.
  *
+ * @param initialValue This is the definitive set of the attributes that an endpoint is able to partition on. This is null for range constraints.
+ * @param lower The initial lower bound for a category that can be constrained by range. This is null for set constraints.
+ * @param lower The initial upper bound for a category that can be constrained by range. This is null for set constraints.
+ * @param dataType The name of the type for attributes of this category.
+ * @param constraintType A enum that indicates whether the category is to be constrained by range or by a set.
  */
 case class CategoryDescriptor(
   @BeanProperty var initialValue: String = null,
@@ -65,6 +71,10 @@ case class CategoryDescriptor(
   def this(dataType:String,ct:ConstraintType) = this(null, null, null, dataType, ct)
 }
 
+object CategoryDescriptor {
+  val unconstrainedSetDescriptor = new CategoryDescriptor("string", ConstraintType.SET)
+}
+
 case class Endpoint(
   @BeanProperty var name: String = null,
   @BeanProperty var url: String = null,
@@ -74,7 +84,6 @@ case class Endpoint(
   @BeanProperty var online: Boolean = false,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
 
-  //def this() = this(null, null, null, null, null, false, new HashMap[String, String])
   def this() = this(null, null, null, null, null, false, new HashMap[String, CategoryDescriptor])
 
   /**

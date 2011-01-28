@@ -29,6 +29,7 @@ import org.joda.time.DateTime
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config.{CategoryDescriptor, Endpoint, ConfigStore, Pair}
+import net.lshift.diffa.kernel.config.CategoryDescriptor._
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -263,17 +264,28 @@ object AbstractDataDrivenPolicyTest {
 
   val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
   val intCategoryDescriptor = new CategoryDescriptor("int", ConstraintType.RANGE)
-  val setCategoryDescriptor = new CategoryDescriptor("string", ConstraintType.SET)
 
   @DataPoint def setOnlyScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("someString" -> setCategoryDescriptor)),
-      downstream = new Endpoint(categories = Map("someString" -> setCategoryDescriptor))),
+      upstream = new Endpoint(categories = Map("someString" -> unconstrainedSetDescriptor)),
+      downstream = new Endpoint(categories = Map("someString" -> unconstrainedSetDescriptor))),
     AggregateTx(Map("someString" -> byName), Seq(unbounded("someString")),
       Bucket("A", Map("someString" -> "A"),
         EntityTx(Seq(SetQueryConstraint("someString", Set("A"))),
           Vsn("id1", Map("someString" -> "A"), "vsn1"),
           Vsn("id2", Map("someString" -> "A"), "vsn2")
+        )
+      ),
+      Bucket("B", Map("someString" -> "B"),
+        EntityTx(Seq(SetQueryConstraint("someString", Set("B"))),
+          Vsn("id3", Map("someString" -> "B"), "vsn3"),
+          Vsn("id4", Map("someString" -> "B"), "vsn4")
+        )
+      ),
+      Bucket("C", Map("someString" -> "C"),
+        EntityTx(Seq(SetQueryConstraint("someString", Set("C"))),
+          Vsn("id5", Map("someString" -> "C"), "vsn5"),
+          Vsn("id6", Map("someString" -> "C"), "vsn6")
         )
       )
     ))
