@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.participants._
 import collection.mutable.HashMap
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.config.CategoryType
+import net.lshift.diffa.kernel.config.CategoryDescriptor
 
 /**
  * Test cases for the DigestDifferencingUtils object.
@@ -34,8 +34,8 @@ class DigestDifferencingUtilsTest {
   def dateRangeConstraint(start:DateTime, end:DateTime) = DateRangeConstraint("bizDate", start, end)
 
   val unconstrained = EasyConstraints.unconstrainedDate("bizDate")
-  val dateCategoryType = new CategoryType("date", ConstraintType.RANGE)
-  val dateOnlyAttrs = Map("bizDate" -> dateCategoryType)
+  val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
+  val dateOnlyAttrs = Map("bizDate" -> dateCategoryDescriptor)
 
   def resolve(d:Digest) = {
     new HashMap[String,String]

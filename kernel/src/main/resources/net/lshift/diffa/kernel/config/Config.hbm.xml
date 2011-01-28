@@ -32,7 +32,7 @@
     <map name="categories" table="intial_configs" lazy="false" cascade="all">
       <key column="id"/>
       <index column="name" type="string"/>
-      <composite-element class="CategoryType">
+      <composite-element class="net.lshift.diffa.kernel.config.CategoryDescriptor">
         <property name="initialValue" column="initial_value" type="text" not-null="false"/>
         <property name="upper" column="upper_bound" type="string" not-null="false"/>
         <property name="lower" column="lower_bound" type="string" not-null="false"/>

@@ -32,10 +32,10 @@ class HibernateConfigStoreTest {
 
   val US_CATEGORY_NAME = "bizDate"
   val US_CATEGORY_TYPE = "date"
-  val US_CATEGORIES = Map(US_CATEGORY_NAME ->  new CategoryType(US_CATEGORY_TYPE, ConstraintType.RANGE))
+  val US_CATEGORIES = Map(US_CATEGORY_NAME ->  new CategoryDescriptor(US_CATEGORY_TYPE, ConstraintType.RANGE))
   val DS_CATEGORY_NAME = "someInt"
   val DS_CATEGORY_TYPE = "int"
-  val DS_CATEGORIES = Map(DS_CATEGORY_NAME ->  new CategoryType(DS_CATEGORY_TYPE, ConstraintType.RANGE))
+  val DS_CATEGORIES = Map(DS_CATEGORY_NAME ->  new CategoryDescriptor(DS_CATEGORY_TYPE, ConstraintType.RANGE))
   val UPSTREAM_EP = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
   val DOWNSTREAM_EP = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
 

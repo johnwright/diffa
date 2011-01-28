@@ -28,9 +28,9 @@ import net.lshift.diffa.kernel.differencing.{ConstraintType, MatchState, Session
  */
 class DocExamplesFactory {
 
-  val categoryType = new CategoryType("date", ConstraintType.RANGE)
-  val up = new Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null, null, true, Map("bizDate" -> categoryType))
-  val down = new Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, null, true, Map("bizDate" -> categoryType))
+  val categoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
+  val up = new Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null, null, true, Map("bizDate" -> categoryDescriptor))
+  val down = new Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, null, true, Map("bizDate" -> categoryDescriptor))
 
   val group = PairGroup("important-group")
   var pair = Pair("pair-id", up, down, group, "correlated", 120)

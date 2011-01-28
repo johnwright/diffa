@@ -59,10 +59,10 @@ abstract class AbstractPolicyTest {
   val emptyAttributes:Map[String,TypedAttribute] = Map()
   val emptyStrAttributes:Map[String,String] = Map()
 
-  val dateCategoryType = new CategoryType("date", ConstraintType.RANGE)
-  val intCategoryType = new CategoryType("int", ConstraintType.RANGE)
+  val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
+  val intCategoryDescriptor = new CategoryDescriptor("int", ConstraintType.RANGE)
 
-  val pair = new Pair(key=abPair, upstream=new Endpoint(categories=Map("bizDate" -> dateCategoryType)), downstream=new Endpoint(categories=Map("bizDate" -> dateCategoryType)))
+  val pair = new Pair(key=abPair, upstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)), downstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)))
 
   expect(configStore.getPair(abPair)).andReturn(pair).anyTimes
   replay(configStore)
@@ -92,8 +92,8 @@ abstract class AbstractPolicyTest {
   def bizDateSeq(d:DateTime) = Seq(d.toString())
 
   case class PolicyTestData(
-    upstreamCategories: Map[String, CategoryType],
-    downstreamCategories: Map[String, CategoryType],
+    upstreamCategories: Map[String, CategoryDescriptor],
+    downstreamCategories: Map[String, CategoryDescriptor],
     bucketing:Seq[Map[String, CategoryFunction]],
     constraints: Seq[Seq[QueryConstraint]],
     attributes: Seq[Seq[String]],
@@ -105,8 +105,8 @@ abstract class AbstractPolicyTest {
   }
 
   val dateCategoryData = PolicyTestData(
-    upstreamCategories = Map("bizDate" -> dateCategoryType),
-    downstreamCategories = Map("bizDate" -> dateCategoryType),
+    upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
+    downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
     bucketing = Seq(Map("bizDate" -> YearlyCategoryFunction),
                     Map("bizDate" -> MonthlyCategoryFunction),
                     Map("bizDate" -> DailyCategoryFunction),
@@ -122,8 +122,8 @@ abstract class AbstractPolicyTest {
   )
 
   val integerCategoryData = PolicyTestData(
-    upstreamCategories = Map("someInt" -> intCategoryType),
-    downstreamCategories = Map("someInt" -> intCategoryType),
+    upstreamCategories = Map("someInt" -> intCategoryDescriptor),
+    downstreamCategories = Map("someInt" -> intCategoryDescriptor),
     bucketing = Seq(Map("someInt" -> thousands),
                     Map("someInt" -> hundreds),
                     Map("someInt" -> tens),
@@ -161,48 +161,48 @@ abstract class AbstractPolicyTest {
   @Test
   def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
     shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
-      upstreamCategories = Map("bizDate" -> dateCategoryType),
-      downstreamCategories = Map("bizDate" -> dateCategoryType),
+      upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
+      downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       attributes = bizDateSeq(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
   def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
     shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
-      upstreamCategories = Map("someInt" -> intCategoryType),
-      downstreamCategories = Map("someInt" -> intCategoryType),
+      upstreamCategories = Map("someInt" -> intCategoryDescriptor),
+      downstreamCategories = Map("someInt" -> intCategoryDescriptor),
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   @Test
   def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
     shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
-      upstreamCategories = Map("bizDate" -> dateCategoryType),
-      downstreamCategories = Map("bizDate" -> dateCategoryType),
+      upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
+      downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       attributes = bizDateSeq(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
   def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
     shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
-      upstreamCategories = Map("someInt" -> intCategoryType),
-      downstreamCategories = Map("someInt" -> intCategoryType),
+      upstreamCategories = Map("someInt" -> intCategoryDescriptor),
+      downstreamCategories = Map("someInt" -> intCategoryDescriptor),
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   @Test
   def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstreamForDateCategories =
     shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
-      upstreamCategories = Map("bizDate" -> dateCategoryType),
-      downstreamCategories = Map("bizDate" -> dateCategoryType),
+      upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
+      downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       attributes = bizDateSeq(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
   def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstreamForIntegerCategories =
     shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
-      upstreamCategories = Map("someInt" -> intCategoryType),
-      downstreamCategories = Map("someInt" -> intCategoryType),
+      upstreamCategories = Map("someInt" -> intCategoryDescriptor),
+      downstreamCategories = Map("someInt" -> intCategoryDescriptor),
       attributes = Seq("1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
@@ -259,8 +259,8 @@ abstract class AbstractPolicyTest {
   }
 
   protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
-    upstreamCategories: Map[String, CategoryType],
-    downstreamCategories: Map[String, CategoryType],
+    upstreamCategories: Map[String, CategoryDescriptor],
+    downstreamCategories: Map[String, CategoryDescriptor],
     attributes: Seq[String],
     downstreamAttributes: Map[String, TypedAttribute]
   ) {
@@ -281,8 +281,8 @@ abstract class AbstractPolicyTest {
   }
 
   protected def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
-    upstreamCategories: Map[String, CategoryType],
-    downstreamCategories: Map[String, CategoryType],
+    upstreamCategories: Map[String, CategoryDescriptor],
+    downstreamCategories: Map[String, CategoryDescriptor],
     attributes: Seq[String],
     downstreamAttributes: Map[String, TypedAttribute]
   ) {
@@ -299,8 +299,8 @@ abstract class AbstractPolicyTest {
   }
 
   protected def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
-    upstreamCategories: Map[String, CategoryType],
-    downstreamCategories: Map[String, CategoryType],
+    upstreamCategories: Map[String, CategoryDescriptor],
+    downstreamCategories: Map[String, CategoryDescriptor],
     attributes: Seq[String],
     downstreamAttributes: Map[String, TypedAttribute]
   ) {

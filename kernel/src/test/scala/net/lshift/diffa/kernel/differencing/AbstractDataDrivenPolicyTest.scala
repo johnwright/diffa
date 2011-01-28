@@ -28,7 +28,7 @@ import org.junit.experimental.theories.{Theory, Theories, DataPoint}
 import org.joda.time.DateTime
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.config.{CategoryType, Endpoint, ConfigStore, Pair}
+import net.lshift.diffa.kernel.config.{CategoryDescriptor, Endpoint, ConfigStore, Pair}
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -261,14 +261,14 @@ object AbstractDataDrivenPolicyTest {
   // Scenarios
   //
 
-  val dateCategoryType = new CategoryType("date", ConstraintType.RANGE)
-  val intCategoryType = new CategoryType("int", ConstraintType.RANGE)
-  val setCategoryType = new CategoryType("string", ConstraintType.SET)
+  val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
+  val intCategoryDescriptor = new CategoryDescriptor("int", ConstraintType.RANGE)
+  val setCategoryDescriptor = new CategoryDescriptor("string", ConstraintType.SET)
 
   @DataPoint def setOnlyScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("someString" -> setCategoryType)),
-      downstream = new Endpoint(categories = Map("someString" -> setCategoryType))),
+      upstream = new Endpoint(categories = Map("someString" -> setCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("someString" -> setCategoryDescriptor))),
     AggregateTx(Map("someString" -> byName), Seq(unbounded("someString")),
       Bucket("A", Map("someString" -> "A"),
         EntityTx(Seq(SetQueryConstraint("someString", Set("A"))),
@@ -280,8 +280,8 @@ object AbstractDataDrivenPolicyTest {
 
   @DataPoint def datesOnlyScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryType)),
-      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryType))),
+      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor))),
     AggregateTx(Map("bizDate" -> yearly), Seq(unbounded("bizDate")),
       Bucket("2010", Map("bizDate" -> "2010"),
         AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2010, END_2010)),
@@ -319,8 +319,8 @@ object AbstractDataDrivenPolicyTest {
 
   @DataPoint def integersOnlyScenario = Scenario(
     Pair(key = "bc",
-      upstream = new Endpoint(categories = Map("someInt" -> intCategoryType)),
-      downstream = new Endpoint(categories = Map("someInt" -> intCategoryType))),
+      upstream = new Endpoint(categories = Map("someInt" -> intCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("someInt" -> intCategoryDescriptor))),
     AggregateTx(Map("someInt" -> thousands), Seq(unbounded("someInt")),
       Bucket("1000", Map("someInt" -> "1000"),
         AggregateTx(Map("someInt" -> hundreds), Seq(intRange("someInt", 1000, 1999)),
@@ -357,8 +357,8 @@ object AbstractDataDrivenPolicyTest {
 
   @DataPoint def integersAndDatesScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryType, "someInt" -> intCategoryType)),
-      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryType, "someInt" -> intCategoryType))),
+      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someInt" -> intCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someInt" -> intCategoryDescriptor))),
     AggregateTx(Map("bizDate" -> yearly, "someInt" -> thousands), Seq(unbounded("bizDate"), unbounded("someInt")),
       Bucket("2010_1000", Map("bizDate" -> "2010", "someInt" -> "1000"),
         AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(dateRange("bizDate", START_2010, END_2010), intRange("someInt", 1000, 1999)),

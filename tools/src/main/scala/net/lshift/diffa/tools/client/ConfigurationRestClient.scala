@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.client.ConfigurationClient
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{CategoryType, Endpoint, PairDef, PairGroup}
+import net.lshift.diffa.kernel.config.{CategoryDescriptor, Endpoint, PairDef, PairGroup}
 
 class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")
@@ -32,7 +32,7 @@ class ConfigurationRestClient(serverRootUrl:String)
     g
   }
 
-  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean, categories:java.util.Map[String,CategoryType]) = {
+  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean, categories:java.util.Map[String,CategoryDescriptor]) = {
     val e = Endpoint(name, url, contentType, inboundUrl, inboundContentType, online, categories)
     create("endpoints", e)
     e

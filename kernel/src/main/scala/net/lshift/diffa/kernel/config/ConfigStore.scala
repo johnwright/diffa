@@ -50,7 +50,11 @@ trait ConfigStore {
 
 }
 
-case class CategoryType(
+/**
+ * This provides various attributes of a category that are necessary for the kernel to be able auto-narrow a category.
+ *
+ */
+case class CategoryDescriptor(
   @BeanProperty var initialValue: String = null,
   @BeanProperty var lower: String = null,
   @BeanProperty var upper: String = null,
@@ -68,10 +72,10 @@ case class Endpoint(
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
   @BeanProperty var online: Boolean = false,
-  @BeanProperty var categories: java.util.Map[String,CategoryType] = new HashMap[String, CategoryType]) {
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
 
   //def this() = this(null, null, null, null, null, false, new HashMap[String, String])
-  def this() = this(null, null, null, null, null, false, new HashMap[String, CategoryType])
+  def this() = this(null, null, null, null, null, false, new HashMap[String, CategoryDescriptor])
 
   /**
    * Fuses a list of runtime attributes together with their

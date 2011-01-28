@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.DateTimeZone
-import net.lshift.diffa.kernel.config.CategoryType
+import net.lshift.diffa.kernel.config.CategoryDescriptor
 
 /**
  * Utility for working with attribute maps.

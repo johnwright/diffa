@@ -29,8 +29,8 @@ import net.lshift.diffa.kernel.differencing.{ConstraintType, DateAttribute, Stri
  */
 class EndpointTest {
 
-  val dateCategoryType = new CategoryType("date", ConstraintType.RANGE)
-  val intCategoryType = new CategoryType("int", ConstraintType.RANGE)
+  val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
+  val intCategoryDescriptor = new CategoryDescriptor("int", ConstraintType.RANGE)
 
   @Test
   def defaultConstraintsForEndpointWithNoCategories = {
@@ -40,21 +40,21 @@ class EndpointTest {
 
     @Test
   def defaultConstraintsForEndpointWithDateCategory = {
-    val ep = new Endpoint(categories=Map("bizDate" -> dateCategoryType))
+    val ep = new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor))
     assertEquals(Seq(unconstrainedDate("bizDate")), ep.defaultConstraints)
   }
 
   @Test
   def defaultConstraintsForEndpointWithIntCategory = {
-    val ep = new Endpoint(categories=Map("someInt" -> intCategoryType))
+    val ep = new Endpoint(categories=Map("someInt" -> intCategoryDescriptor))
     assertEquals(Seq(unconstrainedInt("someInt")), ep.defaultConstraints)
   }
 
   @Test
   def schematize() = {
-    val categoryMap = Map("xyz_attribute" -> intCategoryType,
-                          "abc_attribute" -> dateCategoryType,
-                          "def_attribute" -> dateCategoryType)
+    val categoryMap = Map("xyz_attribute" -> intCategoryDescriptor,
+                          "abc_attribute" -> dateCategoryDescriptor,
+                          "def_attribute" -> dateCategoryDescriptor)
 
     val rightOrder = Seq("2011-01-26T10:24:00.000Z" /* abc */ ,"2011-01-26T10:36:00.000Z" /* def */, "55" /* xyz */)
 
