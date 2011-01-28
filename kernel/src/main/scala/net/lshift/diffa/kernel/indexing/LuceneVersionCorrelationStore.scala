@@ -166,7 +166,7 @@ class LuceneVersionCorrelationStore(index:Directory)
         }
         query.add(tq, BooleanClause.Occur.MUST)
       }
-      case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
+      case l:SetQueryConstraint  => throw new RuntimeException("SetQueryConstraint not yet implemented")
     }
   }
 

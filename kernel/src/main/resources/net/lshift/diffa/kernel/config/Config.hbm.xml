@@ -33,7 +33,7 @@
       <key column="id"/>
       <index column="name" type="string"/>
       <composite-element class="CategoryType">
-        <property name="initialValue" column="initial_value" type="string" not-null="false"/>
+        <property name="initialValue" column="initial_value" type="text" not-null="false"/>
         <property name="upper" column="upper_bound" type="string" not-null="false"/>
         <property name="lower" column="lower_bound" type="string" not-null="false"/>
         <property name="dataType" column="data_type" type="string" not-null="false"/>
