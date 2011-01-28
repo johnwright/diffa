@@ -21,44 +21,39 @@
         "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
         "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
-    <class name="Endpoint" table="endpoint" abstract="false">
-      <id name="name" type="string" />
-      <property name="url" type="string" not-null="true" unique="true" />
-      <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false" />
-      <property name="contentType" column="content_type" type="string" not-null="true"/>
-      <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
-      <property name="online" type="boolean" />
-      <!--map name="categories" table="category" lazy="false" cascade="all">
-         <key column="id"/>
-         <index column="name" type="string"/>
-         <element column="type" type="string"/>
-      </map-->
-      <map name="categories" table="intial_configs" lazy="false" cascade="all">
-        <key column="id"/>
-        <index column="name" type="string"/>
-        <composite-element class="CategoryType" >
-          <property name="initialValue" column="initial_value" type="string" not-null="false"/>
-          <property name="upper" column="upper_bound" type="string" not-null="false"/>
-          <property name="lower" column="lower_bound" type="string" not-null="false"/>
-          <property name="dataType" column="data_type" type="string" not-null="false"/>
-          <property name="constraintType" not-null="true"/>
-        </composite-element>
-     </map>
-      <!-- List = absolute list of values; Range: (initial) lower and upper bounds -->
-    </class>
 
-    <class name="Pair" table="pair" abstract="false">
-      <id name="key" type="string" column="pair_key" />
-      <many-to-one name="upstream" class="Endpoint" not-null="true" lazy="false" fetch="join" />
-      <many-to-one name="downstream" class="Endpoint" not-null="true" lazy="false" fetch="join" />
-      <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false" />
-      <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false" />
-      <many-to-one name="group" column="name" class="PairGroup" not-null="true" lazy="false" fetch="join" />
-    </class>
+  <class name="Endpoint" table="endpoint" abstract="false">
+    <id name="name" type="string"/>
+    <property name="url" type="string" not-null="true" unique="true"/>
+    <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false"/>
+    <property name="contentType" column="content_type" type="string" not-null="true"/>
+    <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
+    <property name="online" type="boolean"/>
+    <map name="categories" table="intial_configs" lazy="false" cascade="all">
+      <key column="id"/>
+      <index column="name" type="string"/>
+      <composite-element class="CategoryType">
+        <property name="initialValue" column="initial_value" type="string" not-null="false"/>
+        <property name="upper" column="upper_bound" type="string" not-null="false"/>
+        <property name="lower" column="lower_bound" type="string" not-null="false"/>
+        <property name="dataType" column="data_type" type="string" not-null="false"/>
+        <property name="constraintType" not-null="true"/>
+      </composite-element>
+    </map>
+  </class>
 
-    <class name="PairGroup" table="pair_group" abstract="false">
-      <id name="key" type="string" column="group_key" />
-    </class>
+  <class name="Pair" table="pair" abstract="false">
+    <id name="key" type="string" column="pair_key"/>
+    <many-to-one name="upstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
+    <many-to-one name="downstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
+    <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false"/>
+    <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false"/>
+    <many-to-one name="group" column="name" class="PairGroup" not-null="true" lazy="false" fetch="join"/>
+  </class>
+
+  <class name="PairGroup" table="pair_group" abstract="false">
+    <id name="key" type="string" column="group_key"/>
+  </class>
 
   <class name="User" table="users" abstract="false">
     <id name="name" type="string"/>
