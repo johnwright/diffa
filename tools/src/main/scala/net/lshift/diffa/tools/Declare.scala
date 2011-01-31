@@ -22,7 +22,7 @@ import net.lshift.diffa.kernel.client.ConfigurationClient
 import collection.mutable.HashMap
 import collection.mutable.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.CategoryDescriptor
+import net.lshift.diffa.kernel.config.{RangeCategoryDescriptor,CategoryDescriptor}
 import net.lshift.diffa.kernel.differencing.ConstraintType
 
 /**
@@ -94,7 +94,7 @@ object Declare extends DiffaTool {
     categories.foreach(s => {
       var parts = s.split(":")
       // TODO Hardcoded
-      cats(parts(0)) = new CategoryDescriptor(parts(1),ConstraintType.RANGE)
+      cats(parts(0)) = new RangeCategoryDescriptor(parts(1))
     })
     if (cats.isEmpty) {
       throw new RuntimeException("No categories defined")

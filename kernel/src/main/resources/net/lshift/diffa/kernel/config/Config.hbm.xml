@@ -29,17 +29,25 @@
     <property name="contentType" column="content_type" type="string" not-null="true"/>
     <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
     <property name="online" type="boolean"/>
-    <map name="categories" table="intial_configs" lazy="false" cascade="all">
+    <map name="categories" lazy="false" cascade="all">
       <key column="id"/>
       <index column="name" type="string"/>
-      <composite-element class="net.lshift.diffa.kernel.config.CategoryDescriptor">
-        <property name="initialValue" column="initial_value" type="text" not-null="false"/>
+      <element type="net.lshift.diffa.kernel.config.CategoryDescriptor"/>
+    </map>
+  </class>
+
+  <class name="CategoryDescriptor" abstract="true">
+    <id name="dataType" type="string"/>
+    <union-subclass name="RangeCategoryDescriptor" table="range_categories">
         <property name="upper" column="upper_bound" type="string" not-null="false"/>
         <property name="lower" column="lower_bound" type="string" not-null="false"/>
-        <property name="dataType" column="data_type" type="string" not-null="false"/>
-        <property name="constraintType" not-null="true"/>
-      </composite-element>
-    </map>
+    </union-subclass>
+    <union-subclass name="SetCategoryDescriptor" table="set_categories">
+        <set name="values" table="set_constraint_values">
+          <key column="value_id"/>
+          <element column="value_name" type="string" not-null="true"/>
+        </set>
+    </union-subclass>
   </class>
 
   <class name="Pair" table="pair" abstract="false">

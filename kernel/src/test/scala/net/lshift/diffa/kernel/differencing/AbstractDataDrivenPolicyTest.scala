@@ -28,8 +28,8 @@ import org.junit.experimental.theories.{Theory, Theories, DataPoint}
 import org.joda.time.DateTime
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.config.{CategoryDescriptor, Endpoint, ConfigStore, Pair}
 import net.lshift.diffa.kernel.config.CategoryDescriptor._
+import net.lshift.diffa.kernel.config._
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -262,14 +262,14 @@ object AbstractDataDrivenPolicyTest {
   // Scenarios
   //
 
-  val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
-  val intCategoryDescriptor = new CategoryDescriptor("int", ConstraintType.RANGE)
+  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
+  val intCategoryDescriptor = new RangeCategoryDescriptor("int")
 
   @DataPoint def setOnlyScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("someString" -> unconstrainedSetDescriptor)),
-      downstream = new Endpoint(categories = Map("someString" -> unconstrainedSetDescriptor))),
-    AggregateTx(Map("someString" -> byName), Seq(unbounded("someString")),
+      upstream = new Endpoint(categories = Map("someString" -> SetCategoryDescriptor(Set("A","B","C")))),
+      downstream = new Endpoint(categories = Map("someString" -> SetCategoryDescriptor(Set("A","B","C"))))),
+    AggregateTx(Map("someString" -> byName), Seq(SetQueryConstraint("someString",Set("A","B","C"))),
       Bucket("A", Map("someString" -> "A"),
         EntityTx(Seq(SetQueryConstraint("someString", Set("A"))),
           Vsn("id1", Map("someString" -> "A"), "vsn1"),
@@ -406,6 +406,28 @@ object AbstractDataDrivenPolicyTest {
         ))
     ))
 
+  @DataPoint def setAndDateScenario = Scenario(
+    Pair(key = "gh",
+      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B","C")))),
+      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B","C"))))),
+    AggregateTx(Map("bizDate" -> yearly, "someString" -> byName), Seq(unbounded("bizDate"), SetQueryConstraint("someString",Set("A","B","C"))),
+      Bucket("2010_A", Map("bizDate" -> "2010", "someString" -> "A"),
+        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2010, END_2010), SetQueryConstraint("someString",Set("A"))),
+          Bucket("2010-07_A", Map("bizDate" -> "2010-07"),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JUL_2010, END_JUL_2010), SetQueryConstraint("someString",Set("A"))),
+              Bucket("2010-07-08_A", Map("bizDate" -> "2010-07-08"),
+                EntityTx(Seq(dateRange("bizDate", JUL_8_2010, END_JUL_8_2010), SetQueryConstraint("someString",Set("A"))),
+                  Vsn("id1", Map("bizDate" -> JUL_8_2010_1, "someString" -> "A"), "vsn1"),
+                  Vsn("id2", Map("bizDate" -> JUL_8_2010_2, "someString" -> "A"), "vsn2")
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+
   
   //
   // Aliases
@@ -425,7 +447,6 @@ object AbstractDataDrivenPolicyTest {
   def unbounded(n:String) = UnboundedRangeQueryConstraint(n)
   def dateRange(n:String, lower:DateTime, upper:DateTime) = DateRangeConstraint(n, lower, upper)
   def intRange(n:String, lower:Int, upper:Int) = IntegerRangeConstraint(n, lower, upper)
-
 
   //
   // Type Definitions

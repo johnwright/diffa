@@ -26,7 +26,7 @@ import collection.mutable.HashMap
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.{ConstraintType, AttributesUtil}
-import net.lshift.diffa.kernel.config.CategoryDescriptor
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -60,7 +60,7 @@ class TestEnvironment(val pairKey: String,
 
 
   // Categories
-  val categories = Map("bizDate" -> new CategoryDescriptor("date",ConstraintType.RANGE))
+  val categories = Map("bizDate" -> new RangeCategoryDescriptor("date"))
 
   // Participants' RPC server setup
   participants.startUpstreamServer(upstream)

@@ -29,8 +29,8 @@ import net.lshift.diffa.kernel.differencing.{ConstraintType, DateAttribute, Stri
  */
 class EndpointTest {
 
-  val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
-  val intCategoryDescriptor = new CategoryDescriptor("int", ConstraintType.RANGE)
+  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
+  val intCategoryDescriptor = new RangeCategoryDescriptor("int")
 
   @Test
   def defaultConstraintsForEndpointWithNoCategories = {

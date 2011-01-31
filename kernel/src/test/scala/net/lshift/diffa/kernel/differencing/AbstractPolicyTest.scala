@@ -59,8 +59,8 @@ abstract class AbstractPolicyTest {
   val emptyAttributes:Map[String,TypedAttribute] = Map()
   val emptyStrAttributes:Map[String,String] = Map()
 
-  val dateCategoryDescriptor = new CategoryDescriptor("date", ConstraintType.RANGE)
-  val intCategoryDescriptor = new CategoryDescriptor("int", ConstraintType.RANGE)
+  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
+  val intCategoryDescriptor = new RangeCategoryDescriptor("int")
 
   val pair = new Pair(key=abPair, upstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)), downstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)))
 

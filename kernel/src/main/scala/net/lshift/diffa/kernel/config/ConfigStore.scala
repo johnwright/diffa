@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.{ConstraintType, MatchState, AttributesUtil}
-import net.lshift.diffa.kernel.participants.{ByNameCategoryFunction, CategoryFunction, QueryConstraint, YearlyCategoryFunction}
+import net.lshift.diffa.kernel.participants.{ByNameCategoryFunction, CategoryFunction, QueryConstraint, YearlyCategoryFunction, SetQueryConstraint}
 import net.lshift.diffa.kernel.participants.UnboundedRangeQueryConstraint
 
 trait ConfigStore {
@@ -55,24 +55,43 @@ trait ConfigStore {
  * to be able auto-narrow a category.
  *
  * @param initialValue This is the definitive set of the attributes that an endpoint is able to partition on. This is null for range constraints.
- * @param lower The initial lower bound for a category that can be constrained by range. This is null for set constraints.
- * @param lower The initial upper bound for a category that can be constrained by range. This is null for set constraints.
+ *
  * @param dataType The name of the type for attributes of this category.
  * @param constraintType A enum that indicates whether the category is to be constrained by range or by a set.
  */
-case class CategoryDescriptor(
-  @BeanProperty var initialValue: String = null,
-  @BeanProperty var lower: String = null,
-  @BeanProperty var upper: String = null,
-  @BeanProperty var dataType: String = null,
-  @BeanProperty var constraintType: ConstraintType = ConstraintType.RANGE) {
+abstract case class CategoryDescriptor(
+  @BeanProperty var dataType: String = null) {}
 
-  def this() = this(null, null, null, null, ConstraintType.RANGE)
-  def this(dataType:String,ct:ConstraintType) = this(null, null, null, dataType, ct)
+/**
+ * This describes a category that can be constrained by range.
+ *
+ * @param lower The initial lower bound which will be used for top level queries.
+ * @param upper The initial upper bound which will be used for top level queries.
+ */
+case class RangeCategoryDescriptor(
+  categoryDataType:String,
+  @BeanProperty var lower: String = null,
+  @BeanProperty var upper: String = null) extends CategoryDescriptor(categoryDataType) {
+
+  def this() = this(null,null,null)
+  def this(categoryDataType:String) = this(categoryDataType,null,null)
 }
 
-object CategoryDescriptor {
-  val unconstrainedSetDescriptor = new CategoryDescriptor("string", ConstraintType.SET)
+/**
+ * This describes a category that constrains attributes based on a set of values.
+ *
+ * @params values The set of attribute values that a search space should contain.
+ */
+case class SetCategoryDescriptor(
+  @BeanProperty var values: java.util.Set[String] = new java.util.HashSet[String])
+    extends CategoryDescriptor("string") {
+
+  def this() = this (new java.util.HashSet[String])
+
+  /**
+   * Generates a query constraint from this descriptor.
+   */
+  def queryConstraint(name:String) = SetQueryConstraint(name,values.toSet)
 }
 
 case class Endpoint(
@@ -101,14 +120,14 @@ case class Endpoint(
   def defaultBucketing() : Map[String, CategoryFunction] = {
     categories.map {
       case (name, categoryType) => {
-        if (categoryType.constraintType == ConstraintType.RANGE) {
-          categoryType.dataType match {
-            case "date" => name -> YearlyCategoryFunction
-            case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+        categoryType match {
+          case x:SetCategoryDescriptor   => name -> ByNameCategoryFunction
+          case x:RangeCategoryDescriptor => {
+            categoryType.dataType match {
+              case "date" => name -> YearlyCategoryFunction
+              case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+            }
           }
-        }
-        else {
-          name -> ByNameCategoryFunction
         }
       }
     }.toMap
@@ -121,13 +140,18 @@ case class Endpoint(
   def defaultConstraints() : Seq[QueryConstraint] =
     categories.flatMap({
       case (name, categoryType) => {
-        categoryType.dataType match {
-          case "date" => Some(unconstrainedDate(name))
-          case "int"  => Some(unconstrainedInt(name))
-          // TODO This requires some attention - basically {unconstrainedInt,unconstrainedDate}
-          // route back to UnboundedRangeQueryConstraint, which makes this case statement redundant
-          // and UnboundedRangeQueryConstraint is not a range query anyway
-          case x      => Some(UnboundedRangeQueryConstraint(name))
+        categoryType match {
+          case x:SetCategoryDescriptor   => Some(x.queryConstraint(name))
+          case x:RangeCategoryDescriptor => {
+            categoryType.dataType match {
+              case "date" => Some(unconstrainedDate(name))
+              case "int"  => Some(unconstrainedInt(name))
+              // TODO This requires some attention - basically {unconstrainedInt,unconstrainedDate}
+              // route back to UnboundedRangeQueryConstraint, which makes this case statement redundant
+              // and UnboundedRangeQueryConstraint is not a range query anyway
+              case x      => Some(UnboundedRangeQueryConstraint(name))
+            }
+          }
         }
       }
     }).toList
