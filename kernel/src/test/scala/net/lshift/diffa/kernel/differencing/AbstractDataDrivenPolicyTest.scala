@@ -408,9 +408,9 @@ object AbstractDataDrivenPolicyTest {
 
   @DataPoint def setAndDateScenario = Scenario(
     Pair(key = "gh",
-      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B","C")))),
-      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B","C"))))),
-    AggregateTx(Map("bizDate" -> yearly, "someString" -> byName), Seq(unbounded("bizDate"), SetQueryConstraint("someString",Set("A","B","C"))),
+      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B")))),
+      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B"))))),
+    AggregateTx(Map("bizDate" -> yearly, "someString" -> byName), Seq(unbounded("bizDate"), SetQueryConstraint("someString",Set("A","B"))),
       Bucket("2010_A", Map("bizDate" -> "2010", "someString" -> "A"),
         AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2010, END_2010), SetQueryConstraint("someString",Set("A"))),
           Bucket("2010-07_A", Map("bizDate" -> "2010-07"),
@@ -419,6 +419,19 @@ object AbstractDataDrivenPolicyTest {
                 EntityTx(Seq(dateRange("bizDate", JUL_8_2010, END_JUL_8_2010), SetQueryConstraint("someString",Set("A"))),
                   Vsn("id1", Map("bizDate" -> JUL_8_2010_1, "someString" -> "A"), "vsn1"),
                   Vsn("id2", Map("bizDate" -> JUL_8_2010_2, "someString" -> "A"), "vsn2")
+                )
+              )
+            )
+          )
+        )
+      ),
+      Bucket("2011_B", Map("bizDate" -> "2011", "someString" -> "B"),
+        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2011, END_2011), SetQueryConstraint("someString",Set("B"))),
+          Bucket("2011-01_B", Map("bizDate" -> "2011-01"),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JAN_2011, END_JAN_2011), SetQueryConstraint("someString",Set("B"))),
+              Bucket("2011-01-20_B", Map("bizDate" -> "2011-01-20"),
+                EntityTx(Seq(dateRange("bizDate", JAN_20_2011, END_JAN_20_2011), SetQueryConstraint("someString",Set("A"))),
+                  Vsn("id3", Map("bizDate" -> JAN_20_2011_1, "someString" -> "B"), "vsn3")
                 )
               )
             )
