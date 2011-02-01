@@ -20,9 +20,8 @@ import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
-import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute}
-import org.joda.time.{DateTimeZone, DateTime}
-import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute}
+import org.joda.time.DateTime
+import net.lshift.diffa.kernel.differencing.{DateAttribute, IntegerAttribute}
 
 /**
  * Test cases for the Endpoint class.
