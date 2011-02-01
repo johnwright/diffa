@@ -91,9 +91,14 @@ object Declare extends DiffaTool {
     val cats = new HashMap[String,CategoryDescriptor]
     val categories = line.getOptionValues(key)
     categories.foreach(s => {
+      // TODO This currently doesn't allow for set based constraints, but this utility will be deprecated through [#43]
       var parts = s.split(":")
-      // TODO Hardcoded
-      cats(parts(0)) = new RangeCategoryDescriptor(parts(1))
+      val range = new RangeCategoryDescriptor(parts(1))
+      if (parts.size == 4) {
+        range.lower = parts(2)
+        range.upper = parts(3)
+      }
+      cats(parts(0)) = range
     })
     if (cats.isEmpty) {
       throw new RuntimeException("No categories defined")

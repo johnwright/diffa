@@ -64,7 +64,6 @@ abstract case class NonValueConstraint(c:String) extends BaseQueryConstraint(c) 
 /**
  * This represents an unbounded range constraint, that, when narrowed, turns into a regular RangeQueryConstraint.
  */
-// TODO Strictly speaking, this is not a range query - it could also be a set theory
 case class UnboundedRangeQueryConstraint(override val c:String) extends NonValueConstraint(c) {
 }
 
