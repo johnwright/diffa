@@ -16,6 +16,10 @@
 
 package net.lshift.diffa.kernel.config;
 
+
+/**
+ * This describes a category that can be constrained by range.
+ */
 public class RangeCategoryDescriptor extends CategoryDescriptor {
 
   public RangeCategoryDescriptor() {
@@ -36,7 +40,14 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
     this.upper = upper;
   }
 
+  /**
+   * The initial lower bound which will be used for top level queries.
+   */
   public String lower;
+
+  /**
+   * @param The initial upper bound which will be used for top level queries.
+   */
   public String upper;
 
   public String getLower() {

@@ -19,8 +19,14 @@ package net.lshift.diffa.kernel.config;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * This describes a category that constrains attributes based on a set of values.
+ */
 public class SetCategoryDescriptor extends CategoryDescriptor {
 
+  /**
+   * The set of attribute values that a search space should contain.
+   */
   public Set<String> values = new HashSet<String>();
 
   public SetCategoryDescriptor() {

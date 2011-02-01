@@ -19,6 +19,10 @@ package net.lshift.diffa.kernel.config;
 import org.codehaus.jackson.annotate.JsonSubTypes;
 import org.codehaus.jackson.annotate.JsonTypeInfo;
 
+/**
+ * This provides various endpoint-specific attributes of a category that are necessary for the kernel
+ * to be able auto-narrow a category.
+ */
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.PROPERTY, property="@type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = RangeCategoryDescriptor.class, name = "range"),
@@ -33,6 +37,9 @@ abstract public class CategoryDescriptor {
     this.dataType = dataType;
   }
 
+  /**
+   * The name of the type for attributes of this category.
+   */
   public String dataType;
 
   public String getDataType() {
