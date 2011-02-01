@@ -23,7 +23,7 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants.{ByNameCategoryFunction, CategoryFunction, QueryConstraint, YearlyCategoryFunction, SetQueryConstraint}
-import net.lshift.diffa.kernel.participants.UnboundedRangeQueryConstraint
+import net.lshift.diffa.kernel.participants.{UnboundedRangeQueryConstraint,RangeQueryConstraint}
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -92,14 +92,13 @@ case class Endpoint(
     categories.flatMap({
       case (name, categoryType) => {
         categoryType match {
-          case x:SetCategoryDescriptor   => Some(SetQueryConstraint(name,x.values.toSet))
-          case x:RangeCategoryDescriptor => {
-            categoryType.dataType match {
-              case "date" => Some(unconstrainedDate(name))
-              case "int"  => Some(unconstrainedInt(name))
-              // TODO This requires some attention - basically {unconstrainedInt,unconstrainedDate}
-              // route back to UnboundedRangeQueryConstraint, which makes this case statement redundant
-              case x      => Some(UnboundedRangeQueryConstraint(name))
+          case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, r.values.toSet))
+          case r:RangeCategoryDescriptor => {
+            if (r.lower == null && r.upper == null) {
+              Some(UnboundedRangeQueryConstraint(name))
+            }
+            else {
+              Some(RangeQueryConstraint(name, r.lower, r.upper))
             }
           }
         }
