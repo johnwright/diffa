@@ -40,9 +40,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        // TODO maybe change AttributesUtil
-        val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
-        result += VersionMismatch(label, AttributesUtil.toTypedMap(nameTypeMap, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
+        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
       }
     }}
 
@@ -53,9 +51,7 @@ object DigestDifferencingUtils {
       }
 
       if (!otherMatches) {
-        // TODO maybe change AttributesUtil
-        val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
-        result += VersionMismatch(label, AttributesUtil.toTypedMap(nameTypeMap, hs2Digest.attributes), hs2Digest.lastUpdated, null, hs2Digest.digest)
+        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, hs2Digest.attributes), hs2Digest.lastUpdated, null, hs2Digest.digest)
       }
     }}
 

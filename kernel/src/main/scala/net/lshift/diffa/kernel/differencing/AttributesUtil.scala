@@ -31,9 +31,16 @@ object AttributesUtil {
   def toMap(keys:Iterable[String], attrs:Iterable[String]):Map[String, String] = toMap(keys.toSeq, attrs.toSeq)
   def toMap(keys:Seq[String], attrs:Seq[String]):Map[String, String] = (keys.sorted, attrs).zip.toMap
 
-  def toTypedMap(schema:Map[String, String], attrs:Seq[String]):Map[String, TypedAttribute] = {
+  def schemaToTypedMap(schema:Map[String, String], attrs:Seq[String]):Map[String, TypedAttribute] = {
     (schema.keys.toSeq.sorted, attrs).zip.map { case(name, value) => name -> asTyped(name, value, schema) }.toMap
   }
+
+  def toTypedMap(categories:Map[String, CategoryDescriptor], attrs:Seq[String]):Map[String, TypedAttribute] = {
+    schemaToTypedMap(categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap, attrs)
+  }
+
+  //val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
+
   def asTyped(name:String, value:String, schema:Map[String, String]) = {
     schema(name) match {
       case "int"  => IntegerAttribute(Integer.valueOf(value).intValue)

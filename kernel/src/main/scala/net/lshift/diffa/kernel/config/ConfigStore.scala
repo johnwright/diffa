@@ -66,12 +66,7 @@ case class Endpoint(
    * static schema bound keys because the static attributes
    * are not transmitted over the wire.
    */
-  def schematize(runtimeValues:Seq[String]) = {
-    val staticValues = categories.keySet.toList
-    // TODO
-    val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
-    AttributesUtil.toTypedMap(nameTypeMap, runtimeValues)
-  }
+  def schematize(runtimeValues:Seq[String]) = AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
 
   def defaultBucketing() : Map[String, CategoryFunction] = {
     categories.map {
