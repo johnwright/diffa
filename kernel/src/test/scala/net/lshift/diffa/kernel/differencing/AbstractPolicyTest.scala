@@ -268,11 +268,8 @@ abstract class AbstractPolicyTest {
     pair.downstream.categories = downstreamCategories
     val timestamp = new DateTime
 
-    // TODO
-    val nameTypeMap = downstreamCategories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
-
     expect(store.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn1")).
-      andReturn(Correlation(null, abPair, "id1", toStrMap(downstreamAttributes), nameTypeMap, JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
+      andReturn(Correlation(null, abPair, "id1", toStrMap(downstreamAttributes), AttributesUtil.untypedMap(downstreamCategories), JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
     listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1"); expectLastCall
     replayAll
 

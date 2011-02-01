@@ -99,7 +99,6 @@ case class Endpoint(
               case "int"  => Some(unconstrainedInt(name))
               // TODO This requires some attention - basically {unconstrainedInt,unconstrainedDate}
               // route back to UnboundedRangeQueryConstraint, which makes this case statement redundant
-              // and UnboundedRangeQueryConstraint is not a range query anyway
               case x      => Some(UnboundedRangeQueryConstraint(name))
             }
           }

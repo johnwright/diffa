@@ -36,10 +36,10 @@ object AttributesUtil {
   }
 
   def toTypedMap(categories:Map[String, CategoryDescriptor], attrs:Seq[String]):Map[String, TypedAttribute] = {
-    schemaToTypedMap(categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap, attrs)
+    schemaToTypedMap(untypedMap(categories), attrs)
   }
 
-  //val nameTypeMap = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
+  def untypedMap(categories:Map[String, CategoryDescriptor]) = categories.map{ case (name, categoryType) => name -> categoryType.dataType }.toMap
 
   def asTyped(name:String, value:String, schema:Map[String, String]) = {
     schema(name) match {
