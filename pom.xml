@@ -40,6 +40,7 @@
     <jersey.version>1.4-ea06</jersey.version>
     <jackson.version>1.7.1</jackson.version>
     <lucene.version>3.0.2</lucene.version>
+    <jodatime.version>1.6</jodatime.version>
   </properties>
     
   <dependencyManagement>
@@ -142,7 +143,7 @@
     <dependency>
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
-      <version>1.6</version>
+      <version>${jodatime.version}</version>
     </dependency>    
     <dependency>
       <groupId>joda-time</groupId>
