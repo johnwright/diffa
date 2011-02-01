@@ -43,11 +43,6 @@
     <property name="contentType" column="content_type" type="string" not-null="true"/>
     <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
     <property name="online" type="boolean"/>
-    <!--map name="categories" lazy="false" cascade="all">
-      <key column="id"/>
-      <index column="name" type="string"/>
-      <element column="descriptor" type="net.lshift.diffa.kernel.config.CategoryDescriptor"/>
-    </map-->
     <map name="categories" lazy="false" cascade="all" >
       <key column="id"/>
       <index column="name" type="string"/>
