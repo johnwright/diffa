@@ -92,7 +92,7 @@ case class Endpoint(
     categories.flatMap({
       case (name, categoryType) => {
         categoryType match {
-          case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, r.values.toSet))
+          case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, s.values.toSet))
           case r:RangeCategoryDescriptor => {
             if (r.lower == null && r.upper == null) {
               Some(UnboundedRangeQueryConstraint(name))
