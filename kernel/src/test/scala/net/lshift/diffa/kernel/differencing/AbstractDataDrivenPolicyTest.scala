@@ -267,8 +267,8 @@ object AbstractDataDrivenPolicyTest {
 
   @DataPoint def setOnlyScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("someString" -> SetCategoryDescriptor(Set("A","B","C")))),
-      downstream = new Endpoint(categories = Map("someString" -> SetCategoryDescriptor(Set("A","B","C"))))),
+      upstream = new Endpoint(categories = Map("someString" -> new SetCategoryDescriptor(Set("A","B","C")))),
+      downstream = new Endpoint(categories = Map("someString" -> new SetCategoryDescriptor(Set("A","B","C"))))),
     AggregateTx(Map("someString" -> byName), Seq(SetQueryConstraint("someString",Set("A","B","C"))),
       Bucket("A", Map("someString" -> "A"),
         EntityTx(Seq(SetQueryConstraint("someString", Set("A"))),
@@ -408,8 +408,8 @@ object AbstractDataDrivenPolicyTest {
 
   @DataPoint def setAndDateScenario = Scenario(
     Pair(key = "gh",
-      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B")))),
-      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> SetCategoryDescriptor(Set("A","B"))))),
+      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B")))),
+      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B"))))),
     AggregateTx(Map("bizDate" -> yearly, "someString" -> byName), Seq(unbounded("bizDate"), SetQueryConstraint("someString",Set("A","B"))),
       Bucket("2010_A", Map("bizDate" -> "2010", "someString" -> "A"),
         AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2010, END_2010), SetQueryConstraint("someString",Set("A"))),

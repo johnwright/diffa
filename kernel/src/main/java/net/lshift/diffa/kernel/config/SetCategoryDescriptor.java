@@ -13,11 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.differencing;
 
-/**
- * Defines whether a constraint on a category is a range or a list constraint.
- */
-public enum ConstraintType {
-  RANGE, SET;
+package net.lshift.diffa.kernel.config;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class SetCategoryDescriptor extends CategoryDescriptor {
+
+  public Set<String> values = new HashSet<String>();
+
+  public SetCategoryDescriptor() {
+  }
+
+  public SetCategoryDescriptor(Set<String> values) {
+    super("string");
+    this.values = values;
+  }
+
+  public Set<String> getValues() {
+    return values;
+  }
+
+  public void setValues(Set<String> values) {
+    this.values = values;
+  }
 }

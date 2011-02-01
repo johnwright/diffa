@@ -61,11 +61,8 @@
         <value>true</value>
         <util:map>
           <entry key="bizDate">
-            <bean class="net.lshift.diffa.kernel.config.CategoryDescriptor">
+            <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
               <property name="dataType" value="date"/>
-              <property name="constraintType">
-                <value type="net.lshift.diffa.kernel.differencing.ConstraintType">RANGE</value>
-              </property>
             </bean>
           </entry>
         </util:map>
@@ -86,11 +83,8 @@
         <value>true</value>
         <util:map>
           <entry key="bizDate">
-            <bean class="net.lshift.diffa.kernel.config.CategoryDescriptor">
+            <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
               <property name="dataType" value="date"/>
-              <property name="constraintType">
-                <value type="net.lshift.diffa.kernel.differencing.ConstraintType">RANGE</value>
-              </property>
             </bean>
           </entry>
         </util:map>

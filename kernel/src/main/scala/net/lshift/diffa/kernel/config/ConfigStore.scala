@@ -21,7 +21,7 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
-import net.lshift.diffa.kernel.differencing.{ConstraintType, MatchState, AttributesUtil}
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants.{ByNameCategoryFunction, CategoryFunction, QueryConstraint, YearlyCategoryFunction, SetQueryConstraint}
 import net.lshift.diffa.kernel.participants.UnboundedRangeQueryConstraint
 
@@ -48,50 +48,6 @@ trait ConfigStore {
 
   def getPairsForEndpoint(epName:String):Seq[Pair]
 
-}
-
-/**
- * This provides various endpoint-specific attributes of a category that are necessary for the kernel
- * to be able auto-narrow a category.
- *
- * @param initialValue This is the definitive set of the attributes that an endpoint is able to partition on. This is null for range constraints.
- *
- * @param dataType The name of the type for attributes of this category.
- * @param constraintType A enum that indicates whether the category is to be constrained by range or by a set.
- */
-abstract case class CategoryDescriptor(
-  @BeanProperty var dataType: String = null) {}
-
-/**
- * This describes a category that can be constrained by range.
- *
- * @param lower The initial lower bound which will be used for top level queries.
- * @param upper The initial upper bound which will be used for top level queries.
- */
-case class RangeCategoryDescriptor(
-  categoryDataType:String,
-  @BeanProperty var lower: String = null,
-  @BeanProperty var upper: String = null) extends CategoryDescriptor(categoryDataType) {
-
-  def this() = this(null,null,null)
-  def this(categoryDataType:String) = this(categoryDataType,null,null)
-}
-
-/**
- * This describes a category that constrains attributes based on a set of values.
- *
- * @params values The set of attribute values that a search space should contain.
- */
-case class SetCategoryDescriptor(
-  @BeanProperty var values: java.util.Set[String] = new java.util.HashSet[String])
-    extends CategoryDescriptor("string") {
-
-  def this() = this (new java.util.HashSet[String])
-
-  /**
-   * Generates a query constraint from this descriptor.
-   */
-  def queryConstraint(name:String) = SetQueryConstraint(name,values.toSet)
 }
 
 case class Endpoint(
@@ -141,7 +97,7 @@ case class Endpoint(
     categories.flatMap({
       case (name, categoryType) => {
         categoryType match {
-          case x:SetCategoryDescriptor   => Some(x.queryConstraint(name))
+          case x:SetCategoryDescriptor   => Some(SetQueryConstraint(name,x.values.toSet))
           case x:RangeCategoryDescriptor => {
             categoryType.dataType match {
               case "date" => Some(unconstrainedDate(name))

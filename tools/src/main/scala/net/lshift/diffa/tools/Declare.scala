@@ -23,7 +23,6 @@ import collection.mutable.HashMap
 import collection.mutable.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{RangeCategoryDescriptor,CategoryDescriptor}
-import net.lshift.diffa.kernel.differencing.ConstraintType
 
 /**
  * Utility class for declaring a differencing configuration.

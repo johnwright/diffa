@@ -22,20 +22,6 @@
         "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
 
-  <class name="Endpoint" table="endpoint" abstract="false">
-    <id name="name" type="string"/>
-    <property name="url" type="string" not-null="true" unique="true"/>
-    <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false"/>
-    <property name="contentType" column="content_type" type="string" not-null="true"/>
-    <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
-    <property name="online" type="boolean"/>
-    <map name="categories" lazy="false" cascade="all">
-      <key column="id"/>
-      <index column="name" type="string"/>
-      <element type="net.lshift.diffa.kernel.config.CategoryDescriptor"/>
-    </map>
-  </class>
-
   <class name="CategoryDescriptor" abstract="true">
     <id name="dataType" type="string"/>
     <union-subclass name="RangeCategoryDescriptor" table="range_categories">
@@ -43,11 +29,30 @@
         <property name="lower" column="lower_bound" type="string" not-null="false"/>
     </union-subclass>
     <union-subclass name="SetCategoryDescriptor" table="set_categories">
-        <set name="values" table="set_constraint_values">
+        <set name="values" table="set_constraint_values" lazy="false" cascade="all" order-by="value_name">
           <key column="value_id"/>
           <element column="value_name" type="string" not-null="true"/>
         </set>
     </union-subclass>
+  </class>
+
+  <class name="Endpoint" table="endpoint" abstract="false">
+    <id name="name" type="string"/>
+    <property name="url" type="string" not-null="true" unique="true"/>
+    <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false"/>
+    <property name="contentType" column="content_type" type="string" not-null="true"/>
+    <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
+    <property name="online" type="boolean"/>
+    <!--map name="categories" lazy="false" cascade="all">
+      <key column="id"/>
+      <index column="name" type="string"/>
+      <element column="descriptor" type="net.lshift.diffa.kernel.config.CategoryDescriptor"/>
+    </map-->
+    <map name="categories" lazy="false" cascade="all" >
+      <key column="id"/>
+      <index column="name" type="string"/>
+      <many-to-many column="category_descriptor_id" class="CategoryDescriptor"/>
+    </map>
   </class>
 
   <class name="Pair" table="pair" abstract="false">

@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute}
 import org.joda.time.{DateTimeZone, DateTime}
-import net.lshift.diffa.kernel.differencing.{ConstraintType, DateAttribute, StringAttribute, IntegerAttribute}
+import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute}
 
 /**
  * Test cases for the Endpoint class.

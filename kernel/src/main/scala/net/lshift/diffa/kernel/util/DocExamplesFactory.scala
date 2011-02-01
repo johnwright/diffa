@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
-import net.lshift.diffa.kernel.differencing.{ConstraintType, MatchState, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.

@@ -27,7 +27,7 @@ import net.lshift.diffa.kernel.differencing.MatchState.UNMATCHED
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.differencing.{ConstraintType, SessionEvent, SessionScope}
+import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 
 /**
