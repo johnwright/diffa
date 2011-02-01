@@ -60,8 +60,7 @@ class TestEnvironment(val pairKey: String,
 
 
   // Categories
-  val categories = new java.util.HashMap[String,CategoryDescriptor]
-  categories("bizDate") = new RangeCategoryDescriptor("date")
+  val categories = Map("bizDate" -> new RangeCategoryDescriptor("date"))
   
   // Participants' RPC server setup
   participants.startUpstreamServer(upstream)
