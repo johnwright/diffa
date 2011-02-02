@@ -29,16 +29,16 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
     this.dataType = dataType;
   }
 
-  public RangeCategoryDescriptor(String lower, String upper) {
+  public RangeCategoryDescriptor(String dataType, String lower, String upper) {
+    this(dataType);
     this.lower = lower;
     this.upper = upper;
   }
 
-  public RangeCategoryDescriptor(String dataType, String lower, String upper) {
-    super(dataType);
-    this.lower = lower;
-    this.upper = upper;
-  }
+  /**
+   * The name of the type for attributes of this category.
+   */
+  public String dataType;
 
   /**
    * The initial lower bound which will be used for top level queries.
@@ -49,6 +49,14 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
    * @param The initial upper bound which will be used for top level queries.
    */
   public String upper;
+
+  public String getDataType() {
+    return dataType;
+  }
+
+  public void setDataType(String dataType) {
+    this.dataType = dataType;
+  }
 
   public String getLower() {
     return lower;

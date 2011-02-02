@@ -33,20 +33,13 @@ abstract public class CategoryDescriptor {
   protected CategoryDescriptor() {
   }
 
-  protected CategoryDescriptor(String dataType) {
-    this.dataType = dataType;
+  private int id;
+
+  public int getId() {
+    return id;
   }
 
-  /**
-   * The name of the type for attributes of this category.
-   */
-  public String dataType;
-
-  public String getDataType() {
-    return dataType;
-  }
-
-  public void setDataType(String dataType) {
-    this.dataType = dataType;
+  public void setId(int id) {
+    this.id = id;
   }
 }

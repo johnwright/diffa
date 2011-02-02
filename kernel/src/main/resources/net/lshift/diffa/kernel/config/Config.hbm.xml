@@ -22,18 +22,28 @@
         "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
 
-  <class name="CategoryDescriptor" abstract="true">
-    <id name="dataType" type="string"/>
-    <union-subclass name="RangeCategoryDescriptor" table="range_categories">
+  <class name="CategoryDescriptor" table="category_descriptor" abstract="true">
+    <id name="id" type="int" column="category_id">
+      <generator class="native"/>
+    </id>
+    <discriminator column="constraint_type" type="string"/>
+    <subclass name="RangeCategoryDescriptor" discriminator-value="range">
+      <join table="range_category_descriptor">
+        <key column="id"/>
+        <property name="dataType" type="string"/>
         <property name="upper" column="upper_bound" type="string" not-null="false"/>
         <property name="lower" column="lower_bound" type="string" not-null="false"/>
-    </union-subclass>
-    <union-subclass name="SetCategoryDescriptor" table="set_categories">
-        <set name="values" table="set_constraint_values" lazy="false" cascade="all" order-by="value_name">
-          <key column="value_id"/>
-          <element column="value_name" type="string" not-null="true"/>
-        </set>
-    </union-subclass>
+      </join>
+    </subclass>
+    <subclass name="SetCategoryDescriptor" discriminator-value="set">
+      <set name="values" table="set_constraint_values" lazy="false" cascade="all" order-by="value_name">
+        <key column="value_id"/>
+        <element column="value_name" type="string" not-null="true"/>
+      </set>
+      <join table="set_category_descriptor">
+        <key column="id"/>
+      </join>
+    </subclass>
   </class>
 
   <class name="Endpoint" table="endpoint" abstract="false">

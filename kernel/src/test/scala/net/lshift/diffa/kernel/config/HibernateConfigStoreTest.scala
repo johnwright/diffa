@@ -295,11 +295,12 @@ class HibernateConfigStoreTest {
     val pair = configStore.getPair(PAIR_KEY)
     assertNotNull(pair.upstream.categories)
     assertNotNull(pair.downstream.categories)
-    assertEquals(US_CATEGORY_TYPE, pair.upstream.categories(US_CATEGORY_NAME).dataType)
-    assertEquals(DS_CATEGORY_TYPE, pair.downstream.categories(DS_CATEGORY_NAME).dataType)
-    val descriptor = pair.upstream.categories(US_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
-    assertEquals(US_CATEGORY_LOWER, descriptor.lower)
-    assertEquals(US_CATEGORY_UPPER, descriptor.upper)
+    val us_descriptor = pair.upstream.categories(US_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
+    val ds_descriptor = pair.downstream.categories(DS_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
+    assertEquals(US_CATEGORY_TYPE, us_descriptor.dataType)
+    assertEquals(DS_CATEGORY_TYPE, ds_descriptor.dataType)
+    assertEquals(US_CATEGORY_LOWER, us_descriptor.lower)
+    assertEquals(US_CATEGORY_UPPER, us_descriptor.upper)
   }
 
   @Test

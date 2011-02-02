@@ -72,9 +72,9 @@ case class Endpoint(
     categories.map {
       case (name, categoryType) => {
         categoryType match {
-          case x:SetCategoryDescriptor   => name -> ByNameCategoryFunction
-          case x:RangeCategoryDescriptor => {
-            categoryType.dataType match {
+          case s:SetCategoryDescriptor   => name -> ByNameCategoryFunction
+          case r:RangeCategoryDescriptor => {
+            r.dataType match {
               case "date" => name -> YearlyCategoryFunction
               case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
             }

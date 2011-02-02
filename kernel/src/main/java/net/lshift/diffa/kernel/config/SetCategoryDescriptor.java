@@ -33,7 +33,6 @@ public class SetCategoryDescriptor extends CategoryDescriptor {
   }
 
   public SetCategoryDescriptor(Set<String> values) {
-    super("string");
     this.values = values;
   }
 
