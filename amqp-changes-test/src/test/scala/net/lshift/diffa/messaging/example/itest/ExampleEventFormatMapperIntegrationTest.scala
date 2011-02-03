@@ -26,8 +26,9 @@ import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestCl
 import net.lshift.diffa.kernel.differencing.MatchState.UNMATCHED
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
-import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 
 /**
  * Integration test for change events over AMQP in an example JSON format.
@@ -43,7 +44,7 @@ class ExampleEventFormatMapperIntegrationTest {
     val serverRoot = "http://localhost:19095/diffa-agent"
     val diffClient = new DifferencesRestClient(serverRoot)
     val config = new ConfigurationRestClient(serverRoot)
-    val categories = Map("bizDate" -> "date")
+    val categories = Map("bizDate" -> new RangeCategoryDescriptor("date"))
 
     config.declareGroup("g1")
     config.declareEndpoint("upstream",

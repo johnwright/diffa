@@ -67,7 +67,7 @@ trait CategoryFunction {
 object IndividualCategoryFunction extends CategoryFunction {
   def name = "individual"
   def descend = None
-  def constrain(categoryName:String, partition:String) = new ListQueryConstraint(categoryName, Seq(partition))
+  def constrain(categoryName:String, partition:String) = new SetQueryConstraint(categoryName, Set(partition))
   def shouldBucket() = false
   def owningPartition(value:String) = value
 }

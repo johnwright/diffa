@@ -55,7 +55,7 @@ case class WireConstraint(
   def toQueryConstraint = {
     validate
     if (values != null) {
-      ListQueryConstraint(dataType, values)
+      SetQueryConstraint(dataType, values.toSet)
     }
     else {
       val lower = attributes.get(WireConstraint.LO)
@@ -80,8 +80,8 @@ object WireConstraint {
     WireConstraint(dataType, scala.collection.Map(LO -> lower.toString(), HI -> upper.toString()), null)
   }
 
-  def listConstraint(dataType:String, values:Seq[String]) = {
-    WireConstraint(dataType, new java.util.HashMap, values)
+  def setConstraint(dataType:String, values:Set[String]) = {
+    WireConstraint(dataType, new java.util.HashMap, values.toList)
   }
 
   def unbounded(dataType:String) = {

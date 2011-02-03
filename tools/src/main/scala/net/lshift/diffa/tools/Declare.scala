@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.client.ConfigurationClient
 import collection.mutable.HashMap
 import collection.mutable.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{RangeCategoryDescriptor,CategoryDescriptor}
 
 /**
  * Utility class for declaring a differencing configuration.
@@ -86,12 +87,18 @@ object Declare extends DiffaTool {
   }
 
   // TODO [#2] Add unit test for this
-  def parseCategories(key:String, line:CommandLine) : Map[String,String] = {
-    val cats = new HashMap[String,String]
+  def parseCategories(key:String, line:CommandLine) : Map[String,CategoryDescriptor] = {
+    val cats = new HashMap[String,CategoryDescriptor]
     val categories = line.getOptionValues(key)
     categories.foreach(s => {
+      // TODO This currently doesn't allow for set based constraints, but this utility will be deprecated through [#43]
       var parts = s.split(":")
-      cats(parts(0)) = parts(1)
+      val range = new RangeCategoryDescriptor(parts(1))
+      if (parts.size == 4) {
+        range.lower = parts(2)
+        range.upper = parts(3)
+      }
+      cats(parts(0)) = range
     })
     if (cats.isEmpty) {
       throw new RuntimeException("No categories defined")
