@@ -16,20 +16,21 @@
 
 package net.lshift.diffa.kernel.util
 
-import net.lshift.diffa.kernel.config.{Pair, PairDef, GroupContainer, PairGroup, Endpoint}
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
 import org.joda.time.DateTime
 import scala.collection.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.
  */
 class DocExamplesFactory {
 
-  val up = Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null, null, true, Map("bizDate" -> "date"))
-  val down = Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, null, true, Map("bizDate" -> "date"))
+  val categoryDescriptor = new RangeCategoryDescriptor("date")
+  val up = new Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null, null, true, Map("bizDate" -> categoryDescriptor))
+  val down = new Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, null, true, Map("bizDate" -> categoryDescriptor))
 
   val group = PairGroup("important-group")
   var pair = Pair("pair-id", up, down, group, "correlated", 120)

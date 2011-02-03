@@ -60,7 +60,11 @@
         <value>null</value>
         <value>true</value>
         <util:map>
-          <entry key="bizDate" value="date" />
+          <entry key="bizDate">
+            <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
+              <property name="dataType" value="date"/>
+            </bean>
+          </entry>
         </util:map>
       </list>
     </property>
@@ -78,7 +82,11 @@
         <value>null</value>
         <value>true</value>
         <util:map>
-          <entry key="bizDate" value="date" />
+          <entry key="bizDate">
+            <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
+              <property name="dataType" value="date"/>
+            </bean>
+          </entry>
         </util:map>
       </list>
     </property>

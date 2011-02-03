@@ -18,13 +18,14 @@ package net.lshift.diffa.kernel.differencing
 
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.config.CategoryDescriptor
 
 /**
  * Utility methods for differencing sequences of digests.
  */
 object DigestDifferencingUtils {
 
-  def differenceEntities(categories:Map[String, String],
+  def differenceEntities(categories:Map[String, CategoryDescriptor],
                          ds1:Seq[EntityVersion],
                          ds2:Seq[EntityVersion],
                          constraints:Seq[QueryConstraint]) : Seq[VersionMismatch] = {

@@ -306,7 +306,7 @@
           </remoteTestResources>
         </configuration>
       </plugin>
-      <plugin>
+      <!--plugin>
         <groupId>net.lshift.diffa</groupId>
         <artifactId>diffa-docgen-maven-plugin</artifactId>
         <configuration>
@@ -329,7 +329,7 @@
             </goals>
           </execution>
         </executions>
-      </plugin>
+      </plugin-->
     </plugins>
   </build>
   <reporting>

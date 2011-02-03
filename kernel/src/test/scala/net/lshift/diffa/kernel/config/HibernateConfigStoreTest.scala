@@ -24,6 +24,7 @@ import org.hibernate.exception.ConstraintViolationException
 import org.junit.{Test, Before}
 import scala.collection.Map
 import scala.collection.JavaConversions._
+import org.joda.time.DateTime
 
 class HibernateConfigStoreTest {
   private val configStore: ConfigStore = HibernateConfigStoreTest.configStore
@@ -31,12 +32,18 @@ class HibernateConfigStoreTest {
 
   val US_CATEGORY_NAME = "bizDate"
   val US_CATEGORY_TYPE = "date"
-  val US_CATEGORIES = Map(US_CATEGORY_NAME -> US_CATEGORY_TYPE)
+  val US_CATEGORY_LOWER = new DateTime(1982,4,5,12,13,9,0).toString()
+  val US_CATEGORY_UPPER = new DateTime(1982,4,6,12,13,9,0).toString()
+  val US_CATEGORIES = Map(US_CATEGORY_NAME ->  new RangeCategoryDescriptor(US_CATEGORY_TYPE,US_CATEGORY_LOWER,US_CATEGORY_UPPER))
+  val US_ALT_SET = Set("a","b","c")
+  val US_CATEGORIES_ALT = Map(US_CATEGORY_NAME ->  new SetCategoryDescriptor(US_ALT_SET))
   val DS_CATEGORY_NAME = "someInt"
   val DS_CATEGORY_TYPE = "int"
-  val DS_CATEGORIES = Map(DS_CATEGORY_NAME -> DS_CATEGORY_TYPE)
-  val UPSTREAM_EP = Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
-  val DOWNSTREAM_EP = Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
+  val DS_CATEGORIES = Map(DS_CATEGORY_NAME ->  new RangeCategoryDescriptor(DS_CATEGORY_TYPE))
+  val UPSTREAM_EP = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
+  val UPSTREAM_EP_ALT_NAME = "TEST_UPSTREAM_ALT"
+  val UPSTREAM_EP_ALT = new Endpoint(UPSTREAM_EP_ALT_NAME, "TEST_UPSTREAM_URL_ALT", "application/json", null, null, true, US_CATEGORIES_ALT)
+  val DOWNSTREAM_EP = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
 
   val GROUP_KEY = "TEST_GROUP"
   val GROUP = new PairGroup(GROUP_KEY)
@@ -56,6 +63,7 @@ class HibernateConfigStoreTest {
 
   def declareAll: Unit = {
     configStore.createOrUpdateEndpoint(UPSTREAM_EP)
+    configStore.createOrUpdateEndpoint(UPSTREAM_EP_ALT)
     configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
     configStore.createOrUpdateGroup(GROUP)
     configStore.createOrUpdatePair(PAIR_DEF)
@@ -282,13 +290,26 @@ class HibernateConfigStoreTest {
   }
 
   @Test
-  def testCategories = {
+  def rangeCategory = {
     declareAll
     val pair = configStore.getPair(PAIR_KEY)
     assertNotNull(pair.upstream.categories)
     assertNotNull(pair.downstream.categories)
-    assertEquals(US_CATEGORY_TYPE, pair.upstream.categories(US_CATEGORY_NAME))
-    assertEquals(DS_CATEGORY_TYPE, pair.downstream.categories(DS_CATEGORY_NAME))
+    val us_descriptor = pair.upstream.categories(US_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
+    val ds_descriptor = pair.downstream.categories(DS_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
+    assertEquals(US_CATEGORY_TYPE, us_descriptor.dataType)
+    assertEquals(DS_CATEGORY_TYPE, ds_descriptor.dataType)
+    assertEquals(US_CATEGORY_LOWER, us_descriptor.lower)
+    assertEquals(US_CATEGORY_UPPER, us_descriptor.upper)
+  }
+
+  @Test
+  def setCategory = {
+    declareAll
+    val endpoint = configStore.getEndpoint(UPSTREAM_EP_ALT_NAME)
+    assertNotNull(endpoint.categories)
+    val descriptor = endpoint.categories(US_CATEGORY_NAME).asInstanceOf[SetCategoryDescriptor]
+    assertEquals(US_ALT_SET, descriptor.values.toSet)
   }
 
   @Test

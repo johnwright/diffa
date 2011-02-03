@@ -19,10 +19,11 @@ package net.lshift.diffa.kernel.config
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, YearlyCategoryFunction}
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
+import net.lshift.diffa.kernel.participants.{ByNameCategoryFunction, CategoryFunction, QueryConstraint, YearlyCategoryFunction, SetQueryConstraint}
+import net.lshift.diffa.kernel.participants.{UnboundedRangeQueryConstraint,RangeQueryConstraint}
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -56,24 +57,30 @@ case class Endpoint(
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
   @BeanProperty var online: Boolean = false,
-  @BeanProperty var categories: java.util.Map[String,String] = new HashMap[String, String]) {
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
 
-  def this() = this(null, null, null, null, null, false, new HashMap[String, String])
+  def this() = this(null, null, null, null, null, false, new HashMap[String, CategoryDescriptor])
 
   /**
    * Fuses a list of runtime attributes together with their
    * static schema bound keys because the static attributes
    * are not transmitted over the wire.
    */
-  def schematize(runtimeValues:Seq[String]) = {
-    val staticValues = categories.keySet.toList
-    AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
-  }
+  def schematize(runtimeValues:Seq[String]) = AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
 
   def defaultBucketing() : Map[String, CategoryFunction] = {
     categories.map {
-      case (name, "date") => name -> YearlyCategoryFunction
-      case (name, "int") => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+      case (name, categoryType) => {
+        categoryType match {
+          case s:SetCategoryDescriptor   => name -> ByNameCategoryFunction
+          case r:RangeCategoryDescriptor => {
+            r.dataType match {
+              case "date" => name -> YearlyCategoryFunction
+              case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
+            }
+          }
+        }
+      }
     }.toMap
   }
 
@@ -83,9 +90,19 @@ case class Endpoint(
    */
   def defaultConstraints() : Seq[QueryConstraint] =
     categories.flatMap({
-      case (name, "date") => Some(unconstrainedDate(name))
-      case (name, "int") => Some(unconstrainedInt(name))
-      case _ => None
+      case (name, categoryType) => {
+        categoryType match {
+          case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, s.values.toSet))
+          case r:RangeCategoryDescriptor => {
+            if (r.lower == null && r.upper == null) {
+              Some(UnboundedRangeQueryConstraint(name))
+            }
+            else {
+              Some(RangeQueryConstraint(name, r.lower, r.upper))
+            }
+          }
+        }
+      }
     }).toList
 }
 

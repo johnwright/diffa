@@ -31,7 +31,7 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.apache.lucene.store.{MMapDirectory, FSDirectory, RAMDirectory}
 import java.io.File
 import org.junit.runner.RunWith
-import org.junit.experimental.theories.{Theory, DataPoint, Theories}
+import org.junit.experimental.theories.{DataPoints, Theory, DataPoint, Theories}
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -211,30 +211,28 @@ class LuceneVersionCorrelationStoreTest {
     assertEquals(0, collector.downstreamObjs.size)
   }
 
-  // TODO: [#164] Theorise
-  @Test
-  def queryUpstreamRangeExcludesEarlier = {
-    store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
-    store.storeUpstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")
+  @Theory
+  def queryUpstreamRangeExcludesExcluded(system:AttributeSystem) = {
+    store.storeUpstreamVersion(VersionID(pair, "id1"), system.includedAttrs, DEC_31_2009, "upstreamVsn-id1")
+    store.storeUpstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn-id2")
 
     val collector = new Collector
-    val digests = store.queryUpstreams(pair, List(DateRangeConstraint("bizDate", DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectUpstream)
+    val digests = store.queryUpstreams(pair, system.constraints, collector.collectUpstream)
     assertEquals(
-      List(UpstreamPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")),
+      List(UpstreamPairChangeEvent(VersionID(pair, "id1"), AttributesUtil.toSeqFromTyped(system.includedAttrs), DEC_31_2009, "upstreamVsn-id1")),
       collector.upstreamObjs.toList)
   }
 
-  // TODO: [#164] Theorise
-  @Test
-  def queryUpstreamRangeExcludesLater = {
-    store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
-    store.storeUpstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")
+  @Theory
+  def queryDownstreamRangeExcludesExcluded(system:AttributeSystem) = {
+    store.storeDownstreamVersion(VersionID(pair, "id1"), system.includedAttrs, DEC_31_2009, "upstreamVsn-id1", "downstreamVsn-id1")
+    store.storeDownstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn-id2", "downstreamVsn-id1")
 
     val collector = new Collector
-    val digests = store.queryUpstreams(pair, List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    val digests = store.queryDownstreams(pair, system.constraints, collector.collectDownstream)
     assertEquals(
-      List(UpstreamPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")),
-      collector.upstreamObjs.toList)
+      List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id1"), AttributesUtil.toSeqFromTyped(system.includedAttrs), DEC_31_2009, "upstreamVsn-id1", "downstreamVsn-id1")),
+      collector.downstreamObjs.toList)
   }
 
   @Test
@@ -249,32 +247,6 @@ class LuceneVersionCorrelationStoreTest {
         UpstreamPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6"),
         UpstreamPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")),
       collector.upstreamObjs.toList)
-  }
-
-  // TODO: [#164] Theorise
-  @Test
-  def queryDownstreamRangeExcludesEarlier = {
-    store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
-    store.storeDownstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
-
-    val collector = new Collector
-    val digests = store.queryDownstreams(pair, List(DateRangeConstraint("bizDate", DEC_2_2009, endOfDay(DEC_2_2009))), collector.collectDownstream)
-    assertEquals(
-      List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
-      collector.downstreamObjs.toList)
-  }
-
-  // TODO: [#164] Theorise
-  @Test
-  def queryDownstreamRangeExcludesLater = {
-    store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
-    store.storeDownstreamVersion(VersionID(pair, "id7"), bizDateMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
-
-    val collector = new Collector
-    val digests = store.queryDownstreams(pair, List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
-    assertEquals(
-      List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")),
-      collector.downstreamObjs.toList)
   }
 
   @Test
@@ -368,27 +340,41 @@ object LuceneVersionCorrelationStoreTest {
   def bizDateSeq(d:DateTime) = Seq(d.toString())
   def bizDateMap(d:DateTime) = Map("bizDate" -> DateAttribute(d))
   def intMap(i:Int) = Map("someInt" -> IntegerAttribute(i))
+  def stringMap(s:String) = Map("someString" -> StringAttribute(s))
 
   // Standard attribute/constraint definitions
   private val dateAttributes = bizDateMap(JUL_1_2010_1)
-  private val excludedDateAttributes = bizDateMap(AUG_11_2010_1)
+  private val excludedByEarlierDateAttributes = bizDateMap(FEB_15_2010)
+  private val excludedByLaterDateAttributes = bizDateMap(AUG_11_2010_1)
   private val dateConstraints = Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010))
   private val noDateConstraint = Seq(NoConstraint("bizDate"))
+
   private val intAttributes = intMap(2500)
   private val excludedIntAttributes = intMap(20000)
   private val intConstraints = Seq(IntegerRangeConstraint("someInt", 2000, 2999))
-  private val stringAttributes = Map("someString" -> StringAttribute("abc"))
-  private val excludedStringAttributes = Map("someString" -> StringAttribute("def"))
+  private val stringAttributes = stringMap("abc")
+  private val excludedStringAttributes = stringMap("def")
   private val stringConstraints = Seq(PrefixQueryConstraint("someString", "ab"))
+  private val setConstraints = Seq(SetQueryConstraint("someString", Set("abc","abc123","abcdef")))
 
   // Defines a testable combination of constraints/attributes the store should be able to handle
   case class AttributeSystem(constraints:Seq[QueryConstraint], includedAttrs:Map[String, TypedAttribute], excludedAttrs:Map[String, TypedAttribute]) {
     def includedStrAttrs = includedAttrs.map { case (k, v) => k -> v.value }.toMap
     def excludedStrAttrs = excludedAttrs.map { case (k, v) => k -> v.value }.toMap
   }
-  @DataPoint def dates = AttributeSystem(dateConstraints, dateAttributes, excludedDateAttributes)
+
+  @DataPoints def dates = Array(
+    AttributeSystem(dateConstraints, dateAttributes, excludedByLaterDateAttributes),
+    AttributeSystem(dateConstraints, dateAttributes, excludedByEarlierDateAttributes)
+  )
   @DataPoint def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
   @DataPoint def strings = AttributeSystem(stringConstraints, stringAttributes, excludedStringAttributes)
+  @DataPoint def set = AttributeSystem(setConstraints, stringAttributes, excludedStringAttributes)
+  @DataPoints def setAndDates = Array(
+    AttributeSystem(dateConstraints ++ setConstraints, dateAttributes ++ stringAttributes, excludedByLaterDateAttributes ++ excludedStringAttributes),
+    AttributeSystem(dateConstraints ++ setConstraints, dateAttributes ++ stringAttributes, dateAttributes ++ excludedStringAttributes),
+    AttributeSystem(dateConstraints ++ setConstraints, dateAttributes ++ stringAttributes, excludedByLaterDateAttributes ++ stringAttributes)
+  )
 
   def flushStore = {
     indexer.reset

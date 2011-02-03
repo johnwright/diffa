@@ -45,8 +45,8 @@ abstract case class BaseQueryConstraint(category:String) extends QueryConstraint
 /**
  *  This type of constraint is to be interpreted as a set of values to constrain with.
  */
-case class ListQueryConstraint(c:String, values:Seq[String]) extends BaseQueryConstraint(c) {
-  def wireFormat() = listConstraint(category, values)
+case class SetQueryConstraint(c:String, values:Set[String]) extends BaseQueryConstraint(c) {
+  def wireFormat() = setConstraint(category, values)
 }
 
 /**

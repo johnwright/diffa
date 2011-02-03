@@ -35,9 +35,9 @@ class WireConstraintTest {
 
   @Test
   def listToWireAndBack = {
-    val list = Seq("1","2","3")
-    val constraint = ListQueryConstraint("date", list)
-    val expectation = listConstraint("date", list)
+    val list = Set("1","2","3")
+    val constraint = SetQueryConstraint("date", list)
+    val expectation = setConstraint("date", list)
     roundTrip(expectation, constraint)
   }
 

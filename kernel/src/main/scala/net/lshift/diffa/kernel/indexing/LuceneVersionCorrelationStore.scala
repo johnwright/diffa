@@ -170,7 +170,11 @@ class LuceneVersionCorrelationStore(index:Directory)
         val wq = new WildcardQuery(new Term(prefix + s.category, s.prefix + "*"))
         query.add(wq, BooleanClause.Occur.MUST)
       }
-      case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
+      case s:SetQueryConstraint  => {
+        val setMatchQuery = new BooleanQuery
+        s.values.foreach(x => setMatchQuery.add(new TermQuery(new Term(prefix + s.category, x)), BooleanClause.Occur.SHOULD))
+        query.add(setMatchQuery, BooleanClause.Occur.MUST)
+      }
     }
   }
 
