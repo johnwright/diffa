@@ -30,43 +30,51 @@ class HibernateConfigStoreTest {
   private val configStore: ConfigStore = HibernateConfigStoreTest.configStore
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
-  val US_CATEGORY_NAME = "bizDate"
-  val US_CATEGORY_TYPE = "date"
-  val US_CATEGORY_LOWER = new DateTime(1982,4,5,12,13,9,0).toString()
-  val US_CATEGORY_UPPER = new DateTime(1982,4,6,12,13,9,0).toString()
-  val US_CATEGORIES = Map(US_CATEGORY_NAME ->  new RangeCategoryDescriptor(US_CATEGORY_TYPE,US_CATEGORY_LOWER,US_CATEGORY_UPPER))
-  val US_ALT_SET = Set("a","b","c")
-  val US_CATEGORIES_ALT = Map(US_CATEGORY_NAME ->  new SetCategoryDescriptor(US_ALT_SET))
-  val DS_CATEGORY_NAME = "someInt"
-  val DS_CATEGORY_TYPE = "int"
-  val DS_CATEGORIES = Map(DS_CATEGORY_NAME ->  new RangeCategoryDescriptor(DS_CATEGORY_TYPE))
-  val UPSTREAM_EP = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
-  val UPSTREAM_EP_ALT_NAME = "TEST_UPSTREAM_ALT"
-  val UPSTREAM_EP_ALT = new Endpoint(UPSTREAM_EP_ALT_NAME, "TEST_UPSTREAM_URL_ALT", "application/json", null, null, true, US_CATEGORIES_ALT)
-  val DOWNSTREAM_EP = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
+  val dateCategoryName = "bizDate"
+  val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
+  val dateCategoryUpper = new DateTime(1982,4,6,12,13,9,0).toString()
+  val dateRangeCategoriesMap =
+    Map(dateCategoryName ->  new RangeCategoryDescriptor("date",dateCategoryLower,dateCategoryUpper))
 
-  val GROUP_KEY = "TEST_GROUP"
-  val GROUP = new PairGroup(GROUP_KEY)
-  val VP_NAME = "TEST_VPNAME"
-  val MATCHING_TIMEOUT = 120
-  val VP_NAME_ALT = "TEST_VPNAME_ALT"
-  val PAIR_KEY = "TEST_PAIR"
-  val PAIR_DEF = new PairDef(PAIR_KEY, VP_NAME, MATCHING_TIMEOUT, UPSTREAM_EP.name,
-    DOWNSTREAM_EP.name, GROUP_KEY)
+  val setCategoryValues = Set("a","b","c")
+  val setCategoriesMap = Map(dateCategoryName ->  new SetCategoryDescriptor(setCategoryValues))
 
-  val GROUP_KEY_ALT = "TEST_GROUP2"
-  val UPSTREAM_RENAMED = "TEST_UPSTREAM_RENAMED"
-  val GROUP_RENAMED = "TEST_GROUP_RENAMED"
-  val PAIR_RENAMED = "TEST_PAIR_RENAMED"
+  val intCategoryName = "someInt"
+  val stringCategoryName = "someString"
+
+  val intCategoryType = "int"
+  val intRangeCategoriesMap = Map(intCategoryName ->  new RangeCategoryDescriptor(intCategoryType))
+
+  val stringPrefixCategoriesMap = Map(stringCategoryName -> new PrefixCategoryDescriptor(1, 3, 1))
+
+  val upstream1 = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, dateRangeCategoriesMap)
+  val upstream2 = new Endpoint("TEST_UPSTREAM_ALT", "TEST_UPSTREAM_URL_ALT", "application/json", null, null, true, setCategoriesMap)
+  val downstream1 = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, intRangeCategoriesMap)
+  val downstream2 = new Endpoint("TEST_DOWNSTREAM_ALT", "TEST_DOWNSTREAM_URL_ALT", "application/json", null, null, true, stringPrefixCategoriesMap)
+
+  val groupKey1 = "TEST_GROUP"
+  val group = new PairGroup(groupKey1)
+  val versionPolicyName1 = "TEST_VPNAME"
+  val matchingTimeout = 120
+  val versionPolicyName2 = "TEST_VPNAME_ALT"
+  val pairKey = "TEST_PAIR"
+  val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
+    downstream1.name, groupKey1)
+
+  val groupKey2 = "TEST_GROUP2"
+  val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
+  val groupRenamed = "TEST_GROUP_RENAMED"
+  val pairRenamed = "TEST_PAIR_RENAMED"
 
   val TEST_USER = User("foo","foo@bar.com")
 
   def declareAll: Unit = {
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP_ALT)
-    configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
-    configStore.createOrUpdateGroup(GROUP)
-    configStore.createOrUpdatePair(PAIR_DEF)
+    configStore.createOrUpdateEndpoint(upstream1)
+    configStore.createOrUpdateEndpoint(upstream2)
+    configStore.createOrUpdateEndpoint(downstream1)
+    configStore.createOrUpdateEndpoint(downstream2)
+    configStore.createOrUpdateGroup(group)
+    configStore.createOrUpdatePair(pairDef)
   }
 
   @Before
@@ -92,101 +100,101 @@ class HibernateConfigStoreTest {
   @Test
   def testDeclare: Unit = {
     // Declare endpoints
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    exists(UPSTREAM_EP, 1)
+    configStore.createOrUpdateEndpoint(upstream1)
+    exists(upstream1, 1)
 
-    configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
-    exists(DOWNSTREAM_EP, 2)
+    configStore.createOrUpdateEndpoint(downstream1)
+    exists(downstream1, 2)
 
     // Declare a group
-    configStore.createOrUpdateGroup(GROUP)
+    configStore.createOrUpdateGroup(group)
     val retrGroups = configStore.listGroups
     assertEquals(1, retrGroups.length)
-    assertEquals(GROUP_KEY, retrGroups.first.group.key)
+    assertEquals(groupKey1, retrGroups.first.group.key)
     assertEquals(0, retrGroups.first.pairs.length)
 
     // Declare a pair
-    configStore.createOrUpdatePair(PAIR_DEF)
+    configStore.createOrUpdatePair(pairDef)
     val retrGroups2 = configStore.listGroups
     assertEquals(1, retrGroups2.length)
     assertEquals(1, retrGroups2.first.pairs.length)
     val retrPair = retrGroups2.first.pairs.first
-    assertEquals(PAIR_KEY, retrPair.key)
-    assertEquals(UPSTREAM_EP.name, retrPair.upstream.name)
-    assertEquals(DOWNSTREAM_EP.name, retrPair.downstream.name)
-    assertEquals(GROUP_KEY, retrPair.group.key)
-    assertEquals(VP_NAME, retrPair.versionPolicyName)
-    assertEquals(MATCHING_TIMEOUT, retrPair.matchingTimeout)
+    assertEquals(pairKey, retrPair.key)
+    assertEquals(upstream1.name, retrPair.upstream.name)
+    assertEquals(downstream1.name, retrPair.downstream.name)
+    assertEquals(groupKey1, retrPair.group.key)
+    assertEquals(versionPolicyName1, retrPair.versionPolicyName)
+    assertEquals(matchingTimeout, retrPair.matchingTimeout)
   }
 
   @Test
   def testUpdateEndpoint: Unit = {
     // Create endpoint
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    exists(UPSTREAM_EP, 1)
+    configStore.createOrUpdateEndpoint(upstream1)
+    exists(upstream1, 1)
 
-    configStore.deleteEndpoint(UPSTREAM_EP.name)
+    configStore.deleteEndpoint(upstream1.name)
     expectMissingObject("endpoint") {
-      configStore.getEndpoint(UPSTREAM_EP.name)
+      configStore.getEndpoint(upstream1.name)
     }
         
     // Change its name
-    configStore.createOrUpdateEndpoint(Endpoint(UPSTREAM_RENAMED, UPSTREAM_EP.url, "application/json", "changes", "application/json", true))
+    configStore.createOrUpdateEndpoint(Endpoint(upstreamRenamed, upstream1.url, "application/json", "changes", "application/json", true))
 
-    val retrieved = configStore.getEndpoint(UPSTREAM_RENAMED)
-    assertEquals(UPSTREAM_RENAMED, retrieved.name)
+    val retrieved = configStore.getEndpoint(upstreamRenamed)
+    assertEquals(upstreamRenamed, retrieved.name)
     assertTrue(retrieved.online)
   }
 
   @Test
   def testUpdatePair: Unit = {
     declareAll
-    configStore.createOrUpdateGroup(new PairGroup(GROUP_KEY_ALT))
+    configStore.createOrUpdateGroup(new PairGroup(groupKey2))
 
     // Rename, change a few fields and swap endpoints by deleting and creating new
-    configStore.deletePair(PAIR_KEY)
+    configStore.deletePair(pairKey)
     expectMissingObject("pair") {
-      configStore.getPair(PAIR_KEY)
+      configStore.getPair(pairKey)
     }
 
-    configStore.createOrUpdatePair(new PairDef(PAIR_RENAMED, VP_NAME_ALT, Pair.NO_MATCHING,
-      DOWNSTREAM_EP.name, UPSTREAM_EP.name, GROUP_KEY_ALT))
+    configStore.createOrUpdatePair(new PairDef(pairRenamed, versionPolicyName2, Pair.NO_MATCHING,
+      downstream1.name, upstream1.name, groupKey2))
     
-    val retrieved = configStore.getPair(PAIR_RENAMED)
-    assertEquals(PAIR_RENAMED, retrieved.key)
-    assertEquals(DOWNSTREAM_EP.name, retrieved.upstream.name) // check endpoints are swapped
-    assertEquals(UPSTREAM_EP.name, retrieved.downstream.name)
-    assertEquals(VP_NAME_ALT, retrieved.versionPolicyName)
+    val retrieved = configStore.getPair(pairRenamed)
+    assertEquals(pairRenamed, retrieved.key)
+    assertEquals(downstream1.name, retrieved.upstream.name) // check endpoints are swapped
+    assertEquals(upstream1.name, retrieved.downstream.name)
+    assertEquals(versionPolicyName2, retrieved.versionPolicyName)
     assertEquals(Pair.NO_MATCHING, retrieved.matchingTimeout)
   }
 
   @Test
   def testUpdateGroup: Unit = {
     // Create a group
-    configStore.createOrUpdateGroup(GROUP)
+    configStore.createOrUpdateGroup(group)
 
     // Rename it by deleting and re-creating
-    configStore.deleteGroup(GROUP.key)
+    configStore.deleteGroup(group.key)
     expectMissingObject("group") {
-      configStore.getGroup(GROUP.key)
+      configStore.getGroup(group.key)
     }
-    configStore.createOrUpdateGroup(new PairGroup(GROUP_RENAMED))
+    configStore.createOrUpdateGroup(new PairGroup(groupRenamed))
 
-    val retrieved = configStore.getGroup(GROUP_RENAMED)
-    assertEquals(GROUP_RENAMED, retrieved.key)
+    val retrieved = configStore.getGroup(groupRenamed)
+    assertEquals(groupRenamed, retrieved.key)
   }
 
   @Test
   def testDeleteEndpointCascade: Unit = {
     declareAll
 
-    assertEquals(UPSTREAM_EP.name, configStore.getEndpoint(UPSTREAM_EP.name).name)
-    configStore.deleteEndpoint(UPSTREAM_EP.name)
+    assertEquals(upstream1.name, configStore.getEndpoint(upstream1.name).name)
+    configStore.deleteEndpoint(upstream1.name)
     expectMissingObject("endpoint") {
-      configStore.getEndpoint(UPSTREAM_EP.name)
+      configStore.getEndpoint(upstream1.name)
     }
     expectMissingObject("pair") {
-      configStore.getPair(PAIR_KEY) // delete should cascade
+      configStore.getPair(pairKey) // delete should cascade
     }
   }
 
@@ -194,10 +202,10 @@ class HibernateConfigStoreTest {
   def testDeletePair: Unit = {
     declareAll
 
-    assertEquals(PAIR_KEY, configStore.getPair(PAIR_KEY).key)
-    configStore.deletePair(PAIR_KEY)
+    assertEquals(pairKey, configStore.getPair(pairKey).key)
+    configStore.deletePair(pairKey)
     expectMissingObject("pair") {
-      configStore.getPair(PAIR_KEY)
+      configStore.getPair(pairKey)
     }
   }
 
@@ -205,13 +213,13 @@ class HibernateConfigStoreTest {
   def testDeleteGroupCascade: Unit = {
     declareAll
 
-    assertEquals(GROUP_KEY, configStore.getGroup(GROUP_KEY).key)
-    configStore.deleteGroup(GROUP_KEY)
+    assertEquals(groupKey1, configStore.getGroup(groupKey1).key)
+    configStore.deleteGroup(groupKey1)
     expectMissingObject("group") {
-      configStore.getGroup(GROUP_KEY)
+      configStore.getGroup(groupKey1)
     }
     expectMissingObject("pair") {
-      configStore.getPair(PAIR_KEY) // delete should cascade
+      configStore.getPair(pairKey) // delete should cascade
     }
   }
 
@@ -232,84 +240,95 @@ class HibernateConfigStoreTest {
 
   @Test
   def testDeclarePairNullConstraints: Unit = {
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
-    configStore.createOrUpdateGroup(GROUP)
+    configStore.createOrUpdateEndpoint(upstream1)
+    configStore.createOrUpdateEndpoint(downstream1)
+    configStore.createOrUpdateGroup(group)
 
       // TODO: We should probably get an exception indicating that the constraint was null, not that the object
       //       we're linking to is missing.
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, null, DOWNSTREAM_EP.name, GROUP_KEY))
+      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, null, downstream1.name, groupKey1))
     }
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, UPSTREAM_EP.name, null, GROUP_KEY))
+      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null, groupKey1))
     }
     expectMissingObject("group") {
-      configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME, Pair.NO_MATCHING, UPSTREAM_EP.name, DOWNSTREAM_EP.name, null))
+      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, downstream1.name, null))
     }
   }
 
   @Test
   def testRedeclareEndpointSucceeds = {
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    configStore.createOrUpdateEndpoint(Endpoint(UPSTREAM_EP.name, "DIFFERENT_URL", "application/json", "changes", "application/json", false))
+    configStore.createOrUpdateEndpoint(upstream1)
+    configStore.createOrUpdateEndpoint(Endpoint(upstream1.name, "DIFFERENT_URL", "application/json", "changes", "application/json", false))
     assertEquals(1, configStore.listEndpoints.length)
-    assertEquals("DIFFERENT_URL", configStore.getEndpoint(UPSTREAM_EP.name).url)
+    assertEquals("DIFFERENT_URL", configStore.getEndpoint(upstream1.name).url)
   }
 
   @Test
   def testQueryingForAssociatedPairsReturnsNothingForUnusedEndpoint {
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    assertEquals(0, configStore.getPairsForEndpoint(UPSTREAM_EP.name).length)
+    configStore.createOrUpdateEndpoint(upstream1)
+    assertEquals(0, configStore.getPairsForEndpoint(upstream1.name).length)
   }
 
   @Test
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsUpstream {
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
-    configStore.createOrUpdateGroup(new PairGroup(GROUP_KEY))
-    configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME_ALT, Pair.NO_MATCHING,
-                                               UPSTREAM_EP.name, DOWNSTREAM_EP.name, GROUP_KEY))
+    configStore.createOrUpdateEndpoint(upstream1)
+    configStore.createOrUpdateEndpoint(downstream1)
+    configStore.createOrUpdateGroup(new PairGroup(groupKey1))
+    configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName2, Pair.NO_MATCHING,
+                                               upstream1.name, downstream1.name, groupKey1))
 
-    val res = configStore.getPairsForEndpoint(UPSTREAM_EP.name)
+    val res = configStore.getPairsForEndpoint(upstream1.name)
     assertEquals(1, res.length)
-    assertEquals(PAIR_KEY, res(0).key)
+    assertEquals(pairKey, res(0).key)
   }
 
   @Test
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsDownstream {
-    configStore.createOrUpdateEndpoint(UPSTREAM_EP)
-    configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
-    configStore.createOrUpdateGroup(new PairGroup(GROUP_KEY))
-    configStore.createOrUpdatePair(new PairDef(PAIR_KEY, VP_NAME_ALT, Pair.NO_MATCHING,
-                                               UPSTREAM_EP.name, DOWNSTREAM_EP.name, GROUP_KEY))
+    configStore.createOrUpdateEndpoint(upstream1)
+    configStore.createOrUpdateEndpoint(downstream1)
+    configStore.createOrUpdateGroup(new PairGroup(groupKey1))
+    configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName2, Pair.NO_MATCHING,
+                                               upstream1.name, downstream1.name, groupKey1))
 
-    val res = configStore.getPairsForEndpoint(DOWNSTREAM_EP.name)
+    val res = configStore.getPairsForEndpoint(downstream1.name)
     assertEquals(1, res.length)
-    assertEquals(PAIR_KEY, res(0).key)
+    assertEquals(pairKey, res(0).key)
   }
 
   @Test
   def rangeCategory = {
     declareAll
-    val pair = configStore.getPair(PAIR_KEY)
+    val pair = configStore.getPair(pairKey)
     assertNotNull(pair.upstream.categories)
     assertNotNull(pair.downstream.categories)
-    val us_descriptor = pair.upstream.categories(US_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
-    val ds_descriptor = pair.downstream.categories(DS_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
-    assertEquals(US_CATEGORY_TYPE, us_descriptor.dataType)
-    assertEquals(DS_CATEGORY_TYPE, ds_descriptor.dataType)
-    assertEquals(US_CATEGORY_LOWER, us_descriptor.lower)
-    assertEquals(US_CATEGORY_UPPER, us_descriptor.upper)
+    val us_descriptor = pair.upstream.categories(dateCategoryName).asInstanceOf[RangeCategoryDescriptor]
+    val ds_descriptor = pair.downstream.categories(intCategoryName).asInstanceOf[RangeCategoryDescriptor]
+    assertEquals("date", us_descriptor.dataType)
+    assertEquals(intCategoryType, ds_descriptor.dataType)
+    assertEquals(dateCategoryLower, us_descriptor.lower)
+    assertEquals(dateCategoryUpper, us_descriptor.upper)
   }
 
   @Test
   def setCategory = {
     declareAll
-    val endpoint = configStore.getEndpoint(UPSTREAM_EP_ALT_NAME)
+    val endpoint = configStore.getEndpoint(upstream2.name)
     assertNotNull(endpoint.categories)
-    val descriptor = endpoint.categories(US_CATEGORY_NAME).asInstanceOf[SetCategoryDescriptor]
-    assertEquals(US_ALT_SET, descriptor.values.toSet)
+    val descriptor = endpoint.categories(dateCategoryName).asInstanceOf[SetCategoryDescriptor]
+    assertEquals(setCategoryValues, descriptor.values.toSet)
+  }
+
+  @Test
+  def prefixCategory = {
+    declareAll
+    val endpoint = configStore.getEndpoint(downstream2.name)
+    assertNotNull(endpoint.categories)
+    val descriptor = endpoint.categories(stringCategoryName).asInstanceOf[PrefixCategoryDescriptor]
+    assertEquals(1, descriptor.prefixLength)
+    assertEquals(3, descriptor.maxLength)
+    assertEquals(1, descriptor.step)
   }
 
   @Test
