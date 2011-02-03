@@ -166,6 +166,10 @@ class LuceneVersionCorrelationStore(index:Directory)
         }
         query.add(tq, BooleanClause.Occur.MUST)
       }
+      case s:PrefixQueryConstraint => {
+        val wq = new WildcardQuery(new Term(prefix + s.category, s.prefix + "*"))
+        query.add(wq, BooleanClause.Occur.MUST)
+      }
       case l:ListQueryConstraint  => throw new RuntimeException("ListQueryConstraint not yet implemented")
     }
   }

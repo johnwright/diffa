@@ -377,6 +377,9 @@ object LuceneVersionCorrelationStoreTest {
   private val intAttributes = intMap(2500)
   private val excludedIntAttributes = intMap(20000)
   private val intConstraints = Seq(IntegerRangeConstraint("someInt", 2000, 2999))
+  private val stringAttributes = Map("someString" -> StringAttribute("abc"))
+  private val excludedStringAttributes = Map("someString" -> StringAttribute("def"))
+  private val stringConstraints = Seq(PrefixQueryConstraint("someString", "ab"))
 
   // Defines a testable combination of constraints/attributes the store should be able to handle
   case class AttributeSystem(constraints:Seq[QueryConstraint], includedAttrs:Map[String, TypedAttribute], excludedAttrs:Map[String, TypedAttribute]) {
@@ -385,6 +388,7 @@ object LuceneVersionCorrelationStoreTest {
   }
   @DataPoint def dates = AttributeSystem(dateConstraints, dateAttributes, excludedDateAttributes)
   @DataPoint def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
+  @DataPoint def strings = AttributeSystem(stringConstraints, stringAttributes, excludedStringAttributes)
 
   def flushStore = {
     indexer.reset
