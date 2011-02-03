@@ -37,7 +37,7 @@ trait CategoryFunction {
   /**
    * Descends into a more fine-grained partitioning mechanism.
    *
-   * If this function returns None, then no more finer grained partitioning is possible.
+   * If this function returns None, then finer-grained partitioning is not possible.
    * This occurs for example when trying to descend using a category function for an individual entity.   
    */
   def descend : Option[CategoryFunction]

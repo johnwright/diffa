@@ -22,8 +22,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
-import net.lshift.diffa.kernel.participants.{ByNameCategoryFunction, CategoryFunction, QueryConstraint, YearlyCategoryFunction, SetQueryConstraint}
-import net.lshift.diffa.kernel.participants.{UnboundedRangeQueryConstraint,RangeQueryConstraint}
+import net.lshift.diffa.kernel.participants._
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -79,6 +78,7 @@ case class Endpoint(
               case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
             }
           }
+          case p:PrefixCategoryDescriptor => name -> StringPrefixCategoryFunction(p.prefixLength, p.maxLength, p.step)
         }
       }
     }.toMap
@@ -101,6 +101,7 @@ case class Endpoint(
               Some(RangeQueryConstraint(name, r.lower, r.upper))
             }
           }
+          case p:PrefixCategoryDescriptor => Some(UnboundedRangeQueryConstraint(name))
         }
       }
     }).toList
