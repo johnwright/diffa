@@ -30,24 +30,30 @@ class HibernateConfigStoreTest {
   private val configStore: ConfigStore = HibernateConfigStoreTest.configStore
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
-  val US_CATEGORY_NAME = "bizDate"
-  val US_CATEGORY_TYPE = "date"
-  val US_CATEGORY_LOWER = new DateTime(1982,4,5,12,13,9,0).toString()
-  val US_CATEGORY_UPPER = new DateTime(1982,4,6,12,13,9,0).toString()
-  val US_CATEGORIES = Map(US_CATEGORY_NAME ->  new RangeCategoryDescriptor(US_CATEGORY_TYPE,US_CATEGORY_LOWER,US_CATEGORY_UPPER))
-  val US_ALT_SET = Set("a","b","c")
-  val US_CATEGORIES_ALT = Map(US_CATEGORY_NAME ->  new SetCategoryDescriptor(US_ALT_SET))
-  val DS_CATEGORY_NAME = "someInt"
-  val DS_CATEGORY_NAME_ALT = "someString"
-  val DS_CATEGORY_TYPE = "int"
-  val DS_CATEGORIES = Map(DS_CATEGORY_NAME ->  new RangeCategoryDescriptor(DS_CATEGORY_TYPE))
-  val DS_CATEGORIES_ALT = Map(DS_CATEGORY_NAME_ALT -> new PrefixCategoryDescriptor(1, 3, 1))
-  val UPSTREAM_EP = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
-  val UPSTREAM_EP_ALT_NAME = "TEST_UPSTREAM_ALT"
-  val UPSTREAM_EP_ALT = new Endpoint(UPSTREAM_EP_ALT_NAME, "TEST_UPSTREAM_URL_ALT", "application/json", null, null, true, US_CATEGORIES_ALT)
-  val DOWNSTREAM_EP = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
-  val DOWNSTREAM_EP_ALT_NAME = "TEST_DOWNSTREAM_ALT"
-  val DOWNSTREAM_EP_ALT = new Endpoint(DOWNSTREAM_EP_ALT_NAME, "TEST_DOWNSTREAM_URL_ALT", "application/json", null, null, true, DS_CATEGORIES_ALT)
+  val dateCategoryName = "bizDate"
+  val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
+  val dateCategoryUpper = new DateTime(1982,4,6,12,13,9,0).toString()
+  val dateRangeCategoriesMap =
+    Map(dateCategoryName ->  new RangeCategoryDescriptor("date",dateCategoryLower,dateCategoryUpper))
+
+  val setCategoryValues = Set("a","b","c")
+  val setCategoriesMap = Map(dateCategoryName ->  new SetCategoryDescriptor(setCategoryValues))
+
+  val intCategoryName = "someInt"
+  val stringCategoryName = "someString"
+
+  val intCategoryType = "int"
+  val intRangeCategoriesMap = Map(intCategoryName ->  new RangeCategoryDescriptor(intCategoryType))
+
+  val stringPrefixCategoriesMap = Map(stringCategoryName -> new PrefixCategoryDescriptor(1, 3, 1))
+
+  val UPSTREAM_EP = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, dateRangeCategoriesMap)
+
+  val UPSTREAM_EP_ALT = new Endpoint("TEST_UPSTREAM_ALT", "TEST_UPSTREAM_URL_ALT", "application/json", null, null, true, setCategoriesMap)
+
+  val DOWNSTREAM_EP = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, intRangeCategoriesMap)
+  
+  val DOWNSTREAM_EP_ALT = new Endpoint("TEST_DOWNSTREAM_ALT", "TEST_DOWNSTREAM_URL_ALT", "application/json", null, null, true, stringPrefixCategoriesMap)
 
   val GROUP_KEY = "TEST_GROUP"
   val GROUP = new PairGroup(GROUP_KEY)
@@ -300,29 +306,29 @@ class HibernateConfigStoreTest {
     val pair = configStore.getPair(PAIR_KEY)
     assertNotNull(pair.upstream.categories)
     assertNotNull(pair.downstream.categories)
-    val us_descriptor = pair.upstream.categories(US_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
-    val ds_descriptor = pair.downstream.categories(DS_CATEGORY_NAME).asInstanceOf[RangeCategoryDescriptor]
-    assertEquals(US_CATEGORY_TYPE, us_descriptor.dataType)
-    assertEquals(DS_CATEGORY_TYPE, ds_descriptor.dataType)
-    assertEquals(US_CATEGORY_LOWER, us_descriptor.lower)
-    assertEquals(US_CATEGORY_UPPER, us_descriptor.upper)
+    val us_descriptor = pair.upstream.categories(dateCategoryName).asInstanceOf[RangeCategoryDescriptor]
+    val ds_descriptor = pair.downstream.categories(intCategoryName).asInstanceOf[RangeCategoryDescriptor]
+    assertEquals("date", us_descriptor.dataType)
+    assertEquals(intCategoryType, ds_descriptor.dataType)
+    assertEquals(dateCategoryLower, us_descriptor.lower)
+    assertEquals(dateCategoryUpper, us_descriptor.upper)
   }
 
   @Test
   def setCategory = {
     declareAll
-    val endpoint = configStore.getEndpoint(UPSTREAM_EP_ALT_NAME)
+    val endpoint = configStore.getEndpoint(UPSTREAM_EP_ALT.name)
     assertNotNull(endpoint.categories)
-    val descriptor = endpoint.categories(US_CATEGORY_NAME).asInstanceOf[SetCategoryDescriptor]
-    assertEquals(US_ALT_SET, descriptor.values.toSet)
+    val descriptor = endpoint.categories(dateCategoryName).asInstanceOf[SetCategoryDescriptor]
+    assertEquals(setCategoryValues, descriptor.values.toSet)
   }
 
   @Test
   def prefixCategory = {
     declareAll
-    val endpoint = configStore.getEndpoint(DOWNSTREAM_EP_ALT_NAME)
+    val endpoint = configStore.getEndpoint(DOWNSTREAM_EP_ALT.name)
     assertNotNull(endpoint.categories)
-    val descriptor = endpoint.categories(DS_CATEGORY_NAME_ALT).asInstanceOf[PrefixCategoryDescriptor]
+    val descriptor = endpoint.categories(stringCategoryName).asInstanceOf[PrefixCategoryDescriptor]
     assertEquals(1, descriptor.prefixLength)
     assertEquals(3, descriptor.maxLength)
     assertEquals(1, descriptor.step)
