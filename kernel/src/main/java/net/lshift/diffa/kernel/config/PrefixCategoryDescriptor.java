@@ -25,29 +25,15 @@ public class PrefixCategoryDescriptor extends CategoryDescriptor {
   public PrefixCategoryDescriptor() {
   }
 
-  public PrefixCategoryDescriptor(String dataType, int prefixLength, int maxLength, int step) {
-    this.dataType = dataType;
+  public PrefixCategoryDescriptor(int prefixLength, int maxLength, int step) {
     this.prefixLength = prefixLength;
     this.maxLength = maxLength;
     this.step = step;
   }
 
-  /**
-   * The name of the type for attributes of this category.
-   */
-  public String dataType;
-
   public int prefixLength;
   public int maxLength;
   public int step;
-
-  public String getDataType() {
-    return dataType;
-  }
-
-  public void setDataType(String dataType) {
-    this.dataType = dataType;
-  }
 
   public int getPrefixLength() {
     return prefixLength;

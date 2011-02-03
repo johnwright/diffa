@@ -19,7 +19,7 @@
 
 <!DOCTYPE hibernate-mapping PUBLIC
         "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
-        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
 
   <class name="CategoryDescriptor" table="category_descriptor" abstract="true">
@@ -30,7 +30,7 @@
     <subclass name="RangeCategoryDescriptor" discriminator-value="range">
       <join table="range_category_descriptor">
         <key column="id"/>
-        <property name="dataType" type="string"/>
+        <property name="dataType" column="data_type" type="string"/>
         <property name="upper" column="upper_bound" type="string" not-null="false"/>
         <property name="lower" column="lower_bound" type="string" not-null="false"/>
       </join>
@@ -41,6 +41,14 @@
         <element column="value_name" type="string" not-null="true"/>
       </set>
       <join table="set_category_descriptor">
+        <key column="id"/>
+      </join>
+    </subclass>
+    <subclass name="PrefixCategoryDescriptor" discriminator-value="prefix">
+      <property name="prefixLength" column="prefix_length" type="int"/>
+      <property name="maxLength" column="max_length" type="int"/>
+      <property name="step" type="int"/>
+      <join table="prefix_category_descriptor">
         <key column="id"/>
       </join>
     </subclass>

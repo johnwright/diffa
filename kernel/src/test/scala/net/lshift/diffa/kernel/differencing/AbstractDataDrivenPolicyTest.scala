@@ -264,7 +264,7 @@ object AbstractDataDrivenPolicyTest {
 
   val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
   val intCategoryDescriptor = new RangeCategoryDescriptor("int")
-  val stringCategoryDescriptor = new PrefixCategoryDescriptor("string", 1, 3, 1)
+  val stringCategoryDescriptor = new PrefixCategoryDescriptor(1, 3, 1)
 
   @DataPoint def setOnlyScenario = Scenario(
     Pair(key = "ab",

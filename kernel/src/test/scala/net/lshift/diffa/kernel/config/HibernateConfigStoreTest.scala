@@ -38,12 +38,16 @@ class HibernateConfigStoreTest {
   val US_ALT_SET = Set("a","b","c")
   val US_CATEGORIES_ALT = Map(US_CATEGORY_NAME ->  new SetCategoryDescriptor(US_ALT_SET))
   val DS_CATEGORY_NAME = "someInt"
+  val DS_CATEGORY_NAME_ALT = "someString"
   val DS_CATEGORY_TYPE = "int"
   val DS_CATEGORIES = Map(DS_CATEGORY_NAME ->  new RangeCategoryDescriptor(DS_CATEGORY_TYPE))
+  val DS_CATEGORIES_ALT = Map(DS_CATEGORY_NAME_ALT -> new PrefixCategoryDescriptor(1, 3, 1))
   val UPSTREAM_EP = new Endpoint("TEST_UPSTREAM", "TEST_UPSTREAM_URL", "application/json", null, null, true, US_CATEGORIES)
   val UPSTREAM_EP_ALT_NAME = "TEST_UPSTREAM_ALT"
   val UPSTREAM_EP_ALT = new Endpoint(UPSTREAM_EP_ALT_NAME, "TEST_UPSTREAM_URL_ALT", "application/json", null, null, true, US_CATEGORIES_ALT)
   val DOWNSTREAM_EP = new Endpoint("TEST_DOWNSTREAM", "TEST_DOWNSTREAM_URL", "application/json", null, null, true, DS_CATEGORIES)
+  val DOWNSTREAM_EP_ALT_NAME = "TEST_DOWNSTREAM_ALT"
+  val DOWNSTREAM_EP_ALT = new Endpoint(DOWNSTREAM_EP_ALT_NAME, "TEST_DOWNSTREAM_URL_ALT", "application/json", null, null, true, DS_CATEGORIES_ALT)
 
   val GROUP_KEY = "TEST_GROUP"
   val GROUP = new PairGroup(GROUP_KEY)
@@ -65,6 +69,7 @@ class HibernateConfigStoreTest {
     configStore.createOrUpdateEndpoint(UPSTREAM_EP)
     configStore.createOrUpdateEndpoint(UPSTREAM_EP_ALT)
     configStore.createOrUpdateEndpoint(DOWNSTREAM_EP)
+    configStore.createOrUpdateEndpoint(DOWNSTREAM_EP_ALT)
     configStore.createOrUpdateGroup(GROUP)
     configStore.createOrUpdatePair(PAIR_DEF)
   }
@@ -310,6 +315,17 @@ class HibernateConfigStoreTest {
     assertNotNull(endpoint.categories)
     val descriptor = endpoint.categories(US_CATEGORY_NAME).asInstanceOf[SetCategoryDescriptor]
     assertEquals(US_ALT_SET, descriptor.values.toSet)
+  }
+
+  @Test
+  def prefixCategory = {
+    declareAll
+    val endpoint = configStore.getEndpoint(DOWNSTREAM_EP_ALT_NAME)
+    assertNotNull(endpoint.categories)
+    val descriptor = endpoint.categories(DS_CATEGORY_NAME_ALT).asInstanceOf[PrefixCategoryDescriptor]
+    assertEquals(1, descriptor.prefixLength)
+    assertEquals(3, descriptor.maxLength)
+    assertEquals(1, descriptor.step)
   }
 
   @Test
