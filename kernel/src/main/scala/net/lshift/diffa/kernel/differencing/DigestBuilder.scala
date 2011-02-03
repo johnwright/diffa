@@ -52,7 +52,7 @@ class DigestBuilder(val functions:Map[String, CategoryFunction]) {
 
       val bucket = digestBuckets.get(label) match {
         case null => {
-          val newBucket = new Bucket(label, partitions, lastUpdated)
+          val newBucket = new Bucket(label, partitions)
           digestBuckets.put(label, newBucket)
           newBucket
         }
@@ -81,7 +81,7 @@ class DigestBuilder(val functions:Map[String, CategoryFunction]) {
   private lazy val shouldBucket = bucketingFunctions.size > 0
 }
 
-class Bucket(val name: String, val attributes: Map[String, String], val lastUpdated:DateTime) {
+class Bucket(val name: String, val attributes: Map[String, String]) {
   private val digestAlgorithm = "MD5"
   private val messageDigest = MessageDigest.getInstance(digestAlgorithm)
   private var digest:String = null
@@ -100,7 +100,7 @@ class Bucket(val name: String, val attributes: Map[String, String], val lastUpda
     if (digest == null) {
       digest = new String(Hex.encodeHex(messageDigest.digest()))
     }
-    AggregateDigest(AttributesUtil.toSeq(attributes), lastUpdated, digest)
+    AggregateDigest(AttributesUtil.toSeq(attributes), digest)
   }
 
 }

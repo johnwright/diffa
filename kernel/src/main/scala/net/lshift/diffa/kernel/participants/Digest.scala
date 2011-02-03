@@ -40,11 +40,6 @@ trait Digest {
   def attributes:Seq[String]
 
   /**
-   * A timestamp of the last time a digest was changed - as reported by the participant.
-   */
-  def lastUpdated:DateTime
-
-  /**
    * The actual digest to perform comparisons with.
    */
   def digest:String
@@ -55,10 +50,9 @@ trait Digest {
  */
 case class AggregateDigest(
   @BeanProperty var attributes:Seq[String],
-  @BeanProperty var lastUpdated:DateTime,
   @BeanProperty var digest:String) extends Digest {
 
-  def this() = this(null, null, null)
+  def this() = this(null, null)
 }
 
 /**
