@@ -26,7 +26,8 @@ import org.codehaus.jackson.annotate.JsonTypeInfo;
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.PROPERTY, property="@type")
 @JsonSubTypes({
   @JsonSubTypes.Type(value = RangeCategoryDescriptor.class, name = "range"),
-  @JsonSubTypes.Type(value = SetCategoryDescriptor.class, name = "set")
+  @JsonSubTypes.Type(value = SetCategoryDescriptor.class, name = "set"),
+  @JsonSubTypes.Type(value = PrefixCategoryDescriptor.class, name = "prefix")
 })
 abstract public class CategoryDescriptor {
 

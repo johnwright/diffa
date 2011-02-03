@@ -264,6 +264,7 @@ object AbstractDataDrivenPolicyTest {
 
   val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
   val intCategoryDescriptor = new RangeCategoryDescriptor("int")
+  val stringCategoryDescriptor = new PrefixCategoryDescriptor("string", 1, 3, 1)
 
   @DataPoint def setOnlyScenario = Scenario(
     Pair(key = "ab",
@@ -367,6 +368,44 @@ object AbstractDataDrivenPolicyTest {
         ))
     ))
 
+  @DataPoint def stringsOnlyScenario = Scenario(
+    Pair(key = "bc",
+      upstream = new Endpoint(categories = Map("someString" -> stringCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("someString" -> stringCategoryDescriptor))),
+    AggregateTx(Map("someString" -> oneCharString), Seq(unbounded("someString")),
+      Bucket("A", Map("someString" -> "A"),
+        AggregateTx(Map("someString" -> twoCharString), Seq(prefix("someString", "A")),
+          Bucket("AB", Map("someString" -> "AB"),
+            AggregateTx(Map("someString" -> threeCharString), Seq(prefix("someString", "AB")),
+              Bucket("ABC", Map("someString" -> "ABC"),
+                EntityTx(Seq(prefix("someString", "ABC")),
+                  Vsn("id1", Map("someString" -> "ABC"), "vsn1")
+                )),
+              Bucket("ABD", Map("someString" -> "ABD"),
+                EntityTx(Seq(prefix("someString", "ABD")),
+                  Vsn("id2", Map("someString" -> "ABDZ"), "vsn2")
+                ))
+            )),
+          Bucket("AC", Map("someString" -> "AC"),
+            AggregateTx(Map("someString" -> threeCharString), Seq(prefix("someString", "AC")),
+              Bucket("ACD", Map("someString" -> "ACD"),
+                EntityTx(Seq(prefix("someString", "ACD")),
+                  Vsn("id3", Map("someString" -> "ACDC"), "vsn3")
+                ))
+            ))
+        )),
+      Bucket("Z", Map("someString" -> "Z"),
+        AggregateTx(Map("someString" -> twoCharString), Seq(prefix("someString", "Z")),
+          Bucket("ZY", Map("someString" -> "ZY"),
+            AggregateTx(Map("someString" -> threeCharString), Seq(prefix("someString", "ZY")),
+              Bucket("ZYX", Map("someString" -> "ZYX"),
+                EntityTx(Seq(prefix("someString", "ZYX")),
+                  Vsn("id4", Map("someString" -> "ZYXXY"), "vsn4")
+                ))
+            ))
+        ))
+    ))
+
   @DataPoint def integersAndDatesScenario = Scenario(
     Pair(key = "ab",
       upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someInt" -> intCategoryDescriptor)),
@@ -457,9 +496,14 @@ object AbstractDataDrivenPolicyTest {
   val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
   val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
 
+  val oneCharString = StringPrefixCategoryFunction(1, 3, 1)
+  val twoCharString = StringPrefixCategoryFunction(2, 3, 1)
+  val threeCharString = StringPrefixCategoryFunction(3, 3, 1)
+
   def unbounded(n:String) = UnboundedRangeQueryConstraint(n)
   def dateRange(n:String, lower:DateTime, upper:DateTime) = DateRangeConstraint(n, lower, upper)
   def intRange(n:String, lower:Int, upper:Int) = IntegerRangeConstraint(n, lower, upper)
+  def prefix(n: String, prefix: String) = PrefixQueryConstraint(n, prefix)
 
   //
   // Type Definitions

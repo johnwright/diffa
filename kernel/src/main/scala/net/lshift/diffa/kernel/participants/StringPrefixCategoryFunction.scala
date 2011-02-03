@@ -35,8 +35,9 @@ case class StringPrefixCategoryFunction(prefixLength: Int,
       Some(StringPrefixCategoryFunction(prefixLength + step, maxLength, step))
 
   def constrain(categoryName: String, partition: String) =
-    if (partition.length != prefixLength)
-      // TODO if the partitioning value is shorter than the prefix length, return a set constraint containing that value
+    if (partition.length < prefixLength)
+      SetQueryConstraint(categoryName, Set(partition))
+    else if (partition.length > prefixLength)
       throw new InvalidAttributeValueException(
         "Partition value must be %d characters in length".format(prefixLength))
     else

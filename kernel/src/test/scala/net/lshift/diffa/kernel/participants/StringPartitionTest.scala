@@ -66,11 +66,10 @@ class StringPartitionTest {
     assertEquals(PrefixQueryConstraint("foo", "xx"), spc.constrain("foo", "xx"))
   }
 
-  // TODO this should actually return a set constraint containing the single value "x"
-  @Test(expected = classOf[InvalidAttributeValueException])
+  @Test
   def cannotConstrainWhenPartitionIsTooShort {
     val spc = StringPrefixCategoryFunction(prefixLength = 2, maxLength = 2, step = 1)
-    spc.constrain("foo", "x")
+    assertEquals(SetQueryConstraint("foo", Set("x")), spc.constrain("foo", "x"))
   }
 
   @Test(expected = classOf[InvalidAttributeValueException])

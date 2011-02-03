@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.format.ISODateTimeFormat
-import net.lshift.diffa.kernel.config.{RangeCategoryDescriptor, SetCategoryDescriptor, CategoryDescriptor}
+import net.lshift.diffa.kernel.config.{PrefixCategoryDescriptor, RangeCategoryDescriptor, SetCategoryDescriptor, CategoryDescriptor}
 
 /**
  * Utility for working with attribute maps.
@@ -49,6 +49,7 @@ object AttributesUtil {
           case _      => StringAttribute(value)
         }
       }
+      case p:PrefixCategoryDescriptor => StringAttribute(value)
     }
   }
 }
