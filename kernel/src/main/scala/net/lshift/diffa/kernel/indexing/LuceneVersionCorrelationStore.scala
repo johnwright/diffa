@@ -166,7 +166,11 @@ class LuceneVersionCorrelationStore(index:Directory)
         }
         query.add(tq, BooleanClause.Occur.MUST)
       }
-      case l:SetQueryConstraint  => throw new RuntimeException("SetQueryConstraint not yet implemented")
+      case s:SetQueryConstraint  => {
+        val setMatchQuery = new BooleanQuery
+        s.values.foreach(x => setMatchQuery.add(new TermQuery(new Term(prefix + s.category, x)), BooleanClause.Occur.SHOULD))
+        query.add(setMatchQuery, BooleanClause.Occur.MUST)
+      }
     }
   }
 

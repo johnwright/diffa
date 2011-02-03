@@ -28,6 +28,10 @@ object AttributesUtil {
     attrs.toSeq.sortBy { case (name, value) => name }.map { case (name, value) => value }
   }
 
+  def toSeqFromTyped(attrs:Map[String, TypedAttribute]):Seq[String] = {
+    attrs.toSeq.sortBy { case (name, value) => name }.map { case (name, value) => value.value }
+  }
+
   def toMap(keys:Iterable[String], attrs:Iterable[String]):Map[String, String] = toMap(keys.toSeq, attrs.toSeq)
   def toMap(keys:Seq[String], attrs:Seq[String]):Map[String, String] = (keys.sorted, attrs).zip.toMap
 
