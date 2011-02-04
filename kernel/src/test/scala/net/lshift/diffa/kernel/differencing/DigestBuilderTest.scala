@@ -62,9 +62,8 @@ class DigestBuilderTest {
 
     assertEquals(
       HashSet(
-        // TODO [#2] Should the youngest or lastUpDated date be taken for the comparison?
-        AggregateDigest(Seq("2010-07-08"), JUL_8_2010_1, DigestUtils.md5Hex("vsn1" + "vsn2")),
-        AggregateDigest(Seq("2010-07-09"), JUL_9_2010_1, DigestUtils.md5Hex("vsn3"))),
+        AggregateDigest(Seq("2010-07-08"), DigestUtils.md5Hex("vsn1" + "vsn2")),
+        AggregateDigest(Seq("2010-07-09"), DigestUtils.md5Hex("vsn3"))),
       HashSet(builder.digests: _*))
   }
 
@@ -79,9 +78,8 @@ class DigestBuilderTest {
 
     assertEquals(
       HashSet(
-        // TODO [#2] Should the youngest or lastUpDated date be taken for the comparison?
-        AggregateDigest(Seq("2010-07"), JUL_8_2010_1, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3")),
-        AggregateDigest(Seq("2010-08"), AUG_2_2010_1, DigestUtils.md5Hex("vsn4"))),
+        AggregateDigest(Seq("2010-07"), DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3")),
+        AggregateDigest(Seq("2010-08"), DigestUtils.md5Hex("vsn4"))),
       HashSet(builder.digests: _*))
   }
 
@@ -99,10 +97,9 @@ class DigestBuilderTest {
 
     assertEquals(
       HashSet(
-        // TODO [#2] Should the youngest or lastUpDated date be taken for the comparison?
-        AggregateDigest(Seq("2009"), JUN_6_2009_1, DigestUtils.md5Hex("vsn0")),
-        AggregateDigest(Seq("2010"), JUL_8_2010_1, DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3" + "vsn4")),
-        AggregateDigest(Seq("2011"), JAN_2_2011_1, DigestUtils.md5Hex("vsn5" + "vsn6"))),
+        AggregateDigest(Seq("2009"), DigestUtils.md5Hex("vsn0")),
+        AggregateDigest(Seq("2010"), DigestUtils.md5Hex("vsn1" + "vsn2" + "vsn3" + "vsn4")),
+        AggregateDigest(Seq("2011"), DigestUtils.md5Hex("vsn5" + "vsn6"))),
       HashSet(builder.digests: _*))
   }
 
