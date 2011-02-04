@@ -90,8 +90,26 @@ class StringPartitionTest {
 
   @Test
   def prefixQueryConstraintMustImplementWireFormat {
-    assertEquals(WireConstraint("string", Map("prefix" -> "abc"), List()),
+    assertEquals(WireConstraint("foo", Map("prefix" -> "abc"), null),
                PrefixQueryConstraint("foo", "abc").wireFormat)
+  }
+
+  @Test
+  def parsesFromName {
+    assertEquals(StringPrefixCategoryFunction(1, 1, 1),
+               StringPrefixCategoryFunction.parse("prefix(1,1,1)"))
+    assertEquals(StringPrefixCategoryFunction(10, 100, 10),
+               StringPrefixCategoryFunction.parse("prefix(10,100,10)"))
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def failsToParseEmptyString {
+    StringPrefixCategoryFunction.parse("")
+  }
+
+  @Test(expected = classOf[IllegalArgumentException])
+  def failsToParseNonDigitValues {
+    StringPrefixCategoryFunction.parse("prefix(a,b,c)")
   }
 
 }

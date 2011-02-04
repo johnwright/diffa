@@ -17,8 +17,8 @@
 package net.lshift.diffa.kernel.frontend.wire
 
 
-import net.lshift.diffa.kernel.participants._
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.participants._
 
 /**
  * Provides a simple registry so that constraints in wire formats can
@@ -40,5 +40,9 @@ object CategoryFunctionRegistry {
     TensIntegerCategoryFunction.name -> TensIntegerCategoryFunction
   )
 
-  def resolve(fun:String) = registry(fun)
+  def resolve(fun:String) =
+    if (fun.startsWith("prefix"))
+      StringPrefixCategoryFunction.parse(fun)
+    else
+      registry(fun)
 }

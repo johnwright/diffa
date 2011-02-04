@@ -26,46 +26,50 @@ import scala.collection.JavaConversions._
  * This is a structure that is straightforward to pack and unpack onto and off a wire.
  */
 case class WireConstraint(
-  @BeanProperty var dataType:String,
+  @BeanProperty var category:String,
   @BeanProperty var attributes:Map[String,String],
   @BeanProperty var values:List[String]) {
-  
+
+  import WireConstraint.{LO, HI, PREFIX}
+
   def this() = this(null,null,null)
 
   /**
    *  Simple validation function - the wire format is not constained by any schema ATM
    */
   def validate() = {
-    if (dataType == null) {
+    if (category == null) {
       throw new InvalidWireConstraint(this, "missing datatype")
     }
     if (attributes == null) {
       throw new InvalidWireConstraint(this, "missing attributes")
     }
     if (values != null) {
-      if (attributes.containsKey(WireConstraint.LO) || attributes.containsKey(WireConstraint.HI)) {
+      if (attributes.containsKey(LO) || attributes.containsKey(HI)) {
         throw new InvalidWireConstraint(this, "contains values AND range")
       }
     }
-    else if (((!attributes.containsKey(WireConstraint.LO) && attributes.containsKey(WireConstraint.HI)))) {
+    else if (((!attributes.containsKey(LO) && attributes.containsKey(HI)))) {
         throw new InvalidWireConstraint(this, "incomplete bounds")
     }
   }
 
-  def toQueryConstraint = {
+  def toQueryConstraint: QueryConstraint = {
     validate
     if (values != null) {
-      SetQueryConstraint(dataType, values.toSet)
-    }
-    else {
-      val lower = attributes.get(WireConstraint.LO)
-      val upper = attributes.get(WireConstraint.HI)
+      SetQueryConstraint(category, values.toSet)
+    } else if (attributes.containsKey(PREFIX)) {
+      PrefixQueryConstraint(category, attributes.get(PREFIX))
+    } else if (attributes.containsKey(LO) && attributes.containsKey(HI)) {
+      val lower = attributes.get(LO)
+      val upper = attributes.get(HI)
       if (lower != null && upper != null) {
-        RangeQueryConstraint(dataType, lower, upper)
+        RangeQueryConstraint(category, lower, upper)
+      } else {
+        UnboundedRangeQueryConstraint(category)
       }
-      else {
-        UnboundedRangeQueryConstraint(dataType)
-      }
+    } else {
+      UnboundedRangeQueryConstraint(category)
     }
   }
 }
@@ -75,16 +79,21 @@ class InvalidWireConstraint(wire:WireConstraint, s:String) extends Exception(s +
 object WireConstraint {
   val LO = "lower"
   val HI = "upper"
+  val PREFIX = "prefix"
 
-  def rangeConstraint(dataType:String, lower:AnyRef, upper:AnyRef) = {
-    WireConstraint(dataType, scala.collection.Map(LO -> lower.toString(), HI -> upper.toString()), null)
+  def rangeConstraint(category:String, lower:AnyRef, upper:AnyRef) = {
+    WireConstraint(category, scala.collection.Map(LO -> lower.toString(), HI -> upper.toString()), null)
   }
 
-  def setConstraint(dataType:String, values:Set[String]) = {
-    WireConstraint(dataType, new java.util.HashMap, values.toList)
+  def setConstraint(category:String, values:Set[String]) = {
+    WireConstraint(category, new java.util.HashMap, values.toList)
   }
 
-  def unbounded(dataType:String) = {
-    WireConstraint(dataType, new java.util.HashMap, null)
-  }  
+  def unbounded(category:String) = {
+    WireConstraint(category, new java.util.HashMap, null)
+  }
+
+  def prefixConstraint(category: String, prefix: String) = {
+    WireConstraint(category, scala.collection.Map(PREFIX -> prefix), null)
+  }
 }
