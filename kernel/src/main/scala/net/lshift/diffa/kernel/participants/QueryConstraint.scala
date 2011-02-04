@@ -58,7 +58,7 @@ case class RangeQueryConstraint(c:String, lower:String, upper:String) extends Ba
 }
 
 case class PrefixQueryConstraint(c: String, prefix: String) extends BaseQueryConstraint(c) {
-  def wireFormat() = WireConstraint("string", Map("prefix" -> prefix), List())
+  def wireFormat() = prefixConstraint(c, prefix)
 }
 
 abstract case class NonValueConstraint(c:String) extends BaseQueryConstraint(c) {

@@ -16,6 +16,8 @@
 
 package net.lshift.diffa.kernel.participants
 
+import scala.util.matching.Regex
+
 /**
  * Category function for partitioning on prefixes of strings.
  *
@@ -50,4 +52,18 @@ case class StringPrefixCategoryFunction(prefixLength: Int,
       value
     else
       value.substring(0, prefixLength)
+}
+
+object StringPrefixCategoryFunction {
+
+  private val pattern = new Regex("""prefix\((\d+),(\d+),(\d+)\)""")
+
+  def parse(str: String) = str match {
+    case pattern(prefixLength, maxLength, step) =>
+      StringPrefixCategoryFunction(prefixLength.toInt,
+                                   maxLength.toInt,
+                                   step.toInt)
+    case _ =>
+      throw new IllegalArgumentException("Bad format for StringPrefixCategoryFunction name: " + str)
+  }
 }
