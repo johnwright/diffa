@@ -29,7 +29,7 @@ class EventFormatMapperManager {
   private val mappers = HashMap[String, EventFormatMapper]()
 
   def registerMapper(mapper: EventFormatMapper) = {
-    log.info("Registered mapper for content type: %s [%s]".format(mapper.contentType, mapper))
+    log.debug("Registered mapper for content type: %s [%s]".format(mapper.contentType, mapper))
     mappers.put(mapper.contentType, mapper)
   }
 
