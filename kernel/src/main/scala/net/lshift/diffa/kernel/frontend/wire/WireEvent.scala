@@ -37,6 +37,9 @@ case class WireEvent(
 
 object WireEvent {
 
+  val UPSTREAM = "upstream"
+  val DOWNSTREAM = "downstream-same"
+  val DOWNSTREAM_CORRELATED = "downstream-correlated"
   val ID = "id"
   val LAST_UPDATE = "lastUpdate"
   val ENDPOINT = "endpoint"
@@ -44,8 +47,8 @@ object WireEvent {
   val DVSN = "dvsn"
   val UVSN = "uvsn"
 
-  def toWire(event:UpstreamChangeEvent) = new WireEvent(event.eventType, extractMetaDataWithVersion(event), event.attributes)
-  def toWire(event:DownstreamChangeEvent) = new WireEvent(event.eventType, extractMetaDataWithVersion(event), event.attributes)
+  def toWire(event:UpstreamChangeEvent) = new WireEvent(event.eventType.toString, extractMetaDataWithVersion(event), event.attributes)
+  def toWire(event:DownstreamChangeEvent) = new WireEvent(event.eventType.toString, extractMetaDataWithVersion(event), event.attributes)
   def toWire(event:DownstreamCorrelatedChangeEvent) = {
     val metadata = (extractMetaData(event)(DVSN) = event.downstreamVsn)(UVSN) = event.upstreamVsn
     new WireEvent(event.eventType, metadata, event.attributes)

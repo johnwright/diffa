@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.events
 
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.frontend.wire.WireEvent
 
 /**
  * Base inherited by the various types of events.
@@ -35,7 +36,7 @@ abstract class ChangeEvent {
  */
 case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent {
-  def eventType = "upstream"
+  def eventType = WireEvent.UPSTREAM
 }
 
 /**
@@ -43,7 +44,7 @@ case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String
  */
 case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent {
-  def eventType = "downstream-same"
+  def eventType = WireEvent.DOWNSTREAM
 }
 
 /**
@@ -53,5 +54,5 @@ case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[Stri
  */
 case class DownstreamCorrelatedChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
   extends ChangeEvent {
-  def eventType = "downstream-correlated"
+  def eventType = WireEvent.DOWNSTREAM_CORRELATED
 }

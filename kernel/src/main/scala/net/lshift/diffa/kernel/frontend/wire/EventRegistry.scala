@@ -35,9 +35,9 @@ object EventRegistry {
     val lastUpdate = formatter.parseDateTime(wire.metadata(LAST_UPDATE))
 
     wire.eventType match {
-      case "upstream" => UpstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
-      case "downstream-same" => DownstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
-      case "downstream-correlated" =>
+      case WireEvent.UPSTREAM => UpstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
+      case WireEvent.DOWNSTREAM => DownstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
+      case WireEvent.DOWNSTREAM_CORRELATED =>
         val up = wire.metadata(UVSN)
         val down = wire.metadata(DVSN)
         DownstreamCorrelatedChangeEvent(endpoint, id, wire.attributes, lastUpdate, up, down)

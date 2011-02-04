@@ -45,11 +45,11 @@ class ExampleEventFormatMapper extends EventFormatMapper {
     val lastUpdate = date.parseDateTime(in.path("record-date").getValueAsText)
     val vsn = in.path("version").getValueAsText
 
-    WireEvent(eventType = "upstream",
-              metadata = Map("id" -> id,
-                              "endpoint" -> endpoint,
-                              "lastUpdate" -> dateTime.print(lastUpdate),
-                              "vsn" -> vsn),
-              attributes = List(dateTime.print(effectiveDate), value))
+    Seq(WireEvent(eventType = WireEvent.UPSTREAM,
+                  metadata = Map(WireEvent.ID -> id,
+                                  WireEvent.ENDPOINT -> endpoint,
+                                  WireEvent.LAST_UPDATE -> dateTime.print(lastUpdate),
+                                  WireEvent.VSN -> vsn),
+                  attributes = List(dateTime.print(effectiveDate), value)))
   }
 }
