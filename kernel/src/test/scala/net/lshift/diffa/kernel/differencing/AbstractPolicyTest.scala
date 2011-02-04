@@ -213,15 +213,15 @@ abstract class AbstractPolicyTest {
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), START_2009, DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex("vsn2"))),
+        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         Up("id1", testData.valueKey, testData.values(0), "vsn1"),
         Up("id2", testData.valueKey, testData.values(1), "vsn2")))
     expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
+        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
+        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
       VersionsFromStore(Down("id1", testData.valueKey, testData.values(0), "vsn1a", downstreamVersionFor("vsn1a")),
                         Down("id2", testData.valueKey, testData.values(1), "vsn2a", downstreamVersionFor("vsn2a"))))
 

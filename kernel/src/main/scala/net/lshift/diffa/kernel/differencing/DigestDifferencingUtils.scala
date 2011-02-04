@@ -97,9 +97,9 @@ object DigestDifferencingUtils {
     }
 
     ds1Ids.foreach { case (label, ds1Digest) => {
-      val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
-        case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest, hs2Digest.lastUpdated)
-        case None => (false, null, null)
+      val (otherMatches, otherDigest) = ds2Ids.remove(label) match {
+        case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest)
+        case None => (false, null)
       }
 
       if (!otherMatches) {

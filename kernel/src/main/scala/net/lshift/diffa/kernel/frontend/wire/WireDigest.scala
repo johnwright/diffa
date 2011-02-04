@@ -44,11 +44,13 @@ object WireDigest {
 
   def toWire(d:Digest) = {
     val base = collection.immutable.Map(
-      LAST_UPDATED -> d.lastUpdated.toString(),
       DIGEST -> d.digest
     )
     val metadata = d match {
-      case e:EntityVersion => base(ID) = e.id
+      case e:EntityVersion => base ++ collection.immutable.Map(
+        ID -> e.id,
+        LAST_UPDATED -> e.lastUpdated.toString()
+      )
       case d:AggregateDigest => base
     }
     WireDigest(metadata, d.attributes)
@@ -62,9 +64,7 @@ object WireDigest {
                     wire.metadata(DIGEST))
     }
     else {
-      AggregateDigest(wire.attributes,
-                      dateParser.parseDateTime(wire.metadata(LAST_UPDATED)),
-                      wire.metadata(DIGEST))
+      AggregateDigest(wire.attributes, wire.metadata(DIGEST))
     }
   }
 }

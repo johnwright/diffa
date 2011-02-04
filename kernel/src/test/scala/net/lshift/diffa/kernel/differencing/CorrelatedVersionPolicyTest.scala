@@ -66,16 +66,16 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // Expect only a top-level sync for the upstream, but a full sync for the downstream
     expectUpstreamAggregateSync(abPair, testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), START_2009, DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex("vsn2"))),
+        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         Up("id1", testData.valueKey, testData.values(0), "vsn1"),
         Up("id2", testData.valueKey, testData.values(1), "vsn2")))
 
     expectDownstreamAggregateSync(abPair, testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), START_2009, DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
+        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
         Down("id1", testData.valueKey, testData.values(0), "vsn1", downstreamVersionFor("vsn1")),
         Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
@@ -83,14 +83,14 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         Down("id5", testData.valueKey, testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamAggregateSync(abPair, testData.bucketing(1), testData.constraints(1),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(2), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        AggregateDigest(testData.attributes(2), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
         Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.valueKey, testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
         Down("id5", testData.valueKey, testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamAggregateSync(abPair, testData.bucketing(2), testData.constraints(2),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(3), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        AggregateDigest(testData.attributes(3), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
       VersionsFromStore(
         Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.valueKey, testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
@@ -131,25 +131,25 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), START_2009, DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex("vsn2"))),
+        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex("vsn1")),
+        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex("vsn2"))),
       VersionsFromStore(
         Up("id1", testData.valueKey, testData.values(0), "vsn1"),
         Up("id2", testData.valueKey, testData.values(1), "vsn2")))
 
     expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(1), START_2010, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
         Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamAggregateSync(testData.bucketing(1), testData.constraints(1),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(2), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        AggregateDigest(testData.attributes(2), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
         Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamAggregateSync(testData.bucketing(2), testData.constraints(2),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(3), JUL_8_2010_1, DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        AggregateDigest(testData.attributes(3), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
       VersionsFromStore(
         Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamEntitySync2(abPair, testData.constraints(3),

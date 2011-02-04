@@ -214,7 +214,7 @@ abstract class AbstractDataDrivenPolicyTest {
   }
 
   protected def participantDigestResponse(buckets:Seq[Bucket]):Seq[AggregateDigest] =
-    buckets.map(b => AggregateDigest(AttributesUtil.toSeq(b.attrs), new DateTime, b.vsn))
+    buckets.map(b => AggregateDigest(AttributesUtil.toSeq(b.attrs), b.vsn))
   protected def participantEntityResponse(entities:Seq[Vsn]):Seq[EntityVersion] =
     entities.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.strAttrs), e.lastUpdated, e.vsn))
 
