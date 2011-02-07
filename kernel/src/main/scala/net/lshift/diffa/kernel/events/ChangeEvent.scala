@@ -28,15 +28,25 @@ abstract class ChangeEvent {
   def id:String
   def attributes:Seq[String]
   def lastUpdate:DateTime
-  def eventType:String
+  def eventType:ChangeEventType
 }
+
+/**
+ * Enumeration of possible types of change events.
+ */
+sealed abstract class ChangeEventType(val name: String) {
+  override def toString = name
+}
+case object UpstreamChangeEventType extends ChangeEventType("upstream")
+case object DownstreamChangeEventType extends ChangeEventType("downstream-same")
+case object DownstreamCorrelatedChangeEventType extends ChangeEventType("downstream-correlated")
 
 /**
  * Event indicating that a change has occurred within an upstream system.
  */
 case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent {
-  def eventType = WireEvent.UPSTREAM
+  def eventType = UpstreamChangeEventType
 }
 
 /**
@@ -44,7 +54,7 @@ case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String
  */
 case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent {
-  def eventType = WireEvent.DOWNSTREAM
+  def eventType = DownstreamChangeEventType
 }
 
 /**
@@ -54,5 +64,5 @@ case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[Stri
  */
 case class DownstreamCorrelatedChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
   extends ChangeEvent {
-  def eventType = WireEvent.DOWNSTREAM_CORRELATED
+  def eventType = DownstreamCorrelatedChangeEventType
 }
