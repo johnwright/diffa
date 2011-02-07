@@ -33,9 +33,8 @@ class ChangesHandler(val frontend: Changes,
   override val contentType = eventFormatMapper.contentType
 
   protected val endpoints = Map(
-    "changes" -> skeleton((eventFormatMapper.map(_: String, inboundEndpoint))
-                           andThen (resolveEvent _)
-                           andThen (frontend.onChange _)
+    "changes" -> skeleton((eventFormatMapper.map(_: String, inboundEndpoint)
+                             .foreach { wireEvent => frontend.onChange(resolveEvent(wireEvent)) })
                            andThen (_ => serializeEmptyResponse()))
   )
 }

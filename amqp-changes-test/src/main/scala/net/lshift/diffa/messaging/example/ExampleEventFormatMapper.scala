@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import org.joda.time.format.ISODateTimeFormat.{date, dateTime}
+import net.lshift.diffa.kernel.events.UpstreamChangeEventType
 
 /**
  * Content mapper for an example data type.
@@ -45,11 +46,11 @@ class ExampleEventFormatMapper extends EventFormatMapper {
     val lastUpdate = date.parseDateTime(in.path("record-date").getValueAsText)
     val vsn = in.path("version").getValueAsText
 
-    WireEvent(eventType = "upstream",
-              metadata = Map("id" -> id,
-                              "endpoint" -> endpoint,
-                              "lastUpdate" -> dateTime.print(lastUpdate),
-                              "vsn" -> vsn),
-              attributes = List(dateTime.print(effectiveDate), value))
+    Seq(WireEvent(eventType = UpstreamChangeEventType.name,
+                  metadata = Map(WireEvent.ID -> id,
+                                  WireEvent.ENDPOINT -> endpoint,
+                                  WireEvent.LAST_UPDATE -> dateTime.print(lastUpdate),
+                                  WireEvent.VSN -> vsn),
+                  attributes = List(dateTime.print(effectiveDate), value)))
   }
 }

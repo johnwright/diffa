@@ -29,7 +29,9 @@ class ExampleEventFormatMapperTests {
   def mapsExampleJson() {
     val example = IOUtils.toString(getClass.getResourceAsStream("/event.json"))
     val mapper = new ExampleEventFormatMapper
-    val wireEvent = mapper.map(example, "exampleEndpoint")
+    val events = mapper.map(example, "exampleEndpoint")
+    assertEquals(1, events.size)
+    val wireEvent = events.head
 
     assertEquals("upstream", wireEvent.eventType)
     assertEquals("5509a836-ca75-42a4-855a-71893448cc9d", wireEvent.metadata.get("id"))

@@ -16,10 +16,10 @@
 
 package net.lshift.diffa.kernel.frontend.wire
 
-import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent, ChangeEvent}
 import scala.collection.JavaConversions._
 import WireEvent._
 import org.joda.time.format.ISODateTimeFormat
+import net.lshift.diffa.kernel.events._
 
 /**
  * Provides a simple registry to decode a wire event to a kernel event
@@ -35,9 +35,9 @@ object EventRegistry {
     val lastUpdate = formatter.parseDateTime(wire.metadata(LAST_UPDATE))
 
     wire.eventType match {
-      case "upstream" => UpstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
-      case "downstream-same" => DownstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
-      case "downstream-correlated" =>
+      case UpstreamChangeEventType.name => UpstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
+      case DownstreamChangeEventType.name => DownstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
+      case DownstreamCorrelatedChangeEventType.name =>
         val up = wire.metadata(UVSN)
         val down = wire.metadata(DVSN)
         DownstreamCorrelatedChangeEvent(endpoint, id, wire.attributes, lastUpdate, up, down)
