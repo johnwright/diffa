@@ -83,20 +83,6 @@
       <Arg type="java.lang.Boolean">true</Arg>
       <Arg type="boolean">true</Arg>
     </New>
-    <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
-      <Arg>diffaProperties</Arg>
-      <Arg>
-        <New class="java.util.Properties">
-          <Call name="load">
-            <Arg>
-              <New class="java.io.FileReader">
-                <Arg type="java.lang.String"><SystemProperty name="demo.basedir"/>/../agent/src/test/resources/diffa.itest.properties</Arg>
-              </New>
-            </Arg>
-          </Call>
-        </New>
-      </Arg>
-    </New>
     <New id="mail" class="org.eclipse.jetty.plus.jndi.Resource">
       <Arg>mail/Session</Arg>
       <Arg>

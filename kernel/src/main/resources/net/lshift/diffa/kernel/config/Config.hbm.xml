@@ -86,6 +86,11 @@
     <property name="email" type="string" />
   </class>
 
+  <class name="ConfigOption" table="config_options" abstract="false">
+    <id name="key" type="string" column="opt_key" />
+    <property name="value" type="string" column="opt_val" />
+  </class>
+
   <query name="endpointByName">
     select e from Endpoint e where e.name = :name
   </query>
@@ -118,4 +123,7 @@
     select p from Pair p where p.group = :group
   </query>
 
+  <query name="configOptionByKey">
+    select o.value from ConfigOption o where o.key = :key
+  </query>
 </hibernate-mapping>

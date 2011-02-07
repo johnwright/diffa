@@ -103,6 +103,24 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
 
+  def configOptionOrDefault(key: String, defaultVal: String) = sessionFactory.withSession(s => {
+    singleQueryOpt[String](s, "configOptionByKey", Map("key" -> key)) match {
+      case Some(str) => str
+      case None      => defaultVal
+    }
+  })
+  def setConfigOption(key:String, value:String) = sessionFactory.withSession(s => {
+    val co = s.get(classOf[ConfigOption], key) match {
+      case null =>
+        new ConfigOption(key = key, value = value)
+      case current:ConfigOption =>  {
+        current.value = value
+        current
+      }
+    }
+    s.saveOrUpdate(co)
+  })
+
   private def getEndpoint(s: Session, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint")
   private def getUser(s: Session, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user")
   private def getEndpointOpt(s: Session, name: String) = singleQueryOpt[Endpoint](s, "endpointByName", Map("name" -> name))

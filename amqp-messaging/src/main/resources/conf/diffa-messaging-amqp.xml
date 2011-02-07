@@ -37,7 +37,18 @@
     <constructor-arg ref="participantFactory" />
     <constructor-arg ref="eventFormatMapperManager" />
     <constructor-arg ref="changesFrontend" />
-    <constructor-arg value="${diffa.amqp.rpc.timeout}" />
+    <constructor-arg>
+      <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="diffaConfigStore"/>
+        <property name="targetMethod" value="configOptionOrDefault"/>
+        <property name="arguments">
+          <list>
+            <value>diffa.amqp.rpc.timeout</value>
+            <value>10000</value>
+          </list>
+        </property>
+      </bean>
+    </constructor-arg>
   </bean>
   
 </beans>

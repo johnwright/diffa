@@ -83,6 +83,7 @@ class HibernateConfigStoreTest {
     s.createCriteria(classOf[Pair]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
+    s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
     s.flush
     s.close
   }
@@ -344,6 +345,24 @@ class HibernateConfigStoreTest {
     configStore.deleteUser(TEST_USER.name)
     val users = configStore.listUsers
     assertEquals(0, users.length)    
+  }
+
+  @Test
+  def testApplyingDefaultConfigOption = {
+    assertEquals("defaultVal", configStore.configOptionOrDefault("some.option", "defaultVal"))
+  }
+
+  @Test
+  def testRetrievingConfigOption = {
+    configStore.setConfigOption("some.option2", "storedVal")
+    assertEquals("storedVal", configStore.configOptionOrDefault("some.option2", "defaultVal"))
+  }
+
+  @Test
+  def testUpdatingConfigOption = {
+    configStore.setConfigOption("some.option3", "storedVal")
+    configStore.setConfigOption("some.option3", "storedVal2")
+    assertEquals("storedVal2", configStore.configOptionOrDefault("some.option3", "defaultVal"))
   }
 
   private def expectMissingObject(name:String)(f: => Unit) {

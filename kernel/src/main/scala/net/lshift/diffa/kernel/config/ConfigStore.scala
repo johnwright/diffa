@@ -47,6 +47,15 @@ trait ConfigStore {
 
   def getPairsForEndpoint(epName:String):Seq[Pair]
 
+  /**
+   * Retrieves an agent configuration option, returning the provided default value if it is unset.
+   */
+  def configOptionOrDefault(key:String, defaultVal:String):String
+
+  /**
+   * Sets the given configuration option to the given value.
+   */
+  def setConfigOption(key:String, value:String)
 }
 
 case class Endpoint(
@@ -141,5 +150,10 @@ case class PairDef(
 
 case class User(@BeanProperty var name: String,
                 @BeanProperty var email: String) {
+  def this() = this(null, null)
+}
+
+case class ConfigOption(@BeanProperty var key:String,
+                        @BeanProperty var value:String) {
   def this() = this(null, null)
 }
