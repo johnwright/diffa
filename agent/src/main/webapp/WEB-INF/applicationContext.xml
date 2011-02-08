@@ -121,9 +121,9 @@
                 <list>
                   <value>event.notifier.quiet.time</value>
                   <value>0</value>
-          </list>
-        </property>
-      </bean>
+                </list>
+              </property>
+            </bean>
           </list>
         </property>
       </bean>
@@ -287,21 +287,22 @@
 
   <bean id="versionCorrelationStore" class="net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore">
     <constructor-arg>
-        <bean class="org.apache.lucene.store.MMapDirectory">
-          <constructor-arg>
-            <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-              <property name="targetObject" ref="diffaConfigStore"/>
-              <property name="targetMethod" value="configOptionOrDefault"/>
-              <property name="arguments">
-                <list>
-                  <value>index.dir</value>
-                  <value>target/webapp-data/diffa-index</value>
-                </list>
-              </property>
-        </bean>
+      <bean class="org.apache.lucene.store.MMapDirectory">
+        <constructor-arg>
+          <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+            <property name="targetObject" ref="diffaConfigStore"/>
+            <property name="targetMethod" value="configOptionOrDefault"/>
+            <property name="arguments">
+              <list>
+                <value>index.dir</value>
+                <value>target/webapp-data/diffa-index</value>
+              </list>
+            </property>
+          </bean>
+        </constructor-arg>
+      </bean>
     </constructor-arg>
-  </bean>
-    </constructor-arg>
+    <constructor-arg ref="diffaConfigStore" />
   </bean>
 
   <!--

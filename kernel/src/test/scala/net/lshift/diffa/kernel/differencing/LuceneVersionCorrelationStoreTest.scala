@@ -32,6 +32,8 @@ import org.apache.lucene.store.{MMapDirectory, FSDirectory, RAMDirectory}
 import java.io.File
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoints, Theory, DataPoint, Theories}
+import net.lshift.diffa.kernel.config.ConfigStore
+import org.easymock.EasyMock
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -333,7 +335,11 @@ class Collector {
 }
 
 object LuceneVersionCorrelationStoreTest {
-  val indexer = new LuceneVersionCorrelationStore(new MMapDirectory(new File("target")))
+  val dummyConfigStore = EasyMock.createMock(classOf[ConfigStore])
+  EasyMock.expect(dummyConfigStore.maybeConfigOption("correlationStore.schemaVersion")).andStubReturn(Some("0"))
+  EasyMock.replay(dummyConfigStore)
+
+  val indexer = new LuceneVersionCorrelationStore(new MMapDirectory(new File("target")), dummyConfigStore)
   val store:VersionCorrelationStore = indexer
 
   // Helper methods for various constraint/attribute scenarios

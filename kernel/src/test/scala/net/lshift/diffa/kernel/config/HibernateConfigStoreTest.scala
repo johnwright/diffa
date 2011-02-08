@@ -353,9 +353,15 @@ class HibernateConfigStoreTest {
   }
 
   @Test
+  def testReturningNoneForConfigOption {
+    assertEquals(None, configStore.maybeConfigOption("some.option"))
+  }
+
+  @Test
   def testRetrievingConfigOption = {
     configStore.setConfigOption("some.option2", "storedVal")
     assertEquals("storedVal", configStore.configOptionOrDefault("some.option2", "defaultVal"))
+    assertEquals(Some("storedVal"), configStore.maybeConfigOption("some.option2"))
   }
 
   @Test
@@ -363,6 +369,7 @@ class HibernateConfigStoreTest {
     configStore.setConfigOption("some.option3", "storedVal")
     configStore.setConfigOption("some.option3", "storedVal2")
     assertEquals("storedVal2", configStore.configOptionOrDefault("some.option3", "defaultVal"))
+    assertEquals(Some("storedVal2"), configStore.maybeConfigOption("some.option3"))
   }
 
   private def expectMissingObject(name:String)(f: => Unit) {

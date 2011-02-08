@@ -32,17 +32,25 @@ import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute, TypedAttribute, Correlation, VersionCorrelationStore}
 import org.apache.lucene.document._
 import org.joda.time.{DateTimeZone, DateTime}
+import net.lshift.diffa.kernel.config.ConfigStore
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
  * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
  * of pair attributes.
  */
-class LuceneVersionCorrelationStore(index:Directory)
+class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
     extends VersionCorrelationStore
     with Closeable {
 
   private val log = LoggerFactory.getLogger(getClass)
+
+  val schemaVersionKey = "correlationStore.schemaVersion"
+  configStore.maybeConfigOption(schemaVersionKey) match {
+    case None      => configStore.setConfigOption(schemaVersionKey, "0")
+    case Some("0") => // We're up to date
+      // When new schema versions appear, we can handle their upgrade here
+  }
 
   val analyzer = new StandardAnalyzer(Version.LUCENE_30)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)

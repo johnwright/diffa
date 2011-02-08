@@ -48,6 +48,11 @@ trait ConfigStore {
   def getPairsForEndpoint(epName:String):Seq[Pair]
 
   /**
+   * Retrieves an agent configuration option, returning the None if it is unset.
+   */
+  def maybeConfigOption(key:String):Option[String]
+
+  /**
    * Retrieves an agent configuration option, returning the provided default value if it is unset.
    */
   def configOptionOrDefault(key:String, defaultVal:String):String
