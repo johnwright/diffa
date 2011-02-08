@@ -41,6 +41,7 @@ class AmqpRpcServer(connector: Connector, queueName: String, handler: ProtocolHa
     replyHeaders.put(AmqpRpc.statusCodeHeader, status.asInstanceOf[AnyRef])
     
     val reply = msg.createReply()
+    reply.setFrom(null) // Required for compatibility with RabbitMQ >= 2.3
     reply.getProperties.setHeaders(replyHeaders)
     reply.setBody(body)
     messaging.send(reply)
