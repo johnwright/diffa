@@ -176,10 +176,10 @@ class LuceneVersionCorrelationStoreTest {
       collector.upstreamObjs.toList)
   }
 
-  @Test
-  def deletingSourceThatIsMatched = {
-    store.storeUpstreamVersion(VersionID(pair, "id6"), emptyAttributes, DEC_1_2009, "upstreamVsn-id6")
-    store.storeDownstreamVersion(VersionID(pair, "id6"), emptyAttributes, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
+  @Theory
+  def deletingSourceThatIsMatched(system:AttributeSystem) = {
+    store.storeUpstreamVersion(VersionID(pair, "id6"), system.includedAttrs, DEC_1_2009, "upstreamVsn-id6")
+    store.storeDownstreamVersion(VersionID(pair, "id6"), system.includedAttrs, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.clearUpstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
@@ -202,10 +202,10 @@ class LuceneVersionCorrelationStoreTest {
       collector.downstreamObjs.toList)
   }
 
-  @Test
-  def deletingDestThatIsMatched = {
-    store.storeUpstreamVersion(VersionID(pair, "id6"), emptyAttributes, DEC_1_2009, "upstreamVsn-id6")
-    store.storeDownstreamVersion(VersionID(pair, "id6"), emptyAttributes, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
+  @Theory
+  def deletingDestThatIsMatched(system:AttributeSystem) = {
+    store.storeUpstreamVersion(VersionID(pair, "id6"), system.includedAttrs, DEC_1_2009, "upstreamVsn-id6")
+    store.storeDownstreamVersion(VersionID(pair, "id6"), system.includedAttrs, DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     store.clearDownstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
