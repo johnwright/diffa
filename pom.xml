@@ -42,6 +42,19 @@
     <lucene.version>3.0.2</lucene.version>
     <jodatime.version>1.6</jodatime.version>
   </properties>
+
+  <distributionManagement>
+    <repository>
+      <id>nexus-oss</id>
+      <name>Nexus OSS (Releases)</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+    </repository>
+    <snapshotRepository>
+      <id>nexus-oss</id>
+      <name>Nexus OSS (Snapshots)</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
     
   <dependencyManagement>
   <dependencies>
