@@ -1,0 +1,138 @@
+<!--
+ Copyright (C) 2010-2011 LShift Ltd.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<mapping>
+  <description>Diffa XML Configuration Mapping</description>
+
+  <class name="net.lshift.diffa.kernel.config.User">
+    <field name="name" type="string">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    <field name="email" type="string">
+      <bind-xml name="email" node="attribute" />
+    </field>
+  </class>
+
+  <class name="net.lshift.diffa.agent.rest.SerialisableRangeCategoryDescriptor">
+    <field name="name" type="string" required="true">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    <field name="dataType" type="string">
+      <bind-xml name="data-type" node="attribute" />
+    </field>
+    <field name="lower" type="string">
+      <bind-xml name="lower" node="attribute" />
+    </field>
+    <field name="upper" type="string">
+      <bind-xml name="upper" node="attribute" />
+    </field>
+  </class>
+  <class name="net.lshift.diffa.agent.rest.SerialisablePrefixCategoryDescriptor">
+    <field name="name" type="string" required="true">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    <field name="prefixLength" type="int">
+      <bind-xml name="prefix-length" node="attribute" />
+    </field>
+    <field name="maxLength" type="int" required="true">
+      <bind-xml name="max-length" node="attribute" />
+    </field>
+    <field name="step" type="int">
+      <bind-xml name="step" node="attribute" />
+    </field>
+  </class>
+  <class name="net.lshift.diffa.agent.rest.SetValue">
+    <field name="value" type="string" required="true">
+      <bind-xml name="name" node="text" />
+    </field>
+  </class>
+  <class name="net.lshift.diffa.agent.rest.SerialisableSetCategoryDescriptor">
+    <field name="name" type="string" required="true">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    <field name="values" type="net.lshift.diffa.agent.rest.SetValue" collection="set">
+      <bind-xml name="value" />
+    </field>
+  </class>
+
+  <class name="net.lshift.diffa.agent.rest.SerialisableEndpoint">
+    <field name="name" type="string">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    <field name="url" type="string">
+      <bind-xml name="url" node="attribute" />
+    </field>
+    <field name="contentType" type="string">
+      <bind-xml name="content-type" node="attribute" />
+    </field>
+    <field name="inboundUrl" type="string">
+      <bind-xml name="inbound-url" node="attribute" />
+    </field>
+    <field name="inboundContentType" type="string">
+      <bind-xml name="inbound-content-type" node="attribute" />
+    </field>
+
+    <field name="rangeCategories" type="net.lshift.diffa.agent.rest.SerialisableRangeCategoryDescriptor" collection="arraylist">
+      <bind-xml name="range-category" />
+    </field>
+    <field name="prefixCategories" type="net.lshift.diffa.agent.rest.SerialisablePrefixCategoryDescriptor" collection="arraylist">
+      <bind-xml name="prefix-category" />
+    </field>
+    <field name="setCategories" type="net.lshift.diffa.agent.rest.SerialisableSetCategoryDescriptor" collection="arraylist">
+      <bind-xml name="set-category" />
+    </field>
+  </class>
+
+  <class name="net.lshift.diffa.kernel.config.PairDef">
+    <field name="pairKey" type="string">
+      <bind-xml name="key" node="attribute" />
+    </field>
+    <field name="upstreamName" type="string">
+      <bind-xml name="upstream" node="attribute" />
+    </field>
+    <field name="downstreamName" type="string">
+      <bind-xml name="downstream" node="attribute" />
+    </field>
+    <field name="versionPolicyName" type="string">
+      <bind-xml name="version-policy" node="attribute" />
+    </field>
+    <field name="matchingTimeout" type="int">
+      <bind-xml name="matching-timeout" node="attribute" />
+    </field>
+  </class>
+
+  <class name="net.lshift.diffa.agent.rest.SerialisableGroup">
+    <field name="name" type="string">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    <field name="pairs" type="net.lshift.diffa.kernel.config.PairDef" collection="arraylist">
+      <bind-xml name="pair" />
+    </field>
+  </class>
+
+  <class name="net.lshift.diffa.agent.rest.DiffaSerialisableConfig">
+    <map-to xml="diffa-config" />
+
+    <field name="users" type="net.lshift.diffa.kernel.config.User" collection="arraylist">
+      <bind-xml name="user" />
+    </field>
+    <field name="endpoints" type="net.lshift.diffa.agent.rest.SerialisableEndpoint" collection="arraylist">
+      <bind-xml name="endpoint" />
+    </field>
+    <field name="groups" type="net.lshift.diffa.agent.rest.SerialisableGroup" collection="arraylist">
+      <bind-xml name="group" />
+    </field>
+  </class>
+</mapping>

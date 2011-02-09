@@ -58,4 +58,35 @@ public class PrefixCategoryDescriptor extends CategoryDescriptor {
   public void setStep(int step) {
     this.step = step;
   }
+
+  @Override
+  public String toString() {
+    return "PrefixCategoryDescriptor{" +
+      "prefixLength=" + prefixLength +
+      ", maxLength=" + maxLength +
+      ", step=" + step +
+      '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof PrefixCategoryDescriptor)) return false;
+
+    PrefixCategoryDescriptor that = (PrefixCategoryDescriptor) o;
+
+    if (maxLength != that.maxLength) return false;
+    if (prefixLength != that.prefixLength) return false;
+    if (step != that.step) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = prefixLength;
+    result = 31 * result + maxLength;
+    result = 31 * result + step;
+    return result;
+  }
 }

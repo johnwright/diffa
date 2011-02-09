@@ -21,9 +21,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.slf4j.{Logger, LoggerFactory}
 import javax.ws.rs._
 import net.lshift.diffa.kernel.config._
-import net.lshift.diffa.kernel.frontend.Configuration
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
+import net.lshift.diffa.kernel.frontend.{DiffaConfig, Configuration}
+import scala.collection.JavaConversions._
 
 /**
  * This is a REST interface the Configuration abstraction.
@@ -36,6 +37,17 @@ class ConfigurationResource extends AbstractRestResource {
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   @Autowired var config:Configuration = null
+
+  @GET
+  @Path("/xml")
+  @Produces(Array("application/xml"))
+  def retrieveConfiguration():DiffaConfig = config.retrieveConfiguration
+
+  @POST
+  @Path("/xml")
+  @Consumes(Array("application/xml"))
+  @Produces(Array("application/xml"))
+  def applyConfiguration(newConfig:DiffaConfig) = config.applyConfiguration(newConfig)
 
   @GET
   @Path("/endpoints")

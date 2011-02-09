@@ -32,6 +32,17 @@ class Configuration(val configStore: ConfigStore,
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
+  def applyConfiguration(diffaConfig:DiffaConfig) = null
+  def retrieveConfiguration:DiffaConfig = {
+    DiffaConfig(
+      users = configStore.listUsers.toList,
+      endpoints = configStore.listEndpoints.toList,
+      groups = configStore.listGroups.map(g => g.group).toList,
+      pairs = configStore.listGroups.flatMap(g => g.pairs.map(
+        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toList
+    )
+  }
+
   /*
   * Endpoint CRUD
   * */
