@@ -25,6 +25,13 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     extends ConfigStore
     with HibernateQueryUtils {
 
+  val schemaVersionKey = "configStore.schemaVersion"
+  maybeConfigOption(schemaVersionKey) match {
+    case None      => setConfigOption(schemaVersionKey, "0")
+    case Some("0") => // We're up to date
+      // When new schema versions appear, we can handle their upgrade here
+  }
+
   def createOrUpdateEndpoint(e: Endpoint): Unit = sessionFactory.withSession(s => s.saveOrUpdate(e))
 
   def deleteEndpoint(name: String): Unit = sessionFactory.withSession(s => {
@@ -102,6 +109,25 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def getPair(key: String) = sessionFactory.withSession(s => getPair(s, key))
   def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
+
+  def maybeConfigOption(key:String) =
+    sessionFactory.withSession(s => singleQueryOpt[String](s, "configOptionByKey", Map("key" -> key)))
+  def configOptionOrDefault(key: String, defaultVal: String) =
+    maybeConfigOption(key) match {
+      case Some(str) => str
+      case None      => defaultVal
+    }
+  def setConfigOption(key:String, value:String) = sessionFactory.withSession(s => {
+    val co = s.get(classOf[ConfigOption], key) match {
+      case null =>
+        new ConfigOption(key = key, value = value)
+      case current:ConfigOption =>  {
+        current.value = value
+        current
+      }
+    }
+    s.saveOrUpdate(co)
+  })
 
   private def getEndpoint(s: Session, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint")
   private def getUser(s: Session, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user")
