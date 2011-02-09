@@ -99,8 +99,8 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
       if (doc.get("duvsn") == null) {
         false // Remove the document
       } else {
-        // Remove all the upstream attributes. Convert to sequence as middle-step to prevent ConcurrentModificationEx
-        doc.getFields.toSeq.foreach(f => {
+        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+        doc.getFields.toList.foreach(f => {
           if (f.name.startsWith("up.")) doc.removeField(f.name)
         })
         doc.removeField("uvsn")
@@ -114,8 +114,8 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
       if (doc.get("uvsn") == null) {
         false // Remove the document
       } else {
-        // Remove all the upstream attributes. Convert to sequence as middle-step to prevent ConcurrentModificationEx
-        doc.getFields.toSeq.foreach(f => {
+        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+        doc.getFields.toList.foreach(f => {
           if (f.name.startsWith("down.")) doc.removeField(f.name)
         })
         doc.removeField("duvsn")
