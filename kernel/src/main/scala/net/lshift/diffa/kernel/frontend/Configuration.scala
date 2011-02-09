@@ -32,7 +32,21 @@ class Configuration(val configStore: ConfigStore,
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
-  def applyConfiguration(diffaConfig:DiffaConfig) = null
+  def applyConfiguration(diffaConfig:DiffaConfig) = {
+    // Remove all existing objects
+    configStore.listUsers.foreach(u => configStore.deleteUser(u.name))
+    configStore.listGroups.foreach(g => {
+      g.pairs.foreach(p => configStore.deletePair(p.key))
+      configStore.deleteGroup(g.group.key)
+    })
+    configStore.listEndpoints.foreach(e => configStore.deleteEndpoint(e.name))
+
+    // Create each of the objects
+    diffaConfig.users.foreach(u => configStore.createOrUpdateUser(u))
+    diffaConfig.endpoints.foreach(e => configStore.createOrUpdateEndpoint(e))
+    diffaConfig.groups.foreach(g => configStore.createOrUpdateGroup(g))
+    diffaConfig.pairs.foreach(p => configStore.createOrUpdatePair(p))
+  }
   def retrieveConfiguration:DiffaConfig = {
     DiffaConfig(
       users = configStore.listUsers.toList,

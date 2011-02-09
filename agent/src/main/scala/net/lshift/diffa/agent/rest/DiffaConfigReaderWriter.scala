@@ -126,8 +126,8 @@ class SerialisableEndpoint {
     Endpoint(
       name = name, url = url, contentType = contentType, inboundUrl = inboundUrl, inboundContentType = inboundContentType,
       categories =
-        rangeCategories.map(c => c.name -> c).toMap[String, CategoryDescriptor] ++
-        prefixCategories.map(c => c.name -> c).toMap[String, CategoryDescriptor] ++
+        rangeCategories.map(c => c.name -> c.toRangeCategoryDescriptor).toMap[String, CategoryDescriptor] ++
+        prefixCategories.map(c => c.name -> c.toPrefixCategoryDescriptor).toMap[String, CategoryDescriptor] ++
         setCategories.map(c => c.name -> c.toSetCategoryDescriptor).toMap[String, CategoryDescriptor]
     )
 }
@@ -137,12 +137,16 @@ class SerialisableRangeCategoryDescriptor(@BeanProperty var name:String, dataTyp
 
   def this() = this(null, null, null, null)
   def this(name:String, rcd:RangeCategoryDescriptor) = this(name, rcd.dataType, rcd.lower, rcd.upper)
+
+  def toRangeCategoryDescriptor = new RangeCategoryDescriptor(dataType, lower, upper)
 }
 class SerialisablePrefixCategoryDescriptor(@BeanProperty var name:String, prefixLength:Int, maxLength:Int, step:Int)
   extends PrefixCategoryDescriptor(prefixLength, maxLength, step) {
 
   def this() = this(null, 1, 1, 1)
   def this(name:String, pcd:PrefixCategoryDescriptor) = this(name, pcd.prefixLength, pcd.maxLength, pcd.step)
+
+  def toPrefixCategoryDescriptor = new PrefixCategoryDescriptor(prefixLength, maxLength, step)
 }
 class SerialisableSetCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var values:java.util.Set[SetValue]) {
   def this() = this(null, new java.util.HashSet[SetValue])
