@@ -54,31 +54,31 @@ class DiffaConfigReaderWriterTest {
     readerWriter.writeTo(config, null, null, null, null, null, baos)
 
     val expectedXml =
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-      "<diffa-config>" +
-        "<property key=\"diffa.host\">localhost:1234</property>" +
-        "<property key=\"a\">b</property>" +
-        "<user name=\"abc\" email=\"a@example.com\"/>" +
-        "<endpoint name=\"upstream1\" url=\"http://localhost:1234\" content-type=\"application/json\" " +
-                   "inbound-url=\"http://inbound\" inbound-content-type=\"application/xml\">" +
-          "<range-category name=\"a\" data-type=\"date\" lower=\"2009\" upper=\"2010\"/>" +
-          "<set-category name=\"b\">" +
-            "<value>a</value>" +
-            "<value>b</value>" +
-            "<value>c</value>" +
-          "</set-category>" +
-        "</endpoint>" +
-        "<endpoint name=\"downstream1\" url=\"http://localhost:5432\" content-type=\"application/json\">" +
-          "<prefix-category name=\"c\" prefix-length=\"1\" max-length=\"5\" step=\"1\"/>" +
-          "<prefix-category name=\"d\" prefix-length=\"1\" max-length=\"6\" step=\"1\"/>" +
-        "</endpoint>" +
-        "<group name=\"gaa\">" +
-          "<pair key=\"ab\" upstream=\"upstream1\" downstream=\"downstream1\" version-policy=\"same\" matching-timeout=\"5\"/>" +
-        "</group>" +
-        "<group name=\"gbb\">" +
-          "<pair key=\"ac\" upstream=\"upstream1\" downstream=\"downstream1\" version-policy=\"same\" matching-timeout=\"5\"/>" +
-        "</group>" +
-      "</diffa-config>"
+      <diffa-config>
+        <property key="diffa.host">localhost:1234</property>
+        <property key="a">b</property>
+        <user name="abc" email="a@example.com"/>
+        <endpoint name="upstream1" url="http://localhost:1234" content-type="application/json"
+                  inbound-url="http://inbound" inbound-content-type="application/xml">
+          <range-category name="a" data-type="date" lower="2009" upper="2010"/>
+          <set-category name="b">
+            <value>a</value>
+            <value>b</value>
+            <value>c</value>
+          </set-category>
+        </endpoint>
+        <endpoint name="downstream1" url="http://localhost:5432" content-type="application/json">
+          <prefix-category name="c" prefix-length="1" max-length="5" step="1"/>
+          <prefix-category name="d" prefix-length="1" max-length="6" step="1"/>
+        </endpoint>
+        <group name="gaa">
+          <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>
+        </group>
+        <group name="gbb">
+          <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>
+        </group>
+      </diffa-config>.toString
+
     ConfigComparisonUtil.assertConfigMatches(expectedXml, new String(baos.toByteArray, "UTF-8"))
 
     val newConfig = readerWriter.readFrom(null, null, null, null, null, new ByteArrayInputStream(baos.toByteArray))

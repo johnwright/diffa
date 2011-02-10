@@ -32,15 +32,14 @@ class ConfigurationUploadTest {
       // Don't create any endpoints or pairs, since they'll be verified on upload and will put the agent into a
       // bad state.
     var config =
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-      "<diffa-config>" +
-        "<property key=\"a\">b</property>" +
-        "<user name=\"foo\" email=\"foo@bar.com\"/>" +
-        "<group name=\"gaa\">" +
-        "</group>" +
-        "<group name=\"gbb\">" +
-        "</group>" +
-      "</diffa-config>"
+      <diffa-config>
+        <property key="a">b</property>
+        <user name="foo" email="foo@bar.com"/>
+        <group name="gaa">
+        </group>
+        <group name="gbb">
+        </group>
+      </diffa-config>.toString
 
     uploadConfig(config)
     val retrieved = retrieveConfig
@@ -50,7 +49,7 @@ class ConfigurationUploadTest {
 
   @Test
   def shouldAllowBlankingOfConfig() {
-    val empty = "<diffa-config />"
+    val empty = <diffa-config />.toString
 
     uploadConfig(empty)
     val retrieved = retrieveConfig
