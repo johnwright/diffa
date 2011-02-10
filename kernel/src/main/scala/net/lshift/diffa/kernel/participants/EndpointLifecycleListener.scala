@@ -16,6 +16,8 @@
 
 package net.lshift.diffa.kernel.participants
 
+import net.lshift.diffa.kernel.config.Endpoint
+
 /**
  * Trait for receiving notifications about the lifecycle of endpoints within the system.
  */
