@@ -48,6 +48,17 @@ class ConfigurationUploadTest {
     ConfigComparisonUtil.assertConfigMatches(config, retrieved)
   }
 
+  @Test
+  def shouldAllowBlankingOfConfig() {
+    val empty = "<diffa-config />"
+
+    uploadConfig(empty)
+    val retrieved = retrieveConfig
+
+    ConfigComparisonUtil.assertConfigMatches(empty, retrieved)
+
+  }
+
   // Create our own Client here, since this mechanism doesn't really fit any of the other REST clients
 
   val config = new DefaultClientConfig()

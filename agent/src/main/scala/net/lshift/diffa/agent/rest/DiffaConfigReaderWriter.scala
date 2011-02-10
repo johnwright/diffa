@@ -51,36 +51,43 @@ class DiffaConfigReaderWriter
     classOf[DiffaConfig].isAssignableFrom(propType)
 
   def readFrom(propType: Class[DiffaConfig], genericType: Type, annotations: Array[Annotation], mediaType: MediaType, httpHeaders: MultivaluedMap[String, String], entityStream: InputStream) =
-    marshaller.unmarshal(new StreamSource(entityStream)).asInstanceOf[DiffaSerializableConfig].toDiffaConfig
+    marshaller.unmarshal(new StreamSource(entityStream)).asInstanceOf[DiffaCastorSerializableConfig].toDiffaConfig
 
   def writeTo(t: DiffaConfig, `type` : Class[_], genericType: Type, annotations: Array[Annotation], mediaType: MediaType, httpHeaders: MultivaluedMap[String, AnyRef], entityStream: OutputStream) = {
     var r = new StreamResult(entityStream)
-    marshaller.marshal((new DiffaSerializableConfig).fromDiffaConfig(t), r)
+    marshaller.marshal((new DiffaCastorSerializableConfig).fromDiffaConfig(t), r)
   }
 
   def getSize(t: DiffaConfig, `type` : Class[_], genericType: Type, annotations: Array[Annotation], mediaType: MediaType) = {
     var sw = new StringWriter
     var r = new StreamResult(sw)
-    marshaller.marshal((new DiffaSerializableConfig).fromDiffaConfig(t), r)
+    marshaller.marshal((new DiffaCastorSerializableConfig).fromDiffaConfig(t), r)
 
     sw.toString.length
   }
 }
 
+//
+// The below types are essential private the DiffaConfigReaderWriter, and are used simply to allow for clean xml
+// to be mapped to/from by Castor. Our internal types simply don't serialize to XML cleanly, and we don't want to live
+// with the mess they'd be in if we adjusted them to be so.
+//
+
+
 /**
  * Describes a complete diffa configuration.
  */
-class DiffaSerializableConfig {
+class DiffaCastorSerializableConfig {
   @BeanProperty var users:java.util.List[User] = new java.util.ArrayList[User]
   @BeanProperty var properties:java.util.List[DiffaProperty] = new java.util.ArrayList[DiffaProperty]
-  @BeanProperty var endpoints:java.util.List[SerializableEndpoint] = new java.util.ArrayList[SerializableEndpoint]
-  @BeanProperty var groups:java.util.List[SerializableGroup] = new java.util.ArrayList[SerializableGroup]
+  @BeanProperty var endpoints:java.util.List[CastorSerializableEndpoint] = new java.util.ArrayList[CastorSerializableEndpoint]
+  @BeanProperty var groups:java.util.List[CastorSerializableGroup] = new java.util.ArrayList[CastorSerializableGroup]
 
   def fromDiffaConfig(c:DiffaConfig) = {
     this.users = c.users.toList
     this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
-    this.endpoints = c.endpoints.map { e => (new SerializableEndpoint).fromDiffaEndpoint(e) }.toList
-    this.groups = c.groups.map(g => new SerializableGroup(g.key, c.pairs.filter(p => p.groupKey == g.key).toList)).toList
+    this.endpoints = c.endpoints.map { e => (new CastorSerializableEndpoint).fromDiffaEndpoint(e) }.toList
+    this.groups = c.groups.map(g => new CastorSerializableGroup(g.key, c.pairs.filter(p => p.groupKey == g.key).toList)).toList
 
     this
   }
@@ -99,15 +106,15 @@ class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String
   def this() = this(null, null)
 }
 
-class SerializableEndpoint {
+class CastorSerializableEndpoint {
   @BeanProperty var name: String = null
   @BeanProperty var url: String = null
   @BeanProperty var contentType: String = null
   @BeanProperty var inboundUrl: String = null
   @BeanProperty var inboundContentType: String = null
-  @BeanProperty var rangeCategories: java.util.List[SerializableRangeCategoryDescriptor] = new java.util.ArrayList[SerializableRangeCategoryDescriptor]
-  @BeanProperty var prefixCategories: java.util.List[SerializablePrefixCategoryDescriptor] = new java.util.ArrayList[SerializablePrefixCategoryDescriptor]
-  @BeanProperty var setCategories: java.util.List[SerializableSetCategoryDescriptor] = new java.util.ArrayList[SerializableSetCategoryDescriptor]
+  @BeanProperty var rangeCategories: java.util.List[CastorSerializableRangeCategoryDescriptor] = new java.util.ArrayList[CastorSerializableRangeCategoryDescriptor]
+  @BeanProperty var prefixCategories: java.util.List[CastorSerializablePrefixCategoryDescriptor] = new java.util.ArrayList[CastorSerializablePrefixCategoryDescriptor]
+  @BeanProperty var setCategories: java.util.List[CastorSerializableSetCategoryDescriptor] = new java.util.ArrayList[CastorSerializableSetCategoryDescriptor]
 
   def fromDiffaEndpoint(e:Endpoint) = {
     this.name = e.name
@@ -117,11 +124,11 @@ class SerializableEndpoint {
     this.inboundContentType = e.inboundContentType
 
     this.rangeCategories = e.categories.filter { case (key, cat) => cat.isInstanceOf[RangeCategoryDescriptor] }.
-      map { case (key, cat) => new SerializableRangeCategoryDescriptor(key, cat.asInstanceOf[RangeCategoryDescriptor]) }.toList
+      map { case (key, cat) => new CastorSerializableRangeCategoryDescriptor(key, cat.asInstanceOf[RangeCategoryDescriptor]) }.toList
     this.prefixCategories = e.categories.filter { case (key, cat) => cat.isInstanceOf[PrefixCategoryDescriptor] }.
-      map { case (key, cat) => new SerializablePrefixCategoryDescriptor(key, cat.asInstanceOf[PrefixCategoryDescriptor]) }.toList
+      map { case (key, cat) => new CastorSerializablePrefixCategoryDescriptor(key, cat.asInstanceOf[PrefixCategoryDescriptor]) }.toList
     this.setCategories = e.categories.filter { case (key, cat) => cat.isInstanceOf[SetCategoryDescriptor] }.
-      map { case (key, cat) => new SerializableSetCategoryDescriptor(key, cat.asInstanceOf[SetCategoryDescriptor]) }.toList
+      map { case (key, cat) => new CastorSerializableSetCategoryDescriptor(key, cat.asInstanceOf[SetCategoryDescriptor]) }.toList
 
     this
   }
@@ -136,7 +143,7 @@ class SerializableEndpoint {
     )
 }
 
-class SerializableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var dataType:String,
+class CastorSerializableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var dataType:String,
                                           @BeanProperty var lower:String, @BeanProperty var upper:String) {
 
   def this() = this(null, null, null, null)
@@ -144,7 +151,7 @@ class SerializableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanPr
 
   def toRangeCategoryDescriptor = new RangeCategoryDescriptor(dataType, lower, upper)
 }
-class SerializablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var prefixLength:Int,
+class CastorSerializablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var prefixLength:Int,
                                            @BeanProperty var maxLength:Int, @BeanProperty var step:Int) {
 
   def this() = this(null, 1, 1, 1)
@@ -152,7 +159,7 @@ class SerializablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanP
 
   def toPrefixCategoryDescriptor = new PrefixCategoryDescriptor(prefixLength, maxLength, step)
 }
-class SerializableSetCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var values:java.util.Set[SetValue]) {
+class CastorSerializableSetCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var values:java.util.Set[SetValue]) {
   def this() = this(null, new java.util.HashSet[SetValue])
   def this(name:String, scd:SetCategoryDescriptor) = this(name, scd.values.map(v => new SetValue(v)).toSet)
 
@@ -162,7 +169,7 @@ class SetValue(@BeanProperty var value:String) {
   def this() = this(null)
 }
 
-class SerializableGroup(
+class CastorSerializableGroup(
     @BeanProperty var name:String,
     @BeanProperty var pairs:java.util.List[PairDef] = new java.util.ArrayList[PairDef]
 ) {

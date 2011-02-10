@@ -46,7 +46,6 @@ class ConfigurationResource extends AbstractRestResource {
   @POST
   @Path("/xml")
   @Consumes(Array("application/xml"))
-  @Produces(Array("application/xml"))
   def applyConfiguration(newConfig:DiffaConfig) = config.applyConfiguration(newConfig)
 
   @GET

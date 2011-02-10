@@ -141,6 +141,26 @@ class ConfigurationTest {
     verifyAll
   }
 
+  @Test
+  def shouldBlankConfigurationOfNonEmptySystem() {
+    // Apply the configuration used in the empty state test
+    shouldApplyConfigurationToEmptySystem
+    resetAll
+
+    expect(pairManager.stopActor("ab")).once
+    expect(pairManager.stopActor("ac")).once
+    expect(matchingManager.onDeletePair("ab")).once
+    expect(matchingManager.onDeletePair("ac")).once
+//    expect(sessionManager.onDeletePair("ac")).once
+    expect(endpointListener.onEndpointRemoved("upstream1")).once
+    expect(endpointListener.onEndpointRemoved("downstream1")).once
+    replayAll
+
+    configuration.applyConfiguration(DiffaConfig())
+    assertEquals(DiffaConfig(), configuration.retrieveConfiguration)
+    verifyAll
+  }
+
   private def replayAll = replay(matchingManager, pairManager, sessionManager, endpointListener)
   private def verifyAll = verify(matchingManager, pairManager, sessionManager, endpointListener)
   private def resetAll = reset(matchingManager, pairManager, sessionManager, endpointListener)
