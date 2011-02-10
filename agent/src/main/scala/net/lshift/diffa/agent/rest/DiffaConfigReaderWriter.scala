@@ -51,17 +51,17 @@ class DiffaConfigReaderWriter
     classOf[DiffaConfig].isAssignableFrom(propType)
 
   def readFrom(propType: Class[DiffaConfig], genericType: Type, annotations: Array[Annotation], mediaType: MediaType, httpHeaders: MultivaluedMap[String, String], entityStream: InputStream) =
-    marshaller.unmarshal(new StreamSource(entityStream)).asInstanceOf[DiffaSerialisableConfig].toDiffaConfig
+    marshaller.unmarshal(new StreamSource(entityStream)).asInstanceOf[DiffaSerializableConfig].toDiffaConfig
 
   def writeTo(t: DiffaConfig, `type` : Class[_], genericType: Type, annotations: Array[Annotation], mediaType: MediaType, httpHeaders: MultivaluedMap[String, AnyRef], entityStream: OutputStream) = {
     var r = new StreamResult(entityStream)
-    marshaller.marshal((new DiffaSerialisableConfig).fromDiffaConfig(t), r)
+    marshaller.marshal((new DiffaSerializableConfig).fromDiffaConfig(t), r)
   }
 
   def getSize(t: DiffaConfig, `type` : Class[_], genericType: Type, annotations: Array[Annotation], mediaType: MediaType) = {
     var sw = new StringWriter
     var r = new StreamResult(sw)
-    marshaller.marshal((new DiffaSerialisableConfig).fromDiffaConfig(t), r)
+    marshaller.marshal((new DiffaSerializableConfig).fromDiffaConfig(t), r)
 
     sw.toString.length
   }
@@ -70,17 +70,17 @@ class DiffaConfigReaderWriter
 /**
  * Describes a complete diffa configuration.
  */
-class DiffaSerialisableConfig {
+class DiffaSerializableConfig {
   @BeanProperty var users:java.util.List[User] = new java.util.ArrayList[User]
   @BeanProperty var properties:java.util.List[DiffaProperty] = new java.util.ArrayList[DiffaProperty]
-  @BeanProperty var endpoints:java.util.List[SerialisableEndpoint] = new java.util.ArrayList[SerialisableEndpoint]
-  @BeanProperty var groups:java.util.List[SerialisableGroup] = new java.util.ArrayList[SerialisableGroup]
+  @BeanProperty var endpoints:java.util.List[SerializableEndpoint] = new java.util.ArrayList[SerializableEndpoint]
+  @BeanProperty var groups:java.util.List[SerializableGroup] = new java.util.ArrayList[SerializableGroup]
 
   def fromDiffaConfig(c:DiffaConfig) = {
     this.users = c.users.toList
     this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
-    this.endpoints = c.endpoints.map { e => (new SerialisableEndpoint).fromDiffaEndpoint(e) }.toList
-    this.groups = c.groups.map(g => new SerialisableGroup(g.key, c.pairs.filter(p => p.groupKey == g.key).toList)).toList
+    this.endpoints = c.endpoints.map { e => (new SerializableEndpoint).fromDiffaEndpoint(e) }.toList
+    this.groups = c.groups.map(g => new SerializableGroup(g.key, c.pairs.filter(p => p.groupKey == g.key).toList)).toList
 
     this
   }
@@ -99,15 +99,15 @@ class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String
   def this() = this(null, null)
 }
 
-class SerialisableEndpoint {
+class SerializableEndpoint {
   @BeanProperty var name: String = null
   @BeanProperty var url: String = null
   @BeanProperty var contentType: String = null
   @BeanProperty var inboundUrl: String = null
   @BeanProperty var inboundContentType: String = null
-  @BeanProperty var rangeCategories: java.util.List[SerialisableRangeCategoryDescriptor] = new java.util.ArrayList[SerialisableRangeCategoryDescriptor]
-  @BeanProperty var prefixCategories: java.util.List[SerialisablePrefixCategoryDescriptor] = new java.util.ArrayList[SerialisablePrefixCategoryDescriptor]
-  @BeanProperty var setCategories: java.util.List[SerialisableSetCategoryDescriptor] = new java.util.ArrayList[SerialisableSetCategoryDescriptor]
+  @BeanProperty var rangeCategories: java.util.List[SerializableRangeCategoryDescriptor] = new java.util.ArrayList[SerializableRangeCategoryDescriptor]
+  @BeanProperty var prefixCategories: java.util.List[SerializablePrefixCategoryDescriptor] = new java.util.ArrayList[SerializablePrefixCategoryDescriptor]
+  @BeanProperty var setCategories: java.util.List[SerializableSetCategoryDescriptor] = new java.util.ArrayList[SerializableSetCategoryDescriptor]
 
   def fromDiffaEndpoint(e:Endpoint) = {
     this.name = e.name
@@ -117,11 +117,11 @@ class SerialisableEndpoint {
     this.inboundContentType = e.inboundContentType
 
     this.rangeCategories = e.categories.filter { case (key, cat) => cat.isInstanceOf[RangeCategoryDescriptor] }.
-      map { case (key, cat) => new SerialisableRangeCategoryDescriptor(key, cat.asInstanceOf[RangeCategoryDescriptor]) }.toList
+      map { case (key, cat) => new SerializableRangeCategoryDescriptor(key, cat.asInstanceOf[RangeCategoryDescriptor]) }.toList
     this.prefixCategories = e.categories.filter { case (key, cat) => cat.isInstanceOf[PrefixCategoryDescriptor] }.
-      map { case (key, cat) => new SerialisablePrefixCategoryDescriptor(key, cat.asInstanceOf[PrefixCategoryDescriptor]) }.toList
+      map { case (key, cat) => new SerializablePrefixCategoryDescriptor(key, cat.asInstanceOf[PrefixCategoryDescriptor]) }.toList
     this.setCategories = e.categories.filter { case (key, cat) => cat.isInstanceOf[SetCategoryDescriptor] }.
-      map { case (key, cat) => new SerialisableSetCategoryDescriptor(key, cat.asInstanceOf[SetCategoryDescriptor]) }.toList
+      map { case (key, cat) => new SerializableSetCategoryDescriptor(key, cat.asInstanceOf[SetCategoryDescriptor]) }.toList
 
     this
   }
@@ -136,7 +136,7 @@ class SerialisableEndpoint {
     )
 }
 
-class SerialisableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var dataType:String,
+class SerializableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var dataType:String,
                                           @BeanProperty var lower:String, @BeanProperty var upper:String) {
 
   def this() = this(null, null, null, null)
@@ -144,7 +144,7 @@ class SerialisableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanPr
 
   def toRangeCategoryDescriptor = new RangeCategoryDescriptor(dataType, lower, upper)
 }
-class SerialisablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var prefixLength:Int,
+class SerializablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var prefixLength:Int,
                                            @BeanProperty var maxLength:Int, @BeanProperty var step:Int) {
 
   def this() = this(null, 1, 1, 1)
@@ -152,7 +152,7 @@ class SerialisablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanP
 
   def toPrefixCategoryDescriptor = new PrefixCategoryDescriptor(prefixLength, maxLength, step)
 }
-class SerialisableSetCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var values:java.util.Set[SetValue]) {
+class SerializableSetCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var values:java.util.Set[SetValue]) {
   def this() = this(null, new java.util.HashSet[SetValue])
   def this(name:String, scd:SetCategoryDescriptor) = this(name, scd.values.map(v => new SetValue(v)).toSet)
 
@@ -162,7 +162,7 @@ class SetValue(@BeanProperty var value:String) {
   def this() = this(null)
 }
 
-class SerialisableGroup(
+class SerializableGroup(
     @BeanProperty var name:String,
     @BeanProperty var pairs:java.util.List[PairDef] = new java.util.ArrayList[PairDef]
 ) {

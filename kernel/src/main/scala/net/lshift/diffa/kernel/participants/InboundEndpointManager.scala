@@ -21,11 +21,6 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 
-trait EndpointLifecycleListener {
-  def onEndpointAvailable(e:Endpoint):Unit
-  def onEndpointRemoved(key:String):Unit
-}
-
 /**
  * Manager for delegating inbound endpoint setup/destruction to InboundEndpointFactory instances.
  */
