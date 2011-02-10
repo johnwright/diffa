@@ -41,6 +41,7 @@
     <jackson.version>1.7.1</jackson.version>
     <lucene.version>3.0.2</lucene.version>
     <jodatime.version>1.6</jodatime.version>
+    <javamail.file.transport.version>0.8-SNAPSHOT</javamail.file.transport.version>
   </properties>
 
   <distributionManagement>
