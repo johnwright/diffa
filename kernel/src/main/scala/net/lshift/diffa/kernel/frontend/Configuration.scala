@@ -143,7 +143,7 @@ class Configuration(val configStore: ConfigStore,
       f(current.key)
     }
     catch {
-      case e:MissingObjectException => println("No pair " + pairDef.pairKey)// Do nothing, the pair doesn't currently exist
+      case e:MissingObjectException => // Do nothing, the pair doesn't currently exist
     }
   }
 
