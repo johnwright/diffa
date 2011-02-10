@@ -162,6 +162,9 @@ class SetValue(@BeanProperty var value:String) {
   def this() = this(null)
 }
 
-class SerialisableGroup(@BeanProperty var name:String, @BeanProperty var pairs:java.util.List[PairDef]) {
-  def this() = this(null, null)
+class SerialisableGroup(
+    @BeanProperty var name:String,
+    @BeanProperty var pairs:java.util.List[PairDef] = new java.util.ArrayList[PairDef]
+) {
+  def this() = this(name = null)
 }

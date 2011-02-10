@@ -21,9 +21,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.frontend.DiffaConfig
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import org.custommonkey.xmlunit.XMLAssert.assertXMLEqual
-import org.custommonkey.xmlunit._
-import org.w3c.dom.Element
+import net.lshift.diffa.agent.util.ConfigComparisonUtil
 
 /*
 * Test cases for the DiffaConfigReaderWriter.
@@ -55,10 +53,6 @@ class DiffaConfigReaderWriterTest {
     val baos = new ByteArrayOutputStream
     readerWriter.writeTo(config, null, null, null, null, null, baos)
 
-    XMLUnit.setNormalize(true);
-    XMLUnit.setNormalizeWhitespace(true);
-    XMLUnit.setIgnoreWhitespace(true);
-
     val expectedXml =
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
       "<diffa-config>" +
@@ -85,23 +79,7 @@ class DiffaConfigReaderWriterTest {
           "<pair key=\"ac\" upstream=\"upstream1\" downstream=\"downstream1\" version-policy=\"same\" matching-timeout=\"5\"/>" +
         "</group>" +
       "</diffa-config>"
-    val serialised = new String(baos.toByteArray, "UTF-8")
-    val diff = new DetailedDiff(new Diff(expectedXml, serialised))
-    diff.overrideElementQualifier(new ElementQualifier() {
-      val nameAndAttrQualifier = new ElementNameAndAttributeQualifier
-      val nameAndTextQualifier = new ElementNameAndTextQualifier
-
-      def qualifyForComparison(control: Element, test: Element) = {
-        // Custom behaviour for value nodes, since they don't have alignment attributes
-        if (test.getNodeName == "value") {
-          nameAndTextQualifier.qualifyForComparison(control, test)
-        } else {
-          nameAndAttrQualifier.qualifyForComparison(control, test)
-        }
-      }
-    })
-
-    assertXMLEqual("Serialized xml " + serialised + " does not match expected " + expectedXml, diff, true)
+    ConfigComparisonUtil.assertConfigMatches(expectedXml, new String(baos.toByteArray, "UTF-8"))
 
     val newConfig = readerWriter.readFrom(null, null, null, null, null, new ByteArrayInputStream(baos.toByteArray))
     assertEquals(config, newConfig)

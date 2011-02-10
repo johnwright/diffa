@@ -27,7 +27,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
   val schemaVersionKey = "configStore.schemaVersion"
   maybeConfigOption(schemaVersionKey) match {
-    case None      => setConfigOption(schemaVersionKey, "0")
+    case None      => setConfigOption(schemaVersionKey, "0", isInternal = true)
     case Some("0") => // We're up to date
       // When new schema versions appear, we can handle their upgrade here
   }
