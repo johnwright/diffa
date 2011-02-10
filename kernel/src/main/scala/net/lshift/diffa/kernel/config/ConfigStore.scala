@@ -48,6 +48,11 @@ trait ConfigStore {
   def getPairsForEndpoint(epName:String):Seq[Pair]
 
   /**
+   * Retrieves all (non-internal) agent configuration options.
+   */
+  def allConfigOptions:Map[String, String]
+
+  /**
    * Retrieves an agent configuration option, returning the None if it is unset.
    */
   def maybeConfigOption(key:String):Option[String]
@@ -59,8 +64,15 @@ trait ConfigStore {
 
   /**
    * Sets the given configuration option to the given value.
+   * @param isInternal options marked as internal will not be returned by the allConfigOptions method. This allows
+   *   properties to be prevented from being shown in the user-visible system configuration views.
    */
-  def setConfigOption(key:String, value:String)
+  def setConfigOption(key:String, value:String, isInternal:Boolean = false)
+
+  /**
+   * Removes the setting for the given configuration option.
+   */
+  def clearConfigOption(key:String)
 }
 
 case class Endpoint(
@@ -159,6 +171,7 @@ case class User(@BeanProperty var name: String,
 }
 
 case class ConfigOption(@BeanProperty var key:String,
-                        @BeanProperty var value:String) {
-  def this() = this(null, null)
+                        @BeanProperty var value:String,
+                        @BeanProperty var isInternal:Boolean) {
+  def this() = this(null, null, false)
 }

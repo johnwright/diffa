@@ -74,4 +74,34 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
     this.upper = upper;
   }
 
+  @Override
+  public String toString() {
+    return "RangeCategoryDescriptor{" +
+      "dataType='" + dataType + '\'' +
+      ", lower='" + lower + '\'' +
+      ", upper='" + upper + '\'' +
+      '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof RangeCategoryDescriptor)) return false;
+
+    RangeCategoryDescriptor that = (RangeCategoryDescriptor) o;
+
+    if (dataType != null ? !dataType.equals(that.dataType) : that.dataType != null) return false;
+    if (lower != null ? !lower.equals(that.lower) : that.lower != null) return false;
+    if (upper != null ? !upper.equals(that.upper) : that.upper != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = dataType != null ? dataType.hashCode() : 0;
+    result = 31 * result + (lower != null ? lower.hashCode() : 0);
+    result = 31 * result + (upper != null ? upper.hashCode() : 0);
+    return result;
+  }
 }

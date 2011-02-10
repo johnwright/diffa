@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 /**
  * Manager for delegating inbound endpoint setup/destruction to InboundEndpointFactory instances.
  */
-class InboundEndpointManager(configStore:ConfigStore) extends AgentLifecycleAware {
+class InboundEndpointManager(configStore:ConfigStore) extends EndpointLifecycleListener with AgentLifecycleAware {
   private val factories = new ListBuffer[InboundEndpointFactory]
   private val log = LoggerFactory.getLogger(classOf[InboundEndpointFactory])
 

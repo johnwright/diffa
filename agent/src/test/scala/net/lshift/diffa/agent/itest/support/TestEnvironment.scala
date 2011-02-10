@@ -33,7 +33,7 @@ import net.lshift.diffa.kernel.config.{CategoryDescriptor, RangeCategoryDescript
  * various parts, along with convenience methods for making the configuration valid.
  */
 class TestEnvironment(val pairKey: String,
-                      participants: Participants,
+                      val participants: Participants,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
 

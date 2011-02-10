@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.config.ConfigStore
 
 class PairActorSupervisor(val policyManager:VersionPolicyManager,
                           val config:ConfigStore,
-                          val participantFactory:ParticipantFactory) {
+                          val participantFactory:ParticipantFactory) extends ActivePairManager {
 
   private val log = LoggerFactory.getLogger(getClass)
 

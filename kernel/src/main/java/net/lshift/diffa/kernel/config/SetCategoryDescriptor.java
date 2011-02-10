@@ -43,4 +43,28 @@ public class SetCategoryDescriptor extends CategoryDescriptor {
   public void setValues(Set<String> values) {
     this.values = values;
   }
+
+  @Override
+  public String toString() {
+    return "SetCategoryDescriptor{" +
+      "values=" + values +
+      '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof SetCategoryDescriptor)) return false;
+
+    SetCategoryDescriptor that = (SetCategoryDescriptor) o;
+
+    if (values != null ? !values.equals(that.values) : that.values != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return values != null ? values.hashCode() : 0;
+  }
 }

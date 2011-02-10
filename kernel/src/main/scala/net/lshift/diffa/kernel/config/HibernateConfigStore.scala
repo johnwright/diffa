@@ -27,7 +27,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
   val schemaVersionKey = "configStore.schemaVersion"
   maybeConfigOption(schemaVersionKey) match {
-    case None      => setConfigOption(schemaVersionKey, "0")
+    case None      => setConfigOption(schemaVersionKey, "0", isInternal = true)
     case Some("0") => // We're up to date
       // When new schema versions appear, we can handle their upgrade here
   }
@@ -110,6 +110,12 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
 
+  def allConfigOptions = {
+    sessionFactory.withSession(s => {
+      listQuery[ConfigOption](s, "allNonInternalConfigOptions", Map()).map(opt => opt.key -> opt.value).toMap
+    })
+  }
+
   def maybeConfigOption(key:String) =
     sessionFactory.withSession(s => singleQueryOpt[String](s, "configOptionByKey", Map("key" -> key)))
   def configOptionOrDefault(key: String, defaultVal: String) =
@@ -117,16 +123,23 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
       case Some(str) => str
       case None      => defaultVal
     }
-  def setConfigOption(key:String, value:String) = sessionFactory.withSession(s => {
+  def setConfigOption(key:String, value:String, isInternal:Boolean = false) = sessionFactory.withSession(s => {
     val co = s.get(classOf[ConfigOption], key) match {
       case null =>
-        new ConfigOption(key = key, value = value)
+        new ConfigOption(key = key, value = value, isInternal = isInternal)
       case current:ConfigOption =>  {
         current.value = value
+        current.isInternal = isInternal
         current
       }
     }
     s.saveOrUpdate(co)
+  })
+  def clearConfigOption(key:String) = sessionFactory.withSession(s => {
+    val co = s.get(classOf[ConfigOption], key) match {
+      case null =>
+      case current:ConfigOption =>  s.delete(current)
+    }
   })
 
   private def getEndpoint(s: Session, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint")

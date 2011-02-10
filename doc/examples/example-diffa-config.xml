@@ -1,0 +1,35 @@
+<diffa-config>
+  <user name="user1" email="user1@example.com" />
+  <user name="user2" email="user2@example.com" />
+
+  <property key="diffa.host">diffa-internal.lshift.net:1234</property>
+  
+  <endpoint name="upstream1"
+            url="http://localhost:19293/diffa-participants/p/upstream"
+            content-type="application/json">
+
+    <prefix-category name="id" initial-length="1" max-length="8" step="2" />
+    <range-category name="bizDate" data-type="date" lower="2009-01-01" />
+    <set-category name="segments">
+      <value>1</value>
+      <value>2</value>
+    </set-category>
+  </endpoint>
+
+  <endpoint name="downstream1"
+            url="amqp://localhost//exchanges/downstream1"
+            content-type="application/json"
+            inbound-url="amqp://localhost//queues/exampleChanges"
+            inbound-content-type="application/example+json">
+
+    <range-category name="bizDate" data-type="date" lower="2009-01-01" />
+    <set-category name="segments">
+      <value>1</value>
+      <value>2</value>
+    </set-category>
+  </endpoint>
+
+  <group name="main">
+    <pair key="ab" upstream="upstream1" downstream="downstream1" match-timeout="5" version-policy="same" />
+  </group>
+</diffa-config>
