@@ -72,27 +72,31 @@ class DiffaConfigReaderWriter
  */
 class DiffaSerialisableConfig {
   @BeanProperty var users:java.util.List[User] = new java.util.ArrayList[User]
-  @BeanProperty var properties:java.util.Map[String, String] = new java.util.HashMap[String, String]
+  @BeanProperty var properties:java.util.List[DiffaProperty] = new java.util.ArrayList[DiffaProperty]
   @BeanProperty var endpoints:java.util.List[SerialisableEndpoint] = new java.util.ArrayList[SerialisableEndpoint]
   @BeanProperty var groups:java.util.List[SerialisableGroup] = new java.util.ArrayList[SerialisableGroup]
 
   def fromDiffaConfig(c:DiffaConfig) = {
-    this.users = c.users
-    this.properties = c.properties
-    this.endpoints = c.endpoints.map { e => (new SerialisableEndpoint).fromDiffaEndpoint(e) }
-    this.groups = c.groups.map(g => new SerialisableGroup(g.key, c.pairs.filter(p => p.groupKey == g.key)))
+    this.users = c.users.toList
+    this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
+    this.endpoints = c.endpoints.map { e => (new SerialisableEndpoint).fromDiffaEndpoint(e) }.toList
+    this.groups = c.groups.map(g => new SerialisableGroup(g.key, c.pairs.filter(p => p.groupKey == g.key).toList)).toList
 
     this
   }
 
   def toDiffaConfig:DiffaConfig = {
     DiffaConfig(
-      users = users.toList,
-      properties = properties.toMap,
-      endpoints = endpoints.map(_.toDiffaEndpoint).toList,
-      groups = groups.map(g => PairGroup(g.name)).toList,
-      pairs = groups.flatMap(g => g.pairs.map { p => { p.groupKey = g.name; p } }).toList)
+      users = users.toSet,
+      properties = properties.map(p => p.key -> p.value).toMap,
+      endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
+      groups = groups.map(g => PairGroup(g.name)).toSet,
+      pairs = groups.flatMap(g => g.pairs.map { p => { p.groupKey = g.name; p } }).toSet)
   }
+}
+
+class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String) {
+  def this() = this(null, null)
 }
 
 class SerialisableEndpoint {
@@ -132,16 +136,16 @@ class SerialisableEndpoint {
     )
 }
 
-class SerialisableRangeCategoryDescriptor(@BeanProperty var name:String, dataType:String, lower:String, upper:String)
-  extends RangeCategoryDescriptor(dataType, lower, upper) {
+class SerialisableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var dataType:String,
+                                          @BeanProperty var lower:String, @BeanProperty var upper:String) {
 
   def this() = this(null, null, null, null)
   def this(name:String, rcd:RangeCategoryDescriptor) = this(name, rcd.dataType, rcd.lower, rcd.upper)
 
   def toRangeCategoryDescriptor = new RangeCategoryDescriptor(dataType, lower, upper)
 }
-class SerialisablePrefixCategoryDescriptor(@BeanProperty var name:String, prefixLength:Int, maxLength:Int, step:Int)
-  extends PrefixCategoryDescriptor(prefixLength, maxLength, step) {
+class SerialisablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var prefixLength:Int,
+                                           @BeanProperty var maxLength:Int, @BeanProperty var step:Int) {
 
   def this() = this(null, 1, 1, 1)
   def this(name:String, pcd:PrefixCategoryDescriptor) = this(name, pcd.prefixLength, pcd.maxLength, pcd.step)

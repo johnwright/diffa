@@ -22,10 +22,9 @@ import net.lshift.diffa.kernel.config.{PairGroup, PairDef, Endpoint, User}
  * Describes a complete diffa configuration.
  */
 case class DiffaConfig(
-  @BeanProperty var users:List[User] = List(),
-  @BeanProperty var properties:Map[String, String] = Map(),
-  @BeanProperty var endpoints:List[Endpoint] = List(),
-  @BeanProperty var groups:List[PairGroup] = List(),
-  @BeanProperty var pairs:List[PairDef] = List()
-) {
-}
+  users:Set[User] = Set(),
+  properties:Map[String, String] = Map(),
+  endpoints:Set[Endpoint] = Set(),
+  groups:Set[PairGroup] = Set(),
+  pairs:Set[PairDef] = Set()
+)

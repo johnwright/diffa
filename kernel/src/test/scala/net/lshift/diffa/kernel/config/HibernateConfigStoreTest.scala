@@ -79,13 +79,7 @@ class HibernateConfigStoreTest {
 
   @Before
   def setUp: Unit = {
-    val s = HibernateConfigStoreTest.sessionFactory.openSession
-    s.createCriteria(classOf[Pair]).list.foreach(p => s.delete(p))
-    s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
-    s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
-    s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
-    s.flush
-    s.close
+    HibernateConfigStoreTest.clearAllConfig
   }
 
   def exists (e:Endpoint, count:Int, offset:Int) : Unit = {
@@ -372,6 +366,35 @@ class HibernateConfigStoreTest {
     assertEquals(Some("storedVal2"), configStore.maybeConfigOption("some.option3"))
   }
 
+  @Test
+  def testRemovingConfigOption = {
+    configStore.setConfigOption("some.option3", "storedVal")
+    configStore.clearConfigOption("some.option3")
+    assertEquals("defaultVal", configStore.configOptionOrDefault("some.option3", "defaultVal"))
+    assertEquals(None, configStore.maybeConfigOption("some.option3"))
+  }
+
+  @Test
+  def testRetrievingAllOptions = {
+    configStore.setConfigOption("some.option3", "storedVal")
+    configStore.setConfigOption("some.option4", "storedVal3")
+    assertEquals(Map("some.option3" -> "storedVal", "some.option4" -> "storedVal3"), configStore.allConfigOptions)
+  }
+
+  @Test
+  def testRetrievingOptionsIgnoresInternalOptions = {
+    configStore.setConfigOption("some.option3", "storedVal")
+    configStore.setConfigOption("some.option4", "storedVal3", isInternal = true)
+    assertEquals(Map("some.option3" -> "storedVal"), configStore.allConfigOptions)
+  }
+
+  @Test
+  def testOptionCanBeUpdatedToBeInternal = {
+    configStore.setConfigOption("some.option3", "storedVal")
+    configStore.setConfigOption("some.option3", "storedVal3", isInternal = true)
+    assertEquals(Map(), configStore.allConfigOptions)
+  }
+
   private def expectMissingObject(name:String)(f: => Unit) {
     try {
       f
@@ -403,4 +426,15 @@ object HibernateConfigStoreTest {
 
   val sessionFactory = config.buildSessionFactory
   val configStore = new HibernateConfigStore(sessionFactory)
+
+  def clearAllConfig = {
+    val s = sessionFactory.openSession
+    s.createCriteria(classOf[User]).list.foreach(u => s.delete(u))
+    s.createCriteria(classOf[Pair]).list.foreach(p => s.delete(p))
+    s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
+    s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
+    s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
+    s.flush
+    s.close
+  }
 }

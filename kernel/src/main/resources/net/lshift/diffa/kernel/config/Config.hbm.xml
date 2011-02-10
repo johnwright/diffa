@@ -89,6 +89,7 @@
   <class name="ConfigOption" table="config_options" abstract="false">
     <id name="key" type="string" column="opt_key" />
     <property name="value" type="string" column="opt_val" />
+    <property name="isInternal" type="boolean" column="is_internal" />
   </class>
 
   <query name="endpointByName">
@@ -125,5 +126,8 @@
 
   <query name="configOptionByKey">
     select o.value from ConfigOption o where o.key = :key
+  </query>
+  <query name="allNonInternalConfigOptions">
+    select o from ConfigOption o where o.isInternal = false
   </query>
 </hibernate-mapping>

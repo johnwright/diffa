@@ -23,9 +23,17 @@ import net.lshift.diffa.kernel.differencing.VersionPolicyManager
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.ConfigStore
 
+/**
+ * Trait supported by components that manage active pairs.
+ */
+trait ActivePairManager {
+  def startActor(pair:net.lshift.diffa.kernel.config.Pair)
+  def stopActor(key:String)
+}
+
 class PairActorSupervisor(val policyManager:VersionPolicyManager,
                           val config:ConfigStore,
-                          val participantFactory:ParticipantFactory) {
+                          val participantFactory:ParticipantFactory) extends ActivePairManager {
 
   private val log = LoggerFactory.getLogger(getClass)
 

@@ -21,6 +21,9 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.frontend.DiffaConfig
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import org.custommonkey.xmlunit.XMLAssert.assertXMLEqual
+import org.custommonkey.xmlunit._
+import org.w3c.dom.Element
 
 /*
 * Test cases for the DiffaConfigReaderWriter.
@@ -29,9 +32,9 @@ class DiffaConfigReaderWriterTest {
   @Test
   def roundtrip = {
     val config = new DiffaConfig(
-//      properties = Map("diffa.host" -> "localhost:1234"),
-      users = List(User("abc", "a@example.com")),
-      endpoints = List(
+      properties = Map("diffa.host" -> "localhost:1234", "a" -> "b"),
+      users = Set(User("abc", "a@example.com")),
+      endpoints = Set(
         Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           categories = Map(
@@ -42,8 +45,8 @@ class DiffaConfigReaderWriterTest {
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
           ))),
-      groups = List(PairGroup("gaa"), PairGroup("gbb")),
-      pairs = List(
+      groups = Set(PairGroup("gaa"), PairGroup("gbb")),
+      pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb"))
     )
@@ -52,34 +55,53 @@ class DiffaConfigReaderWriterTest {
     val baos = new ByteArrayOutputStream
     readerWriter.writeTo(config, null, null, null, null, null, baos)
 
-      // TODO: Use XMLDiff to compare these
-//    val xml = new String(baos.toByteArray, "UTF-8")
-//    assertEquals(
-//      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-//      "<diffa-config>" +
-//        "<user name=\"abc\" email=\"a@example.com\"/>" +
-//        "<endpoint name=\"upstream1\" url=\"http://localhost:1234\" content-type=\"application/json\" " +
-//                   "inbound-url=\"http://inbound\" inbound-content-type=\"application/xml\">" +
-//          "<range-category name=\"upstream1\" data-type=\"date\" lower=\"2009\" upper=\"2010\"/>" +
-//          "<set-category name=\"upstream1\">" +
-//            "<value>a</value>" +
-//            "<value>b</value>" +
-//            "<value>c</value>" +
-//          "</set-category>" +
-//        "</endpoint>" +
-//        "<endpoint name=\"downstream1\" url=\"http://localhost:5432\" content-type=\"application/json\">" +
-//          "<prefix-category name=\"downstream1\" prefix-length=\"1\" max-length=\"6\" step=\"1\"/>" +
-//          "<prefix-category name=\"downstream1\" prefix-length=\"1\" max-length=\"5\" step=\"1\"/>" +
-//        "</endpoint>" +
-//        "<group name=\"gaa\">" +
-//          "<pair key=\"ab\" upstream=\"upstream1\" downstream=\"downstream1\" version-policy=\"same\" matching-timeout=\"5\"/>" +
-//        "</group>" +
-//        "<group name=\"gbb\">" +
-//          "<pair key=\"ac\" upstream=\"upstream1\" downstream=\"downstream1\" version-policy=\"same\" matching-timeout=\"5\"/>" +
-//        "</group>" +
-//      "</diffa-config>",
-//      xml
-//    )
+    XMLUnit.setNormalize(true);
+    XMLUnit.setNormalizeWhitespace(true);
+    XMLUnit.setIgnoreWhitespace(true);
+
+    val expectedXml =
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+      "<diffa-config>" +
+        "<property key=\"diffa.host\">localhost:1234</property>" +
+        "<property key=\"a\">b</property>" +
+        "<user name=\"abc\" email=\"a@example.com\"/>" +
+        "<endpoint name=\"upstream1\" url=\"http://localhost:1234\" content-type=\"application/json\" " +
+                   "inbound-url=\"http://inbound\" inbound-content-type=\"application/xml\">" +
+          "<range-category name=\"a\" data-type=\"date\" lower=\"2009\" upper=\"2010\"/>" +
+          "<set-category name=\"b\">" +
+            "<value>a</value>" +
+            "<value>b</value>" +
+            "<value>c</value>" +
+          "</set-category>" +
+        "</endpoint>" +
+        "<endpoint name=\"downstream1\" url=\"http://localhost:5432\" content-type=\"application/json\">" +
+          "<prefix-category name=\"c\" prefix-length=\"1\" max-length=\"5\" step=\"1\"/>" +
+          "<prefix-category name=\"d\" prefix-length=\"1\" max-length=\"6\" step=\"1\"/>" +
+        "</endpoint>" +
+        "<group name=\"gaa\">" +
+          "<pair key=\"ab\" upstream=\"upstream1\" downstream=\"downstream1\" version-policy=\"same\" matching-timeout=\"5\"/>" +
+        "</group>" +
+        "<group name=\"gbb\">" +
+          "<pair key=\"ac\" upstream=\"upstream1\" downstream=\"downstream1\" version-policy=\"same\" matching-timeout=\"5\"/>" +
+        "</group>" +
+      "</diffa-config>"
+    val serialised = new String(baos.toByteArray, "UTF-8")
+    val diff = new DetailedDiff(new Diff(expectedXml, serialised))
+    diff.overrideElementQualifier(new ElementQualifier() {
+      val nameAndAttrQualifier = new ElementNameAndAttributeQualifier
+      val nameAndTextQualifier = new ElementNameAndTextQualifier
+
+      def qualifyForComparison(control: Element, test: Element) = {
+        // Custom behaviour for value nodes, since they don't have alignment attributes
+        if (test.getNodeName == "value") {
+          nameAndTextQualifier.qualifyForComparison(control, test)
+        } else {
+          nameAndAttrQualifier.qualifyForComparison(control, test)
+        }
+      }
+    })
+
+    assertXMLEqual("Serialized xml " + serialised + " does not match expected " + expectedXml, diff, true)
 
     val newConfig = readerWriter.readFrom(null, null, null, null, null, new ByteArrayInputStream(baos.toByteArray))
     assertEquals(config, newConfig)
