@@ -199,6 +199,8 @@ class DefaultSessionManager(
    * If no -> this is a reportable event. Record it in the active list, and emit an event to our clients.
    */
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String) = {
+    log.debug("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
+
     matching.getMatcher(id.pairKey) match {
       case Some(matcher) => {
         matcher.isVersionIDActive(id) match {
@@ -221,6 +223,7 @@ class DefaultSessionManager(
    * If we don't know about this id (no mismatches for this id reported), just ignore.
    */
   def onMatch(id: VersionID, vsn: String) {
+    log.debug("Processing match for " + id + " with vsn '" + vsn + "'")
 
     // Rest API
     addMatched(id, vsn)
@@ -309,8 +312,12 @@ class DefaultSessionManager(
     forEachSession(id, s => {
       val evt = s.upgradePendingUnmatchedEvent(id)
       if (evt != null) {
+        log.debug("Processing upgrade from pending to unmatched for " + id)
+
         val timestamp = new DateTime()
         forEachSessionListener(s, l => l.onMismatch(id, timestamp, evt.upstreamVsn, evt.downstreamVsn))
+      } else {
+        log.debug("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
       }
     })
   }

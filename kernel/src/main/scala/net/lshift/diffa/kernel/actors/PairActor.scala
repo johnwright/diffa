@@ -38,8 +38,7 @@ class PairActor(val pairKey:String,
   def receive = {
     case ChangeMessage(event)               => policy.onChange(event)
     case DifferenceMessage(listener) => {
-      val sync = policy.difference(pairKey, us, ds, listener)
-      self.reply(sync)
+      policy.difference(pairKey, us, ds, listener)
     }
   }
 }
@@ -61,38 +60,5 @@ trait PairPolicyClient {
   /**
    * Runs a syncing difference report on the underlying policy implementation in a thread safe way.
    */
-  def syncPair(pairKey:String, listener:DifferencingListener) : Boolean
-}
-
-class DefaultPairPolicyClient extends PairPolicyClient {
-
-  val log = LoggerFactory.getLogger(getClass)
-
-  def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id.pairKey) ! ChangeMessage(event)
-
-  def syncPair(pairKey:String, listener:DifferencingListener) = {
-    val result = findActor(pairKey) !! DifferenceMessage(listener)
-    result match {
-      case Some(b) => b.asInstanceOf[Boolean]
-      case None => {
-        log.error("Message timeout")
-        throw new RuntimeException("Message timeout")
-      }
-    }
-  }
-
-  def findActor(pairKey:String) = {
-    val actors = ActorRegistry.actorsFor(pairKey)
-    actors.length match {
-      case 1 => actors(0)
-      case 0 => {
-        log.error("Could not resolve actor for key: " + pairKey)
-        throw new RuntimeException("Unresolvable pair: " + pairKey)
-      }
-      case x => {
-        log.error("Too many actors for key: " + pairKey + "; actors = " + x)
-        throw new RuntimeException("Too many actors: " + pairKey)
-      }
-    }
-  }
+  def syncPair(pairKey:String, listener:DifferencingListener) : Unit
 }

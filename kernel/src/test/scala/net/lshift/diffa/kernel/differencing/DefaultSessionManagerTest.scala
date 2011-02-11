@@ -121,7 +121,7 @@ class DefaultSessionManagerTest {
   def expectForPair(p:String)  = {
     val p1 = EasyMock.eq(p)
     val p2 = isA(classOf[DifferencingListener])
-    expect(pairPolicyClient.syncPair(p1, p2)).andReturn(true).atLeastOnce
+    expect(pairPolicyClient.syncPair(p1, p2)).atLeastOnce
     replay(pairPolicyClient)
   }
 
