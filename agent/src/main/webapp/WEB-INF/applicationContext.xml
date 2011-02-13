@@ -245,7 +245,7 @@
       Data
     ========
   -->
-  <bean id="diffaSessionFactory" class="net.lshift.diffa.kernel.util.ListeningLocalSessionFactoryBean">
+  <bean id="diffaSessionFactory" class="net.lshift.diffa.agent.util.ListeningLocalSessionFactoryBean">
     <constructor-arg>
       <bean class="net.lshift.diffa.kernel.activation.BaselineConfiguration"/>
     </constructor-arg>
@@ -256,14 +256,9 @@
     </property>
     <property name="hibernateProperties">
       <bean class="net.lshift.diffa.agent.util.HibernatePropertiesFactory">
-        <constructor-arg index="0">
+        <constructor-arg>
           <bean class="org.springframework.jndi.JndiObjectFactoryBean">
             <property name="jndiName" value="java:comp/env/diffaHibernateDialect"/>
-          </bean>
-        </constructor-arg>
-        <constructor-arg index="1">
-          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-            <property name="jndiName" value="java:comp/env/diffaCreateDB"/>
           </bean>
         </constructor-arg>
       </bean>
@@ -272,6 +267,11 @@
       <list>
           <value>net/lshift/diffa/kernel/differencing/Correlations.hbm.xml</value>
           <value>net/lshift/diffa/kernel/config/Config.hbm.xml</value>
+      </list>
+    </property>
+    <property name="preparationSteps">
+      <list>
+        <bean class="net.lshift.diffa.kernel.config.HibernateConfigStorePreparationStep" />
       </list>
     </property>
   </bean>

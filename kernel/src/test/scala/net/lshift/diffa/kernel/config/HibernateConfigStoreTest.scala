@@ -421,10 +421,14 @@ object HibernateConfigStoreTest {
           addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
           setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
           setProperty("hibernate.connection.url", "jdbc:derby:target/configStore;create=true").
-          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
-          setProperty("hibernate.hbm2ddl.auto", "create-drop")
+          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
 
-  val sessionFactory = config.buildSessionFactory
+  val sessionFactory = {
+    val sf = config.buildSessionFactory
+    (new HibernateConfigStorePreparationStep).prepare(sf, config)
+
+    sf
+  }
   val configStore = new HibernateConfigStore(sessionFactory)
 
   def clearAllConfig = {

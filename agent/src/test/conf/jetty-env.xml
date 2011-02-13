@@ -44,12 +44,6 @@
     <Arg type="java.lang.String">org.hibernate.dialect.DerbyDialect</Arg>
     <Arg type="boolean">true</Arg>
   </New>
-  <New class="org.eclipse.jetty.plus.jndi.EnvEntry">
-    <Arg></Arg>
-    <Arg>diffaCreateDB</Arg>
-    <Arg type="java.lang.Boolean">true</Arg>
-    <Arg type="boolean">true</Arg>
-  </New>
   <New id="mail" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg>mail/Session</Arg>
     <Arg>
