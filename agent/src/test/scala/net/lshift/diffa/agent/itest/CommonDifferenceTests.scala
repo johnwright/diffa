@@ -58,6 +58,9 @@ trait CommonDifferenceTests {
 
   def getReport(pair:String, from:DateTime, until:DateTime) : Array[SessionEvent]= {
     var uri = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+      // TODO: Ideally, the server should be able to tell us (somehow) when it has completed the initial sync.
+      //       Since for now it can't, we'll just have to give it a little bit of time.
+    Thread.sleep(1000)
     env.diffClient.poll(uri)
   }
 

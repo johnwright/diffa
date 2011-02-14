@@ -24,6 +24,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
+import org.easymock.IAnswer
 
 class PairActorTest {
 
@@ -56,10 +57,10 @@ class PairActorTest {
   replay(configStore)
 
   val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory)
+  supervisor.onAgentAssemblyCompleted
+  supervisor.onAgentConfigurationActivated
 
   verify(configStore)
-
-  val client = new DefaultPairPolicyClient()
 
   val listener = createStrictMock("differencingListener", classOf[DifferencingListener])
 
@@ -72,11 +73,24 @@ class PairActorTest {
   @Test
   def runDifference = {
     val id = VersionID(pairKey, "foo")
+    val monitor = new Object
 
-    expect(versionPolicy.difference(pairKey, us, ds, listener)).andReturn(true)
+    expect(versionPolicy.difference(pairKey, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
+      def answer = {
+        monitor.synchronized {
+          monitor.notifyAll
+        }
+
+        true
+      }
+    })
     replay(versionPolicy)
 
-    assertTrue(client.syncPair(pairKey, listener))
+    supervisor.syncPair(pairKey, listener)
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
+    verify(versionPolicy)
   }
 
   @Test
@@ -85,14 +99,23 @@ class PairActorTest {
     val lastUpdate = new DateTime()
     val vsn = "foobar"
     val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
-    
-    expect(versionPolicy.onChange(event))
+
+    val monitor = new Object
+    expect(versionPolicy.onChange(event)).andAnswer(new IAnswer[Unit] {
+      def answer = {
+        monitor.synchronized {
+          monitor.notifyAll
+        }
+      }
+    })
     replay(versionPolicy)
 
-    client.propagateChangeEvent(event)
+    supervisor.propagateChangeEvent(event)
 
     // propagateChangeEvent is an aysnc call, so yield the test thread to allow the actor to invoke the policy
-    Thread.sleep(1000)
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
 
     verify(versionPolicy)
   }
