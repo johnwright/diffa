@@ -21,7 +21,8 @@ import org.junit.Assert._
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
-import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
+import com.rabbitmq.messagepatterns.unicast.{ChannelSetupListener, ReceivedMessage,Factory}
+import com.rabbitmq.client.Channel
 
 /**
  * Test cases for fire-and-forget AMQP messaging.
@@ -49,5 +50,41 @@ class AmqpProducerConsumerTests {
     
     val producer = new AmqpProducer(holder.connector, queueName)
     producer.send("expected payload")
+  }
+
+  @Test(timeout = 5000)
+  def applicationExceptionsShouldBeAcked() = {
+
+    val queueName = "testQueue"
+    val holder = new ConnectorHolder()
+
+    val consumer1 = new AmqpConsumer(holder.connector,
+                                    queueName,
+                                    new EndpointMapper { def apply(msg: ReceivedMessage) = "" },
+                                    new ProtocolHandler {
+      val contentType = "text/plain"
+
+      def handleRequest(req: TransportRequest, res: TransportResponse) = {
+        throw new Exception("Deliberate exception")
+      }
+    })
+
+    val producer = new AmqpProducer(holder.connector, queueName)
+    producer.send("some payload")
+
+    Thread.sleep(1000)
+    consumer1.close
+
+    val m = Factory.createMessaging()
+    m.setConnector(holder.connector)
+    m.setQueueName(queueName)
+    m.setExchangeName("")
+    m.addSetupListener(new ChannelSetupListener {
+      def channelSetup(channel: Channel) {
+        val response = channel.basicGet(queueName, true)
+        assertNull(response.getBody)
+        assertEquals(0, response.getMessageCount)
+      }
+    })
   }
 }
