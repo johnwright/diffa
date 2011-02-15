@@ -32,4 +32,15 @@ trait AgentLifecycleAware {
    * An example is when a plugin needs to have been booted for it the agent to become operational.
    */
   def onAgentAssemblyCompleted {}
+
+  /**
+   * Indicates that persistent configuration within the agent has been restored. This means that:
+   * <ul>
+   *   <li><code>onAgentAssemblyCompleted</code> preconditions have been satisified</li>
+   *   <li>Components that need to re-activate persistent components have done so</li>
+   * </ul>
+   *
+   * This lifecycle event should be listened for by components that need to work with a completely restored agent state.
+   */
+  def onAgentConfigurationActivated {}
 }

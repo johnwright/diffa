@@ -19,18 +19,26 @@ package net.lshift.diffa.kernel.actors
 import se.scalablesolutions.akka.actor.ActorRegistry
 import se.scalablesolutions.akka.actor.Actor._
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.differencing.VersionPolicyManager
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.ConfigStore
+import net.lshift.diffa.kernel.events.PairChangeEvent
+import net.lshift.diffa.kernel.differencing.{DifferencingListener, VersionPolicyManager}
+import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 
 class PairActorSupervisor(val policyManager:VersionPolicyManager,
                           val config:ConfigStore,
-                          val participantFactory:ParticipantFactory) extends ActivePairManager {
+                          val participantFactory:ParticipantFactory)
+    extends ActivePairManager
+    with PairPolicyClient
+
+    with AgentLifecycleAware {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  // Initialize actors for any persistent pairs
-  config.listGroups.foreach(g => g.pairs.foreach(p => startActor(p)) )
+  override def onAgentAssemblyCompleted = {
+    // Initialize actors for any persistent pairs
+    config.listGroups.foreach(g => g.pairs.foreach(p => startActor(p)) )
+  }
 
   def startActor(pair:net.lshift.diffa.kernel.config.Pair) = {
     val actors = ActorRegistry.actorsFor(pair.key)
@@ -63,6 +71,25 @@ class PairActorSupervisor(val policyManager:VersionPolicyManager,
       }
       case 0    => log.warn("Could not resolve actor for key: " + key)
       case x    => log.error("Too many actors for key: " + key + "; actors = " + x)
+    }
+  }
+
+  def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id.pairKey) ! ChangeMessage(event)
+
+  def syncPair(pairKey:String, listener:DifferencingListener) = findActor(pairKey) ! DifferenceMessage(listener)
+
+  def findActor(pairKey:String) = {
+    val actors = ActorRegistry.actorsFor(pairKey)
+    actors.length match {
+      case 1 => actors(0)
+      case 0 => {
+        log.error("Could not resolve actor for key: " + pairKey)
+        throw new RuntimeException("Unresolvable pair: " + pairKey)
+      }
+      case x => {
+        log.error("Too many actors for key: " + pairKey + "; actors = " + x)
+        throw new RuntimeException("Too many actors: " + pairKey)
+      }
     }
   }
 }

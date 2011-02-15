@@ -32,6 +32,7 @@ class AgentLifecycleHelper extends ApplicationListener[ContextRefreshedEvent] {
 
   def onApplicationEvent(event:ContextRefreshedEvent) {
     fireLifecycle(event.getApplicationContext, _.onAgentAssemblyCompleted)
+    fireLifecycle(event.getApplicationContext, _.onAgentConfigurationActivated)
 
     log.info("Diffa Agent successfully initialized")
   }

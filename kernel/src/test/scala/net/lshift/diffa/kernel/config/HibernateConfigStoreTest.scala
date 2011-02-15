@@ -123,6 +123,18 @@ class HibernateConfigStoreTest {
   }
 
   @Test
+  def testEndpointsWithSameURL {
+    configStore.createOrUpdateEndpoint(upstream1)
+
+    upstream2.url = upstream1.url
+    configStore.createOrUpdateEndpoint(upstream2)
+
+    exists(upstream1, 2, 0)
+    exists(upstream2, 2, 1)
+  }
+
+
+  @Test
   def testUpdateEndpoint: Unit = {
     // Create endpoint
     configStore.createOrUpdateEndpoint(upstream1)

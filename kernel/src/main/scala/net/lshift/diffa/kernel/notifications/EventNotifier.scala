@@ -22,22 +22,31 @@ import net.lshift.diffa.kernel.differencing.{SessionScope, DifferencingListener,
 import org.joda.time.{Period, DateTime}
 import net.lshift.diffa.kernel.config.ConfigStore
 import collection.mutable.ListBuffer
+import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 
+/**
+ * This fires mismatch events out to each registered NotificationProvider.
+ */
 class EventNotifier(val sessionManager:SessionManager,
                     val config:ConfigStore,
-                    val quietTime:Period) extends DifferencingListener {
+                    val quietTime:Period)
+    extends DifferencingListener
+    with AgentLifecycleAware {
 
   val log:Logger = LoggerFactory.getLogger(getClass)
+
 
   log.debug("Quiet time set to " + quietTime.toString)
 
   private val providers = new ListBuffer[NotificationProvider]()
   private var nextRun = new DateTime()
 
-  sessionManager.start(SessionScope.all, this)
-
   def destroy() = {
     // TODO call sessionManager.end() when it is implemented correctly
+  }
+
+  override def onAgentConfigurationActivated {
+    sessionManager.start(SessionScope.all, this)
   }
 
   def registerProvider(p:NotificationProvider) = providers += p

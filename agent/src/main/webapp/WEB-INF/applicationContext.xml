@@ -78,14 +78,6 @@
 
   <!--
     ============
-      Change Event Stubs
-    ============
-  -->
-
-  <bean id="changeEventClient" class="net.lshift.diffa.kernel.actors.DefaultPairPolicyClient"/>
-
-  <!--
-    ============
       Sessions
     ============
   -->
@@ -94,7 +86,7 @@
     <constructor-arg ref="sessionCacheProvider" />
     <constructor-arg ref="matchingManager" />
     <constructor-arg ref="versionPolicyManager" />
-    <constructor-arg ref="changeEventClient" />
+    <constructor-arg ref="pairActorSupervisor" />
     <constructor-arg ref="participantFactory" />
   </bean>
   <bean id="sessionCacheProvider" class="net.lshift.diffa.kernel.differencing.LocalSessionCacheProvider" />
@@ -232,7 +224,7 @@
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
     <constructor-arg ref="diffaConfigStore"/>
-    <constructor-arg ref="changeEventClient"/>
+    <constructor-arg ref="pairActorSupervisor"/>
     <constructor-arg ref="matchingManager"/>
   </bean>
   <bean id="actionsFrontend" class="net.lshift.diffa.kernel.frontend.wire.ActionsProxy">
@@ -289,15 +281,8 @@
     <constructor-arg>
       <bean class="org.apache.lucene.store.MMapDirectory">
         <constructor-arg>
-          <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-            <property name="targetObject" ref="diffaConfigStore"/>
-            <property name="targetMethod" value="configOptionOrDefault"/>
-            <property name="arguments">
-              <list>
-                <value>index.dir</value>
-                <value>target/webapp-data/diffa-index</value>
-              </list>
-            </property>
+          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/diffaIndexDir"/>
           </bean>
         </constructor-arg>
       </bean>

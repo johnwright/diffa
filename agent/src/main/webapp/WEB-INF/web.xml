@@ -62,17 +62,18 @@
   </resource-ref>
 
   <env-entry>
+    <env-entry-name>diffaIndexDir</env-entry-name>
+    <env-entry-value>target/webapp-data/diffa-index</env-entry-value>
+    <env-entry-type>java.lang.String</env-entry-type>
+  </env-entry>
+  <env-entry>
     <env-entry-name>diffaCustomRoot</env-entry-name>
     <env-entry-value>__context__</env-entry-value>
     <env-entry-type>java.lang.String</env-entry-type>
   </env-entry>
   <env-entry>
-    <env-entry-name>diffaProperties</env-entry-name>
-    <env-entry-type>java.io.Properties</env-entry-type>
-  </env-entry>
-  <env-entry>
     <env-entry-name>diffaHibernateDialect</env-entry-name>
-    <env-entry-value>org.hibernate.dialect.SQLServerDialect</env-entry-value>
+    <env-entry-value>org.hibernate.dialect.DerbyDialect</env-entry-value>
     <env-entry-type>java.lang.String</env-entry-type>
   </env-entry>
 </web-app>

@@ -19,8 +19,8 @@ package net.lshift.diffa.messaging.amqp
 import com.rabbitmq.messagepatterns.unicast.{ChannelSetupListener, Connector, Factory, ReceivedMessage}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
-import java.io.{OutputStream, ByteArrayInputStream, Closeable}
 import com.rabbitmq.client.{ShutdownSignalException, Channel}
+import java.io.{IOException, OutputStream, ByteArrayInputStream, Closeable}
 
 
 /**
@@ -63,9 +63,19 @@ class AmqpConsumer(connector: Connector,
         try {
           val msg = messaging.receive(receiveTimeout)
           if (msg != null) {
-            messaging.ack(msg)
-
-            handleMessage(msg)
+            try {
+              handleMessage(msg)
+              messaging.ack(msg)
+            }
+            catch {
+              // Re-throw any exceptions that originate from the AMQP libraries
+              case s:ShutdownSignalException => throw s
+              case o:IOException => throw o
+              case e:Exception => {
+                messaging.ack(msg)
+                throw e
+              }
+            }
           }
         } catch {
           case s: ShutdownSignalException =>
