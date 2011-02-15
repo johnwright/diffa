@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.util
+package net.lshift.diffa.kernel.config
 
-import org.springframework.beans.factory.FactoryBean
-import java.util.Properties
+import org.hibernate.cfg.Configuration
+import org.hibernate.SessionFactory
 
 /**
- * Factory for creating the configuration to run Hibernate. Abstracted since we'd like
- * to be able to configure Hibernate via the context.xml, and this just doesn't seem
- * to be possible via the provided mechanisms.
+ * Implemented by components that perform work to prepare the hibernate configuration for use.
  */
-class HibernatePropertiesFactory(dialect:String)
-    extends FactoryBean[Properties] {
-  private val props = new Properties
-  props.setProperty("hibernate.dialect", dialect)
-
-  def isSingleton = true
-  def getObjectType = classOf[Properties]
-  def getObject = props
+trait HibernatePreparationStep {
+  /**
+   * Executes this preparation step with the given session factory and configuration.
+   */
+  def prepare(sf:SessionFactory, config:Configuration)
 }

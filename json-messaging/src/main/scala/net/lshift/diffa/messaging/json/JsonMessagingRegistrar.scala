@@ -33,10 +33,10 @@ class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
 
   val factory = new JSONRestParticipantProtocolFactory()
 
+  // Register the outbound participant factory for JSON/HTTP
+  participantFactory.registerFactory(factory)
+  
   override def onAgentAssemblyCompleted {
-    // Register the outbound participant factory for JSON/HTTP
-    participantFactory.registerFactory(factory)
-
     // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
     // application/json are decoded by our ChangesHandler.
     val changesHandler = new ChangesHandler(changes, "changes", eventFormatMapperManager.lookup("application/json").get)

@@ -76,10 +76,5 @@
     <env-entry-value>org.hibernate.dialect.DerbyDialect</env-entry-value>
     <env-entry-type>java.lang.String</env-entry-type>
   </env-entry>
-  <env-entry>
-    <env-entry-name>diffaCreateDB</env-entry-name>
-    <env-entry-value>false</env-entry-value>
-    <env-entry-type>java.lang.Boolean</env-entry-type>
-  </env-entry>
 </web-app>
 

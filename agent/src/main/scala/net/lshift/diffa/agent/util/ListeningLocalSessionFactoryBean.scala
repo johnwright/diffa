@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.util
+package net.lshift.diffa.agent.util
 
 import org.springframework.orm.hibernate3.LocalSessionFactoryBean
 import org.hibernate.SessionFactoryObserver
+import org.hibernate.cfg.Configuration
+import reflect.BeanProperty
+import net.lshift.diffa.kernel.config.HibernatePreparationStep
 
 /**
  * This wires in a callback that will be invoked when the underlying session factory has been
@@ -25,10 +28,22 @@ import org.hibernate.SessionFactoryObserver
  * the Hibernate Configuration object in a suitable way. 
  */
 class ListeningLocalSessionFactoryBean(observer:SessionFactoryObserver) extends LocalSessionFactoryBean {
+  @BeanProperty var preparationSteps:Array[HibernatePreparationStep] = Array[HibernatePreparationStep]()
 
   override def newConfiguration() = {
     val config = super.newConfiguration()
     config.setSessionFactoryObserver(observer)
     config
 	}
+
+  /**
+   * Override the final step in the session factory creation to let us prepare the database.
+   */
+  override def newSessionFactory(config:Configuration) = {
+    val sf = super.newSessionFactory(config)
+
+    preparationSteps.foreach(step => step.prepare(sf, config))
+
+    sf
+  }
 }
