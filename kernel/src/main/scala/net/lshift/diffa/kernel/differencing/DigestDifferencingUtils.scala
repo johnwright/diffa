@@ -67,7 +67,7 @@ object DigestDifferencingUtils {
     val ds1Ids = indexByAttributeValues(ds1)
     val ds2Ids = indexByAttributeValues(ds2)
 
-    def evaluate(partitions:Map[String, String]) = {
+    def evaluate(partitions:Map[String, String]) = try {
         val empty = ds1.isEmpty || ds2.isEmpty
 
         val nextConstraints = constraints.map(c => {
@@ -94,6 +94,11 @@ object DigestDifferencingUtils {
         } else {
           results += EntityQueryAction(nextConstraints)
         }
+    } catch {
+      case e: Exception =>
+        throw new RuntimeException(
+          "%s { bucketing = %s, constraints = %s, partitions = %s, results = %s }"
+            .format(e.getMessage, bucketing, constraints, partitions, results), e)
     }
 
     ds1Ids.foreach { case (label, ds1Digest) => {
