@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.participants
 /**
  * This function partitions based on a set of attribute names who individually form single level buckets.
  */
-object ByNameCategoryFunction extends CategoryFunction {
+case object ByNameCategoryFunction extends CategoryFunction {
 
   def name = "by name"
   def shouldBucket() = true

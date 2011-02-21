@@ -52,7 +52,7 @@ abstract case class DateCategoryFunction extends CategoryFunction {
 /**
  * This function partitions by whole days.
  */
-object DailyCategoryFunction extends DateCategoryFunction {
+case object DailyCategoryFunction extends DateCategoryFunction {
   def name = "daily"
   def pattern = DateTimeFormat.forPattern("yyyy-MM-dd")
   def descend = Some(IndividualCategoryFunction)
@@ -62,7 +62,7 @@ object DailyCategoryFunction extends DateCategoryFunction {
 /**
  * This function partitions by whole calendar months.
  */
-object MonthlyCategoryFunction extends DateCategoryFunction {
+case object MonthlyCategoryFunction extends DateCategoryFunction {
   def name = "monthly"
   def pattern = DateTimeFormat.forPattern("yyyy-MM")
   def descend = Some(DailyCategoryFunction)
@@ -72,7 +72,7 @@ object MonthlyCategoryFunction extends DateCategoryFunction {
 /**
  * This function partitions by whole years.
  */
-object YearlyCategoryFunction extends DateCategoryFunction {
+case object YearlyCategoryFunction extends DateCategoryFunction {
   def name = "yearly"
   def pattern = DateTimeFormat.forPattern("yyyy")
   def descend = Some(MonthlyCategoryFunction)

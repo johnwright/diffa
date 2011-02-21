@@ -61,8 +61,9 @@ class DigestDifferencingUtilsTest {
       fail("Should have thrown Exception")
     } catch {
       case ex =>
-        assertTrue(ex.getMessage.contains("bucketing"))
-        assertTrue(ex.getMessage.contains("constraints"))
+        assertEquals(
+          "Invalid format: \"2010\" is too short { bucketing = Map(bizDate -> MonthlyCategoryFunction), constraints = List(UnboundedRangeQueryConstraint(bizDate)), partitions = Map(bizDate -> 2010), results = ListBuffer() }",
+          ex.getMessage)
     }
   }
 

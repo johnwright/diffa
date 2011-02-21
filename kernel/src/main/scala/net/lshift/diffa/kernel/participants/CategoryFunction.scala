@@ -64,7 +64,7 @@ trait CategoryFunction {
  * A special type of function that indicates that no further partitioning should take place.
  *
  */
-object IndividualCategoryFunction extends CategoryFunction {
+case object IndividualCategoryFunction extends CategoryFunction {
   def name = "individual"
   def descend = None
   def constrain(categoryName:String, partition:String) = new SetQueryConstraint(categoryName, Set(partition))
