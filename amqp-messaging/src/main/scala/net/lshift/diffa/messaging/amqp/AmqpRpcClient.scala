@@ -19,6 +19,7 @@ package net.lshift.diffa.messaging.amqp
 import com.rabbitmq.messagepatterns.unicast.{ChannelSetupListener, Connector, Factory}
 import com.rabbitmq.client.Channel
 import java.io.{Closeable, IOException}
+import java.util.UUID
 import org.slf4j.LoggerFactory
 
 /**
@@ -53,7 +54,7 @@ class AmqpRpcClient(connector: Connector, queueName: String)
     m
   }
 
-  def call(endpoint: String, payload: String, timeout: Long = defaultTimeout) = {
+  def call(endpoint: String, payload: String, timeout: Long = defaultTimeout): String = {
     if (log.isDebugEnabled) {
       log.debug("%s: %s".format(endpoint, payload))
     }
@@ -68,22 +69,32 @@ class AmqpRpcClient(connector: Connector, queueName: String)
     headers.put(AmqpRpc.endpointHeader, endpoint)
     msg.getProperties.setHeaders(headers)
     msg.setBody(payload.getBytes(AmqpRpc.encoding))
+    msg.setMessageId(UUID.randomUUID.toString)
     messaging.send(msg)
 
-    val reply = messaging.receive(timeout)
-    if (reply == null)
-      throw new ReceiveTimeoutException(timeout)
+    val endTime = System.currentTimeMillis + timeout
 
-    val statusCode = try {
-      reply.getProperties.getHeaders.get(AmqpRpc.statusCodeHeader).toString.toInt
-    } catch {
-      case e => throw new MissingResponseCodeException(e)
+    while (System.currentTimeMillis < endTime) {
+      val remainingTime = endTime - System.currentTimeMillis
+      val reply = messaging.receive(if (remainingTime < 0) 0 else remainingTime)
+      if (reply == null)
+        throw new ReceiveTimeoutException(timeout)
+
+      // if the reply doesn't have the right correlation ID, loop
+      if (reply.getCorrelationId == msg.getMessageId) {
+        val statusCode = try {
+          reply.getProperties.getHeaders.get(AmqpRpc.statusCodeHeader).toString.toInt
+        } catch {
+          case e => throw new MissingResponseCodeException(e)
+        }
+        if (statusCode != AmqpRpc.defaultStatusCode) {
+          throw new AmqpRemoteException(endpoint, statusCode)
+        } else {
+          return new String(reply.getBody, AmqpRpc.encoding)
+        }
+      }
     }
-    if (statusCode != AmqpRpc.defaultStatusCode) {
-      throw new AmqpRemoteException(endpoint, statusCode)
-    } else {
-      new String(reply.getBody, AmqpRpc.encoding)
-    }
+    throw new ReceiveTimeoutException(timeout)
   }
 
   def close() {
