@@ -52,6 +52,21 @@ class DigestDifferencingUtilsTest {
   }
 
   @Test
+  def shouldThrowUsefulExceptionOnBadInputData {
+    val a = Seq(AggregateDigest(Seq("2010"), "v1"))
+    val b = Seq(AggregateDigest(Seq("2010-07"), "v2"))
+
+    try {
+      DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDate" -> MonthlyCategoryFunction), Seq(unconstrained))
+      fail("Should have thrown Exception")
+    } catch {
+      case ex =>
+        assertTrue(ex.getMessage.contains("bucketing"))
+        assertTrue(ex.getMessage.contains("constraints"))
+    }
+  }
+
+  @Test
   def shouldReportNothingOnMatchingNonEmptyLists {
     val a = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "h1"),
                 EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
