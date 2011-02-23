@@ -32,7 +32,9 @@ class AmqpRpcClient(connector: Connector, queueName: String)
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  private var replyQueueName: Option[String] = None
+  protected var replyQueueName: Option[String] = None
+
+  protected def nextMessageId() = UUID.randomUUID.toString
 
   private val messaging = {
     val m = Factory.createMessaging()
@@ -69,7 +71,7 @@ class AmqpRpcClient(connector: Connector, queueName: String)
     headers.put(AmqpRpc.endpointHeader, endpoint)
     msg.getProperties.setHeaders(headers)
     msg.setBody(payload.getBytes(AmqpRpc.encoding))
-    msg.setMessageId(UUID.randomUUID.toString)
+    msg.setMessageId(nextMessageId())
     messaging.send(msg)
 
     val endTime = System.currentTimeMillis + timeout
@@ -92,6 +94,9 @@ class AmqpRpcClient(connector: Connector, queueName: String)
         } else {
           return new String(reply.getBody, AmqpRpc.encoding)
         }
+      } else {
+        log.warn("Skipping over message with correlation ID [%s], expected message with ID [%s]"
+                   .format(reply.getCorrelationId, msg.getMessageId))
       }
     }
     throw new ReceiveTimeoutException(timeout)
