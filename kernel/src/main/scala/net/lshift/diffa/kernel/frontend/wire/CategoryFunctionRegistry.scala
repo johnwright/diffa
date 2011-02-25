@@ -37,7 +37,9 @@ object CategoryFunctionRegistry {
 
     ThousandsIntegerCategoryFunction.name -> ThousandsIntegerCategoryFunction,
     HundredsIntegerCategoryFunction.name -> HundredsIntegerCategoryFunction,
-    TensIntegerCategoryFunction.name -> TensIntegerCategoryFunction
+    TensIntegerCategoryFunction.name -> TensIntegerCategoryFunction,
+
+    ByNameCategoryFunction.name -> ByNameCategoryFunction
   )
 
   def resolve(fun:String) =
