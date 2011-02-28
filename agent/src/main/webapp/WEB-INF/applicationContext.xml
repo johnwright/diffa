@@ -44,7 +44,7 @@
       <list>
         <value>same</value>
         <bean class="net.lshift.diffa.kernel.differencing.SameVersionPolicy">
-            <constructor-arg ref="versionCorrelationStore" />
+            <constructor-arg ref="versionCorrelationStoreFactory" />
             <constructor-arg ref="sessionManager" />
             <constructor-arg ref="diffaConfigStore" />
           </bean>
@@ -59,7 +59,7 @@
       <list>
         <value>correlated</value>
         <bean class="net.lshift.diffa.kernel.differencing.CorrelatedVersionPolicy">
-          <constructor-arg ref="versionCorrelationStore" />
+          <constructor-arg ref="versionCorrelationStoreFactory" />
           <constructor-arg ref="sessionManager" />
           <constructor-arg ref="diffaConfigStore" />
         </bean>
@@ -277,16 +277,14 @@
     ===========
   -->
 
-  <bean id="versionCorrelationStore" class="net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore">
+  <bean id="versionCorrelationStoreFactory" class="net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStoreFactory"
+        destroy-method="close">
     <constructor-arg>
-      <bean class="org.apache.lucene.store.MMapDirectory">
-        <constructor-arg>
-          <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-            <property name="jndiName" value="java:comp/env/diffaIndexDir"/>
-          </bean>
-        </constructor-arg>
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName" value="java:comp/env/diffaIndexDir"/>
       </bean>
     </constructor-arg>
+    <constructor-arg value="org.apache.lucene.store.MMapDirectory" />
     <constructor-arg ref="diffaConfigStore" />
   </bean>
 

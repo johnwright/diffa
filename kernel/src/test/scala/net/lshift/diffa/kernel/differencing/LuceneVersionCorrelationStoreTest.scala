@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.util.Dates._
 import net.lshift.diffa.kernel.events._
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
+import net.lshift.diffa.kernel.indexing.{LuceneVersionCorrelationStore, LuceneVersionCorrelationStoreFactory}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.apache.lucene.store.{MMapDirectory, FSDirectory, RAMDirectory}
@@ -42,7 +42,6 @@ import org.easymock.EasyMock
 class LuceneVersionCorrelationStoreTest {
   import LuceneVersionCorrelationStoreTest._
 
-  private val pair = "pair"
   private val otherPair = "other-pair"
   private val emptyAttributes:Map[String, TypedAttribute] = Map()
   private val emptyStrAttributes:Map[String, String] = Map()
@@ -62,7 +61,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeUpstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn")
     store.storeDownstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(0, unmatched.size)
   }
 
@@ -71,7 +70,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeUpstreamVersion(VersionID(pair, "id1"), dateAttributes, JUL_1_2010_1, "upstreamVsn")
     store.storeDownstreamVersion(VersionID(pair, "id1"), intAttributes, JUL_1_2010_1, "upstreamVsn", "downstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, dateConstraints, intConstraints)
+    val unmatched = store.unmatchedVersions(dateConstraints, intConstraints)
     assertEquals(0, unmatched.size)
   }
 
@@ -80,7 +79,7 @@ class LuceneVersionCorrelationStoreTest {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id2"), emptyAttributes, DEC_31_2009, "upstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id2", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
@@ -90,7 +89,7 @@ class LuceneVersionCorrelationStoreTest {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id2"), system.includedAttrs, DEC_31_2009, "upstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, system.constraints, noDateConstraint)
+    val unmatched = store.unmatchedVersions(system.constraints, noDateConstraint)
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id2", system.includedStrAttrs, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
@@ -100,7 +99,7 @@ class LuceneVersionCorrelationStoreTest {
     val timestamp = new DateTime()
     store.storeUpstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, system.constraints, noDateConstraint)
+    val unmatched = store.unmatchedVersions(system.constraints, noDateConstraint)
     assertEquals(0, unmatched.size)
   }
 
@@ -116,7 +115,7 @@ class LuceneVersionCorrelationStoreTest {
     val timestamp = new DateTime()
     store.storeDownstreamVersion(VersionID(pair, "id3"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id3", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp,  null, "upstreamVsn", "downstreamVsn", false), unmatched(0))
   }
@@ -135,7 +134,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id4"), emptyAttributes, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
     store.storeDownstreamVersion(VersionID(pair, "id4"), emptyAttributes, DEC_31_2009, "upstreamVsnB", "downstreamVsnB")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(0, unmatched.size)
   }
 
@@ -146,7 +145,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id5"), emptyAttributes, DEC_31_2009, "upstreamVsnA", "downstreamVsnA")
     store.storeUpstreamVersion(VersionID(pair, "id5"), emptyAttributes, DEC_31_2009, "upstreamVsnB")
 
-    val unmatched = store.unmatchedVersions(pair, Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id5", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), unmatched(0))
   }
@@ -170,7 +169,7 @@ class LuceneVersionCorrelationStoreTest {
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
 
     val collector = new Collector
-    store.queryUpstreams(pair, List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    store.queryUpstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(
       List(UpstreamPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")),
       collector.upstreamObjs.toList)
@@ -183,7 +182,7 @@ class LuceneVersionCorrelationStoreTest {
     store.clearUpstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
-    store.queryUpstreams(pair, List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    store.queryUpstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(0, collector.upstreamObjs.size)
   }
 
@@ -196,7 +195,7 @@ class LuceneVersionCorrelationStoreTest {
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
 
     val collector = new Collector
-    val digests = store.queryDownstreams(pair, List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
+    val digests = store.queryDownstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       collector.downstreamObjs.toList)
@@ -209,7 +208,7 @@ class LuceneVersionCorrelationStoreTest {
     store.clearDownstreamVersion(VersionID(pair, "id6"))
 
     val collector = new Collector
-    store.queryDownstreams(pair, List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
+    store.queryDownstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(0, collector.downstreamObjs.size)
   }
 
@@ -219,7 +218,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeUpstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn-id2")
 
     val collector = new Collector
-    val digests = store.queryUpstreams(pair, system.constraints, collector.collectUpstream)
+    val digests = store.queryUpstreams(system.constraints, collector.collectUpstream)
     assertEquals(
       List(UpstreamPairChangeEvent(VersionID(pair, "id1"), AttributesUtil.toSeqFromTyped(system.includedAttrs), DEC_31_2009, "upstreamVsn-id1")),
       collector.upstreamObjs.toList)
@@ -231,7 +230,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn-id2", "downstreamVsn-id1")
 
     val collector = new Collector
-    val digests = store.queryDownstreams(pair, system.constraints, collector.collectDownstream)
+    val digests = store.queryDownstreams(system.constraints, collector.collectDownstream)
     assertEquals(
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id1"), AttributesUtil.toSeqFromTyped(system.includedAttrs), DEC_31_2009, "upstreamVsn-id1", "downstreamVsn-id1")),
       collector.downstreamObjs.toList)
@@ -243,7 +242,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeUpstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
 
     val collector = new Collector
-    val digests = store.queryUpstreams(pair, List(unconstrainedDate("bizDate")), collector.collectUpstream)
+    val digests = store.queryUpstreams(List(unconstrainedDate("bizDate")), collector.collectUpstream)
     assertEquals(
       List(
         UpstreamPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6"),
@@ -257,7 +256,7 @@ class LuceneVersionCorrelationStoreTest {
     store.storeDownstreamVersion(VersionID(pair, "id6"), bizDateMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
 
     val collector = new Collector
-    val digests = store.queryDownstreams(pair, List(unconstrainedDate("bizDate")), collector.collectDownstream)
+    val digests = store.queryDownstreams(List(unconstrainedDate("bizDate")), collector.collectDownstream)
     assertEquals(
       List(
         DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6"),
@@ -339,7 +338,9 @@ object LuceneVersionCorrelationStoreTest {
   EasyMock.expect(dummyConfigStore.maybeConfigOption("correlationStore.schemaVersion")).andStubReturn(Some("0"))
   EasyMock.replay(dummyConfigStore)
 
-  val indexer = new LuceneVersionCorrelationStore(new MMapDirectory(new File("target")), dummyConfigStore)
+  val pair = "pair"
+  val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore)
+  val indexer = stores(pair)
   val store:VersionCorrelationStore = indexer
 
   // Helper methods for various constraint/attribute scenarios

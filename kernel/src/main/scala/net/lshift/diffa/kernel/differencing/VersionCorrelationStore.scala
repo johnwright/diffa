@@ -16,6 +16,7 @@
 
 package net.lshift.diffa.kernel.differencing
 
+import java.io.Closeable
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.participants.QueryConstraint
 import org.joda.time.{DateTimeZone, DateTime}
@@ -23,9 +24,14 @@ import org.joda.time.{DateTimeZone, DateTime}
 /**
  * Store used for caching version correlation information between a pair of participants.
  */
-trait VersionCorrelationStore {
+trait VersionCorrelationStore extends Closeable {
   type UpstreamVersionHandler = Function4[VersionID, Map[String, String], DateTime, String, Unit]
   type DownstreamVersionHandler = Function5[VersionID, Map[String, String], DateTime, String, String, Unit]
+
+  /**
+   * The unique key for the upstream and downstream participant pair
+   */
+  val pairKey: String
 
   /**
    * Stores the details of an upstream version.
@@ -42,7 +48,7 @@ trait VersionCorrelationStore {
    * @param usConstraints constraints on the upstream participant's entities
    * @param dsConstraints constraints on the downstream participant's entities
    */
-  def unmatchedVersions(pairKey:String, usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def unmatchedVersions(usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) : Seq[Correlation]
 
   /**
    * Retrieves the current pairing information for the given pairKey/id.
@@ -62,8 +68,8 @@ trait VersionCorrelationStore {
   /**
    * Queries for all upstream versions for the given pair based on the given constraints.
    */
-  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler):Unit = {
-    queryUpstreams(pairKey, constraints).foreach(c => {
+  def queryUpstreams(constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler):Unit = {
+    queryUpstreams(constraints).foreach(c => {
       handler(VersionID(c.pairing, c.id), c.upstreamAttributes.toMap, c.lastUpdate, c.upstreamVsn)
     })
   }
@@ -71,8 +77,8 @@ trait VersionCorrelationStore {
   /**
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
-  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) : Unit = {
-    queryDownstreams(pairKey, constraints).foreach(c => {
+  def queryDownstreams(constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) : Unit = {
+    queryDownstreams(constraints).foreach(c => {
       handler(VersionID(c.pairing, c.id), c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }
@@ -80,12 +86,20 @@ trait VersionCorrelationStore {
   /**
    * Queries for all upstream versions for the given pair based on the given constraints.
    */
-  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def queryUpstreams(constraints:Seq[QueryConstraint]) : Seq[Correlation]
 
   /**
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
-  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def queryDownstreams(constraints:Seq[QueryConstraint]) : Seq[Correlation]
+}
+
+/**
+ * Creates a specific implementation of a VersionCorrelationStore for a given pair key.
+ */
+trait VersionCorrelationStoreFactory extends Closeable {
+
+  def apply(pairKey: String): VersionCorrelationStore
 }
 
 abstract class TypedAttribute { def value:String }

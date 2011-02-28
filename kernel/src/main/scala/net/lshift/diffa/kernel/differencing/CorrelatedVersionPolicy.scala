@@ -26,10 +26,10 @@ import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
  * and matching recovery will require messages to be reprocessed via a differencing back-channel to determine
  * whether they are identical.
  */
-class CorrelatedVersionPolicy(store:VersionCorrelationStore,
+class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               listener:DifferencingListener,
                               configStore:ConfigStore)
-    extends BaseSynchingVersionPolicy(store, listener, configStore) {
+    extends BaseSynchingVersionPolicy(stores, listener, configStore) {
 
   def synchroniseParticipants(pair: Pair, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
@@ -42,12 +42,12 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore,
     
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
       val aggregator = new Aggregator(bucketing)
-      store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
+      stores(pairKey).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      store.queryDownstreams(pairKey, constraints).map(x => {
+      stores(pairKey).queryDownstreams(constraints).map(x => {
         EntityVersion(x.id, AttributesUtil.toSeq(x.downstreamAttributes.toMap), x.lastUpdate, x.downstreamDVsn)
       })
     }
@@ -55,14 +55,14 @@ class CorrelatedVersionPolicy(store:VersionCorrelationStore,
     def handleMismatch(pairKey:String, vm:VersionMismatch) = {
       vm match {
         case VersionMismatch(id, categories, _, null, storedVsn) =>
-          store.clearDownstreamVersion(VersionID(pairKey, id))
+          stores(pairKey).clearDownstreamVersion(VersionID(pairKey, id))
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)
 
           if (response.dvsn == partVsn) {
             // This is the same destination object, so we're safe to store the correlation
-            store.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.uvsn, response.dvsn)
+            stores(pairKey).storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.uvsn, response.dvsn)
           } else {
             // We can't update our datastore, so we just have to generate a mismatch            
             l.onMismatch(VersionID(pairKey, id), lastUpdated, response.dvsn, partVsn)

@@ -50,6 +50,10 @@ abstract class AbstractDataDrivenPolicyTest {
   val nullListener = new NullDifferencingListener
 
   val store = createStrictMock("versionStore", classOf[VersionCorrelationStore])
+  val stores = new VersionCorrelationStoreFactory {
+    def apply(pairKey: String) = store
+    def close {}
+  }
   EasyMock.checkOrder(store, false)   // Store doesn't care about order
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
@@ -69,7 +73,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -97,7 +101,7 @@ abstract class AbstractDataDrivenPolicyTest {
     })
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -126,7 +130,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -154,7 +158,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.pair.key), EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
     policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
@@ -173,13 +177,13 @@ abstract class AbstractDataDrivenPolicyTest {
   protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                             partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
     expect(usMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantDigestResponse(partResp))
-    store.queryUpstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints), anyUnitF4)
+    store.queryUpstreams(EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(pair, storeResp))
   }
   protected def expectDownstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                               partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
     expect(dsMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantDigestResponse(partResp))
-    store.queryDownstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints), anyUnitF5)
+    store.queryDownstreams(EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(pair, storeResp))
   }
 
@@ -189,7 +193,7 @@ abstract class AbstractDataDrivenPolicyTest {
       Correlation(id = v.id, upstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, upstreamVsn = v.vsn)
     })
 
-    expect(store.queryUpstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints))).andReturn(correlations)
+    expect(store.queryUpstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
   protected def expectDownstreamEntitySync(pair:Pair, constraints:Seq[QueryConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
     expect(dsMock.queryEntityVersions(constraints)).andReturn(participantEntityResponse(partResp))
@@ -197,7 +201,7 @@ abstract class AbstractDataDrivenPolicyTest {
       Correlation(id = v.id, downstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, downstreamDVsn = v.vsn)
     })
 
-    expect(store.queryDownstreams(EasyMock.eq(pair.key), EasyMock.eq(constraints))).andReturn(correlations)
+    expect(store.queryDownstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
 
   protected def expectUpstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
@@ -223,7 +227,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     def answer {
       val args = EasyMock.getCurrentArguments
-      val cb = args(2).asInstanceOf[T]
+      val cb = args(1).asInstanceOf[T]
 
       // Answer with entities from each bucket's children
       answerEntities(res.flatMap(b => b.allVsns), cb)

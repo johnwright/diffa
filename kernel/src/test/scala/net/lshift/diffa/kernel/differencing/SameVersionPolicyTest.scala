@@ -34,7 +34,7 @@ import scala.collection.JavaConversions._
  * Test cases for the same version policy.
  */
 class SameVersionPolicyTest extends AbstractPolicyTest {
-  val policy = new SameVersionPolicy(store, listener, configStore)
+  val policy = new SameVersionPolicy(stores, listener, configStore)
 
   def downstreamVersionFor(v:String) = v
 
@@ -88,13 +88,13 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
         Down("id4", testData.valueKey, testData.values(1), "vsn4", downstreamVersionFor("vsn4"))))
 
     // We should see id3 be updated, and id4 be removed
-    expect(store.storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
+    expect(stores(pair.key).storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
       andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
-    expect(store.clearDownstreamVersion(VersionID(abPair, "id4"))).
+    expect(stores(pair.key).clearDownstreamVersion(VersionID(abPair, "id4"))).
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
 
     // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.difference(abPair, usMock, dsMock, nullListener)

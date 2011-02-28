@@ -30,8 +30,8 @@ import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
  * Compliance with this policy could also be achieved by the downstream simply recording the versions of received
  * upstream events.
  */
-class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingListener, configStore:ConfigStore)
-    extends BaseSynchingVersionPolicy(store, listener, configStore:ConfigStore) {
+class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore)
+    extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore) {
 
   def synchroniseParticipants(pair: Pair, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
@@ -42,12 +42,12 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
       val aggregator = new Aggregator(bucketing)
-      store.queryDownstreams(pairKey, constraints, aggregator.collectDownstream)
+      stores(pairKey).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      store.queryDownstreams(pairKey, constraints).map(x => {
+      stores(pairKey).queryDownstreams(constraints).map(x => {
         EntityVersion(x.id, AttributesUtil.toSeq(x.downstreamAttributes.toMap), x.lastUpdate, x.downstreamDVsn)
       })
     }
@@ -56,9 +56,9 @@ class SameVersionPolicy(store:VersionCorrelationStore, listener:DifferencingList
       vm match {
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            store.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn)
+            stores(pairKey).storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn)
           } else {
-            store.clearDownstreamVersion(VersionID(pairKey, id))
+            stores(pairKey).clearDownstreamVersion(VersionID(pairKey, id))
           }
       }
     }
