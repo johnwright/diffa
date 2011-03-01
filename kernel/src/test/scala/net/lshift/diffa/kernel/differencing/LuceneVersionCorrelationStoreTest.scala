@@ -304,6 +304,27 @@ class LuceneVersionCorrelationStoreTest {
     assertEquals(None, corr)
   }
 
+  @Test
+  def storesMustBeIsolatedByPairKey = {
+    val otherStore = stores(otherPair)
+
+    otherStore.storeUpstreamVersion(VersionID(otherPair, "123456789"), emptyAttributes, DEC_1_2009, "up-123456789")
+    otherStore.storeDownstreamVersion(VersionID(otherPair, "123456789"), emptyAttributes, DEC_1_2009, "up-123456789", "down-123456789")
+    assertCorrelationEquals(
+      Correlation(null, otherPair, "123456789", Map(), Map(), DEC_1_2009, null, "up-123456789", "up-123456789", "down-123456789", true),
+      otherStore.retrieveCurrentCorrelation(VersionID(otherPair, "123456789")).getOrElse(null))
+
+    store.storeUpstreamVersion(VersionID(pair, "123456789"), emptyAttributes, DEC_1_2009, "up-123456789")
+    assertCorrelationEquals(
+      Correlation(null, pair, "123456789", Map(), Map(), DEC_1_2009, null, "up-123456789", null, null, false),
+      store.retrieveCurrentCorrelation(VersionID(pair, "123456789")).getOrElse(null))
+
+    // re-check other store
+    assertCorrelationEquals(
+      Correlation(null, otherPair, "123456789", Map(), Map(), DEC_1_2009, null, "up-123456789", "up-123456789", "down-123456789", true),
+      otherStore.retrieveCurrentCorrelation(VersionID(otherPair, "123456789")).getOrElse(null))
+  }
+
   private def assertCorrelationEquals(expected:Correlation, actual:Correlation) {
     if (expected == null) {
       assertNull(actual)
@@ -317,6 +338,7 @@ class LuceneVersionCorrelationStoreTest {
       assertEquals(expected.downstreamDVsn, actual.downstreamDVsn)
       assertEquals(expected.upstreamAttributes, actual.upstreamAttributes)
       assertEquals(expected.downstreamAttributes, actual.downstreamAttributes)
+      assertEquals(expected.isMatched, actual.isMatched)
     }
   }
 }
