@@ -52,6 +52,7 @@ abstract class AbstractDataDrivenPolicyTest {
   val store = createStrictMock("versionStore", classOf[VersionCorrelationStore])
   val stores = new VersionCorrelationStoreFactory {
     def apply(pairKey: String) = store
+    def remove(pairKey: String) {}
     def close {}
   }
   EasyMock.checkOrder(store, false)   // Store doesn't care about order

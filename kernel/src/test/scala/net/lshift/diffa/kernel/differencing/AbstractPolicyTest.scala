@@ -54,6 +54,7 @@ abstract class AbstractPolicyTest {
 
   val stores = new VersionCorrelationStoreFactory {
     def apply(pairKey: String) = store
+    def remove(pairKey: String) {}
     def close {}
   }
 
