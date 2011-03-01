@@ -51,6 +51,13 @@ abstract class AbstractPolicyTest {
   
   val store = createStrictMock("versionStore", classOf[VersionCorrelationStore])
   EasyMock.checkOrder(store, false)   // Store doesn't care about order
+
+  val stores = new VersionCorrelationStoreFactory {
+    def apply(pairKey: String) = store
+    def remove(pairKey: String) {}
+    def close {}
+  }
+
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
   val configStore = createStrictMock("configStore", classOf[ConfigStore])
@@ -226,7 +233,7 @@ abstract class AbstractPolicyTest {
                         Down("id2", testData.valueKey, testData.values(1), "vsn2a", downstreamVersionFor("vsn2a"))))
 
     // If the version check returns mismatches, we should see differences generated
-    expect(store.unmatchedVersions(EasyMock.eq(abPair), EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
+    expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
       Correlation(null, abPair, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
       Correlation(null, abPair, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
     listener.onMismatch(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", "vsn1a"); expectLastCall
@@ -321,7 +328,7 @@ abstract class AbstractPolicyTest {
   protected case class UpstreamVersionAnswer(hs:Seq[UpstreamVersion]) extends IAnswer[Unit] {
     def answer {
       val args = EasyMock.getCurrentArguments
-      val cb = args(2).asInstanceOf[Function4[VersionID, Map[String, String], DateTime, String, Unit]]
+      val cb = args(1).asInstanceOf[Function4[VersionID, Map[String, String], DateTime, String, Unit]]
 
       hs.foreach { case UpstreamVersion(id, attributes, lastUpdate, vsn) =>
         cb(id, attributes, lastUpdate, vsn)
@@ -332,7 +339,7 @@ abstract class AbstractPolicyTest {
   protected case class DownstreamVersionAnswer(hs:Seq[DownstreamVersion]) extends IAnswer[Unit] {
     def answer {
       val args = EasyMock.getCurrentArguments
-      val cb = args(2).asInstanceOf[Function5[VersionID, Map[String, String], DateTime, String, String, Unit]]
+      val cb = args(1).asInstanceOf[Function5[VersionID, Map[String, String], DateTime, String, String, Unit]]
 
       hs.foreach { case DownstreamVersion(id, attributes, lastUpdate, uvsn, dvsn) =>
         cb(id, attributes, lastUpdate, uvsn, dvsn)
@@ -347,7 +354,7 @@ abstract class AbstractPolicyTest {
 
   protected def expectUpstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[AggregateDigest], storeResp:Seq[UpstreamVersion]) {
     expect(usMock.queryAggregateDigests(bucketing, constraints)).andReturn(partResp)
-    store.queryUpstreams(EasyMock.eq(pair), EasyMock.eq(constraints), anyUnitF4)
+    store.queryUpstreams(EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(storeResp))
   }
 
@@ -358,7 +365,7 @@ abstract class AbstractPolicyTest {
 
   protected def expectDownstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[AggregateDigest], storeResp:Seq[DownstreamVersion]) {
     expect(dsMock.queryAggregateDigests(bucketing, constraints)).andReturn(partResp)
-    store.queryDownstreams(EasyMock.eq(pair), EasyMock.eq(constraints), anyUnitF5)
+    store.queryDownstreams(EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
   }
 
@@ -379,7 +386,7 @@ abstract class AbstractPolicyTest {
       c
     })
 
-    expect(store.queryUpstreams(EasyMock.eq(pair), EasyMock.eq(constraints))).andReturn(correlations)
+    expect(store.queryUpstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
   protected def expectDownstreamEntitySync2(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[EntityVersion], storeResp:Seq[DownstreamVersion]) {
     val pairDef = configStore.getPair(pair)
@@ -393,7 +400,7 @@ abstract class AbstractPolicyTest {
       c
     })
 
-    expect(store.queryDownstreams(EasyMock.eq(pair), EasyMock.eq(constraints))).andReturn(correlations)
+    expect(store.queryDownstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
 
   protected def toStrMap(attrs:Map[String, TypedAttribute]) = attrs.map { case (k, v) => k -> v.value }.toMap

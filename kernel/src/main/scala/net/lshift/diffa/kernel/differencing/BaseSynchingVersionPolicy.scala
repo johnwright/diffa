@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, Pair, ConfigStore}
 /**
  * Standard behaviours supported by synchronising version policies.
  */
-abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
+abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFactory,
                                          listener:DifferencingListener,
                                          configStore:ConfigStore)
     extends VersionPolicy {
@@ -42,16 +42,16 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
 
     val corr = evt match {
       case UpstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
-        case null => store.clearUpstreamVersion(id)
-        case _    => store.storeUpstreamVersion(id, pair.upstream.schematize(evt.attributes), maybe(lastUpdate), vsn)
+        case null => stores(pair.key).clearUpstreamVersion(id)
+        case _    => stores(pair.key).storeUpstreamVersion(id, pair.upstream.schematize(evt.attributes), maybe(lastUpdate), vsn)
       }
       case DownstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
-        case null => store.clearDownstreamVersion(id)
-        case _    => store.storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), vsn, vsn)
+        case null => stores(pair.key).clearDownstreamVersion(id)
+        case _    => stores(pair.key).storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), vsn, vsn)
       }
       case DownstreamCorrelatedPairChangeEvent(id, _, lastUpdate, uvsn, dvsn) => (uvsn, dvsn) match {
-        case (null, null) => store.clearDownstreamVersion(id)
-        case _            => store.storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), uvsn, dvsn)
+        case (null, null) => stores(pair.key).clearDownstreamVersion(id)
+        case _            => stores(pair.key).storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), uvsn, dvsn)
       }
     }
 
@@ -75,7 +75,7 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
     synchroniseParticipants(pair, us, ds, l)
 
     // Run a query for mismatched versions, and report each one
-    store.unmatchedVersions(pairKey, pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
+    stores(pairKey).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
       corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn))
 
     true
@@ -114,12 +114,12 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
 
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
       val aggregator = new Aggregator(bucketing)
-      store.queryUpstreams(pairKey, constraints, aggregator.collectUpstream)
+      stores(pairKey).queryUpstreams(constraints, aggregator.collectUpstream)
       aggregator.digests
     }
 
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
-      store.queryUpstreams(pairKey, constraints).map(x => {
+      stores(pairKey).queryUpstreams(constraints).map(x => {
         EntityVersion(x.id, AttributesUtil.toSeq(x.upstreamAttributes.toMap), x.lastUpdate, x.upstreamVsn)
       })
     }
@@ -128,9 +128,9 @@ abstract class BaseSynchingVersionPolicy(val store:VersionCorrelationStore,
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            store.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn)
+            stores(pairKey).storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn)
           } else {
-            store.clearUpstreamVersion(VersionID(pairKey, id))
+            stores(pairKey).clearUpstreamVersion(VersionID(pairKey, id))
           }
       }
     }

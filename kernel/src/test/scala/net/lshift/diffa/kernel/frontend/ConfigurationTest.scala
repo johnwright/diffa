@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.frontend
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.matching.MatchingManager
 import net.lshift.diffa.kernel.actors.ActivePairManager
-import net.lshift.diffa.kernel.differencing.SessionManager
+import net.lshift.diffa.kernel.differencing.{SessionManager, VersionCorrelationStoreFactory}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
@@ -31,11 +31,17 @@ import org.easymock.IArgumentMatcher
  */
 class ConfigurationTest {
   private val matchingManager = createMock("matchingManager", classOf[MatchingManager])
+  private val versionCorrelationStoreFactory = createMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
   private val pairManager = createMock("pairManager", classOf[ActivePairManager])
   private val sessionManager = createMock("sessionManager", classOf[SessionManager])
   private val endpointListener = createMock("endpointListener", classOf[EndpointLifecycleListener])
 
-  private val configuration = new Configuration(HibernateConfigStoreTest.configStore, matchingManager, pairManager, sessionManager, endpointListener)
+  private val configuration = new Configuration(HibernateConfigStoreTest.configStore,
+                                                matchingManager,
+                                                versionCorrelationStoreFactory,
+                                                pairManager,
+                                                sessionManager,
+                                                endpointListener)
 
   @Before
   def clearConfig {
@@ -126,6 +132,7 @@ class ConfigurationTest {
     expect(sessionManager.onUpdatePair("ab")).once
     expect(pairManager.stopActor("ac")).once
     expect(matchingManager.onDeletePair("ac")).once
+    expect(versionCorrelationStoreFactory.remove("ac")).once
 //    expect(sessionManager.onDeletePair("ac")).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair("ad")).once
@@ -151,6 +158,8 @@ class ConfigurationTest {
     expect(pairManager.stopActor("ac")).once
     expect(matchingManager.onDeletePair("ab")).once
     expect(matchingManager.onDeletePair("ac")).once
+    expect(versionCorrelationStoreFactory.remove("ab")).once
+    expect(versionCorrelationStoreFactory.remove("ac")).once
 //    expect(sessionManager.onDeletePair("ac")).once
     expect(endpointListener.onEndpointRemoved("upstream1")).once
     expect(endpointListener.onEndpointRemoved("downstream1")).once

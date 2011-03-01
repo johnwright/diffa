@@ -39,7 +39,7 @@ import net.lshift.diffa.kernel.config.ConfigStore
  * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
  * of pair attributes.
  */
-class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
+class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, configStore:ConfigStore)
     extends VersionCorrelationStore
     with Closeable {
 
@@ -74,8 +74,8 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
     })
   }
 
-  def unmatchedVersions(pairKey:String, usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) = {
-    val query = queryForPair(pairKey)
+  def unmatchedVersions(usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) = {
+    val query = new BooleanQuery
     query.add(new TermQuery(new Term("isMatched", "0")), BooleanClause.Occur.MUST)
 
     applyConstraints(query, usConstraints, "up.")
@@ -126,39 +126,33 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
     })
   }
 
-  def queryUpstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
-    val query = queryForPair(pairKey)
+  def queryUpstreams(constraints:Seq[QueryConstraint]) = {
+    val query = new BooleanQuery
     applyConstraints(query, constraints, "up.")
       // TODO: There doesn't seem to be a good way to filter for documents that have upstream versions. Currently,
       // we're having to do it after the documents are loaded.
 
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
-    searcher.search(query, idOnlyCollector)
+
+    searcher.search(preventEmptyQuery(query), idOnlyCollector)
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.upstreamVsn != null)
   }
-  def queryDownstreams(pairKey:String, constraints:Seq[QueryConstraint]) = {
-    val query = queryForPair(pairKey)
+  def queryDownstreams(constraints:Seq[QueryConstraint]) = {
+    val query = new BooleanQuery
     applyConstraints(query, constraints, "down.")
       // TODO: There doesn't seem to be a good way to filter for documents that have downstream versions. Currently,
       // we're having to do it after the documents are loaded.
 
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
-    searcher.search(query, idOnlyCollector)
+    searcher.search(preventEmptyQuery(query), idOnlyCollector)
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.downstreamUVsn != null)
   }
   
   private def queryForId(id:VersionID) = {
     val query = new BooleanQuery
-    query.add(new TermQuery(new Term("pair", id.pairKey)), BooleanClause.Occur.MUST)
     query.add(new TermQuery(new Term("id", id.id)), BooleanClause.Occur.MUST)
-    query
-  }
-
-  private def queryForPair(pairKey:String):BooleanQuery = {
-    val query = new BooleanQuery
-    query.add(new TermQuery(new Term("pair", pairKey)), BooleanClause.Occur.MUST)
     query
   }
 
@@ -186,6 +180,12 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
     }
   }
 
+  private def preventEmptyQuery(query: BooleanQuery): Query =
+    if (query.getClauses.length == 0)
+      new MatchAllDocsQuery()
+    else
+      query
+
   private def retrieveCurrentDoc(id:VersionID) = {
     val searcher = new IndexSearcher(index, false)
     val hits = searcher.search(queryForId(id), 1)
@@ -201,8 +201,6 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
       case None => {
         // Nothing in the index yet for this document
         val result = new Document
-        result.add(new Field("pairWithId", id.pairKey + "." + id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
-        result.add(new Field("pair", id.pairKey, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
         result.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
         result
       }
@@ -258,7 +256,7 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
   }
 
   private def updateDocument(id:VersionID, doc:Document) = {
-    writer.updateDocument(new Term("pairWithId", id.pairKey + "." + id.id), doc)
+    writer.updateDocument(new Term("id", id.id), doc)
   }
   private def updateField(doc:Document, field:Fieldable) = {
     doc.removeField(field.name)
@@ -277,7 +275,7 @@ class LuceneVersionCorrelationStore(index:Directory, configStore:ConfigStore)
 
   private def docToCorrelation(doc:Document) = {
     Correlation(
-      pairing = doc.get("pair"), id = doc.get("id"),
+      pairing = pairKey, id = doc.get("id"),
       upstreamAttributes = findAttributes(doc, "up."),
       downstreamAttributes = findAttributes(doc, "down."),
       lastUpdate = parseDate(doc.get("lastUpdated")),

@@ -49,7 +49,7 @@ class VersionCorrelationStorePerfTest {
     LuceneVersionCorrelationStoreTest.flushStore
   }
 
-  private val store = LuceneVersionCorrelationStoreTest.store
+  private val stores = LuceneVersionCorrelationStoreTest.stores
   private val pairKey = "ab"
 
   @Test
@@ -58,24 +58,24 @@ class VersionCorrelationStorePerfTest {
 
     withTiming("load upstream versions") {
       for (i <- 0 until vsnCount) {
-        store.storeUpstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
+        stores(pairKey).storeUpstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
       }
     }
 
     withTiming("run unmatched version query") {
-      val res = store.unmatchedVersions(pairKey, Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pairKey).unmatchedVersions(Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(vsnCount, res.length)
     }
 
     withTiming("load downstream versions") {
       for (i <- 0 until vsnCount) {
-        store.storeDownstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
+        stores(pairKey).storeDownstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
       }
     }
 
     withTiming("run unmatched version query (2)") {
-      val res = store.unmatchedVersions(pairKey, Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pairKey).unmatchedVersions(Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(0, res.length)
     }
