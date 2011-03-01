@@ -100,6 +100,8 @@ trait VersionCorrelationStore extends Closeable {
 trait VersionCorrelationStoreFactory extends Closeable {
 
   def apply(pairKey: String): VersionCorrelationStore
+
+  def remove(pairKey: String): Unit
 }
 
 abstract class TypedAttribute { def value:String }

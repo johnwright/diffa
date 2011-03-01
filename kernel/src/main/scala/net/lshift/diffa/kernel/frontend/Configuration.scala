@@ -19,13 +19,14 @@ package net.lshift.diffa.kernel.frontend
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.matching.MatchingManager
-import net.lshift.diffa.kernel.differencing.SessionManager
+import net.lshift.diffa.kernel.differencing.{SessionManager, VersionCorrelationStoreFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.actors.{ActivePairManager}
 import net.lshift.diffa.kernel.participants.{EndpointLifecycleListener, InboundEndpointManager}
 
 class Configuration(val configStore: ConfigStore,
                     val matchingManager: MatchingManager,
+                    val versionCorrelationStoreFactory: VersionCorrelationStoreFactory,
                     val supervisor:ActivePairManager,
                     val sessionManager: SessionManager,
                     val endpointListener: EndpointLifecycleListener) {
@@ -134,6 +135,7 @@ class Configuration(val configStore: ConfigStore,
     log.debug("Processing pair delete request: " + key)
     supervisor.stopActor(key)
     configStore.deletePair(key)
+    versionCorrelationStoreFactory.remove(key)
     matchingManager.onDeletePair(key)
   }
 

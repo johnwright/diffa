@@ -40,8 +40,13 @@ class LuceneVersionCorrelationStoreFactory[T <: FSDirectory](
   private def directory(pairKey: String) =
     directoryClass.getConstructor(classOf[File]).newInstance(new File(baseDir, pairKey))
 
+  def remove(pairKey: String) = {
+    stores(pairKey).close()
+    stores.remove(pairKey)
+  }
+
   def close {
-    stores.foreach { case (_, store) => store.close }
+    stores.keys.foreach(remove _)
   }
 
 }
