@@ -366,10 +366,10 @@ class LuceneVersionCorrelationStoreTest {
       Correlation(null, otherPair, "123456789", Map(), Map(), DEC_1_2009, null, "up-123456789", "up-123456789", "down-123456789", true),
       otherStore.retrieveCurrentCorrelation(VersionID(otherPair, "123456789")).getOrElse(null))
 
-    session.storeUpstreamVersion(VersionID(pair, "123456789"), emptyAttributes, DEC_1_2009, "up-123456789")
+    session.storeUpstreamVersion(VersionID(pair, "123456789"), emptyAttributes, DEC_1_2009, "up-987654321")
     session.flush()
     assertCorrelationEquals(
-      Correlation(null, pair, "123456789", Map(), Map(), DEC_1_2009, null, "up-123456789", null, null, false),
+      Correlation(null, pair, "123456789", Map(), Map(), DEC_1_2009, null, "up-987654321", null, null, false),
       store.retrieveCurrentCorrelation(VersionID(pair, "123456789")).getOrElse(null))
 
     // re-check other store
