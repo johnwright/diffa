@@ -36,22 +36,22 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
    * Handles a participant change. Due to the need to later correlate data, event information is cached to the
    * version correlation store.
    */
-  def onChange(evt: PairChangeEvent) = {
+  def onChange(session: VersionCorrelationSession, evt: PairChangeEvent) = {
 
     val pair = configStore.getPair(evt.id.pairKey)
 
     val corr = evt match {
       case UpstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
-        case null => stores(pair.key).clearUpstreamVersion(id)
-        case _    => stores(pair.key).storeUpstreamVersion(id, pair.upstream.schematize(evt.attributes), maybe(lastUpdate), vsn)
+        case null => session.clearUpstreamVersion(id)
+        case _    => session.storeUpstreamVersion(id, pair.upstream.schematize(evt.attributes), maybe(lastUpdate), vsn)
       }
       case DownstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
-        case null => stores(pair.key).clearDownstreamVersion(id)
-        case _    => stores(pair.key).storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), vsn, vsn)
+        case null => session.clearDownstreamVersion(id)
+        case _    => session.storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), vsn, vsn)
       }
       case DownstreamCorrelatedPairChangeEvent(id, _, lastUpdate, uvsn, dvsn) => (uvsn, dvsn) match {
-        case (null, null) => stores(pair.key).clearDownstreamVersion(id)
-        case _            => stores(pair.key).storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), uvsn, dvsn)
+        case (null, null) => session.clearDownstreamVersion(id)
+        case _            => session.storeDownstreamVersion(id, pair.downstream.schematize(evt.attributes), maybe(lastUpdate), uvsn, dvsn)
       }
     }
 
@@ -69,10 +69,11 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
-  def difference(pairKey: String, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def difference(pairKey: String, session: VersionCorrelationSession, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
 
-    synchroniseParticipants(pair, us, ds, l)
+    synchroniseParticipants(pair, session, us, ds, l)
+    session.flush()
 
     // Run a query for mismatched versions, and report each one
     stores(pairKey).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
@@ -84,30 +85,31 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   /**
    * Allows the policy to perform a synchronisation of participants.
    */
-  protected def synchroniseParticipants(pair: Pair, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener)
+  protected def synchroniseParticipants(pair: Pair, session: VersionCorrelationSession, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener)
 
   /**
    * The basic functionality for a synchronisation strategy.
    */
   protected abstract class SyncStrategy {
-    def syncHalf(pair:Pair, endpoint:Endpoint, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], p:Participant) {
+    def syncHalf(pair:Pair, session: VersionCorrelationSession, endpoint:Endpoint, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], p:Participant) {
       val remoteDigests = p.queryAggregateDigests(bucketing, constraints)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
 
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
         case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
-          syncHalf(pair, endpoint, narrowBuckets, narrowConstraints, p)
+          syncHalf(pair, session, endpoint, narrowBuckets, narrowConstraints, p)
         case EntityQueryAction(narrowed)    => {
           val remoteVersions = p.queryEntityVersions(narrowed)
           val cachedVersions = getEntities(pair.key, narrowed)
-          DigestDifferencingUtils.differenceEntities(endpoint.categories.toMap, remoteVersions, cachedVersions, narrowed).foreach(handleMismatch(pair.key, _))
+          DigestDifferencingUtils.differenceEntities(endpoint.categories.toMap, remoteVersions, cachedVersions, narrowed)
+            .foreach(handleMismatch(pair.key, session, _))
         }
       })
     }
 
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
-    def handleMismatch(pairKey:String, vm:VersionMismatch)
+    def handleMismatch(pairKey:String, session: VersionCorrelationSession, vm:VersionMismatch)
   }
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
@@ -124,13 +126,13 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
     }
 
-    def handleMismatch(pairKey:String, vm:VersionMismatch) = {
+    def handleMismatch(pairKey: String, session: VersionCorrelationSession, vm:VersionMismatch) = {
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            stores(pairKey).storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn)
+            session.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn)
           } else {
-            stores(pairKey).clearUpstreamVersion(VersionID(pairKey, id))
+            session.clearUpstreamVersion(VersionID(pairKey, id))
           }
       }
     }

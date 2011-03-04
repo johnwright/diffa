@@ -33,10 +33,10 @@ import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
 class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore) {
 
-  def synchroniseParticipants(pair: Pair, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def synchroniseParticipants(pair: Pair, session: VersionCorrelationSession, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pair, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
-    (new DownstreamSameSyncStrategy).syncHalf(pair, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
+    (new UpstreamSyncStrategy).syncHalf(pair, session, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
+    (new DownstreamSameSyncStrategy).syncHalf(pair, session, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
   }
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
@@ -52,13 +52,13 @@ class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:Differen
       })
     }
 
-    def handleMismatch(pairKey:String, vm:VersionMismatch) = {
+    def handleMismatch(pairKey:String, session: VersionCorrelationSession, vm:VersionMismatch) = {
       vm match {
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            stores(pairKey).storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn)
+            session.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn)
           } else {
-            stores(pairKey).clearDownstreamVersion(VersionID(pairKey, id))
+            session.clearDownstreamVersion(VersionID(pairKey, id))
           }
       }
     }

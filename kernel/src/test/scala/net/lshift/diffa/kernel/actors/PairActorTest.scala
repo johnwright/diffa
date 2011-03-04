@@ -56,7 +56,19 @@ class PairActorTest {
   expect(configStore.listGroups).andReturn(Array[GroupContainer]())
   replay(configStore)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory)
+  val session = createMock("session", classOf[VersionCorrelationSession])
+  expect(session.flush()).atLeastOnce
+  replay(session)
+
+  val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
+  expect(store.startSession()).andReturn(session).anyTimes
+  replay(store)
+
+  val stores = createStrictMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
+  expect(stores.apply(pairKey)).andReturn(store)
+  replay(stores)
+
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory, stores, 5000, 10000)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
@@ -75,7 +87,7 @@ class PairActorTest {
     val id = VersionID(pairKey, "foo")
     val monitor = new Object
 
-    expect(versionPolicy.difference(pairKey, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
+    expect(versionPolicy.difference(pairKey, session, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
       def answer = {
         monitor.synchronized {
           monitor.notifyAll
@@ -101,7 +113,7 @@ class PairActorTest {
     val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
 
     val monitor = new Object
-    expect(versionPolicy.onChange(event)).andAnswer(new IAnswer[Unit] {
+    expect(versionPolicy.onChange(session, event)).andAnswer(new IAnswer[Unit] {
       def answer = {
         monitor.synchronized {
           monitor.notifyAll

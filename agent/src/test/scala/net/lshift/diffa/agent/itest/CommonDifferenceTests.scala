@@ -134,7 +134,7 @@ trait CommonDifferenceTests {
     assertEquals(1, diffs2.length)
     val seqId2 = diffs2(0).seqId
 
-    assertTrue("Invalid sequence id", seqId2 > seqId1)
+    assertTrue("Invalid sequence ids: seqId1 = %s, seqId2 = %s".format(seqId1, seqId2), seqId2 > seqId1)
 
     val up2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.UPSTREAM)
     val down2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.DOWNSTREAM)

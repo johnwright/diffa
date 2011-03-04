@@ -35,11 +35,15 @@ trait VersionPolicy {
   /**
    * Indicates to the policy that a change has occurred within a participant.
    */
-  def onChange(evt:PairChangeEvent) : Unit
+  def onChange(session: VersionCorrelationSession, evt:PairChangeEvent) : Unit
 
   /**
    * Requests that the policy difference the given participants for the given time range. Differences that are
    * detected will be reported to the listener configured in the policy.
    */
-  def difference(pairKey:String, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Boolean
+  def difference(pairKey:String,
+                 session: VersionCorrelationSession,
+                 us:UpstreamParticipant,
+                 ds:DownstreamParticipant,
+                 listener:DifferencingListener) : Boolean
 }

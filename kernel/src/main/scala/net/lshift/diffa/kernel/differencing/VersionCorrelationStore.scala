@@ -25,8 +25,8 @@ import org.joda.time.{DateTimeZone, DateTime}
  * Store used for caching version correlation information between a pair of participants.
  */
 trait VersionCorrelationStore extends Closeable {
-  type UpstreamVersionHandler = Function4[VersionID, Map[String, String], DateTime, String, Unit]
-  type DownstreamVersionHandler = Function5[VersionID, Map[String, String], DateTime, String, String, Unit]
+  type UpstreamVersionHandler = (VersionID, Map[String, String], DateTime, String) => Unit
+  type DownstreamVersionHandler = (VersionID, Map[String, String], DateTime, String, String) => Unit
 
   /**
    * The unique key for the upstream and downstream participant pair
@@ -34,14 +34,9 @@ trait VersionCorrelationStore extends Closeable {
   val pairKey: String
 
   /**
-   * Stores the details of an upstream version.
+   * Starts a new session, giving access to write operations on the store.
    */
-  def storeUpstreamVersion(id:VersionID, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, vsn:String):Correlation
-
-  /**
-   * Stores the details of a downstream version.
-   */
-  def storeDownstreamVersion(id:VersionID, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
+  def startSession(): VersionCorrelationSession
 
   /**
    * Retrieves all of the unmatched version that have been stored.
@@ -54,16 +49,6 @@ trait VersionCorrelationStore extends Closeable {
    * Retrieves the current pairing information for the given pairKey/id.
    */
   def retrieveCurrentCorrelation(id:VersionID):Option[Correlation]
-
-  /**
-   * Clears the upstream version for the given pairKey/id.
-   */
-  def clearUpstreamVersion(id:VersionID):Correlation
-
-  /**
-   * Clears the downstream version for the given pairKey/id.
-   */
-  def clearDownstreamVersion(id:VersionID):Correlation
 
   /**
    * Queries for all upstream versions for the given pair based on the given constraints.
@@ -92,6 +77,35 @@ trait VersionCorrelationStore extends Closeable {
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
   def queryDownstreams(constraints:Seq[QueryConstraint]) : Seq[Correlation]
+}
+
+/** Allows write operations to the store to be batched and together. */
+trait VersionCorrelationSession {
+
+  /**
+   *   Stores the details of an upstream version.
+   */
+  def storeUpstreamVersion(id:VersionID, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, vsn:String):Correlation
+
+  /**
+   * Stores the details of a downstream version.
+   */
+  def storeDownstreamVersion(id:VersionID, attributes:Map[String,TypedAttribute], lastUpdated:DateTime, uvsn:String, dvsn:String):Correlation
+
+  /**
+   * Clears the upstream version for the given pairKey/id.
+   */
+  def clearUpstreamVersion(id:VersionID):Correlation
+
+  /**
+   * Clears the downstream version for the given pairKey/id.
+   */
+  def clearDownstreamVersion(id:VersionID):Correlation
+
+  /**
+   * Flushes any pending changes to the store, making them permanent.
+   */
+  def flush(): Unit
 }
 
 /**

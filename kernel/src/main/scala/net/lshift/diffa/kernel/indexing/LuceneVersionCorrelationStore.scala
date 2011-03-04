@@ -28,8 +28,8 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
-import collection.mutable.{ListBuffer, HashMap}
-import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, IntegerAttribute, TypedAttribute, Correlation, VersionCorrelationStore}
+import collection.mutable.{ListBuffer, HashMap, HashSet}
+import net.lshift.diffa.kernel.differencing._
 import org.apache.lucene.document._
 import org.joda.time.{DateTimeZone, DateTime}
 import net.lshift.diffa.kernel.config.ConfigStore
@@ -43,6 +43,8 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     extends VersionCorrelationStore
     with Closeable {
 
+  import LuceneVersionCorrelationStore._
+
   private val log = LoggerFactory.getLogger(getClass)
 
   val schemaVersionKey = "correlationStore.schemaVersion"
@@ -55,24 +57,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   val analyzer = new StandardAnalyzer(Version.LUCENE_30)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
 
-  def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
-    log.debug("Indexing " + id + " with attributes: " + attributes)
-    doDocUpdate(id, lastUpdated, doc => {
-      // Update all of the upstream attributes
-      applyAttributes(doc, "up.", attributes)
-      updateField(doc, stringField("uvsn", vsn))
-    })
-  }
-
-  def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
-    log.debug("Indexing " + id + " with attributes: " + attributes)
-    doDocUpdate(id, lastUpdated, doc => {
-      // Update all of the upstream attributes
-      applyAttributes(doc, "down.", attributes)
-      updateField(doc, stringField("duvsn", uvsn))
-      updateField(doc, stringField("ddvsn", dvsn))
-    })
-  }
+  def startSession() = new LuceneSession(index, writer)
 
   def unmatchedVersions(usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) = {
     val query = new BooleanQuery
@@ -88,42 +73,10 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   }
 
   def retrieveCurrentCorrelation(id:VersionID) = {
-    retrieveCurrentDoc(id) match {
+    retrieveCurrentDoc(index, id) match {
       case None => None
-      case Some(doc) => Some(docToCorrelation(doc))
+      case Some(doc) => Some(docToCorrelation(doc, id.pairKey))
     }
-  }
-
-  def clearUpstreamVersion(id:VersionID) = {
-    doClearAttributes(id, doc => {
-      if (doc.get("duvsn") == null) {
-        false // Remove the document
-      } else {
-        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
-        doc.getFields.toList.foreach(f => {
-          if (f.name.startsWith("up.")) doc.removeField(f.name)
-        })
-        doc.removeField("uvsn")
-
-        true  // Keep the document
-      }
-    })
-  }
-  def clearDownstreamVersion(id:VersionID) = {
-    doClearAttributes(id, doc => {
-      if (doc.get("uvsn") == null) {
-        false // Remove the document
-      } else {
-        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
-        doc.getFields.toList.foreach(f => {
-          if (f.name.startsWith("down.")) doc.removeField(f.name)
-        })
-        doc.removeField("duvsn")
-        doc.removeField("ddvsn")
-
-        true  // Keep the document
-      }
-    })
   }
 
   def queryUpstreams(constraints:Seq[QueryConstraint]) = {
@@ -148,12 +101,6 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     val searcher = new IndexSearcher(index, false)
     searcher.search(preventEmptyQuery(query), idOnlyCollector)
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.downstreamUVsn != null)
-  }
-  
-  private def queryForId(id:VersionID) = {
-    val query = new BooleanQuery
-    query.add(new TermQuery(new Term("id", id.id)), BooleanClause.Occur.MUST)
-    query
   }
 
   private def applyConstraints(query:BooleanQuery, constraints:Seq[QueryConstraint], prefix:String) = {
@@ -186,7 +133,38 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     else
       query
 
-  private def retrieveCurrentDoc(id:VersionID) = {
+  private class DocIdOnlyCollector extends Collector {
+    val docIds = new ListBuffer[Int]
+    private var docBase:Int = 0
+
+    def acceptsDocsOutOfOrder = true
+    def setNextReader(reader: IndexReader, docBase: Int) = this.docBase = docBase
+    def collect(doc: Int) = docIds.add(docBase + doc)
+    def setScorer(scorer: Scorer) = {}   // Not needed
+
+    def allCorrelations(searcher:IndexSearcher) = {
+      docIds.map(id => {
+        val doc = searcher.doc(id)
+        docToCorrelation(doc, pairKey)
+      })
+    }
+
+    def allSortedCorrelations(searcher:IndexSearcher) = allCorrelations(searcher).sortBy(c => c.id)
+  }
+
+  def close = {
+    writer.close
+  }
+
+  def reset() = {
+    writer.deleteAll
+    writer.commit
+  }
+}
+
+object LuceneVersionCorrelationStore {
+
+  def retrieveCurrentDoc(index: Directory, id:VersionID) = {
     val searcher = new IndexSearcher(index, false)
     val hits = searcher.search(queryForId(id), 1)
     if (hits.scoreDocs.size == 0) {
@@ -196,15 +174,139 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     }
   }
 
-  private def getCurrentOrNewDoc(id:VersionID) = {
-    retrieveCurrentDoc(id) match {
-      case None => {
-        // Nothing in the index yet for this document
-        val result = new Document
-        result.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
-        result
+  def docToCorrelation(doc:Document, pairKey: String) = {
+    Correlation(
+      pairing = pairKey, id = doc.get("id"),
+      upstreamAttributes = findAttributes(doc, "up."),
+      downstreamAttributes = findAttributes(doc, "down."),
+      lastUpdate = parseDate(doc.get("lastUpdated")),
+      timestamp = parseDate(doc.get("timestamp")),
+      upstreamVsn = doc.get("uvsn"),
+      downstreamUVsn = doc.get("duvsn"),
+      downstreamDVsn = doc.get("ddvsn"),
+      isMatched = parseBool(doc.get("isMatched"))
+    )
+  }
+
+  private def findAttributes(doc:Document, prefix:String) = {
+    val attrs = new HashMap[String, String]
+    doc.getFields.foreach(f => {
+      if (f.name.startsWith(prefix)) {
+        attrs(f.name.substring(prefix.size)) = f.stringValue
       }
-      case Some(doc) => doc
+    })
+    attrs
+  }
+
+  def queryForId(id:VersionID) = {
+    val query = new BooleanQuery
+    query.add(new TermQuery(new Term("id", id.id)), BooleanClause.Occur.MUST)
+    query
+  }
+
+  private def parseBool(bs:String) = bs != null && bs.equals("1")
+
+  def parseDate(ds:String) = {
+    if (ds != null) {
+      ISODateTimeFormat.dateTimeParser.parseDateTime(ds)
+    } else {
+      null
+    }
+  }
+
+  def formatDate(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
+}
+
+class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrelationSession {
+  import LuceneVersionCorrelationStore._
+
+  private val log = LoggerFactory.getLogger(getClass)
+
+  private val updatedDocs = HashMap[VersionID, Document]()
+  private val deletedDocs = HashSet[VersionID]()
+
+  private var open = true
+
+  def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
+    log.debug("Indexing " + id + " with attributes: " + attributes)
+    doDocUpdate(id, lastUpdated, doc => {
+      // Update all of the upstream attributes
+      applyAttributes(doc, "up.", attributes)
+      updateField(doc, stringField("uvsn", vsn))
+    })
+  }
+
+  def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
+    log.debug("Indexing " + id + " with attributes: " + attributes)
+    doDocUpdate(id, lastUpdated, doc => {
+      // Update all of the upstream attributes
+      applyAttributes(doc, "down.", attributes)
+      updateField(doc, stringField("duvsn", uvsn))
+      updateField(doc, stringField("ddvsn", dvsn))
+    })
+  }
+
+  def clearUpstreamVersion(id:VersionID) = {
+    doClearAttributes(id, doc => {
+      if (doc.get("duvsn") == null) {
+        false // Remove the document
+      } else {
+        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+        doc.getFields.toList.foreach(f => {
+          if (f.name.startsWith("up.")) doc.removeField(f.name)
+        })
+        doc.removeField("uvsn")
+
+        true  // Keep the document
+      }
+    })
+  }
+
+  def clearDownstreamVersion(id:VersionID) = {
+    doClearAttributes(id, doc => {
+      if (doc.get("uvsn") == null) {
+        false // Remove the document
+      } else {
+        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+        doc.getFields.toList.foreach(f => {
+          if (f.name.startsWith("down.")) doc.removeField(f.name)
+        })
+        doc.removeField("duvsn")
+        doc.removeField("ddvsn")
+
+        true  // Keep the document
+      }
+    })
+  }
+
+  def flush() {
+    updatedDocs.foreach { case (id, doc) =>
+      writer.updateDocument(new Term("id", id.id), doc)
+    }
+    deletedDocs.foreach { id =>
+      writer.deleteDocuments(queryForId(id))
+    }
+    writer.commit()
+    updatedDocs.clear()
+    log.debug("Session flushed")
+  }
+
+  private def getCurrentOrNewDoc(id:VersionID) = {
+    if (updatedDocs.contains(id)) {
+      updatedDocs(id)
+    } else {
+      val doc = retrieveCurrentDoc(index, id) match {
+        case None => {
+          // Nothing in the index yet for this document
+          val result = new Document
+          result.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+          result
+        }
+        case Some(doc) => doc
+      }
+      deletedDocs.remove(id)
+      updatedDocs.put(id, doc)
+      doc
     }
   }
 
@@ -226,65 +328,37 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     // Update the timestamp
     updateField(doc, dateField("timestamp", new DateTime, indexed = false))
 
-    updateDocument(id, doc)
-    writer.commit
+    updatedDocs.put(id, doc)
 
-    docToCorrelation(doc)
+    docToCorrelation(doc, id.pairKey)
   }
 
   private def doClearAttributes(id:VersionID, f:Document => Boolean) = {
-    retrieveCurrentDoc(id) match {
+    val currentDoc =
+      if (updatedDocs.contains(id))
+        Some(updatedDocs(id))
+      else
+        retrieveCurrentDoc(index, id)
+
+    currentDoc match {
       case None => Correlation.asDeleted(id.pairKey, id.id, new DateTime)
       case Some(doc) => {
         if (f(doc)) {
           // We want to keep the document. Update match status and write it out
           updateField(doc, boolField("isMatched", false))
 
-          updateDocument(id, doc)
-          writer.commit
+          updatedDocs.put(id, doc)
 
-          docToCorrelation(doc)
+          docToCorrelation(doc, id.pairKey)
         } else {
           // We'll just delete the doc if it doesn't have a upstream
-          writer.deleteDocuments(queryForId(id))
-          writer.commit
+          deletedDocs.add(id)
+          updatedDocs.remove(id)
 
           Correlation.asDeleted(id.pairKey, id.id, new DateTime)
         }
       }
     }
-  }
-
-  private def updateDocument(id:VersionID, doc:Document) = {
-    writer.updateDocument(new Term("id", id.id), doc)
-  }
-  private def updateField(doc:Document, field:Fieldable) = {
-    doc.removeField(field.name)
-    doc.add(field)
-  }
-  
-  private def stringField(name:String, value:String, indexed:Boolean = true) =
-    new Field(name, value, Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
-  private def dateField(name:String, dt:DateTime, indexed:Boolean = true) =
-    new Field(name, formatDate(dt), Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
-  private def intField(name:String, value:Int, indexed:Boolean = true) =
-    (new NumericField(name, Field.Store.YES, indexed)).setIntValue(value)
-  private def boolField(name:String, value:Boolean, indexed:Boolean = true) =
-    new Field(name, if (value) "1" else "0", Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
-  private def indexConfig(indexed:Boolean) = if (indexed) Field.Index.NOT_ANALYZED_NO_NORMS else Field.Index.NO
-
-  private def docToCorrelation(doc:Document) = {
-    Correlation(
-      pairing = pairKey, id = doc.get("id"),
-      upstreamAttributes = findAttributes(doc, "up."),
-      downstreamAttributes = findAttributes(doc, "down."),
-      lastUpdate = parseDate(doc.get("lastUpdated")),
-      timestamp = parseDate(doc.get("timestamp")),
-      upstreamVsn = doc.get("uvsn"),
-      downstreamUVsn = doc.get("duvsn"),
-      downstreamDVsn = doc.get("ddvsn"),
-      isMatched = parseBool(doc.get("isMatched"))
-    )
   }
 
   private def applyAttributes(doc:Document, prefix:String, attributes:Map[String, TypedAttribute]) = {
@@ -297,51 +371,20 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
       updateField(doc, vF)
     } }
   }
-  private def findAttributes(doc:Document, prefix:String) = {
-    val attrs = new HashMap[String, String]
-    doc.getFields.foreach(f => {
-      if (f.name.startsWith(prefix)) {
-        attrs(f.name.substring(prefix.size)) = f.stringValue
-      }
-    })
-    attrs
+
+  private def updateField(doc:Document, field:Fieldable) = {
+    doc.removeField(field.name)
+    doc.add(field)
   }
 
-  private def parseDate(ds:String) = {
-    if (ds != null) {
-      ISODateTimeFormat.dateTimeParser.parseDateTime(ds)
-    } else {
-      null
-    }
-  }
-  private def formatDate(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
-  private def parseBool(bs:String) = bs != null && bs.equals("1")
+  private def stringField(name:String, value:String, indexed:Boolean = true) =
+    new Field(name, value, Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
+  private def dateField(name:String, dt:DateTime, indexed:Boolean = true) =
+    new Field(name, formatDate(dt), Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
+  private def intField(name:String, value:Int, indexed:Boolean = true) =
+    (new NumericField(name, Field.Store.YES, indexed)).setIntValue(value)
+  private def boolField(name:String, value:Boolean, indexed:Boolean = true) =
+    new Field(name, if (value) "1" else "0", Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
+  private def indexConfig(indexed:Boolean) = if (indexed) Field.Index.NOT_ANALYZED_NO_NORMS else Field.Index.NO
 
-  private class DocIdOnlyCollector extends Collector {
-    val docIds = new ListBuffer[Int]
-    private var docBase:Int = 0
-
-    def acceptsDocsOutOfOrder = true
-    def setNextReader(reader: IndexReader, docBase: Int) = this.docBase = docBase
-    def collect(doc: Int) = docIds.add(docBase + doc)
-    def setScorer(scorer: Scorer) = {}   // Not needed
-
-    def allCorrelations(searcher:IndexSearcher) = {
-      docIds.map(id => {
-        val doc = searcher.doc(id)
-        docToCorrelation(doc)
-      })
-    }
-
-    def allSortedCorrelations(searcher:IndexSearcher) = allCorrelations(searcher).sortBy(c => c.id)
-  }
-
-  def close = {
-    writer.close
-  }
-
-  def reset() = {
-    writer.deleteAll
-    writer.commit
-  }
 }
