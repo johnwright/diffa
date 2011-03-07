@@ -399,11 +399,36 @@ class LuceneVersionCorrelationStoreTest {
     val session = store.startSession()
     assertFalse(session.isDirty)
     for (i <- 1 to 9999) {
-      session.storeUpstreamVersion(VersionID(pair, "ID" + i), emptyAttributes, DEC_1_2009, "upstreamVsn-ID" + i)
+      session.storeUpstreamVersion(VersionID(pair, "id" + i), emptyAttributes, DEC_1_2009, "upstreamVsn-id" + i)
       assertTrue(session.isDirty)
     }
-    session.storeUpstreamVersion(VersionID(pair, "ID10000"), emptyAttributes, DEC_1_2009, "upstreamVsn-ID10000")
+    session.storeUpstreamVersion(VersionID(pair, "id10000"), emptyAttributes, DEC_1_2009, "upstreamVsn-id10000")
     // should be flushed implicitly at this point
+    assertFalse(session.isDirty)
+  }
+
+  @Test
+  def sessionMustFlushAfterUpdateFollowedByDelete {
+    val session = store.startSession()
+    assertFalse(session.isDirty)
+    session.storeUpstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23")
+    assertTrue(session.isDirty)
+    session.clearUpstreamVersion(VersionID(pair, "id23"))
+    assertFalse(session.isDirty)
+  }
+
+  @Test
+  def sessionMustFlushAfterDeleteFollowedByUpdate {
+    val session = store.startSession()
+    assertFalse(session.isDirty)
+    session.storeUpstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23")
+    assertTrue(session.isDirty)
+    session.flush()
+    assertFalse(session.isDirty)
+    
+    session.clearUpstreamVersion(VersionID(pair, "id23"))
+    assertTrue(session.isDirty)
+    session.storeUpstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23")
     assertFalse(session.isDirty)
   }
 
