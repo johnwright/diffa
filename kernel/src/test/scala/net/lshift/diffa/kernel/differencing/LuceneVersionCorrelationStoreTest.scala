@@ -407,31 +407,6 @@ class LuceneVersionCorrelationStoreTest {
     assertFalse(session.isDirty)
   }
 
-  @Test
-  def sessionMustFlushAfterUpdateFollowedByDelete {
-    val session = store.startSession()
-    assertFalse(session.isDirty)
-    session.storeUpstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23")
-    assertTrue(session.isDirty)
-    session.clearUpstreamVersion(VersionID(pair, "id23"))
-    assertFalse(session.isDirty)
-  }
-
-  @Test
-  def sessionMustFlushAfterDeleteFollowedByUpdate {
-    val session = store.startSession()
-    assertFalse(session.isDirty)
-    session.storeUpstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23")
-    assertTrue(session.isDirty)
-    session.flush()
-    assertFalse(session.isDirty)
-    
-    session.clearUpstreamVersion(VersionID(pair, "id23"))
-    assertTrue(session.isDirty)
-    session.storeUpstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23")
-    assertFalse(session.isDirty)
-  }
-
   private def assertCorrelationEquals(expected:Correlation, actual:Correlation) {
     if (expected == null) {
       assertNull(actual)

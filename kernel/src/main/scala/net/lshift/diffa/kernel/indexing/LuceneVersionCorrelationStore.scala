@@ -299,26 +299,20 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
   private def prepareUpdate(id: VersionID, doc: Document) = {
     if (deletedDocs.remove(id)) {
       log.warn("Detected update of a document that was deleted in the same session: " + id)
-      updatedDocs.put(id, doc)
+    }
+    updatedDocs.put(id, doc)
+    if (bufferSize >= maxBufferSize) {
       flush()
-    } else {
-      updatedDocs.put(id, doc)
-      if (bufferSize >= maxBufferSize) {
-        flush()
-      }
     }
   }
 
   private def prepareDelete(id: VersionID) = {
     if (updatedDocs.remove(id).isDefined) {
       log.warn("Detected delete of a document that was updated in the same session: " + id)
-      deletedDocs.add(id)
+    }
+    deletedDocs.add(id)
+    if (bufferSize >= maxBufferSize) {
       flush()
-    } else {
-      deletedDocs.add(id)
-      if (bufferSize >= maxBufferSize) {
-        flush()
-      }
     }
   }
 

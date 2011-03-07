@@ -47,12 +47,12 @@ case class PairActor(pairKey:String,
 
   lazy val session = store.startSession()
 
-  def preStart {
+  override def init {
     // schedule a recurring message to flush the session
     scheduledFlushes = Scheduler.schedule(self, FlushSessionMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
   }
 
-  def postStop {
+  override def shutdown {
     scheduledFlushes.cancel(true)
   }
 
