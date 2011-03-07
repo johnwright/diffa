@@ -378,6 +378,35 @@ class LuceneVersionCorrelationStoreTest {
       otherStore.retrieveCurrentCorrelation(VersionID(otherPair, "123456789")).getOrElse(null))
   }
 
+  @Test
+  def flushingSessionMustClearBuffers {
+    val session = store.startSession()
+    assertFalse(session.isDirty)
+    session.storeUpstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23")
+    assertTrue(session.isDirty)
+    session.storeDownstreamVersion(VersionID(pair, "id23"), emptyAttributes, DEC_1_2009, "upstreamVsn-id23", "downstreamVsn-id23")
+    assertTrue(session.isDirty)
+    session.flush()
+    assertFalse(session.isDirty)
+    session.clearUpstreamVersion(VersionID(pair, "id23"))
+    assertTrue(session.isDirty)
+    session.flush()
+    assertFalse(session.isDirty)
+  }
+
+  @Test
+  def sessionMustFlushWhenMaxBufferSizeIsReached {
+    val session = store.startSession()
+    assertFalse(session.isDirty)
+    for (i <- 1 to 9999) {
+      session.storeUpstreamVersion(VersionID(pair, "ID" + i), emptyAttributes, DEC_1_2009, "upstreamVsn-ID" + i)
+      assertTrue(session.isDirty)
+    }
+    session.storeUpstreamVersion(VersionID(pair, "ID10000"), emptyAttributes, DEC_1_2009, "upstreamVsn-ID10000")
+    // should be flushed implicitly at this point
+    assertFalse(session.isDirty)
+  }
+
   private def assertCorrelationEquals(expected:Correlation, actual:Correlation) {
     if (expected == null) {
       assertNull(actual)

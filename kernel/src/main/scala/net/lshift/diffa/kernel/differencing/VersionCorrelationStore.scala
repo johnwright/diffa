@@ -103,6 +103,11 @@ trait VersionCorrelationSession {
   def clearDownstreamVersion(id:VersionID):Correlation
 
   /**
+   * Indicates whether there are any pending changes to be flushed to the store.
+   */
+  def isDirty: Boolean
+
+  /**
    * Flushes any pending changes to the store, making them permanent.
    */
   def flush(): Unit

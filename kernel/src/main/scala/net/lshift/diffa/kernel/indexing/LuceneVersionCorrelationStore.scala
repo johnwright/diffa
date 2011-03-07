@@ -222,10 +222,10 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
 
   private val log = LoggerFactory.getLogger(getClass)
 
+  private val maxBufferSize = 10000
+
   private val updatedDocs = HashMap[VersionID, Document]()
   private val deletedDocs = HashSet[VersionID]()
-
-  private var open = true
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.debug("Indexing " + id + " with attributes: " + attributes)
@@ -279,6 +279,8 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
     })
   }
 
+  def isDirty = bufferSize > 0
+
   def flush() {
     updatedDocs.foreach { case (id, doc) =>
       writer.updateDocument(new Term("id", id.id), doc)
@@ -288,25 +290,57 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
     }
     writer.commit()
     updatedDocs.clear()
+    deletedDocs.clear()
     log.debug("Session flushed")
+  }
+
+  private def bufferSize = updatedDocs.size + deletedDocs.size
+
+  private def prepareUpdate(id: VersionID, doc: Document) = {
+    if (deletedDocs.remove(id)) {
+      log.warn("Detected update of a document that was deleted in the same session: " + id)
+      updatedDocs.put(id, doc)
+      flush()
+    } else {
+      updatedDocs.put(id, doc)
+      if (bufferSize >= maxBufferSize) {
+        flush()
+      }
+    }
+  }
+
+  private def prepareDelete(id: VersionID) = {
+    if (updatedDocs.remove(id).isDefined) {
+      log.warn("Detected delete of a document that was updated in the same session: " + id)
+      deletedDocs.add(id)
+      flush()
+    } else {
+      deletedDocs.add(id)
+      if (bufferSize >= maxBufferSize) {
+        flush()
+      }
+    }
   }
 
   private def getCurrentOrNewDoc(id:VersionID) = {
     if (updatedDocs.contains(id)) {
       updatedDocs(id)
     } else {
-      val doc = retrieveCurrentDoc(index, id) match {
+      val doc =
+        if (deletedDocs.contains(id))
+          None
+        else
+          retrieveCurrentDoc(index, id)
+
+      doc match {
         case None => {
-          // Nothing in the index yet for this document
-          val result = new Document
-          result.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
-          result
+          // Nothing in the index yet for this document, or it's pending deletion
+          val doc = new Document
+          doc.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+          doc
         }
         case Some(doc) => doc
       }
-      deletedDocs.remove(id)
-      updatedDocs.put(id, doc)
-      doc
     }
   }
 
@@ -328,7 +362,7 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
     // Update the timestamp
     updateField(doc, dateField("timestamp", new DateTime, indexed = false))
 
-    updatedDocs.put(id, doc)
+    prepareUpdate(id, doc)
 
     docToCorrelation(doc, id.pairKey)
   }
@@ -337,6 +371,8 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
     val currentDoc =
       if (updatedDocs.contains(id))
         Some(updatedDocs(id))
+      else if (deletedDocs.contains(id))
+        None
       else
         retrieveCurrentDoc(index, id)
 
@@ -347,13 +383,12 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
           // We want to keep the document. Update match status and write it out
           updateField(doc, boolField("isMatched", false))
 
-          updatedDocs.put(id, doc)
+          prepareUpdate(id, doc)
 
           docToCorrelation(doc, id.pairKey)
         } else {
-          // We'll just delete the doc if it doesn't have a upstream
-          deletedDocs.add(id)
-          updatedDocs.remove(id)
+          // We'll just delete the doc if it doesn't have an upstream
+          prepareDelete(id)
 
           Correlation.asDeleted(id.pairKey, id.id, new DateTime)
         }
