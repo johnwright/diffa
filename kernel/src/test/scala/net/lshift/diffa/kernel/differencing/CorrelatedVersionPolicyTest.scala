@@ -108,23 +108,23 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // We should see id3 re-run through the system, and id4 be removed
     expect(usMock.retrieveContent("id3")).andReturn("content3")
     expect(dsMock.generateVersion("content3")).andReturn(ProcessingResponse("id3", Seq(testData.values(1).toString), "vsn3", downstreamVersionFor("vsn3")))
-    expect(session.storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
+    expect(writer.storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
       andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
-    expect(session.clearDownstreamVersion(VersionID(abPair, "id4"))).
+    expect(writer.clearDownstreamVersion(VersionID(abPair, "id4"))).
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
     expect(usMock.retrieveContent("id5")).andReturn("content5")
     expect(dsMock.generateVersion("content5")).andReturn(ProcessingResponse("id5", Seq(testData.values(1).toString), "vsn5a", downstreamVersionFor("vsn5a")))
-    expect(session.storeDownstreamVersion(VersionID(abPair, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
+    expect(writer.storeDownstreamVersion(VersionID(abPair, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
         andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
-    // Expect to see the session flushed
-    session.flush; expectLastCall.once
+    // Expect to see the writer flushed
+    writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, session, usMock, dsMock, nullListener)
+    policy.difference(abPair, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -169,14 +169,14 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // We should see a difference being generated
     listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3")); expectLastCall
 
-    // Expect to see the session flushed
-    session.flush; expectLastCall.once
+    // Expect to see the writer flushed
+    writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, session, usMock, dsMock, listener)
+    policy.difference(abPair, writer, usMock, dsMock, listener)
     verifyAll
   }
 }

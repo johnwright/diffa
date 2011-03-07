@@ -34,9 +34,9 @@ trait VersionCorrelationStore extends Closeable {
   val pairKey: String
 
   /**
-   * Starts a new session, giving access to write operations on the store.
+   * Opens a new writer, giving access to write operations on the store.
    */
-  def startSession(): VersionCorrelationSession
+  def openWriter(): VersionCorrelationWriter
 
   /**
    * Retrieves all of the unmatched version that have been stored.
@@ -80,7 +80,7 @@ trait VersionCorrelationStore extends Closeable {
 }
 
 /** Allows write operations to the store to be batched and together. */
-trait VersionCorrelationSession {
+trait VersionCorrelationWriter {
 
   /**
    *   Stores the details of an upstream version.

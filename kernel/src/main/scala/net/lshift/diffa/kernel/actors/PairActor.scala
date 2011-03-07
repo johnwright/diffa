@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.differencing.{DifferencingListener, VersionPolicy}
-import net.lshift.diffa.kernel.differencing.{VersionCorrelationStore, VersionCorrelationSession}
+import net.lshift.diffa.kernel.differencing.{VersionCorrelationStore, VersionCorrelationWriter}
 import se.scalablesolutions.akka.actor.{Actor, Scheduler}
 import scala.collection.mutable.ListBuffer
 import net.jcip.annotations.ThreadSafe
@@ -45,11 +45,11 @@ case class PairActor(pairKey:String,
   private var lastEventTime: Long = 0
   private var scheduledFlushes: ScheduledFuture[_] = _
 
-  lazy val session = store.startSession()
+  lazy val writer = store.openWriter()
 
   override def init {
-    // schedule a recurring message to flush the session
-    scheduledFlushes = Scheduler.schedule(self, FlushSessionMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
+    // schedule a recurring message to flush the writer
+    scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
   }
 
   override def shutdown {
@@ -58,21 +58,21 @@ case class PairActor(pairKey:String,
 
   def receive = {
     case ChangeMessage(event)        => {
-      policy.onChange(session, event)
+      policy.onChange(writer, event)
 
       // if no events have arrived within the timeout period, flush and clear the buffer
       if (lastEventTime < (System.currentTimeMillis() - changeEventBusyTimeoutMillis)) {
-        session.flush()
+        writer.flush()
       }
       lastEventTime = System.currentTimeMillis()
     }
     case DifferenceMessage(listener) => {
-      session.flush()
-      policy.difference(pairKey, session, us, ds, listener)
+      writer.flush()
+      policy.difference(pairKey, writer, us, ds, listener)
     }
 
-    case FlushSessionMessage         => {
-      session.flush()
+    case FlushWriterMessage         => {
+      writer.flush()
     }
   }
 
@@ -80,7 +80,7 @@ case class PairActor(pairKey:String,
 
 case class ChangeMessage(event:PairChangeEvent)
 case class DifferenceMessage(listener:DifferencingListener)
-case object FlushSessionMessage
+case object FlushWriterMessage
 
 /**
  * This is a thread safe entry point to an underlying version policy.

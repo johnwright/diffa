@@ -57,7 +57,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   val analyzer = new StandardAnalyzer(Version.LUCENE_30)
   val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
 
-  def startSession() = new LuceneSession(index, writer)
+  def openWriter() = new LuceneWriter(index, writer)
 
   def unmatchedVersions(usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) = {
     val query = new BooleanQuery
@@ -217,7 +217,7 @@ object LuceneVersionCorrelationStore {
   def formatDate(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
 }
 
-class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrelationSession {
+class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrelationWriter {
   import LuceneVersionCorrelationStore._
 
   private val log = LoggerFactory.getLogger(getClass)
@@ -291,14 +291,14 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
     writer.commit()
     updatedDocs.clear()
     deletedDocs.clear()
-    log.debug("Session flushed")
+    log.debug("Writer flushed")
   }
 
   private def bufferSize = updatedDocs.size + deletedDocs.size
 
   private def prepareUpdate(id: VersionID, doc: Document) = {
     if (deletedDocs.remove(id)) {
-      log.warn("Detected update of a document that was deleted in the same session: " + id)
+      log.warn("Detected update of a document that was deleted in the same writer: " + id)
     }
     updatedDocs.put(id, doc)
     if (bufferSize >= maxBufferSize) {
@@ -308,7 +308,7 @@ class LuceneSession(index: Directory, writer: IndexWriter) extends VersionCorrel
 
   private def prepareDelete(id: VersionID) = {
     if (updatedDocs.remove(id).isDefined) {
-      log.warn("Detected delete of a document that was updated in the same session: " + id)
+      log.warn("Detected delete of a document that was updated in the same writer: " + id)
     }
     deletedDocs.add(id)
     if (bufferSize >= maxBufferSize) {

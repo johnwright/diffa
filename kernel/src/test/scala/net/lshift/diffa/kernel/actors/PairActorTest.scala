@@ -56,12 +56,12 @@ class PairActorTest {
   expect(configStore.listGroups).andReturn(Array[GroupContainer]())
   replay(configStore)
 
-  val session = createMock("session", classOf[VersionCorrelationSession])
-  expect(session.flush()).atLeastOnce
-  replay(session)
+  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+  expect(writer.flush()).atLeastOnce
+  replay(writer)
 
   val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
-  expect(store.startSession()).andReturn(session).anyTimes
+  expect(store.openWriter()).andReturn(writer).anyTimes
   replay(store)
 
   val stores = createStrictMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
@@ -87,7 +87,7 @@ class PairActorTest {
     val id = VersionID(pairKey, "foo")
     val monitor = new Object
 
-    expect(versionPolicy.difference(pairKey, session, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
+    expect(versionPolicy.difference(pairKey, writer, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
       def answer = {
         monitor.synchronized {
           monitor.notifyAll
@@ -113,7 +113,7 @@ class PairActorTest {
     val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
 
     val monitor = new Object
-    expect(versionPolicy.onChange(session, event)).andAnswer(new IAnswer[Unit] {
+    expect(versionPolicy.onChange(writer, event)).andAnswer(new IAnswer[Unit] {
       def answer = {
         monitor.synchronized {
           monitor.notifyAll
