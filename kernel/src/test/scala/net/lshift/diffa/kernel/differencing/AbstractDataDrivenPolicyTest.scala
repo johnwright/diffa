@@ -49,19 +49,19 @@ abstract class AbstractDataDrivenPolicyTest {
 
   val nullListener = new NullDifferencingListener
 
-  val store = createStrictMock("versionStore", classOf[VersionCorrelationStore])
+  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+  val store = createMock("versionStore", classOf[VersionCorrelationStore])
   val stores = new VersionCorrelationStoreFactory {
     def apply(pairKey: String) = store
     def remove(pairKey: String) {}
     def close {}
   }
-  EasyMock.checkOrder(store, false)   // Store doesn't care about order
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
   val configStore = createStrictMock("configStore", classOf[ConfigStore])
 
-  protected def replayAll = replay(configStore, usMock, dsMock, store, listener)
-  protected def verifyAll = verify(configStore, usMock, dsMock, store, listener, configStore)
+  protected def replayAll = replay(configStore, usMock, dsMock, store, writer, listener)
+  protected def verifyAll = verify(configStore, usMock, dsMock, store, writer, listener, configStore)
 
   /**
    * Scenario with the top levels matching. The policy should not progress any further than the top level.
@@ -73,11 +73,14 @@ abstract class AbstractDataDrivenPolicyTest {
     expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
+    // Expect to see the writer flushed
+    writer.flush; expectLastCall.once
+
     // We should still see an unmatched version check
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
+    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -88,7 +91,6 @@ abstract class AbstractDataDrivenPolicyTest {
   @Theory
   def shouldJumpToLowestLevelsStraightAfterTopWhenStoreIsEmpty(scenario:Scenario) {
     setupStubs(scenario)
-
     expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
     scenario.tx.respBuckets.foreach(b => {
       expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
@@ -101,11 +103,14 @@ abstract class AbstractDataDrivenPolicyTest {
       expectDownstreamEntityStore(scenario.pair, b.allVsns)
     })
 
+    // Expect to see the writer flushed
+    writer.flush; expectLastCall.once
+
     // We should still see an unmatched version check
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
+    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -130,11 +135,14 @@ abstract class AbstractDataDrivenPolicyTest {
     // Expect only a top-level sync on the downstream
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
+    // Expect to see the writer flushed
+    writer.flush; expectLastCall.once
+
     // We should still see an unmatched version check
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
+    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -158,11 +166,14 @@ abstract class AbstractDataDrivenPolicyTest {
     }
     expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn))
 
+    // Expect to see the writer flushed
+    writer.flush; expectLastCall.once
+
     // We should still see an unmatched version check
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, usMock, dsMock, nullListener)
+    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -207,13 +218,13 @@ abstract class AbstractDataDrivenPolicyTest {
 
   protected def expectUpstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
     entities.foreach(v => {
-      expect(store.storeUpstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
+      expect(writer.storeUpstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
         andReturn(Correlation(null, pair.key, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, null, null))
     })
   }
   protected def expectDownstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
     entities.foreach(v => {
-      expect(store.storeDownstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
+      expect(writer.storeDownstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
         andReturn(Correlation(null, pair.key, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, null, v.vsn, v.vsn))
     })
   }
@@ -484,7 +495,6 @@ object AbstractDataDrivenPolicyTest {
       )
     )
   )
-
   
   //
   // Aliases

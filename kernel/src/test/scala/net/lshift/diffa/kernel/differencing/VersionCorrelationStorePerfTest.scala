@@ -57,9 +57,11 @@ class VersionCorrelationStorePerfTest {
     val vsnCount = Integer.valueOf(System.getProperty("diffa.perf.versionCount", "1000")).intValue
 
     withTiming("load upstream versions") {
+      val writer = stores(pairKey).openWriter()
       for (i <- 0 until vsnCount) {
-        stores(pairKey).storeUpstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
+        writer.storeUpstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
       }
+      writer.flush()
     }
 
     withTiming("run unmatched version query") {
@@ -69,9 +71,11 @@ class VersionCorrelationStorePerfTest {
     }
 
     withTiming("load downstream versions") {
+      val writer = stores(pairKey).openWriter()
       for (i <- 0 until vsnCount) {
-        stores(pairKey).storeDownstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
+        writer.storeDownstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
       }
+      writer.flush()
     }
 
     withTiming("run unmatched version query (2)") {

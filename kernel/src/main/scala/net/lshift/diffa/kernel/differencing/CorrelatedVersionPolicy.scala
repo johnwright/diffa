@@ -31,10 +31,10 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore) {
 
-  def synchroniseParticipants(pair: Pair, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def synchroniseParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pair, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
-    (new DownstreamCorrelatingSyncStrategy(us, ds, l)).syncHalf(pair, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
+    (new UpstreamSyncStrategy).syncHalf(pair, writer, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
+    (new DownstreamCorrelatingSyncStrategy(us, ds, l)).syncHalf(pair, writer, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
   }
   
   private class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant, val l:DifferencingListener)
@@ -52,17 +52,17 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
       })
     }
 
-    def handleMismatch(pairKey:String, vm:VersionMismatch) = {
+    def handleMismatch(pairKey:String, writer: VersionCorrelationWriter, vm:VersionMismatch) = {
       vm match {
         case VersionMismatch(id, categories, _, null, storedVsn) =>
-          stores(pairKey).clearDownstreamVersion(VersionID(pairKey, id))
+          writer.clearDownstreamVersion(VersionID(pairKey, id))
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)
 
           if (response.dvsn == partVsn) {
             // This is the same destination object, so we're safe to store the correlation
-            stores(pairKey).storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.uvsn, response.dvsn)
+            writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.uvsn, response.dvsn)
           } else {
             // We can't update our datastore, so we just have to generate a mismatch            
             l.onMismatch(VersionID(pairKey, id), lastUpdated, response.dvsn, partVsn)

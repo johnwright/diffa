@@ -23,11 +23,15 @@ import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.differencing.{DifferencingListener, VersionPolicyManager}
+import net.lshift.diffa.kernel.differencing.VersionCorrelationStoreFactory
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 
-class PairActorSupervisor(val policyManager:VersionPolicyManager,
-                          val config:ConfigStore,
-                          val participantFactory:ParticipantFactory)
+case class PairActorSupervisor(policyManager:VersionPolicyManager,
+                               config:ConfigStore,
+                               participantFactory:ParticipantFactory,
+                               stores:VersionCorrelationStoreFactory,
+                               changeEventBusyTimeoutMillis:Long,
+                               changeEventQuietTimeoutMillis:Long)
     extends ActivePairManager
     with PairPolicyClient
 
@@ -48,7 +52,8 @@ class PairActorSupervisor(val policyManager:VersionPolicyManager,
           case Some(p) => {
             val us = participantFactory.createUpstreamParticipant(pair.upstream)
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
-            ActorRegistry.register(actorOf(new PairActor(pair.key, us, ds, p)).start)
+            val pairActor = actorOf(new PairActor(pair.key, us, ds, p, stores(pair.key), changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis))
+            ActorRegistry.register(pairActor.start)
             log.info("Started actor for key: " + pair.key)
           }
           case None    => log.error("Failed to find policy for name: " + pair.versionPolicyName)

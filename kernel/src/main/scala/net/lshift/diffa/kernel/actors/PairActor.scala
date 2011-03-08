@@ -16,35 +16,71 @@
 
 package net.lshift.diffa.kernel.actors
 
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.differencing.{DifferencingListener, VersionPolicy}
-import se.scalablesolutions.akka.actor.Actor
+import net.lshift.diffa.kernel.differencing.{VersionCorrelationStore, VersionCorrelationWriter}
+import se.scalablesolutions.akka.actor.{Actor, Scheduler}
+import scala.collection.mutable.ListBuffer
 import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
+import java.util.concurrent.ScheduledFuture
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
  */
-class PairActor(val pairKey:String,
-                val us:UpstreamParticipant,
-                val ds:DownstreamParticipant,
-                val policy:VersionPolicy) extends Actor {
+case class PairActor(pairKey:String,
+                     us:UpstreamParticipant,
+                     ds:DownstreamParticipant,
+                     policy:VersionPolicy,
+                     store:VersionCorrelationStore,
+                     changeEventBusyTimeoutMillis: Long,
+                     changeEventQuietTimeoutMillis: Long) extends Actor {
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
   self.id_=(pairKey)
 
+  private var lastEventTime: Long = 0
+  private var scheduledFlushes: ScheduledFuture[_] = _
+
+  lazy val writer = store.openWriter()
+
+  override def init {
+    // schedule a recurring message to flush the writer
+    scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
+  }
+
+  override def shutdown {
+    scheduledFlushes.cancel(true)
+  }
+
   def receive = {
-    case ChangeMessage(event)               => policy.onChange(event)
+    case ChangeMessage(event)        => {
+      policy.onChange(writer, event)
+
+      // if no events have arrived within the timeout period, flush and clear the buffer
+      if (lastEventTime < (System.currentTimeMillis() - changeEventBusyTimeoutMillis)) {
+        writer.flush()
+      }
+      lastEventTime = System.currentTimeMillis()
+    }
     case DifferenceMessage(listener) => {
-      policy.difference(pairKey, us, ds, listener)
+      writer.flush()
+      policy.difference(pairKey, writer, us, ds, listener)
+    }
+
+    case FlushWriterMessage         => {
+      writer.flush()
     }
   }
+
 }
 
 case class ChangeMessage(event:PairChangeEvent)
 case class DifferenceMessage(listener:DifferencingListener)
+case object FlushWriterMessage
 
 /**
  * This is a thread safe entry point to an underlying version policy.

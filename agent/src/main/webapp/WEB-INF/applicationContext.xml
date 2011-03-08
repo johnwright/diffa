@@ -208,6 +208,31 @@
     <constructor-arg ref="versionPolicyManager"/>
     <constructor-arg ref="diffaConfigStore"/>
     <constructor-arg ref="participantFactory"/>
+    <constructor-arg ref="versionCorrelationStoreFactory"/>
+    <constructor-arg>
+      <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="diffaConfigStore"/>
+        <property name="targetMethod" value="configOptionOrDefault"/>
+        <property name="arguments">
+          <list>
+            <value>diffa.change.busy.timeout</value>
+            <value>5000</value>
+          </list>
+        </property>
+      </bean>
+    </constructor-arg>
+    <constructor-arg>
+      <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="diffaConfigStore"/>
+        <property name="targetMethod" value="configOptionOrDefault"/>
+        <property name="arguments">
+          <list>
+            <value>diffa.change.quiet.timeout</value>
+            <value>10000</value>
+          </list>
+        </property>
+      </bean>
+    </constructor-arg>
   </bean>
 
   <!--

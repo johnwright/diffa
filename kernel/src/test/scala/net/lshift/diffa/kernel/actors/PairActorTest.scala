@@ -25,6 +25,7 @@ import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
 import org.easymock.IAnswer
+import concurrent.{TIMEOUT, MailBox}
 
 class PairActorTest {
 
@@ -56,16 +57,23 @@ class PairActorTest {
   expect(configStore.listGroups).andReturn(Array[GroupContainer]())
   replay(configStore)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory)
+  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+
+  val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
+  expect(store.openWriter()).andReturn(writer).anyTimes
+  replay(store)
+
+  val stores = createStrictMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
+  expect(stores.apply(pairKey)).andReturn(store)
+  replay(stores)
+
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory, stores, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
   verify(configStore)
 
   val listener = createStrictMock("differencingListener", classOf[DifferencingListener])
-
-  @Before
-  def start = supervisor.startActor(pair)
 
   @After
   def stop = supervisor.stopActor(pairKey)
@@ -75,7 +83,9 @@ class PairActorTest {
     val id = VersionID(pairKey, "foo")
     val monitor = new Object
 
-    expect(versionPolicy.difference(pairKey, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
+    expect(writer.flush()).atLeastOnce
+    replay(writer)
+    expect(versionPolicy.difference(pairKey, writer, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
       def answer = {
         monitor.synchronized {
           monitor.notifyAll
@@ -86,6 +96,7 @@ class PairActorTest {
     })
     replay(versionPolicy)
 
+    supervisor.startActor(pair)
     supervisor.syncPair(pairKey, listener)
     monitor.synchronized {
       monitor.wait(1000)
@@ -99,9 +110,11 @@ class PairActorTest {
     val lastUpdate = new DateTime()
     val vsn = "foobar"
     val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
-
     val monitor = new Object
-    expect(versionPolicy.onChange(event)).andAnswer(new IAnswer[Unit] {
+
+    expect(writer.flush()).atLeastOnce
+    replay(writer)
+    expect(versionPolicy.onChange(writer, event)).andAnswer(new IAnswer[Unit] {
       def answer = {
         monitor.synchronized {
           monitor.notifyAll
@@ -110,6 +123,7 @@ class PairActorTest {
     })
     replay(versionPolicy)
 
+    supervisor.startActor(pair)
     supervisor.propagateChangeEvent(event)
 
     // propagateChangeEvent is an aysnc call, so yield the test thread to allow the actor to invoke the policy
@@ -118,5 +132,22 @@ class PairActorTest {
     }
 
     verify(versionPolicy)
+  }
+
+  @Test
+  def scheduledFlush {
+    val mailbox = new MailBox
+    
+    expect(writer.flush()).andStubAnswer(new IAnswer[Unit] {
+      def answer = {
+        mailbox.send(new Object)
+        null
+      }
+    })
+    replay(writer)
+
+    supervisor.startActor(pair)
+    mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
+    mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
   }
 }
