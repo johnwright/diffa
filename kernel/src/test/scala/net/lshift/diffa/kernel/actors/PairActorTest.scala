@@ -25,6 +25,7 @@ import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
 import org.easymock.IAnswer
+import scala.concurrent.MailBox
 
 class PairActorTest {
 
@@ -136,9 +137,17 @@ class PairActorTest {
 
   @Test
   def scheduledFlush {
-    expect(writer.flush()).times(2)
+    val mailbox = new MailBox
+    
+    expect(writer.flush()).andAnswer(new IAnswer[Unit] {
+      def answer = {
+        mailbox.send(new Object)
+        null
+      }
+    })
     replay(writer)
-    Thread.sleep(250)
+    mailbox.receiveWithin(100) { case anything => () }
+    mailbox.receiveWithin(100) { case anything => () }
     verify(writer)
   }
 }
