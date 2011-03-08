@@ -57,8 +57,6 @@ class PairActorTest {
   replay(configStore)
 
   val writer = createMock("writer", classOf[VersionCorrelationWriter])
-  expect(writer.flush()).atLeastOnce
-  replay(writer)
 
   val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
   expect(store.openWriter()).andReturn(writer).anyTimes
@@ -68,7 +66,7 @@ class PairActorTest {
   expect(stores.apply(pairKey)).andReturn(store)
   replay(stores)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory, stores, 5000, 10000)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory, stores, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
@@ -87,6 +85,8 @@ class PairActorTest {
     val id = VersionID(pairKey, "foo")
     val monitor = new Object
 
+    expect(writer.flush()).atLeastOnce
+    replay(writer)
     expect(versionPolicy.difference(pairKey, writer, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
       def answer = {
         monitor.synchronized {
@@ -111,8 +111,10 @@ class PairActorTest {
     val lastUpdate = new DateTime()
     val vsn = "foobar"
     val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
-
     val monitor = new Object
+
+    expect(writer.flush()).atLeastOnce
+    replay(writer)
     expect(versionPolicy.onChange(writer, event)).andAnswer(new IAnswer[Unit] {
       def answer = {
         monitor.synchronized {
@@ -130,5 +132,13 @@ class PairActorTest {
     }
 
     verify(versionPolicy)
+  }
+
+  @Test
+  def scheduledFlush {
+    expect(writer.flush()).times(2)
+    replay(writer)
+    Thread.sleep(250)
+    verify(writer)
   }
 }

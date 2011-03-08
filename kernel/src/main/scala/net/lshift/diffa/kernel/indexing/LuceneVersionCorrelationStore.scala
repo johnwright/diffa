@@ -291,7 +291,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
     writer.commit()
     updatedDocs.clear()
     deletedDocs.clear()
-    log.debug("Writer flushed")
+    log.trace("Writer flushed")
   }
 
   private def bufferSize = updatedDocs.size + deletedDocs.size
