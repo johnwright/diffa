@@ -282,16 +282,18 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
   def isDirty = bufferSize > 0
 
   def flush() {
-    updatedDocs.foreach { case (id, doc) =>
-      writer.updateDocument(new Term("id", id.id), doc)
+    if (isDirty) {
+      updatedDocs.foreach { case (id, doc) =>
+        writer.updateDocument(new Term("id", id.id), doc)
+      }
+      deletedDocs.foreach { id =>
+        writer.deleteDocuments(queryForId(id))
+      }
+      writer.commit()
+      updatedDocs.clear()
+      deletedDocs.clear()
+      log.trace("Writer flushed")
     }
-    deletedDocs.foreach { id =>
-      writer.deleteDocuments(queryForId(id))
-    }
-    writer.commit()
-    updatedDocs.clear()
-    deletedDocs.clear()
-    log.trace("Writer flushed")
   }
 
   private def bufferSize = updatedDocs.size + deletedDocs.size

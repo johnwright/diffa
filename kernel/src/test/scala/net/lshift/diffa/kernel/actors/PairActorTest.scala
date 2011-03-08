@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
 import org.easymock.IAnswer
-import scala.concurrent.MailBox
+import concurrent.{TIMEOUT, MailBox}
 
 class PairActorTest {
 
@@ -75,9 +75,6 @@ class PairActorTest {
 
   val listener = createStrictMock("differencingListener", classOf[DifferencingListener])
 
-  @Before
-  def start = supervisor.startActor(pair)
-
   @After
   def stop = supervisor.stopActor(pairKey)
 
@@ -99,6 +96,7 @@ class PairActorTest {
     })
     replay(versionPolicy)
 
+    supervisor.startActor(pair)
     supervisor.syncPair(pairKey, listener)
     monitor.synchronized {
       monitor.wait(1000)
@@ -125,6 +123,7 @@ class PairActorTest {
     })
     replay(versionPolicy)
 
+    supervisor.startActor(pair)
     supervisor.propagateChangeEvent(event)
 
     // propagateChangeEvent is an aysnc call, so yield the test thread to allow the actor to invoke the policy
@@ -139,15 +138,16 @@ class PairActorTest {
   def scheduledFlush {
     val mailbox = new MailBox
     
-    expect(writer.flush()).andAnswer(new IAnswer[Unit] {
+    expect(writer.flush()).andStubAnswer(new IAnswer[Unit] {
       def answer = {
         mailbox.send(new Object)
         null
       }
     })
     replay(writer)
-    mailbox.receiveWithin(100) { case anything => () }
-    mailbox.receiveWithin(100) { case anything => () }
-    verify(writer)
+
+    supervisor.startActor(pair)
+    mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
+    mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
   }
 }
