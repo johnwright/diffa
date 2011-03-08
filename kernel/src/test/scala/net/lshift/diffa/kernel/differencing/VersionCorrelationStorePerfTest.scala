@@ -46,7 +46,7 @@ class VersionCorrelationStorePerfTest {
 
   @Before
   def cleanupStore {
-    LuceneVersionCorrelationStoreTest.flushStore
+    LuceneVersionCorrelationStoreTest.stores(pairKey).reset
   }
 
   private val stores = LuceneVersionCorrelationStoreTest.stores
