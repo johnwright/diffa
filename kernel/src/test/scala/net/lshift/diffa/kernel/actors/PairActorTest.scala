@@ -73,7 +73,8 @@ class PairActorTest {
 
   verify(configStore)
 
-  val listener = createStrictMock("differencingListener", classOf[DifferencingListener])
+  val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
+  val syncListener = createStrictMock("syncListener", classOf[PairSyncListener])
 
   @After
   def stop = supervisor.stopActor(pairKey)
@@ -85,23 +86,42 @@ class PairActorTest {
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
-    expect(versionPolicy.difference(pairKey, writer, us, ds, listener)).andAnswer(new IAnswer[Boolean] {
-      def answer = {
-        monitor.synchronized {
-          monitor.notifyAll
-        }
-
-        true
-      }
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.Synchronising); expectLastCall
+    expect(versionPolicy.difference(pairKey, writer, us, ds, diffListener)).andReturn(true)
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.UpToDate); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = { monitor.synchronized { monitor.notifyAll } }
     })
-    replay(versionPolicy)
+    replay(versionPolicy, syncListener)
 
     supervisor.startActor(pair)
-    supervisor.syncPair(pairKey, listener)
+    supervisor.syncPair(pairKey, diffListener, syncListener)
     monitor.synchronized {
       monitor.wait(1000)
     }
-    verify(versionPolicy)
+    verify(versionPolicy, syncListener)
+  }
+
+  @Test
+  def reportDifferenceFailure = {
+    val id = VersionID(pairKey, "foo")
+    val monitor = new Object
+
+    expect(writer.flush()).atLeastOnce
+    replay(writer)
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.Synchronising); expectLastCall
+    expect(versionPolicy.difference(pairKey, writer, us, ds, diffListener)).andThrow(new RuntimeException("Foo!"))
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.Failed); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer { monitor.synchronized { monitor.notifyAll } }
+    })
+    replay(versionPolicy, syncListener)
+
+    supervisor.startActor(pair)
+    supervisor.syncPair(pairKey, diffListener, syncListener)
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
+    verify(versionPolicy, syncListener)
+    verify(syncListener)
   }
 
   @Test

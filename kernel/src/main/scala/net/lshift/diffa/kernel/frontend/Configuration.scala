@@ -137,6 +137,7 @@ class Configuration(val configStore: ConfigStore,
     configStore.deletePair(key)
     versionCorrelationStoreFactory.remove(key)
     matchingManager.onDeletePair(key)
+    sessionManager.onDeletePair(key)
   }
 
   def withCurrentPair(pairDef: PairDef, f:Function1[String,Unit]) = {

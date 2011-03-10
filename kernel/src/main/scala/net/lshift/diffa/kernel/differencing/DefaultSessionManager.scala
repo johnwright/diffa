@@ -49,7 +49,7 @@ class DefaultSessionManager(
         val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory)
     extends SessionManager
-    with DifferencingListener with MatchingStatusListener {
+    with DifferencingListener with MatchingStatusListener with PairSyncListener {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -61,6 +61,8 @@ class DefaultSessionManager(
   private val sessionsByKey = new HashMap[String, SessionCache]
 
   private val participants = new HashMap[Endpoint, Participant]
+
+  private val pairStates = new HashMap[String, PairSyncState]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
@@ -104,7 +106,7 @@ class DefaultSessionManager(
 
 
 
-  def start(scope: SessionScope, sessionStart:DateTime, sessionEnd:DateTime, listener: DifferencingListener) : Unit = {
+  def start(scope: SessionScope, sessionStart:DateTime, sessionEnd:DateTime, listener: DifferencingListener) : String = {
     val sessionId = start(scope, sessionStart, sessionEnd)
     listeners.synchronized {
       val keyListeners = listeners.get(sessionId) match {
@@ -118,6 +120,7 @@ class DefaultSessionManager(
       keyListeners += listener
     }
     runDifferenceForScope(scope, sessionStart, sessionEnd, listener)
+    sessionId
   }
 
 
@@ -140,6 +143,19 @@ class DefaultSessionManager(
         }
       }
     })
+  }
+
+  def retrievePairSyncStates(sessionID: String) = {
+    // Gather the states for all pairs in the given session. Since some session
+    sessionsByKey.get(sessionID) match {
+      case Some(cache) => {
+        val pairKeys = pairKeysForScope(cache.scope)
+        pairStates.synchronized {
+          pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.Unknown)).toMap
+        }
+      }
+      case None        => Map()     // No pairs in an inactive session
+    }
   }
 
   def runSync(sessionID:String) = {
@@ -255,6 +271,13 @@ class DefaultSessionManager(
 
 
   //
+  // Pair Sync Notifications
+  //
+
+  def pairSyncStateChanged(pairKey: String, syncState: PairSyncState) = updatePairSyncState(pairKey, syncState)
+
+
+  //
   // Configuration Change Notifications
   //
 
@@ -275,14 +298,31 @@ class DefaultSessionManager(
     }
   }
 
+  /**
+   * When pairs are deleted, we stop tracking their status in the pair sync map.
+   */
+  def onDeletePair(pairKey:String) = {
+    pairStates.synchronized { pairStates.remove(pairKey) }
+  }
+
   def withPair[T](pair:String, f:Function0[T]) = withValidPair(pair, f)
 
   def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
-    val pairs:Seq[String] = scope.includedPairs.size match {
+    pairKeysForScope(scope).foreach(pairKey => {
+      // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
+      // asynchronously, we might have returned before then, and this may potentially result in clients seeing
+      // a "UpToDate" view, even though we're just about to transition out of that state.
+      updatePairSyncState(pairKey, PairSyncState.Synchronising)
+
+      pairPolicyClient.syncPair(pairKey, listener, this)
+    })
+  }
+
+  def pairKeysForScope(scope:SessionScope):Seq[String] = {
+    scope.includedPairs.size match {
       case 0  => config.listGroups.flatMap(g => g.pairs.map(p => p.key))
       case _  => scope.includedPairs
     }
-    pairs.foreach(pairKey => pairPolicyClient.syncPair(pairKey, listener))
   }
 
   def forEachSession(id:VersionID, f: Function1[SessionCache,Any]) = {
@@ -352,4 +392,7 @@ class DefaultSessionManager(
     f()
   }
 
+  def updatePairSyncState(pairKey:String, state:PairSyncState) = pairStates.synchronized {
+    pairStates(pairKey) = state
+  }
 }

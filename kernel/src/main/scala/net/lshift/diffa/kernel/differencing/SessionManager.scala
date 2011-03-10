@@ -45,7 +45,7 @@ trait SessionManager {
   /**
    * Calls start/4 with default time bounds
    */
-  def start(scope: SessionScope, listener: DifferencingListener) : Unit = {
+  def start(scope: SessionScope, listener: DifferencingListener) : String = {
     val (from, until) = defaultDateBounds()
     start(scope, from, until, listener)
   }
@@ -70,7 +70,13 @@ trait SessionManager {
    * @param start The lower time bound of the session
    * @param end The upper time bound of the session
    */
-  def start(scope:SessionScope, start:DateTime, end:DateTime, listener:DifferencingListener): Unit
+  def start(scope:SessionScope, start:DateTime, end:DateTime, listener:DifferencingListener): String
+
+  /**
+   * Retrieves the synchronisation state of all pairs associated with the given session.
+   * @param sessionID the identifier of the session to query the pairs from.
+   */
+  def retrievePairSyncStates(sessionID:String):Map[String, PairSyncState]
 
   /**
    * Requests that a synchronisation be run on all pairs associated with the given session.
@@ -121,6 +127,11 @@ trait SessionManager {
    * Informs the session manager that a pair has been updated.
    */
   def onUpdatePair(pairKey:String)
+
+  /**
+   * Informs the session manager that a pair has been deleted.
+   */
+  def onDeletePair(pairKey:String)
 }
 
 class InvalidSessionIDException extends Exception

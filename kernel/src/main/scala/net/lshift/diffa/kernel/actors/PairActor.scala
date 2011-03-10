@@ -19,13 +19,12 @@ package net.lshift.diffa.kernel.actors
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
-import net.lshift.diffa.kernel.differencing.{DifferencingListener, VersionPolicy}
-import net.lshift.diffa.kernel.differencing.{VersionCorrelationStore, VersionCorrelationWriter}
 import se.scalablesolutions.akka.actor.{Actor, Scheduler}
 import scala.collection.mutable.ListBuffer
 import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import java.util.concurrent.ScheduledFuture
+import net.lshift.diffa.kernel.differencing._
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -66,9 +65,19 @@ case class PairActor(pairKey:String,
       }
       lastEventTime = System.currentTimeMillis()
     }
-    case DifferenceMessage(listener) => {
-      writer.flush()
-      policy.difference(pairKey, writer, us, ds, listener)
+    case DifferenceMessage(diffListener, pairSyncListener) => {
+      pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.Synchronising)
+
+      try {
+        writer.flush()
+        policy.difference(pairKey, writer, us, ds, diffListener)
+        pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.UpToDate)
+      } catch {
+        case ex => {
+          logger.error("Failed to synchronise pair " + pairKey, ex)
+          pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.Failed)
+        }
+      }
     }
 
     case FlushWriterMessage         => {
@@ -79,7 +88,7 @@ case class PairActor(pairKey:String,
 }
 
 case class ChangeMessage(event:PairChangeEvent)
-case class DifferenceMessage(listener:DifferencingListener)
+case class DifferenceMessage(diffListener:DifferencingListener, pairSyncListener:PairSyncListener)
 case object FlushWriterMessage
 
 /**
@@ -96,5 +105,5 @@ trait PairPolicyClient {
   /**
    * Runs a syncing difference report on the underlying policy implementation in a thread safe way.
    */
-  def syncPair(pairKey:String, listener:DifferencingListener) : Unit
+  def syncPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) : Unit
 }
