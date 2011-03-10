@@ -20,10 +20,11 @@ import org.joda.time.DateTime
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import com.sun.jersey.api.client.{WebResource, ClientResponse}
 import net.lshift.diffa.kernel.client.DifferencesClient
-import net.lshift.diffa.kernel.differencing.{SessionScope, SessionEvent}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import javax.ws.rs.core.{Response, MediaType}
+import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
+import scala.collection.JavaConversions._
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -66,6 +67,22 @@ class DifferencesRestClient(serverRootUrl:String)
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 202     => // Successfully submitted (202 is "Accepted")
+      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+    }
+  }
+
+  def getSyncStatus(sessionId: String) = {
+    val p = resource.path("sessions").path(sessionId).path("sync")
+    val media = p.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.get(classOf[ClientResponse])
+
+    val status = response.getClientResponseStatus
+
+    status.getStatusCode match {
+      case 200 => {
+        val responseData = response.getEntity(classOf[java.util.Map[String, String]])
+        responseData.map {case (k, v) => k -> PairSyncState.valueOf(v) }.toMap
+      }
       case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
     }
   }

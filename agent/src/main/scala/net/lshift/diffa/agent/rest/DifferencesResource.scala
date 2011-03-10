@@ -73,6 +73,16 @@ class DifferencesResource extends AbstractRestResource {
   }
 
   @GET
+  @Path("/sessions/{sessionId}/sync")
+  @Produces(Array("application/json"))
+  @Description("Retrieves the synchronisation states of pairs in the current session.")
+  def getPairStates(@PathParam("sessionId") sessionId:String): Response = {
+    val states = session.retrievePairSyncStates(sessionId)
+
+    Response.ok(scala.collection.JavaConversions.asJavaMap(states)).build
+  }
+
+  @GET
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))
   @Description("Returns a list of outstanding differences in the current session. ")

@@ -21,7 +21,6 @@ import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import java.lang.String
 import support.TestEnvironment
-import net.lshift.diffa.kernel.differencing.{SessionScope, SessionEvent}
 import javax.mail.Session
 import java.io.{File, FileInputStream}
 import javax.mail.internet.MimeMessage
@@ -31,6 +30,7 @@ import java.net.URI
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import java.util.{UUID, Properties}
+import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -57,12 +57,7 @@ trait CommonDifferenceTests {
   }
 
   def getReport(pair:String, from:DateTime, until:DateTime) : Array[SessionEvent]= {
-    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
-    env.diffClient.runSync(sessionId)
-
-      // TODO: Ideally, the server should be able to tell us (somehow) when it has completed the initial sync.
-      //       Since for now it can't, we'll just have to give it a little bit of time.
-    Thread.sleep(1000)
+    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.diffClient.poll(sessionId)
   }
 
@@ -101,9 +96,7 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
-    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
-    env.diffClient.runSync(sessionId)
-    Thread.sleep(100)
+    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
 
     val diffs = tryAgain(sessionId,20,100)
@@ -118,9 +111,7 @@ trait CommonDifferenceTests {
     val up = guid()
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
-    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
-    env.diffClient.runSync(sessionId)
-    Thread.sleep(100)
+    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), up)
 
     val diffs = tryAgain(sessionId,20,100)
@@ -170,13 +161,31 @@ trait CommonDifferenceTests {
         
   }
 
+  def subscribeAndRunSync(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
+    def isAllSynced(states:Map[String, PairSyncState]) = states.values.forall(s => s == PairSyncState.UP_TO_DATE)
+
+    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), from, until)
+    env.diffClient.runSync(sessionId)
+
+    var i = n
+    var syncStatus = env.diffClient.getSyncStatus(sessionId)
+    while(!isAllSynced(syncStatus) && i > 0) {
+      Thread.sleep(wait)
+
+      syncStatus = env.diffClient.getSyncStatus(sessionId)
+      i-=1
+    }
+    assertTrue(isAllSynced(syncStatus))
+
+    sessionId
+  }
+
+
+
   def getVerifiedDiffsWithSessionId() = {
     env.upstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
 
-    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
-    env.diffClient.runSync(sessionId)
-    Thread.sleep(1000)
-
+    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
     val diffs = tryAgain(sessionId,10,100)
 
     assertNotNull(diffs)

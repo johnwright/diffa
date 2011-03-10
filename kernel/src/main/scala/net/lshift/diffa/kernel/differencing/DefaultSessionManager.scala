@@ -151,7 +151,7 @@ class DefaultSessionManager(
       case Some(cache) => {
         val pairKeys = pairKeysForScope(cache.scope)
         pairStates.synchronized {
-          pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.Unknown)).toMap
+          pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.UNKNOWN)).toMap
         }
       }
       case None        => Map()     // No pairs in an inactive session
@@ -311,8 +311,8 @@ class DefaultSessionManager(
     pairKeysForScope(scope).foreach(pairKey => {
       // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
       // asynchronously, we might have returned before then, and this may potentially result in clients seeing
-      // a "UpToDate" view, even though we're just about to transition out of that state.
-      updatePairSyncState(pairKey, PairSyncState.Synchronising)
+      // a "Up To Date" view, even though we're just about to transition out of that state.
+      updatePairSyncState(pairKey, PairSyncState.SYNCHRONISING)
 
       pairPolicyClient.syncPair(pairKey, listener, this)
     })

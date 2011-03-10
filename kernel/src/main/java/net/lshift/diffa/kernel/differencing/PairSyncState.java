@@ -1,3 +1,4 @@
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,32 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.kernel.differencing;
 
 /**
  * Enumeration of the synchronisation states that a pair can be in.
  */
-abstract class PairSyncState
-
-object PairSyncState {
+public enum PairSyncState {
   /**
    * The state of the pair is unknown, and no sync is currently pending.
    */
-  case object Unknown extends PairSyncState
+  UNKNOWN,
 
   /**
    * The last synchronisation operation for the pair failed.
    */
-  case object Failed extends PairSyncState
+  FAILED,
 
   /**
    * The pair is up to date.
    */
-  case object UpToDate extends PairSyncState
+  UP_TO_DATE,
 
   /**
    * The pair is currently being synchronised.
    */
-  case object Synchronising extends PairSyncState
+  SYNCHRONISING
 }
