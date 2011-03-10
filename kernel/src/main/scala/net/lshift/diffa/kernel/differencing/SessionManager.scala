@@ -28,8 +28,10 @@ import net.lshift.diffa.kernel.participants.ParticipantType
 trait SessionManager {
 
   def defaultDateBounds() = {
-    val now = new DateTime()
-    (now.minusYears(1), now.plusYears(1))
+    // TODO: [#147] We're currently ignoring these bounds within the DefaultSessionManager, and passing non-null
+    //       values in here is only serving to make the sessionIds unstable.
+
+    (null, null)
   }
 
   /**
@@ -69,6 +71,12 @@ trait SessionManager {
    * @param end The upper time bound of the session
    */
   def start(scope:SessionScope, start:DateTime, end:DateTime, listener:DifferencingListener): Unit
+
+  /**
+   * Requests that a synchronisation be run on all pairs associated with the given session.
+   * @param sessionID the session.
+   */
+  def runSync(sessionID:String):Unit
 
   /**
    * Retrieves a version for the given session.

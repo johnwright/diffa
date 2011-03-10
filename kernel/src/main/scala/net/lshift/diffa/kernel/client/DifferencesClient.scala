@@ -46,6 +46,11 @@ trait DifferencesClient {
   def subscribe(scope:SessionScope, start:DateTime, end:DateTime):String
 
   /**
+   * Requests that the agent run a synchronisation of the given session.
+   */
+  def runSync(sessionId:String): Unit
+
+  /**
    * Polls the identified session for all events since the start of the session.
    */
   def poll(sessionId:String): Array[SessionEvent]

@@ -117,6 +117,9 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(writer.storeDownstreamVersion(VersionID(abPair, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
         andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
+    // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
+    listener.onMatch(VersionID(abPair, "id4"), null); expectLastCall
+
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 

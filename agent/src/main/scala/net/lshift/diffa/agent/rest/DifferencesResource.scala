@@ -61,6 +61,17 @@ class DifferencesResource extends AbstractRestResource {
     Response.created(uri).`type`("text/plain").build()
   }
 
+  @POST
+  @Path("/sessions/{sessionId}/sync")
+  @Description("Forces Diffa to execute a synchronisation operation on the pairs underlying the session")
+  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
+  def synchroniseSession(@PathParam("sessionId") sessionId:String, @Context request:Request) : Response = {
+    log.debug("Sync requested for sessionId = " + sessionId)
+
+    session.runSync(sessionId)
+    Response.status(Response.Status.ACCEPTED).build
+  }
+
   @GET
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))

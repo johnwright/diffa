@@ -142,6 +142,15 @@ class DefaultSessionManager(
     })
   }
 
+  def runSync(sessionID:String) = {
+    sessionsByKey.get(sessionID) match {
+      case None => // No session. Nothing to do. TODO: Throw an exception?
+      case Some(cache) => {
+        runDifferenceForScope(cache.scope, null, null, this)
+      }
+    }
+  }
+
   def retrieveSessionVersion(id:String) = sessionsByKey(id).currentVersion
   def retrieveEventsSince(id:String, evtSeqId:String) = sessionsByKey(id).retrieveEventsSince(evtSeqId)
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents

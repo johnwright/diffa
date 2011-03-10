@@ -27,7 +27,7 @@ import collection.mutable.{LinkedHashMap, HashMap}
  *
  * TODO: Expire matched events and overridden unmatched events.
  */
-class LocalSessionCache(val sessionId:String, private val scope:SessionScope) extends SessionCache {
+class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends SessionCache {
   private val pending = new HashMap[VersionID, SessionEvent]
   private val events = new LinkedHashMap[String,SessionEvent]
   private val seqGenerator = new AtomicInteger(1)

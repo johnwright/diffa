@@ -57,11 +57,13 @@ trait CommonDifferenceTests {
   }
 
   def getReport(pair:String, from:DateTime, until:DateTime) : Array[SessionEvent]= {
-    var uri = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    env.diffClient.runSync(sessionId)
+
       // TODO: Ideally, the server should be able to tell us (somehow) when it has completed the initial sync.
       //       Since for now it can't, we'll just have to give it a little bit of time.
     Thread.sleep(1000)
-    env.diffClient.poll(uri)
+    env.diffClient.poll(sessionId)
   }
 
   @Test
@@ -100,6 +102,7 @@ trait CommonDifferenceTests {
   @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    env.diffClient.runSync(sessionId)
     Thread.sleep(100)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
 
@@ -116,6 +119,7 @@ trait CommonDifferenceTests {
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    env.diffClient.runSync(sessionId)
     Thread.sleep(100)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), up)
 
@@ -170,6 +174,8 @@ trait CommonDifferenceTests {
     env.upstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
 
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    env.diffClient.runSync(sessionId)
+    Thread.sleep(1000)
 
     val diffs = tryAgain(sessionId,10,100)
 

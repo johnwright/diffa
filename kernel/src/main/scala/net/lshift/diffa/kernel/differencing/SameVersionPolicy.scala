@@ -56,9 +56,9 @@ class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:Differen
       vm match {
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn)
+            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn))
           } else {
-            writer.clearDownstreamVersion(VersionID(pairKey, id))
+            handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pairKey, id)))
           }
       }
     }
