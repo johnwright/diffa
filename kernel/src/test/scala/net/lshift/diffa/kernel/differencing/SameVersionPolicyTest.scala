@@ -93,6 +93,9 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     expect(writer.clearDownstreamVersion(VersionID(abPair, "id4"))).
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
 
+    // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
+    listener.onMatch(VersionID(abPair, "id4"), null); expectLastCall
+
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 

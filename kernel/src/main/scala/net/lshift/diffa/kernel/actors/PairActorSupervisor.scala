@@ -22,9 +22,8 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.events.PairChangeEvent
-import net.lshift.diffa.kernel.differencing.{DifferencingListener, VersionPolicyManager}
-import net.lshift.diffa.kernel.differencing.VersionCorrelationStoreFactory
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
+import net.lshift.diffa.kernel.differencing.{PairSyncListener, DifferencingListener, VersionPolicyManager, VersionCorrelationStoreFactory}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                config:ConfigStore,
@@ -81,7 +80,8 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id.pairKey) ! ChangeMessage(event)
 
-  def syncPair(pairKey:String, listener:DifferencingListener) = findActor(pairKey) ! DifferenceMessage(listener)
+  def syncPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) =
+    findActor(pairKey) ! DifferenceMessage(diffListener, pairSyncListener)
 
   def findActor(pairKey:String) = {
     val actors = ActorRegistry.actorsFor(pairKey)

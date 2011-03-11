@@ -19,12 +19,14 @@ package net.lshift.diffa.kernel.differencing
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Before, Test}
-import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
+import org.junit.Assert._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
+import net.lshift.diffa.kernel.config.{GroupContainer, Endpoint, ConfigStore}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Test cases for the default session manager.
@@ -82,6 +84,7 @@ class DefaultSessionManagerTest {
   participantFactory.registerFactory(protocol2)
 
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
+  EasyMock.checkOrder(pairPolicyClient, false)
 
   val manager = new DefaultSessionManager(configStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
   verify(matchingManager); reset(matchingManager)    // The matching manager will have been called on session manager startup
@@ -99,18 +102,12 @@ class DefaultSessionManagerTest {
     participantFactory.createUpstreamParticipant(u)
     participantFactory.createDownstreamParticipant(d)
 
-    val pair1 = new net.lshift.diffa.kernel.config.Pair()
-    pair1.versionPolicyName = "policy"
-    pair1.upstream = u
-    pair1.downstream = d
-
-    val pair2 = new net.lshift.diffa.kernel.config.Pair()
-    pair2.versionPolicyName = "policy"
-    pair2.upstream = u
-    pair2.downstream = d
+    val pair1 = DiffaPair(key = "pair1", versionPolicyName = "policy", upstream = u, downstream = d)
+    val pair2 = DiffaPair(key = "pair2", versionPolicyName = "policy", upstream = u, downstream = d)
         
     expect(configStore.getPair("pair")).andStubReturn(pair1)
     expect(configStore.getPair("pair2")).andStubReturn(pair2)
+    expect(configStore.listGroups).andStubReturn(Seq(GroupContainer(null, Array(pair1, pair2))))
     expect(matchingManager.getMatcher("pair")).andStubReturn(Some(matcher))
     expect(matcher.isVersionIDActive(VersionID("pair", "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(VersionID("pair", "id2"))).andStubReturn(false)
@@ -118,10 +115,14 @@ class DefaultSessionManagerTest {
     replay(configStore, matchingManager, matcher)
   }
 
-  def expectForPair(p:String)  = {
-    val p1 = EasyMock.eq(p)
-    val p2 = isA(classOf[DifferencingListener])
-    expect(pairPolicyClient.syncPair(p1, p2)).atLeastOnce
+  def expectForPair(pairs:String*)  = {
+    pairs.foreach(p => {
+      val p1 = EasyMock.eq(p)
+      val p2 = isA(classOf[DifferencingListener])
+      val p3 = isA(classOf[PairSyncListener])
+      expect(pairPolicyClient.syncPair(p1, p2, p3)).atLeastOnce
+    })
+
     replay(pairPolicyClient)
   }
 
@@ -206,6 +207,70 @@ class DefaultSessionManagerTest {
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onDownstreamExpired(VersionID("pair", "unknownid"), "dvsn")
+  }
+
+  @Test
+  def shouldTrackStateOfPairsForExplicitScopeSession {
+    // Create a session that contains our given pair
+    replayAll
+    expectForPair("pair")
+    val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
+
+    // Query for the states associated. We should get back an entry for pair in "synchronising", since the stubs
+    // don't notify of completion
+    assertEquals(Map("pair" -> PairSyncState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
+
+    // Notify that the pair is now in Synchronised state
+    manager.pairSyncStateChanged("pair", PairSyncState.UP_TO_DATE)
+    assertEquals(Map("pair" -> PairSyncState.UP_TO_DATE), manager.retrievePairSyncStates(sessionId))
+
+    // Start a sync. We should enter the synchronising state again
+    manager.runSync(sessionId)
+    assertEquals(Map("pair" -> PairSyncState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
+
+    // Notify that the pair is now in Failed state
+    manager.pairSyncStateChanged("pair", PairSyncState.FAILED)
+    assertEquals(Map("pair" -> PairSyncState.FAILED), manager.retrievePairSyncStates(sessionId))
+  }
+
+  @Test
+  def shouldTrackStateOfPairsForImplicitScopeSession {
+    // Create a session that contains our given pair
+    replayAll
+    expectForPair("pair1", "pair2")
+    val sessionId = manager.start(SessionScope.all, listener1)
+
+    // Query for the states associated. We should get back an entry for pair in "synchronising", since the stubs
+    // don't notify of completion
+    assertEquals(Map("pair1" -> PairSyncState.SYNCHRONIZING, "pair2" -> PairSyncState.SYNCHRONIZING),
+      manager.retrievePairSyncStates(sessionId))
+
+    // Notify that the pair1 is now in Synchronised state
+    manager.pairSyncStateChanged("pair1", PairSyncState.UP_TO_DATE)
+    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.SYNCHRONIZING),
+      manager.retrievePairSyncStates(sessionId))
+
+    // Notify that the pair2 is now in Failed state
+    manager.pairSyncStateChanged("pair2", PairSyncState.FAILED)
+    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.FAILED),
+      manager.retrievePairSyncStates(sessionId))
+
+    // Start a sync. We should enter the synchronising state again
+    manager.runSync(sessionId)
+    assertEquals(Map("pair1" -> PairSyncState.SYNCHRONIZING, "pair2" -> PairSyncState.SYNCHRONIZING),
+      manager.retrievePairSyncStates(sessionId))
+  }
+
+  @Test
+  def shouldReportUnknownSyncStateForRemovedPairs {
+    // Create a session that contains our given pair
+    replayAll
+    expectForPair("pair")
+    val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
+
+    // If we delete the pair, then the sync state should return the pair with an Unknown status
+    manager.onDeletePair("pair")
+    assertEquals(Map("pair" -> PairSyncState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
   }
 
   private def replayAll = replay(listener1, listener2)

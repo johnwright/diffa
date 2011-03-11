@@ -30,6 +30,11 @@ trait SessionCache {
   def sessionId:String
 
   /**
+   * The scope assigned to this session.
+   */
+  def scope:SessionScope
+
+  /**
    * Retrieves the current version of the cache
    */
   def currentVersion:String

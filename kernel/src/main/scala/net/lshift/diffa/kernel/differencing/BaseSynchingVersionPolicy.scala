@@ -107,6 +107,18 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
     }
 
+    /**
+     * Should be invoked by the child sync strategies each time they modify a correlation (eg, store an upstream or
+     * downstream version). This allows for any necessary eventing to be performed.
+     */
+    protected def handleUpdatedCorrelation(corr:Correlation) {
+      // Unmatched versions will be evented at the end of the sync. Matched versions should be evented immediately, as
+      // we won't know what went from unmatched -> matched later.
+      if (corr.isMatched.booleanValue) {
+        listener.onMatch(VersionID(corr.pairing, corr.id), corr.upstreamVsn)
+      }
+    }
+
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
     def handleMismatch(pairKey:String, writer: VersionCorrelationWriter, vm:VersionMismatch)
@@ -130,9 +142,9 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            writer.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn)
+            handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn))
           } else {
-            writer.clearUpstreamVersion(VersionID(pairKey, id))
+            handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pairKey, id)))
           }
       }
     }

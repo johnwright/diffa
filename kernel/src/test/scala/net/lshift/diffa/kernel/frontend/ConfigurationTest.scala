@@ -133,7 +133,7 @@ class ConfigurationTest {
     expect(pairManager.stopActor("ac")).once
     expect(matchingManager.onDeletePair("ac")).once
     expect(versionCorrelationStoreFactory.remove("ac")).once
-//    expect(sessionManager.onDeletePair("ac")).once
+    expect(sessionManager.onDeletePair("ac")).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair("ad")).once
     expect(sessionManager.onUpdatePair("ad")).once
@@ -160,7 +160,8 @@ class ConfigurationTest {
     expect(matchingManager.onDeletePair("ac")).once
     expect(versionCorrelationStoreFactory.remove("ab")).once
     expect(versionCorrelationStoreFactory.remove("ac")).once
-//    expect(sessionManager.onDeletePair("ac")).once
+    expect(sessionManager.onDeletePair("ab")).once
+    expect(sessionManager.onDeletePair("ac")).once
     expect(endpointListener.onEndpointRemoved("upstream1")).once
     expect(endpointListener.onEndpointRemoved("downstream1")).once
     replayAll

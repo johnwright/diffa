@@ -94,13 +94,13 @@ abstract class AbstractDataDrivenPolicyTest {
     expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
     scenario.tx.respBuckets.foreach(b => {
       expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
-      expectUpstreamEntityStore(scenario.pair, b.allVsns)
+      expectUpstreamEntityStore(scenario.pair, b.allVsns, false)
     })
 
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
     scenario.tx.respBuckets.foreach(b => {
       expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
-      expectDownstreamEntityStore(scenario.pair, b.allVsns)
+      expectDownstreamEntityStore(scenario.pair, b.allVsns, false)
     })
 
     // Expect to see the writer flushed
@@ -130,7 +130,10 @@ abstract class AbstractDataDrivenPolicyTest {
       case (tx1:EntityTx, tx2:EntityTx) =>
         expectUpstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
     }
-    expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn))
+    expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
+
+    // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
+    listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
 
     // Expect only a top-level sync on the downstream
     expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
@@ -164,7 +167,10 @@ abstract class AbstractDataDrivenPolicyTest {
       case (tx1:EntityTx, tx2:EntityTx) =>
         expectDownstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
     }
-    expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn))
+    expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
+
+    // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
+    listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
 
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
@@ -216,16 +222,20 @@ abstract class AbstractDataDrivenPolicyTest {
     expect(store.queryDownstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
 
-  protected def expectUpstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
+  protected def expectUpstreamEntityStore(pair:Pair, entities:Seq[Vsn], matched:Boolean) {
     entities.foreach(v => {
+      val downstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
+
       expect(writer.storeUpstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
-        andReturn(Correlation(null, pair.key, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, null, null))
+        andReturn(Correlation(null, pair.key, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, downstreamVsnToUse, downstreamVsnToUse, matched))
     })
   }
-  protected def expectDownstreamEntityStore(pair:Pair, entities:Seq[Vsn]) {
+  protected def expectDownstreamEntityStore(pair:Pair, entities:Seq[Vsn], matched:Boolean) {
     entities.foreach(v => {
+      val upstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
+
       expect(writer.storeDownstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
-        andReturn(Correlation(null, pair.key, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, null, v.vsn, v.vsn))
+        andReturn(Correlation(null, pair.key, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, upstreamVsnToUse, v.vsn, v.vsn, matched))
     })
   }
 
