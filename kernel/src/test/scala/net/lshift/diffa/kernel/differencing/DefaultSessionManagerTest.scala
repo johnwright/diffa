@@ -115,12 +115,28 @@ class DefaultSessionManagerTest {
     replay(configStore, matchingManager, matcher)
   }
 
-  def expectForPair(pairs:String*)  = {
-    pairs.foreach(p => {
-      val p1 = EasyMock.eq(p)
-      val p2 = isA(classOf[DifferencingListener])
-      val p3 = isA(classOf[PairSyncListener])
-      expect(pairPolicyClient.syncPair(p1, p2, p3)).atLeastOnce
+  def expectDifferenceForPair(pairs:String*)  = {
+    pairs.foreach(pairKey => {
+      val pairKeyEq = EasyMock.eq(pairKey)
+      val diffListenerEq = isA(classOf[DifferencingListener])
+      expect(pairPolicyClient.difference(pairKeyEq, diffListenerEq)).atLeastOnce
+    })
+
+    replay(pairPolicyClient)
+  }
+  def expectSyncAndDifferenceForPair(pairs:String*)  = {
+    pairs.foreach(pairKey => {
+      val pairKeyEq = EasyMock.eq(pairKey)
+      val diffListenerEq = isA(classOf[DifferencingListener])
+
+      expect(pairPolicyClient.difference(pairKeyEq, diffListenerEq)).atLeastOnce
+    })
+    pairs.foreach(pairKey => {
+      val pairKeyEq = EasyMock.eq(pairKey)
+      val diffListenerEq = isA(classOf[DifferencingListener])
+      val pairSyncListenerEq = isA(classOf[PairSyncListener])
+
+      expect(pairPolicyClient.syncPair(pairKeyEq, diffListenerEq, pairSyncListenerEq)).atLeastOnce
     })
 
     replay(pairPolicyClient)
@@ -132,7 +148,7 @@ class DefaultSessionManagerTest {
     expect(listener1.onMatch(VersionID("pair", "id"), "vsn"))
     replayAll
 
-    expectForPair("pair")
+    expectDifferenceForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn")
@@ -146,7 +162,7 @@ class DefaultSessionManagerTest {
     // Replay to get blank stubs
     replayAll
 
-    expectForPair("pair")
+    expectDifferenceForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     
@@ -160,7 +176,7 @@ class DefaultSessionManagerTest {
     expect(listener1.onMismatch(VersionID("pair", "id2"), timestamp, "uvsn", "dvsn"))
     replayAll
 
-    expectForPair("pair")
+    expectDifferenceForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
 
@@ -174,7 +190,7 @@ class DefaultSessionManagerTest {
     val timestamp = new DateTime()
     replayAll
 
-    expectForPair("pair")
+    expectDifferenceForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.end("pair", listener1)
@@ -188,7 +204,7 @@ class DefaultSessionManagerTest {
     val timestamp = new DateTime()
     replayAll
 
-    expectForPair("pair2")
+    expectDifferenceForPair("pair2")
 
     val session = manager.start(SessionScope.forPairs("pair2"), listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn")
@@ -203,7 +219,7 @@ class DefaultSessionManagerTest {
 
     replayAll
 
-    expectForPair("pair")
+    expectDifferenceForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onDownstreamExpired(VersionID("pair", "unknownid"), "dvsn")
@@ -213,8 +229,14 @@ class DefaultSessionManagerTest {
   def shouldTrackStateOfPairsForExplicitScopeSession {
     // Create a session that contains our given pair
     replayAll
-    expectForPair("pair")
+    expectSyncAndDifferenceForPair("pair")
     val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
+
+    // Initial state of all pairs should be "unknown"
+    assertEquals(Map("pair" -> PairSyncState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
+
+    // Start the initial sync
+    manager.runSync(sessionId)
 
     // Query for the states associated. We should get back an entry for pair in "synchronising", since the stubs
     // don't notify of completion
@@ -235,19 +257,18 @@ class DefaultSessionManagerTest {
 
   @Test
   def shouldTrackStateOfPairsForImplicitScopeSession {
-    // Create a session that contains our given pair
+    // Create a session that contains all pairs
     replayAll
-    expectForPair("pair1", "pair2")
+    expectSyncAndDifferenceForPair("pair1", "pair2")
     val sessionId = manager.start(SessionScope.all, listener1)
 
-    // Query for the states associated. We should get back an entry for pair in "synchronising", since the stubs
-    // don't notify of completion
-    assertEquals(Map("pair1" -> PairSyncState.SYNCHRONIZING, "pair2" -> PairSyncState.SYNCHRONIZING),
+    // Query for the states associated. We should get back an entry for pair in "unknown"
+    assertEquals(Map("pair1" -> PairSyncState.UNKNOWN, "pair2" -> PairSyncState.UNKNOWN),
       manager.retrievePairSyncStates(sessionId))
 
     // Notify that the pair1 is now in Synchronised state
     manager.pairSyncStateChanged("pair1", PairSyncState.UP_TO_DATE)
-    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.SYNCHRONIZING),
+    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.UNKNOWN),
       manager.retrievePairSyncStates(sessionId))
 
     // Notify that the pair2 is now in Failed state
@@ -265,7 +286,7 @@ class DefaultSessionManagerTest {
   def shouldReportUnknownSyncStateForRemovedPairs {
     // Create a session that contains our given pair
     replayAll
-    expectForPair("pair")
+    expectDifferenceForPair("pair")
     val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
 
     // If we delete the pair, then the sync state should return the pair with an Unknown status

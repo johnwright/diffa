@@ -69,17 +69,26 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
+  def difference(pairKey:String, l:DifferencingListener) {
+    val pair = configStore.getPair(pairKey)
+    generateDifferenceEvents(pair, l)
+  }
+
   def difference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
 
     synchroniseParticipants(pair, writer, us, ds, l)
     writer.flush()
 
-    // Run a query for mismatched versions, and report each one
-    stores(pairKey).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
-      corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn))
+    generateDifferenceEvents(pair, l)
 
     true
+  }
+
+  private def generateDifferenceEvents(pair:Pair, l:DifferencingListener) {
+    // Run a query for mismatched versions, and report each one
+    stores(pair.key).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
+      corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn))
   }
 
   /**

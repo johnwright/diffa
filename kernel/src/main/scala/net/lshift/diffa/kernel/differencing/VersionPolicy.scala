@@ -38,8 +38,15 @@ trait VersionPolicy {
   def onChange(writer: VersionCorrelationWriter, evt:PairChangeEvent) : Unit
 
   /**
-   * Requests that the policy difference the given participants for the given time range. Differences that are
-   * detected will be reported to the listener configured in the policy.
+   * Requests that the policy generate a series of events describing the differences between the endpoints
+   * within the given pair. Will not perform any endpoint synchronisation, and will operate entirely from
+   * local data stores.
+   */
+  def difference(pairKey:String, listener:DifferencingListener)
+
+  /**
+   * Requests that the policy synchronise then difference the given participants. Differences that are
+   * detected will be reported to the listener provided.
    */
   def difference(pairKey:String,
                  writer: VersionCorrelationWriter,

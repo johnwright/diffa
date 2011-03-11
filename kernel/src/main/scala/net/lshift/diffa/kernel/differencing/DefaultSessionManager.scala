@@ -162,7 +162,7 @@ class DefaultSessionManager(
     sessionsByKey.get(sessionID) match {
       case None => // No session. Nothing to do. TODO: Throw an exception?
       case Some(cache) => {
-        runDifferenceForScope(cache.scope, null, null, this)
+        runSyncForScope(cache.scope, null, null, this)
       }
     }
   }
@@ -307,7 +307,7 @@ class DefaultSessionManager(
 
   def withPair[T](pair:String, f:Function0[T]) = withValidPair(pair, f)
 
-  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
+  def runSyncForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
     pairKeysForScope(scope).foreach(pairKey => {
       // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
       // asynchronously, we might have returned before then, and this may potentially result in clients seeing
@@ -315,6 +315,12 @@ class DefaultSessionManager(
       updatePairSyncState(pairKey, PairSyncState.SYNCHRONIZING)
 
       pairPolicyClient.syncPair(pairKey, listener, this)
+    })
+  }
+
+  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
+    pairKeysForScope(scope).foreach(pairKey => {
+      pairPolicyClient.difference(pairKey, listener)
     })
   }
 
@@ -392,7 +398,10 @@ class DefaultSessionManager(
     f()
   }
 
-  def updatePairSyncState(pairKey:String, state:PairSyncState) = pairStates.synchronized {
-    pairStates(pairKey) = state
+  def updatePairSyncState(pairKey:String, state:PairSyncState) = {
+    pairStates.synchronized {
+      pairStates(pairKey) = state
+    }
+    log.info("Pair " + pairKey + " entered synchronization state: " + state)
   }
 }
