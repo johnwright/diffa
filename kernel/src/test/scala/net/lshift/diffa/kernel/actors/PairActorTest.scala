@@ -87,7 +87,7 @@ class PairActorTest {
     expect(writer.flush()).atLeastOnce
     replay(writer)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    expect(versionPolicy.difference(pairKey, writer, us, ds, diffListener)).andReturn(true)
+    expect(versionPolicy.syncAndDifference(pairKey, writer, us, ds, diffListener)).andReturn(true)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
@@ -109,7 +109,7 @@ class PairActorTest {
     expect(writer.flush()).atLeastOnce
     replay(writer)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    expect(versionPolicy.difference(pairKey, writer, us, ds, diffListener)).andThrow(new RuntimeException("Foo!"))
+    expect(versionPolicy.syncAndDifference(pairKey, writer, us, ds, diffListener)).andThrow(new RuntimeException("Foo!"))
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })

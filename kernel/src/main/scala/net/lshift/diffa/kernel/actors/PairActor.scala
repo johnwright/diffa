@@ -80,7 +80,7 @@ case class PairActor(pairKey:String,
 
       try {
         writer.flush()
-        policy.difference(pairKey, writer, us, ds, diffListener)
+        policy.syncAndDifference(pairKey, writer, us, ds, diffListener)
         pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE)
       } catch {
         case ex => {

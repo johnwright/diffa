@@ -80,7 +80,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -110,7 +110,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -145,7 +145,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -179,7 +179,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
     replayAll
 
-    policy.difference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 

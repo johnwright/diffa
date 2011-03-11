@@ -74,7 +74,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     generateDifferenceEvents(pair, l)
   }
 
-  def difference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+  def syncAndDifference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
 
     synchroniseParticipants(pair, writer, us, ds, l)

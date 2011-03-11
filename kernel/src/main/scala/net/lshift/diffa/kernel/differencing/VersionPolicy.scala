@@ -48,9 +48,9 @@ trait VersionPolicy {
    * Requests that the policy synchronise then difference the given participants. Differences that are
    * detected will be reported to the listener provided.
    */
-  def difference(pairKey:String,
-                 writer: VersionCorrelationWriter,
-                 us:UpstreamParticipant,
-                 ds:DownstreamParticipant,
-                 listener:DifferencingListener) : Boolean
+  def syncAndDifference(pairKey:String,
+                        writer: VersionCorrelationWriter,
+                        us:UpstreamParticipant,
+                        ds:DownstreamParticipant,
+                        listener:DifferencingListener) : Boolean
 }
