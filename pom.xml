@@ -41,6 +41,7 @@
     <lucene.version>3.0.2</lucene.version>
     <jodatime.version>1.6</jodatime.version>
     <javamail.file.transport.version>1.0</javamail.file.transport.version>
+    <slf4j.version>1.6.1</slf4j.version>
   </properties>
 
   <distributionManagement>
@@ -156,7 +157,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.5.8</version>
+      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>javassist</groupId>

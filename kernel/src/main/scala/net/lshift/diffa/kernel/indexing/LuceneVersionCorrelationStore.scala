@@ -228,7 +228,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
   private val deletedDocs = HashSet[VersionID]()
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
-    log.debug("Indexing " + id + " with attributes: " + attributes)
+    log.trace("Indexing " + id + " with attributes: " + attributes)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
@@ -237,7 +237,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
   }
 
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
-    log.debug("Indexing " + id + " with attributes: " + attributes)
+    log.trace("Indexing " + id + " with attributes: " + attributes)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
