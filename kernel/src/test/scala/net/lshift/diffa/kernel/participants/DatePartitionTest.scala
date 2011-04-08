@@ -46,6 +46,22 @@ class DatePartitionTest {
     assertEquals("1998", partition)
   }
 
+  @Test
+  def shouldParseFullIsoDate = {
+    val date = "1998-11-21T15:49:55.000Z"
+    val function = DailyCategoryFunction
+    val partition = function.owningPartition(date)
+    assertEquals("1998-11-21", partition)
+  }
+
+  @Test
+  def shouldParseYYYYMMddDate = {
+    val date = "1998-11-21"
+    val function = DailyCategoryFunction
+    val partition = function.owningPartition(date)
+    assertEquals("1998-11-21", partition)
+  }
+
   @Test(expected=classOf[InvalidAttributeValueException])
   def shouldThrowInvalidCategoryExceptionIfValueIsNotDate {
     DailyCategoryFunction.owningPartition("NOT_A_DATE")
