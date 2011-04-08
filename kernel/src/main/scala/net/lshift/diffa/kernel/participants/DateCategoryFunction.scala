@@ -17,11 +17,16 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.LocalDate
-import org.joda.time.format.{ISODateTimeFormat, DateTimeFormatter, DateTimeFormat}
+import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat, DateTimeFormatter, DateTimeFormat}
 
 abstract case class DateCategoryFunction extends CategoryFunction {
 
-  protected val isoFormat = ISODateTimeFormat.dateTime()
+  val parsers = Array(
+          ISODateTimeFormat.dateTime().getParser,
+          ISODateTimeFormat.date().getParser
+  )
+  protected val formatter = new DateTimeFormatterBuilder().append( null, parsers ).toFormatter
+
 
   def pattern:DateTimeFormatter
   def descend:Option[CategoryFunction]
@@ -41,7 +46,7 @@ abstract case class DateCategoryFunction extends CategoryFunction {
 
   override def owningPartition(value:String) =
     try {
-      val date = isoFormat.parseDateTime(value)
+      val date = formatter.parseDateTime(value)
       pattern.print(date)
     }
     catch {
