@@ -58,7 +58,7 @@ class AmqpRpcClient(connector: Connector, queueName: String)
 
   def call(endpoint: String, payload: String, timeout: Long = defaultTimeout): String = {
     if (log.isDebugEnabled) {
-      log.debug("%s: %s".format(endpoint, payload))
+      log.debug("%s / %s: %s".format(queueName, endpoint, payload))
     }
 
     val msg = messaging.createMessage()
