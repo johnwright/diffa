@@ -202,8 +202,8 @@
     </dependency>
     <dependency>
       <groupId>se.scalablesolutions.akka</groupId>
-      <artifactId>akka-core_2.8.0</artifactId>
-      <version>0.10</version>
+      <artifactId>akka-actor</artifactId>
+      <version>1.0</version>
       <exclusions>
         <exclusion>
           <groupId>org.codehaus.jackson</groupId>

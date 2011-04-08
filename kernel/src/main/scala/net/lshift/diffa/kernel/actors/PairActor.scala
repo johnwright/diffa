@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.actors
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
-import se.scalablesolutions.akka.actor.{Actor, Scheduler}
+import akka.actor.{Actor, Scheduler}
 import scala.collection.mutable.ListBuffer
 import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
@@ -46,12 +46,12 @@ case class PairActor(pairKey:String,
 
   lazy val writer = store.openWriter()
 
-  override def init {
+  override def preStart = {
     // schedule a recurring message to flush the writer
     scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
   }
 
-  override def shutdown {
+  override def postStop = {
     scheduledFlushes.cancel(true)
   }
 
