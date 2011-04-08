@@ -25,6 +25,7 @@ import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import java.util.concurrent.ScheduledFuture
 import net.lshift.diffa.kernel.differencing._
+import java.net.ConnectException
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -73,10 +74,15 @@ case class PairActor(pairKey:String,
         policy.difference(pairKey, writer, us, ds, diffListener)
         pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE)
       } catch {
-        case ex => {
-          logger.error("FAILED to synchronise pair " + pairKey, ex)
-          pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
+        case c:ConnectException => {
+          logger.error("Investigate: Participant was not available to synchronize pair: " + pairKey)
         }
+        case x:Exception => {
+          logger.error("FAILED to synchronise pair " + pairKey, x)
+        }
+      }
+      finally {
+        pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
       }
     }
 
