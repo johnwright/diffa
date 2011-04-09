@@ -68,7 +68,7 @@ case class PairActor(pairKey:String,
     }
     case DifferenceMessage(diffListener, pairSyncListener) => {
       pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING)
-
+      var state = PairSyncState.UP_TO_DATE 
       try {
         writer.flush()
         policy.difference(pairKey, writer, us, ds, diffListener)
@@ -76,13 +76,15 @@ case class PairActor(pairKey:String,
       } catch {
         case c:ConnectException => {
           logger.error("Investigate: Participant was not available to synchronize pair: " + pairKey)
+          state = PairSyncState.FAILED
         }
         case x:Exception => {
           logger.error("FAILED to synchronise pair " + pairKey, x)
+          state = PairSyncState.FAILED
         }
       }
       finally {
-        pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
+        pairSyncListener.pairSyncStateChanged(pairKey, state)
       }
     }
 
