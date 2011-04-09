@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{Endpoint, Pair, ConfigStore}
+import org.slf4j.LoggerFactory
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -91,9 +92,17 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
    * The basic functionality for a synchronisation strategy.
    */
   protected abstract class SyncStrategy {
+
+    val log = LoggerFactory.getLogger(getClass)
+
     def syncHalf(pair:Pair, writer: VersionCorrelationWriter, endpoint:Endpoint, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], p:Participant) {
       val remoteDigests = p.queryAggregateDigests(bucketing, constraints)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
+
+      if (log.isTraceEnabled) {
+        log.trace("Remote digests: %s".format(remoteDigests))
+        log.trace("Local digests: %s".format(localDigests))
+      }
 
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
         case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
