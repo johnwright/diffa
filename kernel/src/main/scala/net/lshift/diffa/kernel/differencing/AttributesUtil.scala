@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.joda.time.format.ISODateTimeFormat
-import net.lshift.diffa.kernel.config.{PrefixCategoryDescriptor, RangeCategoryDescriptor, SetCategoryDescriptor, CategoryDescriptor}
+import net.lshift.diffa.kernel.config._
 
 /**
  * Utility for working with attribute maps.
@@ -42,13 +42,7 @@ object AttributesUtil {
   def asTyped(name:String, value:String, categories:Map[String, CategoryDescriptor]) = {
     categories(name) match {
       case s:SetCategoryDescriptor => StringAttribute(value)
-      case r:RangeCategoryDescriptor => {
-        r.dataType match {
-          case "int"  => IntegerAttribute(Integer.valueOf(value).intValue)
-          case "date" => DateAttribute(ISODateTimeFormat.dateTimeParser.parseDateTime(value)) // TODO: Force Timezone
-          case _      => StringAttribute(value)
-        }
-      }
+      case r:RangeCategoryDescriptor => RangeCategoryParser.typedAttribute(r, value)
       case p:PrefixCategoryDescriptor => StringAttribute(value)
     }
   }

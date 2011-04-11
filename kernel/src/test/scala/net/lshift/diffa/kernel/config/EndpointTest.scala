@@ -22,14 +22,18 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.{DateAttribute, IntegerAttribute}
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{DataPoint, Theories, Theory, DataPoints}
+import net.lshift.diffa.kernel.config.EndpointTest.ConstraintExpectation
+import net.lshift.diffa.kernel.participants.{IntegerRangeConstraint, DateRangeConstraint, QueryConstraint}
 
 /**
  * Test cases for the Endpoint class.
  */
-class EndpointTest {
 
-  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
-  val intCategoryDescriptor = new RangeCategoryDescriptor("int")
+
+@RunWith(classOf[Theories])
+class EndpointTest {
 
   @Test
   def defaultConstraintsForEndpointWithNoCategories = {
@@ -37,23 +41,20 @@ class EndpointTest {
     assertEquals(Seq(), ep.defaultConstraints)
   }
 
-    @Test
-  def defaultConstraintsForEndpointWithDateCategory = {
-    val ep = new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor))
-    assertEquals(Seq(unconstrainedDate("bizDate")), ep.defaultConstraints)
-  }
-
-  @Test
-  def defaultConstraintsForEndpointWithIntCategory = {
-    val ep = new Endpoint(categories=Map("someInt" -> intCategoryDescriptor))
-    assertEquals(Seq(unconstrainedInt("someInt")), ep.defaultConstraints)
+  @Theory
+  def shouldBuildConstraintsForEndpoint(expectation:ConstraintExpectation) = {
+    val ep = new Endpoint(categories=Map(expectation.name -> expectation.descriptor))
+    assertEquals(Seq(expectation.constraint), ep.defaultConstraints)
   }
 
   @Test
   def schematize() = {
-    val categoryMap = Map("xyz_attribute" -> intCategoryDescriptor,
-                          "abc_attribute" -> dateCategoryDescriptor,
-                          "def_attribute" -> dateCategoryDescriptor)
+    val unboundDateCategoryDescriptor = new RangeCategoryDescriptor("date")
+    val unboundIntCategoryDescriptor = new RangeCategoryDescriptor("int")
+
+    val categoryMap = Map("xyz_attribute" -> unboundIntCategoryDescriptor,
+                          "abc_attribute" -> unboundDateCategoryDescriptor,
+                          "def_attribute" -> unboundDateCategoryDescriptor)
 
     val rightOrder = Seq("2011-01-26T10:24:00.000Z" /* abc */ ,"2011-01-26T10:36:00.000Z" /* def */, "55" /* xyz */)
 
@@ -64,4 +65,28 @@ class EndpointTest {
     var ep = new Endpoint{categories = categoryMap}
     assertEquals(schematized, ep.schematize(rightOrder))
   }
+}
+
+object EndpointTest {
+
+  case class ConstraintExpectation(name:String, descriptor:RangeCategoryDescriptor, constraint:QueryConstraint)
+
+  @DataPoints def unbounded =
+    Array(
+      ConstraintExpectation("bizDate", new RangeCategoryDescriptor("date"), unconstrainedDate("bizDate")),
+      ConstraintExpectation("someInt", new RangeCategoryDescriptor("int"), unconstrainedInt("someInt"))
+   )
+
+  @DataPoints def bounded =
+    Array(
+      ConstraintExpectation("bizDate",
+        new RangeCategoryDescriptor("date", "2011-01-01", "2011-01-31"),
+        DateRangeConstraint("bizDate", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,0,0,0,0))),
+      ConstraintExpectation("bizDate",
+        new RangeCategoryDescriptor("date", "1998-11-21T00:00:00.000Z", "1998-11-29T00:00:00.000Z"),
+        DateRangeConstraint("bizDate", new DateTime(1998,11,21,0,0,0,0), new DateTime(1998,11,29,0,0,0,0))),
+      ConstraintExpectation("someInt",
+        new RangeCategoryDescriptor("int", "0", "9"),
+        IntegerRangeConstraint("someInt", 0, 9))
+   )
 }

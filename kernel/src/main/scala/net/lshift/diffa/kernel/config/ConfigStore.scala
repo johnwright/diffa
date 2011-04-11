@@ -124,7 +124,7 @@ case class Endpoint(
               Some(UnboundedRangeQueryConstraint(name))
             }
             else {
-              Some(RangeQueryConstraint(name, r.lower, r.upper))
+              Some(RangeCategoryParser.buildConstraint(name,r))
             }
           }
           case p:PrefixCategoryDescriptor => Some(UnboundedRangeQueryConstraint(name))
