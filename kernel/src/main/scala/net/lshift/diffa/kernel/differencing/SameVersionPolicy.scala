@@ -20,7 +20,7 @@ package net.lshift.diffa.kernel.differencing
 import java.lang.String
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
-import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
+import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore, Pair}
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -33,10 +33,34 @@ import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
 class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore) {
 
+  /**
+   * Sync the two halves
+   */
   def synchroniseParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
-    // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pair, writer, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
-    (new DownstreamSameSyncStrategy).syncHalf(pair, writer, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
+
+    val syncUp = (c:Seq[QueryConstraint]) => (new UpstreamSyncStrategy).syncHalf(pair, writer, pair.upstream, pair.upstream.defaultBucketing, c, us)
+    val syncDown = (c:Seq[QueryConstraint]) => (new DownstreamSameSyncStrategy).syncHalf(pair, writer, pair.downstream, pair.downstream.defaultBucketing, c, ds)
+
+    filterSetConstraints(pair.upstream, syncUp)
+    filterSetConstraints(pair.downstream, syncDown)
+  }
+
+  // #203: By default, set elements should be sent out individually - in the future, this may be configurable
+  def filterSetConstraints(endpoint:Endpoint, f:Function1[Seq[QueryConstraint],Unit]) = {
+    def isSet = (q:QueryConstraint) => q.isInstanceOf[SetQueryConstraint]
+    val setBased = endpoint.defaultConstraints.filter(isSet)
+    val others = endpoint.defaultConstraints.filterNot(isSet)
+
+    setBased.isEmpty match {
+      case false  => {
+        setBased.foreach(s => {
+          val packed = s.asInstanceOf[SetQueryConstraint]
+          val unpacked = packed.values.map(v => SetQueryConstraint(packed.category, Set(v)))
+          unpacked.foreach(u => f(others :+ u))
+        })
+      }
+      case true  => f(others)
+    }
   }
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
