@@ -314,7 +314,7 @@ object AbstractDataDrivenPolicyTest {
   val stringCategoryDescriptor = new PrefixCategoryDescriptor(1, 3, 1)
 
   /**
-   * As part of #203, elements of a set are sent out individually be default.
+   * As part of #203, elements of a set are sent out individually by default.
    * For the sake of simplicity, the old behaviour (to send them out as a batch) can not be configured.
    * Should any body ask for this, this behavior be may re-instated at some point.
    */
