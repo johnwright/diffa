@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.participants
 
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.wire.WireConstraint
 import net.lshift.diffa.kernel.frontend.wire.WireConstraint._
 import scala.collection.Map
@@ -38,6 +37,12 @@ trait QueryConstraint {
    *  Returns a simplified representation of this constraint that is suitable for packing
    */
   def wireFormat : WireConstraint
+
+  /**
+   * This allows a concrete constraint to define how it would group itself into multiple batches for
+   * convenient transmission over the wire.
+   */
+  def group : Seq[QueryConstraint] = Seq(this)
 }
 
 abstract case class BaseQueryConstraint(category:String) extends QueryConstraint
@@ -47,6 +52,7 @@ abstract case class BaseQueryConstraint(category:String) extends QueryConstraint
  */
 case class SetQueryConstraint(c:String, values:Set[String]) extends BaseQueryConstraint(c) {
   def wireFormat() = setConstraint(category, values)
+  override def group = values.map(v => SetQueryConstraint(c,Set(v))).toSeq
 }
 
 /**

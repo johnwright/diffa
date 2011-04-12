@@ -118,20 +118,8 @@ case class Endpoint(
    * #203: By default, set elements should be sent out individually - in the future, this may be configurable
    */
   def groupedConstraints() : Seq[Seq[QueryConstraint]] = {
-    def isSet = (q:QueryConstraint) => q.isInstanceOf[SetQueryConstraint]
-    val setBased = defaultConstraints.filter(isSet)
-    val others = defaultConstraints.filterNot(isSet)
-
-    setBased.isEmpty match {
-      case false  => {
-        setBased.flatMap(s => {
-          val packed = s.asInstanceOf[SetQueryConstraint]
-          val unpacked = packed.values.map(v => SetQueryConstraint(packed.category, Set(v)))
-          unpacked.map(u => others :+ u)
-        })
-      }
-      case true  => Seq(others)
-    }
+    val constraints = defaultConstraints.map(_.group)
+    constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
   }
 
   /**
