@@ -78,7 +78,6 @@ abstract class AbstractDataDrivenPolicyTest {
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
@@ -112,7 +111,6 @@ abstract class AbstractDataDrivenPolicyTest {
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
@@ -150,7 +148,6 @@ abstract class AbstractDataDrivenPolicyTest {
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
@@ -187,7 +184,6 @@ abstract class AbstractDataDrivenPolicyTest {
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
