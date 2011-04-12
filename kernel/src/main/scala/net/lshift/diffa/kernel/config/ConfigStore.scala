@@ -111,6 +111,15 @@ case class Endpoint(
   }
 
   /**
+   * Returns a structured group of constraints for the current endpoint that is appropriate for transmission
+   * over the wire.
+   */
+  def groupedConstraints() : Seq[Seq[QueryConstraint]] = {
+    val constraints = defaultConstraints.map(_.group)
+    constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
+  }
+
+  /**
    * Returns a set of the coarsest unbound query constraints for
    * each of the category types that has been configured for this pair.
    */

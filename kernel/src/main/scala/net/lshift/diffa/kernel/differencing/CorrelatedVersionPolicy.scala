@@ -31,13 +31,9 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore) {
 
-  def synchroniseParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
-    // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pair, writer, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
-    (new DownstreamCorrelatingSyncStrategy(us, ds, l)).syncHalf(pair, writer, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
-  }
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) = new DownstreamCorrelatingSyncStrategy(us,ds,l)
   
-  private class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant, val l:DifferencingListener)
+  protected class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant, val l:DifferencingListener)
       extends SyncStrategy {
     
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
