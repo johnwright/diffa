@@ -52,6 +52,10 @@ abstract case class BaseQueryConstraint(category:String) extends QueryConstraint
  */
 case class SetQueryConstraint(c:String, values:Set[String]) extends BaseQueryConstraint(c) {
   def wireFormat() = setConstraint(category, values)
+
+  /**
+   * #203: By default, set elements should be sent out individually - in the future, this may be configurable
+   */
   override def group = values.map(v => SetQueryConstraint(c,Set(v))).toSeq
 }
 

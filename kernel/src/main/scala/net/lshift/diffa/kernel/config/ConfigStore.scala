@@ -111,11 +111,8 @@ case class Endpoint(
   }
 
   /**
-   * Returns a structured group of constraints for the current endpoint.
-   * The intention of the structuring is to group the constraints in a sequence that is appropriate for transmission
+   * Returns a structured group of constraints for the current endpoint that is appropriate for transmission
    * over the wire.
-   *
-   * #203: By default, set elements should be sent out individually - in the future, this may be configurable
    */
   def groupedConstraints() : Seq[Seq[QueryConstraint]] = {
     val constraints = defaultConstraints.map(_.group)
