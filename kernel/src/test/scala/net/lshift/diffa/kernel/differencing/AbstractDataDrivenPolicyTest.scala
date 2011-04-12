@@ -79,9 +79,7 @@ abstract class AbstractDataDrivenPolicyTest {
     writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
-    val us = scenario.pair.upstream.defaultConstraints
-    val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
@@ -115,9 +113,7 @@ abstract class AbstractDataDrivenPolicyTest {
     writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
-    val us = scenario.pair.upstream.defaultConstraints
-    val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
@@ -155,9 +151,7 @@ abstract class AbstractDataDrivenPolicyTest {
     writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
-    val us = scenario.pair.upstream.defaultConstraints
-    val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
@@ -194,9 +188,7 @@ abstract class AbstractDataDrivenPolicyTest {
     writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
-    val us = scenario.pair.upstream.defaultConstraints
-    val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
@@ -211,6 +203,12 @@ abstract class AbstractDataDrivenPolicyTest {
 
   protected def setupStubs(scenario:Scenario) {
     expect(configStore.getPair(scenario.pair.key)).andReturn(scenario.pair).anyTimes
+  }
+
+  protected def expectUnmatchedVersionCheck(scenario:Scenario) = {
+    val us = scenario.pair.upstream.defaultConstraints
+    val ds = scenario.pair.downstream.defaultConstraints
+    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
   }
 
   protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],

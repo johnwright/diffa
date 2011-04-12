@@ -73,7 +73,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   def difference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
 
-    synchroniseParticipants(pair, writer, us, ds, l)
+    synchronizeParticipants(pair, writer, us, ds, l)
     writer.flush()
 
     // Run a query for mismatched versions, and report each one
@@ -84,9 +84,20 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   }
 
   /**
-   * Allows the policy to perform a synchronisation of participants.
+   * Performs a synchronization between participants.
    */
-  protected def synchroniseParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener)
+  protected def synchronizeParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+    val upstreamConstraints = pair.upstream.groupedConstraints
+    val downstreamConstraints = pair.downstream.groupedConstraints
+
+    upstreamConstraints.foreach((new UpstreamSyncStrategy).syncHalf(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, us))
+    downstreamConstraints.foreach(downstreamStrategy(us,ds,l).syncHalf(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds))
+  }
+
+  /**
+   * Allows an implementing policy to define what kind of downstream syncing policy it requires
+   */
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) : SyncStrategy
 
   /**
    * The basic functionality for a synchronisation strategy.
