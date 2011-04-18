@@ -60,7 +60,7 @@ class TestEnvironment(val pairKey: String,
 
 
   // Categories
-  val categories = Map("bizDate" -> new RangeCategoryDescriptor("date"))
+  val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
   
   // Participants' RPC server setup
   participants.startUpstreamServer(upstream)

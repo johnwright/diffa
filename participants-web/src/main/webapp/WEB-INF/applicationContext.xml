@@ -62,7 +62,7 @@
         <util:map>
           <entry key="bizDate">
             <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
-              <property name="dataType" value="date"/>
+              <property name="dataType" value="datetime"/>
             </bean>
           </entry>
         </util:map>
@@ -84,7 +84,7 @@
         <util:map>
           <entry key="bizDate">
             <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
-              <property name="dataType" value="date"/>
+              <property name="dataType" value="datetime"/>
             </bean>
           </entry>
         </util:map>

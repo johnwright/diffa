@@ -31,10 +31,10 @@ import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
  */
 class DigestDifferencingUtilsTest {
 
-  def dateRangeConstraint(start:DateTime, end:DateTime) = DateRangeConstraint("bizDate", start, end)
+  def dateRangeConstraint(start:DateTime, end:DateTime) = DateTimeRangeConstraint("bizDate", start, end)
 
   val unconstrained = EasyConstraints.unconstrainedDate("bizDate")
-  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
+  val dateCategoryDescriptor = new RangeCategoryDescriptor("datetime")
   val dateOnlyAttrs = Map("bizDate" -> dateCategoryDescriptor)
 
   def resolve(d:Digest) = {

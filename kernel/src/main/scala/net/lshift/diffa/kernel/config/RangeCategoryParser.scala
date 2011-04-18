@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.config
 
 import org.joda.time.format.ISODateTimeFormat
-import net.lshift.diffa.kernel.participants.{DateRangeConstraint, IntegerRangeConstraint, RangeQueryConstraint}
+import net.lshift.diffa.kernel.participants.{DateTimeRangeConstraint, IntegerRangeConstraint, RangeQueryConstraint}
 import net.lshift.diffa.kernel.differencing.{StringAttribute, DateAttribute, IntegerAttribute}
 
 /**
@@ -30,13 +30,13 @@ object RangeCategoryParser {
 
   def typedAttribute(descriptor:RangeCategoryDescriptor, value:String) = descriptor.dataType match {
     case "int"  => IntegerAttribute(parseInt(value))
-    case "date" => DateAttribute(parseDate(value))
+    case "datetime" => DateAttribute(parseDate(value))
     case _      => StringAttribute(value)
   }
 
   def buildConstraint(name:String, descriptor:RangeCategoryDescriptor) = descriptor.dataType match {
     case "int"  => IntegerRangeConstraint(name, parseInt(descriptor.lower), parseInt(descriptor.upper))
-    case "date" => DateRangeConstraint(name, parseDate(descriptor.lower), parseDate(descriptor.upper))
+    case "datetime" => DateTimeRangeConstraint(name, parseDate(descriptor.lower), parseDate(descriptor.upper))
     case _      => RangeQueryConstraint(name, descriptor.lower, descriptor.upper)
   }
 }

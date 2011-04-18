@@ -61,7 +61,7 @@ class ConfigurationTest {
     val ep1 = Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           categories = Map(
-            "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
+            "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
     val ep2 = Endpoint(name = "downstream1", url = "http://localhost:5432", contentType = "application/json",
           categories = Map(
@@ -103,7 +103,7 @@ class ConfigurationTest {
     val ep1 = Endpoint(name = "upstream1", url = "http://localhost:6543", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           categories = Map(
-            "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
+            "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
       // downstream1 is gone, downstream2 is added
     val ep2 = Endpoint(name = "downstream2", url = "http://localhost:54321", contentType = "application/json",

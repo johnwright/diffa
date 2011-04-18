@@ -63,7 +63,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("datetime")), Seq(NoConstraint("datetime")))
     assertEquals(0, unmatched.size)
   }
 
@@ -85,7 +85,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id2"), emptyAttributes, DEC_31_2009, "upstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("datetime")), Seq(NoConstraint("datetime")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id2", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
@@ -130,7 +130,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id3"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("datetime")), Seq(NoConstraint("datetime")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id3", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp,  null, "upstreamVsn", "downstreamVsn", false), unmatched(0))
   }
@@ -153,7 +153,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id4"), emptyAttributes, DEC_31_2009, "upstreamVsnB", "downstreamVsnB")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("datetime")), Seq(NoConstraint("datetime")))
     assertEquals(0, unmatched.size)
   }
 
@@ -167,7 +167,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id5"), emptyAttributes, DEC_31_2009, "upstreamVsnB")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(NoConstraint("date")), Seq(NoConstraint("date")))
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("datetime")), Seq(NoConstraint("datetime")))
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id5", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), unmatched(0))
   }
@@ -195,7 +195,7 @@ class LuceneVersionCorrelationStoreTest {
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
 
     val collector = new Collector
-    store.queryUpstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    store.queryUpstreams(List(DateTimeRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(
       List(UpstreamPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")),
       collector.upstreamObjs.toList)
@@ -210,7 +210,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.flush()
 
     val collector = new Collector
-    store.queryUpstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
+    store.queryUpstreams(List(DateTimeRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
     assertEquals(0, collector.upstreamObjs.size)
   }
 
@@ -227,7 +227,7 @@ class LuceneVersionCorrelationStoreTest {
     assertCorrelationEquals(Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
 
     val collector = new Collector
-    val digests = store.queryDownstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
+    val digests = store.queryDownstreams(List(DateTimeRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(
       List(DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id7"), bizDateSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       collector.downstreamObjs.toList)
@@ -242,7 +242,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.flush()
 
     val collector = new Collector
-    store.queryDownstreams(List(DateRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
+    store.queryDownstreams(List(DateTimeRangeConstraint("bizDate", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)
     assertEquals(0, collector.downstreamObjs.size)
   }
 
@@ -457,7 +457,7 @@ object LuceneVersionCorrelationStoreTest {
   private val dateAttributes = bizDateMap(JUL_1_2010_1)
   private val excludedByEarlierDateAttributes = bizDateMap(FEB_15_2010)
   private val excludedByLaterDateAttributes = bizDateMap(AUG_11_2010_1)
-  private val dateConstraints = Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010))
+  private val dateConstraints = Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010))
   private val noDateConstraint = Seq(NoConstraint("bizDate"))
 
   private val intAttributes = intMap(2500)

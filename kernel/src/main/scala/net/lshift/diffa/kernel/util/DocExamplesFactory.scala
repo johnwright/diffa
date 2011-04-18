@@ -28,7 +28,7 @@ import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
  */
 class DocExamplesFactory {
 
-  val categoryDescriptor = new RangeCategoryDescriptor("date")
+  val categoryDescriptor = new RangeCategoryDescriptor("datetime")
   val up = new Endpoint("upstream-system", "http://acme.com/upstream", "application/json", null, null, true, Map("bizDate" -> categoryDescriptor))
   val down = new Endpoint("downstream-system", "http://acme.com/downstream", "application/json", null, null, true, Map("bizDate" -> categoryDescriptor))
 

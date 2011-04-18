@@ -110,7 +110,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
       case u:UnboundedRangeQueryConstraint =>   // No constraints to add
       case r:RangeQueryConstraint          => {
         val tq = r match {
-          case DateRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDate(lowerDate), formatDate(upperDate), true, true)
+          case DateTimeRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDate(lowerDate), formatDate(upperDate), true, true)
           case IntegerRangeConstraint(category, lowerInt, upperInt) => NumericRangeQuery.newIntRange(prefix + category, lowerInt, upperInt, true, true)
         }
         query.add(tq, BooleanClause.Occur.MUST)

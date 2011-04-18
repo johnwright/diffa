@@ -100,7 +100,7 @@ case class Endpoint(
           case s:SetCategoryDescriptor   => name -> ByNameCategoryFunction
           case r:RangeCategoryDescriptor => {
             r.dataType match {
-              case "date" => name -> YearlyCategoryFunction
+              case "datetime" => name -> YearlyCategoryFunction
               case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
             }
           }

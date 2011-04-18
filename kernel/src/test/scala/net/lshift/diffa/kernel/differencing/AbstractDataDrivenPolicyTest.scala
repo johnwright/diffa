@@ -303,7 +303,7 @@ object AbstractDataDrivenPolicyTest {
   // Scenarios
   //
 
-  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
+  val dateCategoryDescriptor = new RangeCategoryDescriptor("datetime")
   val intCategoryDescriptor = new RangeCategoryDescriptor("int")
   val stringCategoryDescriptor = new PrefixCategoryDescriptor(1, 3, 1)
 
@@ -559,7 +559,7 @@ object AbstractDataDrivenPolicyTest {
   val threeCharString = StringPrefixCategoryFunction(3, 3, 1)
 
   def unbounded(n:String) = UnboundedRangeQueryConstraint(n)
-  def dateRange(n:String, lower:DateTime, upper:DateTime) = DateRangeConstraint(n, lower, upper)
+  def dateRange(n:String, lower:DateTime, upper:DateTime) = DateTimeRangeConstraint(n, lower, upper)
   def intRange(n:String, lower:Int, upper:Int) = IntegerRangeConstraint(n, lower, upper)
   def prefix(n: String, prefix: String) = PrefixQueryConstraint(n, prefix)
 

@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.differencing.{DateAttribute, IntegerAttribute}
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory, DataPoints}
 import net.lshift.diffa.kernel.config.EndpointTest.ConstraintExpectation
-import net.lshift.diffa.kernel.participants.{IntegerRangeConstraint, DateRangeConstraint, QueryConstraint}
+import net.lshift.diffa.kernel.participants.{IntegerRangeConstraint, DateTimeRangeConstraint, QueryConstraint}
 
 /**
  * Test cases for the Endpoint class.
@@ -49,7 +49,7 @@ class EndpointTest {
 
   @Test
   def schematize() = {
-    val unboundDateCategoryDescriptor = new RangeCategoryDescriptor("date")
+    val unboundDateCategoryDescriptor = new RangeCategoryDescriptor("datetime")
     val unboundIntCategoryDescriptor = new RangeCategoryDescriptor("int")
 
     val categoryMap = Map("xyz_attribute" -> unboundIntCategoryDescriptor,
@@ -73,18 +73,18 @@ object EndpointTest {
 
   @DataPoints def unbounded =
     Array(
-      ConstraintExpectation("bizDate", new RangeCategoryDescriptor("date"), unconstrainedDate("bizDate")),
+      ConstraintExpectation("bizDate", new RangeCategoryDescriptor("datetime"), unconstrainedDate("bizDate")),
       ConstraintExpectation("someInt", new RangeCategoryDescriptor("int"), unconstrainedInt("someInt"))
    )
 
   @DataPoints def bounded =
     Array(
       ConstraintExpectation("bizDate",
-        new RangeCategoryDescriptor("date", "2011-01-01", "2011-01-31"),
-        DateRangeConstraint("bizDate", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,0,0,0,0))),
+        new RangeCategoryDescriptor("datetime", "2011-01-01", "2011-01-31"),
+        DateTimeRangeConstraint("bizDate", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,0,0,0,0))),
       ConstraintExpectation("bizDate",
-        new RangeCategoryDescriptor("date", "1998-11-21T00:00:00.000Z", "1998-11-29T00:00:00.000Z"),
-        DateRangeConstraint("bizDate", new DateTime(1998,11,21,0,0,0,0), new DateTime(1998,11,29,0,0,0,0))),
+        new RangeCategoryDescriptor("datetime", "1998-11-21T00:00:00.000Z", "1998-11-29T00:00:00.000Z"),
+        DateTimeRangeConstraint("bizDate", new DateTime(1998,11,21,0,0,0,0), new DateTime(1998,11,29,0,0,0,0))),
       ConstraintExpectation("someInt",
         new RangeCategoryDescriptor("int", "0", "9"),
         IntegerRangeConstraint("someInt", 0, 9))

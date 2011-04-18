@@ -40,7 +40,7 @@ object ConstraintGroupingTest {
   @DataPoint def rangeOnly =
     GroupExpectation(
       categories = Map(
-        "bizDate" -> new RangeCategoryDescriptor("date"),
+        "bizDate" -> new RangeCategoryDescriptor("datetime"),
         "someInt" -> new RangeCategoryDescriptor("int")
       ),
       grouped = Seq(
@@ -79,7 +79,7 @@ object ConstraintGroupingTest {
   @DataPoint def singleRangeAndSet =
     GroupExpectation(
       categories = Map(
-        "bizDate" -> new RangeCategoryDescriptor("date"),
+        "bizDate" -> new RangeCategoryDescriptor("datetime"),
         "someString" -> new SetCategoryDescriptor(Set("A","B"))
       ),
       grouped = Seq(
@@ -91,7 +91,7 @@ object ConstraintGroupingTest {
   @DataPoint def multipleRangesAndSets =
     GroupExpectation(
       categories = Map(
-        "bizDate" -> new RangeCategoryDescriptor("date"),
+        "bizDate" -> new RangeCategoryDescriptor("datetime"),
         "someInt" -> new RangeCategoryDescriptor("int"),
         "someString" -> new SetCategoryDescriptor(Set("A","B")),
         "someOtherString" -> new SetCategoryDescriptor(Set("1","2"))

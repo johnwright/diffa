@@ -66,7 +66,7 @@ abstract class AbstractPolicyTest {
   val emptyAttributes:Map[String,TypedAttribute] = Map()
   val emptyStrAttributes:Map[String,String] = Map()
 
-  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
+  val dateCategoryDescriptor = new RangeCategoryDescriptor("datetime")
   val intCategoryDescriptor = new RangeCategoryDescriptor("int")
 
   val pair = new Pair(key=abPair, upstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)), downstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)))
@@ -119,9 +119,9 @@ abstract class AbstractPolicyTest {
                     Map("bizDate" -> DailyCategoryFunction),
                     Map("bizDate" -> IndividualCategoryFunction)),
     constraints = Seq(Seq(unconstrainedDate("bizDate")),
-                      Seq(DateRangeConstraint("bizDate", START_2010, END_2010)),
-                      Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)),
-                      Seq(DateRangeConstraint("bizDate", JUL_8_2010, endOfDay(JUL_8_2010)))),
+                      Seq(DateTimeRangeConstraint("bizDate", START_2010, END_2010)),
+                      Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)),
+                      Seq(DateTimeRangeConstraint("bizDate", JUL_8_2010, endOfDay(JUL_8_2010)))),
     attributes = Seq(Seq("2009"), Seq("2010"), Seq("2010-07"), Seq("2010-07-08")),
     downstreamAttributes = Seq(bizDateMap(JUN_6_2009_1), bizDateMap(JUL_8_2010_1)),
     valueKey = "bizDate",

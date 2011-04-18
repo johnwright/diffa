@@ -37,7 +37,7 @@ abstract case class DateCategoryFunction extends CategoryFunction {
     val (upper,lower) = pointToBounds(point)
     val (start,end) = align(upper,lower)
 
-    new DateRangeConstraint(categoryName, start, end)
+    new DateTimeRangeConstraint(categoryName, start, end)
   }
 
   def align(s:LocalDate, e:LocalDate) = (s.toDateTimeAtStartOfDay, e.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))

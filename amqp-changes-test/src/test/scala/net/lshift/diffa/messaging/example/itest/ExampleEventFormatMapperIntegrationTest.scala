@@ -44,7 +44,7 @@ class ExampleEventFormatMapperIntegrationTest {
     val serverRoot = "http://localhost:19095/diffa-agent"
     val diffClient = new DifferencesRestClient(serverRoot)
     val config = new ConfigurationRestClient(serverRoot)
-    val categories = Map("bizDate" -> new RangeCategoryDescriptor("date"))
+    val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
     config.declareGroup("g1")
     config.declareEndpoint("upstream",
