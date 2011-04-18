@@ -46,7 +46,7 @@ trait CategoryFunction {
    * Given the name of a valid partition, return a query constraint that will constrain a request to including
    * only data that exists with the partition.
    */
-  def constrain(categoryName:String, partition:String) : QueryConstraint
+  def constrain(constraint:QueryConstraint, partition:String) : QueryConstraint
 
   /**
    * Indicates whether this function supports bucketing.
@@ -67,7 +67,7 @@ trait CategoryFunction {
 case object IndividualCategoryFunction extends CategoryFunction {
   def name = "individual"
   def descend = None
-  def constrain(categoryName:String, partition:String) = new SetQueryConstraint(categoryName, Set(partition))
+  def constrain(constraint:QueryConstraint, partition:String) = new SetQueryConstraint(constraint.category, Set(partition))
   def shouldBucket() = false
   def owningPartition(value:String) = value
 }

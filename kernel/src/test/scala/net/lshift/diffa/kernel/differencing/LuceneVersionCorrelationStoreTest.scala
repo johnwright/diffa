@@ -282,7 +282,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.flush()
 
     val collector = new Collector
-    val digests = store.queryUpstreams(List(unconstrainedDate("bizDate")), collector.collectUpstream)
+    val digests = store.queryUpstreams(List(unconstrainedDateTime("bizDate")), collector.collectUpstream)
     assertEquals(
       List(
         UpstreamPairChangeEvent(VersionID(pair, "id6"), bizDateTimeSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6"),
@@ -298,7 +298,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.flush()
 
     val collector = new Collector
-    val digests = store.queryDownstreams(List(unconstrainedDate("bizDate")), collector.collectDownstream)
+    val digests = store.queryDownstreams(List(unconstrainedDateTime("bizDate")), collector.collectDownstream)
     assertEquals(
       List(
         DownstreamCorrelatedPairChangeEvent(VersionID(pair, "id6"), bizDateTimeSeq(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6"),

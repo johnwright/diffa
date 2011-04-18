@@ -45,8 +45,8 @@ object ConstraintGroupingTest {
       ),
       grouped = Seq(
         Seq(
-          unconstrainedDate("bizDate"),
-          unconstrainedDate("someInt")
+          unconstrainedDateTime("bizDate"),
+          unconstrainedDateTime("someInt")
         )
       )
     )
@@ -83,8 +83,8 @@ object ConstraintGroupingTest {
         "someString" -> new SetCategoryDescriptor(Set("A","B"))
       ),
       grouped = Seq(
-        Seq(unconstrainedDate("bizDate"), SetQueryConstraint("someString", Set("A"))),
-        Seq(unconstrainedDate("bizDate"), SetQueryConstraint("someString", Set("B")))
+        Seq(unconstrainedDateTime("bizDate"), SetQueryConstraint("someString", Set("A"))),
+        Seq(unconstrainedDateTime("bizDate"), SetQueryConstraint("someString", Set("B")))
       )
     )
 
@@ -97,23 +97,23 @@ object ConstraintGroupingTest {
         "someOtherString" -> new SetCategoryDescriptor(Set("1","2"))
       ),
       grouped = Seq(
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("A")),
             SetQueryConstraint("someOtherString", Set("1"))
         ),
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("A")),
             SetQueryConstraint("someOtherString", Set("2"))
         ),
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("B")),
             SetQueryConstraint("someOtherString", Set("1"))
         ),
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("B")),
             SetQueryConstraint("someOtherString", Set("2"))
         )

@@ -23,6 +23,11 @@ import scala.collection.JavaConversions._
 
 class StringPartitionTest {
 
+  val constraint = new QueryConstraint {
+    def category = "foo"
+    def wireFormat = null
+  }
+
   @Test
   def owningPartitionReturnsShortestPrefix {
     val spc = new StringPrefixCategoryFunction(prefixLength = 2, maxLength = 1, step = 1)
@@ -63,19 +68,19 @@ class StringPartitionTest {
   @Test
   def generatesConstraintForPartition {
     val spc = StringPrefixCategoryFunction(prefixLength = 2, maxLength = 2, step = 1)
-    assertEquals(PrefixQueryConstraint("foo", "xx"), spc.constrain("foo", "xx"))
+    assertEquals(PrefixQueryConstraint("foo", "xx"), spc.constrain(constraint, "xx"))
   }
 
   @Test
   def cannotConstrainWhenPartitionIsTooShort {
     val spc = StringPrefixCategoryFunction(prefixLength = 2, maxLength = 2, step = 1)
-    assertEquals(SetQueryConstraint("foo", Set("x")), spc.constrain("foo", "x"))
+    assertEquals(SetQueryConstraint("foo", Set("x")), spc.constrain(constraint, "x"))
   }
 
   @Test(expected = classOf[InvalidAttributeValueException])
   def cannotConstrainWhenPartitionIsTooLong {
     val spc = StringPrefixCategoryFunction(prefixLength = 2, maxLength = 2, step = 1)
-    spc.constrain("foo", "xxx")
+    spc.constrain(constraint, "xxx")
   }
 
   @Test

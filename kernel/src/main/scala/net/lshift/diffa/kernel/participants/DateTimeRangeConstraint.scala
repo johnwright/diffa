@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.{DateTime}
+import net.lshift.diffa.kernel.config.DateTimeTypeDescriptor
 
 /**
  * A constraint for a datetime-typed field that should have a <code>cat</code> field with its value between start and
@@ -33,4 +34,7 @@ import org.joda.time.{DateTime}
  *
  */
 case class DateTimeRangeConstraint(cat:String, start:DateTime, end:DateTime)
-    extends RangeQueryConstraint(cat, start.toString(), end.toString())
+    extends RangeQueryConstraint(cat, start.toString(), end.toString()) {
+
+  override def dataType = DateTimeTypeDescriptor
+}

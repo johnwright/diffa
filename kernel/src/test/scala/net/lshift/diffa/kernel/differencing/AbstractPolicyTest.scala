@@ -118,7 +118,7 @@ abstract class AbstractPolicyTest {
                     Map("bizDate" -> MonthlyCategoryFunction),
                     Map("bizDate" -> DailyCategoryFunction),
                     Map("bizDate" -> IndividualCategoryFunction)),
-    constraints = Seq(Seq(unconstrainedDate("bizDate")),
+    constraints = Seq(Seq(unconstrainedDateTime("bizDate")),
                       Seq(DateTimeRangeConstraint("bizDate", START_2010, END_2010)),
                       Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)),
                       Seq(DateTimeRangeConstraint("bizDate", JUL_8_2010, endOfDay(JUL_8_2010)))),

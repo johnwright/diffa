@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.frontend.wire.WireConstraint
 import net.lshift.diffa.kernel.frontend.wire.WireConstraint._
 import scala.collection.Map
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config._
 
 /**
  * Base type for all query constraints. Enforces that all constraints define the category they are constraining and
@@ -43,6 +44,11 @@ trait QueryConstraint {
    * convenient transmission over the wire.
    */
   def group : Seq[QueryConstraint] = Seq(this)
+
+  /**
+   * Defines the type information that this constraint can used in conjunction with
+   */
+  def dataType : TypeDescriptor = AnyTypeDescriptor
 }
 
 abstract case class BaseQueryConstraint(category:String) extends QueryConstraint
@@ -57,6 +63,8 @@ case class SetQueryConstraint(c:String, values:Set[String]) extends BaseQueryCon
    * #203: By default, set elements should be sent out individually - in the future, this may be configurable
    */
   override def group = values.map(v => SetQueryConstraint(c,Set(v))).toSeq
+
+  override def dataType = StringTypeDescriptor
 }
 
 /**
@@ -69,6 +77,7 @@ case class RangeQueryConstraint(c:String, lower:String, upper:String) extends Ba
 
 case class PrefixQueryConstraint(c: String, prefix: String) extends BaseQueryConstraint(c) {
   def wireFormat() = prefixConstraint(c, prefix)
+  override def dataType = StringTypeDescriptor
 }
 
 abstract case class NonValueConstraint(c:String) extends BaseQueryConstraint(c) {
@@ -91,7 +100,15 @@ case class NoConstraint(override val c:String) extends NonValueConstraint(c) {
  *   Utility builders
  */
 object EasyConstraints {
-  def unconstrainedDate(cat:String) = UnboundedRangeQueryConstraint(cat)
+  def unconstrainedDateTime(cat:String) = new UnboundedRangeQueryConstraint(cat) {
+    override def dataType = DateTimeTypeDescriptor
+  }
 
-  def unconstrainedInt(cat:String) = UnboundedRangeQueryConstraint(cat)
+  def unconstrainedDate(cat:String) = new UnboundedRangeQueryConstraint(cat) {
+    override def dataType = DateTypeDescriptor
+  }
+
+  def unconstrainedInt(cat:String) = new UnboundedRangeQueryConstraint(cat) {
+    override def dataType = IntegerTypeDescriptor
+  }
 }

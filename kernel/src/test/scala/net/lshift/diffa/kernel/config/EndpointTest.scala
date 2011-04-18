@@ -73,7 +73,7 @@ object EndpointTest {
 
   @DataPoints def unbounded =
     Array(
-      ConstraintExpectation("bizDateTime", new RangeCategoryDescriptor("datetime"), unconstrainedDate("bizDateTime")),
+      ConstraintExpectation("bizDateTime", new RangeCategoryDescriptor("datetime"), unconstrainedDateTime("bizDateTime")),
       ConstraintExpectation("someInt", new RangeCategoryDescriptor("int"), unconstrainedInt("someInt"))
    )
 

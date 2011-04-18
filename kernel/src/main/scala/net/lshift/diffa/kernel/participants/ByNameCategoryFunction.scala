@@ -25,6 +25,6 @@ case object ByNameCategoryFunction extends CategoryFunction {
   def shouldBucket() = true
   def owningPartition(value: String) = value
   def descend = Some(IndividualCategoryFunction)
-  def constrain(categoryName: String, partition: String) = SetQueryConstraint(categoryName, Set(partition))
+  def constrain(constraint:QueryConstraint, partition: String) = SetQueryConstraint(constraint.category, Set(partition))
 
 }

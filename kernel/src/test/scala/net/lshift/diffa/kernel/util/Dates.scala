@@ -16,7 +16,7 @@
 
 package net.lshift.diffa.kernel.util
 
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, DateTime}
 
 /**
  * Lots of constant dateTimes for use in tests.
@@ -81,4 +81,22 @@ object Dates {
   val END_JAN_2011 = new DateTime(2011, 1, 31, 23, 59, 59, 999)
   val AUG_11_2011_1 = new DateTime(2011, 8, 11, 12, 13, 0, 0)
   val END_2011 = new DateTime(2011, 12, 31, 23, 59, 59, 999)
+}
+
+object Dates2 {
+  val START_1995 = new LocalDate(1995, 1, 1)
+    val APR_1_1995 = new LocalDate(1995,4,1)
+      val APR_11_1995 = new LocalDate(1995,4,11)
+      val APR_12_1995 = new LocalDate(1995,4,12)
+    val APR_30_1995 = new LocalDate(1995,4,30)
+    val MAY_1_1995 = new LocalDate(1995,5,1)
+      val MAY_23_1995 = new LocalDate(1995,5,23)
+    val MAY_31_1995 = new LocalDate(1995,5,31)
+  val END_1995 = new LocalDate(1995,12,31)
+
+  val START_1996 = new LocalDate(1996, 1, 1)
+    val MAR_1_1996 = new LocalDate(1996,3,1)
+      val MAR_15_1996 = new LocalDate(1996,3,15)
+    val MAR_31_1996 = new LocalDate(1996,3,31)
+  val END_1996 = new LocalDate(1996, 12, 31)
 }

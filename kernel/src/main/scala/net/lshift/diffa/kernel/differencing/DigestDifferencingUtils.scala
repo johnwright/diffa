@@ -75,7 +75,7 @@ object DigestDifferencingUtils {
           if (bucketing.contains(c.category)) {
             val partition = partitions(c.category)
 
-            bucketing(c.category).constrain(c.category, partition)
+            bucketing(c.category).constrain(c, partition)
           } else {
             c
           }

@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.LocalDate
+import net.lshift.diffa.kernel.config.DateTypeDescriptor
 
 /**
  * A constraint for a Year-Month-Day-typed field that should have a <code>cat</code> field with its value between:
@@ -29,4 +30,7 @@ import org.joda.time.LocalDate
  * inclusively.
  */
 case class DateRangeConstraint(cat:String, start:LocalDate, end:LocalDate)
-  extends RangeQueryConstraint(cat, start.toString(), end.toString())
+  extends RangeQueryConstraint(cat, start.toString(), end.toString()) {
+
+  override def dataType = DateTypeDescriptor
+}

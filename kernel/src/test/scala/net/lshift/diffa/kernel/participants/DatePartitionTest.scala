@@ -19,8 +19,21 @@ package net.lshift.diffa.kernel.participants
 import org.junit.Test
 import org.junit.Assert._
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.config.{DateTimeTypeDescriptor, DateTypeDescriptor}
 
 class DatePartitionTest {
+
+  val dateTimeConstraint = new QueryConstraint {
+    def category = "someDateTime"
+    def wireFormat = null
+    override def dataType = DateTimeTypeDescriptor
+  }
+
+  val dateConstraint = new QueryConstraint {
+    def category = "someDate"
+    def wireFormat = null
+    override def dataType = DateTypeDescriptor
+  }
 
   @Test
   def dailyPartition = {
@@ -72,8 +85,13 @@ class DatePartitionTest {
     val expectedStart = new DateTime(1986, 01, 01, 0, 0, 0, 0)
     val expectedEnd = new DateTime(1987, 01, 01, 0, 0, 0, 0).minusMillis(1)
     assertEquals(Some(MonthlyCategoryFunction), YearlyCategoryFunction.descend)
-    assertEquals(DateTimeRangeConstraint("someDate", expectedStart, expectedEnd),
-      YearlyCategoryFunction.constrain("someDate", "1986"))
+    assertEquals(DateTimeRangeConstraint("someDateTime", expectedStart, expectedEnd),
+      YearlyCategoryFunction.constrain(dateTimeConstraint, "1986"))
+
+    val expectedStartAsLocal = expectedStart.toLocalDate
+    val expectedEndAsLocal = expectedEnd.toLocalDate
+    assertEquals(DateRangeConstraint("someDate", expectedStartAsLocal, expectedEndAsLocal),
+      YearlyCategoryFunction.constrain(dateConstraint, "1986"))
   }
 
 }
