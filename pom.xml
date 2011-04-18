@@ -45,6 +45,11 @@
     <logback.version>0.9.28</logback.version>
   </properties>
 
+  <scm>
+    <url>https://github.com/lshift/diffa</url>
+    <connection>scm:git:git://github.com/lshift/diffa.git</connection>
+  </scm>
+
   <distributionManagement>
     <repository>
       <id>nexus-oss</id>
