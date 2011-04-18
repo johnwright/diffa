@@ -95,7 +95,7 @@ abstract class AbstractPolicyTest {
   def Down(id: String, okey:String, o:Any, s1: String, s2: String): DownstreamVersion = Down(VersionID(abPair, id), okey, o, s1, s2)
   def Down(v:VersionID, okey:String, o:Any, s1:String, s2:String): DownstreamVersion = DownstreamVersion(v, Map(okey -> o.toString()), new DateTime, s1, s2)
 
-  def bizDateMap(d:DateTime) = Map("bizDate" -> DateAttribute(d))
+  def bizDateMap(d:DateTime) = Map("bizDate" -> DateTimeAttribute(d))
   def bizDateSeq(d:DateTime) = Seq(d.toString())
 
   case class PolicyTestData(

@@ -95,7 +95,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v1"))
 
     val actions = DigestDifferencingUtils.differenceEntities(dateOnlyAttrs, a, b, Seq(unconstrained))
-    val attributes = Map("bizDate" -> DateAttribute(JAN_1_2010))
+    val attributes = Map("bizDate" -> DateTimeAttribute(JAN_1_2010))
     assertEquals(HashSet(VersionMismatch("id1", attributes, JAN_1_2010, null, "v1")), HashSet(actions: _*))
   }
   
@@ -105,7 +105,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq()
 
     val actions = DigestDifferencingUtils.differenceEntities(dateOnlyAttrs, a, b, Seq(unconstrained))
-    val attributes = Map("bizDate" -> DateAttribute(JAN_1_2010))
+    val attributes = Map("bizDate" -> DateTimeAttribute(JAN_1_2010))
     assertEquals(HashSet(VersionMismatch("id1", attributes, JAN_1_2010, "v1", null)), HashSet(actions: _*))
   }
 
@@ -115,7 +115,7 @@ class DigestDifferencingUtilsTest {
     val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v2"))
 
     val actions = DigestDifferencingUtils.differenceEntities(dateOnlyAttrs, a, b, Seq(unconstrained))
-    val attributes = Map("bizDate" -> DateAttribute(JAN_1_2010))
+    val attributes = Map("bizDate" -> DateTimeAttribute(JAN_1_2010))
     assertEquals(HashSet(VersionMismatch("id1",  attributes, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
   }
 

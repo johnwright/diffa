@@ -17,26 +17,28 @@
 package net.lshift.diffa.kernel.config
 
 import org.joda.time.format.ISODateTimeFormat
-import net.lshift.diffa.kernel.participants.{DateTimeRangeConstraint, IntegerRangeConstraint, RangeQueryConstraint}
-import net.lshift.diffa.kernel.differencing.{StringAttribute, DateAttribute, IntegerAttribute}
+import net.lshift.diffa.kernel.differencing.{StringAttribute, DateTimeAttribute, IntegerAttribute}
+import net.lshift.diffa.kernel.participants.{DateRangeConstraint, DateTimeRangeConstraint, IntegerRangeConstraint, RangeQueryConstraint}
 
 /**
  * This is a simple registry that can hydrate category values based on a descriptor
  */
 object RangeCategoryParser {
 
-  def parseDate(s:String) = ISODateTimeFormat.dateTimeParser.parseDateTime(s) // TODO: Force Timezone
+  def parseDateTime(s:String) = ISODateTimeFormat.dateTimeParser.parseDateTime(s) // TODO: Force Timezone
+  def parseDate(s:String) = parseDateTime(s).toLocalDate
   def parseInt(s:String) = Integer.valueOf(s).intValue
 
   def typedAttribute(descriptor:RangeCategoryDescriptor, value:String) = descriptor.dataType match {
-    case "int"  => IntegerAttribute(parseInt(value))
-    case "datetime" => DateAttribute(parseDate(value))
-    case _      => StringAttribute(value)
+    case "int"      => IntegerAttribute(parseInt(value))
+    case "datetime" => DateTimeAttribute(parseDateTime(value))
+    case _          => StringAttribute(value)
   }
 
   def buildConstraint(name:String, descriptor:RangeCategoryDescriptor) = descriptor.dataType match {
-    case "int"  => IntegerRangeConstraint(name, parseInt(descriptor.lower), parseInt(descriptor.upper))
-    case "datetime" => DateTimeRangeConstraint(name, parseDate(descriptor.lower), parseDate(descriptor.upper))
-    case _      => RangeQueryConstraint(name, descriptor.lower, descriptor.upper)
+    case "int"      => IntegerRangeConstraint(name, parseInt(descriptor.lower), parseInt(descriptor.upper))
+    case "datetime" => DateTimeRangeConstraint(name, parseDateTime(descriptor.lower), parseDateTime(descriptor.upper))
+    case "date"     => DateRangeConstraint(name, parseDate(descriptor.lower), parseDate(descriptor.upper))
+    case _          => RangeQueryConstraint(name, descriptor.lower, descriptor.upper)
   }
 }

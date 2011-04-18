@@ -622,7 +622,7 @@ object AbstractDataDrivenPolicyTest {
 
     def toTyped(v:Any) = v match {
       case i:Int       => IntegerAttribute(i)
-      case dt:DateTime => DateAttribute(dt)
+      case dt:DateTime => DateTimeAttribute(dt)
       case _           => StringAttribute(v.toString)
     }
   }

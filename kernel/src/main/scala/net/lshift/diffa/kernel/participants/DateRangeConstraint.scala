@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.util
+package net.lshift.diffa.kernel.participants
 
-import org.joda.time.DateTime
+import org.joda.time.LocalDate
 
 /**
- * Utility methods that can be imported to help with working with dateTimes in tests.
+ * A constraint for a Year-Month-Day-typed field that should have a <code>cat</code> field with its value between:
+ *
+ * <li>
+ *   <ul>yyyy-MM-ddT00:00:00.000Z</ul>
+ *   <ul>yyyy-MM-ddT23:59:59.999Z</ul>
+ * </li>
+ *
+ * inclusively.
  */
-object DateUtils {
-  /**
-   * Forces the given date to be the very start of the day
-   */
-  def startOfDay(date:DateTime) = date.withMillisOfDay(0)
-
-  /**
-   * Returns the time just before the end of the day that start resides in.
-   */
-  def endOfDay(date:DateTime) = startOfDay(date).plusDays(1).minusMillis(1)
-}
+case class DateRangeConstraint(cat:String, start:LocalDate, end:LocalDate)
+  extends RangeQueryConstraint(cat, start.toString(), end.toString())

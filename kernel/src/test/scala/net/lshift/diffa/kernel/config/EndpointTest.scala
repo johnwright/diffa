@@ -20,12 +20,12 @@ import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
-import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{DateAttribute, IntegerAttribute}
+import net.lshift.diffa.kernel.differencing.{DateTimeAttribute, IntegerAttribute}
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory, DataPoints}
 import net.lshift.diffa.kernel.config.EndpointTest.ConstraintExpectation
-import net.lshift.diffa.kernel.participants.{IntegerRangeConstraint, DateTimeRangeConstraint, QueryConstraint}
+import net.lshift.diffa.kernel.participants.{IntegerRangeConstraint, DateTimeRangeConstraint, DateRangeConstraint, QueryConstraint}
+import org.joda.time.{LocalDate, DateTime}
 
 /**
  * Test cases for the Endpoint class.
@@ -59,8 +59,8 @@ class EndpointTest {
     val rightOrder = Seq("2011-01-26T10:24:00.000Z" /* abc */ ,"2011-01-26T10:36:00.000Z" /* def */, "55" /* xyz */)
 
     val schematized = Map("xyz_attribute" -> IntegerAttribute(55),
-                          "abc_attribute" -> DateAttribute(new DateTime(2011, 1, 26, 10, 24, 0, 0)),    // TODO: Specify timezone
-                          "def_attribute" -> DateAttribute(new DateTime(2011, 1, 26, 10, 36, 0, 0)))    // TODO: Specify timezone
+                          "abc_attribute" -> DateTimeAttribute(new DateTime(2011, 1, 26, 10, 24, 0, 0)),    // TODO: Specify timezone
+                          "def_attribute" -> DateTimeAttribute(new DateTime(2011, 1, 26, 10, 36, 0, 0)))    // TODO: Specify timezone
 
     var ep = new Endpoint{categories = categoryMap}
     assertEquals(schematized, ep.schematize(rightOrder))
@@ -73,18 +73,21 @@ object EndpointTest {
 
   @DataPoints def unbounded =
     Array(
-      ConstraintExpectation("bizDate", new RangeCategoryDescriptor("datetime"), unconstrainedDate("bizDate")),
+      ConstraintExpectation("bizDateTime", new RangeCategoryDescriptor("datetime"), unconstrainedDate("bizDateTime")),
       ConstraintExpectation("someInt", new RangeCategoryDescriptor("int"), unconstrainedInt("someInt"))
    )
 
   @DataPoints def bounded =
     Array(
-      ConstraintExpectation("bizDate",
+      ConstraintExpectation("bizDateTime",
         new RangeCategoryDescriptor("datetime", "2011-01-01", "2011-01-31"),
-        DateTimeRangeConstraint("bizDate", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,0,0,0,0))),
-      ConstraintExpectation("bizDate",
+        DateTimeRangeConstraint("bizDateTime", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,0,0,0,0))),
+      ConstraintExpectation("bizDateTime",
         new RangeCategoryDescriptor("datetime", "1998-11-21T00:00:00.000Z", "1998-11-29T00:00:00.000Z"),
-        DateTimeRangeConstraint("bizDate", new DateTime(1998,11,21,0,0,0,0), new DateTime(1998,11,29,0,0,0,0))),
+        DateTimeRangeConstraint("bizDateTime", new DateTime(1998,11,21,0,0,0,0), new DateTime(1998,11,29,0,0,0,0))),
+      ConstraintExpectation("bizDate",
+        new RangeCategoryDescriptor("date", "1992-10-19", "1992-10-22"),
+        DateRangeConstraint("bizDate", new LocalDate(1992,10,19), new LocalDate(1992,10,22))),
       ConstraintExpectation("someInt",
         new RangeCategoryDescriptor("int", "0", "9"),
         IntegerRangeConstraint("someInt", 0, 9))

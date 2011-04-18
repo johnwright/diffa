@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.util
 import org.joda.time.DateTime
 
 /**
- * Lots of constant dates for use in tests.
+ * Lots of constant dateTimes for use in tests.
  *
  * The convention used is:
  *   START_2010 indicates the very start of 1-Jan-2010;
