@@ -97,15 +97,8 @@ case class Endpoint(
     categories.map {
       case (name, categoryType) => {
         categoryType match {
-          case s:SetCategoryDescriptor   => name -> ByNameCategoryFunction
-          case r:RangeCategoryDescriptor => {
-            r.dataType match {
-              // TODO This should be in some kind of registry potentially
-              case "date"     => name -> YearlyCategoryFunction
-              case "datetime" => name -> YearlyCategoryFunction
-              case "int"      => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
-            }
-          }
+          case s:SetCategoryDescriptor    => name -> ByNameCategoryFunction
+          case r:RangeCategoryDescriptor  => name -> TypeRegistry.defaultCategoryFunction(r.dataType)
           case p:PrefixCategoryDescriptor => name -> StringPrefixCategoryFunction(p.prefixLength, p.maxLength, p.step)
         }
       }
@@ -132,13 +125,7 @@ case class Endpoint(
           case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, s.values.toSet))
           case r:RangeCategoryDescriptor => {
             if (r.lower == null && r.upper == null) {
-              // TODO This is in the wrong place
-              val range = r.dataType match {
-                case "date" => EasyConstraints.unconstrainedDate(name)
-                case "datetime" => EasyConstraints.unconstrainedDateTime(name)
-                case "int" => EasyConstraints.unconstrainedInt(name)
-              }
-              Some(range)
+              Some(TypeRegistry.unboundedConstraint(r.dataType, name))
             }
             else {
               Some(RangeCategoryParser.buildConstraint(name,r))
