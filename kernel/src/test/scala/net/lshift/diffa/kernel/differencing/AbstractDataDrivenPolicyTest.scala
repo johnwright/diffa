@@ -309,8 +309,6 @@ object AbstractDataDrivenPolicyTest {
   val intCategoryDescriptor = new RangeCategoryDescriptor("int")
   val stringCategoryDescriptor = new PrefixCategoryDescriptor(1, 3, 1)
 
-  def l(d:DateTime) = d.toLocalDate
-
   /**
    * As part of #203, elements of a set are sent out individually by default.
    * For the sake of simplicity, the old behaviour (to send them out as a batch) can not be configured.
