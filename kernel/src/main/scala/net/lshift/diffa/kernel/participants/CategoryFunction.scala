@@ -43,8 +43,11 @@ trait CategoryFunction {
   def descend : Option[CategoryFunction]
 
   /**
-   * Given the name of a valid partition, return a query constraint that will constrain a request to including
-   * only data that exists with the partition.
+   * Given the name of a valid partition, return a query constraint that will further constrain a request to include
+   * only data that exists with the partition. The constraint argument is a reference to the parent constraint
+   * that is used as the context within which a new constraint can be produced. Hence the returned constraint
+   * is the product of the constraint that caused this function to get executed together with the current level
+   * of partitioning.
    */
   def constrain(constraint:QueryConstraint, partition:String) : QueryConstraint
 
