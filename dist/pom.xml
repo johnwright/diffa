@@ -126,6 +126,14 @@
           </execution>
         </executions>
       </plugin>
+
+        <!-- We don't deploy this module - the generated artifacts are uploaded elsewhere -->
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>
