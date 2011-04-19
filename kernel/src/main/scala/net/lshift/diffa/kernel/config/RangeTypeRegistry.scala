@@ -21,12 +21,12 @@ import net.lshift.diffa.kernel.participants.{EasyConstraints, YearlyCategoryFunc
 
 
 /**
- * Simple registry to be able to dispatch by a data type.
+ * Simple registry to be allow to dispatching on RangeCategoryDescriptors by their data type.
  *
  * ATM this is not as strongly typed as it could be because the type is persisted as a string, but at least this
  * lookup is centralized.
  */
-object TypeRegistry {
+object RangeTypeRegistry {
 
   /**
    * Resolve the default category function for any given data type name

@@ -98,7 +98,7 @@ case class Endpoint(
       case (name, categoryType) => {
         categoryType match {
           case s:SetCategoryDescriptor    => name -> ByNameCategoryFunction
-          case r:RangeCategoryDescriptor  => name -> TypeRegistry.defaultCategoryFunction(r.dataType)
+          case r:RangeCategoryDescriptor  => name -> RangeTypeRegistry.defaultCategoryFunction(r.dataType)
           case p:PrefixCategoryDescriptor => name -> StringPrefixCategoryFunction(p.prefixLength, p.maxLength, p.step)
         }
       }
@@ -125,7 +125,7 @@ case class Endpoint(
           case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, s.values.toSet))
           case r:RangeCategoryDescriptor => {
             if (r.lower == null && r.upper == null) {
-              Some(TypeRegistry.unboundedConstraint(r.dataType, name))
+              Some(RangeTypeRegistry.unboundedConstraint(r.dataType, name))
             }
             else {
               Some(RangeCategoryParser.buildConstraint(name,r))
