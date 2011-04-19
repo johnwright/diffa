@@ -224,6 +224,14 @@
           </execution>
         </executions>
       </plugin>
+
+        <!-- We don't deploy this module - it is for testing only -->
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <reporting>
