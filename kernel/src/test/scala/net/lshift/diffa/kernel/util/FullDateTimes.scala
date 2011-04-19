@@ -100,3 +100,18 @@ object SimpleDates {
     val MAR_31_1996 = new LocalDate(1996,3,31)
   val END_1996 = new LocalDate(1996, 12, 31)
 }
+
+/**
+ * A mixture of LocalDates and DateTimes for use when testing DateTime constraints with LocalDate inputs
+ */
+object ConvenienceDateTimes {
+  val START_2023 = new LocalDate(2023, 1, 1)
+  val START_2023_FULL = new DateTime(2023, 1, 1, 0, 0, 0, 0)
+    val OCT_1_2023 = new DateTime(2023, 10, 1, 0, 0, 0, 0)
+    val OCT_17_2023_START = new DateTime(2023, 10, 17, 0, 0, 0, 0)
+    val OCT_17_2023       = new DateTime(2023, 10, 17, 12, 12, 12, 12)
+    val OCT_17_2023_END   = new DateTime(2023, 10, 17, 23, 59, 59, 999)
+    val OCT_31_2023 = new DateTime(2023, 10, 31, 23, 59, 59, 999)
+  val END_2023 = new LocalDate(2023, 12, 31)
+  val END_2023_FULL = new DateTime(2023, 12, 31, 23, 59, 59, 999)
+}

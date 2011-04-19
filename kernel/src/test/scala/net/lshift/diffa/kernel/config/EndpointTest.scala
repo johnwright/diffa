@@ -81,7 +81,7 @@ object EndpointTest {
     Array(
       ConstraintExpectation("bizDateTime",
         new RangeCategoryDescriptor("datetime", "2011-01-01", "2011-01-31"),
-        DateTimeRangeConstraint("bizDateTime", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,0,0,0,0))),
+        DateTimeRangeConstraint("bizDateTime", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,23,59,59,999))),
       ConstraintExpectation("bizDateTime",
         new RangeCategoryDescriptor("datetime", "1998-11-21T00:00:00.000Z", "1998-11-29T00:00:00.000Z"),
         DateTimeRangeConstraint("bizDateTime", new DateTime(1998,11,21,0,0,0,0), new DateTime(1998,11,29,0,0,0,0))),

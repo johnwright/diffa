@@ -25,6 +25,7 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import org.junit.runner.RunWith
 import net.lshift.diffa.kernel.util.FullDateTimes._
 import net.lshift.diffa.kernel.util.SimpleDates._
+import net.lshift.diffa.kernel.util.ConvenienceDateTimes._
 import org.junit.experimental.theories.{Theory, Theories, DataPoint}
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID
@@ -310,6 +311,11 @@ object AbstractDataDrivenPolicyTest {
   val stringCategoryDescriptor = new PrefixCategoryDescriptor(1, 3, 1)
 
   /**
+   * This is a DateTime descriptor that is initialized using LocalDates
+   */
+  val localDatePrimedDescriptor = new RangeCategoryDescriptor("datetime", START_2023.toString, END_2023.toString)
+
+  /**
    * As part of #203, elements of a set are sent out individually by default.
    * For the sake of simplicity, the old behaviour (to send them out as a batch) can not be configured.
    * Should any body ask for this, this behavior be may re-instated at some point.
@@ -421,6 +427,27 @@ object AbstractDataDrivenPolicyTest {
                   Vsn("id5", Map("bizDate" -> MAR_15_1996), "vsn5")
                 ))
             ))
+        ))
+    ))
+
+  /**
+   *  This scenario uses a constrained descriptor that is initialized with LocalDate
+   *  values but uses a full DateTime data type during its descent.
+   */
+  @DataPoint def yy_MM_dddd_dateTimesOnlyScenario = Scenario(
+    Pair(key = "tf",
+      upstream = new Endpoint(categories = Map("bizDateTime" -> localDatePrimedDescriptor)),
+      downstream = new Endpoint(categories = Map("bizDateTime" -> localDatePrimedDescriptor))),
+    AggregateTx(Map("bizDateTime" -> yearly), Seq(dateTimeRange("bizDateTime", START_2023_FULL, END_2023_FULL)),
+      Bucket("2023", Map("bizDateTime" -> "2023"),
+        AggregateTx(Map("bizDateTime" -> monthly), Seq(dateTimeRange("bizDateTime", START_2023_FULL, END_2023_FULL)),
+          Bucket("2023-10", Map("bizDateTime" -> "2023-10"),
+            AggregateTx(Map("bizDateTime" -> daily), Seq(dateTimeRange("bizDateTime", OCT_1_2023, OCT_31_2023)),
+              Bucket("2023-10-17", Map("bizDateTime" -> "2023-10-17"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", OCT_17_2023_START, OCT_17_2023_END)),
+                  Vsn("id1", Map("bizDateTime" -> OCT_17_2023), "vsn1")
+                ))
+           ))
         ))
     ))
 

@@ -16,14 +16,17 @@
 
 package net.lshift.diffa.kernel.config
 
-import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.differencing.{StringAttribute, DateTimeAttribute, IntegerAttribute}
 import net.lshift.diffa.kernel.participants.{DateRangeConstraint, DateTimeRangeConstraint, IntegerRangeConstraint, RangeQueryConstraint}
+import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat}
 
 /**
  * This is a simple registry that can hydrate category values based on a descriptor
  */
 object RangeCategoryParser {
+
+  val dateParsers = Array(ISODateTimeFormat.date().getParser)
+  protected val dateFormatter = new DateTimeFormatterBuilder().append( null, dateParsers ).toFormatter
 
   def parseDateTime(s:String) = ISODateTimeFormat.dateTimeParser.parseDateTime(s) // TODO: Force Timezone
   def parseDate(s:String) = parseDateTime(s).toLocalDate
@@ -35,9 +38,22 @@ object RangeCategoryParser {
     case _          => StringAttribute(value)
   }
 
+  // TODO Timezone handling may not be quite correct
   def buildConstraint(name:String, descriptor:RangeCategoryDescriptor) = descriptor.dataType match {
     case "int"      => IntegerRangeConstraint(name, parseInt(descriptor.lower), parseInt(descriptor.upper))
-    case "datetime" => DateTimeRangeConstraint(name, parseDateTime(descriptor.lower), parseDateTime(descriptor.upper))
+    case "datetime" => {
+      try {
+        // Attempt to parse a yyyy-MM-dd format and widen
+        val lower = dateFormatter.parseDateTime(descriptor.lower)
+        val upper = dateFormatter.parseDateTime(descriptor.upper).plusDays(1).minusMillis(1)
+        DateTimeRangeConstraint(name, lower, upper)
+      }
+      catch {
+        // The format is not yyyy-MM-dd, so don't widen
+        case e:IllegalArgumentException =>
+          DateTimeRangeConstraint(name, parseDateTime(descriptor.lower), parseDateTime(descriptor.upper))
+      }
+    }
     case "date"     => DateRangeConstraint(name, parseDate(descriptor.lower), parseDate(descriptor.upper))
     case _          => RangeQueryConstraint(name, descriptor.lower, descriptor.upper)
   }
