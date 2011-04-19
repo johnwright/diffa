@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.Assert._
 import collection.immutable.HashSet
 import net.lshift.diffa.kernel.util.DateUtils._
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 import net.lshift.diffa.kernel.participants._
 import collection.mutable.HashMap
 import org.joda.time.DateTime

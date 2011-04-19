@@ -23,8 +23,8 @@ import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import org.junit.runner.RunWith
-import net.lshift.diffa.kernel.util.Dates._
-import net.lshift.diffa.kernel.util.Dates2._
+import net.lshift.diffa.kernel.util.FullDateTimes._
+import net.lshift.diffa.kernel.util.SimpleDates._
 import org.junit.experimental.theories.{Theory, Theories, DataPoint}
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID

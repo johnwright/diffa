@@ -27,7 +27,7 @@ import org.junit.Test
 
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants.EasyConstraints._

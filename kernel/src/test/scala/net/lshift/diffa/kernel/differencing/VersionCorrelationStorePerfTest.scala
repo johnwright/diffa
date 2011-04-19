@@ -20,7 +20,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.hamcrest.CoreMatchers._
 import org.junit.{Test, Before}
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events._
 import org.slf4j.LoggerFactory

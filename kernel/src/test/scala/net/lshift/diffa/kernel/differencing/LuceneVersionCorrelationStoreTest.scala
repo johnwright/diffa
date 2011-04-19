@@ -20,7 +20,7 @@ import org.hibernate.cfg.Configuration
 import org.junit.{Before, Test}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.util.DateUtils._
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 import net.lshift.diffa.kernel.events._
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._

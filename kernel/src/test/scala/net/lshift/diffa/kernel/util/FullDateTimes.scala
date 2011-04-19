@@ -29,7 +29,7 @@ import org.joda.time.{LocalDate, DateTime}
  *   END_JUL_2010 indicates the very last millisecond of 31-Jul-2010;
  *   AUG_11_2011_1 indicates a (at time of writing) random time during 11-Aug-2011;
  */
-object Dates {
+object FullDateTimes {
   val NOV_1_2008 = new DateTime(2008, 11, 1, 0, 0, 0, 0)
   val DEC_1_2008 = new DateTime(2008, 12, 1, 0, 0, 0, 0)
 
@@ -83,7 +83,7 @@ object Dates {
   val END_2011 = new DateTime(2011, 12, 31, 23, 59, 59, 999)
 }
 
-object Dates2 {
+object SimpleDates {
   val START_1995 = new LocalDate(1995, 1, 1)
     val APR_1_1995 = new LocalDate(1995,4,1)
       val APR_11_1995 = new LocalDate(1995,4,11)
