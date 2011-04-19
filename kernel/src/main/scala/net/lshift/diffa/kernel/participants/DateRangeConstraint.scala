@@ -23,8 +23,8 @@ import net.lshift.diffa.kernel.config.DateTypeDescriptor
  * A constraint for a Year-Month-Day-typed field that should have a <code>cat</code> field with its value between:
  *
  * <li>
- *   <ul>yyyy-MM-ddT00:00:00.000Z</ul>
- *   <ul>yyyy-MM-ddT23:59:59.999Z</ul>
+ *   <ul>yyyy-MM-ddT00:00:00.000Z (applied to the lower bound)</ul>
+ *   <ul>yyyy-MM-ddT23:59:59.999Z (applied to the upper bound)</ul>
  * </li>
  *
  * inclusively.
