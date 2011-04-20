@@ -18,7 +18,11 @@ package net.lshift.diffa.kernel.participants
 
 import org.joda.time.LocalDate
 import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat, DateTimeFormatter, DateTimeFormat}
+import net.lshift.diffa.kernel.config.{DateTypeDescriptor,DateTimeTypeDescriptor}
 
+/**
+ * Provides basic functionality required to narrow down date based categories.
+ */
 abstract case class DateCategoryFunction extends CategoryFunction {
 
   val parsers = Array(
@@ -32,12 +36,17 @@ abstract case class DateCategoryFunction extends CategoryFunction {
   def descend:Option[CategoryFunction]
   def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
 
-  def constrain(categoryName:String, partition:String) = {
+  def constrain(constraint:QueryConstraint, partition:String) = {
     val point = pattern.parseDateTime(partition).toLocalDate
-    val (upper,lower) = pointToBounds(point)
-    val (start,end) = align(upper,lower)
+    val (lower,upper) = pointToBounds(point)
 
-    new DateRangeConstraint(categoryName, start, end)
+    constraint.dataType match {
+      case DateTypeDescriptor     =>
+        new DateRangeConstraint(constraint.category, lower, upper)
+      case DateTimeTypeDescriptor =>
+        val (start,end) = align(lower, upper)
+        new DateTimeRangeConstraint(constraint.category, start, end)
+    }
   }
 
   def align(s:LocalDate, e:LocalDate) = (s.toDateTimeAtStartOfDay, e.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))

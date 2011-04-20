@@ -27,7 +27,7 @@ import org.junit.Test
 
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
@@ -66,7 +66,7 @@ abstract class AbstractPolicyTest {
   val emptyAttributes:Map[String,TypedAttribute] = Map()
   val emptyStrAttributes:Map[String,String] = Map()
 
-  val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
+  val dateCategoryDescriptor = new RangeCategoryDescriptor("datetime")
   val intCategoryDescriptor = new RangeCategoryDescriptor("int")
 
   val pair = new Pair(key=abPair, upstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)), downstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)))
@@ -95,7 +95,7 @@ abstract class AbstractPolicyTest {
   def Down(id: String, okey:String, o:Any, s1: String, s2: String): DownstreamVersion = Down(VersionID(abPair, id), okey, o, s1, s2)
   def Down(v:VersionID, okey:String, o:Any, s1:String, s2:String): DownstreamVersion = DownstreamVersion(v, Map(okey -> o.toString()), new DateTime, s1, s2)
 
-  def bizDateMap(d:DateTime) = Map("bizDate" -> DateAttribute(d))
+  def bizDateMap(d:DateTime) = Map("bizDate" -> DateTimeAttribute(d))
   def bizDateSeq(d:DateTime) = Seq(d.toString())
 
   case class PolicyTestData(
@@ -118,10 +118,10 @@ abstract class AbstractPolicyTest {
                     Map("bizDate" -> MonthlyCategoryFunction),
                     Map("bizDate" -> DailyCategoryFunction),
                     Map("bizDate" -> IndividualCategoryFunction)),
-    constraints = Seq(Seq(unconstrainedDate("bizDate")),
-                      Seq(DateRangeConstraint("bizDate", START_2010, END_2010)),
-                      Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)),
-                      Seq(DateRangeConstraint("bizDate", JUL_8_2010, endOfDay(JUL_8_2010)))),
+    constraints = Seq(Seq(unconstrainedDateTime("bizDate")),
+                      Seq(DateTimeRangeConstraint("bizDate", START_2010, END_2010)),
+                      Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)),
+                      Seq(DateTimeRangeConstraint("bizDate", JUL_8_2010, endOfDay(JUL_8_2010)))),
     attributes = Seq(Seq("2009"), Seq("2010"), Seq("2010-07"), Seq("2010-07-08")),
     downstreamAttributes = Seq(bizDateMap(JUN_6_2009_1), bizDateMap(JUL_8_2010_1)),
     valueKey = "bizDate",

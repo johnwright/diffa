@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import java.io.Closeable
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.participants.QueryConstraint
-import org.joda.time.{DateTimeZone, DateTime}
+import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 
 /**
  * Store used for caching version correlation information between a pair of participants.
@@ -125,8 +125,11 @@ trait VersionCorrelationStoreFactory extends Closeable {
 
 abstract class TypedAttribute { def value:String }
 case class StringAttribute(value:String) extends TypedAttribute
-case class DateAttribute(date:DateTime) extends TypedAttribute {
+case class DateTimeAttribute(date:DateTime) extends TypedAttribute {
   def value = date.withZone(DateTimeZone.UTC).toString()
+}
+case class DateAttribute(date:LocalDate) extends TypedAttribute {
+  def value = date.toString()
 }
 case class IntegerAttribute(int:Int) extends TypedAttribute {
   def value = int.toString

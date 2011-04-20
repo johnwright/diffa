@@ -16,11 +16,21 @@
 
 package net.lshift.diffa.kernel.participants
 
-import org.joda.time.{DateTime}
+import org.joda.time.LocalDate
+import net.lshift.diffa.kernel.config.DateTypeDescriptor
 
 /**
- * A constraint for a date-typed field that should have a <code>cat</code> field with its value between start and
- * end (inclusive).
+ * A constraint for a Year-Month-Day-typed field that should have a <code>cat</code> field with its value between:
+ *
+ * <li>
+ *   <ul>yyyy-MM-ddT00:00:00.000Z (applied to the lower bound)</ul>
+ *   <ul>yyyy-MM-ddT23:59:59.999Z (applied to the upper bound)</ul>
+ * </li>
+ *
+ * inclusively.
  */
-case class DateRangeConstraint(cat:String, start:DateTime, end:DateTime)
-    extends RangeQueryConstraint(cat, start.toString(), end.toString())
+case class DateRangeConstraint(cat:String, start:LocalDate, end:LocalDate)
+  extends RangeQueryConstraint(cat, start.toString(), end.toString()) {
+
+  override def dataType = DateTypeDescriptor
+}

@@ -20,20 +20,20 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.hamcrest.CoreMatchers._
 import org.junit.{Test, Before}
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 import ch.qos.logback.classic.Level
-import net.lshift.diffa.kernel.participants.DateRangeConstraint
+import net.lshift.diffa.kernel.participants.DateTimeRangeConstraint
 
 /**
  * Performance test for the version correlation store.
  */
 
 class VersionCorrelationStorePerfTest {
-  private def attributes(idx:Int) = Map("bizDate" -> DateAttribute(JUL_8_2010_1.plusSeconds(idx)), "someInt" -> IntegerAttribute(idx))
+  private def attributes(idx:Int) = Map("bizDate" -> DateTimeAttribute(JUL_8_2010_1.plusSeconds(idx)), "someInt" -> IntegerAttribute(idx))
 
   @Before
   def checkPerformanceTestingEnabled {
@@ -65,7 +65,7 @@ class VersionCorrelationStorePerfTest {
     }
 
     withTiming("run unmatched version query") {
-      val res = stores(pairKey).unmatchedVersions(Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pairKey).unmatchedVersions(Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(vsnCount, res.length)
     }
@@ -79,7 +79,7 @@ class VersionCorrelationStorePerfTest {
     }
 
     withTiming("run unmatched version query (2)") {
-      val res = stores(pairKey).unmatchedVersions(Seq(DateRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pairKey).unmatchedVersions(Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(0, res.length)
     }

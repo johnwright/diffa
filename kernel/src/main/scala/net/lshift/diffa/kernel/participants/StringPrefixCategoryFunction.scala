@@ -36,14 +36,14 @@ case class StringPrefixCategoryFunction(prefixLength: Int,
     else
       Some(StringPrefixCategoryFunction(prefixLength + step, maxLength, step))
 
-  def constrain(categoryName: String, partition: String) =
+  def constrain(constraint: QueryConstraint, partition: String) =
     if (partition.length < prefixLength)
-      SetQueryConstraint(categoryName, Set(partition))
+      SetQueryConstraint(constraint.category, Set(partition))
     else if (partition.length > prefixLength)
       throw new InvalidAttributeValueException(
         "Partition value must be %d characters in length".format(prefixLength))
     else
-      PrefixQueryConstraint(categoryName, partition)
+      PrefixQueryConstraint(constraint.category, partition)
 
   val shouldBucket = true
 

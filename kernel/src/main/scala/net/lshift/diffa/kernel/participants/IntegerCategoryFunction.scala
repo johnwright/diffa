@@ -30,14 +30,14 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
       case e: NumberFormatException => throw new InvalidAttributeValueException("Value is not an integer: "+value)
     }
 
-  def constrain(categoryName:String, partition: String) = {
+  def constrain(constraint:QueryConstraint, partition: String) = {
     val parsedPartition = parseInt(partition)
     if (parsedPartition % denominator > 0) {
       throw new InvalidAttributeValueException("Partition "+partition+" does not match denominator "+denominator)
     }
     val start = parsedPartition
     val end = (parsedPartition + denominator - 1)
-    IntegerRangeConstraint(categoryName, start, end)
+    IntegerRangeConstraint(constraint.category, start, end)
   }
 }
 

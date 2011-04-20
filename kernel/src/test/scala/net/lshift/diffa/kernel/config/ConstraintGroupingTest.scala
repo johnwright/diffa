@@ -40,13 +40,13 @@ object ConstraintGroupingTest {
   @DataPoint def rangeOnly =
     GroupExpectation(
       categories = Map(
-        "bizDate" -> new RangeCategoryDescriptor("date"),
+        "bizDate" -> new RangeCategoryDescriptor("datetime"),
         "someInt" -> new RangeCategoryDescriptor("int")
       ),
       grouped = Seq(
         Seq(
-          unconstrainedDate("bizDate"),
-          unconstrainedDate("someInt")
+          unconstrainedDateTime("bizDate"),
+          unconstrainedDateTime("someInt")
         )
       )
     )
@@ -79,41 +79,41 @@ object ConstraintGroupingTest {
   @DataPoint def singleRangeAndSet =
     GroupExpectation(
       categories = Map(
-        "bizDate" -> new RangeCategoryDescriptor("date"),
+        "bizDate" -> new RangeCategoryDescriptor("datetime"),
         "someString" -> new SetCategoryDescriptor(Set("A","B"))
       ),
       grouped = Seq(
-        Seq(unconstrainedDate("bizDate"), SetQueryConstraint("someString", Set("A"))),
-        Seq(unconstrainedDate("bizDate"), SetQueryConstraint("someString", Set("B")))
+        Seq(unconstrainedDateTime("bizDate"), SetQueryConstraint("someString", Set("A"))),
+        Seq(unconstrainedDateTime("bizDate"), SetQueryConstraint("someString", Set("B")))
       )
     )
 
   @DataPoint def multipleRangesAndSets =
     GroupExpectation(
       categories = Map(
-        "bizDate" -> new RangeCategoryDescriptor("date"),
+        "bizDate" -> new RangeCategoryDescriptor("datetime"),
         "someInt" -> new RangeCategoryDescriptor("int"),
         "someString" -> new SetCategoryDescriptor(Set("A","B")),
         "someOtherString" -> new SetCategoryDescriptor(Set("1","2"))
       ),
       grouped = Seq(
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("A")),
             SetQueryConstraint("someOtherString", Set("1"))
         ),
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("A")),
             SetQueryConstraint("someOtherString", Set("2"))
         ),
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("B")),
             SetQueryConstraint("someOtherString", Set("1"))
         ),
-        Seq(unconstrainedDate("bizDate"),
-            unconstrainedDate("someInt"),
+        Seq(unconstrainedDateTime("bizDate"),
+            unconstrainedDateTime("someInt"),
             SetQueryConstraint("someString", Set("B")),
             SetQueryConstraint("someOtherString", Set("2"))
         )

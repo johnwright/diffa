@@ -97,13 +97,8 @@ case class Endpoint(
     categories.map {
       case (name, categoryType) => {
         categoryType match {
-          case s:SetCategoryDescriptor   => name -> ByNameCategoryFunction
-          case r:RangeCategoryDescriptor => {
-            r.dataType match {
-              case "date" => name -> YearlyCategoryFunction
-              case "int"  => name -> AutoNarrowingIntegerCategoryFunction(1000, 10)
-            }
-          }
+          case s:SetCategoryDescriptor    => name -> ByNameCategoryFunction
+          case r:RangeCategoryDescriptor  => name -> RangeTypeRegistry.defaultCategoryFunction(r.dataType)
           case p:PrefixCategoryDescriptor => name -> StringPrefixCategoryFunction(p.prefixLength, p.maxLength, p.step)
         }
       }
@@ -130,7 +125,7 @@ case class Endpoint(
           case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, s.values.toSet))
           case r:RangeCategoryDescriptor => {
             if (r.lower == null && r.upper == null) {
-              Some(UnboundedRangeQueryConstraint(name))
+              Some(RangeTypeRegistry.unboundedConstraint(r.dataType, name))
             }
             else {
               Some(RangeCategoryParser.buildConstraint(name,r))

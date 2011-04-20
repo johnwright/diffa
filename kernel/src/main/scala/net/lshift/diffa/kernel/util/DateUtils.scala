@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.util
 import org.joda.time.DateTime
 
 /**
- * Utility methods that can be imported to help with working with dates in tests. 
+ * Utility methods that can be imported to help with working with dateTimes in tests.
  */
 object DateUtils {
   /**
