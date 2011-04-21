@@ -18,8 +18,8 @@ package net.lshift.diffa.kernel.participants
 
 import org.junit.Test
 import org.junit.Assert._
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.config.{DateTimeTypeDescriptor, DateTypeDescriptor}
+import org.joda.time.{LocalDate, DateTime}
 
 class DatePartitionTest {
 
@@ -73,6 +73,12 @@ class DatePartitionTest {
     val function = DailyCategoryFunction
     val partition = function.owningPartition(date)
     assertEquals("1998-11-21", partition)
+  }
+
+  @Test
+  def shouldNotWidenConstrainedRange = {
+    val constraint = DateRangeConstraint("someDate", new LocalDate(1979,7,3), new LocalDate(1979,8,15))
+    assertEquals(constraint, YearlyCategoryFunction.constrain(dateTimeConstraint, "1979"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])
