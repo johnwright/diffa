@@ -111,6 +111,8 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       val localDigests = getAggregates(pair.key, bucketing, constraints)
 
       if (log.isTraceEnabled) {
+        log.trace("Bucketing: %s".format(bucketing))
+        log.trace("Constraints: %s".format(constraints))
         log.trace("Remote digests: %s".format(remoteDigests))
         log.trace("Local digests: %s".format(localDigests))
       }
