@@ -40,12 +40,22 @@ abstract case class DateCategoryFunction extends CategoryFunction {
     val point = pattern.parseDateTime(partition).toLocalDate
     val (lower,upper) = pointToBounds(point)
 
-    constraint.dataType match {
-      case DateTypeDescriptor     =>
-        new DateRangeConstraint(constraint.category, lower, upper)
-      case DateTimeTypeDescriptor =>
-        val (start,end) = align(lower, upper)
-        new DateTimeRangeConstraint(constraint.category, start, end)
+    // TODO converting this eagerly to DateTime is not strictly necessary for every code branch
+    val (start,end) = align(lower, upper)
+
+    constraint match {
+      case d:DateRangeConstraint
+        if d.start != null && d.end != null && (d.start.isAfter(lower) || d.end.isBefore(upper)) => d
+      case t:DateTimeRangeConstraint
+        if t.start != null && t.end != null && (t.start.isAfter(start) || t.end.isBefore(end)) => t
+      case _ =>
+         constraint.dataType match {
+          case DateTypeDescriptor     =>
+            new DateRangeConstraint(constraint.category, lower, upper)
+          case DateTimeTypeDescriptor =>
+            val (start,end) = align(lower, upper)
+            new DateTimeRangeConstraint(constraint.category, start, end)
+        }
     }
   }
 

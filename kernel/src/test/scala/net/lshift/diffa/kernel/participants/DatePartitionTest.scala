@@ -78,7 +78,7 @@ class DatePartitionTest {
   @Test
   def shouldNotWidenConstrainedRange = {
     val constraint = DateRangeConstraint("someDate", new LocalDate(1979,7,3), new LocalDate(1979,8,15))
-    assertEquals(constraint, YearlyCategoryFunction.constrain(dateTimeConstraint, "1979"))
+    assertEquals(constraint, YearlyCategoryFunction.constrain(constraint, "1979"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])
