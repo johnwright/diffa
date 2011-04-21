@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory
  */
 trait VersionCorrelationStore extends Closeable {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  val logger = LoggerFactory.getLogger(classOf[VersionCorrelationStore])
 
   type UpstreamVersionHandler = (VersionID, Map[String, String], DateTime, String) => Unit
   type DownstreamVersionHandler = (VersionID, Map[String, String], DateTime, String, String) => Unit
