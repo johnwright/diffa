@@ -40,16 +40,30 @@ abstract case class DateCategoryFunction extends CategoryFunction {
     val point = pattern.parseDateTime(partition).toLocalDate
     val (lower,upper) = pointToBounds(point)
 
-    constraint.dataType match {
-      case DateTypeDescriptor     =>
-        new DateRangeConstraint(constraint.category, lower, upper)
-      case DateTimeTypeDescriptor =>
-        val (start,end) = align(lower, upper)
-        new DateTimeRangeConstraint(constraint.category, start, end)
+    constraint match {
+      case d:DateRangeConstraint
+        if d.start != null && d.end != null
+            && (d.start.isAfter(lower) || d.end.isBefore(upper)) => d
+      case t:DateTimeRangeConstraint
+        if t.start != null && t.end != null
+            && (t.start.isAfter(sod(lower)) || t.end.isBefore(eod(upper))) => t
+      case _ =>
+         constraint.dataType match {
+          case DateTypeDescriptor     => new DateRangeConstraint(constraint.category, lower, upper)
+          case DateTimeTypeDescriptor => new DateTimeRangeConstraint(constraint.category, sod(lower), eod(upper))
+        }
     }
   }
 
-  def align(s:LocalDate, e:LocalDate) = (s.toDateTimeAtStartOfDay, e.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
+  /**
+   * Convert to a DateTime using zero o'clock, i.e. the start of the day
+   */
+  def sod(d:LocalDate) = d.toDateTimeAtStartOfDay
+
+  /**
+   * Convert to a DateTime using a millisecond before the next day, i.e. the end of the day
+   */
+  def eod(d:LocalDate) = d.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1)
 
   def shouldBucket() = true
 
