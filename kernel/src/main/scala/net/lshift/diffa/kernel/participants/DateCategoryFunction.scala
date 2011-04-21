@@ -36,11 +36,11 @@ abstract case class DateCategoryFunction extends CategoryFunction {
   def descend:Option[CategoryFunction]
   def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
 
-  def constrain(constraint:QueryConstraint, partition:String) = {
+  def constrain(parent:QueryConstraint, partition:String) = {
     val point = pattern.parseDateTime(partition).toLocalDate
     val (lower,upper) = pointToBounds(point)
 
-    constraint match {
+    parent match {
       case d:DateRangeConstraint
         if d.start != null && d.end != null
             && (d.start.isAfter(lower) || d.end.isBefore(upper)) => d
@@ -48,9 +48,9 @@ abstract case class DateCategoryFunction extends CategoryFunction {
         if t.start != null && t.end != null
             && (t.start.isAfter(sod(lower)) || t.end.isBefore(eod(upper))) => t
       case _ =>
-         constraint.dataType match {
-          case DateTypeDescriptor     => new DateRangeConstraint(constraint.category, lower, upper)
-          case DateTimeTypeDescriptor => new DateTimeRangeConstraint(constraint.category, sod(lower), eod(upper))
+         parent.dataType match {
+          case DateTypeDescriptor     => new DateRangeConstraint(parent.category, lower, upper)
+          case DateTimeTypeDescriptor => new DateTimeRangeConstraint(parent.category, sod(lower), eod(upper))
         }
     }
   }
