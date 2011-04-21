@@ -22,9 +22,9 @@ import collection.immutable.HashSet
 import net.lshift.diffa.kernel.util.DateUtils._
 import net.lshift.diffa.kernel.util.FullDateTimes._
 import net.lshift.diffa.kernel.participants._
-import collection.mutable.HashMap
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import collection.mutable.{ArrayBuffer, Buffer, HashMap}
+import org.joda.time.{LocalDate, DateTime}
 
 /**
  * Test cases for the DigestDifferencingUtils object.
@@ -43,6 +43,24 @@ class DigestDifferencingUtilsTest {
 
   def bizDateMapper(d: Digest) = {
     HashMap("bizDateTime" -> d.attributes(0))
+  }
+
+  @Test
+  def dateRangeShouldNotWiden = {
+    val dateConstraint = DateRangeConstraint("bizDate", new LocalDate(2011,04,01), new LocalDate(2011,04,29))
+    val bucketing = Map("bizDate" -> YearlyCategoryFunction)
+
+    val remote = ArrayBuffer(AggregateDigest(Buffer("2011"),"2abbcf10cf9ae11c53191eaf8b121104"))
+    val local = List(AggregateDigest(List("2011"),"ae15bc55642738b49b0bad51c420e33b"))
+    val actions = DigestDifferencingUtils.differenceAggregates(remote,local,bucketing, Seq(dateConstraint))
+
+    assertEquals(1, actions.length)
+
+    val queryAction = actions(0).asInstanceOf[AggregateQueryAction]
+
+    assertEquals(1, queryAction.constraints.length)
+    assertEquals(dateConstraint, queryAction.constraints(0))
+
   }
 
   @Test
