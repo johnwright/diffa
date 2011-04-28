@@ -694,9 +694,10 @@ object AbstractDataDrivenPolicyTest {
     def toString(indent:Int) = (" " * indent) + "Vsn(" + id + ", " + attrs + ", " + vsn + ")\n"
 
     def toTyped(v:Any) = v match {
-      case i:Int       => IntegerAttribute(i)
-      case dt:DateTime => DateTimeAttribute(dt)
-      case _           => StringAttribute(v.toString)
+      case i:Int        => IntegerAttribute(i)
+      case dt:DateTime  => DateTimeAttribute(dt)
+      case dt:LocalDate => DateAttribute(dt)
+      case _            => StringAttribute(v.toString)
     }
   }
 }

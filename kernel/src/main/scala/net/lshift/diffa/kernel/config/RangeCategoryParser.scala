@@ -16,14 +16,17 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.differencing.{StringAttribute, DateTimeAttribute, IntegerAttribute}
 import net.lshift.diffa.kernel.participants.{DateRangeConstraint, DateTimeRangeConstraint, IntegerRangeConstraint, RangeQueryConstraint}
 import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat}
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, DateTimeAttribute, IntegerAttribute}
 
 /**
  * This is a simple registry that can hydrate category values based on a descriptor
  */
 object RangeCategoryParser {
+
+  val log = LoggerFactory.getLogger(getClass)
 
   val dateParsers = Array(ISODateTimeFormat.date().getParser)
   protected val dateFormatter = new DateTimeFormatterBuilder().append( null, dateParsers ).toFormatter
@@ -34,8 +37,11 @@ object RangeCategoryParser {
 
   def typedAttribute(descriptor:RangeCategoryDescriptor, value:String) = descriptor.dataType match {
     case "int"      => IntegerAttribute(parseInt(value))
+    case "date"     => DateAttribute(parseDate(value))
     case "datetime" => DateTimeAttribute(parseDateTime(value))
-    case _          => StringAttribute(value)
+    case t          =>
+      log.warn("Casting value %s (which has the configured type %s) to a string".format(value,t))
+      StringAttribute(value)
   }
 
   // TODO Timezone handling may not be quite correct
