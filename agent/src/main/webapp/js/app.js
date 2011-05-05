@@ -18,6 +18,7 @@
 
 // config you can change
 var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport
+	MAX_BLOB_SIZE = 30,
 	INTERVAL_MINS = 15, // the x-axis increments that difference events are bucketed into
 	DEFAULT_TIMESPAN_HOURS = 12, // how many hours the heatmap should show by default
 	POLL_SECS = 1, // how often the server is polled for new events
@@ -417,6 +418,14 @@ function clearBlobs() {
 	config.blobs = [];
 }
 
+function limitBlobSize(value)	{
+	if(value > MAX_BLOB_SIZE)	{
+		return MAX_BLOB_SIZE;
+	}
+
+	return value;
+}
+
 function drawBlobs() {
 	var config = startPolling.config,
 		paper = config.axisxPaper,
@@ -446,7 +455,7 @@ function drawBlobs() {
 			var currCluster = clusters[clusterCount],
 				value = currCluster.length,
 				axisxInc = currCluster.axisxInc,
-				R = Math.max(max*(value/10),5), //JRL: max is not giving nice big sizes, so we're not using it as an upper limit for now. TO-DO: decide on a way to limit or appropriately adjust blob sizes
+				R = limitBlobSize(value),
 				//offset = (currCluster[currCluster.length-1].detectedAt-(config.now-axisxInc*INTERVAL_MS))/(INTERVAL_MS),
 				//dx = X*axisxInc + X*offset,
 				dx = axisxWidth*(currCluster.detectedAt-xLimit)/xRange;
