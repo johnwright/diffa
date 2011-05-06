@@ -22,7 +22,7 @@ import java.io.IOException
  * Exception thrown when by AMQP RPC clients when a response is not received within a fixed
  * period of time.
  */
-case class ReceiveTimeoutException(timeoutMillis: Long) extends IOException {
+case class ReceiveTimeoutException(queueName:String, endpoint:String, timeoutMillis: Long) extends IOException {
 
-  override def getMessage = "Receive timed out after %dms".format(timeoutMillis)
+  override def getMessage = "Receive (%s - %s) timed out after %dms".format(queueName, endpoint, timeoutMillis)
 }

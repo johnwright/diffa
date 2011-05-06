@@ -31,8 +31,8 @@ import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import collection.mutable.{ListBuffer, HashMap, HashSet}
 import net.lshift.diffa.kernel.differencing._
 import org.apache.lucene.document._
-import org.joda.time.{DateTimeZone, DateTime}
 import net.lshift.diffa.kernel.config.ConfigStore
+import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
@@ -110,6 +110,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
       case u:UnboundedRangeQueryConstraint =>   // No constraints to add
       case r:RangeQueryConstraint          => {
         val tq = r match {
+          case DateTimeRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDateTime(lowerDate), formatDateTime(upperDate), true, true)
           case DateRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDate(lowerDate), formatDate(upperDate), true, true)
           case IntegerRangeConstraint(category, lowerInt, upperInt) => NumericRangeQuery.newIntRange(prefix + category, lowerInt, upperInt, true, true)
         }
@@ -214,7 +215,8 @@ object LuceneVersionCorrelationStore {
     }
   }
 
-  def formatDate(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
+  def formatDateTime(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
+  def formatDate(dt:LocalDate) = dt.toString
 }
 
 class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrelationWriter {
@@ -228,7 +230,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
   private val deletedDocs = HashSet[VersionID]()
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
-    log.debug("Indexing " + id + " with attributes: " + attributes)
+    log.trace("Indexing upstream " + id + " with attributes: " + attributes)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
@@ -237,7 +239,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
   }
 
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
-    log.debug("Indexing " + id + " with attributes: " + attributes)
+    log.trace("Indexing downstream " + id + " with attributes: " + attributes)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
@@ -348,7 +350,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
     // Update the lastUpdated field
     val oldLastUpdate = parseDate(doc.get("lastUpdated"))
     if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
-      updateField(doc, dateField("lastUpdated", lastUpdated, indexed = false))
+      updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
     }
 
     // Update the matched status
@@ -356,7 +358,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
     updateField(doc, boolField("isMatched", isMatched))
 
     // Update the timestamp
-    updateField(doc, dateField("timestamp", new DateTime, indexed = false))
+    updateField(doc, dateTimeField("timestamp", new DateTime, indexed = false))
 
     prepareUpdate(id, doc)
 
@@ -397,6 +399,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
       val vF = v match {
         case StringAttribute(s)     => stringField(prefix + k, s)
         case DateAttribute(dt)      => dateField(prefix + k, dt)
+        case DateTimeAttribute(dt)  => dateTimeField(prefix + k, dt)
         case IntegerAttribute(intV) => intField(prefix + k, intV)
       }
       updateField(doc, vF)
@@ -410,7 +413,9 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrela
 
   private def stringField(name:String, value:String, indexed:Boolean = true) =
     new Field(name, value, Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
-  private def dateField(name:String, dt:DateTime, indexed:Boolean = true) =
+  private def dateTimeField(name:String, dt:DateTime, indexed:Boolean = true) =
+    new Field(name, formatDateTime(dt), Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
+  private def dateField(name:String, dt:LocalDate, indexed:Boolean = true) =
     new Field(name, formatDate(dt), Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
   private def intField(name:String, value:Int, indexed:Boolean = true) =
     (new NumericField(name, Field.Store.YES, indexed)).setIntValue(value)

@@ -19,12 +19,16 @@ package net.lshift.diffa.kernel.differencing
 import java.io.Closeable
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.participants.QueryConstraint
-import org.joda.time.{DateTimeZone, DateTime}
+import org.joda.time.{LocalDate, DateTimeZone, DateTime}
+import org.slf4j.LoggerFactory
 
 /**
  * Store used for caching version correlation information between a pair of participants.
  */
 trait VersionCorrelationStore extends Closeable {
+
+  val logger = LoggerFactory.getLogger(classOf[VersionCorrelationStore])
+
   type UpstreamVersionHandler = (VersionID, Map[String, String], DateTime, String) => Unit
   type DownstreamVersionHandler = (VersionID, Map[String, String], DateTime, String, String) => Unit
 
@@ -55,7 +59,12 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryUpstreams(constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler):Unit = {
     queryUpstreams(constraints).foreach(c => {
-      handler(VersionID(c.pairing, c.id), c.upstreamAttributes.toMap, c.lastUpdate, c.upstreamVsn)
+      val version = VersionID(c.pairing, c.id)
+      val attributes = c.upstreamAttributes.toMap
+      if (logger.isTraceEnabled) {
+        logger.trace("US: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn))
+      }
+      handler(version, attributes, c.lastUpdate, c.upstreamVsn)
     })
   }
 
@@ -64,6 +73,11 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryDownstreams(constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) : Unit = {
     queryDownstreams(constraints).foreach(c => {
+      val version = VersionID(c.pairing, c.id)
+      val attributes = c.downstreamAttributes.toMap
+      if (logger.isTraceEnabled) {
+        logger.trace("DS: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s; dvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn, c.downstreamDVsn))
+      }
       handler(VersionID(c.pairing, c.id), c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }
@@ -125,8 +139,11 @@ trait VersionCorrelationStoreFactory extends Closeable {
 
 abstract class TypedAttribute { def value:String }
 case class StringAttribute(value:String) extends TypedAttribute
-case class DateAttribute(date:DateTime) extends TypedAttribute {
+case class DateTimeAttribute(date:DateTime) extends TypedAttribute {
   def value = date.withZone(DateTimeZone.UTC).toString()
+}
+case class DateAttribute(date:LocalDate) extends TypedAttribute {
+  def value = date.toString()
 }
 case class IntegerAttribute(int:Int) extends TypedAttribute {
   def value = int.toString

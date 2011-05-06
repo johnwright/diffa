@@ -58,7 +58,7 @@ class AmqpRpcClient(connector: Connector, queueName: String)
 
   def call(endpoint: String, payload: String, timeout: Long = defaultTimeout): String = {
     if (log.isDebugEnabled) {
-      log.debug("%s: %s".format(endpoint, payload))
+      log.debug("%s / %s: %s".format(queueName, endpoint, payload))
     }
 
     val msg = messaging.createMessage()
@@ -80,7 +80,7 @@ class AmqpRpcClient(connector: Connector, queueName: String)
       val remainingTime = endTime - System.currentTimeMillis
       val reply = messaging.receive(if (remainingTime < 0) 0 else remainingTime)
       if (reply == null)
-        throw new ReceiveTimeoutException(timeout)
+        throw new ReceiveTimeoutException(queueName, endpoint, timeout)
 
       // if the reply doesn't have the right correlation ID, loop
       if (reply.getCorrelationId == msg.getMessageId) {
@@ -99,7 +99,7 @@ class AmqpRpcClient(connector: Connector, queueName: String)
                    .format(reply.getCorrelationId, msg.getMessageId))
       }
     }
-    throw new ReceiveTimeoutException(timeout)
+    throw new ReceiveTimeoutException(queueName, endpoint, timeout)
   }
 
   def close() {

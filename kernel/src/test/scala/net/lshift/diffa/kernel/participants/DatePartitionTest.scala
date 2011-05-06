@@ -18,9 +18,22 @@ package net.lshift.diffa.kernel.participants
 
 import org.junit.Test
 import org.junit.Assert._
-import org.joda.time.DateTime
+import net.lshift.diffa.kernel.config.{DateTimeTypeDescriptor, DateTypeDescriptor}
+import org.joda.time.{LocalDate, DateTime}
 
 class DatePartitionTest {
+
+  val dateTimeConstraint = new QueryConstraint {
+    def category = "someDateTime"
+    def wireFormat = null
+    override def dataType = DateTimeTypeDescriptor
+  }
+
+  val dateConstraint = new QueryConstraint {
+    def category = "someDate"
+    def wireFormat = null
+    override def dataType = DateTypeDescriptor
+  }
 
   @Test
   def dailyPartition = {
@@ -46,6 +59,34 @@ class DatePartitionTest {
     assertEquals("1998", partition)
   }
 
+  @Test
+  def shouldParseFullIsoDate = {
+    val date = "1998-11-21T15:49:55.000Z"
+    val function = DailyCategoryFunction
+    val partition = function.owningPartition(date)
+    assertEquals("1998-11-21", partition)
+  }
+
+  @Test
+  def shouldParseYYYYMMddDate = {
+    val date = "1998-11-21"
+    val function = DailyCategoryFunction
+    val partition = function.owningPartition(date)
+    assertEquals("1998-11-21", partition)
+  }
+
+  @Test
+  def shouldNotWidenConstrainedRangeForYearlyPartition = {
+    val constraint = DateRangeConstraint("someDate", new LocalDate(1979,7,3), new LocalDate(1979,8,15))
+    assertEquals(constraint, YearlyCategoryFunction.constrain(constraint, "1979"))
+  }
+
+  @Test
+  def shouldNotWidenConstrainedRangeForMonthlyPartition = {
+    val constraint = DateRangeConstraint("someDate", new LocalDate(1991,2,2), new LocalDate(1991,2,27))
+    assertEquals(constraint, MonthlyCategoryFunction.constrain(constraint, "1991-02"))
+  }
+
   @Test(expected=classOf[InvalidAttributeValueException])
   def shouldThrowInvalidCategoryExceptionIfValueIsNotDate {
     DailyCategoryFunction.owningPartition("NOT_A_DATE")
@@ -56,8 +97,13 @@ class DatePartitionTest {
     val expectedStart = new DateTime(1986, 01, 01, 0, 0, 0, 0)
     val expectedEnd = new DateTime(1987, 01, 01, 0, 0, 0, 0).minusMillis(1)
     assertEquals(Some(MonthlyCategoryFunction), YearlyCategoryFunction.descend)
-    assertEquals(DateRangeConstraint("someDate", expectedStart, expectedEnd),
-      YearlyCategoryFunction.constrain("someDate", "1986"))
+    assertEquals(DateTimeRangeConstraint("someDateTime", expectedStart, expectedEnd),
+      YearlyCategoryFunction.constrain(dateTimeConstraint, "1986"))
+
+    val expectedStartAsLocal = expectedStart.toLocalDate
+    val expectedEndAsLocal = expectedEnd.toLocalDate
+    assertEquals(DateRangeConstraint("someDate", expectedStartAsLocal, expectedEndAsLocal),
+      YearlyCategoryFunction.constrain(dateConstraint, "1986"))
   }
 
 }

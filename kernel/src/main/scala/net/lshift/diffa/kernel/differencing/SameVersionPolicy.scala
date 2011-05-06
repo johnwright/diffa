@@ -20,7 +20,7 @@ package net.lshift.diffa.kernel.differencing
 import java.lang.String
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events._
-import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
+import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore, Pair}
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -33,11 +33,7 @@ import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
 class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore) {
 
-  def synchroniseParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
-    // Sync the two halves
-    (new UpstreamSyncStrategy).syncHalf(pair, writer, pair.upstream, pair.upstream.defaultBucketing, pair.upstream.defaultConstraints, us)
-    (new DownstreamSameSyncStrategy).syncHalf(pair, writer, pair.downstream, pair.downstream.defaultBucketing, pair.downstream.defaultConstraints, ds)
-  }
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) = new DownstreamSameSyncStrategy
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {

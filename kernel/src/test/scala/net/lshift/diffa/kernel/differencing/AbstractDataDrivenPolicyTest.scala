@@ -23,13 +23,15 @@ import org.apache.commons.codec.digest.DigestUtils
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import org.junit.runner.RunWith
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
+import net.lshift.diffa.kernel.util.SimpleDates._
+import net.lshift.diffa.kernel.util.ConvenienceDateTimes._
 import org.junit.experimental.theories.{Theory, Theories, DataPoint}
-import org.joda.time.DateTime
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config.CategoryDescriptor._
 import net.lshift.diffa.kernel.config._
+import org.joda.time.{LocalDate, DateTime}
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -70,14 +72,16 @@ abstract class AbstractDataDrivenPolicyTest {
   def shouldStopAtTopLevelWhenTopLevelBucketsMatch(scenario:Scenario) {
     setupStubs(scenario)
 
-    expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
-    expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
+    scenario.tx.foreach { tx =>
+      expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
+      expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
+    }
 
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
+
     replayAll
 
     policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
@@ -91,23 +95,26 @@ abstract class AbstractDataDrivenPolicyTest {
   @Theory
   def shouldJumpToLowestLevelsStraightAfterTopWhenStoreIsEmpty(scenario:Scenario) {
     setupStubs(scenario)
-    expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
-    scenario.tx.respBuckets.foreach(b => {
-      expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
-      expectUpstreamEntityStore(scenario.pair, b.allVsns, false)
-    })
 
-    expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, Seq())
-    scenario.tx.respBuckets.foreach(b => {
-      expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
-      expectDownstreamEntityStore(scenario.pair, b.allVsns, false)
-    })
+    scenario.tx.foreach { tx =>
+      expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, Seq())
+      tx.respBuckets.foreach(b => {
+        expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
+        expectUpstreamEntityStore(scenario.pair, b.allVsns, false)
+      })
+
+      expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, Seq())
+      tx.respBuckets.foreach(b => {
+        expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
+        expectDownstreamEntityStore(scenario.pair, b.allVsns, false)
+      })
+    }
 
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
+
     replayAll
 
     policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
@@ -121,28 +128,30 @@ abstract class AbstractDataDrivenPolicyTest {
   def shouldCorrectOutOfDateUpstreamEntity(scenario:Scenario) {
     setupStubs(scenario)
 
-    // Alter the version of the first entity in the upstream tree, then expect traversal to it
-    val updated = scenario.tx.alterFirstVsn("newVsn1")
+    scenario.tx.foreach { tx =>
+      // Alter the version of the first entity in the upstream tree, then expect traversal to it
+      val updated = tx.alterFirstVsn("newVsn1")
 
-    traverseFirstBranch(updated, scenario.tx) {
-      case (tx1:AggregateTx, tx2:AggregateTx) =>
-        expectUpstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
-      case (tx1:EntityTx, tx2:EntityTx) =>
-        expectUpstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+      traverseFirstBranch(updated, tx) {
+        case (tx1:AggregateTx, tx2:AggregateTx) =>
+          expectUpstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
+        case (tx1:EntityTx, tx2:EntityTx) =>
+          expectUpstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+      }
+      expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
+
+      // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
+      listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
+
+      // Expect only a top-level sync on the downstream
+      expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
     }
-    expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
-
-    // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
-    listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
-
-    // Expect only a top-level sync on the downstream
-    expectDownstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
 
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
+
     replayAll
 
     policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
@@ -156,27 +165,29 @@ abstract class AbstractDataDrivenPolicyTest {
   def shouldCorrectOutOfDateDownstreamEntity(scenario:Scenario) {
     setupStubs(scenario)
 
-    // Expect only a top-level sync on the upstream
-    expectUpstreamAggregateSync(scenario.pair, scenario.tx.bucketing, scenario.tx.constraints, scenario.tx.respBuckets, scenario.tx.respBuckets)
+    scenario.tx.foreach { tx =>
+      // Expect only a top-level sync on the upstream
+      expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
 
-    // Alter the version of the first entity in the downstream tree, then expect traversal to it
-    val updated = scenario.tx.alterFirstVsn("newVsn1")
-    traverseFirstBranch(updated, scenario.tx) {
-      case (tx1:AggregateTx, tx2:AggregateTx) =>
-        expectDownstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
-      case (tx1:EntityTx, tx2:EntityTx) =>
-        expectDownstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+      // Alter the version of the first entity in the downstream tree, then expect traversal to it
+      val updated = tx.alterFirstVsn("newVsn1")
+      traverseFirstBranch(updated, tx) {
+        case (tx1:AggregateTx, tx2:AggregateTx) =>
+          expectDownstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
+        case (tx1:EntityTx, tx2:EntityTx) =>
+          expectDownstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+      }
+      expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
+
+      // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
+      listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
     }
-    expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
-
-    // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
-    listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
 
     // Expect to see the writer flushed
     writer.flush; expectLastCall.once
 
-    // We should still see an unmatched version check
-    expect(store.unmatchedVersions(EasyMock.eq(scenario.tx.constraints), EasyMock.eq(scenario.tx.constraints))).andReturn(Seq())
+    expectUnmatchedVersionCheck(scenario)
+
     replayAll
 
     policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
@@ -190,6 +201,12 @@ abstract class AbstractDataDrivenPolicyTest {
 
   protected def setupStubs(scenario:Scenario) {
     expect(configStore.getPair(scenario.pair.key)).andReturn(scenario.pair).anyTimes
+  }
+
+  protected def expectUnmatchedVersionCheck(scenario:Scenario) = {
+    val us = scenario.pair.upstream.defaultConstraints
+    val ds = scenario.pair.downstream.defaultConstraints
+    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
   }
 
   protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
@@ -288,71 +305,149 @@ object AbstractDataDrivenPolicyTest {
   // Scenarios
   //
 
+  val dateTimeCategoryDescriptor = new RangeCategoryDescriptor("datetime")
   val dateCategoryDescriptor = new RangeCategoryDescriptor("date")
   val intCategoryDescriptor = new RangeCategoryDescriptor("int")
   val stringCategoryDescriptor = new PrefixCategoryDescriptor(1, 3, 1)
 
+  /**
+   * This is a DateTime descriptor that is initialized using LocalDates
+   */
+  val localDatePrimedDescriptor = new RangeCategoryDescriptor("datetime", START_2023.toString, END_2023.toString)
+
+  /**
+   * As part of #203, elements of a set are sent out individually by default.
+   * For the sake of simplicity, the old behaviour (to send them out as a batch) can not be configured.
+   * Should any body ask for this, this behavior be may re-instated at some point.
+   */
   @DataPoint def setOnlyScenario = Scenario(
     Pair(key = "ab",
       upstream = new Endpoint(categories = Map("someString" -> new SetCategoryDescriptor(Set("A","B","C")))),
       downstream = new Endpoint(categories = Map("someString" -> new SetCategoryDescriptor(Set("A","B","C"))))),
-    AggregateTx(Map("someString" -> byName), Seq(SetQueryConstraint("someString",Set("A","B","C"))),
-      Bucket("A", Map("someString" -> "A"),
-        EntityTx(Seq(SetQueryConstraint("someString", Set("A"))),
-          Vsn("id1", Map("someString" -> "A"), "vsn1"),
-          Vsn("id2", Map("someString" -> "A"), "vsn2")
+      AggregateTx(Map("someString" -> byName), Seq(SetQueryConstraint("someString",Set("A"))),
+        Bucket("A", Map("someString" -> "A"),
+          EntityTx(Seq(SetQueryConstraint("someString", Set("A"))),
+            Vsn("id1", Map("someString" -> "A"), "vsn1"),
+            Vsn("id2", Map("someString" -> "A"), "vsn2")
+          )
         )
       ),
-      Bucket("B", Map("someString" -> "B"),
-        EntityTx(Seq(SetQueryConstraint("someString", Set("B"))),
-          Vsn("id3", Map("someString" -> "B"), "vsn3"),
-          Vsn("id4", Map("someString" -> "B"), "vsn4")
+      AggregateTx(Map("someString" -> byName), Seq(SetQueryConstraint("someString",Set("B"))),
+        Bucket("B", Map("someString" -> "B"),
+          EntityTx(Seq(SetQueryConstraint("someString", Set("B"))),
+            Vsn("id3", Map("someString" -> "B"), "vsn3"),
+            Vsn("id4", Map("someString" -> "B"), "vsn4")
+          )
         )
       ),
-      Bucket("C", Map("someString" -> "C"),
-        EntityTx(Seq(SetQueryConstraint("someString", Set("C"))),
-          Vsn("id5", Map("someString" -> "C"), "vsn5"),
-          Vsn("id6", Map("someString" -> "C"), "vsn6")
+      AggregateTx(Map("someString" -> byName), Seq(SetQueryConstraint("someString",Set("C"))),
+        Bucket("C", Map("someString" -> "C"),
+          EntityTx(Seq(SetQueryConstraint("someString", Set("C"))),
+            Vsn("id5", Map("someString" -> "C"), "vsn5"),
+            Vsn("id6", Map("someString" -> "C"), "vsn6")
+          )
         )
       )
-    ))
+    )
 
-  @DataPoint def datesOnlyScenario = Scenario(
+  @DataPoint def dateTimesOnlyScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor)),
-      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor))),
-    AggregateTx(Map("bizDate" -> yearly), Seq(unbounded("bizDate")),
-      Bucket("2010", Map("bizDate" -> "2010"),
-        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2010, END_2010)),
-          Bucket("2010-07", Map("bizDate" -> "2010-07"),
-            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JUL_2010, END_JUL_2010)),
-              Bucket("2010-07-08", Map("bizDate" -> "2010-07-08"),
-                EntityTx(Seq(dateRange("bizDate", JUL_8_2010, END_JUL_8_2010)),
-                  Vsn("id1", Map("bizDate" -> JUL_8_2010_1), "vsn1"),
-                  Vsn("id2", Map("bizDate" -> JUL_8_2010_2), "vsn2")
+      upstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor))),
+    AggregateTx(Map("bizDateTime" -> yearly), Seq(unboundedDateTime("bizDateTime")),
+      Bucket("2010", Map("bizDateTime" -> "2010"),
+        AggregateTx(Map("bizDateTime" -> monthly), Seq(dateTimeRange("bizDateTime", START_2010, END_2010)),
+          Bucket("2010-07", Map("bizDateTime" -> "2010-07"),
+            AggregateTx(Map("bizDateTime" -> daily), Seq(dateTimeRange("bizDateTime", JUL_2010, END_JUL_2010)),
+              Bucket("2010-07-08", Map("bizDateTime" -> "2010-07-08"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JUL_8_2010, END_JUL_8_2010)),
+                  Vsn("id1", Map("bizDateTime" -> JUL_8_2010_1), "vsn1"),
+                  Vsn("id2", Map("bizDateTime" -> JUL_8_2010_2), "vsn2")
                 )),
-              Bucket("2010-07-09", Map("bizDate" -> "2010-07-09"),
-                EntityTx(Seq(dateRange("bizDate", JUL_9_2010, END_JUL_9_2010)),
-                  Vsn("id3", Map("bizDate" -> JUL_9_2010_1), "vsn3")
+              Bucket("2010-07-09", Map("bizDateTime" -> "2010-07-09"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JUL_9_2010, END_JUL_9_2010)),
+                  Vsn("id3", Map("bizDateTime" -> JUL_9_2010_1), "vsn3")
                 ))
             )),
-          Bucket("2010-08", Map("bizDate" -> "2010-08"),
-            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", AUG_2010, END_AUG_2010)),
-              Bucket("2010-08-02", Map("bizDate" -> "2010-08-02"),
-                EntityTx(Seq(dateRange("bizDate", AUG_11_2010, END_AUG_11_2010)),
-                  Vsn("id4", Map("bizDate" -> AUG_11_2010_1), "vsn4")
+          Bucket("2010-08", Map("bizDateTime" -> "2010-08"),
+            AggregateTx(Map("bizDateTime" -> daily), Seq(dateTimeRange("bizDateTime", AUG_2010, END_AUG_2010)),
+              Bucket("2010-08-02", Map("bizDateTime" -> "2010-08-02"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", AUG_11_2010, END_AUG_11_2010)),
+                  Vsn("id4", Map("bizDateTime" -> AUG_11_2010_1), "vsn4")
                 ))
             ))
         )),
-      Bucket("2011", Map("bizDate" -> "2011"),
-        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2011, END_2011)),
-          Bucket("2011-01", Map("bizDate" -> "2011-01"),
-            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JAN_2011, END_JAN_2011)),
-              Bucket("2011-01-20", Map("bizDate" -> "2011-01-20"),
-                EntityTx(Seq(dateRange("bizDate", JAN_20_2011, END_JAN_20_2011)),
-                  Vsn("id5", Map("bizDate" -> JAN_20_2011_1), "vsn5")
+      Bucket("2011", Map("bizDateTime" -> "2011"),
+        AggregateTx(Map("bizDateTime" -> monthly), Seq(dateTimeRange("bizDateTime", START_2011, END_2011)),
+          Bucket("2011-01", Map("bizDateTime" -> "2011-01"),
+            AggregateTx(Map("bizDateTime" -> daily), Seq(dateTimeRange("bizDateTime", JAN_2011, END_JAN_2011)),
+              Bucket("2011-01-20", Map("bizDateTime" -> "2011-01-20"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JAN_20_2011, END_JAN_20_2011)),
+                  Vsn("id5", Map("bizDateTime" -> JAN_20_2011_1), "vsn5")
                 ))
             ))
+        ))
+    ))
+
+
+
+  @DataPoint def datesOnlyScenario = Scenario(
+    Pair(key = "xy",
+      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor))),
+    AggregateTx(Map("bizDate" -> yearly), Seq(unboundedDate("bizDate")),
+      Bucket("1995", Map("bizDate" -> "1995"),
+        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_1995, END_1995)),
+          Bucket("1995-04", Map("bizDate" -> "1995-04"),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", APR_1_1995, APR_30_1995)),
+              Bucket("1995-04-11", Map("bizDate" -> "1995-04-11"),
+                EntityTx(Seq(dateRange("bizDate", APR_11_1995, APR_11_1995)),
+                  Vsn("id1", Map("bizDate" -> APR_11_1995), "vsn1"),
+                  Vsn("id2", Map("bizDate" -> APR_11_1995), "vsn2")
+                )),
+              Bucket("1995-04-12", Map("bizDate" -> "1995-04-12"),
+                EntityTx(Seq(dateRange("bizDate", APR_12_1995, APR_12_1995)),
+                  Vsn("id3", Map("bizDate" -> APR_12_1995), "vsn3")
+                ))
+            )),
+          Bucket("1995-05", Map("bizDate" -> "1995-05"),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", MAY_1_1995, MAY_31_1995)),
+              Bucket("1995-05-23", Map("bizDate" -> "1995-05-23"),
+                EntityTx(Seq(dateRange("bizDate", MAY_23_1995, MAY_23_1995)),
+                  Vsn("id4", Map("bizDate" -> MAY_23_1995), "vsn4")
+                ))
+            ))
+        )),
+      Bucket("1996", Map("bizDate" -> "1996"),
+        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_1996, END_1996)),
+          Bucket("1996-03", Map("bizDate" -> "1996-03"),
+            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", MAR_1_1996, MAR_31_1996)),
+              Bucket("1996-03-15", Map("bizDate" -> "1996-03-15"),
+                EntityTx(Seq(dateRange("bizDate", MAR_15_1996, MAR_15_1996)),
+                  Vsn("id5", Map("bizDate" -> MAR_15_1996), "vsn5")
+                ))
+            ))
+        ))
+    ))
+
+  /**
+   *  This scenario uses a constrained descriptor that is initialized with LocalDate
+   *  values but uses a full DateTime data type during its descent.
+   */
+  @DataPoint def yy_MM_dddd_dateTimesOnlyScenario = Scenario(
+    Pair(key = "tf",
+      upstream = new Endpoint(categories = Map("bizDateTime" -> localDatePrimedDescriptor)),
+      downstream = new Endpoint(categories = Map("bizDateTime" -> localDatePrimedDescriptor))),
+    AggregateTx(Map("bizDateTime" -> yearly), Seq(dateTimeRange("bizDateTime", START_2023_FULL, END_2023_FULL)),
+      Bucket("2023", Map("bizDateTime" -> "2023"),
+        AggregateTx(Map("bizDateTime" -> monthly), Seq(dateTimeRange("bizDateTime", START_2023_FULL, END_2023_FULL)),
+          Bucket("2023-10", Map("bizDateTime" -> "2023-10"),
+            AggregateTx(Map("bizDateTime" -> daily), Seq(dateTimeRange("bizDateTime", OCT_1_2023, OCT_31_2023)),
+              Bucket("2023-10-17", Map("bizDateTime" -> "2023-10-17"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", OCT_17_2023_START, OCT_17_2023_END)),
+                  Vsn("id1", Map("bizDateTime" -> OCT_17_2023), "vsn1")
+                ))
+           ))
         ))
     ))
 
@@ -432,71 +527,79 @@ object AbstractDataDrivenPolicyTest {
         ))
     ))
 
-  @DataPoint def integersAndDatesScenario = Scenario(
+  @DataPoint def integersAndDateTimesScenario = Scenario(
     Pair(key = "ab",
-      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someInt" -> intCategoryDescriptor)),
-      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someInt" -> intCategoryDescriptor))),
-    AggregateTx(Map("bizDate" -> yearly, "someInt" -> thousands), Seq(unbounded("bizDate"), unbounded("someInt")),
-      Bucket("2010_1000", Map("bizDate" -> "2010", "someInt" -> "1000"),
-        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(dateRange("bizDate", START_2010, END_2010), intRange("someInt", 1000, 1999)),
-          Bucket("2010-07_1200", Map("bizDate" -> "2010-07", "someInt" -> "1200"),
-            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(dateRange("bizDate", JUL_2010, END_JUL_2010), intRange("someInt", 1200, 1299)),
-              Bucket("2010-07-08_1230", Map("bizDate" -> "2010-07-08", "someInt" -> "1230"),
-                EntityTx(Seq(dateRange("bizDate", JUL_8_2010, END_JUL_8_2010), intRange("someInt", 1230, 1239)),
-                  Vsn("id1", Map("bizDate" -> JUL_8_2010_1, "someInt" -> 1234), "vsn1"),
-                  Vsn("id2", Map("bizDate" -> JUL_8_2010_2, "someInt" -> 1235), "vsn2")
+      upstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor, "someInt" -> intCategoryDescriptor)),
+      downstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor, "someInt" -> intCategoryDescriptor))),
+    AggregateTx(Map("bizDateTime" -> yearly, "someInt" -> thousands), Seq(unboundedDateTime("bizDateTime"), unbounded("someInt")),
+      Bucket("2010_1000", Map("bizDateTime" -> "2010", "someInt" -> "1000"),
+        AggregateTx(Map("bizDateTime" -> monthly, "someInt" -> hundreds), Seq(dateTimeRange("bizDateTime", START_2010, END_2010), intRange("someInt", 1000, 1999)),
+          Bucket("2010-07_1200", Map("bizDateTime" -> "2010-07", "someInt" -> "1200"),
+            AggregateTx(Map("bizDateTime" -> daily, "someInt" -> tens), Seq(dateTimeRange("bizDateTime", JUL_2010, END_JUL_2010), intRange("someInt", 1200, 1299)),
+              Bucket("2010-07-08_1230", Map("bizDateTime" -> "2010-07-08", "someInt" -> "1230"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JUL_8_2010, END_JUL_8_2010), intRange("someInt", 1230, 1239)),
+                  Vsn("id1", Map("bizDateTime" -> JUL_8_2010_1, "someInt" -> 1234), "vsn1"),
+                  Vsn("id2", Map("bizDateTime" -> JUL_8_2010_2, "someInt" -> 1235), "vsn2")
                 )),
-              Bucket("2010-07-09_1240", Map("bizDate" -> "2010-07-09", "someInt" -> "1240"),
-                EntityTx(Seq(dateRange("bizDate", JUL_9_2010, END_JUL_9_2010), intRange("someInt", 1240, 1249)),
-                  Vsn("id3", Map("bizDate" -> JUL_9_2010_1, "someInt" -> 1245), "vsn3")
+              Bucket("2010-07-09_1240", Map("bizDateTime" -> "2010-07-09", "someInt" -> "1240"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JUL_9_2010, END_JUL_9_2010), intRange("someInt", 1240, 1249)),
+                  Vsn("id3", Map("bizDateTime" -> JUL_9_2010_1, "someInt" -> 1245), "vsn3")
                 ))
             )),
-          Bucket("2010-08_1300", Map("bizDate" -> "2010-08", "someInt" -> "1300"),
-            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(dateRange("bizDate", AUG_2010, END_AUG_2010), intRange("someInt", 1300, 1399)),
-              Bucket("2010-08-02_1350", Map("bizDate" -> "2010-08-02", "someInt" -> "1350"),
-                EntityTx(Seq(dateRange("bizDate", AUG_11_2010, END_AUG_11_2010), intRange("someInt", 1350, 1359)),
-                  Vsn("id4", Map("bizDate" -> AUG_11_2010_1, "someInt" -> 1357), "vsn4")
+          Bucket("2010-08_1300", Map("bizDateTime" -> "2010-08", "someInt" -> "1300"),
+            AggregateTx(Map("bizDateTime" -> daily, "someInt" -> tens), Seq(dateTimeRange("bizDateTime", AUG_2010, END_AUG_2010), intRange("someInt", 1300, 1399)),
+              Bucket("2010-08-02_1350", Map("bizDateTime" -> "2010-08-02", "someInt" -> "1350"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", AUG_11_2010, END_AUG_11_2010), intRange("someInt", 1350, 1359)),
+                  Vsn("id4", Map("bizDateTime" -> AUG_11_2010_1, "someInt" -> 1357), "vsn4")
                 ))
             ))
         )),
-      Bucket("2011_2000", Map("bizDate" -> "2011", "someInt" -> "2000"),
-        AggregateTx(Map("bizDate" -> monthly, "someInt" -> hundreds), Seq(dateRange("bizDate", START_2011, END_2011), intRange("someInt", 2000, 2999)),
-          Bucket("2011-01_2300", Map("bizDate" -> "2011-01", "someInt" -> "2300"),
-            AggregateTx(Map("bizDate" -> daily, "someInt" -> tens), Seq(dateRange("bizDate", JAN_2011, END_JAN_2011), intRange("someInt", 2300, 2399)),
-              Bucket("2011-01-20_2340", Map("bizDate" -> "2011-01-20", "someInt" -> "2340"),
-                EntityTx(Seq(dateRange("bizDate", JAN_20_2011, END_JAN_20_2011), intRange("someInt", 2340, 2349)),
-                  Vsn("id5", Map("bizDate" -> JAN_20_2011_1, "someInt" -> 2345), "vsn5")
+      Bucket("2011_2000", Map("bizDateTime" -> "2011", "someInt" -> "2000"),
+        AggregateTx(Map("bizDateTime" -> monthly, "someInt" -> hundreds), Seq(dateTimeRange("bizDateTime", START_2011, END_2011), intRange("someInt", 2000, 2999)),
+          Bucket("2011-01_2300", Map("bizDateTime" -> "2011-01", "someInt" -> "2300"),
+            AggregateTx(Map("bizDateTime" -> daily, "someInt" -> tens), Seq(dateTimeRange("bizDateTime", JAN_2011, END_JAN_2011), intRange("someInt", 2300, 2399)),
+              Bucket("2011-01-20_2340", Map("bizDateTime" -> "2011-01-20", "someInt" -> "2340"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JAN_20_2011, END_JAN_20_2011), intRange("someInt", 2340, 2349)),
+                  Vsn("id5", Map("bizDateTime" -> JAN_20_2011_1, "someInt" -> 2345), "vsn5")
                 ))
             ))
         ))
     ))
 
-  @DataPoint def setAndDateScenario = Scenario(
+  /**
+   * As part of #203, elements of a set are sent out individually by default.
+   * For the sake of simplicity, the old behaviour (to send them out as a batch) can not be configured.
+   * Should any body ask for this, this behavior be may re-instated at some point.
+   */
+
+  @DataPoint def setAndDateTimesScenario = Scenario(
     Pair(key = "gh",
-      upstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B")))),
-      downstream = new Endpoint(categories = Map("bizDate" -> dateCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B"))))),
-    AggregateTx(Map("bizDate" -> yearly, "someString" -> byName), Seq(unbounded("bizDate"), SetQueryConstraint("someString",Set("A","B"))),
-      Bucket("2010_A", Map("bizDate" -> "2010", "someString" -> "A"),
-        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2010, END_2010), SetQueryConstraint("someString",Set("A"))),
-          Bucket("2010-07_A", Map("bizDate" -> "2010-07"),
-            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JUL_2010, END_JUL_2010), SetQueryConstraint("someString",Set("A"))),
-              Bucket("2010-07-08_A", Map("bizDate" -> "2010-07-08"),
-                EntityTx(Seq(dateRange("bizDate", JUL_8_2010, END_JUL_8_2010), SetQueryConstraint("someString",Set("A"))),
-                  Vsn("id1", Map("bizDate" -> JUL_8_2010_1, "someString" -> "A"), "vsn1"),
-                  Vsn("id2", Map("bizDate" -> JUL_8_2010_2, "someString" -> "A"), "vsn2")
+      upstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B")))),
+      downstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B"))))),
+    AggregateTx(Map("bizDateTime" -> yearly, "someString" -> byName), Seq(unboundedDateTime("bizDateTime"), SetQueryConstraint("someString",Set("A"))),
+      Bucket("2010_A", Map("bizDateTime" -> "2010", "someString" -> "A"),
+        AggregateTx(Map("bizDateTime" -> monthly), Seq(dateTimeRange("bizDateTime", START_2010, END_2010), SetQueryConstraint("someString",Set("A"))),
+          Bucket("2010-07_A", Map("bizDateTime" -> "2010-07"),
+            AggregateTx(Map("bizDateTime" -> daily), Seq(dateTimeRange("bizDateTime", JUL_2010, END_JUL_2010), SetQueryConstraint("someString",Set("A"))),
+              Bucket("2010-07-08_A", Map("bizDateTime" -> "2010-07-08"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JUL_8_2010, END_JUL_8_2010), SetQueryConstraint("someString",Set("A"))),
+                  Vsn("id1", Map("bizDateTime" -> JUL_8_2010_1, "someString" -> "A"), "vsn1"),
+                  Vsn("id2", Map("bizDateTime" -> JUL_8_2010_2, "someString" -> "A"), "vsn2")
                 )
               )
             )
           )
         )
-      ),
-      Bucket("2011_B", Map("bizDate" -> "2011", "someString" -> "B"),
-        AggregateTx(Map("bizDate" -> monthly), Seq(dateRange("bizDate", START_2011, END_2011), SetQueryConstraint("someString",Set("B"))),
-          Bucket("2011-01_B", Map("bizDate" -> "2011-01"),
-            AggregateTx(Map("bizDate" -> daily), Seq(dateRange("bizDate", JAN_2011, END_JAN_2011), SetQueryConstraint("someString",Set("B"))),
-              Bucket("2011-01-20_B", Map("bizDate" -> "2011-01-20"),
-                EntityTx(Seq(dateRange("bizDate", JAN_20_2011, END_JAN_20_2011), SetQueryConstraint("someString",Set("A"))),
-                  Vsn("id3", Map("bizDate" -> JAN_20_2011_1, "someString" -> "B"), "vsn3")
+      )
+    ),
+    AggregateTx(Map("bizDateTime" -> yearly, "someString" -> byName), Seq(unboundedDateTime("bizDateTime"), SetQueryConstraint("someString",Set("B"))),
+      Bucket("2011_B", Map("bizDateTime" -> "2011", "someString" -> "B"),
+        AggregateTx(Map("bizDateTime" -> monthly), Seq(dateTimeRange("bizDateTime", START_2011, END_2011), SetQueryConstraint("someString",Set("B"))),
+          Bucket("2011-01_B", Map("bizDateTime" -> "2011-01"),
+            AggregateTx(Map("bizDateTime" -> daily), Seq(dateTimeRange("bizDateTime", JAN_2011, END_JAN_2011), SetQueryConstraint("someString",Set("B"))),
+              Bucket("2011-01-20_B", Map("bizDateTime" -> "2011-01-20"),
+                EntityTx(Seq(dateTimeRange("bizDateTime", JAN_20_2011, END_JAN_20_2011), SetQueryConstraint("someString",Set("B"))),
+                  Vsn("id3", Map("bizDateTime" -> JAN_20_2011_1, "someString" -> "B"), "vsn3")
                 )
               )
             )
@@ -505,7 +608,7 @@ object AbstractDataDrivenPolicyTest {
       )
     )
   )
-  
+
   //
   // Aliases
   //
@@ -526,7 +629,10 @@ object AbstractDataDrivenPolicyTest {
   val threeCharString = StringPrefixCategoryFunction(3, 3, 1)
 
   def unbounded(n:String) = UnboundedRangeQueryConstraint(n)
-  def dateRange(n:String, lower:DateTime, upper:DateTime) = DateRangeConstraint(n, lower, upper)
+  def unboundedDateTime(n:String) = EasyConstraints.unconstrainedDateTime(n)
+  def unboundedDate(n:String) = EasyConstraints.unconstrainedDate(n)
+  def dateTimeRange(n:String, lower:DateTime, upper:DateTime) = DateTimeRangeConstraint(n, lower, upper)
+  def dateRange(n:String, lower:LocalDate, upper:LocalDate) = DateRangeConstraint(n, lower, upper)
   def intRange(n:String, lower:Int, upper:Int) = IntegerRangeConstraint(n, lower, upper)
   def prefix(n: String, prefix: String) = PrefixQueryConstraint(n, prefix)
 
@@ -534,7 +640,7 @@ object AbstractDataDrivenPolicyTest {
   // Type Definitions
   //
 
-  case class Scenario(pair:Pair, tx:AggregateTx)
+  case class Scenario(pair:Pair, tx:AggregateTx*)
 
   abstract class Tx {
     def constraints:Seq[QueryConstraint]
@@ -588,9 +694,10 @@ object AbstractDataDrivenPolicyTest {
     def toString(indent:Int) = (" " * indent) + "Vsn(" + id + ", " + attrs + ", " + vsn + ")\n"
 
     def toTyped(v:Any) = v match {
-      case i:Int       => IntegerAttribute(i)
-      case dt:DateTime => DateAttribute(dt)
-      case _           => StringAttribute(v.toString)
+      case i:Int        => IntegerAttribute(i)
+      case dt:DateTime  => DateTimeAttribute(dt)
+      case dt:LocalDate => DateAttribute(dt)
+      case _            => StringAttribute(v.toString)
     }
   }
 }

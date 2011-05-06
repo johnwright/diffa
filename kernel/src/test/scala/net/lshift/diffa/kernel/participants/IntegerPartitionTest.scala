@@ -26,6 +26,21 @@ class IntegerPartitionTest {
   protected val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
   protected val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
 
+  val constraint = new QueryConstraint {
+    def category = "someInt"
+    def wireFormat = null
+  }
+
+  val constraint2 = new QueryConstraint {
+    def category = "someInt2"
+    def wireFormat = null
+  }
+
+  val constraint3 = new QueryConstraint {
+    def category = "someInt3"
+    def wireFormat = null
+  }
+
   @Test
   def tensPartition {
     assertEquals("120", tens.owningPartition("123"))
@@ -56,20 +71,20 @@ class IntegerPartitionTest {
     val myBinaryCategoryFunction = binaryCategoryFunction(128)
     assertEquals("256", myBinaryCategoryFunction.owningPartition("300"))
     assertEquals(IntegerRangeConstraint("someInt", 256, 383),
-                 myBinaryCategoryFunction.constrain("someInt", "256"))
+                 myBinaryCategoryFunction.constrain(constraint, "256"))
     assertEquals(Some(binaryCategoryFunction(64)), myBinaryCategoryFunction.descend)
   }
 
   @Test
   def descendFromTensPartition {
     assertEquals(Some(IndividualCategoryFunction), tens.descend)
-    assertEquals(IntegerRangeConstraint("someInt", 10, 19), tens.constrain("someInt", "10"))
+    assertEquals(IntegerRangeConstraint("someInt", 10, 19), tens.constrain(constraint, "10"))
   }
 
   @Test
   def descendFromHundredsPartition {
     assertEquals(Some(tens), hundreds.descend)
-    assertEquals(IntegerRangeConstraint("someInt2", 100, 199), hundreds.constrain("someInt2", "100"))
+    assertEquals(IntegerRangeConstraint("someInt2", 100, 199), hundreds.constrain(constraint2, "100"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])
@@ -79,7 +94,7 @@ class IntegerPartitionTest {
 
   @Test(expected=classOf[InvalidAttributeValueException])
   def descendShouldThrowInvalidAttributeValueExceptionIfPartitionValueIsInvalid {
-    tens.constrain("someInt3", "123")
+    tens.constrain(constraint3, "123")
   }
 
   @Test(expected=classOf[IllegalArgumentException])

@@ -16,14 +16,25 @@
 
 package net.lshift.diffa.kernel.participants
 
-import net.lshift.diffa.kernel.config.IntegerTypeDescriptor
+import org.joda.time.{DateTime}
+import net.lshift.diffa.kernel.config.DateTimeTypeDescriptor
 
 /**
- * A constraint for an integer-typed field that should have a <code>cat</code> field with its value between start and
+ * A constraint for a datetime-typed field that should have a <code>cat</code> field with its value between start and
  * end (inclusive).
+ *
+ * This data type can be configured either of the two formats:
+ *
+ * <li>
+ *   <ul>yyyy-MM-ddThh:mm:ss.mmmZ, whereby the range will be inclusive of each bound</ul>
+ *   <ul>yyyy-MM-dd, whereby the range will be inclusive of yyyy-MM-ddT00:00:00.000Z and yyyy-MM-ddT23:59:59.999Z</ul>
+ * </li>
+ *
+ * This implies that his data type has millisecond granularity.
+ *
  */
-case class IntegerRangeConstraint(cat:String, start:Int, end:Int)
+case class DateTimeRangeConstraint(cat:String, start:DateTime, end:DateTime)
     extends RangeQueryConstraint(cat, start.toString(), end.toString()) {
 
-  override def dataType = IntegerTypeDescriptor
+  override def dataType = DateTimeTypeDescriptor
 }

@@ -17,31 +17,59 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.LocalDate
-import org.joda.time.format.{ISODateTimeFormat, DateTimeFormatter, DateTimeFormat}
+import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat, DateTimeFormatter, DateTimeFormat}
+import net.lshift.diffa.kernel.config.{DateTypeDescriptor,DateTimeTypeDescriptor}
 
+/**
+ * Provides basic functionality required to narrow down date based categories.
+ */
 abstract case class DateCategoryFunction extends CategoryFunction {
 
-  protected val isoFormat = ISODateTimeFormat.dateTime()
+  val parsers = Array(
+          ISODateTimeFormat.dateTime().getParser,
+          ISODateTimeFormat.date().getParser
+  )
+  protected val formatter = new DateTimeFormatterBuilder().append( null, parsers ).toFormatter
+
 
   def pattern:DateTimeFormatter
   def descend:Option[CategoryFunction]
   def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
 
-  def constrain(categoryName:String, partition:String) = {
+  def constrain(parent:QueryConstraint, partition:String) = {
     val point = pattern.parseDateTime(partition).toLocalDate
-    val (upper,lower) = pointToBounds(point)
-    val (start,end) = align(upper,lower)
+    val (lower,upper) = pointToBounds(point)
 
-    new DateRangeConstraint(categoryName, start, end)
+    parent match {
+      case d:DateRangeConstraint
+        if d.start != null && d.end != null
+            && (d.start.isAfter(lower) || d.end.isBefore(upper)) => d
+      case t:DateTimeRangeConstraint
+        if t.start != null && t.end != null
+            && (t.start.isAfter(sod(lower)) || t.end.isBefore(eod(upper))) => t
+      case _ =>
+         parent.dataType match {
+          case DateTypeDescriptor     => new DateRangeConstraint(parent.category, lower, upper)
+          case DateTimeTypeDescriptor => new DateTimeRangeConstraint(parent.category, sod(lower), eod(upper))
+        }
+    }
   }
 
-  def align(s:LocalDate, e:LocalDate) = (s.toDateTimeAtStartOfDay, e.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1))
+  /**
+   * Convert to a DateTime using zero o'clock, i.e. the start of the day
+   */
+  def sod(d:LocalDate) = d.toDateTimeAtStartOfDay
+
+  /**
+   * Convert to a DateTime using a millisecond before the next day, i.e. the end of the day
+   */
+  def eod(d:LocalDate) = d.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1)
 
   def shouldBucket() = true
 
   override def owningPartition(value:String) =
     try {
-      val date = isoFormat.parseDateTime(value)
+      val date = formatter.parseDateTime(value)
       pattern.print(date)
     }
     catch {

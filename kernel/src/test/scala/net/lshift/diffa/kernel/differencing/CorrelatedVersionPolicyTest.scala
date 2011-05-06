@@ -26,7 +26,7 @@ import org.apache.commons.codec.digest.DigestUtils
 
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 
 import scala.collection.JavaConversions._
 

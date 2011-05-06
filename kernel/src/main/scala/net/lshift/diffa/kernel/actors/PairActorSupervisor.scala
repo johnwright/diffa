@@ -16,8 +16,7 @@
 
 package net.lshift.diffa.kernel.actors
 
-import se.scalablesolutions.akka.actor.ActorRegistry
-import se.scalablesolutions.akka.actor.Actor._
+import akka.actor._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.ConfigStore
@@ -44,15 +43,15 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   }
 
   def startActor(pair:net.lshift.diffa.kernel.config.Pair) = {
-    val actors = ActorRegistry.actorsFor(pair.key)
+    val actors = Actor.registry.actorsFor(pair.key)
     actors.length match {
       case 0 => {
         policyManager.lookupPolicy(pair.versionPolicyName) match {
           case Some(p) => {
             val us = participantFactory.createUpstreamParticipant(pair.upstream)
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
-            val pairActor = actorOf(new PairActor(pair.key, us, ds, p, stores(pair.key), changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis))
-            ActorRegistry.register(pairActor.start)
+            val pairActor = Actor.actorOf(new PairActor(pair.key, us, ds, p, stores(pair.key), changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis))
+            pairActor.start
             log.info("Started actor for key: " + pair.key)
           }
           case None    => log.error("Failed to find policy for name: " + pair.versionPolicyName)
@@ -65,11 +64,10 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   }
 
   def stopActor(key:String) = {
-    val actors = ActorRegistry.actorsFor(key)
+    val actors = Actor.registry.actorsFor(key)
     actors.length match {
       case 1 => {
         val actor = actors(0)
-        ActorRegistry.unregister(actor)
         actor.stop
         log.info("Stopped actor for key: " + key)
       }
@@ -87,7 +85,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     findActor(pairKey) ! SyncAndDifferenceMessage(diffListener, pairSyncListener)
 
   def findActor(pairKey:String) = {
-    val actors = ActorRegistry.actorsFor(pairKey)
+    val actors = Actor.registry.actorsFor(pairKey)
     actors.length match {
       case 1 => actors(0)
       case 0 => {

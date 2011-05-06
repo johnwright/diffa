@@ -19,12 +19,13 @@ package net.lshift.diffa.kernel.actors
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events.PairChangeEvent
-import se.scalablesolutions.akka.actor.{Actor, Scheduler}
+import akka.actor.{Actor, Scheduler}
 import scala.collection.mutable.ListBuffer
 import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import java.util.concurrent.ScheduledFuture
 import net.lshift.diffa.kernel.differencing._
+import java.net.ConnectException
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -46,12 +47,12 @@ case class PairActor(pairKey:String,
 
   lazy val writer = store.openWriter()
 
-  override def init {
+  override def preStart = {
     // schedule a recurring message to flush the writer
     scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
   }
 
-  override def shutdown {
+  override def postStop = {
     scheduledFlushes.cancel(true)
   }
 
@@ -78,16 +79,23 @@ case class PairActor(pairKey:String,
     case SyncAndDifferenceMessage(diffListener, pairSyncListener) => {
       pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING)
 
-      try {
+      val state = try {
         writer.flush()
         policy.syncAndDifference(pairKey, writer, us, ds, diffListener)
-        pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE)
+        PairSyncState.UP_TO_DATE
       } catch {
-        case ex => {
-          logger.error("Failed to synchronise pair " + pairKey, ex)
-          pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
+        case c:ConnectException => {
+          logger.error("Investigate: Participant was not available to synchronize pair: " + pairKey)
+          PairSyncState.FAILED
+        }
+        case x:Exception => {
+          logger.error("FAILED to synchronise pair " + pairKey, x)
+          PairSyncState.FAILED
         }
       }
+
+      pairSyncListener.pairSyncStateChanged(pairKey, state)
+
     }
 
     case FlushWriterMessage         => {

@@ -34,7 +34,7 @@ class HibernateConfigStoreTest {
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
   val dateCategoryUpper = new DateTime(1982,4,6,12,13,9,0).toString()
   val dateRangeCategoriesMap =
-    Map(dateCategoryName ->  new RangeCategoryDescriptor("date",dateCategoryLower,dateCategoryUpper))
+    Map(dateCategoryName ->  new RangeCategoryDescriptor("datetime",dateCategoryLower,dateCategoryUpper))
 
   val setCategoryValues = Set("a","b","c")
   val setCategoriesMap = Map(dateCategoryName ->  new SetCategoryDescriptor(setCategoryValues))
@@ -312,7 +312,7 @@ class HibernateConfigStoreTest {
     assertNotNull(pair.downstream.categories)
     val us_descriptor = pair.upstream.categories(dateCategoryName).asInstanceOf[RangeCategoryDescriptor]
     val ds_descriptor = pair.downstream.categories(intCategoryName).asInstanceOf[RangeCategoryDescriptor]
-    assertEquals("date", us_descriptor.dataType)
+    assertEquals("datetime", us_descriptor.dataType)
     assertEquals(intCategoryType, ds_descriptor.dataType)
     assertEquals(dateCategoryLower, us_descriptor.lower)
     assertEquals(dateCategoryUpper, us_descriptor.upper)

@@ -44,7 +44,7 @@ class DigestBuilder(val functions:Map[String, CategoryFunction]) {
 
   def add(id:String, attributes:Map[String, String], lastUpdated:DateTime, vsn:String) {
 
-    log.debug("Adding to bucket: " + id + ", " + attributes + ", " + lastUpdated + ", " + vsn)
+    log.trace("Adding to bucket: " + id + ", " + attributes + ", " + lastUpdated + ", " + vsn)
 
     if (shouldBucket) {
       val partitions:Map[String, String] = bucketingFunctions.map { case (attrName, function) => attrName -> function.owningPartition(attributes(attrName)) }

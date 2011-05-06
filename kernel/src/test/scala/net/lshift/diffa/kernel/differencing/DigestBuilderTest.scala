@@ -21,7 +21,7 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import org.apache.commons.codec.digest.DigestUtils
-import net.lshift.diffa.kernel.util.Dates._
+import net.lshift.diffa.kernel.util.FullDateTimes._
 import net.lshift.diffa.kernel.participants._
 import collection.mutable.HashMap
 import collection.immutable.HashSet

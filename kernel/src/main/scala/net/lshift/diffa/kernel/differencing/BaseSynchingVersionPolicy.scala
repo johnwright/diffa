@@ -22,6 +22,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{Endpoint, Pair, ConfigStore}
+import org.slf4j.LoggerFactory
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -77,7 +78,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   def syncAndDifference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
 
-    synchroniseParticipants(pair, writer, us, ds, l)
+    synchronizeParticipants(pair, writer, us, ds, l)
     writer.flush()
 
     generateDifferenceEvents(pair, l)
@@ -92,17 +93,38 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   }
 
   /**
-   * Allows the policy to perform a synchronisation of participants.
+   * Performs a synchronization between participants.
    */
-  protected def synchroniseParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener)
+  protected def synchronizeParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+    val upstreamConstraints = pair.upstream.groupedConstraints
+    val downstreamConstraints = pair.downstream.groupedConstraints
+
+    upstreamConstraints.foreach((new UpstreamSyncStrategy).syncHalf(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, us))
+    downstreamConstraints.foreach(downstreamStrategy(us,ds,l).syncHalf(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds))
+  }
+
+  /**
+   * Allows an implementing policy to define what kind of downstream syncing policy it requires
+   */
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) : SyncStrategy
 
   /**
    * The basic functionality for a synchronisation strategy.
    */
   protected abstract class SyncStrategy {
+
+    val log = LoggerFactory.getLogger(getClass)
+
     def syncHalf(pair:Pair, writer: VersionCorrelationWriter, endpoint:Endpoint, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], p:Participant) {
       val remoteDigests = p.queryAggregateDigests(bucketing, constraints)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
+
+      if (log.isTraceEnabled) {
+        log.trace("Bucketing: %s".format(bucketing))
+        log.trace("Constraints: %s".format(constraints))
+        log.trace("Remote digests: %s".format(remoteDigests))
+        log.trace("Local digests: %s".format(localDigests))
+      }
 
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
         case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
