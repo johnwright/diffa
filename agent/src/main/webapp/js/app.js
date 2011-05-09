@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Requirement: API_BASE must be set - see index.jsp for example
+// Requirement: API_BASE must be set - see decorator.jsp for example
 
 // config you can change
 var HEATMAP_WIDTH = 900, // pixel width for heatmap viewport

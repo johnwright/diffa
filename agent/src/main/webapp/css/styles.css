@@ -130,3 +130,11 @@ circle.disabled {
     border:1px solid #d12f19;
     color:#fff;
 }
+
+.admin_action {
+	margin-left: 50px;
+}
+
+#nav_bar {
+	float: right;
+}

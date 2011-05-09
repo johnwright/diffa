@@ -72,6 +72,14 @@ class DifferencesResource extends AbstractRestResource {
     Response.status(Response.Status.ACCEPTED).build
   }
 
+  @POST
+  @Path("/sessions/scan_all")
+  @Description("Forces Diffa to execute a scan operation on the pairs underlying the session")
+  def scanAllPairings = {
+    log.info("Initiating scan of all known pairs")
+    session.runScanForAllPairings
+  }
+
   @GET
   @Path("/sessions/{sessionId}/sync")
   @Produces(Array("application/json"))

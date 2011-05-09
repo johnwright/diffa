@@ -45,7 +45,7 @@ trait VersionPolicy {
   def difference(pairKey:String, listener:DifferencingListener)
 
   /**
-   * Requests that the policy synchronise then difference the given participants. Differences that are
+   * Requests that the policy synchronize then difference the given participants. Differences that are
    * detected will be reported to the listener provided.
    */
   def syncAndDifference(pairKey:String,

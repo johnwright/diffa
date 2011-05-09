@@ -143,6 +143,16 @@ class DefaultSessionManagerTest {
   }
 
   @Test
+  def shouldTriggerScanOnRequest = {
+    expectSyncAndDifferenceForPair("pair1","pair2")
+    replayAll
+
+    manager.runScanForAllPairings
+
+    verifyAll
+  }
+
+  @Test
   def shouldAlwaysInformMatchEvents {
 
     expect(listener1.onMatch(VersionID("pair", "id"), "vsn"))

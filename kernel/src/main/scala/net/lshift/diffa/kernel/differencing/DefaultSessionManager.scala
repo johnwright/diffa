@@ -158,6 +158,8 @@ class DefaultSessionManager(
     }
   }
 
+  def runScanForAllPairings = runSyncForScope(SessionScope.all, null, null, this)
+
   def runSync(sessionID:String) = {
     sessionsByKey.get(sessionID) match {
       case None => // No session. Nothing to do. TODO: Throw an exception?
