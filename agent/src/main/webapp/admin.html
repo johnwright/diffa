@@ -27,7 +27,8 @@
     <link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
     <link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/>
 
-    <script type="text/javascript" src="js/jquery-1.4.1.patched.js"></script>
+    <script type="text/javascript" src="js/jquery-1.6.min.js"></script>
+    <script type="text/javascript" src="js/smartupdater-3.0.02beta.js"></script>
 
     <script type="text/javascript">
       $(document).ready(function() {
@@ -44,6 +45,22 @@
           });
           return false;
         });
+
+        $("#pairs").smartupdater({
+          url : API_BASE + "/diffs/sessions/all_scan_states",
+          dataType: "json",
+          minTimeout: 5000
+          }, function (states) {
+            $('#pairs').find('tr').remove();
+            for (var pair in states) {
+              $('#pairs').append($('<tr><td>' + pair + '</td><td>' + states[pair] + '</td></tr>'));
+            }
+          }
+        );
+
+        setInterval('$("#pollState").html($("#pairs")[0].smartupdaterStatus.state)',1000);
+        setInterval('$("#pollFrequency").html($("#pairs")[0].smartupdaterStatus.timeout)',1000);
+
       });
     </script>
 
@@ -55,7 +72,17 @@
 
       <h1 class="padtop logo">Diffa Administrative Actions</h1>
 
-      <a class="admin_action" id="scan_all">Scan All Pairings For Differences</a>
+      <div class="admin_action">
+        <a id="scan_all">Scan All Pairings For Differences</a>
+        <p>Polling: <span id="pollState"></span> every <span id="pollFrequency"></span> ms</p>
+
+        <table class="pair_states">
+          <thead>
+            <tr><td>Pair</td><td>State</td></tr>
+          </thead>
+          <tbody id="pairs"/>
+        </table>
+      </div>
 
     </div>
 

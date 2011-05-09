@@ -135,6 +135,10 @@ circle.disabled {
 	margin-left: 50px;
 }
 
+.pair_states td {
+  padding: 10px;
+}
+
 #nav_bar {
 	float: right;
 }

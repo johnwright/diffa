@@ -276,20 +276,32 @@ class DefaultSessionManagerTest {
     assertEquals(Map("pair1" -> PairSyncState.UNKNOWN, "pair2" -> PairSyncState.UNKNOWN),
       manager.retrievePairSyncStates(sessionId))
 
+    assertEquals(Map("pair1" -> PairSyncState.UNKNOWN, "pair2" -> PairSyncState.UNKNOWN),
+      manager.retrieveAllPairScanStates)
+
     // Notify that the pair1 is now in Synchronised state
     manager.pairSyncStateChanged("pair1", PairSyncState.UP_TO_DATE)
     assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.UNKNOWN),
       manager.retrievePairSyncStates(sessionId))
+
+    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.UNKNOWN),
+      manager.retrieveAllPairScanStates)
 
     // Notify that the pair2 is now in Failed state
     manager.pairSyncStateChanged("pair2", PairSyncState.FAILED)
     assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.FAILED),
       manager.retrievePairSyncStates(sessionId))
 
+    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.FAILED),
+      manager.retrieveAllPairScanStates)
+
     // Start a sync. We should enter the synchronising state again
     manager.runSync(sessionId)
     assertEquals(Map("pair1" -> PairSyncState.SYNCHRONIZING, "pair2" -> PairSyncState.SYNCHRONIZING),
       manager.retrievePairSyncStates(sessionId))
+
+    assertEquals(Map("pair1" -> PairSyncState.SYNCHRONIZING, "pair2" -> PairSyncState.SYNCHRONIZING),
+      manager.retrieveAllPairScanStates)
   }
 
   @Test

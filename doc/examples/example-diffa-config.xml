@@ -17,7 +17,7 @@
   </endpoint>
 
   <endpoint name="downstream1"
-            url="amqp://localhost//exchanges/downstream1"
+            url="amqp://localhost//queues/downstream1"
             content-type="application/json"
             inbound-url="amqp://localhost//queues/exampleChanges"
             inbound-content-type="application/example+json">

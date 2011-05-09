@@ -148,13 +148,17 @@ class DefaultSessionManager(
   def retrievePairSyncStates(sessionID: String) = {
     // Gather the states for all pairs in the given session. Since some session
     sessionsByKey.get(sessionID) match {
-      case Some(cache) => {
-        val pairKeys = pairKeysForScope(cache.scope)
-        pairStates.synchronized {
-          pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.UNKNOWN)).toMap
-        }
-      }
+      case Some(cache) => pairScanStates(cache.scope)
       case None        => Map()     // No pairs in an inactive session
+    }
+  }
+
+  def retrieveAllPairScanStates = pairScanStates(SessionScope.all)
+
+  def pairScanStates(scope:SessionScope) = {
+    val pairKeys = pairKeysForScope(scope)
+    pairStates.synchronized {
+      pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.UNKNOWN)).toMap
     }
   }
 
