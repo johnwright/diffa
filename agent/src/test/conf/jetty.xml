@@ -33,13 +33,6 @@
             <New id="contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection" />
           </Item>
           <Item>
-            <New id="jsTestsHandler" class="org.eclipse.jetty.webapp.WebAppContext">
-              <Arg><Ref id="contexts"/></Arg>
-              <Arg><SystemProperty name="basedir" default="."/>/src/test/js-client</Arg>
-              <Arg>/js-tests</Arg>
-            </New>
-          </Item>
-          <Item>
             <New id="defaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler" />
           </Item>
         </Array>

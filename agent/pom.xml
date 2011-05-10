@@ -329,52 +329,5 @@
   <properties>
     <docs.targetDir>${project.build.directory}/rest-docs</docs.targetDir>
   </properties>
-
-  <profiles>
-    <profile>
-      <id>javascript-testing</id>
-      <activation>
-        <property>
-          <name>!maven.test.skip</name>
-        </property>
-      </activation>
-
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.moyrax.qunit</groupId>
-            <artifactId>qunit-maven-plugin</artifactId>
-            <version>1.2.4.2</version>
-
-            <executions>
-              <execution>
-                <phase>integration-test</phase>
-                <goals>
-                  <goal>test</goal>
-                </goals>
-              </execution>
-            </executions>
-
-            <configuration>
-              <contextPath>
-                <entry>
-                  <files>
-                    <directory>${basedir}/src/test/js-client</directory>
-                  </files>
-                </entry>
-              </contextPath>
-
-              <remoteTestResources>
-                <baseUrl>http://localhost:19093/js-tests/</baseUrl>
-                <urlFiles>
-                  <urlFile>crud-test.html</urlFile>
-                </urlFiles>
-              </remoteTestResources>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
 
