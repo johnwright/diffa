@@ -10,7 +10,7 @@ Diffa uses the Apache license, Version 2.0.
 Maven
 -----
 
-Diffa is maven built using Maven. Currently only version 2.2.1 has been tested.
+Diffa is maven built using Maven. Currently version 3.0.3 is supported.
 
 Maven Proxy
 -----------
