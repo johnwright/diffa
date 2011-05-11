@@ -77,7 +77,7 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.sitemesh</groupId>
+      <groupId>opensymphony</groupId>
       <artifactId>sitemesh</artifactId>
     </dependency>
     <dependency>

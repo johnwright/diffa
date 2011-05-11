@@ -16,6 +16,8 @@
 
 --%>
 
+<%@ taglib uri="http://www.opensymphony.com/sitemesh/decorator" prefix="decorator" %>
+
 <!-- This decorator could be a static HTML file if we didn't need to the context lookup -->
 <html>
   <head>
@@ -40,13 +42,13 @@
       var API_BASE = "<%= apiRoot %>/rest"
     </script>
 
-    <title><sitemesh:write property='title'/></title>
-    <sitemesh:write property='head'/>
+    <title><decorator:title default="Diffa"/></title>
+    <decorator:head/>
 
   </head>
 
   <body>
-    <sitemesh:write property='body'/>
+    <decorator:body/>
     <div class="footer jbasewrap">&copy;2010 LShift Ltd</div>
   </body>
 
