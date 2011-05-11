@@ -72,6 +72,22 @@ class DifferencesResource extends AbstractRestResource {
     Response.status(Response.Status.ACCEPTED).build
   }
 
+  @POST
+  @Path("/sessions/scan_all")
+  @Description("Forces Diffa to execute a scan operation for every configured pair.")
+  def scanAllPairings = {
+    log.info("Initiating scan of all known pairs")
+    session.runScanForAllPairings
+  }
+
+  @GET
+  @Path("/sessions/all_scan_states")
+  @Description("Lists the scanning state for every configured pair.")
+  def getAllPairStates = {
+    val states = session.retrieveAllPairScanStates
+    Response.ok(scala.collection.JavaConversions.asJavaMap(states)).build
+  }
+
   @GET
   @Path("/sessions/{sessionId}/sync")
   @Produces(Array("application/json"))
@@ -79,7 +95,6 @@ class DifferencesResource extends AbstractRestResource {
   @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
   def getPairStates(@PathParam("sessionId") sessionId:String): Response = {
     val states = session.retrievePairSyncStates(sessionId)
-
     Response.ok(scala.collection.JavaConversions.asJavaMap(states)).build
   }
 

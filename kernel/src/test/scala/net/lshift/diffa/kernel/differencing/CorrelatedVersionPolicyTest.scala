@@ -127,7 +127,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, writer, usMock, dsMock, nullListener)
+    policy.syncAndDifference(abPair, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 
@@ -179,7 +179,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, writer, usMock, dsMock, listener)
+    policy.syncAndDifference(abPair, writer, usMock, dsMock, listener)
     verifyAll
   }
 }

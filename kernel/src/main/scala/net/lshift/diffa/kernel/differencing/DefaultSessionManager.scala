@@ -148,21 +148,27 @@ class DefaultSessionManager(
   def retrievePairSyncStates(sessionID: String) = {
     // Gather the states for all pairs in the given session. Since some session
     sessionsByKey.get(sessionID) match {
-      case Some(cache) => {
-        val pairKeys = pairKeysForScope(cache.scope)
-        pairStates.synchronized {
-          pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.UNKNOWN)).toMap
-        }
-      }
+      case Some(cache) => pairScanStates(cache.scope)
       case None        => Map()     // No pairs in an inactive session
     }
   }
+
+  def retrieveAllPairScanStates = pairScanStates(SessionScope.all)
+
+  def pairScanStates(scope:SessionScope) = {
+    val pairKeys = pairKeysForScope(scope)
+    pairStates.synchronized {
+      pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.UNKNOWN)).toMap
+    }
+  }
+
+  def runScanForAllPairings = runSyncForScope(SessionScope.all, null, null, this)
 
   def runSync(sessionID:String) = {
     sessionsByKey.get(sessionID) match {
       case None => // No session. Nothing to do. TODO: Throw an exception?
       case Some(cache) => {
-        runDifferenceForScope(cache.scope, null, null, this)
+        runSyncForScope(cache.scope, null, null, this)
       }
     }
   }
@@ -307,7 +313,7 @@ class DefaultSessionManager(
 
   def withPair[T](pair:String, f:Function0[T]) = withValidPair(pair, f)
 
-  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
+  def runSyncForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
     pairKeysForScope(scope).foreach(pairKey => {
       // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
       // asynchronously, we might have returned before then, and this may potentially result in clients seeing
@@ -315,6 +321,12 @@ class DefaultSessionManager(
       updatePairSyncState(pairKey, PairSyncState.SYNCHRONIZING)
 
       pairPolicyClient.syncPair(pairKey, listener, this)
+    })
+  }
+
+  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
+    pairKeysForScope(scope).foreach(pairKey => {
+      pairPolicyClient.difference(pairKey, listener)
     })
   }
 
@@ -392,7 +404,10 @@ class DefaultSessionManager(
     f()
   }
 
-  def updatePairSyncState(pairKey:String, state:PairSyncState) = pairStates.synchronized {
-    pairStates(pairKey) = state
+  def updatePairSyncState(pairKey:String, state:PairSyncState) = {
+    pairStates.synchronized {
+      pairStates(pairKey) = state
+    }
+    log.info("Pair " + pairKey + " entered synchronization state: " + state)
   }
 }

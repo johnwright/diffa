@@ -103,7 +103,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.difference(abPair, writer, usMock, dsMock, nullListener)
+    policy.syncAndDifference(abPair, writer, usMock, dsMock, nullListener)
     verifyAll
   }
 }

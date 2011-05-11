@@ -66,12 +66,22 @@ case class PairActor(pairKey:String,
       }
       lastEventTime = System.currentTimeMillis()
     }
-    case DifferenceMessage(diffListener, pairSyncListener) => {
+    case DifferenceMessage(diffListener) => {
+      try {
+        writer.flush()
+        policy.difference(pairKey, diffListener)
+      } catch {
+        case ex => {
+          logger.error("Failed to difference pair " + pairKey, ex)
+        }
+      }
+    }
+    case SyncAndDifferenceMessage(diffListener, pairSyncListener) => {
       pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING)
 
       val state = try {
         writer.flush()
-        policy.difference(pairKey, writer, us, ds, diffListener)
+        policy.syncAndDifference(pairKey, writer, us, ds, diffListener)
         PairSyncState.UP_TO_DATE
       } catch {
         case c:ConnectException => {
@@ -96,7 +106,8 @@ case class PairActor(pairKey:String,
 }
 
 case class ChangeMessage(event:PairChangeEvent)
-case class DifferenceMessage(diffListener:DifferencingListener, pairSyncListener:PairSyncListener)
+case class DifferenceMessage(diffListener:DifferencingListener)
+case class SyncAndDifferenceMessage(diffListener:DifferencingListener, pairSyncListener:PairSyncListener)
 case object FlushWriterMessage
 
 /**
@@ -111,7 +122,15 @@ trait PairPolicyClient {
   def propagateChangeEvent(event:PairChangeEvent) : Unit
 
   /**
-   * Runs a syncing difference report on the underlying policy implementation in a thread safe way.
+   * Runs a difference report based on stored data for the given pair. Does not synchronise with the participants
+   * beforehand - use <code>syncPair</code> to do the sync first.
+   */
+  def difference(pairKey:String, diffListener:DifferencingListener)
+
+  /**
+   * Synchronises the participants belonging to the given pair, then generates a different report.
+   * Activities are performed on the underlying policy in a thread safe manner, allowing multiple
+   * concurrent operations to be submitted safely against the same pair concurrently.
    */
   def syncPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) : Unit
 }

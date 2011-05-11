@@ -73,16 +73,26 @@ trait SessionManager {
   def start(scope:SessionScope, start:DateTime, end:DateTime, listener:DifferencingListener): String
 
   /**
-   * Retrieves the synchronisation state of all pairs associated with the given session.
+   * Retrieves the synchronization state of all pairs associated with the given session.
    * @param sessionID the identifier of the session to query the pairs from.
    */
   def retrievePairSyncStates(sessionID:String):Map[String, PairSyncState]
 
   /**
-   * Requests that a synchronisation be run on all pairs associated with the given session.
+   * Retrieves the scanning state of all pairs known to the system.
+   */
+  def retrieveAllPairScanStates : Map[String, PairSyncState]
+
+  /**
+   * Requests that a synchronization be run on all pairs associated with the given session.
    * @param sessionID the session.
    */
   def runSync(sessionID:String):Unit
+
+  /**
+   * Requests that all configured pairs in the system be scanned for differences.
+   */
+  def runScanForAllPairings : Unit
 
   /**
    * Retrieves a version for the given session.

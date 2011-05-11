@@ -244,7 +244,7 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.difference(abPair, writer, usMock, dsMock, listener)
+    policy.syncAndDifference(abPair, writer, usMock, dsMock, listener)
     verifyAll
   }
 
