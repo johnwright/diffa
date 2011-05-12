@@ -82,7 +82,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     findActor(pairKey) ! DifferenceMessage(diffListener)
 
   def syncPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) =
-    findActor(pairKey) ! SyncAndDifferenceMessage(diffListener, pairSyncListener)
+    findActor(pairKey) ! ScanAndDifferenceMessage(diffListener, pairSyncListener)
 
   def findActor(pairKey:String) = {
     val actors = Actor.registry.actorsFor(pairKey)

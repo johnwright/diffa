@@ -18,14 +18,17 @@ package net.lshift.diffa.kernel.actors
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.slf4j.{Logger, LoggerFactory}
-import net.lshift.diffa.kernel.events.PairChangeEvent
 import akka.actor.{Actor, Scheduler}
-import scala.collection.mutable.ListBuffer
 import net.jcip.annotations.ThreadSafe
-import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import java.util.concurrent.ScheduledFuture
 import net.lshift.diffa.kernel.differencing._
 import java.net.ConnectException
+import collection.mutable.{Queue, ListBuffer}
+import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
+import net.lshift.diffa.kernel.config.Pair
+import net.lshift.diffa.kernel.participants.{Participant, DownstreamParticipant, UpstreamParticipant}
+import org.joda.time.DateTime
+import akka.dispatch.{Future, MessageDispatcher, Dispatchers}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -45,6 +48,46 @@ case class PairActor(pairKey:String,
   private var lastEventTime: Long = 0
   private var scheduledFlushes: ScheduledFuture[_] = _
 
+  /**
+   * FSM: This indicates whether the actor has entered the scanning state
+   */
+  private var scanning = false
+  private var currentDiffListener:DifferencingListener = null
+  private var currentScanListener:PairSyncListener = null
+  private var upstreamSuccess = false
+  private var downstreamSuccess = false
+
+  /**
+   * A queue of deferred messages that arrived during a scanning state
+   */
+  private val deferred = new Queue[Deferrable]
+
+  abstract case class VersionCorrelationWriterCommand
+  case class ClearDownstreamVersion(id: VersionID) extends VersionCorrelationWriterCommand
+  case class ClearUpstreamVersion(id: VersionID) extends VersionCorrelationWriterCommand
+  case class StoreDownstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) extends VersionCorrelationWriterCommand
+  case class StoreUpstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, vsn: String) extends VersionCorrelationWriterCommand
+
+  private val writerProxy = new VersionCorrelationWriter() {
+    def flush() = null
+    def isDirty = false
+    def clearDownstreamVersion(id: VersionID) = getOrThrow(self !!! ClearDownstreamVersion(id))
+    def clearUpstreamVersion(id: VersionID) = getOrThrow(self !!! ClearUpstreamVersion(id))
+    def storeDownstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String)
+      = getOrThrow(self !!! StoreDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn))
+    def storeUpstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, vsn: String)
+      = getOrThrow(self !!! StoreUpstreamVersion(id, attributes, lastUpdated, vsn))
+
+    def getOrThrow[T](f:Future[T]) = f.result.getOrElse(throw new RuntimeException("Writer proxy message timeout"))
+  }
+
+  def handleWriterCommand(command:VersionCorrelationWriterCommand) = command match {
+    case ClearDownstreamVersion(id) =>
+    case ClearUpstreamVersion(id) =>
+    case StoreDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn) =>
+    case StoreUpstreamVersion(id, attributes, lastUpdated, vsn) =>
+  }
+
   lazy val writer = store.openWriter()
 
   override def preStart = {
@@ -57,7 +100,12 @@ case class PairActor(pairKey:String,
   }
 
   def receive = {
-    case ChangeMessage(event)        => {
+
+    case c:VersionCorrelationWriterCommand if scanning => handleWriterCommand(c)
+
+    case d:Deferrable   if scanning   => deferred.enqueue(d)
+
+    case ChangeMessage(event)         => {
       policy.onChange(writer, event)
 
       // if no events have arrived within the timeout period, flush and clear the buffer
@@ -66,6 +114,7 @@ case class PairActor(pairKey:String,
       }
       lastEventTime = System.currentTimeMillis()
     }
+
     case DifferenceMessage(diffListener) => {
       try {
         writer.flush()
@@ -76,38 +125,115 @@ case class PairActor(pairKey:String,
         }
       }
     }
-    case SyncAndDifferenceMessage(diffListener, pairSyncListener) => {
+
+    case ScanAndDifferenceMessage(diffListener, pairSyncListener) if !scanning => {
+      scanning = true
+
+      // squirrel some callbacks away for invocation in subsequent receives in the scanning state
+      currentDiffListener = diffListener
+      currentScanListener = pairSyncListener
+
       pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING)
 
-      val state = try {
+      try {
         writer.flush()
-        policy.syncAndDifference(pairKey, writer, us, ds, diffListener)
-        PairSyncState.UP_TO_DATE
-      } catch {
-        case c:ConnectException => {
-          logger.error("Investigate: Participant was not available to synchronize pair: " + pairKey)
-          PairSyncState.FAILED
+
+        Actor.spawn {
+          initiateScan(us)
+          self !  UpstreamScanSuccess
         }
+
+        Actor.spawn {
+          initiateScan(ds)
+          self !  DownstreamScanSuccess
+        }
+
+      } catch {
         case x:Exception => {
-          logger.error("FAILED to synchronise pair " + pairKey, x)
-          PairSyncState.FAILED
+          logger.error("Failed to initiate scan for pair: " + pairKey, x)
+          pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
         }
       }
+    }
 
-      pairSyncListener.pairSyncStateChanged(pairKey, state)
-
+    case UpstreamScanSuccess if scanning => {
+      upstreamSuccess = true
+      checkForCompletion
+    }
+    case DownstreamScanSuccess if scanning => {
+      downstreamSuccess = true
+      checkForCompletion
     }
 
     case FlushWriterMessage         => {
       writer.flush()
     }
+
+    case x => logger.error("Spurious message: %s".format(x))
   }
+
+  def initiateScan(participant:Participant) = {
+    try {
+      participant match {
+        case u:UpstreamParticipant    => policy.scanUpstream(pairKey, writerProxy, u, currentDiffListener)
+        case d:DownstreamParticipant  => policy.scanDownstream(pairKey, writerProxy, d, currentDiffListener)
+      }
+    }
+    catch {
+      case x:Exception => {
+        scanning = false
+        currentDiffListener = null
+        currentScanListener = null
+        currentScanListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
+      }
+    }
+  }
+  /**
+   * Exit the scanning state and notify interested parties
+   */
+  def checkForCompletion = {
+    if (upstreamSuccess && downstreamSuccess) {
+      scanning = false
+      currentScanListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE)
+    }
+  }
+
+//  def spawnLink(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
+//    case object SpawnLink
+//    val worker = Actor.actorOf(new Actor() {
+//      self.dispatcher = dispatcher
+//      def receive = { case SpawnLink => try { body } finally {self.stop } }
+//    }).start
+//    worker.link(self)
+//    worker ! SpawnLink
+//  }
+
+  //def sendBack(pair:Pair, mismatch:VersionMismatch) = ()
+
+  // Lifted from BSVP
+//  def handleCorrelation(c:Correlation) = {
+//
+//  }
+//  def handleMismatch(pairKey: String, vm: VersionMismatch) = {
+//    vm match {
+//      case VersionMismatch(id, attributes, lastUpdate, usVsn, _) =>
+//        if (usVsn != null) {
+//          handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn))
+//        } else {
+//          handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pairKey, id)))
+//        }
+//    }
+//  }
 
 }
 
-case class ChangeMessage(event:PairChangeEvent)
-case class DifferenceMessage(diffListener:DifferencingListener)
-case class SyncAndDifferenceMessage(diffListener:DifferencingListener, pairSyncListener:PairSyncListener)
+case object UpstreamScanSuccess
+case object DownstreamScanSuccess
+
+abstract class Deferrable
+case class ChangeMessage(event:PairChangeEvent) extends Deferrable
+case class DifferenceMessage(diffListener:DifferencingListener) extends Deferrable
+case class ScanAndDifferenceMessage(diffListener:DifferencingListener, pairSyncListener:PairSyncListener)
 case object FlushWriterMessage
 
 /**

@@ -48,7 +48,7 @@ class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:Differen
       })
     }
 
-    def handleMismatch(pairKey:String, writer: VersionCorrelationWriter, vm:VersionMismatch) = {
+    def handleMismatch(pairKey:String, writer: VersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           if (partVsn != null) {

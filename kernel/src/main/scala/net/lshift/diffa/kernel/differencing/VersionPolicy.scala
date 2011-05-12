@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
+import net.lshift.diffa.kernel.config.Pair
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -48,9 +49,31 @@ trait VersionPolicy {
    * Requests that the policy synchronize then difference the given participants. Differences that are
    * detected will be reported to the listener provided.
    */
+  @Deprecated
   def syncAndDifference(pairKey:String,
                         writer: VersionCorrelationWriter,
                         us:UpstreamParticipant,
                         ds:DownstreamParticipant,
                         listener:DifferencingListener) : Boolean
+
+//  def handleMismatch(pairKey:String,
+//                     writer: VersionCorrelationWriter,
+//                     vm:VersionMismatch,
+//                     listener:DifferencingListener,
+//                     eventHandler:CorrelationEventHandler) : Unit
+
+  def scanUpstream(pairKey:String, writer: VersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) : Unit
+  def scanDownstream(pairKey:String, writer: VersionCorrelationWriter, participant:DownstreamParticipant, listener:DifferencingListener) : Unit
+
 }
+
+/**
+   * A delegate that knows how to process a mismatched version that is emitted from a policy
+   */
+//trait VersionMismatchHandler {
+//  def handleMismatch(pair:Pair, mismatch:VersionMismatch) : Unit
+//}
+
+//trait CorrelationEventHandler {
+//  def handleUpdate(correlation:Correlation) : Unit
+//}
