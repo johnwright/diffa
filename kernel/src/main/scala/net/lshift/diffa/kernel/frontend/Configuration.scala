@@ -160,6 +160,12 @@ class Configuration(val configStore: ConfigStore,
 
   def deleteGroup(key: String): Unit = {
     log.debug("Processing group delete request: " + key)
+    val group = configStore.getGroup(key)
+    val pairs = configStore.getPairsInGroup(group)
+
+    // delete pairs first
+    pairs.foreach(p => deletePair(p.key))
+    
     configStore.deleteGroup(key)
   }
 
