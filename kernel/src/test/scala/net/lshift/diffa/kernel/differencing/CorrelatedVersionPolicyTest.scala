@@ -121,7 +121,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     listener.onMatch(VersionID(abPair, "id4"), null); expectLastCall
 
     // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
+    //writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
@@ -177,15 +177,15 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3")); expectLastCall
 
     // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
+    //writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     //policy.syncAndDifference(abPair, writer, usMock, dsMock, listener)
-    policy.scanUpstream(abPair, writer, usMock, nullListener)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(abPair, writer, usMock, listener)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener)
     policy.difference(abPair, nullListener)
 
     verifyAll
