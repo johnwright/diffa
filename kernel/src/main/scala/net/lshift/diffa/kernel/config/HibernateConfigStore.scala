@@ -61,10 +61,21 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
     // Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
     // which would create an infinite loop in computing the hashCode of pairs and groups
-    s.createQuery("FROM Pair WHERE group = :group").setEntity("group", group).list.foreach(x => s.delete(x))
+    getPairsInGroup(s, group).foreach(x => s.delete(x))
 
     s.delete(group)
   })
+
+  def getPairsInGroup(group: PairGroup): Seq[Pair] =
+    sessionFactory.withSession(s => getPairsInGroup(s, group))
+
+  private def getPairsInGroup(s: Session, group: PairGroup): Seq[Pair] = {
+    s.createQuery("FROM Pair WHERE group = :group")
+     .setEntity("group", group)
+     .list
+     .asInstanceOf[java.util.List[Pair]]
+     .toSeq
+  }
 
   def listGroups: Seq[GroupContainer] = sessionFactory.withSession(s => {
     val groups = listQuery[PairGroup](s, "allGroups", Map())

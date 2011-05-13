@@ -61,6 +61,7 @@ class HibernateConfigStoreTest {
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name, groupKey1)
 
+
   val groupKey2 = "TEST_GROUP2"
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
   val groupRenamed = "TEST_GROUP_RENAMED"
@@ -189,6 +190,24 @@ class HibernateConfigStoreTest {
 
     val retrieved = configStore.getGroup(groupRenamed)
     assertEquals(groupRenamed, retrieved.key)
+  }
+
+  @Test
+  def testGetPairsInGroup {
+    declareAll
+    val pairKey2 = "TEST_PAIR_ALT"
+    val pairDef2 = new PairDef(pairKey2, versionPolicyName2, matchingTimeout, upstream2.name,
+                               downstream2.name, groupKey1)
+    configStore.createOrUpdatePair(pairDef2)
+
+    val pairs = configStore.getPairsInGroup(group)
+    assertEquals(2, pairs.size)
+    val pair1 = pairs.find(_.key == pairKey)
+    val pair2 = pairs.find(_.key == pairKey2)
+    assertTrue(pair1.isDefined)
+    assertTrue(pair2.isDefined)
+    assertEquals(group, pair1.get.group)
+    assertEquals(group, pair2.get.group)
   }
 
   @Test
