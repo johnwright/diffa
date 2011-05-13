@@ -84,7 +84,11 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    //policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
     verifyAll
   }
 
@@ -117,7 +121,12 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    // TODO refactor
+    //policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
     verifyAll
   }
 
@@ -154,7 +163,13 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    //policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
+
+
     verifyAll
   }
 
@@ -190,7 +205,12 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    // TODO
+    //policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
     verifyAll
   }
 

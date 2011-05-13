@@ -81,7 +81,7 @@ class PairActorTest {
 
   def expectScans() = {
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
-    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(ds), EasyMock.eq(diffListener)))
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(ds), EasyMock.eq(diffListener)))
   }
 
   @Test

@@ -31,9 +31,9 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) = new DownstreamCorrelatingSyncStrategy(us,ds,l)
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingSyncStrategy(us,ds)
   
-  protected class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant, val l:DifferencingListener)
+  protected class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
       extends SyncStrategy {
     
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {

@@ -233,7 +233,7 @@ abstract class AbstractPolicyTest {
                         Down("id2", testData.valueKey, testData.values(1), "vsn2a", downstreamVersionFor("vsn2a"))))
 
     // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
+    //writer.flush; expectLastCall.once
 
     // If the version check returns mismatches, we should see differences generated
     expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
@@ -244,7 +244,11 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.syncAndDifference(abPair, writer, usMock, dsMock, listener)
+    //policy.syncAndDifference(abPair, writer, usMock, dsMock, listener)
+    policy.scanUpstream(abPair, writer, usMock, nullListener)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener)
+    policy.difference(abPair, listener)
+
     verifyAll
   }
 

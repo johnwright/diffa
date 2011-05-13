@@ -33,7 +33,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore, Pair}
 class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) = new DownstreamSameSyncStrategy
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamSameSyncStrategy
 
   protected class DownstreamSameSyncStrategy extends SyncStrategy {
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {

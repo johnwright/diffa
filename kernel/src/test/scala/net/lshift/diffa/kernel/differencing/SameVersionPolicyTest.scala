@@ -97,13 +97,18 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     listener.onMatch(VersionID(abPair, "id4"), null); expectLastCall
 
     // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
+    //writer.flush; expectLastCall.once
 
     // We should still see an unmatched version check
     expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.syncAndDifference(abPair, writer, usMock, dsMock, nullListener)
+    // TODO
+    //policy.syncAndDifference(abPair, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(abPair, writer, usMock, nullListener)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener)
+    policy.difference(abPair, listener)
+
     verifyAll
   }
 }

@@ -82,10 +82,10 @@ case class PairActor(pairKey:String,
   }
 
   def handleWriterCommand(command:VersionCorrelationWriterCommand) = command match {
-    case ClearDownstreamVersion(id) =>
-    case ClearUpstreamVersion(id) =>
-    case StoreDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn) =>
-    case StoreUpstreamVersion(id, attributes, lastUpdated, vsn) =>
+    case ClearDownstreamVersion(id) => writer.clearDownstreamVersion(id)
+    case ClearUpstreamVersion(id)   => writer.clearUpstreamVersion(id)
+    case StoreDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn) => writer.storeDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn)
+    case StoreUpstreamVersion(id, attributes, lastUpdated, vsn) => writer.storeUpstreamVersion(id, attributes, lastUpdated, vsn)
   }
 
   lazy val writer = store.openWriter()
@@ -175,8 +175,8 @@ case class PairActor(pairKey:String,
   def initiateScan(participant:Participant) = {
     try {
       participant match {
-        case u:UpstreamParticipant    => policy.scanUpstream(pairKey, writerProxy, u, currentDiffListener)
-        case d:DownstreamParticipant  => policy.scanDownstream(pairKey, writerProxy, d, currentDiffListener)
+        case u:UpstreamParticipant    => policy.scanUpstream(pairKey, writerProxy, us, currentDiffListener)
+        case d:DownstreamParticipant  => policy.scanDownstream(pairKey, writerProxy, us, ds, currentDiffListener)
       }
     }
     catch {
@@ -197,33 +197,6 @@ case class PairActor(pairKey:String,
       currentScanListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE)
     }
   }
-
-//  def spawnLink(body: => Unit)(implicit dispatcher: MessageDispatcher = Dispatchers.defaultGlobalDispatcher): Unit = {
-//    case object SpawnLink
-//    val worker = Actor.actorOf(new Actor() {
-//      self.dispatcher = dispatcher
-//      def receive = { case SpawnLink => try { body } finally {self.stop } }
-//    }).start
-//    worker.link(self)
-//    worker ! SpawnLink
-//  }
-
-  //def sendBack(pair:Pair, mismatch:VersionMismatch) = ()
-
-  // Lifted from BSVP
-//  def handleCorrelation(c:Correlation) = {
-//
-//  }
-//  def handleMismatch(pairKey: String, vm: VersionMismatch) = {
-//    vm match {
-//      case VersionMismatch(id, attributes, lastUpdate, usVsn, _) =>
-//        if (usVsn != null) {
-//          handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn))
-//        } else {
-//          handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pairKey, id)))
-//        }
-//    }
-//  }
 
 }
 

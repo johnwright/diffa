@@ -75,17 +75,16 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     generateDifferenceEvents(pair, l)
   }
 
-  @Deprecated
-  def syncAndDifference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
-    val pair = configStore.getPair(pairKey)
-
-//    synchronizeParticipants(pair, writer, us, ds, l)
-    writer.flush()
-
-    generateDifferenceEvents(pair, l)
-
-    true
-  }
+//  def syncAndDifference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+//    val pair = configStore.getPair(pairKey)
+//
+////    synchronizeParticipants(pair, writer, us, ds, l)
+//    writer.flush()
+//
+//    generateDifferenceEvents(pair, l)
+//
+//    true
+//  }
 
   def scanUpstream(pairKey:String, writer: VersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
@@ -93,7 +92,12 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     upstreamConstraints.foreach((new UpstreamSyncStrategy).scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener))
   }
 
-  def scanDownstream(pairKey:String, writer: VersionCorrelationWriter, participant:DownstreamParticipant, listener:DifferencingListener) = ()
+  def scanDownstream(pairKey:String, writer: VersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) = {
+    val pair = configStore.getPair(pairKey)
+    val downstreamConstraints = pair.downstream.groupedConstraints
+    downstreamConstraints.foreach(downstreamStrategy(us,ds).scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener))
+  }
+
 
   private def generateDifferenceEvents(pair:Pair, l:DifferencingListener) {
     // Run a query for mismatched versions, and report each one
@@ -116,7 +120,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   /**
    * Allows an implementing policy to define what kind of downstream syncing policy it requires
    */
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) : SyncStrategy
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) : SyncStrategy
 
   /**
    * The basic functionality for a synchronisation strategy.

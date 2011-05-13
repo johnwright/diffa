@@ -46,34 +46,15 @@ trait VersionPolicy {
   def difference(pairKey:String, listener:DifferencingListener)
 
   /**
-   * Requests that the policy synchronize then difference the given participants. Differences that are
+   * Requests that the policy scan the upstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
    */
-  @Deprecated
-  def syncAndDifference(pairKey:String,
-                        writer: VersionCorrelationWriter,
-                        us:UpstreamParticipant,
-                        ds:DownstreamParticipant,
-                        listener:DifferencingListener) : Boolean
-
-//  def handleMismatch(pairKey:String,
-//                     writer: VersionCorrelationWriter,
-//                     vm:VersionMismatch,
-//                     listener:DifferencingListener,
-//                     eventHandler:CorrelationEventHandler) : Unit
-
   def scanUpstream(pairKey:String, writer: VersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) : Unit
-  def scanDownstream(pairKey:String, writer: VersionCorrelationWriter, participant:DownstreamParticipant, listener:DifferencingListener) : Unit
+
+  /**
+   * Requests that the policy scan the downstream participants for the given pairing. Differences that are
+   * detected will be reported to the listener provided.
+   */
+  def scanDownstream(pairKey:String, writer: VersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Unit
 
 }
-
-/**
-   * A delegate that knows how to process a mismatched version that is emitted from a policy
-   */
-//trait VersionMismatchHandler {
-//  def handleMismatch(pair:Pair, mismatch:VersionMismatch) : Unit
-//}
-
-//trait CorrelationEventHandler {
-//  def handleUpdate(correlation:Correlation) : Unit
-//}
