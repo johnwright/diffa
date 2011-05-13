@@ -182,9 +182,9 @@ case class PairActor(pairKey:String,
     catch {
       case x:Exception => {
         scanning = false
+        currentScanListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
         currentDiffListener = null
         currentScanListener = null
-        currentScanListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
       }
     }
   }

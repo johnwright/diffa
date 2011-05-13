@@ -24,8 +24,8 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
-import org.easymock.IAnswer
 import concurrent.{TIMEOUT, MailBox}
+import org.easymock.{EasyMock, IAnswer}
 
 class PairActorTest {
 
@@ -79,6 +79,11 @@ class PairActorTest {
   @After
   def stop = supervisor.stopActor(pairKey)
 
+  def expectScans() = {
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(ds), EasyMock.eq(diffListener)))
+  }
+
   @Test
   def runDifference = {
     val id = VersionID(pairKey, "foo")
@@ -87,7 +92,9 @@ class PairActorTest {
     expect(writer.flush()).atLeastOnce
     replay(writer)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    expect(versionPolicy.syncAndDifference(pairKey, writer, us, ds, diffListener)).andReturn(true)
+
+    expectScans
+
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
@@ -109,7 +116,9 @@ class PairActorTest {
     expect(writer.flush()).atLeastOnce
     replay(writer)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    expect(versionPolicy.syncAndDifference(pairKey, writer, us, ds, diffListener)).andThrow(new RuntimeException("Foo!"))
+
+    expectScans.andThrow(new RuntimeException("Foo!"))
+
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })
