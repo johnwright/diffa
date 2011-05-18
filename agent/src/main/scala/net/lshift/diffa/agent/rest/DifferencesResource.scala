@@ -32,31 +32,31 @@ import net.lshift.diffa.kernel.participants.ParticipantType
 @Component
 class DifferencesResource extends AbstractRestResource {
 
-  private val log:Logger = LoggerFactory.getLogger(getClass)
+  private val log: Logger = LoggerFactory.getLogger(getClass)
 
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
 
-  @Autowired var session:SessionManager = null
-  
+  @Autowired var session: SessionManager = null
+
   @POST
   @Path("/sessions")
   @Description("Returns the URL of an endpoint that can be polled to receive outstanding differences. " +
-               "If a requested pair does not exist, a 404 will be returned.")
+    "If a requested pair does not exist, a 404 will be returned.")
   @OptionalParams(Array(
-    new OptionalParam(name="pairs", datatype="string", description="Comma-separated list of pair IDs"),
-    new OptionalParam(name="start", datatype="date", description="This is the lower bound of the date range for analysis"),
-    new OptionalParam(name="end", datatype="date", description="This is the upper bound of the date range for analysis")
+    new OptionalParam(name = "pairs", datatype = "string", description = "Comma-separated list of pair IDs"),
+    new OptionalParam(name = "start", datatype = "date", description = "This is the lower bound of the date range for analysis"),
+    new OptionalParam(name = "end", datatype = "date", description = "This is the upper bound of the date range for analysis")
   ))
-  def subscribe(@QueryParam("pairs") pairs:String,
-                @QueryParam("start") start:String,
-                @QueryParam("end") end:String) = {
+  def subscribe(@QueryParam("pairs") pairs: String,
+                @QueryParam("start") start: String,
+                @QueryParam("end") end: String) = {
     val scope = pairs match {
       case null => SessionScope.all
-      case _    => SessionScope.forPairs(pairs.split(","):_*)
+      case _ => SessionScope.forPairs(pairs.split(","): _*)
     }
 
     log.debug("Creating a subscription for this scope: " + scope)
-    val sessionId = maybe((_:Seq[String]) => session.start(scope), scope.includedPairs)
+    val sessionId = maybe((_: Seq[String]) => session.start(scope), scope.includedPairs)
     val uri = uriInfo.getBaseUriBuilder.path("diffs/sessions/" + sessionId).build()
     Response.created(uri).`type`("text/plain").build()
   }
@@ -64,8 +64,8 @@ class DifferencesResource extends AbstractRestResource {
   @POST
   @Path("/sessions/{sessionId}/sync")
   @Description("Forces Diffa to execute a synchronisation operation on the pairs underlying the session")
-  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
-  def synchroniseSession(@PathParam("sessionId") sessionId:String, @Context request:Request) : Response = {
+  @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
+  def synchroniseSession(@PathParam("sessionId") sessionId: String, @Context request: Request): Response = {
     log.debug("Sync requested for sessionId = " + sessionId)
 
     session.runSync(sessionId)
@@ -92,8 +92,8 @@ class DifferencesResource extends AbstractRestResource {
   @Path("/sessions/{sessionId}/sync")
   @Produces(Array("application/json"))
   @Description("Retrieves the synchronisation states of pairs in the current session.")
-  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
-  def getPairStates(@PathParam("sessionId") sessionId:String): Response = {
+  @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
+  def getPairStates(@PathParam("sessionId") sessionId: String): Response = {
     val states = session.retrievePairSyncStates(sessionId)
     Response.ok(scala.collection.JavaConversions.asJavaMap(states)).build
   }
@@ -102,29 +102,29 @@ class DifferencesResource extends AbstractRestResource {
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))
   @Description("Returns a list of outstanding differences in the current session. ")
-  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
-  @OptionalParams(Array(new OptionalParam(name="since", datatype="integer",
-      description="This will return differences subsequent to the given sequence number.")))
-  def getDifferences(@PathParam("sessionId") sessionId:String,
-                     @QueryParam("since") since:String,
-                     @Context request:Request) : Response = {
+  @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
+  @OptionalParams(Array(new OptionalParam(name = "since", datatype = "integer",
+    description = "This will return differences subsequent to the given sequence number.")))
+  def getDifferences(@PathParam("sessionId") sessionId: String,
+                     @QueryParam("since") since: String,
+                     @Context request: Request): Response = {
     try {
       // Evaluate whether the version of the session has changed
       val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
       request.evaluatePreconditions(sessionVsn) match {
         case null => // We'll continue with the request
-        case r    => throw new WebApplicationException(r.build)
+        case r => throw new WebApplicationException(r.build)
       }
-      
+
       val diffs = since match {
         case null => session.retrieveAllEvents(sessionId)
-        case _    => session.retrieveEventsSince(sessionId, since)
+        case _ => session.retrieveEventsSince(sessionId, since)
       }
 
       Response.ok(diffs.toArray).tag(sessionVsn).build
     }
-    catch  {
-      case e:NoSuchElementException => {
+    catch {
+      case e: NoSuchElementException => {
         log.error("Unsucessful query on sessionId = " + sessionId + "; since = " + since)
         throw new WebApplicationException(404)
       }
@@ -136,17 +136,17 @@ class DifferencesResource extends AbstractRestResource {
   @Produces(Array("text/plain"))
   @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
   @MandatoryParams(Array(
-    new MandatoryParam(name="sessionId", datatype="string", description="Session ID"),
-    new MandatoryParam(name="evtSeqId", datatype="string", description="Event Sequence ID"),
-    new MandatoryParam(name="participant", datatype="string", description="Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
+    new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID"),
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID"),
+    new MandatoryParam(name = "participant", datatype = "string", description = "Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
   ))
-  def getDetail(@PathParam("sessionId") sessionId:String,
-                @PathParam("evtSeqId") evtSeqId:String,
-                @PathParam("participant") participant:String) : String = {
+  def getDetail(@PathParam("sessionId") sessionId: String,
+                @PathParam("evtSeqId") evtSeqId: String,
+                @PathParam("participant") participant: String): String = {
     log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId + "; participant = " + participant)
 
     ParticipantType.valueOf(participant) match {
-      case None    => throw new WebApplicationException(404)
+      case None => throw new WebApplicationException(404)
       case Some(t) => {
         try {
           session.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.valueOf(participant).get)
@@ -161,13 +161,30 @@ class DifferencesResource extends AbstractRestResource {
     }
   }
 
+  @GET
+  @Path("/buckets")
+  @Produces(Array("application/json"))
+  @Description("Returns an array of bucketed event counts")
+  def getBuckets(): Response = {
+    val buckets = Array(
+      Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350),
+      Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
+      Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 3),
+      Array(1, 10, 2, 12, 3, 40, 0, 10, 0, 3),
+      Array (1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
+      Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
+      Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350)
+    )
+    Response.ok(buckets).build
+  }
 
-  def maybe(s:String) = {
+
+  def maybe(s: String) = {
     try {
       parser.parseDateTime(s)
     }
     catch {
-      case e:Exception => null 
+      case e: Exception => null
     }
   }
 
