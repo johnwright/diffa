@@ -3,6 +3,8 @@ var canvas;
 var context;
 var overlay;
 var overlayContext;
+var underlay;
+var underlayContext;
 
 function initCanvas() {
   display = document.getElementById("display");
@@ -11,6 +13,9 @@ function initCanvas() {
   context = canvas.getContext("2d");
   overlay = document.getElementById("overlay");
   overlayContext = overlay.getContext("2d");
+
+  underlay = document.getElementById("underlay");
+  underlayContext = underlay.getContext("2d");
 }
 
 function clearCanvas() {
@@ -37,7 +42,6 @@ function loadTestData() {
     buckets[i] = row;
   }
   $.get("rest/diffs/buckets", function(data) {
-    alert("Load was performed." + data);
     for (var y = 0; y < data.length; y++) {
       for (var x = 0; x < data[y].length; x++) {
         buckets[y][x] = data[y][x];
@@ -129,7 +133,7 @@ function drawGrid() {
   }
 
   for (var s = 0.5 + (2 * gutterSize + gridSize); s < canvas.height; s += (2 * gutterSize + gridSize)) {
-    dashedLine(context, 0, s, region_width, s);
+    dashedLine(underlayContext, 0, s, region_width, s);
   }
 
   for (var i = 0.5; i < region_width; i += gridSize) {
