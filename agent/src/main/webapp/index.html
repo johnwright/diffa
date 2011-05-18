@@ -29,11 +29,12 @@
   <link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
   <link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/>
 
-  <script type="text/javascript" src="js/jquery-1.4.1.patched.js" charset="utf-8"></script>
+  <script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
   <script type="text/javascript" src="js/jquery-ui-slider.1.8.5.min.js" charset="utf-8"></script>
   <script type="text/javascript" src="js/jquery.color.js" charset="utf-8"></script>
-  <script type="text/javascript" src="js/raphael.js" charset="utf-8"></script>
-  <script type="text/javascript" src="js/app.js" charset="utf-8"></script>
+  <!--<script type="text/javascript" src="js/raphael.js" charset="utf-8"></script>-->
+  <!--<script type="text/javascript" src="js/app.js" charset="utf-8"></script>-->
+  <script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
 </head>
 
 <body>
@@ -45,8 +46,14 @@
   </div>
 
   <h1 class="padtop logo">Diffa</h1>
+  <div id="heatmapContainer" class="margintop">
+    <div id="display" style="position:relative; width:800px;height:400px">
+      <canvas id="canvas" style="z-index:1; position:absolute; left:0px; top:0px;" width="800px" height="400px"></canvas>
+      <canvas id="overlay" style="z-index:2; position:absolute; left:0px; top:0px;" width="800px" height="400px"></canvas>
+    </div>
+  </div>
 
-  <div id="heatmapContainer" class="margintop"></div>
+  <!--<div id="heatmapContainer" class="margintop"></div>-->
   <div id="heatmapcontrols" class="clear padtop padbottom">
     <div class="right"><span id="errorContainer"></span></div>
     <div id="scrollBarContainer" class="left">
@@ -109,6 +116,11 @@
 
   <div class="push"></div>
 </div>
+<script>
+  $(document).ready(function() {
+    initGraph();
+  });
+</script>
 <!-- end wrap -->
 
 </body>
