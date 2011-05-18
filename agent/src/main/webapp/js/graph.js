@@ -25,7 +25,7 @@ var buckets;
 var maxColumns = 100;
 var maxRows = 10;
 var gridSize = 30;
-var gutterSize = 20;
+var gutterSize = 12;
 
 function loadTestData() {
   buckets = [];
@@ -38,8 +38,8 @@ function loadTestData() {
   }
   $.get("rest/diffs/buckets", function(data) {
     alert("Load was performed." + data);
-    for(var y = 0; y < data.length; y++)  {
-      for(var x = 0; x < data[y].length; x++)  {
+    for (var y = 0; y < data.length; y++) {
+      for (var x = 0; x < data[y].length; x++) {
         buckets[y][x] = data[y][x];
       }
     }
@@ -84,7 +84,7 @@ function drawGrid() {
       context.moveTo(x, 0);
       context.lineTo(x, canvas.height);
     }
-    for (var y = 0.5; y < canvas.height; y += (gutterSize + gridSize)) {
+    for (var y = 0.5; y < canvas.height; y += (2 * gutterSize + gridSize)) {
       context.moveTo(0, y);
       context.lineTo(region_width, y);
     }
@@ -92,8 +92,15 @@ function drawGrid() {
     context.stroke();
   }
 
+  for (var s = 0.5; s < canvas.height; s += (2 * gutterSize + gridSize)) {
+    context.moveTo(0, s);
+    context.lineTo(region_width, s);
+  }
+  context.strokeStyle = "#eee";
+  context.stroke();
+
   for (var i = 0.5; i < region_width; i += gridSize) {
-    for (var j = 0.5; j < canvas.height; j += (gutterSize + gridSize)) {
+    for (var j = 0.5; j < canvas.height; j += (2 * gutterSize + gridSize)) {
       drawCircle(i, j);
     }
   }
@@ -105,10 +112,9 @@ function drawOverlay() {
     var value = buckets[highlighted.row][highlighted.column];
     if (value > 0) {
       var c_x = highlighted.column * gridSize;
-      var c_y = (highlighted.row * (gutterSize + gridSize)) + gutterSize;
-      + Math.floor(gridSize / 2);
+      var c_y = (highlighted.row * (2 * gutterSize + gridSize)) + gutterSize + Math.floor(gridSize / 2);
       overlayContext.font = "bold 12px sans-serif";
-      overlayContext.textBaseline = "bottom";
+      overlayContext.textBaseline = "middle";
       var width = context.measureText("" + value).width;
       overlayContext.fillText(value, c_x + Math.floor(gridSize / 2) - Math.floor(width / 2), c_y);
     }
@@ -144,7 +150,7 @@ function coords(e) {
 
 function coordsToPosition(coords) {
   return {
-    "row": Math.floor(coords.y / (gutterSize + gridSize)),
+    "row": Math.floor(coords.y / (2 * gutterSize + gridSize)),
     "column": Math.floor((coords.x) / gridSize)
   };
 }
