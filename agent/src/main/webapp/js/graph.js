@@ -65,12 +65,14 @@ function drawCircle(i, j) {
       context.strokeStyle = "red";
     }
     else {
-      context.strokeStyle = "green";
+      context.strokeStyle = "black";
     }
+    context.fillStyle = "white";
     context.beginPath();
     context.arc(cell_x, cell_y, size.value, 0, Math.PI * 2, false);
     context.closePath();
     context.stroke();
+    context.fill();
   }
 }
 
