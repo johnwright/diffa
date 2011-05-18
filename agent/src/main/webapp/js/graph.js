@@ -48,6 +48,42 @@ function loadTestData() {
   });
 }
 
+function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
+  if (dashLen == undefined) dashLen = 2;
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+
+  var dX = x2 - x1;
+  var dY = y2 - y1;
+  var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
+  var dashX = dX / dashes;
+  var dashY = dY / dashes;
+
+  var q = 0;
+  while (q++ < dashes) {
+    x1 += dashX;
+    y1 += dashY;
+    if (q % 2 == 0) {
+      ctx.moveTo(x1, y1);
+    }
+    else {
+      ctx.lineTo(x1, y1);
+    }
+    //this[q % 2 == 0 ? 'moveTo' : 'lineTo'](x1, y1);
+  }
+  if (q % 2 == 0) {
+    ctx.moveTo(x1, y1);
+  }
+  else {
+    ctx.lineTo(x1, y1);
+  }
+  //this[q % 2 == 0 ? 'moveTo' : 'lineTo'](x2, y2);
+
+  ctx.stroke();
+  ctx.closePath();
+}
+
 var selected;
 function drawCircle(i, j) {
   var cell = coordsToPosition({"x":i, "y":j});
@@ -92,12 +128,9 @@ function drawGrid() {
     context.stroke();
   }
 
-  for (var s = 0.5; s < canvas.height; s += (2 * gutterSize + gridSize)) {
-    context.moveTo(0, s);
-    context.lineTo(region_width, s);
+  for (var s = 0.5 + (2 * gutterSize + gridSize); s < canvas.height; s += (2 * gutterSize + gridSize)) {
+    dashedLine(context, 0, s, region_width, s);
   }
-  context.strokeStyle = "#eee";
-  context.stroke();
 
   for (var i = 0.5; i < region_width; i += gridSize) {
     for (var j = 0.5; j < canvas.height; j += (2 * gutterSize + gridSize)) {
