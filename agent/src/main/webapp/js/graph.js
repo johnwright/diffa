@@ -32,6 +32,20 @@ var maxRows = 10;
 var gridSize = 30;
 var gutterSize = 12;
 
+var sessionId = null;
+
+function createSession(cb) {
+	var handleSessionId = function(data, status, req) {
+		var location = req.getResponseHeader('Location');
+		var parts = location.split("/");
+		var sessionID = parts[parts.length - 1];
+		sessionId = sessionID;
+
+    cb();
+	};
+	$.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
+}
+
 function loadTestData() {
   buckets = [];
   for (var i = 0; i < maxRows; i++) {
@@ -41,11 +55,18 @@ function loadTestData() {
     }
     buckets[i] = row;
   }
-  $.get("rest/diffs/buckets", function(data) {
-    for (var y = 0; y < data.length; y++) {
-      for (var x = 0; x < data[y].length; x++) {
-        buckets[y][x] = data[y][x];
+
+  var now = new Date().formatString("YYYY0MM0DDT0hh0mm0ssZ");
+  var dayBeforeNow = new Date(new Date() - (3600 * 24 * 1000)).formatString("YYYY0MM0DDT0hh0mm0ssZ");
+
+  $.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=3600", function(data) {
+    var indexer = 0;
+
+    for (var pair in data) {
+      for (var x = 0; x < data[pair].length; x++) {
+        buckets[indexer][x] = data[pair][x];
       }
+      indexer++;
     }
     clearCanvas();
     drawGrid();
@@ -240,14 +261,16 @@ function mouseOver(e) {
 
 function initGraph() {
   initCanvas();
-  loadTestData();
+  createSession(function() {
+    loadTestData();
 
-  $(document).mouseup(mouseUp);
-  $("#display").mousedown(mouseDown);
-  $(document).mousemove(mouseMove);
+    $(document).mouseup(mouseUp);
+    $("#display").mousedown(mouseDown);
+    $(document).mousemove(mouseMove);
 
 
-  $("#display").bind("contextmenu", function(e) {
-    return false;
-  });
+    $("#display").bind("contextmenu", function(e) {
+      return false;
+    });
+ });
 }

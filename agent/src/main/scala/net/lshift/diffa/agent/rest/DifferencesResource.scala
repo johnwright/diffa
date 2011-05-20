@@ -21,12 +21,14 @@ import javax.ws.rs._
 import core.{EntityTag, Context, Request, Response}
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
-import org.joda.time.format.DateTimeFormat
 import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
 import net.lshift.diffa.kernel.participants.ParticipantType
+import org.joda.time.DateTime
+import scala.collection.JavaConversions._
+import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 
 @Path("/diffs")
 @Component
@@ -35,6 +37,7 @@ class DifferencesResource extends AbstractRestResource {
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
+  val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
 
   @Autowired var session: SessionManager = null
 
@@ -129,6 +132,98 @@ class DifferencesResource extends AbstractRestResource {
         throw new WebApplicationException(404)
       }
     }
+  }
+  
+  @GET
+  @Path("/sessions/{sessionId}/zoom")
+  @Produces(Array("application/json"))
+  @MandatoryParams(
+    Array(
+      new MandatoryParam(name = "range-start", datatype = "date",
+        description = "The starting time for any differences"),
+      new MandatoryParam(name = "range-end", datatype = "date",
+        description = "The ending time for any differences"),
+      new MandatoryParam(name = "width", datatype = "int",
+        description = "The size in elements in the zoomed view")
+
+    ))
+  @Description("Returns a zoomed view of the data within a specific time range")
+  def getZoomedView(@PathParam("sessionId") sessionId: String,
+                    @QueryParam("range-start") rangeStart: String,
+                    @QueryParam("range-end") rangeEnd:String,
+                    @QueryParam("bucketing") width:Int,
+                    @Context request: Request): Response = {
+    try {
+      // Evaluate whether the version of the session has changed
+      val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
+      request.evaluatePreconditions(sessionVsn) match {
+        case null => // We'll continue with the request
+        case r => throw new WebApplicationException(r.build)
+      }
+
+      val rangeStartDate = isoDateTime.parseDateTime(rangeStart)
+      val rangeEndDate = isoDateTime.parseDateTime(rangeEnd)
+
+      if (rangeStartDate == null || rangeEndDate == null) {
+        return Response.status(Response.Status.BAD_REQUEST).entity("Invalid start or end date").build
+      }
+
+      // Calculate the maximum number of buckets that will be seen
+      val rangeSecs = (rangeEndDate.getMillis - rangeStartDate.getMillis) / 1000
+      val max = (rangeSecs.asInstanceOf[Double] / width.asInstanceOf[Double]).ceil.asInstanceOf[Int]
+      if (max > 100) {
+        return Response.status(Response.Status.BAD_REQUEST).entity("Time range too big for width. Maximum of 100 blobs can be generated, requesting " + max).build
+      }
+
+      // Calculate the zoomed view
+      val interestingEvents = session.retrieveAllEvents(sessionId).
+        filter(evt => !evt.detectedAt.isBefore(rangeStartDate) && !evt.detectedAt.isAfter(rangeEndDate))
+
+      // Bucket the events
+      val pairs = scala.collection.mutable.Map[String, ZoomPair]()
+      interestingEvents.foreach(evt => {
+        val pair = pairs.getOrElseUpdate(evt.objId.pairKey, new ZoomPair(evt.objId.pairKey, rangeStartDate, width, max))
+        pair.addEvent(evt)
+      })
+
+      // Convert to an appropriate web response
+      val respObj = asJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
+
+//      val buckets = Array(
+//        Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350),
+//        Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
+//        Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 3),
+//        Array(1, 10, 2, 12, 3, 40, 0, 10, 0, 3),
+//        Array (1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
+//        Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
+//        Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350)
+//      )
+      Response.ok(respObj).tag(sessionVsn).build
+    }
+    catch {
+      case e: NoSuchElementException => {
+        log.error("Unsucessful query on sessionId = " + sessionId)
+        throw new WebApplicationException(404)
+      }
+    }
+
+
+
+  }
+
+  class ZoomPair(pairKey:String, rangeStart:DateTime, width:Int, max:Int) {
+    private val buckets = new Array[Int](max)
+
+    def addEvent(evt:SessionEvent) = {
+      val offset = (evt.detectedAt.getMillis - rangeStart.getMillis) / 1000
+      val bucketNum = (offset / width).asInstanceOf[Int]
+
+      // Add an entry to the bucket
+      buckets(bucketNum) += 1
+      println(buckets)
+    }
+
+    def toArray:Array[Int] = buckets
   }
 
   @GET
