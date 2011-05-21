@@ -137,7 +137,7 @@ class PairActorTest {
   }
 
   @Test
-  def buildUpBacklog = {
+  def backlogShouldBeProcessedAfterScan = {
     val flushMonitor = new Object
     val eventMonitor = new Object
 
