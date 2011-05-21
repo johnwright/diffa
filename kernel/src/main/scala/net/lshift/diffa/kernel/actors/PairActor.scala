@@ -31,6 +31,7 @@ import org.joda.time.DateTime
 import akka.dispatch.Future
 import util.matching.Regex.Match
 import javax.persistence.criteria.CriteriaBuilder.Case
+import net.lshift.diffa.kernel.util.AlertCodes
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -116,7 +117,7 @@ case class PairActor(pairKey:String,
       checkForCompletion
     }
 
-    case x => logger.error("Spurious message: %s".format(x))
+    case x => logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
 
   def initiateScan(participant:Participant) = {

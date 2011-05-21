@@ -26,6 +26,12 @@ import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
 import concurrent.{TIMEOUT, MailBox}
 import org.easymock.{EasyMock, IAnswer}
+import org.slf4j.LoggerFactory
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.core.AppenderBase
+import ch.qos.logback.classic.spi.ILoggingEvent
+import java.lang.RuntimeException
+import net.lshift.diffa.kernel.util.AlertCodes
 
 class PairActorTest {
 
@@ -81,6 +87,25 @@ class PairActorTest {
 
   @After
   def stop = supervisor.stopActor(pairKey)
+
+  // Check for spurious actor events
+  val spuriousEventAppender = new SpuriousEventAppender
+
+  @Before
+  def attachAppenderToContext = {
+    val ctx = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+    spuriousEventAppender.setContext(ctx)
+    spuriousEventAppender.start()
+    val log = LoggerFactory.getLogger(classOf[PairActor]).asInstanceOf[ch.qos.logback.classic.Logger]
+    log.addAppender(spuriousEventAppender)
+  }
+
+  @After
+  def checkForSpuriousEvents = {
+    if (spuriousEventAppender.hasSpuriousEvent) {
+      fail("Should not have receied a spurious message: %s".format(spuriousEventAppender.lastEvent.getMessage))
+    }
+  }
 
   def expectScans() = {
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
@@ -240,4 +265,22 @@ class PairActorTest {
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
   }
+
+}
+
+/**
+ * Simple logback appender that detects whether the PairActor has received a spurious message
+ */
+class SpuriousEventAppender extends AppenderBase[ILoggingEvent]{
+
+  var hasSpuriousEvent = false
+  var lastEvent:ILoggingEvent = null
+
+  def append(event:ILoggingEvent) = {
+    lastEvent = event
+    if (event.getFormattedMessage.contains(AlertCodes.SPURIOUS_ACTOR_MESSAGE + ":")) {
+      hasSpuriousEvent = true
+    }
+  }
+
 }
