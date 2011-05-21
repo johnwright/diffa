@@ -49,7 +49,10 @@ class PairActorTest {
   org.easymock.classextension.EasyMock.replay(participantFactory)
 
   val versionPolicyManager = org.easymock.classextension.EasyMock.createStrictMock("versionPolicyManager", classOf[VersionPolicyManager])
-  val versionPolicy = createStrictMock("versionPolicy", classOf[VersionPolicy])
+
+  val versionPolicy = createMock("versionPolicy", classOf[VersionPolicy])
+  checkOrder(versionPolicy, false)
+
   expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy))
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
@@ -107,6 +110,64 @@ class PairActorTest {
     }
     verify(versionPolicy, syncListener)
   }
+
+  @Test
+  def buildUpBacklog = {
+    val flushMonitor = new Object
+    val eventMonitor = new Object
+
+    val id = VersionID(pairKey, "foo")
+    val lastUpdate = new DateTime(1999,9,9,9,9,9,0)
+    val vsn = "foobar"
+    val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
+
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
+    })
+    replay(syncListener)
+
+    expect(versionPolicy.onChange(writer, event))
+    .andAnswer(new IAnswer[Unit] {
+      def answer = {
+        eventMonitor.synchronized {
+          eventMonitor.notifyAll
+        }
+      }
+    })
+
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey),
+           EasyMock.isA(classOf[VersionCorrelationWriter]),
+           EasyMock.eq(us),
+           EasyMock.isA(classOf[DifferencingListener]))
+    ).andAnswer(new IAnswer[Unit] {
+      def answer = {
+        // Queue up a change event and block the actor in the scanning state for a 1 sec
+        supervisor.propagateChangeEvent(event)
+        Thread.sleep(1000)
+      }
+    })
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey),
+           EasyMock.isA(classOf[VersionCorrelationWriter]),
+           EasyMock.eq(us), EasyMock.eq(ds),
+           EasyMock.isA(classOf[DifferencingListener])))
+
+    replay(versionPolicy)
+
+    supervisor.startActor(pair)
+    supervisor.syncPair(pairKey, diffListener, syncListener)
+
+    flushMonitor.synchronized {
+      flushMonitor.wait(2000)
+    }
+    eventMonitor.synchronized {
+      eventMonitor.wait(2000)
+    }
+
+    verify(versionPolicy)
+    verify(syncListener)
+  }
+
 
   @Test
   def reportDifferenceFailure = {
