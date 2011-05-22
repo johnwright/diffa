@@ -145,7 +145,9 @@ case class PairActor(pairKey:String,
    */
   def processBacklog(state:PairSyncState) = {
     scanning = false
-    currentScanListener.pairSyncStateChanged(pairKey, state)
+    if (currentScanListener != null) {
+      currentScanListener.pairSyncStateChanged(pairKey, state)
+    }
     currentDiffListener = null
     currentScanListener = null
     deferred.dequeueAll(d => true).foreach(handleDeferrable(_))
