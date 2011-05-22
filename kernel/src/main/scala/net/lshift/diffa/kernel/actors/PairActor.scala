@@ -94,25 +94,24 @@ case class PairActor(pairKey:String,
     scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
   }
 
-  override def postStop = {
-    scheduledFlushes.cancel(true)
-  }
+  override def postStop = scheduledFlushes.cancel(true)
 
+  /**
+   * Main receive loop of this actor
+   */
   def receive = {
-
-    case c:VersionCorrelationWriterCommand if scanning => handleWriterCommand(c)
-    case d:Deferrable   if scanning   => deferred.enqueue(d)
-    case d:Deferrable   if !scanning  => handleDeferrable(d)
-
-    case UpstreamScanSuccess if scanning => {
+    case c:VersionCorrelationWriterCommand if scanning  => handleWriterCommand(c)
+    case d:Deferrable                      if scanning  => deferred.enqueue(d)
+    case d:Deferrable                      if !scanning => handleDeferrable(d)
+    case UpstreamScanSuccess               if scanning  => {
       upstreamSuccess = true
       checkForCompletion
     }
-    case DownstreamScanSuccess if scanning => {
+    case DownstreamScanSuccess             if scanning  => {
       downstreamSuccess = true
       checkForCompletion
     }
-    case s:ScanResult if !scanning =>  {
+    case s:ScanResult                      if !scanning =>  {
       logger.info("%s: Received scan result (%s) in non-scanning state - potential downstream error"
                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, s))
     }
@@ -141,13 +140,14 @@ case class PairActor(pairKey:String,
     }
   }
 
-  // TODO test this
+  /**
+   * Resets the state of the actor and processes any pending messages that may have arrived during a scan phase.
+   */
   def processBacklog(state:PairSyncState) = {
     scanning = false
     currentScanListener.pairSyncStateChanged(pairKey, state)
     currentDiffListener = null
     currentScanListener = null
-    // TODO I can't beleive this is how you drain a queue using Scala collections
     deferred.dequeueAll(d => true).foreach(handleDeferrable(_))
   }
 
