@@ -22,15 +22,11 @@ import akka.actor.{Actor, Scheduler}
 import net.jcip.annotations.ThreadSafe
 import java.util.concurrent.ScheduledFuture
 import net.lshift.diffa.kernel.differencing._
-import java.net.ConnectException
-import collection.mutable.{Queue, ListBuffer}
+import collection.mutable.Queue
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
-import net.lshift.diffa.kernel.config.Pair
 import net.lshift.diffa.kernel.participants.{Participant, DownstreamParticipant, UpstreamParticipant}
 import org.joda.time.DateTime
 import akka.dispatch.Future
-import util.matching.Regex.Match
-import javax.persistence.criteria.CriteriaBuilder.Case
 import net.lshift.diffa.kernel.util.AlertCodes
 
 /**
@@ -116,7 +112,10 @@ case class PairActor(pairKey:String,
       downstreamSuccess = true
       checkForCompletion
     }
-
+    case s:ScanResult if !scanning =>  {
+      logger.info("%s: Received scan result (%s) in non-scanning state - potential downstream error"
+                  .format(AlertCodes.OUT_OF_ORDER_MESSAGE, s))
+    }
     case x => logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
 
@@ -206,7 +205,7 @@ case class PairActor(pairKey:String,
     } catch {
       case x: Exception => {
         logger.error("Failed to initiate scan for pair: " + pairKey, x)
-        message.pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED)
+        processBacklog(PairSyncState.FAILED)
       }
     }
   }
@@ -215,8 +214,9 @@ case class PairActor(pairKey:String,
 
 }
 
-case object UpstreamScanSuccess
-case object DownstreamScanSuccess
+abstract class ScanResult
+case object UpstreamScanSuccess extends ScanResult
+case object DownstreamScanSuccess extends ScanResult
 
 abstract class Deferrable
 case class ChangeMessage(event: PairChangeEvent) extends Deferrable
