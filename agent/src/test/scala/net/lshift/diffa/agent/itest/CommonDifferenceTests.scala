@@ -185,7 +185,7 @@ trait CommonDifferenceTests {
   def getVerifiedDiffsWithSessionId() = {
     env.upstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
 
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     val diffs = tryAgain(sessionId,10,100)
 
     assertNotNull(diffs)

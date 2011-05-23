@@ -320,7 +320,7 @@ class DefaultSessionManager(
       // a "Up To Date" view, even though we're just about to transition out of that state.
       updatePairSyncState(pairKey, PairSyncState.SYNCHRONIZING)
 
-      pairPolicyClient.syncPair(pairKey, listener, this)
+      pairPolicyClient.scanPair(pairKey, listener, this)
     })
   }
 

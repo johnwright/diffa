@@ -149,7 +149,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener)
 
     supervisor.startActor(pair)
-    supervisor.syncPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -202,7 +202,7 @@ class PairActorTest {
     replay(versionPolicy)
 
     supervisor.startActor(pair)
-    supervisor.syncPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
 
     flushMonitor.synchronized {
       flushMonitor.wait(2000)
@@ -232,7 +232,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener)
 
     supervisor.startActor(pair)
-    supervisor.syncPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
     monitor.synchronized {
       monitor.wait(1000)
     }
