@@ -5,6 +5,15 @@ var overlay;
 var overlayContext;
 var underlay;
 var underlayContext;
+var scale;
+var scaleContext;
+var buckets;
+var maxColumns = 100;
+var maxRows = 10;
+var gridSize = 30;
+var gutterSize = 12;
+
+var rightLimit = 0;
 
 function initCanvas() {
   display = document.getElementById("display");
@@ -16,6 +25,11 @@ function initCanvas() {
 
   underlay = document.getElementById("underlay");
   underlayContext = underlay.getContext("2d");
+
+  scale = document.getElementById("scale");
+  scaleContext = scale.getContext("2d");
+
+  rightLimit = (maxColumns * gridSize) - canvas.width;
 }
 
 function clearCanvas() {
@@ -26,25 +40,26 @@ function clearOverlay() {
   overlay.width = overlay.width;
 }
 
-var buckets;
-var maxColumns = 100;
-var maxRows = 10;
-var gridSize = 30;
-var gutterSize = 12;
+function clearScale() {
+  scale.width = scale.width;
+}
 
 var sessionId = null;
 
 function createSession(cb) {
-	var handleSessionId = function(data, status, req) {
-		var location = req.getResponseHeader('Location');
-		var parts = location.split("/");
-		var sessionID = parts[parts.length - 1];
-		sessionId = sessionID;
+  var handleSessionId = function(data, status, req) {
+    var location = req.getResponseHeader('Location');
+    var parts = location.split("/");
+    var sessionID = parts[parts.length - 1];
+    sessionId = sessionID;
 
     cb();
-	};
-	$.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
+  };
+  $.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
 }
+
+var startTime, endTime;
+var bucketSize = 3600;
 
 function loadTestData() {
   buckets = [];
@@ -56,8 +71,11 @@ function loadTestData() {
     buckets[i] = row;
   }
 
-  var now = new Date().formatString("YYYY0MM0DDT0hh0mm0ssZ");
-  var dayBeforeNow = new Date(new Date() - (3600 * 24 * 1000)).formatString("YYYY0MM0DDT0hh0mm0ssZ");
+  endTime = new Date();
+  var now = endTime.formatString("YYYY0MM0DDT0hh0mm0ssZ");
+
+  startTime = new Date(endTime - (3600 * maxColumns * 1000));
+  var dayBeforeNow = startTime.formatString("YYYY0MM0DDT0hh0mm0ssZ");
 
   $.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=3600", function(data) {
     var indexer = 0;
@@ -95,7 +113,6 @@ function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
     else {
       ctx.lineTo(x1, y1);
     }
-    //this[q % 2 == 0 ? 'moveTo' : 'lineTo'](x1, y1);
   }
   if (q % 2 == 0) {
     ctx.moveTo(x1, y1);
@@ -103,7 +120,6 @@ function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
   else {
     ctx.lineTo(x1, y1);
   }
-  //this[q % 2 == 0 ? 'moveTo' : 'lineTo'](x2, y2);
 
   ctx.stroke();
   ctx.closePath();
@@ -162,6 +178,20 @@ function drawGrid() {
       drawCircle(i, j);
     }
   }
+
+  drawScale();
+}
+
+function drawScale() {
+  scaleContext.font = "9px sans-serif";
+  for (var i = 0; i < maxColumns; i++) {
+    if (i % 3 == 0) {
+      var tick = new Date(startTime.getTime() + (i * bucketSize * 1000));
+      var time = tick.formatString("0hh:0mm");
+      scaleContext.fillText(tick.formatString("0DD/0MM"), i  * gridSize, 10);
+      scaleContext.fillText(time, i * gridSize, 20);
+    }
+  }
 }
 
 var highlighted;
@@ -186,7 +216,7 @@ function limit(value, maximum) {
   return {"value":maximum, "limited":true};
 }
 
-var o_x = 0;
+var o_x = rightLimit;
 var o_y = 0;
 function coords(e) {
   var x;
@@ -235,12 +265,22 @@ function mouseMove(e) {
   if (dragging) {
     clearCanvas();
     clearOverlay();
+    clearScale();
     var m_coords = coords(e);
     var d_coords = coords(dragging);
     o_x += m_coords.x - d_coords.x;
+    if(o_x > 0) {
+      o_x = 0;
+    }
+
+    if(Math.abs(o_x) > rightLimit) {
+      o_x = -1 * rightLimit;
+    }
     context.translate(o_x, o_y);
+    scaleContext.translate(o_x, 0);
     drawGrid();
     dragging = e;
+    $("#debug").text("Offset " + o_x + " " + rightLimit);
   }
   else {
     clearOverlay();
@@ -272,5 +312,5 @@ function initGraph() {
     $("#display").bind("contextmenu", function(e) {
       return false;
     });
- });
+  });
 }

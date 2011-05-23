@@ -44,6 +44,7 @@
 
   <div id="nav_bar">
     <a href="admin.html">Admin</a>
+    <p id="debug">Debug</p>
   </div>
 
   <h1 class="padtop logo">Diffa</h1>
@@ -52,6 +53,9 @@
       <canvas id="underlay" style="z-index:1; position:absolute; left:0px; top:0px; background-color: #cfe2f3" width="800px" height="400px"></canvas>
       <canvas id="canvas" style="z-index:2; position:absolute; left:0px; top:0px;" width="800px" height="400px"></canvas>
       <canvas id="overlay" style="z-index:4; position:absolute; left:0px; top:0px;" width="800px" height="400px"></canvas>
+    </div>
+    <div id="scaleHolder" style="position:relative; width:800px; height:40px;">
+      <canvas id="scale" width="800px" height="40px"></canvas>
     </div>
   </div>
 
@@ -118,7 +122,7 @@
 
   <div class="push"></div>
 </div>
-<script>
+<script type="text/javascript">
   $(document).ready(function() {
     initGraph();
   });
