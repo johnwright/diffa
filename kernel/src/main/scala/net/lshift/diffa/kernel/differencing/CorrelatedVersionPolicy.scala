@@ -48,7 +48,7 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
       })
     }
 
-    def handleMismatch(pairKey:String, writer: VersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, categories, _, null, storedVsn) =>
           handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pairKey, id)))

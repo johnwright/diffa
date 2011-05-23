@@ -66,7 +66,7 @@ class PairActorTest {
   expect(configStore.listGroups).andReturn(Array[GroupContainer]())
   replay(configStore)
 
-  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+  val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
 
   val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
   expect(store.openWriter()).andReturn(writer).anyTimes
@@ -108,13 +108,31 @@ class PairActorTest {
   }
 
   def expectScans() = {
-    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
-    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[VersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(ds), EasyMock.eq(diffListener)))
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(ds), EasyMock.eq(diffListener)))
   }
 
   @Test
   def runDifference = {
-    val id = VersionID(pairKey, "foo")
+    val monitor = new Object
+    expect(versionPolicy.difference(pairKey, diffListener)).andAnswer(new IAnswer[Unit] {
+      def answer = { monitor.synchronized { monitor.notifyAll } }
+    })
+
+    replay(versionPolicy)
+
+    supervisor.startActor(pair)
+    supervisor.difference(pairKey, diffListener)
+
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
+
+    verify(versionPolicy)
+  }
+
+  @Test
+  def runScan = {
     val monitor = new Object
 
     expect(writer.flush()).atLeastOnce
@@ -122,6 +140,8 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
 
     expectScans
+
+    expect(versionPolicy.difference(pairKey, diffListener))
 
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
@@ -142,7 +162,7 @@ class PairActorTest {
     val eventMonitor = new Object
 
     val id = VersionID(pairKey, "foo")
-    val lastUpdate = new DateTime(1999,9,9,9,9,9,0)
+    val lastUpdate = new DateTime
     val vsn = "foobar"
     val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
 
@@ -162,7 +182,7 @@ class PairActorTest {
     })
 
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey),
-           EasyMock.isA(classOf[VersionCorrelationWriter]),
+           EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us),
            EasyMock.isA(classOf[DifferencingListener]))
     ).andAnswer(new IAnswer[Unit] {
@@ -173,9 +193,11 @@ class PairActorTest {
       }
     })
     expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey),
-           EasyMock.isA(classOf[VersionCorrelationWriter]),
+           EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us), EasyMock.eq(ds),
            EasyMock.isA(classOf[DifferencingListener])))
+
+    expect(versionPolicy.difference(pairKey, diffListener))
 
     replay(versionPolicy)
 
@@ -195,8 +217,7 @@ class PairActorTest {
 
 
   @Test
-  def reportDifferenceFailure = {
-    val id = VersionID(pairKey, "foo")
+  def shouldReportScanFailure = {
     val monitor = new Object
 
     expect(writer.flush()).atLeastOnce

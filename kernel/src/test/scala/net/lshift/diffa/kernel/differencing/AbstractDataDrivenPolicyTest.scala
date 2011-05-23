@@ -51,7 +51,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
   val nullListener = new NullDifferencingListener
 
-  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+  val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])
   val stores = new VersionCorrelationStoreFactory {
     def apply(pairKey: String) = store

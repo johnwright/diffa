@@ -36,7 +36,7 @@ trait VersionPolicy {
   /**
    * Indicates to the policy that a change has occurred within a participant.
    */
-  def onChange(writer: VersionCorrelationWriter, evt:PairChangeEvent) : Unit
+  def onChange(writer: LimitedVersionCorrelationWriter, evt:PairChangeEvent) : Unit
 
   /**
    * Requests that the policy generate a series of events describing the differences between the endpoints
@@ -49,12 +49,12 @@ trait VersionPolicy {
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
    */
-  def scanUpstream(pairKey:String, writer: VersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) : Unit
+  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) : Unit
 
   /**
    * Requests that the policy scan the downstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
    */
-  def scanDownstream(pairKey:String, writer: VersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Unit
+  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Unit
 
 }

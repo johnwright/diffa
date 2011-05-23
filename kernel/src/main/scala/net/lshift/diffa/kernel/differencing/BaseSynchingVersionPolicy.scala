@@ -37,7 +37,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
    * Handles a participant change. Due to the need to later correlate data, event information is cached to the
    * version correlation store.
    */
-  def onChange(writer: VersionCorrelationWriter, evt: PairChangeEvent) = {
+  def onChange(writer: LimitedVersionCorrelationWriter, evt: PairChangeEvent) = {
 
     val pair = configStore.getPair(evt.id.pairKey)
 
@@ -75,7 +75,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     generateDifferenceEvents(pair, l)
   }
 
-//  def syncAndDifference(pairKey: String, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+//  def syncAndDifference(pairKey: String, writer: LimitedVersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
 //    val pair = configStore.getPair(pairKey)
 //
 ////    synchronizeParticipants(pair, writer, us, ds, l)
@@ -86,13 +86,13 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
 //    true
 //  }
 
-  def scanUpstream(pairKey:String, writer: VersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) = {
+  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
     val upstreamConstraints = pair.upstream.groupedConstraints
     upstreamConstraints.foreach((new UpstreamSyncStrategy).scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener))
   }
 
-  def scanDownstream(pairKey:String, writer: VersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) = {
+  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
     val downstreamConstraints = pair.downstream.groupedConstraints
     downstreamConstraints.foreach(downstreamStrategy(us,ds).scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener))
@@ -109,7 +109,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
    * Performs a synchronization between participants.
    */
 //  @Deprecated
-//  protected def synchronizeParticipants(pair: Pair, writer: VersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
+//  protected def synchronizeParticipants(pair: Pair, writer: LimitedVersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
 //    val upstreamConstraints = pair.upstream.groupedConstraints
 //    val downstreamConstraints = pair.downstream.groupedConstraints
 //
@@ -130,7 +130,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     val log = LoggerFactory.getLogger(getClass)
 
     def scanParticipant(pair:Pair,
-                        writer:VersionCorrelationWriter,
+                        writer:LimitedVersionCorrelationWriter,
                         endpoint:Endpoint,
                         bucketing:Map[String, CategoryFunction],
                         constraints:Seq[QueryConstraint],
@@ -172,7 +172,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
 
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
     def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
-    def handleMismatch(pairKey:String, writer: VersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
+    def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
@@ -189,7 +189,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
     }
 
-    def handleMismatch(pairKey: String, writer: VersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(pairKey: String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {

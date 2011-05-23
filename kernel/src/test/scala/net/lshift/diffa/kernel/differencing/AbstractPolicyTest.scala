@@ -49,7 +49,7 @@ abstract class AbstractPolicyTest {
   val dsMock = createStrictMock("ds", classOf[DownstreamParticipant])
   val nullListener = new NullDifferencingListener
 
-  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+  val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])
 
   val stores = new VersionCorrelationStoreFactory {

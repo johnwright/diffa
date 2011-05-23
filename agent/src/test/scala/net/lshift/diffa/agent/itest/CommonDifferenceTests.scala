@@ -57,7 +57,7 @@ trait CommonDifferenceTests {
   }
 
   def getReport(pair:String, from:DateTime, until:DateTime) : Array[SessionEvent]= {
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.diffClient.poll(sessionId)
   }
 
@@ -96,7 +96,7 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
 
     val diffs = tryAgain(sessionId,20,100)
@@ -111,7 +111,7 @@ trait CommonDifferenceTests {
     val up = guid()
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), up)
 
     val diffs = tryAgain(sessionId,20,100)
@@ -161,21 +161,21 @@ trait CommonDifferenceTests {
         
   }
 
-  def subscribeAndRunSync(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
+  def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
     def isAllSynced(states:Map[String, PairSyncState]) = states.values.forall(s => s == PairSyncState.UP_TO_DATE)
 
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), from, until)
     env.diffClient.runSync(sessionId)
 
     var i = n
-    var syncStatus = env.diffClient.getSyncStatus(sessionId)
-    while(!isAllSynced(syncStatus) && i > 0) {
+    var scanStatus = env.diffClient.getSyncStatus(sessionId)
+    while(!isAllSynced(scanStatus) && i > 0) {
       Thread.sleep(wait)
 
-      syncStatus = env.diffClient.getSyncStatus(sessionId)
+      scanStatus = env.diffClient.getSyncStatus(sessionId)
       i-=1
     }
-    assertTrue(isAllSynced(syncStatus))
+    assertTrue("Unexpected scan state (seesion = %s): %s".format(sessionId, scanStatus), isAllSynced(scanStatus))
 
     sessionId
   }
