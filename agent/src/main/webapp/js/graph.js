@@ -87,6 +87,9 @@ function loadTestData() {
       indexer++;
     }
     clearCanvas();
+    o_x = -1 * rightLimit;
+    context.translate(o_x, o_y);
+    scaleContext.translate(o_x, o_y);
     drawGrid();
   });
 }
