@@ -40,6 +40,10 @@ function clearOverlay() {
   overlay.width = overlay.width;
 }
 
+function clearUnderlay() {
+  underlay.width = underlay.width;
+}
+
 function clearScale() {
   scale.width = scale.width;
 }
@@ -61,6 +65,7 @@ function createSession(cb) {
 var startTime, endTime;
 var bucketSize = 3600;
 
+var swimlaneLabels = [];
 function loadTestData() {
   buckets = [];
   for (var i = 0; i < maxRows; i++) {
@@ -81,6 +86,7 @@ function loadTestData() {
     var indexer = 0;
 
     for (var pair in data) {
+      swimlaneLabels[indexer] = pair;
       for (var x = 0; x < data[pair].length; x++) {
         buckets[indexer][x] = data[pair][x];
       }
@@ -172,9 +178,16 @@ function drawGrid() {
     context.stroke();
   }
 
+  var lane = 0;
   for (var s = 0.5 + (2 * gutterSize + gridSize); s < canvas.height; s += (2 * gutterSize + gridSize)) {
-    dashedLine(underlayContext, 0, s, region_width, s);
+    dashedLine(underlayContext, 0, s, region_width, s, 2);
+    if (swimlaneLabels[lane] != null) {
+      underlayContext.font = "italic 12px serif";
+      underlayContext.fillText(swimlaneLabels[lane], 10, s - 3);
+    }
+    lane++;
   }
+
 
   for (var i = 0.5; i < region_width; i += gridSize) {
     for (var j = 0.5; j < canvas.height; j += (2 * gutterSize + gridSize)) {
@@ -191,7 +204,7 @@ function drawScale() {
     if (i % 3 == 0) {
       var tick = new Date(startTime.getTime() + (i * bucketSize * 1000));
       var time = tick.formatString("0hh:0mm");
-      scaleContext.fillText(tick.formatString("0DD/0MM"), i  * gridSize, 10);
+      scaleContext.fillText(tick.formatString("0DD/0MM"), i * gridSize, 10);
       scaleContext.fillText(time, i * gridSize, 20);
     }
   }
@@ -268,15 +281,16 @@ function mouseMove(e) {
   if (dragging) {
     clearCanvas();
     clearOverlay();
+    clearUnderlay();
     clearScale();
     var m_coords = coords(e);
     var d_coords = coords(dragging);
     o_x += m_coords.x - d_coords.x;
-    if(o_x > 0) {
+    if (o_x > 0) {
       o_x = 0;
     }
 
-    if(Math.abs(o_x) > rightLimit) {
+    if (Math.abs(o_x) > rightLimit) {
       o_x = -1 * rightLimit;
     }
     context.translate(o_x, o_y);
