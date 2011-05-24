@@ -48,12 +48,12 @@ trait DifferencesClient {
   /**
    * Requests that the agent run a synchronisation of the given session.
    */
-  def runSync(sessionId:String): Unit
+  def runScan(sessionId:String): Unit
 
   /**
    * Retrieves the sync status of all the pairs associated with the session.
    */
-  def getSyncStatus(sessionId: String):Map[String, PairSyncState]
+  def getScanStatus(sessionId: String):Map[String, PairSyncState]
 
   /**
    * Polls the identified session for all events since the start of the session.

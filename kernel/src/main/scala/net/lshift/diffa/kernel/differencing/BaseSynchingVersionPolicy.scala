@@ -75,17 +75,6 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     generateDifferenceEvents(pair, l)
   }
 
-//  def syncAndDifference(pairKey: String, writer: LimitedVersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
-//    val pair = configStore.getPair(pairKey)
-//
-////    synchronizeParticipants(pair, writer, us, ds, l)
-//    writer.flush()
-//
-//    generateDifferenceEvents(pair, l)
-//
-//    true
-//  }
-
   def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) = {
     val pair = configStore.getPair(pairKey)
     val upstreamConstraints = pair.upstream.groupedConstraints
@@ -104,18 +93,6 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     stores(pair.key).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
       corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn))
   }
-
-  /**
-   * Performs a synchronization between participants.
-   */
-//  @Deprecated
-//  protected def synchronizeParticipants(pair: Pair, writer: LimitedVersionCorrelationWriter, us: UpstreamParticipant, ds: DownstreamParticipant, l:DifferencingListener) = {
-//    val upstreamConstraints = pair.upstream.groupedConstraints
-//    val downstreamConstraints = pair.downstream.groupedConstraints
-//
-//    upstreamConstraints.foreach((new UpstreamSyncStrategy).scanParticipant(pair, pair.upstream, pair.upstream.defaultBucketing, _, us))
-//    downstreamConstraints.foreach(downstreamStrategy(us,ds,l).scanParticipant(pair, pair.downstream, pair.downstream.defaultBucketing, _, ds))
-//  }
 
   /**
    * Allows an implementing policy to define what kind of downstream syncing policy it requires

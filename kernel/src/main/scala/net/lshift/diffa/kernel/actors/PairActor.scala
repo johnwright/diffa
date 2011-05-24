@@ -69,7 +69,7 @@ case class PairActor(pairKey:String,
   /**
    * This allows tracing of spurious messages, but is only enabled in when the log level is set to TRACE
    */
-  abstract case class TraceableCommand(uuid:UUID) {
+  abstract class TraceableCommand(uuid:UUID) {
     var exception:Throwable = null
     if (logger.isTraceEnabled) {
       exception = new Exception().fillInStackTrace()
@@ -79,7 +79,7 @@ case class PairActor(pairKey:String,
   /**
    * This is the set of commands that the writer proxy understands
    */
-  abstract case class VersionCorrelationWriterCommand(guid:UUID) extends TraceableCommand(guid)
+  abstract class VersionCorrelationWriterCommand(guid:UUID) extends TraceableCommand(guid)
   case class ClearDownstreamVersion(u:UUID, id: VersionID) extends VersionCorrelationWriterCommand(u)
   case class ClearUpstreamVersion(u:UUID, id: VersionID) extends VersionCorrelationWriterCommand(u)
   case class StoreDownstreamVersion(u:UUID, id: VersionID,
@@ -148,7 +148,9 @@ case class PairActor(pairKey:String,
         }
       }
     }
-    case d:Deferrable => handleDeferrable(d)
+    case c:ChangeMessage                   => handleChangeMessage(c)
+    case d:DifferenceMessage               => handleDifferenceMessage(d)
+    case FlushWriterMessage                => writer.flush()
     case c:VersionCorrelationWriterCommand =>  {
       logger.error("%s: Received command (%s) in non-scanning state - potential bug"
                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, c), c.exception)
@@ -188,13 +190,6 @@ case class PairActor(pairKey:String,
     currentDiffListener = null
     currentScanListener = null
     deferred.dequeueAll(d => {self ! d; true})
-  }
-
-  def handleDeferrable(d:Deferrable) : Unit = d match {
-    case c:ChangeMessage      => handleChangeMessage(c)
-    case d:DifferenceMessage  => handleDifferenceMessage(d)
-    case s:ScanMessage        => handleScanMessage(s)
-    case FlushWriterMessage   => writer.flush()
   }
 
   /**
@@ -312,7 +307,6 @@ trait PairPolicyClient {
   def difference(pairKey:String, diffListener:DifferencingListener)
 
   /**
-   * TODO This is just a scan, not a sync
    * Synchronises the participants belonging to the given pair, then generates a different report.
    * Activities are performed on the underlying policy in a thread safe manner, allowing multiple
    * concurrent operations to be submitted safely against the same pair concurrently.

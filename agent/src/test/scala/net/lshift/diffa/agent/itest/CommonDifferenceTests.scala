@@ -162,20 +162,20 @@ trait CommonDifferenceTests {
   }
 
   def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
-    def isAllSynced(states:Map[String, PairSyncState]) = states.values.forall(s => s == PairSyncState.UP_TO_DATE)
+    def isUpToDate(states:Map[String, PairSyncState]) = states.values.forall(s => s == PairSyncState.UP_TO_DATE)
 
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), from, until)
-    env.diffClient.runSync(sessionId)
+    env.diffClient.runScan(sessionId)
 
     var i = n
-    var scanStatus = env.diffClient.getSyncStatus(sessionId)
-    while(!isAllSynced(scanStatus) && i > 0) {
+    var scanStatus = env.diffClient.getScanStatus(sessionId)
+    while(!isUpToDate(scanStatus) && i > 0) {
       Thread.sleep(wait)
 
-      scanStatus = env.diffClient.getSyncStatus(sessionId)
+      scanStatus = env.diffClient.getScanStatus(sessionId)
       i-=1
     }
-    assertTrue("Unexpected scan state (seesion = %s): %s".format(sessionId, scanStatus), isAllSynced(scanStatus))
+    assertTrue("Unexpected scan state (seesion = %s): %s".format(sessionId, scanStatus), isUpToDate(scanStatus))
 
     sessionId
   }

@@ -24,9 +24,9 @@ object AlertCodes {
   /**
    * Occurs when an actor receives an out of order message. This can occur as a result of a downstream error.
    */
-  val OUT_OF_ORDER_MESSAGE = "D28"
+  val OUT_OF_ORDER_MESSAGE = "D1"
   /**
    * Occurs when an actor receives an unexpected message. This generally indicates a bug in Diffa.
    */
-  val SPURIOUS_ACTOR_MESSAGE = "D29"
+  val SPURIOUS_ACTOR_MESSAGE = "D2"
 }
