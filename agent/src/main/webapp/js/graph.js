@@ -7,8 +7,8 @@ var underlay;
 var underlayContext;
 var scale;
 var scaleContext;
-var buckets;
-var maxColumns = 100;
+var buckets = [];
+var maxColumns = 96;
 var maxRows = 10;
 var gridSize = 30;
 var gutterSize = 14;
@@ -92,12 +92,26 @@ function loadTestData() {
       }
       indexer++;
     }
-    clearCanvas();
+    clearEverything();
     o_x = -1 * rightLimit;
     context.translate(o_x, o_y);
     scaleContext.translate(o_x, o_y);
     drawGrid();
   });
+}
+
+var timeout;
+var polling = true;
+function startPolling() {
+  clearTimeout(timeout);
+  createSession(function() {
+    loadTestData();
+  });
+  timeout = window.setTimeout(startPolling, 5000);
+}
+
+function stopPolling() {
+  clearTimeout(timeout);
 }
 
 function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
@@ -147,12 +161,7 @@ function drawCircle(i, j) {
     else {
       context.lineWidth = 1;
     }
-    if (selected != null && selected.row == cell.row && selected.column == cell.column) {
-      context.strokeStyle = "red";
-    }
-    else {
-      context.strokeStyle = "black";
-    }
+    context.strokeStyle = "black";
     context.fillStyle = "white";
     context.beginPath();
     context.arc(cell_x, cell_y, size.value, 0, Math.PI * 2, false);
@@ -180,9 +189,9 @@ function drawGrid() {
 
   var lane = 0;
   for (var s = 0.5 + (2 * gutterSize + gridSize); s < canvas.height; s += (2 * gutterSize + gridSize)) {
-    dashedLine(underlayContext, 0, s, region_width, s, 2);
+    dashedLine(underlayContext, 0, s, canvas.width, s, 2);
     if (swimlaneLabels[lane] != null) {
-      underlayContext.font = "italic 11px serif";
+      underlayContext.font = "11px serif";
       underlayContext.fillText(swimlaneLabels[lane], 10, s - 3);
     }
     lane++;
@@ -195,17 +204,12 @@ function drawGrid() {
     }
   }
 
-  drawScale();
-}
-
-function drawScale() {
   scaleContext.font = "9px sans-serif";
-  for (var i = 0; i < maxColumns; i++) {
-    if (i % 3 == 0) {
-      var tick = new Date(startTime.getTime() + (i * bucketSize * 1000));
-      var time = tick.formatString("0hh:0mm");
-      scaleContext.fillText(tick.formatString("0DD/0MM"), i * gridSize, 10);
-      scaleContext.fillText(time, i * gridSize, 20);
+  for (var sc = 0; sc < maxColumns; sc++) {
+    if (sc % 3 == 0) {
+      var tick = new Date(startTime.getTime() + (sc * bucketSize * 1000));
+      scaleContext.fillText(tick.formatString("0DD/0MM"), sc * gridSize, 10);
+      scaleContext.fillText(tick.formatString("0hh:0mm"), sc * gridSize, 20);
     }
   }
 }
@@ -217,7 +221,7 @@ function drawOverlay() {
     if (value > 0) {
       var c_x = highlighted.column * gridSize;
       var c_y = (highlighted.row * (2 * gutterSize + gridSize)) + gutterSize;
-      overlayContext.font = "bold 12px sans-serif";
+      overlayContext.font = "12px sans-serif";
       overlayContext.textBaseline = "bottom";
       var width = context.measureText("" + value).width;
       overlayContext.fillText(value, c_x + Math.floor(gridSize / 2) - Math.floor(width / 2), c_y);
@@ -259,7 +263,6 @@ function coordsToPosition(coords) {
   };
 }
 
-var polling = true;
 var dragging = false;
 function mouseDown(e) {
   switch (e.which) {
@@ -268,6 +271,7 @@ function mouseDown(e) {
       break;
     default:
       dragging = e;
+      stopPolling();
       polling = false;
       var c = coords(e);
       c.x -= o_x;
@@ -280,17 +284,22 @@ function mouseUp(e) {
   polling = true;
 }
 
+function clearEverything() {
+  clearCanvas();
+  clearOverlay();
+  clearUnderlay();
+  clearScale();
+}
+
 function mouseMove(e) {
   if (dragging) {
-    clearCanvas();
-    clearOverlay();
-    clearUnderlay();
-    clearScale();
+    clearEverything()
     var m_coords = coords(e);
     var d_coords = coords(dragging);
     o_x += m_coords.x - d_coords.x;
     if (o_x > 0) {
       o_x = 0;
+      //alert("This application can only show 7 days worth of data.\n\nThis restriction could be removed if you raise a change request with the Diffa development team.")
     }
 
     if (Math.abs(o_x) > rightLimit) {
@@ -321,16 +330,14 @@ function mouseOver(e) {
 
 function initGraph() {
   initCanvas();
-  createSession(function() {
-    loadTestData();
+  startPolling();
 
-    $(document).mouseup(mouseUp);
-    $("#display").mousedown(mouseDown);
-    $(document).mousemove(mouseMove);
+  $(document).mouseup(mouseUp);
+  $("#display").mousedown(mouseDown);
+  $(document).mousemove(mouseMove);
 
 
-    $("#display").bind("contextmenu", function(e) {
-      return false;
-    });
+  $("#display").bind("contextmenu", function(e) {
+    return false;
   });
 }
