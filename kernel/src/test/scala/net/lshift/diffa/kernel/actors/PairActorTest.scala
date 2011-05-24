@@ -224,7 +224,7 @@ class PairActorTest {
     replay(writer)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
 
-    expectScans.andThrow(new RuntimeException("Foo!"))
+    expectScans.andThrow(new RuntimeException("Deliberate runtime excecption, this should be handled"))
 
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }

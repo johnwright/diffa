@@ -18,17 +18,17 @@ package net.lshift.diffa.kernel.actors
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import org.slf4j.{Logger, LoggerFactory}
-import akka.actor.{Actor, Scheduler}
 import net.jcip.annotations.ThreadSafe
 import java.util.concurrent.ScheduledFuture
 import net.lshift.diffa.kernel.differencing._
 import collection.mutable.Queue
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
-import net.lshift.diffa.kernel.participants.{Participant, DownstreamParticipant, UpstreamParticipant}
+import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.AlertCodes
 import java.lang.Exception
 import com.eaio.uuid.UUID
+import akka.actor._
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -52,7 +52,6 @@ case class PairActor(pairKey:String,
   private var currentScanListener:PairSyncListener = null
   private var upstreamSuccess = false
   private var downstreamSuccess = false
-
 
   lazy val writer = store.openWriter()
 
@@ -146,6 +145,12 @@ case class PairActor(pairKey:String,
           downstreamSuccess = true
           checkForCompletion
         }
+        case ScanFailed(uuid)               => {
+          logger.error("Received scan failure: %s".format(uuid))
+          leaveScanState(PairSyncState.FAILED)
+        }
+        case x            =>
+          logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
       }
     }
     case c:ChangeMessage                   => handleChangeMessage(c)
@@ -154,6 +159,10 @@ case class PairActor(pairKey:String,
     case c:VersionCorrelationWriterCommand =>  {
       logger.error("%s: Received command (%s) in non-scanning state - potential bug"
                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, c), c.exception)
+    }
+    case ScanFailed(uuid)               => {
+      logger.error("%s: Received scan failure (%s) in non-scanning state - potential bug"
+                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, uuid))
     }
     case x            =>
       logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
@@ -173,11 +182,19 @@ case class PairActor(pairKey:String,
       policy.difference(pairKey, currentDiffListener)
 
       // Re-queue all buffered commands
-      processBacklog(PairSyncState.UP_TO_DATE)
-
-      // Leave the scan state
-      unbecome()
+      leaveScanState(PairSyncState.UP_TO_DATE)
     }
+  }
+
+  /**
+   * Ensures that the scan state is left cleanly
+   */
+  def leaveScanState(state:PairSyncState) = {
+    // Re-queue all buffered commands
+    processBacklog(state)
+
+    // Leave the scan state
+    unbecome()
   }
 
   /**
@@ -233,36 +250,34 @@ case class PairActor(pairKey:String,
       writer.flush()
 
       Actor.spawn {
-        doScan(us)
-        self ! UpstreamScanSuccess(lastUUID)
+        try {
+          policy.scanUpstream(pairKey, writerProxy, us, currentDiffListener)
+          self ! UpstreamScanSuccess(lastUUID)
+        }
+        catch {
+          case e:Exception => {
+            logger.error("Upstream scan failed: " + pairKey, e)
+            self ! ScanFailed(lastUUID)
+          }
+        }
       }
 
       Actor.spawn {
-        doScan(ds)
-        self ! DownstreamScanSuccess(lastUUID)
+        try {
+          policy.scanDownstream(pairKey, writerProxy, us, ds, currentDiffListener)
+          self ! DownstreamScanSuccess(lastUUID)
+        }
+        catch {
+          case e:Exception => {
+            logger.error("Downstream scan failed: " + pairKey, e)
+            self ! ScanFailed(lastUUID)
+          }
+        }
       }
 
     } catch {
       case x: Exception => {
         logger.error("Failed to initiate scan for pair: " + pairKey, x)
-        processBacklog(PairSyncState.FAILED)
-      }
-    }
-  }
-
-  /**
-   * Convenience function to perform scanning.
-   */
-  def doScan(participant:Participant) = {
-    try {
-      participant match {
-        case u:UpstreamParticipant    => policy.scanUpstream(pairKey, writerProxy, us, currentDiffListener)
-        case d:DownstreamParticipant  => policy.scanDownstream(pairKey, writerProxy, us, ds, currentDiffListener)
-      }
-    }
-    catch {
-      case x:Exception => {
-        logger.error("Failed to execute scan for pair %s".format(pairKey), x)
         processBacklog(PairSyncState.FAILED)
       }
     }
@@ -275,6 +290,7 @@ case class PairActor(pairKey:String,
  */
 case class UpstreamScanSuccess(uuid:UUID)
 case class DownstreamScanSuccess(uuid:UUID)
+case class ScanFailed(uuid:UUID)
 
 /**
  * This is the group of all commands that should be buffered when the actor is the scan state.
