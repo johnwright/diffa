@@ -11,7 +11,7 @@ var buckets;
 var maxColumns = 100;
 var maxRows = 10;
 var gridSize = 30;
-var gutterSize = 12;
+var gutterSize = 14;
 
 var rightLimit = 0;
 
@@ -182,7 +182,7 @@ function drawGrid() {
   for (var s = 0.5 + (2 * gutterSize + gridSize); s < canvas.height; s += (2 * gutterSize + gridSize)) {
     dashedLine(underlayContext, 0, s, region_width, s, 2);
     if (swimlaneLabels[lane] != null) {
-      underlayContext.font = "italic 12px serif";
+      underlayContext.font = "italic 11px serif";
       underlayContext.fillText(swimlaneLabels[lane], 10, s - 3);
     }
     lane++;
@@ -216,9 +216,9 @@ function drawOverlay() {
     var value = buckets[highlighted.row][highlighted.column];
     if (value > 0) {
       var c_x = highlighted.column * gridSize;
-      var c_y = (highlighted.row * (2 * gutterSize + gridSize)) + gutterSize + Math.floor(gridSize / 2);
+      var c_y = (highlighted.row * (2 * gutterSize + gridSize)) + gutterSize;
       overlayContext.font = "bold 12px sans-serif";
-      overlayContext.textBaseline = "middle";
+      overlayContext.textBaseline = "bottom";
       var width = context.measureText("" + value).width;
       overlayContext.fillText(value, c_x + Math.floor(gridSize / 2) - Math.floor(width / 2), c_y);
     }
@@ -259,6 +259,7 @@ function coordsToPosition(coords) {
   };
 }
 
+var polling = true;
 var dragging = false;
 function mouseDown(e) {
   switch (e.which) {
@@ -267,6 +268,7 @@ function mouseDown(e) {
       break;
     default:
       dragging = e;
+      polling = false;
       var c = coords(e);
       c.x -= o_x;
       selected = coordsToPosition(c);
@@ -275,6 +277,7 @@ function mouseDown(e) {
 
 function mouseUp(e) {
   dragging = false;
+  polling = true;
 }
 
 function mouseMove(e) {
