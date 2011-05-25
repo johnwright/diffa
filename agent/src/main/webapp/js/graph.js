@@ -146,17 +146,30 @@ function addRow(table, event) {
 	table.append(row);
 }
 
-function fetchData() {
-	var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
-	var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
+function previous()	{
+	fetchData();
+}
 
-	$.get("rest/diffs/sessions/" + sessionId, function(data) {
-		renderEvents(data[0]);
-		var list = $('#difflist').find('tbody').empty().end();
-		$.each(data, function(i, event) {
-			addRow(list, event);
-		});
-	});
+function next()	{
+	alert("Fetching next data");
+	fetchData();
+}
+
+function fetchData() {
+	if(selected != null)	{
+		if(buckets[selected.row][selected.column] > 0)	{
+			var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
+			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
+
+			$.get("rest/diffs/sessions/" + sessionId, function(data) {
+				renderEvents(data[0]);
+				var list = $('#difflist').find('tbody').empty().end();
+				$.each(data, function(i, event) {
+					addRow(list, event);
+				});
+			});
+		}
+	}
 }
 
 var timeout;
@@ -404,9 +417,22 @@ function initGraph() {
 	$("#display").bind("contextmenu", function(e) {
 		return false;
 	});
-	$("#difflist").click(function(e) {
+	$("#difflist.tbody").click(function(e) {
 		selectFromList(e);
 	});
+
+	$("#next").hover(
+		function(e) {
+			$("#next").color("pink");
+		},
+		function(e) {
+			$("#next").color("green");
+	});
+	$("#next").click(function(e) {
+		next();
+	});
+
+
 
 
 	$("#polling").toggle(
