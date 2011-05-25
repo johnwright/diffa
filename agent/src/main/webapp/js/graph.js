@@ -101,17 +101,19 @@ function loadBuckets() {
 }
 
 function renderEvents(event) {
-	var itemID = event.objId.id,
-		pairKey = event.objId.pairKey,
-		seqID = event.seqId,
-		upstreamLabel = "upstream",
-		upstreamVersion = event.upstreamVsn || "no version",
-		downstreamLabel = "downstream",
-		downstreamVersion = event.downstreamVsn || "no version";
+	if(event != null)	{
+		var itemID = event.objId.id,
+			pairKey = event.objId.pairKey,
+			seqID = event.seqId,
+			upstreamLabel = "upstream",
+			upstreamVersion = event.upstreamVsn || "no version",
+			downstreamLabel = "downstream",
+			downstreamVersion = event.downstreamVsn || "no version";
 
-	$('#contentviewer h6').eq(0).text('Content for item ID: ' + itemID);
-	$('#item1 .diffHash').html('<span>' + upstreamLabel + '</span>' + upstreamVersion);
-	$('#item2 .diffHash').html('<span>' + downstreamLabel + '</span>' + downstreamVersion);
+		$('#contentviewer h6').eq(0).text('Content for item ID: ' + itemID);
+		$('#item1 .diffHash').html('<span>' + upstreamLabel + '</span>' + upstreamVersion);
+		$('#item2 .diffHash').html('<span>' + downstreamLabel + '</span>' + downstreamVersion);
+	}
 }
 
 function selectFromList(event) {
@@ -151,7 +153,6 @@ function previous()	{
 }
 
 function next()	{
-	alert("Fetching next data");
 	fetchData();
 }
 
@@ -417,19 +418,30 @@ function initGraph() {
 	$("#display").bind("contextmenu", function(e) {
 		return false;
 	});
-	$("#difflist.tbody").click(function(e) {
+	$("#difflist").click(function(e) {
 		selectFromList(e);
 	});
 
 	$("#next").hover(
 		function(e) {
-			$("#next").color("pink");
+			$(this).css({color:"pink"});
 		},
 		function(e) {
-			$("#next").color("green");
+			$(this).css({color:"green"});
 	});
 	$("#next").click(function(e) {
 		next();
+	});
+
+	$("#previous").hover(
+		function(e) {
+			$(this).css({color:"pink"});
+		},
+		function(e) {
+			$(this).css({color:"green"});
+	});
+	$("#previous").click(function(e) {
+		previous();
 	});
 
 
