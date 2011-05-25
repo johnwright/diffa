@@ -424,10 +424,10 @@ function initGraph() {
 
 	$("#next").hover(
 		function(e) {
-			$(this).css({color:"pink"});
+			$(this).css({"color":"red"});
 		},
 		function(e) {
-			$(this).css({color:"green"});
+			$(this).css({"color":"black"});
 	});
 	$("#next").click(function(e) {
 		next();
@@ -435,10 +435,10 @@ function initGraph() {
 
 	$("#previous").hover(
 		function(e) {
-			$(this).css({color:"pink"});
+			$(this).css({color:"red"});
 		},
 		function(e) {
-			$(this).css({color:"green"});
+			$(this).css({color:"black"});
 	});
 	$("#previous").click(function(e) {
 		previous();
