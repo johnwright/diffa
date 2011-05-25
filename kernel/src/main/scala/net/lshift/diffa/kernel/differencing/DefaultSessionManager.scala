@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.actors.{PairPolicyClient, PairActor}
 import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
-import org.joda.time.DateTime
+import org.joda.time.{Interval, DateTime}
 
 /**
  * Standard implementation of the SessionManager.
@@ -177,9 +177,8 @@ class DefaultSessionManager(
   def retrieveEventsSince(id:String, evtSeqId:String) = sessionsByKey(id).retrieveEventsSince(evtSeqId)
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
 
-  def retrievePagedEvents(sessionId:String, start:DateTime, end:DateTime, offset:Int, length:Int) = {
-    Array(SessionEvent("someSeqId",VersionID("pair","foo"),new DateTime,MatchState.UNMATCHED,"uvsn","dvsn"))
-  }
+  def retrievePagedEvents(sessionId:String, interval:Interval, offset:Int, length:Int) =
+    sessionsByKey(sessionId).retrievePagedEvents(interval, offset,length)
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.debug("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")

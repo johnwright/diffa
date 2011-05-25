@@ -107,12 +107,26 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldTestPaging = {
+    val start = new DateTime
     var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
-    env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
 
-    val diffs = env.diffClient.page(sessionId, today.minusHours(2), today.minusHours(1), 10, 10)
+    val size = 10
+    for (i <- 1 to size) {
+      env.addAndNotifyUpstream("" + i, env.bizDate(yesterday), "abcdef" + i)
+    }
+
+    // TODO Refactor this
+    var i = 20
+    var diffs = env.diffClient.page(sessionId, start, start.plusMinutes(2), 1, 1)
+    while(diffs.isEmpty && i > 0) {
+      Thread.sleep(100)
+
+      diffs = env.diffClient.page(sessionId, start, start.plusMinutes(2), 1, 1)
+      i-=1
+    }
 
     assertNotNull(diffs)
+
     assertFalse(diffs.isEmpty)
     // TODO Implement more meaningful assertion
   }

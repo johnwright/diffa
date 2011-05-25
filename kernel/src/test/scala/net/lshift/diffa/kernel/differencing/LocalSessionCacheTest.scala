@@ -18,8 +18,8 @@ package net.lshift.diffa.kernel.differencing
 
 import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
-import org.joda.time.DateTime
 import org.junit.{Ignore, Test}
+import org.joda.time.{Interval, DateTime}
 
 /**
  * Test cases for the local session cache.
@@ -87,6 +87,32 @@ class LocalSessionCacheTest {
     assertEquals(timestamp, unmatched.first.detectedAt)
     assertEquals("uV", unmatched.first.upstreamVsn)
     assertEquals("dV", unmatched.first.downstreamVsn)
+  }
+
+  @Test
+  def shouldPageReportableUnmatchedEvent = {
+    val start = new DateTime(1982, 5, 5, 14, 15, 19, 0)
+    val size = 100
+
+    for (i <- 1 to size) {
+      val timestamp = start.plusMinutes(i)
+      cache.addReportableUnmatchedEvent(VersionID("pair2", "id" + i), timestamp, "uV", "dV")
+    }
+
+    val unmatched = cache.retrieveAllUnmatchedEvents
+    assertEquals(size, unmatched.length)
+
+    // Set a bound so that 30 events fall into the window
+    val interval = new Interval(start.plusMinutes(20), start.plusMinutes(50))
+
+    // Requesting 19 elements with an offset of 10 from 30 elements should yield elements 10 through to 28
+    val containedPage = cache.retrievePagedEvents(interval, 10, 19)
+    assertEquals(19, containedPage.length)
+
+    // Requesting 19 elements with an offset of 20 from 30 elements should yield elements 20 through to 29
+    val splitPage = cache.retrievePagedEvents(interval, 20, 19)
+    assertEquals(10, splitPage.length)
+
   }
 
   @Test

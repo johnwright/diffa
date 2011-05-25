@@ -25,12 +25,12 @@ import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Des
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.participants.ParticipantType
-import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import net.lshift.diffa.kernel.events.VersionID._
 import net.lshift.diffa.kernel.differencing.{MatchState, SessionScope, SessionManager, SessionEvent}
 import net.lshift.diffa.kernel.events.VersionID
+import org.joda.time.{Interval, DateTime}
 
 @Path("/diffs")
 @Component
@@ -152,9 +152,8 @@ class DifferencesResource extends AbstractRestResource {
           @QueryParam("offset") offset:String,
           @QueryParam("length") length:String) = {
     val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
-    val start = parser.parseDateTime(from)
-    val end = parser.parseDateTime(until)
-    val diffs = session.retrievePagedEvents(sessionId, start, end, offset.toInt, length.toInt)
+    val interval = new Interval(parser.parseDateTime(from), parser.parseDateTime(until))
+    val diffs = session.retrievePagedEvents(sessionId, interval, offset.toInt, length.toInt)
     Response.ok(diffs.toArray).tag(sessionVsn).build
   }
   
