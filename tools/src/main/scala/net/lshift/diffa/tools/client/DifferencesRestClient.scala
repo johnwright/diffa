@@ -25,6 +25,7 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import javax.ws.rs.core.{Response, MediaType}
 import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
+import org.joda.time.format.DateTimeFormat
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -34,6 +35,8 @@ class DifferencesRestClient(serverRootUrl:String)
         with DifferencesClient {
   val supportsStreaming = false
   val supportsPolling = true
+
+  val formatter = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
 
   /**
    * Creates a differencing session that can be polled for match events.
@@ -51,9 +54,7 @@ class DifferencesRestClient(serverRootUrl:String)
     val p = resource.path("sessions").queryParams(params)
     val response = p.post(classOf[ClientResponse])
 
-    val status = response.getClientResponseStatus    
-
-//    val prefix = url + "/" + context + "/" + root + "/sessions/"
+    val status = response.getClientResponseStatus
 
     status.getStatusCode match {
       case 201     => response.getLocation.toString.split("/").last
@@ -99,6 +100,21 @@ class DifferencesRestClient(serverRootUrl:String)
    */
   def poll(sessionId:String, sinceSeqId:String) : Array[SessionEvent] =
     pollInternal(resource.path("sessions/" + sessionId).queryParam("since", sinceSeqId))
+
+  def page(sessionId:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
+    val path = resource.path("sessions/" + sessionId + "/page")
+                       .queryParam("range-start", formatter.print(from))
+                       .queryParam("range-end", formatter.print(until))
+                       .queryParam("offset", offset.toString)
+                       .queryParam("length", length.toString)
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.get(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 200 => response.getEntity(classOf[Array[SessionEvent]])
+      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+    }
+  }
 
   def eventDetail(sessionId:String, evtSeqId:String, t:ParticipantType.ParticipantType) : String = {
     val p = resource.path("events/" + sessionId + "/" + evtSeqId + "/" + t.toString )

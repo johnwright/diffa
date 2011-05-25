@@ -106,6 +106,18 @@ trait CommonDifferenceTests {
   }
 
   @Test
+  def shouldTestPaging = {
+    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
+
+    val diffs = env.diffClient.page(sessionId, today.minusHours(2), today.minusHours(1), 10, 10)
+
+    assertNotNull(diffs)
+    assertFalse(diffs.isEmpty)
+    // TODO Implement more meaningful assertion
+  }
+
+  @Test
   def walkThroughEventDetails = {
     def guid() = UUID.randomUUID.toString
     val up = guid()
