@@ -149,6 +149,7 @@ class DifferencesResource extends AbstractRestResource {
           @QueryParam("until") until:String,
           @QueryParam("offset") offset:String,
           @QueryParam("length") length:String) = {
+    log.info("Paging differences: %s; %s; %s; %s".format(from,until,offset,length))
     val start = parser.parseDateTime(from)
     val end = parser.parseDateTime(until)
     session.retrieveAllEvents(sessionId, start, end, offset.toInt, length.toInt)

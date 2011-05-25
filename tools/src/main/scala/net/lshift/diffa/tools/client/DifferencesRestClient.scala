@@ -103,7 +103,7 @@ class DifferencesRestClient(serverRootUrl:String)
                        .queryParam("from", from.toString())
                        .queryParam("until", until.toString())
                        .queryParam("offset", offset.toString)
-                       .queryParam("offset", length.toString)
+                       .queryParam("length", length.toString)
     val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
