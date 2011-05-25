@@ -50,14 +50,12 @@ function clearScale() {
 
 var sessionId = null;
 
-function createSession(cb) {
+function createSession() {
 	var handleSessionId = function(data, status, req) {
 		var location = req.getResponseHeader('Location');
 		var parts = location.split("/");
 		var sessionID = parts[parts.length - 1];
 		sessionId = sessionID;
-
-		cb();
 	};
 	$.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
 }
@@ -65,8 +63,9 @@ function createSession(cb) {
 var startTime, endTime;
 var bucketSize = 3600;
 
+const TIME_FORMAT = "YYYY0MM0DDT0hh0mm0ssZ";
 var swimlaneLabels = [];
-function loadTestData() {
+function loadBuckets() {
 	buckets = [];
 	for (var i = 0; i < maxRows; i++) {
 		var row = [];
@@ -77,10 +76,11 @@ function loadTestData() {
 	}
 
 	endTime = new Date();
-	var now = endTime.formatString("YYYY0MM0DDT0hh0mm0ssZ");
+
+	var now = endTime.formatString(TIME_FORMAT);
 
 	startTime = new Date(endTime - (3600 * maxColumns * 1000));
-	var dayBeforeNow = startTime.formatString("YYYY0MM0DDT0hh0mm0ssZ");
+	var dayBeforeNow = startTime.formatString(TIME_FORMAT);
 
 	$.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=3600", function(data) {
 		var indexer = 0;
@@ -100,14 +100,20 @@ function loadTestData() {
 	});
 }
 
+function fetchData()	{
+	var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
+	var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
+
+}
+
 var timeout;
 var polling = true;
 function startPolling() {
 	polling = true;
 	clearTimeout(timeout);
-	createSession(function() {
-		loadTestData();
-	});
+//	createSession(function() {
+		loadBuckets();
+//	});
 	timeout = window.setTimeout(startPolling, 5000);
 	$("#polling").text("Stop polling");
 }
@@ -280,6 +286,8 @@ function mouseDown(e) {
 			var c = coords(e);
 			c.x -= o_x;
 			selected = coordsToPosition(c);
+			$("#debug").text("Selected: " + selected.row + " " + selected.column);
+			fetchData();
 	}
 }
 
@@ -333,6 +341,7 @@ function mouseOver(e) {
 }
 
 function initGraph() {
+	createSession();
 	initCanvas();
 	startPolling();
 
