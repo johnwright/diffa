@@ -110,7 +110,7 @@ trait SessionManager {
    * Retrieves all events known to this session. Will only include unmatched events.
    * @throws InvalidSessionIDException if the requested session does not exist or has expired.
    */
-  def retrieveAllEvents(sessionId:String, start:DateTime, end:DateTime, offset:Int, numberToReturn:Int)
+  def retrievePagedEvents(sessionId:String, start:DateTime, end:DateTime, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
    * Retrieves all events that have occurred within a session since the provided sequence id.

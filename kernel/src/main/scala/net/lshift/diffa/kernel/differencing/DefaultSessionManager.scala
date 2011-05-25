@@ -17,15 +17,15 @@
 package net.lshift.diffa.kernel.differencing
 
 import java.lang.String
-import net.lshift.diffa.kernel.events.VersionID
 import collection.mutable.{ListBuffer, HashMap}
-import org.joda.time.DateTime
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, PairActor}
 import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.events.VersionID
+import org.joda.time.DateTime
 
 /**
  * Standard implementation of the SessionManager.
@@ -177,9 +177,8 @@ class DefaultSessionManager(
   def retrieveEventsSince(id:String, evtSeqId:String) = sessionsByKey(id).retrieveEventsSince(evtSeqId)
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
 
-  def retrieveAllEvents(sessionId:String, start:DateTime, end:DateTime, offset:Int, numberToReturn:Int) = {
-    // TODO implement properly
-    retrieveAllEvents(sessionId)
+  def retrievePagedEvents(sessionId:String, start:DateTime, end:DateTime, offset:Int, length:Int) = {
+    Array(SessionEvent("someSeqId",VersionID("pair","foo"),new DateTime,MatchState.UNMATCHED,"uvsn","dvsn"))
   }
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {

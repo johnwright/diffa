@@ -113,6 +113,7 @@ trait CommonDifferenceTests {
     val diffs = env.diffClient.page(sessionId, today.minusHours(2), today.minusHours(1), 10, 10)
 
     assertNotNull(diffs)
+    assertFalse(diffs.isEmpty)
     // TODO Implement more meaningful assertion
   }
 

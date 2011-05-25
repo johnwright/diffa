@@ -24,11 +24,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
-import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
+import net.lshift.diffa.kernel.events.VersionID._
+import net.lshift.diffa.kernel.differencing.{MatchState, SessionScope, SessionManager, SessionEvent}
+import net.lshift.diffa.kernel.events.VersionID
 
 @Path("/diffs")
 @Component
@@ -140,19 +142,20 @@ class DifferencesResource extends AbstractRestResource {
   @Description("Returns a list of outstanding differences in the current session in a paged format.")
   @MandatoryParams(Array(
     new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID"),
-    new MandatoryParam(name = "from", datatype = "date", description = "The lower bound of the items to be paged."),
-    new MandatoryParam(name = "until", datatype = "date", description = "The upper bound of the items to be paged."),
+    new MandatoryParam(name = "range-start", datatype = "date", description = "The lower bound of the items to be paged."),
+    new MandatoryParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
     new MandatoryParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
     new MandatoryParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
   def pageDifferences(@PathParam("sessionId") sessionId: String,
-          @QueryParam("from") from:String,
-          @QueryParam("until") until:String,
+          @QueryParam("range-start") from:String,
+          @QueryParam("range-end") until:String,
           @QueryParam("offset") offset:String,
           @QueryParam("length") length:String) = {
-    log.info("Paging differences: %s; %s; %s; %s".format(from,until,offset,length))
+    val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
     val start = parser.parseDateTime(from)
     val end = parser.parseDateTime(until)
-    session.retrieveAllEvents(sessionId, start, end, offset.toInt, length.toInt)
+    val diffs = session.retrievePagedEvents(sessionId, start, end, offset.toInt, length.toInt)
+    Response.ok(diffs.toArray).tag(sessionVsn).build
   }
   
   @GET

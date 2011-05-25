@@ -25,6 +25,7 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import javax.ws.rs.core.{Response, MediaType}
 import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
+import org.joda.time.format.DateTimeFormat
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -34,6 +35,8 @@ class DifferencesRestClient(serverRootUrl:String)
         with DifferencesClient {
   val supportsStreaming = false
   val supportsPolling = true
+
+  val formatter = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
 
   /**
    * Creates a differencing session that can be polled for match events.
@@ -100,8 +103,8 @@ class DifferencesRestClient(serverRootUrl:String)
 
   def page(sessionId:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
     val path = resource.path("sessions/" + sessionId + "/page")
-                       .queryParam("from", from.toString())
-                       .queryParam("until", until.toString())
+                       .queryParam("range-start", formatter.print(from))
+                       .queryParam("range-end", formatter.print(until))
                        .queryParam("offset", offset.toString)
                        .queryParam("length", length.toString)
     val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
