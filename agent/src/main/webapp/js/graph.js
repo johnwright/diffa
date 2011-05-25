@@ -100,56 +100,77 @@ function loadBuckets() {
 	});
 }
 
-function renderEvents(event)	{
-	var itemID = event.objId.id,
-		pairKey = event.objId.pairKey,
-		seqID = event.seqId,
-		upstreamLabel = "upstream",
-		upstreamVersion = event.upstreamVsn || "no version",
-		downstreamLabel = "downstream",
-		downstreamVersion = event.downstreamVsn || "no version";
+function renderEvents(event) {
+	if(event != null)	{
+		var itemID = event.objId.id,
+			pairKey = event.objId.pairKey,
+			seqID = event.seqId,
+			upstreamLabel = "upstream",
+			upstreamVersion = event.upstreamVsn || "no version",
+			downstreamLabel = "downstream",
+			downstreamVersion = event.downstreamVsn || "no version";
 
-	$('#contentviewer h6').eq(0).text('Content for item ID: '+itemID);
-	$('#item1 .diffHash').html('<span>'+upstreamLabel+'</span>'+upstreamVersion);
-	$('#item2 .diffHash').html('<span>'+downstreamLabel+'</span>'+downstreamVersion);
+		$('#contentviewer h6').eq(0).text('Content for item ID: ' + itemID);
+		$('#item1 .diffHash').html('<span>' + upstreamLabel + '</span>' + upstreamVersion);
+		$('#item2 .diffHash').html('<span>' + downstreamLabel + '</span>' + downstreamVersion);
+	}
 }
 
-function addRow(table, event)	{
+function selectFromList(event) {
+	if (!event) {
+		return false;
+	}
+	var row = event.target.nodeName==="tr" ? $(event.target) : $(event.target).closest('tr');
+	renderEvents(row.data("event"));
+}
+
+function addRow(table, event) {
 	var time = new Date(event.detectedAt).formatString("0hh:0mm:0ss");
 	var date = new Date(event.detectedAt).formatString("DD/MM/YYYY");
 	var row = $("<tr id='evt_" + event.seqId + "></tr>")
 		.append("<td class='date'>" + date + "</td>")
 		.append("<td>" + time + "</td>")
-		.append("<td id='" + event.detectedAt + "_" + event.objId.pairKey +"_group'></td>")
+		.append("<td id='" + event.detectedAt + "_" + event.objId.pairKey + "_group'></td>")
 		.append("<td>" + event.objId.pairKey + "</td>")
-		.append("<td>" + event.objId.id + "</td>");
+		.append("<td>" + event.objId.id + "</td>")
+		.data("event", event);
 
-	if(!event.upstreamVsn)	{
+	if (!event.upstreamVsn) {
 		row.append("<td>Missing from upstream</td>");
 	}
-	else if(!event.downstreamVsn)	{
+	else if (!event.downstreamVsn) {
 		row.append("<td>Missing from downstream</td>");
 	}
-	else	{
+	else {
 		row.append("<td>Data difference</td>");
 	}
 
 	table.append(row);
 }
 
-function fetchData()	{
-	var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
-	var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
+function previous()	{
+	fetchData();
+}
 
-	$.get("rest/diffs/sessions/" + sessionId, function(data){
-		renderEvents(data[0]);
-		var difflist = $('#difflist').find('tbody').empty().end();
-		$.each(data, function(i, event){
-			addRow(difflist, event);
-//			var newRow = "<tr><td>WIND</td></tr>";
-//			difflist.append(newRow);
-		});
-	});
+function next()	{
+	fetchData();
+}
+
+function fetchData() {
+	if(selected != null)	{
+		if(buckets[selected.row][selected.column] > 0)	{
+			var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
+			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
+
+			$.get("rest/diffs/sessions/" + sessionId, function(data) {
+				renderEvents(data[0]);
+				var list = $('#difflist').find('tbody').empty().end();
+				$.each(data, function(i, event) {
+					addRow(list, event);
+				});
+			});
+		}
+	}
 }
 
 var timeout;
@@ -330,7 +351,6 @@ function mouseDown(e) {
 			var c = coords(e);
 			c.x -= o_x;
 			selected = coordsToPosition(c);
-			$("#debug").text("Selected: " + selected.row + " " + selected.column);
 			fetchData();
 	}
 }
@@ -365,7 +385,6 @@ function mouseMove(e) {
 		scaleContext.translate(o_x, 0);
 		drawGrid();
 		dragging = e;
-		$("#debug").text("Offset " + o_x + " " + rightLimit);
 	}
 	else {
 		clearOverlay();
@@ -397,10 +416,38 @@ function initGraph() {
 	$("#display").bind("contextmenu", function(e) {
 		return false;
 	});
+	$("#difflist").click(function(e) {
+		selectFromList(e);
+	});
+
+	$("#next").hover(
+		function(e) {
+			$(this).css({"color":"red"});
+		},
+		function(e) {
+			$(this).css({"color":"black"});
+	});
+	$("#next").click(function(e) {
+		next();
+	});
+
+	$("#previous").hover(
+		function(e) {
+			$(this).css({color:"red"});
+		},
+		function(e) {
+			$(this).css({color:"black"});
+	});
+	$("#previous").click(function(e) {
+		previous();
+	});
+
+
+
 
 	$("#polling").toggle(
 		function() {
-			if(polling)	{
+			if (polling) {
 				stopPolling();
 			}
 		},
@@ -408,4 +455,5 @@ function initGraph() {
 			startPolling();
 		}
 	);
+
 }
