@@ -351,7 +351,6 @@ function mouseDown(e) {
 			var c = coords(e);
 			c.x -= o_x;
 			selected = coordsToPosition(c);
-			$("#debug").text("Selected: " + selected.row + " " + selected.column);
 			fetchData();
 	}
 }
@@ -386,7 +385,6 @@ function mouseMove(e) {
 		scaleContext.translate(o_x, 0);
 		drawGrid();
 		dragging = e;
-		$("#debug").text("Offset " + o_x + " " + rightLimit);
 	}
 	else {
 		clearOverlay();
