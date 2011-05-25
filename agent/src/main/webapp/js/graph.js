@@ -100,10 +100,56 @@ function loadBuckets() {
 	});
 }
 
+function renderEvents(event)	{
+	var itemID = event.objId.id,
+		pairKey = event.objId.pairKey,
+		seqID = event.seqId,
+		upstreamLabel = "upstream",
+		upstreamVersion = event.upstreamVsn || "no version",
+		downstreamLabel = "downstream",
+		downstreamVersion = event.downstreamVsn || "no version";
+
+	$('#contentviewer h6').eq(0).text('Content for item ID: '+itemID);
+	$('#item1 .diffHash').html('<span>'+upstreamLabel+'</span>'+upstreamVersion);
+	$('#item2 .diffHash').html('<span>'+downstreamLabel+'</span>'+downstreamVersion);
+}
+
+function addRow(table, event)	{
+	var time = new Date(event.detectedAt).formatString("0hh:0mm:0ss");
+	var date = new Date(event.detectedAt).formatString("DD/MM/YYYY");
+	var row = $("<tr id='evt_" + event.seqId + "></tr>")
+		.append("<td class='date'>" + date + "</td>")
+		.append("<td>" + time + "</td>")
+		.append("<td id='" + event.detectedAt + "_" + event.objId.pairKey +"_group'></td>")
+		.append("<td>" + event.objId.pairKey + "</td>")
+		.append("<td>" + event.objId.id + "</td>");
+
+	if(!event.upstreamVsn)	{
+		row.append("<td>Missing from upstream</td>");
+	}
+	else if(!event.downstreamVsn)	{
+		row.append("<td>Missing from downstream</td>");
+	}
+	else	{
+		row.append("<td>Data difference</td>");
+	}
+
+	table.append(row);
+}
+
 function fetchData()	{
 	var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
 	var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
+	$.get("rest/diffs/sessions/" + sessionId, function(data){
+		renderEvents(data[0]);
+		var difflist = $('#difflist').find('tbody').empty().end();
+		$.each(data, function(i, event){
+			addRow(difflist, event);
+//			var newRow = "<tr><td>WIND</td></tr>";
+//			difflist.append(newRow);
+		});
+	});
 }
 
 var timeout;
@@ -111,9 +157,7 @@ var polling = true;
 function startPolling() {
 	polling = true;
 	clearTimeout(timeout);
-//	createSession(function() {
-		loadBuckets();
-//	});
+	loadBuckets();
 	timeout = window.setTimeout(startPolling, 5000);
 	$("#polling").text("Stop polling");
 }
