@@ -51,9 +51,7 @@ class DifferencesRestClient(serverRootUrl:String)
     val p = resource.path("sessions").queryParams(params)
     val response = p.post(classOf[ClientResponse])
 
-    val status = response.getClientResponseStatus    
-
-//    val prefix = url + "/" + context + "/" + root + "/sessions/"
+    val status = response.getClientResponseStatus
 
     status.getStatusCode match {
       case 201     => response.getLocation.toString.split("/").last
@@ -99,6 +97,21 @@ class DifferencesRestClient(serverRootUrl:String)
    */
   def poll(sessionId:String, sinceSeqId:String) : Array[SessionEvent] =
     pollInternal(resource.path("sessions/" + sessionId).queryParam("since", sinceSeqId))
+
+  def page(sessionId:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
+    val path = resource.path("sessions/" + sessionId + "/page")
+                       .queryParam("from", from.toString())
+                       .queryParam("until", until.toString())
+                       .queryParam("offset", offset.toString)
+                       .queryParam("offset", length.toString)
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.get(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 200 => response.getEntity(classOf[Array[SessionEvent]])
+      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+    }
+  }
 
   def eventDetail(sessionId:String, evtSeqId:String, t:ParticipantType.ParticipantType) : String = {
     val p = resource.path("events/" + sessionId + "/" + evtSeqId + "/" + t.toString )
