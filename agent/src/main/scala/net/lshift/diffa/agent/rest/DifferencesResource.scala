@@ -133,6 +133,26 @@ class DifferencesResource extends AbstractRestResource {
       }
     }
   }
+
+  @GET
+  @Path("/sessions/{sessionId}/page")
+  @Produces(Array("application/json"))
+  @Description("Returns a list of outstanding differences in the current session in a paged format.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID"),
+    new MandatoryParam(name = "from", datatype = "date", description = "The lower bound of the items to be paged."),
+    new MandatoryParam(name = "until", datatype = "date", description = "The upper bound of the items to be paged."),
+    new MandatoryParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
+    new MandatoryParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
+  def pageDifferences(@PathParam("sessionId") sessionId: String,
+          @QueryParam("from") from:String,
+          @QueryParam("until") until:String,
+          @QueryParam("offset") offset:String,
+          @QueryParam("length") length:String) = {
+    val start = parser.parseDateTime(from)
+    val end = parser.parseDateTime(until)
+    session.retrieveAllEvents(sessionId, start, end, offset.toInt, length.toInt)
+  }
   
   @GET
   @Path("/sessions/{sessionId}/zoom")

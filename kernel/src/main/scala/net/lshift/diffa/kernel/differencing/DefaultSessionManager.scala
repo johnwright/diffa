@@ -177,6 +177,11 @@ class DefaultSessionManager(
   def retrieveEventsSince(id:String, evtSeqId:String) = sessionsByKey(id).retrieveEventsSince(evtSeqId)
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
 
+  def retrieveAllEvents(sessionId:String, start:DateTime, end:DateTime, offset:Int, numberToReturn:Int) = {
+    // TODO implement properly
+    retrieveAllEvents(sessionId)
+  }
+
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.debug("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
     t match {
