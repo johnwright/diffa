@@ -109,11 +109,13 @@ function startPolling() {
 		loadTestData();
 	});
 	timeout = window.setTimeout(startPolling, 5000);
+	$("#polling").text("Stop polling");
 }
 
 function stopPolling() {
 	polling = false;
 	clearTimeout(timeout);
+	$("#polling").text("Start polling");
 }
 
 function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
@@ -347,12 +349,10 @@ function initGraph() {
 		function() {
 			if(polling)	{
 				stopPolling();
-				$("#polling").text("Start polling");
 			}
 		},
 		function() {
 			startPolling();
-			$("#polling").text("Start polling");
 		}
 	);
 }
