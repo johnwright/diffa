@@ -26,7 +26,6 @@ import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.AlertCodes
-import java.lang.Exception
 import com.eaio.uuid.UUID
 import akka.actor._
 
@@ -111,26 +110,27 @@ case class PairActor(pairKey:String,
   def receive = {
     case s:ScanMessage => {
       lastUUID = new UUID
-      handleScanMessage(s)
-      become {
-        case c:VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
-        case d:Deferrable                      => deferred.enqueue(d)
-        case UpstreamScanSuccess(uuid)         => {
-          logger.trace("Received upstream success: %s".format(uuid))
-          upstreamSuccess = true
-          checkForCompletion
+      if (handleScanMessage(s)) {
+        become {
+          case c:VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
+          case d:Deferrable                      => deferred.enqueue(d)
+          case UpstreamScanSuccess(uuid)         => {
+            logger.trace("Received upstream success: %s".format(uuid))
+            upstreamSuccess = true
+            checkForCompletion
+          }
+          case DownstreamScanSuccess(uuid)       => {
+            logger.trace("Received downstream success: %s".format(uuid))
+            downstreamSuccess = true
+            checkForCompletion
+          }
+          case ScanFailed(uuid)                  => {
+            logger.error("Received scan failure: %s".format(uuid))
+            leaveScanState(PairSyncState.FAILED)
+          }
+          case x                                 =>
+            logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
         }
-        case DownstreamScanSuccess(uuid)       => {
-          logger.trace("Received downstream success: %s".format(uuid))
-          downstreamSuccess = true
-          checkForCompletion
-        }
-        case ScanFailed(uuid)                  => {
-          logger.error("Received scan failure: %s".format(uuid))
-          leaveScanState(PairSyncState.FAILED)
-        }
-        case x                                 =>
-          logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
       }
     }
     case c:ChangeMessage                   => handleChangeMessage(c)
@@ -219,7 +219,7 @@ case class PairActor(pairKey:String,
    * Implements the top half of the request to scan the participants for digests.
    * This actor will still be in the scan state after this callback has returned.
    */
-  def handleScanMessage(message:ScanMessage) = {
+  def handleScanMessage(message:ScanMessage) : Boolean = {
     // squirrel some callbacks away for invocation in subsequent receives in the scanning state
     currentDiffListener = message.diffListener
     currentScanListener = message.pairSyncListener
@@ -255,10 +255,13 @@ case class PairActor(pairKey:String,
         }
       }
 
+      true
+
     } catch {
       case x: Exception => {
         logger.error("Failed to initiate scan for pair: " + pairKey, x)
         processBacklog(PairSyncState.FAILED)
+        false
       }
     }
   }
