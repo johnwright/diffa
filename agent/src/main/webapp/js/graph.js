@@ -185,6 +185,7 @@ function fetchData() {
 					addRow(list, event);
 				});
 			});
+			$("#pagecount").text((page + 1) + " of " + Math.ceil(buckets[selected.row][selected.column] / listSize) + " pages");
 		}
 	}
 }
