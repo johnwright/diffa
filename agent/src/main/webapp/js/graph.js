@@ -162,7 +162,9 @@ function fetchData() {
 			var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
 			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
-			$.get("rest/diffs/sessions/" + sessionId, function(data) {
+			var url = "rest/diffs/sessions/" + sessionId + "/page?range-start=" + selectedStart.formatString(TIME_FORMAT) + "&range-end=" + selectedEnd.formatString(TIME_FORMAT) + "&offset=" + 0 + "&length=" + 10;
+			//$.get("rest/diffs/sessions/" + sessionId, function(data) {
+			$.get(url, function(data) {
 				renderEvents(data[0]);
 				var list = $('#difflist').find('tbody').empty().end();
 				$.each(data, function(i, event) {
