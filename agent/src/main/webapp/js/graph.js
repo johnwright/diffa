@@ -200,7 +200,7 @@ function selectFromList(event) {
 	}
 	var row = event.target.nodeName === "tr" ? $(event.target) : $(event.target).closest('tr');
 	renderEvent(row.data("event"));
-	if(row.data("event") != null)	{
+	if (row.data("event") != null) {
 		$('#difflist').find('tbody tr').removeClass("specific_selected");
 		$('#evt_' + row.data("event").seqId).addClass("specific_selected");
 	}
@@ -370,6 +370,17 @@ function drawGrid() {
 			underlayContext.fillText(swimlaneLabels[lane], 10, s - 3);
 		}
 		lane++;
+	}
+
+	if (polling) {
+		var pollText = "LIVE";
+		var textWidth = underlayContext.measureText(pollText).width;
+		underlayContext.fillStyle = "#d12f19";
+		underlayContext.fillRect(canvas.width - textWidth - 10, 0, textWidth + 10, 20);
+		underlayContext.fillStyle = "#fff";
+		underlayContext.font = "12px bold sans-serif";
+		underlayContext.textBaseline = "top";
+		underlayContext.fillText(pollText, canvas.width - underlayContext.measureText(pollText).width - 5, 5);
 	}
 
 
