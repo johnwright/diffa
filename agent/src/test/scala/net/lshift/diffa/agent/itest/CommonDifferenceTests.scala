@@ -106,19 +106,27 @@ trait CommonDifferenceTests {
   }
 
   @Test
-  def shouldTestPaging = {
+  def shouldPageDifferences = {
     val start = new DateTime
+    val end = start.plusMinutes(2)
     var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
 
     val size = 10
     for (i <- 1 to size) {
-      env.addAndNotifyUpstream("" + i, env.bizDate(yesterday), "abcdef" + i)
+      env.addAndNotifyUpstream("" + i, env.bizDate(yesterday), "" + i)
     }
 
-    val diffs = tryAgain((d:DifferencesClient) => d.page(sessionId, start, start.plusMinutes(2), 1, 1))
+    val offset = 5
 
-    assertFalse(diffs.isEmpty)
-    // TODO Implement more meaningful assertion
+    val diffs1 = tryAgain((d:DifferencesClient) => d.page(sessionId, start, end, offset, size))
+    assertEquals(size - offset, diffs1.size)
+
+    // Select the 7th and 8th differences and validate their content
+    val subset = 2
+    val diffs2 = tryAgain((d:DifferencesClient) => d.page(sessionId, start, end, 6, subset))
+    assertEquals(subset, diffs2.size)
+    assertTrue(diffs2(0).upstreamVsn.contains("vsn_7"))
+    assertTrue(diffs2(1).upstreamVsn.contains("vsn_8"))
   }
 
   @Test
