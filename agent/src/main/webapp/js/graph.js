@@ -100,8 +100,8 @@ function loadBuckets() {
 	});
 }
 
-function renderEvents(event) {
-	if(event != null)	{
+function renderEvent(event) {
+	if (event != null) {
 		var itemID = event.objId.id,
 			pairKey = event.objId.pairKey,
 			seqID = event.seqId,
@@ -113,6 +113,29 @@ function renderEvents(event) {
 		$('#contentviewer h6').eq(0).text('Content for item ID: ' + itemID);
 		$('#item1 .diffHash').html('<span>' + upstreamLabel + '</span>' + upstreamVersion);
 		$('#item2 .diffHash').html('<span>' + downstreamLabel + '</span>' + downstreamVersion);
+
+		var getContent = function(selector, label, upOrDown) {
+			$.ajax({
+					url: "rest/diffs/events/" + sessionId + "/" + seqID + "/" + upOrDown,
+					success: function(data) {
+						$(selector).text(data || "no content found for " + upOrDown);
+					},
+					error: function(xhr, status, ex) {
+						if (console && console.log) {
+							console.log('error getting the content for ' + (label || "(no label)"), status, ex, xhr);
+						}
+					}
+				});
+		};
+
+		$.get("rest/config/pairs/" + pairKey, function(data, status, xhr) {
+			upstreamLabel = data.upstream.name;
+			$("#item1 h6").text(upstreamLabel);
+			downstreamLabel = data.downstream.name;
+			$("#item2 h6").text(downstreamLabel);
+			getContent("#item1 pre", upstreamLabel, "upstream");
+			getContent("#item2 pre", downstreamLabel, "downstream");
+		});
 	}
 }
 
@@ -120,8 +143,8 @@ function selectFromList(event) {
 	if (!event) {
 		return false;
 	}
-	var row = event.target.nodeName==="tr" ? $(event.target) : $(event.target).closest('tr');
-	renderEvents(row.data("event"));
+	var row = event.target.nodeName === "tr" ? $(event.target) : $(event.target).closest('tr');
+	renderEvent(row.data("event"));
 	$('#difflist').find('tbody tr').removeClass("specific_selected");
 	$('#evt_' + row.data("event").seqId).addClass("specific_selected");
 }
@@ -152,18 +175,18 @@ function addRow(table, event) {
 
 var listSize = 10;
 var page = 0;
-function previous()	{
-	if(page > 0)	{
+function previous() {
+	if (page > 0) {
 		page--;
 	}
 	fetchData();
 }
 
-function next()	{
-	if(selected != null)	{
+function next() {
+	if (selected != null) {
 		var bucketSize = buckets[selected.row][selected.column];
 
-		if(page * listSize < bucketSize)	{
+		if (page * listSize < bucketSize) {
 			page++;
 			fetchData();
 		}
@@ -171,8 +194,8 @@ function next()	{
 }
 
 function fetchData() {
-	if(selected != null)	{
-		if(buckets[selected.row][selected.column] > 0)	{
+	if (selected != null) {
+		if (buckets[selected.row][selected.column] > 0) {
 			var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
 			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
@@ -181,7 +204,7 @@ function fetchData() {
 				+ "&offset=" + (page * listSize) + "&length=" + listSize;
 
 			$.get(url, function(data) {
-				renderEvents(data[0]);
+				renderEvent(data[0]);
 				var list = $('#difflist').find('tbody').empty().end();
 				$.each(data, function(i, event) {
 					addRow(list, event);
