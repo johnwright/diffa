@@ -148,12 +148,24 @@ function addRow(table, event) {
 	table.append(row);
 }
 
+var listSize = 10;
+var page = 0;
 function previous()	{
+	if(page > 0)	{
+		page--;
+	}
 	fetchData();
 }
 
 function next()	{
-	fetchData();
+	if(selected != null)	{
+		var bucketSize = buckets[selected.row][selected.column];
+
+		if(page * listSize < bucketSize)	{
+			page++;
+			fetchData();
+		}
+	}
 }
 
 function fetchData() {
@@ -162,8 +174,10 @@ function fetchData() {
 			var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
 			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
-			var url = "rest/diffs/sessions/" + sessionId + "/page?range-start=" + selectedStart.formatString(TIME_FORMAT) + "&range-end=" + selectedEnd.formatString(TIME_FORMAT) + "&offset=" + 0 + "&length=" + 10;
-			//$.get("rest/diffs/sessions/" + sessionId, function(data) {
+			var url = "rest/diffs/sessions/" + sessionId + "/page?range-start="
+				+ selectedStart.formatString(TIME_FORMAT) + "&range-end=" + selectedEnd.formatString(TIME_FORMAT)
+				+ "&offset=" + (page * listSize) + "&length=" + listSize;
+
 			$.get(url, function(data) {
 				renderEvents(data[0]);
 				var list = $('#difflist').find('tbody').empty().end();
@@ -353,6 +367,7 @@ function mouseDown(e) {
 			var c = coords(e);
 			c.x -= o_x;
 			selected = coordsToPosition(c);
+			page = 0;
 			fetchData();
 	}
 }
