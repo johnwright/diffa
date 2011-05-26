@@ -90,20 +90,38 @@ class LocalSessionCacheTest {
   }
 
   @Test
-  def shouldPageReportableUnmatchedEvent = {
-    val start = new DateTime(1982, 5, 5, 14, 15, 19, 0)
-    val size = 100
+  def shouldReportUnmatchedEventWithinInterval = {
+    val start = new DateTime(2004, 11, 6, 3, 5, 15, 0)
+    val size = 60
+    var frontFence = 10
+    var rearFence = 10
 
+    val interval = addUnmatchedEvents(start, size, frontFence, rearFence)
+
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
+    assertEquals(size - frontFence - rearFence, unmatched.length)
+  }
+
+  def addUnmatchedEvents(start:DateTime, size:Int, frontFence:Int, rearFence:Int) : Interval = {
     for (i <- 1 to size) {
       val timestamp = start.plusMinutes(i)
       cache.addReportableUnmatchedEvent(VersionID("pair2", "id" + i), timestamp, "uV", "dV")
     }
+    new Interval(start.plusMinutes(frontFence), start.plusMinutes(size - rearFence))
+  }
+
+  @Test
+  def shouldPageReportableUnmatchedEvent = {
+    val start = new DateTime(1982, 5, 5, 14, 15, 19, 0)
+    val size = 100
+    var frontFence = 20
+    var rearFence = 50
+
+    // Set a bound so that 30 events fall into the window
+    val interval = addUnmatchedEvents(start, size, frontFence, rearFence)
 
     val unmatched = cache.retrieveAllUnmatchedEvents
     assertEquals(size, unmatched.length)
-
-    // Set a bound so that 30 events fall into the window
-    val interval = new Interval(start.plusMinutes(20), start.plusMinutes(50))
 
     // Requesting 19 elements with an offset of 10 from 30 elements should yield elements 10 through to 28
     val containedPage = cache.retrievePagedEvents(interval, 10, 19)
