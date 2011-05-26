@@ -31,6 +31,7 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import java.util.{UUID, Properties}
 import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
+import net.lshift.diffa.kernel.client.DifferencesClient
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -99,9 +100,8 @@ trait CommonDifferenceTests {
     var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
 
-    val diffs = tryAgain(sessionId,20,100)
+    val diffs = pollForAllDifferences(sessionId)
 
-    assertNotNull(diffs)
     assertFalse(diffs.isEmpty)
   }
 
@@ -115,17 +115,7 @@ trait CommonDifferenceTests {
       env.addAndNotifyUpstream("" + i, env.bizDate(yesterday), "abcdef" + i)
     }
 
-    // TODO Refactor this
-    var i = 20
-    var diffs = env.diffClient.page(sessionId, start, start.plusMinutes(2), 1, 1)
-    while(diffs.isEmpty && i > 0) {
-      Thread.sleep(100)
-
-      diffs = env.diffClient.page(sessionId, start, start.plusMinutes(2), 1, 1)
-      i-=1
-    }
-
-    assertNotNull(diffs)
+    val diffs = tryAgain((d:DifferencesClient) => d.page(sessionId, start, start.plusMinutes(2), 1, 1))
 
     assertFalse(diffs.isEmpty)
     // TODO Implement more meaningful assertion
@@ -140,7 +130,7 @@ trait CommonDifferenceTests {
     var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), up)
 
-    val diffs = tryAgain(sessionId,20,100)
+    val diffs = pollForAllDifferences(sessionId)
     val seqId1 = diffs(0).seqId
 
     val up1 = env.diffClient.eventDetail(sessionId, seqId1, ParticipantType.UPSTREAM)
@@ -151,7 +141,7 @@ trait CommonDifferenceTests {
 
     env.addAndNotifyDownstream("abc", env.bizDate(yesterday), down)
     Thread.sleep(2000)
-    val diffs2 = tryAgain(sessionId,20,100)
+    val diffs2 = pollForAllDifferences(sessionId)
     assertEquals(1, diffs2.length)
     val seqId2 = diffs2(0).seqId
 
@@ -212,20 +202,23 @@ trait CommonDifferenceTests {
     env.upstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
 
     var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
-    val diffs = tryAgain(sessionId,10,100)
+    val diffs = pollForAllDifferences(sessionId)
 
     assertNotNull(diffs)
     assertFalse(diffs.isEmpty)
     (diffs, sessionId)
   }
 
-  def tryAgain(sessionId:String, n:Int, wait:Int) = {
+  def pollForAllDifferences(sessionId:String,n:Int = 10, wait:Int = 100) =
+    tryAgain((d:DifferencesClient) => d.poll(sessionId),n,wait)
+
+  def tryAgain(poll:DifferencesClient => Seq[SessionEvent], n:Int = 10, wait:Int = 100) : Seq[SessionEvent]= {
     var i = n
-    var diffs = env.diffClient.poll(sessionId)
+    var diffs = poll(env.diffClient)
     while(diffs.isEmpty && i > 0) {
       Thread.sleep(wait)
 
-      diffs = env.diffClient.poll(sessionId)
+      diffs = poll(env.diffClient)
       i-=1
     }
     assertNotNull(diffs)
