@@ -230,7 +230,7 @@ function addRow(table, event) {
 	table.append(row);
 }
 
-var listSize = 10;
+var listSize = 20;
 var page = 0;
 function previous() {
 	if (page > 0) {
@@ -243,7 +243,7 @@ function next() {
 	if (selected != null) {
 		var bucketSize = buckets[selected.row][selected.column];
 
-		if (page * listSize < bucketSize) {
+		if ((page + 1) * listSize < bucketSize) {
 			page++;
 			fetchData();
 		}
