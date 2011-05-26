@@ -100,6 +100,59 @@ function loadBuckets() {
 	});
 }
 
+function renderActions() {
+	var $actionListContainer = $("#actionlist").empty();
+	var actionListCallback = function(actionList, status, xhr) {
+		if (!actionList) {
+			return;
+		}
+		var $repairStatus = $('#repairstatus');
+		$.each(actionList, function(i, action) {
+
+			$("<label>" + action.name + "</label>").appendTo($actionListContainer);
+			$('<button class="repair">Go</button>')
+				.click(function(e) {
+					e.preventDefault();
+					var $button = $(this),
+						url = API_BASE + action.action.replace("${id}", itemID);
+					if ($button.hasClass('disabled')) {
+						return false;
+					}
+					$button.addClass('disabled');
+					$repairStatus.text('Repairing...');
+					$.ajax({
+							type: action.method,
+							url: url,
+							success: function(data, status, xhr) {
+								$repairStatus.html('Repair status: ' + data.result + '<br/>output: ' + data.output);
+							},
+							error: function(xhr, status, ex) {
+								if (console && console.log) {
+									var error = {
+										type: action.method,
+										url: url,
+										status: status,
+										exception: ex,
+										xhr: xhr
+									};
+									console.log("error during repair for item " + itemID + ": ", error);
+								}
+								$repairStatus.text('Error during repair: ' + (status || ex.message));
+							},
+							complete: function() {
+								$button.removeClass('disabled');
+							}
+						});
+					return false;
+				})
+				.appendTo($actionListContainer);
+			$('<br class="clearboth"/>').appendTo($actionListContainer);
+		});
+	};
+
+	$.ajax({ url: API_BASE + '/actions/' + pairKey, success: actionListCallback });
+}
+
 function renderEvent(event) {
 	if (event != null) {
 		var itemID = event.objId.id,
@@ -137,6 +190,8 @@ function renderEvent(event) {
 			getContent("#item2 pre", downstreamLabel, "downstream");
 		});
 	}
+
+	//renderActions();
 }
 
 function selectFromList(event) {
@@ -145,8 +200,10 @@ function selectFromList(event) {
 	}
 	var row = event.target.nodeName === "tr" ? $(event.target) : $(event.target).closest('tr');
 	renderEvent(row.data("event"));
-	$('#difflist').find('tbody tr').removeClass("specific_selected");
-	$('#evt_' + row.data("event").seqId).addClass("specific_selected");
+	if(row.data("event") != null)	{
+		$('#difflist').find('tbody tr').removeClass("specific_selected");
+		$('#evt_' + row.data("event").seqId).addClass("specific_selected");
+	}
 }
 
 function addRow(table, event) {
