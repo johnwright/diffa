@@ -122,6 +122,8 @@ function selectFromList(event) {
 	}
 	var row = event.target.nodeName==="tr" ? $(event.target) : $(event.target).closest('tr');
 	renderEvents(row.data("event"));
+	$('#difflist').find('tbody tr').removeClass("specific_selected");
+	$('#evt_' + row.data("event").seqId).addClass("specific_selected");
 }
 
 function addRow(table, event) {
@@ -186,6 +188,7 @@ function fetchData() {
 				});
 			});
 			$("#pagecount").text((page + 1) + " of " + Math.ceil(buckets[selected.row][selected.column] / listSize) + " pages");
+			$("#navigation").show();
 		}
 	}
 }
@@ -438,30 +441,15 @@ function initGraph() {
 		selectFromList(e);
 	});
 
-	$("#next").hover(
-		function(e) {
-			$(this).css({"color":"red"});
-		},
-		function(e) {
-			$(this).css({"color":"black"});
-	});
 	$("#next").click(function(e) {
 		next();
 	});
 
-	$("#previous").hover(
-		function(e) {
-			$(this).css({color:"red"});
-		},
-		function(e) {
-			$(this).css({color:"black"});
-	});
 	$("#previous").click(function(e) {
 		previous();
 	});
 
-
-
+	$("#navigation").hide();
 
 	$("#polling").toggle(
 		function() {
