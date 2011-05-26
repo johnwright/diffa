@@ -91,8 +91,11 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
   def retrieveAllUnmatchedEvents:Seq[SessionEvent] =
     events.filter(p => p._2.state == MatchState.UNMATCHED).values.toSeq
 
+  def retrieveUnmatchedEvents(interval:Interval) =
+    retrieveAllUnmatchedEvents.filter(e => interval.contains(e.detectedAt))
+
   def retrievePagedEvents(interval:Interval, offset:Int, length:Int) =
-    retrieveAllUnmatchedEvents.filter(e => interval.contains(e.detectedAt)).slice(offset, offset + length)
+    retrieveUnmatchedEvents(interval).slice(offset, offset + length)
 
   def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent] = {
     val seqIdNum = Integer.parseInt(evtSeqId)

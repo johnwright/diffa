@@ -177,6 +177,9 @@ class DefaultSessionManager(
   def retrieveEventsSince(id:String, evtSeqId:String) = sessionsByKey(id).retrieveEventsSince(evtSeqId)
   def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
 
+  def retrieveAllEventsInInterval(sessionId:String, interval:Interval) =
+    sessionsByKey(sessionId).retrieveUnmatchedEvents(interval)
+
   def retrievePagedEvents(sessionId:String, interval:Interval, offset:Int, length:Int) =
     sessionsByKey(sessionId).retrievePagedEvents(interval, offset,length)
 

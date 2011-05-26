@@ -25,7 +25,7 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import javax.ws.rs.core.{Response, MediaType}
 import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
-import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.ISODateTimeFormat
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -36,7 +36,7 @@ class DifferencesRestClient(serverRootUrl:String)
   val supportsStreaming = false
   val supportsPolling = true
 
-  val formatter = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z")
+  val formatter = ISODateTimeFormat.basicDateTimeNoMillis
 
   /**
    * Creates a differencing session that can be polled for match events.

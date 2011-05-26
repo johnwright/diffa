@@ -106,6 +106,12 @@ trait SessionManager {
   def retrieveAllEvents(sessionID:String):Seq[SessionEvent]
 
   /**
+   *  Retrieves all events known to this session in the given interval. Will only include unmatched events.
+   *  @throws InvalidSessionIDException if the requested session does not exist or has expired.
+   */
+  def retrieveAllEventsInInterval(sessionID:String, interval:Interval) : Seq[SessionEvent]
+
+  /**
    *
    * Retrieves all events known to this session. Will only include unmatched events.
    * This pages the results to only contain events that are contained with the specified interval

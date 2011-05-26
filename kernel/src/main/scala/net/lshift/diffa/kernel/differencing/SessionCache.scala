@@ -82,6 +82,12 @@ trait SessionCache {
   def retrieveAllUnmatchedEvents:Seq[SessionEvent]
 
   /**
+   * Retrieves all unmatched events that have been added to the cache where their detection timestamp
+   * falls within the specified period
+   */
+  def retrieveUnmatchedEvents(interval:Interval) : Seq[SessionEvent]
+
+  /**
    * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.

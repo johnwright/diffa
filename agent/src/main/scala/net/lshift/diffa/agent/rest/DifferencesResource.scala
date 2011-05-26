@@ -27,9 +27,7 @@ import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
-import net.lshift.diffa.kernel.events.VersionID._
-import net.lshift.diffa.kernel.differencing.{MatchState, SessionScope, SessionManager, SessionEvent}
-import net.lshift.diffa.kernel.events.VersionID
+import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
 import org.joda.time.{Interval, DateTime}
 
 @Path("/diffs")
@@ -41,7 +39,7 @@ class DifferencesResource extends AbstractRestResource {
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
   val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
 
-  @Autowired var session: SessionManager = null
+  @Autowired var sessionManager: SessionManager = null
 
   @POST
   @Path("/sessions")
@@ -61,7 +59,7 @@ class DifferencesResource extends AbstractRestResource {
     }
 
     log.debug("Creating a subscription for this scope: " + scope)
-    val sessionId = maybe((_: Seq[String]) => session.start(scope), scope.includedPairs)
+    val sessionId = maybe((_: Seq[String]) => sessionManager.start(scope), scope.includedPairs)
     val uri = uriInfo.getBaseUriBuilder.path("diffs/sessions/" + sessionId).build()
     Response.created(uri).`type`("text/plain").build()
   }
@@ -73,7 +71,7 @@ class DifferencesResource extends AbstractRestResource {
   def synchroniseSession(@PathParam("sessionId") sessionId: String, @Context request: Request): Response = {
     log.debug("Sync requested for sessionId = " + sessionId)
 
-    session.runSync(sessionId)
+    sessionManager.runSync(sessionId)
     Response.status(Response.Status.ACCEPTED).build
   }
 
@@ -82,14 +80,14 @@ class DifferencesResource extends AbstractRestResource {
   @Description("Forces Diffa to execute a scan operation for every configured pair.")
   def scanAllPairings = {
     log.info("Initiating scan of all known pairs")
-    session.runScanForAllPairings
+    sessionManager.runScanForAllPairings
   }
 
   @GET
   @Path("/sessions/all_scan_states")
   @Description("Lists the scanning state for every configured pair.")
   def getAllPairStates = {
-    val states = session.retrieveAllPairScanStates
+    val states = sessionManager.retrieveAllPairScanStates
     Response.ok(scala.collection.JavaConversions.asJavaMap(states)).build
   }
 
@@ -99,7 +97,7 @@ class DifferencesResource extends AbstractRestResource {
   @Description("Retrieves the synchronisation states of pairs in the current session.")
   @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
   def getPairStates(@PathParam("sessionId") sessionId: String): Response = {
-    val states = session.retrievePairSyncStates(sessionId)
+    val states = sessionManager.retrievePairSyncStates(sessionId)
     Response.ok(scala.collection.JavaConversions.asJavaMap(states)).build
   }
 
@@ -115,15 +113,15 @@ class DifferencesResource extends AbstractRestResource {
                      @Context request: Request): Response = {
     try {
       // Evaluate whether the version of the session has changed
-      val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
+      val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
       request.evaluatePreconditions(sessionVsn) match {
         case null => // We'll continue with the request
         case r => throw new WebApplicationException(r.build)
       }
 
       val diffs = since match {
-        case null => session.retrieveAllEvents(sessionId)
-        case _ => session.retrieveEventsSince(sessionId, since)
+        case null => sessionManager.retrieveAllEvents(sessionId)
+        case _ => sessionManager.retrieveEventsSince(sessionId, since)
       }
 
       Response.ok(diffs.toArray).tag(sessionVsn).build
@@ -147,29 +145,37 @@ class DifferencesResource extends AbstractRestResource {
     new MandatoryParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
     new MandatoryParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
   def pageDifferences(@PathParam("sessionId") sessionId: String,
-          @QueryParam("range-start") from:String,
-          @QueryParam("range-end") until:String,
-          @QueryParam("offset") offset:String,
-          @QueryParam("length") length:String) = {
-    val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
-    val interval = new Interval(isoDateTime.parseDateTime(from), isoDateTime.parseDateTime(until))
-    val diffs = session.retrievePagedEvents(sessionId, interval, offset.toInt, length.toInt)
-    Response.ok(diffs.toArray).tag(sessionVsn).build
+                      @QueryParam("range-start") from:String,
+                      @QueryParam("range-end") until:String,
+                      @QueryParam("offset") offset:String,
+                      @QueryParam("length") length:String,
+                      @Context request: Request) = {
+    try {
+      val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
+
+      request.evaluatePreconditions(sessionVsn) match {
+        case null => // We'll continue with the request
+        case r => throw new WebApplicationException(r.build)
+      }
+
+      val interval = new Interval(isoDateTime.parseDateTime(from), isoDateTime.parseDateTime(until))
+      val diffs = sessionManager.retrievePagedEvents(sessionId, interval, offset.toInt, length.toInt)
+      Response.ok(diffs.toArray).tag(sessionVsn).build
+    }
+    catch {
+      case e:NoSuchElementException =>
+        log.error("Unsucessful query on sessionId = " + sessionId, e)
+        throw new WebApplicationException(404)
+    }
   }
   
   @GET
   @Path("/sessions/{sessionId}/zoom")
   @Produces(Array("application/json"))
-  @MandatoryParams(
-    Array(
-      new MandatoryParam(name = "range-start", datatype = "date",
-        description = "The starting time for any differences"),
-      new MandatoryParam(name = "range-end", datatype = "date",
-        description = "The ending time for any differences"),
-      new MandatoryParam(name = "width", datatype = "int",
-        description = "The size in elements in the zoomed view")
-
-    ))
+  @MandatoryParams(Array(
+      new MandatoryParam(name = "range-start", datatype = "date", description = "The starting time for any differences"),
+      new MandatoryParam(name = "range-end", datatype = "date", description = "The ending time for any differences"),
+      new MandatoryParam(name = "width", datatype = "int", description = "The size in elements in the zoomed view")))
   @Description("Returns a zoomed view of the data within a specific time range")
   def getZoomedView(@PathParam("sessionId") sessionId: String,
                     @QueryParam("range-start") rangeStart: String,
@@ -178,7 +184,7 @@ class DifferencesResource extends AbstractRestResource {
                     @Context request: Request): Response = {
     try {
       // Evaluate whether the version of the session has changed
-      val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
+      val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
       request.evaluatePreconditions(sessionVsn) match {
         case null => // We'll continue with the request
         case r => throw new WebApplicationException(r.build)
@@ -199,8 +205,7 @@ class DifferencesResource extends AbstractRestResource {
       }
 
       // Calculate the zoomed view
-      val interestingEvents = session.retrieveAllEvents(sessionId).
-        filter(evt => !evt.detectedAt.isBefore(rangeStartDate) && !evt.detectedAt.isAfter(rangeEndDate))
+      val interestingEvents = sessionManager.retrieveAllEventsInInterval(sessionId, new Interval(rangeStartDate, rangeEndDate))
 
       // Bucket the events
       val pairs = scala.collection.mutable.Map[String, ZoomPair]()
@@ -212,15 +217,6 @@ class DifferencesResource extends AbstractRestResource {
       // Convert to an appropriate web response
       val respObj = asJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
 
-//      val buckets = Array(
-//        Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350),
-//        Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
-//        Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 3),
-//        Array(1, 10, 2, 12, 3, 40, 0, 10, 0, 3),
-//        Array (1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
-//        Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
-//        Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350)
-//      )
       Response.ok(respObj).tag(sessionVsn).build
     }
     catch {
@@ -267,7 +263,7 @@ class DifferencesResource extends AbstractRestResource {
       case None => throw new WebApplicationException(404)
       case Some(t) => {
         try {
-          session.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.valueOf(participant).get)
+          sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.valueOf(participant).get)
         }
         catch {
           case e: Exception => {
@@ -278,24 +274,6 @@ class DifferencesResource extends AbstractRestResource {
       }
     }
   }
-
-  @GET
-  @Path("/buckets")
-  @Produces(Array("application/json"))
-  @Description("Returns an array of bucketed event counts")
-  def getBuckets(): Response = {
-    val buckets = Array(
-      Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350),
-      Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
-      Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 3),
-      Array(1, 10, 2, 12, 3, 40, 0, 10, 0, 3),
-      Array (1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
-      Array(1, 0, 20, 200, 300, 400, 0, 0, 0, 350),
-      Array(1, 0, 2, 12, 3, 40, 0, 0, 0, 350)
-    )
-    Response.ok(buckets).build
-  }
-
 
   def maybe(s: String) = {
     try {
