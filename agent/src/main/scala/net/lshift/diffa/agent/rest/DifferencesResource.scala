@@ -152,7 +152,7 @@ class DifferencesResource extends AbstractRestResource {
           @QueryParam("offset") offset:String,
           @QueryParam("length") length:String) = {
     val sessionVsn = new EntityTag(session.retrieveSessionVersion(sessionId))
-    val interval = new Interval(parser.parseDateTime(from), parser.parseDateTime(until))
+    val interval = new Interval(isoDateTime.parseDateTime(from), isoDateTime.parseDateTime(until))
     val diffs = session.retrievePagedEvents(sessionId, interval, offset.toInt, length.toInt)
     Response.ok(diffs.toArray).tag(sessionVsn).build
   }
