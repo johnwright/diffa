@@ -127,7 +127,7 @@ function selectFromList(event) {
 function addRow(table, event) {
 	var time = new Date(event.detectedAt).formatString("0hh:0mm:0ss");
 	var date = new Date(event.detectedAt).formatString("DD/MM/YYYY");
-	var row = $("<tr id='evt_" + event.seqId + "></tr>")
+	var row = $("<tr id='evt_" + event.seqId + "'></tr>")
 		.append("<td class='date'>" + date + "</td>")
 		.append("<td>" + time + "</td>")
 		.append("<td id='" + event.detectedAt + "_" + event.objId.pairKey + "_group'></td>")
