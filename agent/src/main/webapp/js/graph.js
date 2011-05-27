@@ -463,7 +463,6 @@ function mouseDown(e) {
 		default:
 			dragging = e;
 			stopPolling();
-			polling = false;
 			var c = coords(e);
 			c.x -= o_x;
 			selected = coordsToPosition(c);
@@ -474,7 +473,6 @@ function mouseDown(e) {
 
 function mouseUp(e) {
 	dragging = false;
-	polling = true;
 }
 
 function clearEverything() {
@@ -492,7 +490,6 @@ function mouseMove(e) {
 		o_x += m_coords.x - d_coords.x;
 		if (o_x > 0) {
 			o_x = 0;
-			//alert("This application can only show 7 days worth of data.\n\nThis restriction could be removed if you raise a change request with the Diffa development team.")
 		}
 
 		if (Math.abs(o_x) > rightLimit) {
