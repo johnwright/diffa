@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
+package net.lshift.diffa.kernel.util
 
-import support.TestEnvironment
 /**
- * Tests that can be applied to an environment to validate that matching functionality works appropriately.
+ * A dictionary of alert codes that can be used to classify errors in log files quicker
  */
-trait CommonMatchingTests {
+object AlertCodes {
+
+  /**
+   * Occurs when an actor receives an out of order message. This can occur as a result of a downstream error.
+   */
+  val OUT_OF_ORDER_MESSAGE = "D1"
+  /**
+   * Occurs when an actor receives an unexpected message. This generally indicates a bug in Diffa.
+   */
+  val SPURIOUS_ACTOR_MESSAGE = "D2"
 }

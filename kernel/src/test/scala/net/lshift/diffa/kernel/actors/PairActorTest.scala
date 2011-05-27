@@ -24,8 +24,14 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
-import org.easymock.IAnswer
 import concurrent.{TIMEOUT, MailBox}
+import org.easymock.{EasyMock, IAnswer}
+import org.slf4j.LoggerFactory
+import ch.qos.logback.classic.LoggerContext
+import ch.qos.logback.core.AppenderBase
+import ch.qos.logback.classic.spi.ILoggingEvent
+import java.lang.RuntimeException
+import net.lshift.diffa.kernel.util.AlertCodes
 
 class PairActorTest {
 
@@ -49,7 +55,10 @@ class PairActorTest {
   org.easymock.classextension.EasyMock.replay(participantFactory)
 
   val versionPolicyManager = org.easymock.classextension.EasyMock.createStrictMock("versionPolicyManager", classOf[VersionPolicyManager])
-  val versionPolicy = createStrictMock("versionPolicy", classOf[VersionPolicy])
+
+  val versionPolicy = createMock("versionPolicy", classOf[VersionPolicy])
+  checkOrder(versionPolicy, false)
+
   expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy))
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
@@ -57,7 +66,7 @@ class PairActorTest {
   expect(configStore.listGroups).andReturn(Array[GroupContainer]())
   replay(configStore)
 
-  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+  val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
 
   val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
   expect(store.openWriter()).andReturn(writer).anyTimes
@@ -79,22 +88,68 @@ class PairActorTest {
   @After
   def stop = supervisor.stopActor(pairKey)
 
+  // Check for spurious actor events
+  val spuriousEventAppender = new SpuriousEventAppender
+
+  @Before
+  def attachAppenderToContext = {
+    val ctx = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
+    spuriousEventAppender.setContext(ctx)
+    spuriousEventAppender.start()
+    val log = LoggerFactory.getLogger(classOf[PairActor]).asInstanceOf[ch.qos.logback.classic.Logger]
+    log.addAppender(spuriousEventAppender)
+  }
+
+  @After
+  def checkForSpuriousEvents = {
+    if (spuriousEventAppender.hasSpuriousEvent) {
+      fail("Should not have receied a spurious message: %s".format(spuriousEventAppender.lastEvent.getMessage))
+    }
+  }
+
+  def expectScans() = {
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(ds), EasyMock.eq(diffListener)))
+  }
+
   @Test
   def runDifference = {
-    val id = VersionID(pairKey, "foo")
+    val monitor = new Object
+    expect(versionPolicy.difference(pairKey, diffListener)).andAnswer(new IAnswer[Unit] {
+      def answer = { monitor.synchronized { monitor.notifyAll } }
+    })
+
+    replay(versionPolicy)
+
+    supervisor.startActor(pair)
+    supervisor.difference(pairKey, diffListener)
+
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
+
+    verify(versionPolicy)
+  }
+
+  @Test
+  def runScan = {
     val monitor = new Object
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    expect(versionPolicy.syncAndDifference(pairKey, writer, us, ds, diffListener)).andReturn(true)
+
+    expectScans
+
+    expect(versionPolicy.difference(pairKey, diffListener))
+
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
     replay(versionPolicy, syncListener)
 
     supervisor.startActor(pair)
-    supervisor.syncPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -102,21 +157,82 @@ class PairActorTest {
   }
 
   @Test
-  def reportDifferenceFailure = {
+  def backlogShouldBeProcessedAfterScan = {
+    val flushMonitor = new Object
+    val eventMonitor = new Object
+
     val id = VersionID(pairKey, "foo")
+    val lastUpdate = new DateTime
+    val vsn = "foobar"
+    val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
+
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
+    })
+    replay(syncListener)
+
+    expect(versionPolicy.onChange(writer, event))
+    .andAnswer(new IAnswer[Unit] {
+      def answer = {
+        eventMonitor.synchronized {
+          eventMonitor.notifyAll
+        }
+      }
+    })
+
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey),
+           EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+           EasyMock.eq(us),
+           EasyMock.isA(classOf[DifferencingListener]))
+    ).andAnswer(new IAnswer[Unit] {
+      def answer = {
+        // Queue up a change event and block the actor in the scanning state for a 1 sec
+        supervisor.propagateChangeEvent(event)
+        Thread.sleep(1000)
+      }
+    })
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey),
+           EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+           EasyMock.eq(us), EasyMock.eq(ds),
+           EasyMock.isA(classOf[DifferencingListener])))
+
+    expect(versionPolicy.difference(pairKey, diffListener))
+
+    replay(versionPolicy)
+
+    supervisor.startActor(pair)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
+
+    flushMonitor.synchronized {
+      flushMonitor.wait(2000)
+    }
+    eventMonitor.synchronized {
+      eventMonitor.wait(2000)
+    }
+
+    verify(versionPolicy)
+    verify(syncListener)
+  }
+
+
+  @Test
+  def shouldReportScanFailure = {
     val monitor = new Object
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    expect(versionPolicy.syncAndDifference(pairKey, writer, us, ds, diffListener)).andThrow(new RuntimeException("Foo!"))
+
+    expectScans.andThrow(new RuntimeException("Deliberate runtime excecption, this should be handled"))
+
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })
     replay(versionPolicy, syncListener)
 
     supervisor.startActor(pair)
-    supervisor.syncPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -170,4 +286,22 @@ class PairActorTest {
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
   }
+
+}
+
+/**
+ * Simple logback appender that detects whether the PairActor has received a spurious message
+ */
+class SpuriousEventAppender extends AppenderBase[ILoggingEvent]{
+
+  var hasSpuriousEvent = false
+  var lastEvent:ILoggingEvent = null
+
+  def append(event:ILoggingEvent) = {
+    lastEvent = event
+    if (event.getFormattedMessage.contains(AlertCodes.SPURIOUS_ACTOR_MESSAGE + ":")) {
+      hasSpuriousEvent = true
+    }
+  }
+
 }

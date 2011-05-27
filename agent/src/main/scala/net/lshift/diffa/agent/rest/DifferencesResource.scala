@@ -259,20 +259,16 @@ class DifferencesResource extends AbstractRestResource {
                 @PathParam("participant") participant: String): String = {
     log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId + "; participant = " + participant)
 
-    ParticipantType.valueOf(participant) match {
-      case None => throw new WebApplicationException(404)
-      case Some(t) => {
-        try {
-          sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.valueOf(participant).get)
-        }
-        catch {
-          case e: Exception => {
-            log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId + " participant = " + participant, e)
-            throw new WebApplicationException(404)
-          }
-        }
+    try {
+      sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.withName(participant))
+    }
+    catch {
+      case e: Exception => {
+        log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId + " participant = " + participant, e)
+        throw new WebApplicationException(404)
       }
     }
+
   }
 
   def maybe(s: String) = {

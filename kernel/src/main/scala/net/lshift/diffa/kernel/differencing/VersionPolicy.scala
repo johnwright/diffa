@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
+import net.lshift.diffa.kernel.config.Pair
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -35,7 +36,7 @@ trait VersionPolicy {
   /**
    * Indicates to the policy that a change has occurred within a participant.
    */
-  def onChange(writer: VersionCorrelationWriter, evt:PairChangeEvent) : Unit
+  def onChange(writer: LimitedVersionCorrelationWriter, evt:PairChangeEvent) : Unit
 
   /**
    * Requests that the policy generate a series of events describing the differences between the endpoints
@@ -45,12 +46,15 @@ trait VersionPolicy {
   def difference(pairKey:String, listener:DifferencingListener)
 
   /**
-   * Requests that the policy synchronize then difference the given participants. Differences that are
+   * Requests that the policy scan the upstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
    */
-  def syncAndDifference(pairKey:String,
-                        writer: VersionCorrelationWriter,
-                        us:UpstreamParticipant,
-                        ds:DownstreamParticipant,
-                        listener:DifferencingListener) : Boolean
+  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) : Unit
+
+  /**
+   * Requests that the policy scan the downstream participants for the given pairing. Differences that are
+   * detected will be reported to the listener provided.
+   */
+  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Unit
+
 }

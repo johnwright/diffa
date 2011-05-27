@@ -136,7 +136,7 @@ class DefaultSessionManagerTest {
       val diffListenerEq = isA(classOf[DifferencingListener])
       val pairSyncListenerEq = isA(classOf[PairSyncListener])
 
-      expect(pairPolicyClient.syncPair(pairKeyEq, diffListenerEq, pairSyncListenerEq)).atLeastOnce
+      expect(pairPolicyClient.scanPair(pairKeyEq, diffListenerEq, pairSyncListenerEq)).atLeastOnce
     })
 
     replay(pairPolicyClient)

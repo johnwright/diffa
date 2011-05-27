@@ -219,7 +219,7 @@ object LuceneVersionCorrelationStore {
   def formatDate(dt:LocalDate) = dt.toString
 }
 
-class LuceneWriter(index: Directory, writer: IndexWriter) extends VersionCorrelationWriter {
+class LuceneWriter(index: Directory, writer: IndexWriter) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationStore._
 
   private val log = LoggerFactory.getLogger(getClass)

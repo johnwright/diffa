@@ -58,7 +58,7 @@ trait CommonDifferenceTests {
   }
 
   def getReport(pair:String, from:DateTime, until:DateTime) : Array[SessionEvent]= {
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.diffClient.poll(sessionId)
   }
 
@@ -71,7 +71,6 @@ trait CommonDifferenceTests {
 
   @Test
   def detectionTimeShouldBeMatchTheMostRecentUpdatedTimeOnAParticipatingEntity = {
-    val then = new DateTime()
     val (diffs,_) = getVerifiedDiffsWithSessionId()
     assertNotNull(diffs(0))
     val detectionTime = diffs(0).detectedAt
@@ -97,7 +96,7 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
 
     val diffs = pollForAllDifferences(sessionId)
@@ -109,12 +108,12 @@ trait CommonDifferenceTests {
   def shouldPageDifferences = {
     val start = new DateTime
     val end = start.plusMinutes(2)
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
 
     val size = 10
     for (i <- 1 to size) {
       env.addAndNotifyUpstream("" + i, env.bizDate(yesterday), "" + i)
     }
+    val sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
 
     val offset = 5
 
@@ -125,8 +124,12 @@ trait CommonDifferenceTests {
     val subset = 2
     val diffs2 = tryAgain((d:DifferencesClient) => d.page(sessionId, start, end, 6, subset))
     assertEquals(subset, diffs2.size)
-    assertTrue(diffs2(0).upstreamVsn.contains("vsn_7"))
-    assertTrue(diffs2(1).upstreamVsn.contains("vsn_8"))
+
+    // The events aren't guaranteed to come back in any particular order
+    diffs2.sortBy(evt => evt.upstreamVsn)
+
+    assertTrue("Unexpected diff %s; expected to contain vsn_7, all were: %s".format(diffs2(0), diffs2), diffs2(0).upstreamVsn.contains("vsn_7"))
+    assertTrue("Unexpected diff %s; expected to contain vsn_8".format(diffs2(1)), diffs2(1).upstreamVsn.contains("vsn_8"))
   }
 
   @Test
@@ -135,7 +138,7 @@ trait CommonDifferenceTests {
     val up = guid()
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), up)
 
     val diffs = pollForAllDifferences(sessionId)
@@ -185,21 +188,21 @@ trait CommonDifferenceTests {
         
   }
 
-  def subscribeAndRunSync(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
-    def isAllSynced(states:Map[String, PairSyncState]) = states.values.forall(s => s == PairSyncState.UP_TO_DATE)
+  def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
+    def isUpToDate(states:Map[String, PairSyncState]) = states.values.forall(s => s == PairSyncState.UP_TO_DATE)
 
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), from, until)
-    env.diffClient.runSync(sessionId)
+    env.diffClient.runScan(sessionId)
 
     var i = n
-    var syncStatus = env.diffClient.getSyncStatus(sessionId)
-    while(!isAllSynced(syncStatus) && i > 0) {
+    var scanStatus = env.diffClient.getScanStatus(sessionId)
+    while(!isUpToDate(scanStatus) && i > 0) {
       Thread.sleep(wait)
 
-      syncStatus = env.diffClient.getSyncStatus(sessionId)
+      scanStatus = env.diffClient.getScanStatus(sessionId)
       i-=1
     }
-    assertTrue(isAllSynced(syncStatus))
+    assertTrue("Unexpected scan state (session = %s): %s".format(sessionId, scanStatus), isUpToDate(scanStatus))
 
     sessionId
   }
@@ -209,7 +212,7 @@ trait CommonDifferenceTests {
   def getVerifiedDiffsWithSessionId() = {
     env.upstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
 
-    var sessionId = subscribeAndRunSync(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     val diffs = pollForAllDifferences(sessionId)
 
     assertNotNull(diffs)
@@ -217,7 +220,7 @@ trait CommonDifferenceTests {
     (diffs, sessionId)
   }
 
-  def pollForAllDifferences(sessionId:String,n:Int = 10, wait:Int = 100) =
+  def pollForAllDifferences(sessionId:String,n:Int = 20, wait:Int = 100) =
     tryAgain((d:DifferencesClient) => d.poll(sessionId),n,wait)
 
   def tryAgain(poll:DifferencesClient => Seq[SessionEvent], n:Int = 10, wait:Int = 100) : Seq[SessionEvent]= {

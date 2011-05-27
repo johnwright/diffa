@@ -96,14 +96,14 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
     listener.onMatch(VersionID(abPair, "id4"), null); expectLastCall
 
-    // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
-
     // We should still see an unmatched version check
     expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.syncAndDifference(abPair, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(abPair, writer, usMock, nullListener)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener)
+    policy.difference(abPair, listener)
+
     verifyAll
   }
 }
