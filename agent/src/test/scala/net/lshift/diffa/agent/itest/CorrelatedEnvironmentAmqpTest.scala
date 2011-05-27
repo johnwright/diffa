@@ -31,5 +31,5 @@ class CorrelatedEnvironmentAmqpTest extends AbstractEnvironmentTest
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
 
-  val env = TestEnvironments.abCorrelatedAmqp
+  val envFactory = TestEnvironments.correlatedAmqp _
 }

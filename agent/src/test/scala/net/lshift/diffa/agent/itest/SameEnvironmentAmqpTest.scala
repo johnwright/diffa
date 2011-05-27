@@ -30,5 +30,5 @@ class SameEnvironmentAmqpTest extends AbstractEnvironmentTest
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
 
-  val env = TestEnvironments.abSameAmqp
+  def envFactory = TestEnvironments.same _
 }

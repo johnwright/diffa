@@ -51,14 +51,14 @@ class DifferencesRestClient(serverRootUrl:String)
       case (acc, p) => acc + "," + p
     })
 
-    val p = resource.path("sessions").queryParams(params)
-    val response = p.post(classOf[ClientResponse])
+    val path = resource.path("sessions").queryParams(params)
+    val response = path.post(classOf[ClientResponse])
 
     val status = response.getClientResponseStatus
 
     status.getStatusCode match {
       case 201     => response.getLocation.toString.split("/").last
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int   => handleHTTPError(x, path, status)
     }
   }
 
@@ -73,8 +73,8 @@ class DifferencesRestClient(serverRootUrl:String)
   }
 
   def getScanStatus(sessionId: String) = {
-    val p = resource.path("sessions").path(sessionId).path("sync")
-    val media = p.accept(MediaType.APPLICATION_JSON_TYPE)
+    val path = resource.path("sessions").path(sessionId).path("sync")
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
     val response = media.get(classOf[ClientResponse])
 
     val status = response.getClientResponseStatus
@@ -84,9 +84,13 @@ class DifferencesRestClient(serverRootUrl:String)
         val responseData = response.getEntity(classOf[java.util.Map[String, String]])
         responseData.map {case (k, v) => k -> PairSyncState.valueOf(v) }.toMap
       }
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int   => handleHTTPError(x, path, status)
     }
   }
+
+
+  def handleHTTPError(x:Int, path:WebResource, status:ClientResponse.Status) =
+    throw new RuntimeException("HTTP %s for resource %s ; Reason: %s".format(x, path ,status.getReasonPhrase))
 
   /**
    * This will poll the session identified by the id parameter for match events.
