@@ -241,7 +241,6 @@ function previous() {
 }
 
 function next() {
-	alert("NEXT " + selectedBucket.row + " " + buckets[selectedBucket.row]);
 	if (selectedBucket != null && buckets[selectedBucket.row] != null) {
 		var bucketSize = buckets[selectedBucket.row][selectedBucket.column];
 
