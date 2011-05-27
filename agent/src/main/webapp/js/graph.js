@@ -14,6 +14,7 @@ var gridSize = 30;
 var gutterSize = 24;
 
 var rightLimit = 0;
+var selectedBucket;
 
 function initCanvas() {
 	display = document.getElementById("display");
@@ -240,8 +241,8 @@ function previous() {
 }
 
 function next() {
-	if (selected != null) {
-		var bucketSize = buckets[selected.row][selected.column];
+	if (selectedBucket != null && buckets[selectedBucket.row] != null) {
+		var bucketSize = buckets[selectedBucket.row][selectedBucket.column];
 
 		if ((page + 1) * listSize < bucketSize) {
 			page++;
@@ -251,9 +252,9 @@ function next() {
 }
 
 function fetchData() {
-	if (selected != null && buckets[selected.row] != null) {
-		if (buckets[selected.row][selected.column] > 0) {
-			var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
+	if (selectedBucket != null && buckets[selectedBucket.row] != null) {
+		if (buckets[selectedBucket.row][selectedBucket.column] > 0) {
+			var selectedStart = new Date(startTime.getTime() + (selectedBucket.column * bucketSize * 1000));
 			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
 			var url = "rest/diffs/sessions/" + sessionId + "/page?range-start="
@@ -267,7 +268,7 @@ function fetchData() {
 					addRow(list, event);
 				});
 			});
-			$("#pagecount").text((page + 1) + " of " + Math.ceil(buckets[selected.row][selected.column] / listSize) + " pages");
+			$("#pagecount").text((page + 1) + " of " + Math.ceil(buckets[selectedBucket.row][selectedBucket.column] / listSize) + " pages");
 			$("#navigation").show();
 		}
 	}
@@ -323,7 +324,6 @@ function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
 	ctx.closePath();
 }
 
-var selected;
 function drawCircle(i, j) {
 	var cell = coordsToPosition({"x":i, "y":j});
 	if (cell.column < maxColumns && cell.row < maxRows) {
@@ -470,13 +470,14 @@ function mouseDown(e) {
 function mouseUp(e) {
 	dragging = false;
 	if (!dragged) {
-		var c = coords(e);
-		c.x -= o_x;
-		selected = coordsToPosition(c);
-		page = 0;
-		fetchData();
+		if (e.target.tagName == "CANVAS") {
+			var c = coords(e);
+			c.x -= o_x;
+			selectedBucket = coordsToPosition(c);
+			page = 0;
+			fetchData();
+		}
 	}
-
 	dragged = false;
 }
 
