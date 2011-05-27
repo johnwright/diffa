@@ -51,6 +51,7 @@ class AmqpConsumer(connector: Connector,
     m.setExchangeName("")
     m.addSetupListener(new ChannelSetupListener {
       def channelSetup(channel: Channel) {
+        log.debug("Declaring queue: %s".format(queueName))
         channel.queueDeclare(queueName, queueIsDurable, queueIsExclusive, queueIsAutoDelete, null)
       }
     })

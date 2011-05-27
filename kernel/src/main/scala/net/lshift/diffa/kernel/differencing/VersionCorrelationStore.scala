@@ -40,7 +40,7 @@ trait VersionCorrelationStore extends Closeable {
   /**
    * Opens a new writer, giving access to write operations on the store.
    */
-  def openWriter(): VersionCorrelationWriter
+  def openWriter(): ExtendedVersionCorrelationWriter
 
   /**
    * Retrieves all of the unmatched version that have been stored.
@@ -93,8 +93,10 @@ trait VersionCorrelationStore extends Closeable {
   def queryDownstreams(constraints:Seq[QueryConstraint]) : Seq[Correlation]
 }
 
-/** Allows write operations to the store to be batched and together. */
-trait VersionCorrelationWriter {
+/**
+ * Issues write commands to an underlying correlation store.
+ */
+trait LimitedVersionCorrelationWriter {
 
   /**
    *   Stores the details of an upstream version.
@@ -115,7 +117,14 @@ trait VersionCorrelationWriter {
    * Clears the downstream version for the given pairKey/id.
    */
   def clearDownstreamVersion(id:VersionID):Correlation
+}
 
+/**
+ * Provides the ability to batch writes to the underlying store.
+ * Extends the high level <code>LimitedVersionCorrelationWriter</code> interface by adding low level commands
+ * to commit queued up write commands into the store.
+ */
+trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
   /**
    * Indicates whether there are any pending changes to be flushed to the store.
    */
