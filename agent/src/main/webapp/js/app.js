@@ -760,15 +760,15 @@ function showContent(circle, diffEvent, loadContent) {
 			$('<button class="repair">Go</button>')
 				.click(function(e) {
 					e.preventDefault();
-					var $button = $(this),
-						url = API_BASE+action.action.replace("${id}", itemID);
+					var $button = $(this), // TODO support pair scope
+						url = API_BASE+action.path.replace("${id}", itemID).replace("${pairKey}", pairKey);
 					if($button.hasClass('disabled')) {
 						return false;
 					}
 					$button.addClass('disabled');
 					$repairStatus.text('Repairing...');
 					$.ajax({
-						type: action.method,
+						type: "POST",
 						url: url,
 						success: function(data, status, xhr) {
 							$repairStatus.html('Repair status: '+data.result+'<br/>output: '+data.output);
@@ -776,7 +776,7 @@ function showContent(circle, diffEvent, loadContent) {
 						error: function(xhr, status, ex) {
 							if(console && console.log) {
 								var error = {
-									type: action.method,
+									type: "POST",
 									url: url,
 									status: status,
 									exception: ex,

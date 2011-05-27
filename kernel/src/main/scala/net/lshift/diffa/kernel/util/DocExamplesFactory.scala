@@ -22,6 +22,7 @@ import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
+import net.lshift.diffa.kernel.client.Actionable
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.
@@ -42,7 +43,7 @@ class DocExamplesFactory {
     map.put(classOf[Pair], pair)
     map.put(classOf[PairGroup], group)
     map.put(classOf[GroupContainer], GroupContainer(group, Array(pair)))
-    map.put(classOf[PairDef], new PairDef("pairKey","versionPolicyName",120,"upstreamName","downstreamName","groupKey"))
+    map.put(classOf[PairDef], new PairDef("pairKey","versionPolicyName",120,"upstreamName","downstreamName",Seq[Actionable](),"groupKey"))
     map.put(classOf[SessionEvent], SessionEvent("6f72b9",VersionID("pairKey", "4f8a99"), new DateTime(), MatchState.UNMATCHED, "upstreamV", "downstreamV"))
 
     map

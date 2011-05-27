@@ -27,9 +27,8 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
 
   // TODO For the initial release we will hardcoded only the resend action (see ticket #39)
   def listActions(pairKey: String) : Seq[Actionable] = {
-    val action = "resend"
-    val path = "/actions/" + pairKey + "/" + action + "/${id}"
-    def resend() = Array(Actionable(action,"Resend Source", "rpc", path, "POST"))
+    val path = "/actions/" + pairKey + "/resend/${id}"
+    def resend() = Array(Actionable("Resend Source", "item", path, pairKey))
     withValidPair(pairKey, resend)
   }
 

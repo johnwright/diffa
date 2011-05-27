@@ -66,7 +66,7 @@ class Configuration(val configStore: ConfigStore,
       endpoints = configStore.listEndpoints.toSet,
       groups = configStore.listGroups.map(g => g.group).toSet,
       pairs = configStore.listGroups.flatMap(g => g.pairs.map(
-        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toSet
+        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.repairActions, p.group.key))).toSet
     )
   }
 

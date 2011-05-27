@@ -17,6 +17,7 @@ package net.lshift.diffa.kernel.frontend
 
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config.{PairGroup, PairDef, Endpoint, User}
+import net.lshift.diffa.kernel.client.Actionable
 
 /**
  * Describes a complete diffa configuration.
@@ -26,5 +27,6 @@ case class DiffaConfig(
   properties:Map[String, String] = Map(),
   endpoints:Set[Endpoint] = Set(),
   groups:Set[PairGroup] = Set(),
-  pairs:Set[PairDef] = Set()
+  pairs:Set[PairDef] = Set(),
+  repairActions:Set[Actionable] = Set()
 )

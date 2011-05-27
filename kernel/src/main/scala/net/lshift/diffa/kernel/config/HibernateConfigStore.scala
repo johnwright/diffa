@@ -16,7 +16,10 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.client.Actionable
+
+// for 'SessionFactory.withSession'
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
@@ -45,6 +48,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
     val group = getGroup(s, p.groupKey)
+    val repairActions = p.repairActions.map(a => getRepairAction(s, a))
     val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout)
     s.saveOrUpdate(toUpdate)
   })
@@ -152,4 +156,5 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getPairOpt(s: Session, key: String) = singleQueryOpt[Pair](s, "pairByKey", Map("key" -> key))
   private def getGroup(s: Session, key: String) = singleQuery[PairGroup](s, "groupByKey", Map("key" -> key), "group")
   private def getGroupOpt(s: Session, key: String) = singleQueryOpt[PairGroup](s, "groupByKey", Map("key" -> key))
+  private def getRepairSction(s: Session, key: String) = singleQueryOpt[Actionable](s, )
 }

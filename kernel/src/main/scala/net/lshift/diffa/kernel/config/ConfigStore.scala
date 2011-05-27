@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.client.Actionable
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -46,7 +47,8 @@ trait ConfigStore {
   def deleteUser(name: String): Unit
   def listUsers: Seq[User]
 
-  def getPairsForEndpoint(epName:String):Seq[Pair]
+  def ge
+  tPairsForEndpoint(epName:String):Seq[Pair]
 
   /**
    * Retrieves all (non-internal) agent configuration options.
@@ -144,9 +146,10 @@ case class Pair(
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var group: PairGroup = null,
   @BeanProperty var versionPolicyName: String = null,
+  @BeanProperty var repairActions: List[Actionable] = null,
   @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING) {
 
-  def this() = this(null, null, null, null, null, Pair.NO_MATCHING)
+  def this() = this(null, null, null, null, null, null, Pair.NO_MATCHING)
 }
 
 object Pair {
@@ -165,10 +168,16 @@ case class PairDef(
   @BeanProperty var matchingTimeout: Int,
   @BeanProperty var upstreamName: String,
   @BeanProperty var downstreamName: String,
+  @BeanProperty var repairActions: java.util.List[RepairActionDef],
   @BeanProperty var groupKey: String) {
 
-  def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
+  def this() = this(null, null, null.asInstanceOf[Int], null, null, null, null)
 }
+
+case class RepairActionDef(
+  @BeanProperty var name: String = null,
+  @BeanProperty var scope: String = null,
+  @BeanProperty var path: String = null)
 
 case class User(@BeanProperty var name: String,
                 @BeanProperty var email: String) {
