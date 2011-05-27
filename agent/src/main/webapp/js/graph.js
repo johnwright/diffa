@@ -251,7 +251,7 @@ function next() {
 }
 
 function fetchData() {
-	if (selected != null) {
+	if (selected != null && buckets[selected.row] != null) {
 		if (buckets[selected.row][selected.column] > 0) {
 			var selectedStart = new Date(startTime.getTime() + (selected.column * bucketSize * 1000));
 			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
@@ -388,7 +388,6 @@ function drawGrid() {
 	underlayContext.fillText(pollText, canvas.width - underlayContext.measureText(pollText).width - (textSpacer / 2), 5);
 
 
-
 	for (var i = 0.5; i < region_width; i += gridSize) {
 		for (var j = 0.5; j < canvas.height; j += (2 * gutterSize + gridSize)) {
 			drawCircle(i, j);
@@ -454,27 +453,6 @@ function coordsToPosition(coords) {
 	};
 }
 
-var dragging = false;
-function mouseDown(e) {
-	switch (e.which) {
-		case 3:
-			alert("RIGHT CLICK");
-			break;
-		default:
-			dragging = e;
-			stopPolling();
-			var c = coords(e);
-			c.x -= o_x;
-			selected = coordsToPosition(c);
-			page = 0;
-			fetchData();
-	}
-}
-
-function mouseUp(e) {
-	dragging = false;
-}
-
 function clearEverything() {
 	clearCanvas();
 	clearOverlay();
@@ -482,9 +460,31 @@ function clearEverything() {
 	clearScale();
 }
 
+var dragging = false;
+var dragged = false;
+function mouseDown(e) {
+	dragging = e;
+	dragged = false;
+}
+
+function mouseUp(e) {
+	dragging = false;
+	if (!dragged) {
+		var c = coords(e);
+		c.x -= o_x;
+		selected = coordsToPosition(c);
+		page = 0;
+		fetchData();
+	}
+
+	dragged = false;
+}
+
 function mouseMove(e) {
 	if (dragging) {
-		clearEverything()
+		stopPolling();
+		dragged = true;
+		clearEverything();
 		var m_coords = coords(e);
 		var d_coords = coords(dragging);
 		o_x += m_coords.x - d_coords.x;
