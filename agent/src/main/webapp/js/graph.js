@@ -346,6 +346,7 @@ function drawCircle(i, j) {
 	}
 }
 
+var toggleX, toggleY;
 var show_grid = false;
 function drawGrid() {
 	var region_width = maxColumns * gridSize;
@@ -386,6 +387,8 @@ function drawGrid() {
 	underlayContext.font = "12px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif"
 	underlayContext.textBaseline = "top";
 	underlayContext.fillText(pollText, canvas.width - underlayContext.measureText(pollText).width - (textSpacer / 2), 5);
+	toggleX = canvas.width - textWidth - textSpacer;
+	toggleY = 20;
 
 
 	for (var i = 0.5; i < region_width; i += gridSize) {
@@ -467,11 +470,23 @@ function mouseDown(e) {
 	dragged = false;
 }
 
+function togglePolling(c)	{
+	if(c.x > toggleX && c.y < toggleY)	{
+		if(polling)	{
+			stopPolling();
+		}
+		else	{
+			startPolling();
+		}
+	}
+}
+
 function mouseUp(e) {
 	dragging = false;
 	if (!dragged) {
 		if (e.target.tagName == "CANVAS") {
 			var c = coords(e);
+			togglePolling(c);
 			c.x -= o_x;
 			selectedBucket = coordsToPosition(c);
 			page = 0;
@@ -544,16 +559,5 @@ function initGraph() {
 	});
 
 	$("#navigation").hide();
-
-	$("#polling").toggle(
-		function() {
-			if (polling) {
-				stopPolling();
-			}
-		},
-		function() {
-			startPolling();
-		}
-	);
 
 }
