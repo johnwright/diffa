@@ -31,9 +31,9 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               configStore:ConfigStore)
     extends BaseSynchingVersionPolicy(stores, listener, configStore) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, l:DifferencingListener) = new DownstreamCorrelatingSyncStrategy(us,ds,l)
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingSyncStrategy(us,ds)
   
-  protected class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant, val l:DifferencingListener)
+  protected class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
       extends SyncStrategy {
     
     def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
@@ -48,7 +48,7 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
       })
     }
 
-    def handleMismatch(pairKey:String, writer: VersionCorrelationWriter, vm:VersionMismatch) = {
+    def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, categories, _, null, storedVsn) =>
           handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pairKey, id)))
@@ -60,8 +60,8 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
             // This is the same destination object, so we're safe to store the correlation
             handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.uvsn, response.dvsn))
           } else {
-            // We can't update our datastore, so we just have to generate a mismatch            
-            l.onMismatch(VersionID(pairKey, id), lastUpdated, response.dvsn, partVsn)
+            // We can't update our datastore, so we just have to generate a mismatch
+            listener.onMismatch(VersionID(pairKey, id), lastUpdated, response.dvsn, partVsn)
           }
       }
     }

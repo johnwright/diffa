@@ -29,7 +29,6 @@ import net.lshift.diffa.kernel.util.ConvenienceDateTimes._
 import org.junit.experimental.theories.{Theory, Theories, DataPoint}
 import org.easymock.{IAnswer, EasyMock}
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.config.CategoryDescriptor._
 import net.lshift.diffa.kernel.config._
 import org.joda.time.{LocalDate, DateTime}
 
@@ -51,7 +50,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
   val nullListener = new NullDifferencingListener
 
-  val writer = createMock("writer", classOf[VersionCorrelationWriter])
+  val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])
   val stores = new VersionCorrelationStoreFactory {
     def apply(pairKey: String) = store
@@ -77,14 +76,14 @@ abstract class AbstractDataDrivenPolicyTest {
       expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
     }
 
-    // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
-
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
     verifyAll
   }
 
@@ -110,14 +109,14 @@ abstract class AbstractDataDrivenPolicyTest {
       })
     }
 
-    // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
-
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
     verifyAll
   }
 
@@ -147,14 +146,16 @@ abstract class AbstractDataDrivenPolicyTest {
       expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
     }
 
-    // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
-
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
+
+
     verifyAll
   }
 
@@ -183,14 +184,14 @@ abstract class AbstractDataDrivenPolicyTest {
       listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
     }
 
-    // Expect to see the writer flushed
-    writer.flush; expectLastCall.once
-
     expectUnmatchedVersionCheck(scenario)
 
     replayAll
 
-    policy.syncAndDifference(scenario.pair.key, writer, usMock, dsMock, nullListener)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener)
+    policy.difference(scenario.pair.key, listener)
+
     verifyAll
   }
 

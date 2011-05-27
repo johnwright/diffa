@@ -47,7 +47,7 @@ object WireEvent {
   def toWire(event:UpstreamChangeEvent) = new WireEvent(event.eventType.toString, extractMetaDataWithVersion(event), event.attributes)
   def toWire(event:DownstreamChangeEvent) = new WireEvent(event.eventType.toString, extractMetaDataWithVersion(event), event.attributes)
   def toWire(event:DownstreamCorrelatedChangeEvent) = {
-    val metadata = (extractMetaData(event)(DVSN) = event.downstreamVsn)(UVSN) = event.upstreamVsn
+    val metadata = extractMetaData(event) + (DVSN -> event.downstreamVsn) + (UVSN -> event.upstreamVsn)
     new WireEvent(event.eventType.toString, metadata, event.attributes)
   }
 
@@ -59,7 +59,7 @@ object WireEvent {
     )
   }
 
-  def extractMetaDataWithVersion(event:UpstreamChangeEvent) = extractMetaData(event)(VSN) = event.vsn
-  def extractMetaDataWithVersion(event:DownstreamChangeEvent) = extractMetaData(event)(VSN) = event.vsn
+  def extractMetaDataWithVersion(event:UpstreamChangeEvent) = extractMetaData(event) + (VSN -> event.vsn)
+  def extractMetaDataWithVersion(event:DownstreamChangeEvent) = extractMetaData(event) + (VSN -> event.vsn)
 
 }
