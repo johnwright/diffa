@@ -24,6 +24,7 @@ import net.lshift.diffa.tools.client.{DifferencesRestClient, ConfigurationRestCl
 import org.junit.Assert._
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
+import com.eaio.uuid.UUID
 
 /**
  * Utility class to load lots of unmatched events into the agent.
@@ -31,17 +32,23 @@ import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 object PagingDataLoader {
 
   def main(args: Array[String]) {
-    loadData()
+    val size = args match {
+      case Array(s) => s.toInt
+      case _        => 100
+    }
+    loadData(size)
   }
 
-  def loadData() = {
+  def loadData(size:Int) = {
     val host = "http://localhost:19093/diffa-agent/"
+
+    println("Loading %s events onto %s".format(size,host))
 
     val configClient = new ConfigurationRestClient(host)
     val changesClient = new ChangesRestClient(host)
     val diffsClient = new DifferencesRestClient(host)
 
-    val pair = "pair"
+    val pair = new UUID().toString
     val up = "up"
     val down = "down"
 
@@ -57,9 +64,8 @@ object PagingDataLoader {
 
     val start = new DateTime
 
-    val size = 100
     for (i <- 1 to size) {
-      val timestamp = new DateTime()
+      val timestamp = start.plusMinutes(i)
       val id = "id_" + i
       val version = "vsn_" + i
       changesClient.onChangeEvent(UpstreamChangeEvent(up, id, List(start.toString), timestamp, version))
