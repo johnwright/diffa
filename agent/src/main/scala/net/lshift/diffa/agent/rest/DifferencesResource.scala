@@ -239,7 +239,6 @@ class DifferencesResource extends AbstractRestResource {
 
       // Add an entry to the bucket
       buckets(bucketNum) += 1
-      println(buckets)
     }
 
     def toArray:Array[Int] = buckets
