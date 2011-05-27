@@ -11,7 +11,7 @@ var buckets = [];
 var maxColumns = 96;
 var maxRows = 10;
 var gridSize = 30;
-var gutterSize = 14;
+var gutterSize = 24;
 
 var rightLimit = 0;
 
@@ -366,23 +366,27 @@ function drawGrid() {
 	for (var s = 0.5 + (2 * gutterSize + gridSize); s < canvas.height; s += (2 * gutterSize + gridSize)) {
 		dashedLine(underlayContext, 0, s, canvas.width, s, 2);
 		if (swimlaneLabels[lane] != null) {
-			underlayContext.font = "11px serif";
-			underlayContext.fillText(swimlaneLabels[lane], 10, s - 3);
+			underlayContext.font = "11px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
+			underlayContext.fillText(swimlaneLabels[lane], 10, s - (2 * gutterSize + gridSize) + 12);
 		}
 		lane++;
 	}
 
 	if (polling) {
-		var pollText = "LIVE";
-		var textWidth = underlayContext.measureText(pollText).width;
-		var textSpacer = 20;
-		underlayContext.fillStyle = "#d12f19";
-		underlayContext.fillRect(canvas.width - textWidth - textSpacer, 0, textWidth + textSpacer, 20);
-		underlayContext.fillStyle = "#fff";
-		underlayContext.font = "12px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif"
-		underlayContext.textBaseline = "top";
-		underlayContext.fillText(pollText, canvas.width - underlayContext.measureText(pollText).width - (textSpacer / 2), 5);
+		var pollText = " LIVE ";
 	}
+	else {
+		pollText = " CLICK TO POLL ";
+	}
+	var textWidth = underlayContext.measureText(pollText).width;
+	var textSpacer = 20;
+	underlayContext.fillStyle = "#d12f19";
+	underlayContext.fillRect(canvas.width - textWidth - textSpacer, 0, textWidth + textSpacer, 20);
+	underlayContext.fillStyle = "#fff";
+	underlayContext.font = "12px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif"
+	underlayContext.textBaseline = "top";
+	underlayContext.fillText(pollText, canvas.width - underlayContext.measureText(pollText).width - (textSpacer / 2), 5);
+
 
 
 	for (var i = 0.5; i < region_width; i += gridSize) {
@@ -407,9 +411,9 @@ function drawOverlay() {
 		var value = buckets[highlighted.row][highlighted.column];
 		if (value > 0) {
 			var c_x = highlighted.column * gridSize;
-			var c_y = (highlighted.row * (2 * gutterSize + gridSize)) + gutterSize;
+			var c_y = (highlighted.row * (2 * gutterSize + gridSize)) + gutterSize + gridSize;
 			overlayContext.font = "12px sans-serif";
-			overlayContext.textBaseline = "bottom";
+			overlayContext.textBaseline = "top";
 			var width = context.measureText("" + value).width;
 			overlayContext.fillText(value, c_x + Math.floor(gridSize / 2) - Math.floor(width / 2), c_y);
 		}

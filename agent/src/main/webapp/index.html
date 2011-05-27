@@ -16,123 +16,130 @@
 
 -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
-  <title>Diffa</title>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-  <link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/stickyfooter.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/jquery-ui-slider.1.8.5.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/>
+	<title>Diffa</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/>
+	<link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/>
+	<link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/>
+	<link rel="stylesheet" type="text/css" href="css/stickyfooter.css" media="screen"/>
+	<link rel="stylesheet" type="text/css" href="css/jquery-ui-slider.1.8.5.css" media="screen"/>
+	<link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
+	<link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/>
 
-  <script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
-  <script type="text/javascript" src="js/jquery-ui-slider.1.8.5.min.js" charset="utf-8"></script>
-  <script type="text/javascript" src="js/jquery.color.js" charset="utf-8"></script>
-  <!--<script type="text/javascript" src="js/raphael.js" charset="utf-8"></script>-->
-  <!--<script type="text/javascript" src="js/app.js" charset="utf-8"></script>-->
-  <script type="text/javascript" src="js/dates.js" charset="utf-8"></script>
-  <script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
+	<script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
+	<script type="text/javascript" src="js/jquery-ui-slider.1.8.5.min.js" charset="utf-8"></script>
+	<script type="text/javascript" src="js/jquery.color.js" charset="utf-8"></script>
+	<!--<script type="text/javascript" src="js/raphael.js" charset="utf-8"></script>-->
+	<!--<script type="text/javascript" src="js/app.js" charset="utf-8"></script>-->
+	<script type="text/javascript" src="js/dates.js" charset="utf-8"></script>
+	<script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
 </head>
 
 <body>
 <div id="wrap" class="jbasewrap">
 
 
-  <div id="nav_bar">
-    <a href="admin.html">Admin</a>
-    <a id="polling" href="#">Stop polling</a>
-  </div>
+	<div id="nav_bar">
+		<a href="admin.html">Admin</a>
+		<a id="polling" href="#">Stop polling</a>
+	</div>
 
-  <h1 class="padtop logo">Diffa</h1>
-  <div id="heatmapContainer" class="margintop">
-    <div id="display" style="position:relative; width:800px;height:400px">
-      <canvas id="underlay" style="z-index:1; position:absolute; left:0px; top:0px; background-color: #cfe2f3" width="800px" height="400px"></canvas>
-      <canvas id="canvas" style="z-index:2; position:absolute; left:0px; top:0px;" width="800px" height="400px"></canvas>
-      <canvas id="overlay" style="z-index:4; position:absolute; left:0px; top:0px;" width="800px" height="400px"></canvas>
-    </div>
-    <div id="scaleHolder" style="position:relative; width:800px; height:40px;">
-      <canvas id="scale" width="800px" height="40px"></canvas>
-    </div>
-  </div>
+	<h1 class="padtop logo">Diffa</h1>
 
-  <!--<div id="heatmapContainer" class="margintop"></div>-->
-  <div id="heatmapcontrols" class="clear padtop padbottom">
-    <div class="right"><span id="errorContainer"></span></div>
-    <div id="scrollBarContainer" class="left">
-      <div id="scrollBar" class="left grid4col"></div>
-      <br class="clearboth"/>
-    </div>
-  </div>
-  <div id="diffListContainer" class="left">
-    <table id="difflist" summary="Table of differences" border="0" cellspacing="0" cellpadding="0">
-      <thead>
-      <tr>
-        <th class="grid2col date">Date</th>
-        <th class="grid2col">Time</th>
-        <th class="grid2col">Group</th>
-        <th class="grid2col">Pairing</th>
-        <th class="grid3col">Item ID</th>
-        <th class="grid4col">Difference type</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr>
-        <td colspan="6">No items loaded yet...</td>
-      </tr>
-      </tbody>
+	<div id="heatmapContainer" class="margintop">
+		<div id="display" style="position:relative; width:800px;height:400px">
+			<canvas id="underlay" style="z-index:1; position:absolute; left:0px; top:0px; background-color: #cfe2f3"
+							width="800px" height="400px"></canvas>
+			<canvas id="canvas" style="z-index:2; position:absolute; left:0px; top:0px;" width="800px"
+							height="400px"></canvas>
+			<canvas id="overlay" style="z-index:4; position:absolute; left:0px; top:0px;" width="800px"
+							height="400px"></canvas>
+		</div>
+		<div id="scaleHolder" style="position:relative; width:800px; height:40px;">
+			<canvas id="scale" width="800px" height="40px"></canvas>
+		</div>
+	</div>
+
+	<!--<div id="heatmapContainer" class="margintop"></div>-->
+	<div id="heatmapcontrols" class="clear padtop padbottom">
+		<div class="right"><span id="errorContainer"></span></div>
+		<div id="scrollBarContainer" class="left">
+			<div id="scrollBar" class="left grid4col"></div>
+			<br class="clearboth"/>
+		</div>
+	</div>
+	<div id="diffListContainer" class="left">
+		<table id="difflist" summary="Table of differences" border="0" cellspacing="0" cellpadding="0">
+			<thead>
+			<tr>
+				<th class="grid2col date">Date</th>
+				<th class="grid2col">Time</th>
+				<th class="grid2col">Group</th>
+				<th class="grid2col">Pairing</th>
+				<th class="grid3col">Item ID</th>
+				<th class="grid4col">Difference type</th>
+			</tr>
+			</thead>
 			<tfoot id="navigation">
+			<tr><td colspan="6">&nbsp;</td></tr>
+			<tr><td colspan="6">&nbsp;</td></tr>
 			<tr>
 				<th id="previous" colspan="3" align="left"><a href="#">&lt;-Previous</a></th>
 				<th id="pagecount" colspan="2" align="center">nn of XX pages</th>
 				<th id="next" colspan="1"><a href="#">Next-&gt;</a></th>
 			</tr>
 			</tfoot>
-    </table>
-  </div>
-  <div id="contentviewer" class="grid9col left marginleft">
-    <h6>No item selected</h6>
+			<tbody>
+			<tr>
+				<td colspan="6">No items loaded yet...</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+	<div id="contentviewer" class="grid9col left marginleft">
+		<h6>No item selected</h6>
 
-    <div>
-      <div id="item1" class="diffSet">
-        <div class="diffHash">
-          <span>item 1</span>
-        </div>
-        <div class="codeBox">
-          <pre></pre>
-        </div>
-      </div>
-      <div id="item2" class="diffSet">
-        <div class="diffHash">
-          <span>item 2</span>
-        </div>
-        <div class="codeBox">
-          <pre></pre>
-        </div>
-      </div>
-    </div>
-    <div id="diffRepair">
-      <h6>Repair options</h6>
+		<div>
+			<div id="item1" class="diffSet">
+				<div class="diffHash">
+					<span>item 1</span>
+				</div>
+				<div class="codeBox">
+					<pre></pre>
+				</div>
+			</div>
+			<div id="item2" class="diffSet">
+				<div class="diffHash">
+					<span>item 2</span>
+				</div>
+				<div class="codeBox">
+					<pre></pre>
+				</div>
+			</div>
+		</div>
+		<div id="diffRepair">
+			<h6>Repair options</h6>
 
-      <div id="actionlist">
-      </div>
-      <br class="clearboth"/>
+			<div id="actionlist">
+			</div>
+			<br class="clearboth"/>
 
-      <p id="repairstatus" class="margintopsmall marginleft marginright"><em>No repairs in progress</em></p>
-    </div>
-  </div>
+			<p id="repairstatus" class="margintopsmall marginleft marginright"><em>No repairs in progress</em></p>
+		</div>
+	</div>
 
-  <br class="clearboth"/>
+	<br class="clearboth"/>
 
-  <div class="push"></div>
+	<div class="push"></div>
 </div>
 <script type="text/javascript">
-  $(document).ready(function() {
-    initGraph();
-  });
+	$(document).ready(function() {
+		initGraph();
+	});
 </script>
 <!-- end wrap -->
 
