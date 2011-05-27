@@ -378,7 +378,7 @@ function drawGrid() {
 		underlayContext.fillStyle = "#d12f19";
 		underlayContext.fillRect(canvas.width - textWidth - 10, 0, textWidth + 10, 20);
 		underlayContext.fillStyle = "#fff";
-		underlayContext.font = "12px bold sans-serif";
+		underlayContext.font = "12px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif"
 		underlayContext.textBaseline = "top";
 		underlayContext.fillText(pollText, canvas.width - underlayContext.measureText(pollText).width - 5, 5);
 	}
