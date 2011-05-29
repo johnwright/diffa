@@ -39,6 +39,7 @@ trait ConfigStore {
   def deleteGroup(key: String): Unit
   def getPairsInGroup(group: PairGroup): Seq[Pair]
   def listGroups: Seq[GroupContainer]
+  def getRepairActionsForPair(pair: Pair): Seq[Actionable]
 
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair

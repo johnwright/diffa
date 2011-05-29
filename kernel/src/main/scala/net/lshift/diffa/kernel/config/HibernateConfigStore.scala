@@ -93,7 +93,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
      .toSeq
   }
 
-  def getRepairActionsInPair(pair: Pair): Seq[Actionable] =
+  def getRepairActionsForPair(pair: Pair): Seq[Actionable] =
     sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
 
   private def getRepairActionsInPair(s: Session, pair: Pair): Seq[Actionable] =

@@ -60,7 +60,11 @@ class HibernateConfigStoreTest {
   val pairKey = "TEST_PAIR"
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name, groupKey1)
-
+  val repairAction = new RepairActionDef(key="action-1",
+                                         name="REPAIR_ACTION_NAME",
+                                         scope="ENTITY",
+                                         path="/actions/" + pairKey + "/resend/${id}",
+                                         pairKey=pairKey)
 
   val groupKey2 = "TEST_GROUP2"
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
@@ -76,6 +80,7 @@ class HibernateConfigStoreTest {
     configStore.createOrUpdateEndpoint(downstream2)
     configStore.createOrUpdateGroup(group)
     configStore.createOrUpdatePair(pairDef)
+    configStore.createOrUpdateRepairAction(repairAction)
   }
 
   @Before
@@ -121,6 +126,12 @@ class HibernateConfigStoreTest {
     assertEquals(groupKey1, retrPair.group.key)
     assertEquals(versionPolicyName1, retrPair.versionPolicyName)
     assertEquals(matchingTimeout, retrPair.matchingTimeout)
+
+    // Declare a repair action
+    configStore.createOrUpdateRepairAction(repairAction)
+    val retrActions = configStore.getRepairActionsForPair(retrPair)
+    assertEquals(1, retrActions.length)
+    assertEquals(Some(pairKey), retrActions.headOption.map(_.pairKey))
   }
 
   @Test
@@ -469,6 +480,7 @@ object HibernateConfigStoreTest {
     s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
+    s.createCriteria(classOf[Actionable]).list.foreach(s.delete)
     s.flush
     s.close
   }
