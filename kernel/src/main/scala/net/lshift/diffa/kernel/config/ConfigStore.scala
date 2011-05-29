@@ -23,7 +23,6 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.client.Actionable
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -180,6 +179,16 @@ case class RepairActionDef(
   @BeanProperty var scope: String = null,
   @BeanProperty var path: String = null,
   @BeanProperty var pairKey: String = null)
+
+case class Actionable (
+  @BeanProperty var key:String,
+  @BeanProperty var name:String,
+  @BeanProperty var scope:String,
+  @BeanProperty var path:String,
+  @BeanProperty var pairKey:String) {
+
+ def this() = this(null, null, null, null, null)
+}
 
 case class User(@BeanProperty var name: String,
                 @BeanProperty var email: String) {

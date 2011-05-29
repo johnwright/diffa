@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.client
 
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-
+import net.lshift.diffa.kernel.config.Actionable
 
 /**
  * Interface supported by clients capable of listing and invoking actions for pairs.
@@ -44,14 +44,4 @@ case class ActionableRequest (
 
  def this() = this(null, null, null)
 
-}
-
-case class Actionable (
-  @BeanProperty var key:String,
-  @BeanProperty var name:String,
-  @BeanProperty var scope:String,
-  @BeanProperty var path:String,
-  @BeanProperty var pairKey:String) {
-
- def this() = this(null, null, null, null, null)
 }

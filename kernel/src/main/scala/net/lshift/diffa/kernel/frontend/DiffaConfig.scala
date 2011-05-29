@@ -16,8 +16,7 @@
 package net.lshift.diffa.kernel.frontend
 
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.config.{PairGroup, PairDef, Endpoint, User}
-import net.lshift.diffa.kernel.client.Actionable
+import net.lshift.diffa.kernel.config._
 
 /**
  * Describes a complete diffa configuration.

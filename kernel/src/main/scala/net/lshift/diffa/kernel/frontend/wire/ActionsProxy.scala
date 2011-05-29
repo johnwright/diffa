@@ -17,8 +17,8 @@
 package net.lshift.diffa.kernel.frontend.wire
 
 import net.lshift.diffa.kernel.participants.ParticipantFactory
-import net.lshift.diffa.kernel.client.{ActionableRequest, Actionable, ActionsClient}
-import net.lshift.diffa.kernel.config.{Pair, ConfigStore}
+import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
+import net.lshift.diffa.kernel.config.{Actionable, Pair, ConfigStore}
 
 /**
  * This is a conduit to the actions that are provided by participants

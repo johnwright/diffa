@@ -17,7 +17,6 @@
 package net.lshift.diffa.kernel.config
 
 import net.lshift.diffa.kernel.util.SessionHelper._
-import net.lshift.diffa.kernel.client.Actionable
 
 // for 'SessionFactory.withSession'
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
@@ -98,7 +97,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
 
   private def getRepairActionsInPair(s: Session, pair: Pair): Seq[Actionable] =
-    listQuery[Actionable](s, "repairActionsByPair", Map("pair" -> pair))
+    listQuery[Actionable](s, "repairActionsByPair", Map("pairKey" -> pair.key))
 
   def listGroups: Seq[GroupContainer] = sessionFactory.withSession(s => {
     val groups = listQuery[PairGroup](s, "allGroups", Map())

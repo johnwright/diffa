@@ -22,7 +22,6 @@ import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
-import net.lshift.diffa.kernel.client.Actionable
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.
