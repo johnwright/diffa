@@ -44,11 +44,24 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     listQuery[Endpoint](s, "allEndpoints", Map())
   })
 
+  def createOrUpdateRepairAction(a: RepairActionDef) {
+    sessionFactory.withSession(s => {
+      val toUpdate = new Actionable(a.key, a.name, a.scope, a.path, a.pairKey)
+      s.saveOrUpdate(toUpdate)
+    })
+  }
+
+  def deleteRepairAction(key: String) {
+    sessionFactory.withSession(s => {
+      val action = getRepairAction(s, key)
+      s.delete(action)
+    })
+  }
+
   def createOrUpdatePair(p: PairDef): Unit = sessionFactory.withSession(s => {
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
     val group = getGroup(s, p.groupKey)
-    val repairActions = p.repairActions.map(a => getRepairAction(s, a))
     val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout)
     s.saveOrUpdate(toUpdate)
   })
@@ -80,6 +93,12 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
      .asInstanceOf[java.util.List[Pair]]
      .toSeq
   }
+
+  def getRepairActionsInPair(pair: Pair): Seq[Actionable] =
+    sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
+
+  private def getRepairActionsInPair(s: Session, pair: Pair): Seq[Actionable] =
+    listQuery[Actionable](s, "repairActionsByPair", Map("pair" -> pair))
 
   def listGroups: Seq[GroupContainer] = sessionFactory.withSession(s => {
     val groups = listQuery[PairGroup](s, "allGroups", Map())
@@ -156,5 +175,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getPairOpt(s: Session, key: String) = singleQueryOpt[Pair](s, "pairByKey", Map("key" -> key))
   private def getGroup(s: Session, key: String) = singleQuery[PairGroup](s, "groupByKey", Map("key" -> key), "group")
   private def getGroupOpt(s: Session, key: String) = singleQueryOpt[PairGroup](s, "groupByKey", Map("key" -> key))
-  private def getRepairSction(s: Session, key: String) = singleQueryOpt[Actionable](s, )
+  private def getRepairAction(s: Session, key: String) =
+    singleQuery[Actionable](s, "repairActionByKey", Map("key" -> key), "repair action")
+
 }

@@ -47,10 +47,11 @@ case class ActionableRequest (
 }
 
 case class Actionable (
+  @BeanProperty var key:String,
   @BeanProperty var name:String,
   @BeanProperty var scope:String,
   @BeanProperty var path:String,
   @BeanProperty var pairKey:String) {
 
- def this() = this(null, null, null, null)
+ def this() = this(null, null, null, null, null)
 }

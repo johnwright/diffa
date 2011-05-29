@@ -92,6 +92,15 @@
     <property name="isInternal" type="boolean" column="is_internal" />
   </class>
 
+  <class name="Actionable" table="repair_actions" abstract="false">
+    <id name="key" type="string" column="act_key" />
+    <property name="name" type="string" column="name" />
+    <property name="scope" type="string" column="scope" />
+    <property name="path" type="string" column="path" />
+    <property name="pairKey" type="string" column="pair" />
+    <!--<many-to-one name="pair" column="group" class="Pair" not-null="true" lazy="false" fetch="join" />-->
+  </class>
+
   <query name="endpointByName">
     select e from Endpoint e where e.name = :name
   </query>
@@ -122,6 +131,10 @@
 
   <query name="pairsByGroup">
     select p from Pair p where p.group = :group
+  </query>
+
+  <query name="repairActionsByPair">
+    select a from Actionable a where a.pair = :pair
   </query>
 
   <query name="configOptionByKey">

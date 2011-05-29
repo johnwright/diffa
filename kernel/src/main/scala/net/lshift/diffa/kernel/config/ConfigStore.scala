@@ -33,6 +33,9 @@ trait ConfigStore {
   def createOrUpdatePair(pairDef: PairDef): Unit
   def deletePair(key: String): Unit
 
+  def createOrUpdateRepairAction(action: RepairActionDef): Unit
+  def deleteRepairAction(key: String): Unit
+
   def createOrUpdateGroup(group: PairGroup): Unit
   def deleteGroup(key: String): Unit
   def getPairsInGroup(group: PairGroup): Seq[Pair]
@@ -47,8 +50,7 @@ trait ConfigStore {
   def deleteUser(name: String): Unit
   def listUsers: Seq[User]
 
-  def ge
-  tPairsForEndpoint(epName:String):Seq[Pair]
+  def getPairsForEndpoint(epName:String):Seq[Pair]
 
   /**
    * Retrieves all (non-internal) agent configuration options.
@@ -146,10 +148,9 @@ case class Pair(
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var group: PairGroup = null,
   @BeanProperty var versionPolicyName: String = null,
-  @BeanProperty var repairActions: List[Actionable] = null,
   @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING) {
 
-  def this() = this(null, null, null, null, null, null, Pair.NO_MATCHING)
+  def this() = this(null, null, null, null, null, Pair.NO_MATCHING)
 }
 
 object Pair {
@@ -168,16 +169,17 @@ case class PairDef(
   @BeanProperty var matchingTimeout: Int,
   @BeanProperty var upstreamName: String,
   @BeanProperty var downstreamName: String,
-  @BeanProperty var repairActions: java.util.List[RepairActionDef],
   @BeanProperty var groupKey: String) {
 
-  def this() = this(null, null, null.asInstanceOf[Int], null, null, null, null)
+  def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
 }
 
 case class RepairActionDef(
+  @BeanProperty var key: String = null,
   @BeanProperty var name: String = null,
   @BeanProperty var scope: String = null,
-  @BeanProperty var path: String = null)
+  @BeanProperty var path: String = null,
+  @BeanProperty var pairKey: String = null)
 
 case class User(@BeanProperty var name: String,
                 @BeanProperty var email: String) {

@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.kernel.frontend.wire
 
-import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{ActionableRequest, Actionable, ActionsClient}
+import net.lshift.diffa.kernel.config.{Pair, ConfigStore}
 
 /**
  * This is a conduit to the actions that are provided by participants
@@ -28,7 +28,7 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
   // TODO For the initial release we will hardcoded only the resend action (see ticket #39)
   def listActions(pairKey: String) : Seq[Actionable] = {
     val path = "/actions/" + pairKey + "/resend/${id}"
-    def resend() = Array(Actionable("Resend Source", "item", path, pairKey))
+    def resend() = Array(Actionable("action-1", "Resend Source", "item", path, pairKey))
     withValidPair(pairKey, resend)
   }
 
