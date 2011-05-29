@@ -247,6 +247,17 @@ class HibernateConfigStoreTest {
   }
 
   @Test
+  def testDeleteRepairAction {
+    declareAll
+    assertEquals(Some(repairAction.key), configStore.listRepairActions.headOption.map(_.key))
+
+    configStore.deleteRepairAction(repairAction.key)
+    expectMissingObject("repair action") {
+      configStore.getRepairAction(repairAction.key)
+    }
+  }
+
+  @Test
   def testDeleteGroupCascade: Unit = {
     declareAll
 

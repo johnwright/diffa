@@ -117,6 +117,10 @@
     select g from PairGroup g where g.key = :key
   </query>
 
+  <query name="repairActionByKey">
+    select a from Actionable a where a.key = :key
+  </query>
+
   <query name="allEndpoints">
     select e from Endpoint e
   </query>
@@ -127,6 +131,10 @@
 
   <query name="allGroups">
     select g from PairGroup g
+  </query>
+
+  <query name="allRepairActions">
+    select a from Actionable a
   </query>
 
   <query name="pairsByGroup">

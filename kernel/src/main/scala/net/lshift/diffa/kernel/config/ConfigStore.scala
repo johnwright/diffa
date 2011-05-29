@@ -39,12 +39,14 @@ trait ConfigStore {
   def deleteGroup(key: String): Unit
   def getPairsInGroup(group: PairGroup): Seq[Pair]
   def listGroups: Seq[GroupContainer]
+  def listRepairActions: Seq[Actionable]
   def getRepairActionsForPair(pair: Pair): Seq[Actionable]
 
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair
   def getGroup(key: String): PairGroup
   def getUser(name: String) : User
+  def getRepairAction(key: String): Actionable
 
   def createOrUpdateUser(user: User): Unit
   def deleteUser(name: String): Unit

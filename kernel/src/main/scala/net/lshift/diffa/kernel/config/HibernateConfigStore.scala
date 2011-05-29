@@ -99,6 +99,9 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getRepairActionsInPair(s: Session, pair: Pair): Seq[Actionable] =
     listQuery[Actionable](s, "repairActionsByPair", Map("pairKey" -> pair.key))
 
+  def listRepairActions: Seq[Actionable] = sessionFactory.withSession(s =>
+    listQuery[Actionable](s, "allRepairActions", Map()))
+
   def listGroups: Seq[GroupContainer] = sessionFactory.withSession(s => {
     val groups = listQuery[PairGroup](s, "allGroups", Map())
 
@@ -134,6 +137,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def getPair(key: String) = sessionFactory.withSession(s => getPair(s, key))
   def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
+  def getRepairAction(key: String) = sessionFactory.withSession(s => getRepairAction(s, key))
 
   def allConfigOptions = {
     sessionFactory.withSession(s => {
