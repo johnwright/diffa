@@ -30,6 +30,7 @@ import javax.xml.transform.stream.{StreamSource, StreamResult}
 import scala.collection.JavaConversions._
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.differencing.PairSyncState
 
 /**
  * Provider for encoding and decoding diffa configuration blocks.
@@ -87,18 +88,24 @@ class DiffaCastorSerializableConfig {
     this.users = c.users.toList
     this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
     this.endpoints = c.endpoints.map { e => (new CastorSerializableEndpoint).fromDiffaEndpoint(e) }.toList
-    this.groups = c.groups.map(g => new CastorSerializableGroup(g.key, c.pairs.filter(_.groupKey == g.key).toList)).toList
+    this.groups = c.groups.map(g => {
+      def repairActionsForPair(pairKey: String) = c.repairActions.filter(_.pairKey == pairKey).toList
+      val pairs = c.pairs.filter(_.groupKey == g.key).map(p => CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.pairKey))).toList
+      new CastorSerializableGroup(g.key, pairs)
+    }).toList
 
     this
   }
 
   def toDiffaConfig:DiffaConfig = {
-    DiffaConfig(
-      users = users.toSet,
-      properties = properties.map(p => p.key -> p.value).toMap,
-      endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
-      groups = groups.map(g => PairGroup(g.name)).toSet,
-      pairs = groups.flatMap(g => g.pairs.map { p => { p.groupKey = g.name; p } }).toSet)
+    val users = this.users.toSet
+    val properties = this.properties.map(p => p.key -> p.value).toMap
+    val endpoints = this.endpoints.map(_.toDiffaEndpoint).toSet
+    val groups = this.groups.map(g => PairGroup(g.name)).toSet
+    val pairs = for (g <- this.groups; p <- g.pairs) yield p.toPairDef(g.name)
+    val repairActions = for (g <- this.groups; p <- g.pairs; a <- p.repairActions) yield a
+
+    DiffaConfig(users, properties, endpoints, groups, pairs.toSet, repairActions.toSet)
   }
 }
 
@@ -171,7 +178,27 @@ class SetValue(@BeanProperty var value:String) {
 
 class CastorSerializableGroup(
     @BeanProperty var name:String,
-    @BeanProperty var pairs:java.util.List[PairDef] = new java.util.ArrayList[PairDef]
+    @BeanProperty var pairs:java.util.List[CastorSerializablePair] = new java.util.ArrayList[CastorSerializablePair]
 ) {
   def this() = this(name = null)
+}
+
+class CastorSerializablePair(
+  @BeanProperty var key: String,
+  @BeanProperty var upstream: String,
+  @BeanProperty var downstream: String,
+  @BeanProperty var versionPolicy: String,
+  @BeanProperty var matchingTimeout: Int,
+  @BeanProperty var repairActions: java.util.List[RepairActionDef]
+) {
+  def this() = this(null, null, null, null, 0, new java.util.ArrayList[RepairActionDef])
+
+  def toPairDef(groupKey: String): PairDef =
+    new PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, groupKey)
+}
+
+object CastorSerializablePair {
+  def fromPairDef(p: PairDef, repairActions: java.util.List[RepairActionDef]): CastorSerializablePair =
+    new CastorSerializablePair(p.pairKey, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
+                               repairActions)
 }
