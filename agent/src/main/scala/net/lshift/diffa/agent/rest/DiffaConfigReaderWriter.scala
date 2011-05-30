@@ -30,7 +30,6 @@ import javax.xml.transform.stream.{StreamSource, StreamResult}
 import scala.collection.JavaConversions._
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config._
-import net.lshift.diffa.kernel.client.Actionable
 
 /**
  * Provider for encoding and decoding diffa configuration blocks.
@@ -88,7 +87,7 @@ class DiffaCastorSerializableConfig {
     this.users = c.users.toList
     this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
     this.endpoints = c.endpoints.map { e => (new CastorSerializableEndpoint).fromDiffaEndpoint(e) }.toList
-    this.groups = c.groups.map(g => new CastorSerializableGroup(g.key, c.pairs.filter(_.groupKey == g.key).toList, c.repairActions.filter(_.groupKey == g.key).toList)).toList
+    this.groups = c.groups.map(g => new CastorSerializableGroup(g.key, c.pairs.filter(_.groupKey == g.key).toList)).toList
 
     this
   }
@@ -172,7 +171,7 @@ class SetValue(@BeanProperty var value:String) {
 
 class CastorSerializableGroup(
     @BeanProperty var name:String,
-    @BeanProperty var pairs:java.util.List[PairDef] = new java.util.ArrayList[PairDef],
+    @BeanProperty var pairs:java.util.List[PairDef] = new java.util.ArrayList[PairDef]
 ) {
   def this() = this(name = null)
 }

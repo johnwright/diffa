@@ -33,7 +33,7 @@ trait CommonActionTests {
     val actions = env.actionsClient.listActions(env.pairKey)
     assertNotNull(actions)
     assertEquals(1, actions.size)
-    assertEquals("resend", actions(0).id)
+    assertEquals("Resend Source", actions(0).name)
   }
 
   @Test

@@ -16,7 +16,8 @@
 
 package net.lshift.diffa.tools.client
 
-import net.lshift.diffa.kernel.client.{ActionableRequest, Actionable, ActionsClient}
+import net.lshift.diffa.kernel.config.Actionable
+import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
