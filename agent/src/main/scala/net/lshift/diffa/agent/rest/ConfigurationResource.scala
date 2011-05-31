@@ -61,6 +61,12 @@ class ConfigurationResource extends AbstractRestResource {
   def listGroups: Array[GroupContainer] = config.listGroups.toArray
 
   @GET
+  @Path("/repair-actions")
+  @Produces(Array("application/json"))
+  @Description("Returns a list of all the repair actions registered with the agent.")
+  def listRepairActions: Array[RepairAction] = config.listRepairActions.toArray
+
+  @GET
   @Produces(Array("application/json"))
   @Path("/endpoints/{id}")
   @Description("Returns an endpoint by its identifier.")
@@ -107,6 +113,19 @@ class ConfigurationResource extends AbstractRestResource {
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   def deletePair(@PathParam("id") id:String) = maybe[Unit]( x => config.deletePair(x), id )
 
+  @GET
+  @Path("/pairs/{id}/repair-actions")
+  @Produces(Array("application/json"))
+  @Description("Returns a list of the repair actions associated with a pair")
+  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
+  def listRepairActionsForPair(@PathParam("id") pairKey: String) = config.listRepairActionsForPair(pairKey).toArray
+
+  @POST
+  @Path("/pairs/{id}/repair-actions")
+  @Consumes(Array("application/json"))
+  @Description("Creates a new repair action associated with a pair that is registered with the agent.")
+  def createRepairAction(a: RepairAction) = create[RepairAction](a, config.createOrUpdateRepairAction, _.key)
+
   @POST
   @Path("/groups")
   @Consumes(Array("application/json"))
@@ -141,5 +160,4 @@ class ConfigurationResource extends AbstractRestResource {
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
   def getGroup(@PathParam("id") id:String) = maybe[PairGroup]( x => config.getGroup(x), id )
 
-  // TODO repair actions
 }

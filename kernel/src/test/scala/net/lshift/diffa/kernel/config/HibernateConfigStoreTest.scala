@@ -129,7 +129,7 @@ class HibernateConfigStoreTest {
 
     // Declare a repair action
     configStore.createOrUpdateRepairAction(repairAction)
-    val retrActions = configStore.getRepairActionsForPair(retrPair)
+    val retrActions = configStore.listRepairActionsForPair(retrPair)
     assertEquals(1, retrActions.length)
     assertEquals(Some(pairKey), retrActions.headOption.map(_.pairKey))
   }

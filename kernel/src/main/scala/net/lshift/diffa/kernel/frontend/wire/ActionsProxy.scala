@@ -25,10 +25,10 @@ import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
  */
 class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) extends ActionsClient {
 
-  // TODO For the initial release we will hardcoded only the resend action (see ticket #39)
   def listActions(pairKey: String) : Seq[Actionable] = {
-    val repairAction = RepairAction("action-1", "Resend Source", "resend", "entity", pairKey)
-    def resend() = Array(Actionable.fromRepairAction(repairAction))
+    val pair = config.getPair(pairKey)
+    val repairActions = config.listRepairActionsForPair(pair)
+    def resend() = repairActions.map(Actionable.fromRepairAction).toArray
     withValidPair(pairKey, resend)
   }
 

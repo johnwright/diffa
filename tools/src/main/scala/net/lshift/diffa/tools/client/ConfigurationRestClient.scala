@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.client.ConfigurationClient
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{CategoryDescriptor, Endpoint, PairDef, PairGroup}
+import net.lshift.diffa.kernel.config._
 
 class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")
@@ -43,6 +43,12 @@ class ConfigurationRestClient(serverRootUrl:String)
     val p = new PairDef(pairKey, versionPolicyName, matchingTimeout, upstreamName, downstreamName, groupKey)
     create("pairs", p)
     p
+  }
+
+  def declareRepairAction(key: String, name: String, id: String, scope: String, pairKey: String) = {
+    val action = new RepairAction(key, name, id, scope, pairKey)
+    create("/pairs/"+pairKey+"/repair-actions", action)
+    action
   }
 
 }

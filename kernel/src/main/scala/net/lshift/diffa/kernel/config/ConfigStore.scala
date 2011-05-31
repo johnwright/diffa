@@ -40,7 +40,7 @@ trait ConfigStore {
   def getPairsInGroup(group: PairGroup): Seq[Pair]
   def listGroups: Seq[GroupContainer]
   def listRepairActions: Seq[RepairAction]
-  def getRepairActionsForPair(pair: Pair): Seq[RepairAction]
+  def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair

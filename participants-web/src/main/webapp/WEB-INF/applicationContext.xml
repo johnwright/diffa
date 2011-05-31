@@ -107,6 +107,20 @@
     </property>
   </bean>
 
+  <bean id="declareRepairAction" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="configClient" />
+    <property name="targetMethod" value="declareRepairAction" />
+    <property name="arguments">
+      <list>
+        <value>${demo.repairAction.key}</value>
+        <value>${demo.repairAction.name}</value>
+        <value>${demo.repairAction.id}</value>
+        <value>${demo.repairAction.scope}</value>
+        <value>${demo.repairAction.pairKey}</value>
+      </list>
+    </property>
+  </bean>
+
   <bean id="upstreamPart" class="net.lshift.diffa.participants.UpstreamWebParticipant">
     <constructor-arg value="a" />
     <constructor-arg value="${demo.agentUrl}" />

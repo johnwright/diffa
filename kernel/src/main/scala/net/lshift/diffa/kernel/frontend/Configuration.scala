@@ -141,7 +141,7 @@ class Configuration(val configStore: ConfigStore,
 
     // delete repair actions first
     val pair = configStore.getPair(key)
-    val actions = configStore.getRepairActionsForPair(pair)
+    val actions = configStore.listRepairActionsForPair(pair)
     actions.foreach(a => deleteRepairAction(a.key))
 
     configStore.deletePair(key)
@@ -196,5 +196,15 @@ class Configuration(val configStore: ConfigStore,
   def deleteRepairAction(key: String) {
     log.debug("Processing repair action delete request: " + key)
     configStore.deleteRepairAction(key)
+  }
+
+  def listRepairActions: Seq[RepairAction] = {
+    log.debug("Processing repair action list request")
+    configStore.listRepairActions
+  }
+
+  def listRepairActionsForPair(pairKey: String): Seq[RepairAction] = {
+    val pair = configStore.getPair(pairKey)
+    configStore.listRepairActionsForPair(pair)
   }
 }
