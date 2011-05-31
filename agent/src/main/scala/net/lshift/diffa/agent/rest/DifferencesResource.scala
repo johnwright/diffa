@@ -267,7 +267,6 @@ class DifferencesResource extends AbstractRestResource {
         throw new WebApplicationException(404)
       }
     }
-
   }
 
   def maybe(s: String) = {
