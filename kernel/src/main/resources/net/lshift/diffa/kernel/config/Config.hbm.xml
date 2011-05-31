@@ -92,13 +92,12 @@
     <property name="isInternal" type="boolean" column="is_internal" />
   </class>
 
-  <class name="Actionable" table="repair_actions" abstract="false">
+  <class name="RepairAction" table="repair_actions" abstract="false">
     <id name="key" type="string" column="act_key" />
     <property name="name" type="string" column="name" />
     <property name="scope" type="string" column="scope" />
-    <property name="path" type="string" column="path" />
+    <property name="id" type="string" column="id" />
     <property name="pairKey" type="string" column="pair_key" />
-    <!--<many-to-one name="pair" column="group" class="Pair" not-null="true" lazy="false" fetch="join" />-->
   </class>
 
   <query name="endpointByName">
@@ -118,7 +117,7 @@
   </query>
 
   <query name="repairActionByKey">
-    select a from Actionable a where a.key = :key
+    select a from RepairAction a where a.key = :key
   </query>
 
   <query name="allEndpoints">
@@ -134,7 +133,7 @@
   </query>
 
   <query name="allRepairActions">
-    select a from Actionable a
+    select a from RepairAction a
   </query>
 
   <query name="pairsByGroup">
@@ -142,7 +141,7 @@
   </query>
 
   <query name="repairActionsByPair">
-    select a from Actionable a where a.pairKey = :pairKey
+    select a from RepairAction a where a.pairKey = :pairKey
   </query>
 
   <query name="configOptionByKey">

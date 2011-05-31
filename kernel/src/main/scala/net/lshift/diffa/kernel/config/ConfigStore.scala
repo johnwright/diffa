@@ -17,13 +17,12 @@
 package net.lshift.diffa.kernel.config
 
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
 import util.matching.Regex
+import net.lshift.diffa.kernel.client.Actionable
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -33,21 +32,21 @@ trait ConfigStore {
   def createOrUpdatePair(pairDef: PairDef): Unit
   def deletePair(key: String): Unit
 
-  def createOrUpdateRepairAction(action: RepairActionDef): Unit
+  def createOrUpdateRepairAction(action: RepairAction): Unit
   def deleteRepairAction(key: String): Unit
 
   def createOrUpdateGroup(group: PairGroup): Unit
   def deleteGroup(key: String): Unit
   def getPairsInGroup(group: PairGroup): Seq[Pair]
   def listGroups: Seq[GroupContainer]
-  def listRepairActions: Seq[Actionable]
-  def getRepairActionsForPair(pair: Pair): Seq[Actionable]
+  def listRepairActions: Seq[RepairAction]
+  def getRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair
   def getGroup(key: String): PairGroup
   def getUser(name: String) : User
-  def getRepairAction(key: String): Actionable
+  def getRepairAction(key: String): RepairAction
 
   def createOrUpdateUser(user: User): Unit
   def deleteUser(name: String): Unit
@@ -177,7 +176,7 @@ case class PairDef(
   def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
 }
 
-case class RepairActionDef(
+case class RepairAction(
   @BeanProperty var key: String,
   @BeanProperty var name: String,
   @BeanProperty var id: String,
@@ -185,32 +184,6 @@ case class RepairActionDef(
   @BeanProperty var pairKey: String
 ) {
   def this() = this(null, null, null, null, null)
-}
-
-object RepairActionDef {
-  private val Path = new Regex("""/actions/.*/(.*)/\$\{id\}""")
-
-  def fromActionable(a: Actionable): RepairActionDef = {
-    val Path(id) = a.path
-    new RepairActionDef(a.key, a.name, id, a.scope, a.pairKey)
-  }
-}
-
-case class Actionable (
-  @BeanProperty var key:String,
-  @BeanProperty var name:String,
-  @BeanProperty var scope:String,
-  @BeanProperty var path:String,
-  @BeanProperty var pairKey:String) {
-
- def this() = this(null, null, null, null, null)
-}
-
-object Actionable {
-  def fromRepairActionDef(a: RepairActionDef): Actionable = {
-    val path = "/actions/"+a.pairKey+"/"+a.id+"/${id}" // TODO support entity-scoped actions
-    new Actionable(a.key, a.name, a.scope, path, a.pairKey)
-  }
 }
 
 case class User(@BeanProperty var name: String,

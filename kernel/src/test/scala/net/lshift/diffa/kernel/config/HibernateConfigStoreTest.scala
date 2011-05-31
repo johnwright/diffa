@@ -60,7 +60,7 @@ class HibernateConfigStoreTest {
   val pairKey = "TEST_PAIR"
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name, groupKey1)
-  val repairAction = new RepairActionDef(key="action-1",
+  val repairAction = new RepairAction(key="action-1",
                                          name="REPAIR_ACTION_NAME",
                                          scope="entity",
                                          id="resend",
@@ -491,7 +491,7 @@ object HibernateConfigStoreTest {
     s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
-    s.createCriteria(classOf[Actionable]).list.foreach(s.delete)
+    s.createCriteria(classOf[RepairAction]).list.foreach(s.delete)
     s.flush
     s.close
   }

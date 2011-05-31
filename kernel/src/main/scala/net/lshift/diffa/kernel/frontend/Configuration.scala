@@ -69,7 +69,7 @@ class Configuration(val configStore: ConfigStore,
       groups = configStore.listGroups.map(g => g.group).toSet,
       pairs = configStore.listGroups.flatMap(g => g.pairs.map(
         p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toSet,
-      repairActions = configStore.listRepairActions.map(RepairActionDef.fromActionable).toSet
+      repairActions = configStore.listRepairActions.toSet
     )
   }
 
@@ -184,11 +184,11 @@ class Configuration(val configStore: ConfigStore,
     configStore.listGroups
   }
 
-  def declareRepairAction(action: RepairActionDef) {
+  def declareRepairAction(action: RepairAction) {
     createOrUpdateRepairAction(action)
   }
 
-  def createOrUpdateRepairAction(action: RepairActionDef) {
+  def createOrUpdateRepairAction(action: RepairAction) {
     log.debug("Processing repair action declare/update request: " + action.key)
     configStore.createOrUpdateRepairAction(action)
   }

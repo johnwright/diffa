@@ -189,16 +189,16 @@ class CastorSerializablePair(
   @BeanProperty var downstream: String,
   @BeanProperty var versionPolicy: String,
   @BeanProperty var matchingTimeout: Int,
-  @BeanProperty var repairActions: java.util.List[RepairActionDef]
+  @BeanProperty var repairActions: java.util.List[RepairAction]
 ) {
-  def this() = this(null, null, null, null, 0, new java.util.ArrayList[RepairActionDef])
+  def this() = this(null, null, null, null, 0, new java.util.ArrayList[RepairAction])
 
   def toPairDef(groupKey: String): PairDef =
     new PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, groupKey)
 }
 
 object CastorSerializablePair {
-  def fromPairDef(p: PairDef, repairActions: java.util.List[RepairActionDef]): CastorSerializablePair =
+  def fromPairDef(p: PairDef, repairActions: java.util.List[RepairAction]): CastorSerializablePair =
     new CastorSerializablePair(p.pairKey, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
                                repairActions)
 }

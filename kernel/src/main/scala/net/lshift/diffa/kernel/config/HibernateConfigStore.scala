@@ -43,11 +43,8 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     listQuery[Endpoint](s, "allEndpoints", Map())
   })
 
-  def createOrUpdateRepairAction(a: RepairActionDef) {
-    sessionFactory.withSession(s => {
-      val toUpdate = Actionable.fromRepairActionDef(a)
-      s.saveOrUpdate(toUpdate)
-    })
+  def createOrUpdateRepairAction(a: RepairAction) {
+    sessionFactory.withSession(_.saveOrUpdate(a))
   }
 
   def deleteRepairAction(key: String) {
@@ -94,14 +91,14 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
      .toSeq
   }
 
-  def getRepairActionsForPair(pair: Pair): Seq[Actionable] =
+  def getRepairActionsForPair(pair: Pair): Seq[RepairAction] =
     sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
 
-  private def getRepairActionsInPair(s: Session, pair: Pair): Seq[Actionable] =
-    listQuery[Actionable](s, "repairActionsByPair", Map("pairKey" -> pair.key))
+  private def getRepairActionsInPair(s: Session, pair: Pair): Seq[RepairAction] =
+    listQuery[RepairAction](s, "repairActionsByPair", Map("pairKey" -> pair.key))
 
-  def listRepairActions: Seq[Actionable] = sessionFactory.withSession(s =>
-    listQuery[Actionable](s, "allRepairActions", Map()))
+  def listRepairActions: Seq[RepairAction] = sessionFactory.withSession(s =>
+    listQuery[RepairAction](s, "allRepairActions", Map()))
 
   def listGroups: Seq[GroupContainer] = sessionFactory.withSession(s => {
     val groups = listQuery[PairGroup](s, "allGroups", Map())
@@ -180,6 +177,6 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getGroup(s: Session, key: String) = singleQuery[PairGroup](s, "groupByKey", Map("key" -> key), "group")
   private def getGroupOpt(s: Session, key: String) = singleQueryOpt[PairGroup](s, "groupByKey", Map("key" -> key))
   private def getRepairAction(s: Session, key: String) =
-    singleQuery[Actionable](s, "repairActionByKey", Map("key" -> key), "repair action")
+    singleQuery[RepairAction](s, "repairActionByKey", Map("key" -> key), "repair action")
 
 }

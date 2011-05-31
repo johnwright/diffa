@@ -48,7 +48,7 @@ class DiffaConfigReaderWriterTest {
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
       repairActions = Set(
-        RepairActionDef(key="action-1", name="Resend Sauce", scope="entity", id="resend", pairKey="ab")
+        RepairAction(key="action-1", name="Resend Sauce", scope="entity", id="resend", pairKey="ab")
       )
     )
 

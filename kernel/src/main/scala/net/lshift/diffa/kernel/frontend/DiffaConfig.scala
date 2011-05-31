@@ -27,5 +27,5 @@ case class DiffaConfig(
   endpoints:Set[Endpoint] = Set(),
   groups:Set[PairGroup] = Set(),
   pairs:Set[PairDef] = Set(),
-  repairActions:Set[RepairActionDef] = Set()
+  repairActions:Set[RepairAction] = Set()
 )
