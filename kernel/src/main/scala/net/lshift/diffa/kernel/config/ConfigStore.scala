@@ -177,11 +177,14 @@ case class PairDef(
 }
 
 case class RepairActionDef(
-  @BeanProperty var key: String = null,
-  @BeanProperty var name: String = null,
-  @BeanProperty var scope: String = null,
-  @BeanProperty var path: String = null,
-  @BeanProperty var pairKey: String = null)
+  @BeanProperty var key: String,
+  @BeanProperty var name: String,
+  @BeanProperty var scope: String,
+  @BeanProperty var path: String,
+  @BeanProperty var pairKey: String
+) {
+  def this() = this(null, null, null, null, null)
+}
 
 case class Actionable (
   @BeanProperty var key:String,
