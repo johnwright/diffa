@@ -175,7 +175,7 @@ class DifferencesResource extends AbstractRestResource {
   @MandatoryParams(Array(
       new MandatoryParam(name = "range-start", datatype = "date", description = "The starting time for any differences"),
       new MandatoryParam(name = "range-end", datatype = "date", description = "The ending time for any differences"),
-      new MandatoryParam(name = "width", datatype = "int", description = "The size in elements in the zoomed view")))
+      new MandatoryParam(name = "bucketing", datatype = "int", description = "The size in elements in the zoomed view")))
   @Description("Returns a zoomed view of the data within a specific time range")
   def getZoomedView(@PathParam("sessionId") sessionId: String,
                     @QueryParam("range-start") rangeStart: String,
