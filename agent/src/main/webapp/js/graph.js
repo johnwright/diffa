@@ -202,7 +202,7 @@ function selectFromList(event) {
 	var row = event.target.nodeName === "tr" ? $(event.target) : $(event.target).closest('tr');
 	renderEvent(row.data("event"));
 	if (row.data("event") != null) {
-		$('#difflist').find('tbody tr').removeClass("specific_selected");
+		$('#diffList').find('tbody tr').removeClass("specific_selected");
 		$('#evt_' + row.data("event").seqId).addClass("specific_selected");
 	}
 }
@@ -263,12 +263,12 @@ function fetchData() {
 
 			$.get(url, function(data) {
 				renderEvent(data[0]);
-				var list = $('#difflist').find('tbody').empty().end();
+				var list = $('#diffList').find('tbody').empty().end();
 				$.each(data, function(i, event) {
 					addRow(list, event);
 				});
 			});
-			$("#pagecount").text((page + 1) + " of " + Math.ceil(buckets[selectedBucket.row][selectedBucket.column] / listSize) + " pages");
+			$("#pagecount").text("Page " + (page + 1) + " of " + Math.ceil(buckets[selectedBucket.row][selectedBucket.column] / listSize));
 			$("#navigation").show();
 		}
 	}
@@ -546,7 +546,7 @@ function initGraph() {
 	$("#display").bind("contextmenu", function(e) {
 		return false;
 	});
-	$("#difflist").click(function(e) {
+	$("#diffList").click(function(e) {
 		selectFromList(e);
 	});
 
