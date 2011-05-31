@@ -103,7 +103,7 @@ class DiffaCastorSerializableConfig {
     val endpoints = this.endpoints.map(_.toDiffaEndpoint).toSet
     val groups = this.groups.map(g => PairGroup(g.name)).toSet
     val pairs = for (g <- this.groups; p <- g.pairs) yield p.toPairDef(g.name)
-    val repairActions = for (g <- this.groups; p <- g.pairs; a <- p.repairActions) yield a
+    val repairActions = for (g <- this.groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }
 
     DiffaConfig(users, properties, endpoints, groups, pairs.toSet, repairActions.toSet)
   }

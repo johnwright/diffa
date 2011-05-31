@@ -147,9 +147,6 @@
     <field name="path" type="string">
       <bind-xml name="path" node="attribute" />
     </field>
-    <field name="pairKey" type="string">
-      <bind-xml name="pair-key" node="attribute" />
-    </field>
   </class>
 
   <class name="net.lshift.diffa.agent.rest.DiffaCastorSerializableConfig">

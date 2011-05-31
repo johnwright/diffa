@@ -76,7 +76,7 @@ class DiffaConfigReaderWriterTest {
         </endpoint>
         <group name="gaa">
           <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5">
-            <repair-action key="action-1" name="Resend Sauce" scope="entity" path="/foo/bar/" pair-key="ab" />
+            <repair-action key="action-1" name="Resend Sauce" scope="entity" path="/foo/bar/" />
           </pair>
         </group>
         <group name="gbb">
