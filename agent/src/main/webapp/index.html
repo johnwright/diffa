@@ -31,21 +31,43 @@
 	<link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/>
 
 	<script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
-	<script type="text/javascript" src="js/jquery-ui-slider.1.8.5.min.js" charset="utf-8"></script>
-	<script type="text/javascript" src="js/jquery.color.js" charset="utf-8"></script>
-	<!--<script type="text/javascript" src="js/raphael.js" charset="utf-8"></script>-->
-	<!--<script type="text/javascript" src="js/app.js" charset="utf-8"></script>-->
 	<script type="text/javascript" src="js/dates.js" charset="utf-8"></script>
 	<script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
-</head>
 
+	<style type="text/css">
+		table.diffList {
+			table-layout: fixed;
+			font-size: 0.8em;
+		}
+
+		table.diffList th {
+			font-weight: bold;
+			text-transform: uppercase;
+			font-size: 1.05em;
+			border-bottom: 1px dotted silver;
+			border-top: 1px dotted silver;
+		}
+
+		table.diffList td {
+			word-wrap: break-word;
+		}
+
+		table.diffList tr.selected {
+			background-color: #FFF2CC;
+		}
+
+		table.diffList tbody tr {
+			cursor: pointer;
+		}
+	</style>
+</head>
 <body>
 <div id="wrap" class="jbasewrap">
 
 
 	<div id="nav_bar">
 		<a href="settings.html">Admin</a>
- 	</div>
+	</div>
 
 	<h1 class="padtop logo">Diffa</h1>
 
@@ -63,29 +85,25 @@
 		</div>
 	</div>
 
-	<!--<div id="heatmapContainer" class="margintop"></div>-->
-	<div id="heatmapcontrols" class="clear padtop padbottom">
-		<div class="right"><span id="errorContainer"></span></div>
-		<div id="scrollBarContainer" class="left">
-			<div id="scrollBar" class="left grid4col"></div>
-			<br class="clearboth"/>
-		</div>
-	</div>
 	<div id="diffListContainer" class="left">
-		<table id="difflist" summary="Table of differences" border="0" cellspacing="0" cellpadding="0">
+		<table id="diffList" class=" grid14col diffList" width="100%">
 			<thead>
 			<tr>
-				<th class="grid2col date">Date</th>
+				<th class="grid2col">Date</th>
 				<th class="grid2col">Time</th>
 				<th class="grid2col">Group</th>
 				<th class="grid2col">Pairing</th>
 				<th class="grid3col">Item ID</th>
-				<th class="grid4col">Difference type</th>
+				<th class="grid3col">Difference</th>
 			</tr>
 			</thead>
 			<tfoot id="navigation">
-			<tr><td colspan="6">&nbsp;</td></tr>
-			<tr><td colspan="6">&nbsp;</td></tr>
+			<tr>
+				<td colspan="6">&nbsp;</td>
+			</tr>
+			<tr>
+				<td colspan="6">&nbsp;</td>
+			</tr>
 			<tr>
 				<th id="previous" colspan="3" align="left"><a href="#">&lt;-Previous</a></th>
 				<th id="pagecount" colspan="2" align="center">nn of XX pages</th>
