@@ -66,6 +66,10 @@ var bucketSize = 3600;
 
 const TIME_FORMAT = "YYYY0MM0DDT0hh0mm0ssZ";
 var swimlaneLabels = [];
+
+function nearestHour()	{
+	return Date.today().add({hours: Date.now().getHours() + 1});
+}
 function loadBuckets() {
 	buckets = [];
 	for (var i = 0; i < maxRows; i++) {
@@ -76,7 +80,7 @@ function loadBuckets() {
 		buckets[i] = row;
 	}
 
-	endTime = new Date();
+	endTime = nearestHour();
 
 	var now = endTime.formatString(TIME_FORMAT);
 
