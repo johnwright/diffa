@@ -67,7 +67,7 @@ var bucketSize = 3600;
 const TIME_FORMAT = "YYYY0MM0DDT0hh0mm0ssZ";
 var swimlaneLabels = [];
 
-function nearestHour()	{
+function nearestHour() {
 	return Date.today().add({hours: Date.now().getHours() + 1});
 }
 function loadBuckets() {
@@ -244,11 +244,10 @@ function previous() {
 	fetchData();
 }
 
+var itemCount = 0;
 function next() {
 	if (selectedBucket != null && buckets[selectedBucket.row] != null) {
-		var bucketSize = buckets[selectedBucket.row][selectedBucket.column];
-
-		if ((page + 1) * listSize < bucketSize) {
+		if ((page + 1) * listSize < itemCount) {
 			page++;
 			fetchData();
 		}
@@ -256,8 +255,12 @@ function next() {
 }
 
 function fetchData() {
+	itemCount = 0;
 	if (selectedBucket != null && buckets[selectedBucket.row] != null) {
 		if (buckets[selectedBucket.row][selectedBucket.column] > 0) {
+			for (var i = 0; i < maxRows; i++) {
+				itemCount += buckets[i][selectedBucket.column];
+			}
 			var selectedStart = new Date(startTime.getTime() + (selectedBucket.column * bucketSize * 1000));
 			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
@@ -272,7 +275,7 @@ function fetchData() {
 					addRow(list, event);
 				});
 			});
-			$("#pagecount").text("Page " + (page + 1) + " of " + Math.ceil(buckets[selectedBucket.row][selectedBucket.column] / listSize));
+			$("#pagecount").text("Page " + (page + 1) + " of " + Math.ceil(itemCount / listSize));
 			$("#navigation").show();
 		}
 	}
@@ -474,12 +477,12 @@ function mouseDown(e) {
 	dragged = false;
 }
 
-function togglePolling(c)	{
-	if(c.x > toggleX && c.y < toggleY)	{
-		if(polling)	{
+function togglePolling(c) {
+	if (c.x > toggleX && c.y < toggleY) {
+		if (polling) {
 			stopPolling();
 		}
-		else	{
+		else {
 			startPolling();
 		}
 	}
