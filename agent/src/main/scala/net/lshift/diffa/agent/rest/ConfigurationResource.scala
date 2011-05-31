@@ -141,4 +141,5 @@ class ConfigurationResource extends AbstractRestResource {
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
   def getGroup(@PathParam("id") id:String) = maybe[PairGroup]( x => config.getGroup(x), id )
 
+  // TODO repair actions
 }

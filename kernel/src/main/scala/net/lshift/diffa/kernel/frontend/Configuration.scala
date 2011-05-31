@@ -48,12 +48,14 @@ class Configuration(val configStore: ConfigStore,
     diffaConfig.endpoints.foreach(e => createOrUpdateEndpoint(e))
     diffaConfig.groups.foreach(g => createOrUpdateGroup(g))
     diffaConfig.pairs.foreach(p => createOrUpdatePair(p))
+    diffaConfig.repairActions.foreach(createOrUpdateRepairAction)
 
     // Remove old pairs and endpoints
     val removedPairs = configStore.listGroups.flatMap(_.pairs.filter(currP => diffaConfig.pairs.find(newP => newP.pairKey == currP.key).isEmpty))
     removedPairs.foreach(p => deletePair(p.key))
     var removedEndpoints = configStore.listEndpoints.filter(currE => diffaConfig.endpoints.find(newE => newE.name == currE.name).isEmpty)
     removedEndpoints.foreach(e => deleteEndpoint(e.name))
+    // TODO remove old repair actions
 
     // Remove old groups. We leave these till last in case a pair that wasn't removed moved groups
     val removedGroups = configStore.listGroups.filter(currG => diffaConfig.groups.find(newG => newG.key == currG.group.key).isEmpty)
@@ -66,7 +68,8 @@ class Configuration(val configStore: ConfigStore,
       endpoints = configStore.listEndpoints.toSet,
       groups = configStore.listGroups.map(g => g.group).toSet,
       pairs = configStore.listGroups.flatMap(g => g.pairs.map(
-        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toSet
+        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toSet,
+      repairActions = configStore.listRepairActions.map(RepairActionDef.fromActionable).toSet
     )
   }
 
@@ -133,7 +136,14 @@ class Configuration(val configStore: ConfigStore,
 
   def deletePair(key: String): Unit = {
     log.debug("Processing pair delete request: " + key)
+
     supervisor.stopActor(key)
+
+    // delete repair actions first
+    val pair = configStore.getPair(key)
+    val actions = configStore.getRepairActionsForPair(pair)
+    actions.foreach(a => deleteRepairAction(a.key))
+
     configStore.deletePair(key)
     versionCorrelationStoreFactory.remove(key)
     matchingManager.onDeletePair(key)
@@ -172,5 +182,19 @@ class Configuration(val configStore: ConfigStore,
   def listGroups: Seq[GroupContainer] = {
     log.debug("Processing group list request")
     configStore.listGroups
+  }
+
+  def declareRepairAction(action: RepairActionDef) {
+    createOrUpdateRepairAction(action)
+  }
+
+  def createOrUpdateRepairAction(action: RepairActionDef) {
+    log.debug("Processing repair action declare/update request: " + action.key)
+    configStore.createOrUpdateRepairAction(action)
+  }
+
+  def deleteRepairAction(key: String) {
+    log.debug("Processing repair action delete request: " + key)
+    configStore.deleteRepairAction(key)
   }
 }

@@ -62,8 +62,8 @@ class HibernateConfigStoreTest {
     downstream1.name, groupKey1)
   val repairAction = new RepairActionDef(key="action-1",
                                          name="REPAIR_ACTION_NAME",
-                                         scope="ENTITY",
-                                         path="/actions/" + pairKey + "/resend/${id}",
+                                         scope="entity",
+                                         id="resend",
                                          pairKey=pairKey)
 
   val groupKey2 = "TEST_GROUP2"

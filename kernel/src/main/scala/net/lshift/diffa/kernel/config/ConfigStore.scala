@@ -186,6 +186,13 @@ case class RepairActionDef(
   def this() = this(null, null, null, null, null)
 }
 
+object RepairActionDef {
+  def fromActionable(a: Actionable): RepairActionDef = {
+    val id = "resend" // TODO get id out of path? D:
+    new RepairActionDef(a.key, a.name, id, a.scope, a.pairKey)
+  }
+}
+
 case class Actionable (
   @BeanProperty var key:String,
   @BeanProperty var name:String,
