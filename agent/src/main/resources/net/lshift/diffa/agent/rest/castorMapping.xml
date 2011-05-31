@@ -141,11 +141,11 @@
     <field name="name" type="string">
       <bind-xml name="name" node="attribute" />
     </field>
+    <field name="id" type="string">
+      <bind-xml name="id" node="attribute" />
+    </field>
     <field name="scope" type="string">
       <bind-xml name="scope" node="attribute" />
-    </field>
-    <field name="path" type="string">
-      <bind-xml name="path" node="attribute" />
     </field>
   </class>
 

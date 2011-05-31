@@ -179,8 +179,8 @@ case class PairDef(
 case class RepairActionDef(
   @BeanProperty var key: String,
   @BeanProperty var name: String,
+  @BeanProperty var id: String,
   @BeanProperty var scope: String,
-  @BeanProperty var path: String,
   @BeanProperty var pairKey: String
 ) {
   def this() = this(null, null, null, null, null)
@@ -194,6 +194,13 @@ case class Actionable (
   @BeanProperty var pairKey:String) {
 
  def this() = this(null, null, null, null, null)
+}
+
+object Actionable {
+  def fromRepairActionDef(a: RepairActionDef): Actionable = {
+    val path = "/actions/"+a.pairKey+"/"+a.id+"/${id}" // TODO support entity-scoped actions
+    new Actionable(a.key, a.name, a.scope, path, a.pairKey)
+  }
 }
 
 case class User(@BeanProperty var name: String,

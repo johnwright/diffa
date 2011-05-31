@@ -45,7 +45,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
   def createOrUpdateRepairAction(a: RepairActionDef) {
     sessionFactory.withSession(s => {
-      val toUpdate = new Actionable(a.key, a.name, a.scope, a.path, a.pairKey)
+      val toUpdate = Actionable.fromRepairActionDef(a)
       s.saveOrUpdate(toUpdate)
     })
   }
