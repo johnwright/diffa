@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
+import util.matching.Regex
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -187,8 +188,10 @@ case class RepairActionDef(
 }
 
 object RepairActionDef {
+  private val Path = new Regex("""/actions/.*/(.*)/\$\{id\}""")
+
   def fromActionable(a: Actionable): RepairActionDef = {
-    val id = "resend" // TODO get id out of path? D:
+    val Path(id) = a.path
     new RepairActionDef(a.key, a.name, id, a.scope, a.pairKey)
   }
 }
