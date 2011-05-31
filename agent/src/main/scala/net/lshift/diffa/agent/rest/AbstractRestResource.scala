@@ -19,7 +19,6 @@ package net.lshift.diffa.agent.rest
 import javax.ws.rs.WebApplicationException
 import javax.ws.rs.core.{Context, UriInfo, Response}
 import org.slf4j.{Logger, LoggerFactory}
-import net.lshift.diffa.kernel.util.MissingObjectException
 
 abstract class AbstractRestResource {
 
@@ -27,42 +26,9 @@ abstract class AbstractRestResource {
 
   @Context var uriInfo:UriInfo = null
 
-  def maybe[T](f: String => T, key:String) = {
-    try {
-      f(key)
-    }
-    catch {
-      case e:MissingObjectException => {
-        log.debug("Attempt to perform an operation with a non-existent key:" + key)
-        throw new WebApplicationException(404)
-      }
-    }
-  }
-
-  def maybe[T](f: Seq[String] => T, keys:Seq[String]) = {
-    try {
-      f(keys)
-    }
-    catch {
-      case e:MissingObjectException => {
-        log.debug("Attempt to perform an operation with a non-existent key:" + e.objName)
-        throw new WebApplicationException(404)
-      }
-    }
-  }
-
-  def maybeReturn[T](t:T, f: T => Unit) = {
-    try {
-      f(t)
-    }
-    catch {
-      case e:MissingObjectException => {
-        log.debug("Attempt to perform an operation with a non-existent entity: " + t)
-        throw new WebApplicationException(404)
-      }
-    }
-    t
-  }
+  def maybe[T](f: String => T, key:String) = f(key)
+  def maybe[T](f: Seq[String] => T, keys:Seq[String]) = f(keys)
+  def maybeReturn[T](t:T, f: T => Unit) = f(t)
 
   def create[T] (t:T, f: T => Unit, id: T => Any) = {
     try {
