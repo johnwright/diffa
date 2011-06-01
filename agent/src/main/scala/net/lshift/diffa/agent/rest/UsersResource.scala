@@ -23,15 +23,18 @@ import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.config.User
 import javax.ws.rs._
+import core.{UriInfo, Context}
+import net.lshift.diffa.agent.rest.ResponseUtils._
 
 /**
  * This handles all of the user specific admin
  */
 @Path("/security")
 @Component
-class UsersResource extends AbstractRestResource {
+class UsersResource {
 
   @Autowired var config:Configuration = null
+  @Context var uriInfo:UriInfo = null
 
   @GET
   @Path("/users")
@@ -44,13 +47,16 @@ class UsersResource extends AbstractRestResource {
   @Path("/users/{name}")
   @Description("Returns a user by its name.")
   @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
-  def getUser(@PathParam("name") name:String) = maybe[User]( x => config.getUser(x), name )
+  def getUser(@PathParam("name") name:String) = config.getUser(name)
 
   @POST
   @Path("/users")
   @Consumes(Array("application/json"))
   @Description("Registers a new user with the agent.")
-  def createEndpoint(e:User) = create[User] (e, (x:User) => config.createOrUpdateUser(x), (x:User) => x.name )
+  def createEndpoint(e:User) = {
+    config.createOrUpdateUser(e)
+    resourceCreated(e.name, uriInfo)
+  }
 
   @PUT
   @Consumes(Array("application/json"))
@@ -58,12 +64,12 @@ class UsersResource extends AbstractRestResource {
   @Path("/users/{name}")
   @Description("Updates the attributes of a user that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
-  def updateEndpoint(@PathParam("name") name:String, u:User) = maybeReturn[User]( u, x => config.createOrUpdateUser(u) )
+  def updateEndpoint(@PathParam("name") name:String, u:User) = config.createOrUpdateUser(u)
   // TODO This PUT is buggy
 
   @DELETE
   @Path("/users/{name}")
   @Description("Removes an endpoint that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
-  def deleteEndpoint(@PathParam("name") name:String) = maybe[Unit]( x => config.deleteUser(x), name )
+  def deleteEndpoint(@PathParam("name") name:String) = config.deleteUser(name)
 }

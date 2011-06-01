@@ -45,4 +45,6 @@ class ConfigurationRestClient(serverRootUrl:String)
     p
   }
 
+  def getEndpoint(name:String) = rpc("endpoints/" + name, classOf[Endpoint])
+
 }

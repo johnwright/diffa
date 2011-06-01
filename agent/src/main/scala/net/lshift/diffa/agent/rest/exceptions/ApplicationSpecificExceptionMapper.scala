@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest.support
+package net.lshift.diffa.agent.rest.exceptions
 
-import org.joda.time.DateTime
+import javax.ws.rs.core.Response
+import org.slf4j.LoggerFactory
+import javax.ws.rs.ext.{Provider, ExceptionMapper}
 
 /**
- * Useful constants for use in test cases.
+ * This logs all unhandled errors that occur in the application and returns an HTTP 500 to the requester.
  */
-object TestConstants {
-  val today = new DateTime
-  val yesterday = (new DateTime).minusDays(1)
-  val yearAgo = today.minusYears(1)
-  val agentURL = "http://localhost:19093/diffa-agent"
+@Provider
+class ApplicationSpecificExceptionMapper extends ExceptionMapper[Throwable] {
+
+  val log = LoggerFactory.getLogger(getClass)
+
+  def toResponse(t: Throwable) = {
+    log.error("Unhandled application exception", t)
+    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(t.toString).`type`("text/plain").build()
+  }
 }
