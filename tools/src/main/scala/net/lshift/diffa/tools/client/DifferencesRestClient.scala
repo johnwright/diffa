@@ -21,10 +21,11 @@ import com.sun.jersey.core.util.MultivaluedMapImpl
 import com.sun.jersey.api.client.{WebResource, ClientResponse}
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.participants.ParticipantType
-import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.{Response, MediaType}
 import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.messaging.json.{NotFoundException, AbstractRestClient}
+import org.joda.time.format.ISODateTimeFormat
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -34,6 +35,8 @@ class DifferencesRestClient(serverRootUrl:String)
         with DifferencesClient {
   val supportsStreaming = false
   val supportsPolling = true
+
+  val formatter = ISODateTimeFormat.basicDateTimeNoMillis
 
   /**
    * Creates a differencing session that can be polled for match events.
@@ -48,16 +51,14 @@ class DifferencesRestClient(serverRootUrl:String)
       case (acc, p) => acc + "," + p
     })
 
-    val p = resource.path("sessions").queryParams(params)
-    val response = p.post(classOf[ClientResponse])
+    val path = resource.path("sessions").queryParams(params)
+    val response = path.post(classOf[ClientResponse])
 
-    val status = response.getClientResponseStatus    
-
-//    val prefix = url + "/" + context + "/" + root + "/sessions/"
+    val status = response.getClientResponseStatus
 
     status.getStatusCode match {
       case 201     => response.getLocation.toString.split("/").last
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int   => handleHTTPError(x, path, status)
     }
   }
 
@@ -72,8 +73,8 @@ class DifferencesRestClient(serverRootUrl:String)
   }
 
   def getScanStatus(sessionId: String) = {
-    val p = resource.path("sessions").path(sessionId).path("sync")
-    val media = p.accept(MediaType.APPLICATION_JSON_TYPE)
+    val path = resource.path("sessions").path(sessionId).path("sync")
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
     val response = media.get(classOf[ClientResponse])
 
     val status = response.getClientResponseStatus
@@ -83,9 +84,13 @@ class DifferencesRestClient(serverRootUrl:String)
         val responseData = response.getEntity(classOf[java.util.Map[String, String]])
         responseData.map {case (k, v) => k -> PairSyncState.valueOf(v) }.toMap
       }
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int   => handleHTTPError(x, path, status)
     }
   }
+
+
+  def handleHTTPError(x:Int, path:WebResource, status:ClientResponse.Status) =
+    throw new RuntimeException("HTTP %s for resource %s ; Reason: %s".format(x, path ,status.getReasonPhrase))
 
   /**
    * This will poll the session identified by the id parameter for match events.
@@ -100,15 +105,30 @@ class DifferencesRestClient(serverRootUrl:String)
   def poll(sessionId:String, sinceSeqId:String) : Array[SessionEvent] =
     pollInternal(resource.path("sessions/" + sessionId).queryParam("since", sinceSeqId))
 
+  def page(sessionId:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
+    val path = resource.path("sessions/" + sessionId + "/page")
+                       .queryParam("range-start", formatter.print(from))
+                       .queryParam("range-end", formatter.print(until))
+                       .queryParam("offset", offset.toString)
+                       .queryParam("length", length.toString)
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.get(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 200 => response.getEntity(classOf[Array[SessionEvent]])
+      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+    }
+  }
+
   def eventDetail(sessionId:String, evtSeqId:String, t:ParticipantType.ParticipantType) : String = {
-    val p = resource.path("events/" + sessionId + "/" + evtSeqId + "/" + t.toString )
-    val media = p.accept(MediaType.TEXT_PLAIN_TYPE)
+    val path = resource.path("events/" + sessionId + "/" + evtSeqId + "/" + t.toString )
+    val media = path.accept(MediaType.TEXT_PLAIN_TYPE)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 200    => response.getEntity(classOf[String])
       case 404    => throw new NotFoundException(sessionId)
-      case x:Int  => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int  => handleHTTPError(x, path, status)
     }
   }
 
@@ -126,7 +146,7 @@ class DifferencesRestClient(serverRootUrl:String)
     val status = response.getClientResponseStatus
 
     status.getStatusCode match {
-      case 200 => response.getEntity(classOf[Array[SessionEvent]])
+      case 200   => response.getEntity(classOf[Array[SessionEvent]])
       case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
     }
 

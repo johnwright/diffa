@@ -26,37 +26,45 @@ object TestEnvironments {
 
   private val amqpConnectorHolder = new ConnectorHolder()
 
-  lazy val abSame =
-    new TestEnvironment("abSame",
-                        new HttpParticipants(20094, 20095),
+  // Each environment will need participants running on their own ports. To do this, we'll simply provide
+  // a mechanism for portOffset.
+  private var portOffset = 0
+  private def nextPort = this.synchronized {
+    portOffset += 1
+    20194 + portOffset
+  }
+
+  def same(key:String) =
+    new TestEnvironment(key,
+                        new HttpParticipants(nextPort, nextPort),
                         { env: TestEnvironment => new ChangesRestClient(env.serverRoot) },
                         SameVersionScheme)
 
-  lazy val abCorrelated =
-    new TestEnvironment("abCorrelated",
-                        new HttpParticipants(20194, 20195),
+  def correlated(key:String) =
+    new TestEnvironment(key,
+                        new HttpParticipants(nextPort, nextPort),
                         { env: TestEnvironment => new ChangesRestClient(env.serverRoot) },
                         CorrelatedVersionScheme)
 
-  lazy val abSameAmqp =
-    new TestEnvironment("abSameAmqp",
+  def sameAmqp(key:String) =
+    new TestEnvironment(key,
                         new AmqpParticipants(amqpConnectorHolder,
-                                             "participant-us-same",
-                                             "participant-ds-same",
-                                             "changes-same"),
+                                             "participant-us-same" + key,
+                                             "participant-ds-same" + key,
+                                             "changes-same" + key),
                         { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
-                                                     "changes-same",
+                                                     "changes-same" + key,
                                                      10000) },
                         SameVersionScheme)
 
-  lazy val abCorrelatedAmqp =
-    new TestEnvironment("abCorrelatedAmqp",
+  def correlatedAmqp(key:String) =
+    new TestEnvironment(key,
                         new AmqpParticipants(amqpConnectorHolder,
-                                             "participant-us-correlated",
-                                             "participant-ds-correlated",
-                                             "changes-correlated"),
+                                             "participant-us-correlated" + key,
+                                             "participant-ds-correlated" + key,
+                                             "changes-correlated" + key),
                         { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
-                                                     "changes-correlated",
+                                                     "changes-correlated" + key,
                                                      10000) },
                         CorrelatedVersionScheme)
 }

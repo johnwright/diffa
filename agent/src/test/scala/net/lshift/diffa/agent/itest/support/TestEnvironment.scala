@@ -69,8 +69,11 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
+  createPair
 
+  def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
+  def deletePair = configurationClient.deletePair(pairKey)
+  
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
   val downstreamClient: DownstreamParticipant = participants.downstreamClient

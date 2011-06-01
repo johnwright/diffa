@@ -26,6 +26,6 @@ trait ConfigurationClient {
   def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean, categories:java.util.Map[String,CategoryDescriptor]) : Endpoint
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int,
                   upstreamName: String, downstreamName: String, groupKey: String):PairDef
-
+  def deletePair(pairKey: String) : Unit
   def getEndpoint(name:String) : Endpoint
 }

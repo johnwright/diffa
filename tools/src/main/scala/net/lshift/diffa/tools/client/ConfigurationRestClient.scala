@@ -21,6 +21,8 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{CategoryDescriptor, Endpoint, PairDef, PairGroup}
+import javax.ws.rs.core.MediaType
+import com.sun.jersey.api.client.ClientResponse
 
 class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")
@@ -45,6 +47,14 @@ class ConfigurationRestClient(serverRootUrl:String)
     p
   }
 
-  def getEndpoint(name:String) = rpc("endpoints/" + name, classOf[Endpoint])
+  def deletePair(pairKey: String) = {
+    val response = resource.path("pairs").path(pairKey).delete(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 204     => // Successfully submitted (202 is "No Content")
+      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+    }
+  }
 
+  def getEndpoint(name:String) = rpc("endpoints/" + name, classOf[Endpoint])
 }

@@ -31,6 +31,7 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import java.util.{UUID, Properties}
 import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
+import net.lshift.diffa.kernel.client.DifferencesClient
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -70,7 +71,6 @@ trait CommonDifferenceTests {
 
   @Test
   def detectionTimeShouldBeMatchTheMostRecentUpdatedTimeOnAParticipatingEntity = {
-    val then = new DateTime()
     val (diffs,_) = getVerifiedDiffsWithSessionId()
     assertNotNull(diffs(0))
     val detectionTime = diffs(0).detectedAt
@@ -99,10 +99,37 @@ trait CommonDifferenceTests {
     var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
 
-    val diffs = tryAgain(sessionId,20,100)
+    val diffs = pollForAllDifferences(sessionId)
 
-    assertNotNull(diffs)
     assertFalse(diffs.isEmpty)
+  }
+
+  @Test
+  def shouldPageDifferences = {
+    val start = new DateTime
+    val end = start.plusMinutes(2)
+
+    val size = 10
+    for (i <- 1 to size) {
+      env.addAndNotifyUpstream("" + i, env.bizDate(yesterday), "" + i)
+    }
+    val sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+
+    val offset = 5
+
+    val diffs1 = tryAgain((d:DifferencesClient) => d.page(sessionId, start, end, offset, size))
+    assertEquals(size - offset, diffs1.size)
+
+    // Select the 7th and 8th differences and validate their content
+    val subset = 2
+    val diffs2 = tryAgain((d:DifferencesClient) => d.page(sessionId, start, end, 6, subset))
+    assertEquals(subset, diffs2.size)
+
+    // The events aren't guaranteed to come back in any particular order
+    val bySeqId = diffs2.sortBy(evt => evt.seqId)
+
+    assertEquals("Unexpected sequence %s; expected to see sequence 7, all were: %s".format(bySeqId(0), bySeqId), "7", bySeqId(0).seqId)
+    assertEquals("Unexpected sequence %s; expected to see sequence 8".format(bySeqId(1)), "8", bySeqId(1).seqId)
   }
 
   @Test
@@ -114,7 +141,7 @@ trait CommonDifferenceTests {
     var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), up)
 
-    val diffs = tryAgain(sessionId,20,100)
+    val diffs = pollForAllDifferences(sessionId)
     val seqId1 = diffs(0).seqId
 
     val up1 = env.diffClient.eventDetail(sessionId, seqId1, ParticipantType.UPSTREAM)
@@ -125,7 +152,7 @@ trait CommonDifferenceTests {
 
     env.addAndNotifyDownstream("abc", env.bizDate(yesterday), down)
     Thread.sleep(2000)
-    val diffs2 = tryAgain(sessionId,20,100)
+    val diffs2 = pollForAllDifferences(sessionId)
     assertEquals(1, diffs2.length)
     val seqId2 = diffs2(0).seqId
 
@@ -175,7 +202,7 @@ trait CommonDifferenceTests {
       scanStatus = env.diffClient.getScanStatus(sessionId)
       i-=1
     }
-    assertTrue("Unexpected scan state (seesion = %s): %s".format(sessionId, scanStatus), isUpToDate(scanStatus))
+    assertTrue("Unexpected scan state (session = %s): %s".format(sessionId, scanStatus), isUpToDate(scanStatus))
 
     sessionId
   }
@@ -186,20 +213,23 @@ trait CommonDifferenceTests {
     env.upstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
 
     var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
-    val diffs = tryAgain(sessionId,10,100)
+    val diffs = pollForAllDifferences(sessionId)
 
     assertNotNull(diffs)
     assertFalse(diffs.isEmpty)
     (diffs, sessionId)
   }
 
-  def tryAgain(sessionId:String, n:Int, wait:Int) = {
+  def pollForAllDifferences(sessionId:String,n:Int = 20, wait:Int = 100) =
+    tryAgain((d:DifferencesClient) => d.poll(sessionId),n,wait)
+
+  def tryAgain(poll:DifferencesClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
     var i = n
-    var diffs = env.diffClient.poll(sessionId)
+    var diffs = poll(env.diffClient)
     while(diffs.isEmpty && i > 0) {
       Thread.sleep(wait)
 
-      diffs = env.diffClient.poll(sessionId)
+      diffs = poll(env.diffClient)
       i-=1
     }
     assertNotNull(diffs)
