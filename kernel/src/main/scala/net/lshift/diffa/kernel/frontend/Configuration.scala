@@ -55,7 +55,6 @@ class Configuration(val configStore: ConfigStore,
     removedPairs.foreach(p => deletePair(p.key))
     var removedEndpoints = configStore.listEndpoints.filter(currE => diffaConfig.endpoints.find(newE => newE.name == currE.name).isEmpty)
     removedEndpoints.foreach(e => deleteEndpoint(e.name))
-    // TODO remove old repair actions
 
     // Remove old groups. We leave these till last in case a pair that wasn't removed moved groups
     val removedGroups = configStore.listGroups.filter(currG => diffaConfig.groups.find(newG => newG.key == currG.group.key).isEmpty)
@@ -136,14 +135,7 @@ class Configuration(val configStore: ConfigStore,
 
   def deletePair(key: String): Unit = {
     log.debug("Processing pair delete request: " + key)
-
     supervisor.stopActor(key)
-
-    // delete repair actions first
-    val pair = configStore.getPair(key)
-    val actions = configStore.listRepairActionsForPair(pair)
-    actions.foreach(a => deleteRepairAction(a.key))
-
     configStore.deletePair(key)
     versionCorrelationStoreFactory.remove(key)
     matchingManager.onDeletePair(key)

@@ -73,7 +73,7 @@ class HibernateConfigStoreTest {
 
   val TEST_USER = User("foo","foo@bar.com")
 
-  def declareAll: Unit = {
+  def declareAll() {
     configStore.createOrUpdateEndpoint(upstream1)
     configStore.createOrUpdateEndpoint(upstream2)
     configStore.createOrUpdateEndpoint(downstream1)
@@ -243,6 +243,16 @@ class HibernateConfigStoreTest {
     configStore.deletePair(pairKey)
     expectMissingObject("pair") {
       configStore.getPair(pairKey)
+    }
+  }
+
+  @Test
+  def testDeletePairCascade {
+    declareAll()
+    assertEquals(Some(repairAction.key), configStore.listRepairActions.headOption.map(_.key))
+    configStore.deletePair(pairKey)
+    expectMissingObject("repair action") {
+      configStore.getRepairAction(repairAction.key)
     }
   }
 

@@ -62,8 +62,8 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
   def deletePair(key: String): Unit = sessionFactory.withSession(s => {
     val pair = getPair(s, key)
+    listRepairActionsForPair(pair).foreach(s.delete)
     s.delete(pair)
-    // TODO delete repair actions
   })
 
   def createOrUpdateGroup(g: PairGroup): Unit = sessionFactory.withSession( s => s.saveOrUpdate(g) )
@@ -73,8 +73,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
     // Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
     // which would create an infinite loop in computing the hashCode of pairs and groups
-    getPairsInGroup(s, group).foreach(x => s.delete(x))
-    // TODO delete repair actions
+    getPairsInGroup(s, group).foreach(p => deletePair(p.key))
     s.delete(group)
   })
 
