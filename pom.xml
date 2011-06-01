@@ -368,7 +368,7 @@
           <header>etc/header.txt</header>
           <excludes>
             <exclude>**/.idea/</exclude>            
-            <exclude>**/raphael.js/</exclude>            
+            <exclude>**/datejs/</exclude>
             <exclude>**/qunit.*</exclude>            
             <exclude>**/grid.css</exclude>
             <exclude>**/grid24.css</exclude>
