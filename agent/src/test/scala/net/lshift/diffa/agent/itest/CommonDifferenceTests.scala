@@ -127,7 +127,7 @@ trait CommonDifferenceTests {
     val diffs2 = tryAgain((d:DifferencesClient) => d.page(sessionId, start, end, 6, subset))
 
     assertTrue("Diffs was %s, but should have been maximally %s".format(diffs2.length,subset), subset >= diffs2.length)
-    // TODO Put back in
+    // TODO [#224] Put back in
     //assertEquals(subset, diffs2.size)
 
     // The events aren't guaranteed to come back in any particular order
