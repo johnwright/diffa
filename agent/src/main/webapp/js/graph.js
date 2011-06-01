@@ -216,7 +216,7 @@ function addRow(table, event) {
 	var row = $("<tr id='evt_" + event.seqId + "'></tr>")
 		.append("<td class='date'>" + date + "</td>")
 		.append("<td>" + time + "</td>")
-		.append("<td id='" + event.detectedAt + "_" + event.objId.pairKey + "_group'></td>")
+		/*.append("<td id='" + event.detectedAt + "_" + event.objId.pairKey + "_group'></td>")*/
 		.append("<td>" + event.objId.pairKey + "</td>")
 		.append("<td>" + event.objId.id + "</td>")
 		.data("event", event);
