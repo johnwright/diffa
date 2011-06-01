@@ -51,4 +51,8 @@ class ConfigurationRestClient(serverRootUrl:String)
     action
   }
 
+  def removeRepairAction(key: String) {
+    delete("/repair-actions/"+key)
+  }
+
 }

@@ -47,4 +47,13 @@ trait CommonActionTests {
     assertNotNull(response)
     assertEquals("success", response.result)    
   }
+
+  @Test
+  def canDeleteAction {
+    def actionKey = env.actionsClient.listActions(env.pairKey).headOption.map(_.key)
+    assertEquals(Some(env.actionKey), actionKey)
+    env.configurationClient.removeRepairAction(env.actionKey)
+    assertEquals(None, actionKey)
+  }
+
 }

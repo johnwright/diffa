@@ -66,6 +66,12 @@ class ConfigurationResource extends AbstractRestResource {
   @Description("Returns a list of all the repair actions registered with the agent.")
   def listRepairActions: Array[RepairAction] = config.listRepairActions.toArray
 
+  @DELETE
+  @Path("/repair-actions/{id}")
+  @Description("Removes an action that is registered with the agent.")
+  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Action ID")))
+  def deleteRepairAction(@PathParam("id") id:String) = maybe[Unit](config.deleteRepairAction _, id)
+
   @GET
   @Produces(Array("application/json"))
   @Path("/endpoints/{id}")

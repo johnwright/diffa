@@ -58,6 +58,10 @@ class TestEnvironment(val pairKey: String,
   val upstream = new UpstreamMemoryParticipant(versionScheme.upstreamVersionGen)
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
+  // Actions
+  val actionKey = "action-1"
+  val actionName = "Resend Source"
+  val actionId = "resend"
 
   // Categories
   val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
@@ -71,7 +75,7 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
-  configurationClient.declareRepairAction("action-1", "Resend Source", "resend", "entity", pairKey)
+  configurationClient.declareRepairAction(actionKey, actionName, actionId, "entity", pairKey)
 
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
