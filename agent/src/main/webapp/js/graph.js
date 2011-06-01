@@ -64,11 +64,12 @@ function createSession() {
 var startTime, endTime;
 var bucketSize = 3600;
 
-const TIME_FORMAT = "YYYY0MM0DDT0hh0mm0ssZ";
+const TIME_FORMAT = "yyyyMMddTHHmmssZ";
 var swimlaneLabels = [];
 
 function nearestHour() {
-	return Date.today().add({hours: Date.now().getHours() + 1});
+	var hours = (new Date()).getHours() + 1;
+	return Date.today().add({hours: hours});
 }
 function loadBuckets() {
 	buckets = [];
@@ -82,10 +83,10 @@ function loadBuckets() {
 
 	endTime = nearestHour();
 
-	var now = endTime.formatString(TIME_FORMAT);
+	var now = endTime.toString(TIME_FORMAT);
 
-	startTime = new Date(endTime - (3600 * maxColumns * 1000));
-	var dayBeforeNow = startTime.formatString(TIME_FORMAT);
+	startTime = endTime.add({hours: -1 * maxColumns});
+	var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
 	$.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=3600", function(data) {
 		var indexer = 0;
@@ -195,8 +196,6 @@ function renderEvent(event) {
 			getContent("#item2 pre", downstreamLabel, "downstream");
 		});
 	}
-
-	//renderActions();
 }
 
 function selectFromList(event) {
@@ -212,8 +211,8 @@ function selectFromList(event) {
 }
 
 function addRow(table, event) {
-	var time = new Date(event.detectedAt).formatString("0hh:0mm:0ss");
-	var date = new Date(event.detectedAt).formatString("DD/MM/YYYY");
+	var time = new Date(event.detectedAt).toString("HH:mm:ss");
+	var date = new Date(event.detectedAt).toString("dd/MM/yyyy");
 	var row = $("<tr id='evt_" + event.seqId + "'></tr>")
 		.append("<td class='date'>" + date + "</td>")
 		.append("<td>" + time + "</td>")
@@ -265,7 +264,7 @@ function fetchData() {
 			var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
 			var url = "rest/diffs/sessions/" + sessionId + "/page?range-start="
-				+ selectedStart.formatString(TIME_FORMAT) + "&range-end=" + selectedEnd.formatString(TIME_FORMAT)
+				+ selectedStart.toString(TIME_FORMAT) + "&range-end=" + selectedEnd.toString(TIME_FORMAT)
 				+ "&offset=" + (page * listSize) + "&length=" + listSize;
 
 			$.get(url, function(data) {
@@ -408,8 +407,8 @@ function drawGrid() {
 	for (var sc = 0; sc < maxColumns; sc++) {
 		if (sc % 3 == 0) {
 			var tick = new Date(startTime.getTime() + (sc * bucketSize * 1000));
-			scaleContext.fillText(tick.formatString("0DD/0MM"), sc * gridSize, 10);
-			scaleContext.fillText(tick.formatString("0hh:0mm"), sc * gridSize, 20);
+			scaleContext.fillText(tick.toString("dd/MM"), sc * gridSize, 10);
+			scaleContext.fillText(tick.toString("HH:mm"), sc * gridSize, 20);
 		}
 	}
 }
