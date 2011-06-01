@@ -18,7 +18,7 @@ package net.lshift.diffa.agent.rest
 
 import org.springframework.stereotype.Component
 import javax.ws.rs._
-import core.{EntityTag, Context, Request, Response}
+import core._
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
 import org.joda.time.format.DateTimeFormat
@@ -30,13 +30,14 @@ import net.lshift.diffa.kernel.participants.ParticipantType
 
 @Path("/diffs")
 @Component
-class DifferencesResource extends AbstractRestResource {
+class DifferencesResource {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
 
   @Autowired var session:SessionManager = null
+  @Context var uriInfo:UriInfo = null
   
   @POST
   @Path("/sessions")
@@ -57,7 +58,7 @@ class DifferencesResource extends AbstractRestResource {
     if (log.isTraceEnabled) {
       log.debug("Creating a subscription for this scope: " + scope)
     }
-    val sessionId = maybe((_:Seq[String]) => session.start(scope), scope.includedPairs)
+    val sessionId = session.start(scope)
     val uri = uriInfo.getBaseUriBuilder.path("diffs/sessions/" + sessionId).build()
     Response.created(uri).`type`("text/plain").build()
   }
