@@ -27,4 +27,5 @@ trait ConfigurationClient {
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int,
                   upstreamName: String, downstreamName: String, groupKey: String):PairDef
   def deletePair(pairKey: String) : Unit
+  def getEndpoint(name:String) : Endpoint
 }

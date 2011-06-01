@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 /**
  * Standard implementation of the SessionManager.
@@ -173,9 +174,24 @@ class DefaultSessionManager(
     }
   }
 
-  def retrieveSessionVersion(id:String) = sessionsByKey(id).currentVersion
-  def retrieveEventsSince(id:String, evtSeqId:String) = sessionsByKey(id).retrieveEventsSince(evtSeqId)
-  def retrieveAllEvents(id:String) = sessionsByKey(id).retrieveAllUnmatchedEvents
+  /**
+   * If the session does not exist, throw a MissingObjectException which will be handled in a higher layer
+   */
+  def safeGetSession(id:String) = {
+    sessionsByKey.get(id) match {
+      case Some(s) => s
+      case None    => {
+        if (log.isTraceEnabled) {
+          log.trace("Request for non-existent session: %s".format(id))
+        }
+        throw new MissingObjectException(id)
+      }
+    }
+  }
+
+  def retrieveSessionVersion(id:String) = safeGetSession(id).currentVersion
+  def retrieveEventsSince(id:String, evtSeqId:String) = safeGetSession(id).retrieveEventsSince(evtSeqId)
+  def retrieveAllEvents(id:String) = safeGetSession(id).retrieveAllUnmatchedEvents
 
   def retrieveAllEventsInInterval(sessionId:String, interval:Interval) =
     sessionsByKey(sessionId).retrieveUnmatchedEvents(interval)
@@ -207,7 +223,7 @@ class DefaultSessionManager(
                      check:Function1[SessionEvent,Boolean],
                      resolve:(net.lshift.diffa.kernel.config.Pair) => Endpoint,
                      p:(Endpoint) => Participant): String = {
-    val event = sessionsByKey(sessionID).getEvent(evtSeqId)
+    val event = safeGetSession(sessionID).getEvent(evtSeqId)
     check(event) match {
       case true  => {
        val versionID = event.objId

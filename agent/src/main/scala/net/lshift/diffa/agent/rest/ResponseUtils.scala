@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest.support
+package net.lshift.diffa.agent.rest
 
-import org.joda.time.DateTime
+import javax.ws.rs.core.{UriInfo, Response}
 
 /**
- * Useful constants for use in test cases.
+ * Helper class to provide commonly used HTTP responses
  */
-object TestConstants {
-  val today = new DateTime
-  val yesterday = (new DateTime).minusDays(1)
-  val yearAgo = today.minusYears(1)
-  val agentURL = "http://localhost:19093/diffa-agent"
+object ResponseUtils {
+
+  /**
+   * Constructs an HTTP 201 response for the given identifier in the given context
+   */
+  def resourceCreated(id:String, uriInfo:UriInfo) = {
+    val uri = uriInfo.getAbsolutePathBuilder().path(id).build()
+    Response.created(uri).build()
+  }
 }

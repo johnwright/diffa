@@ -20,13 +20,12 @@ import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, Downstre
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
-import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
 import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
-import collection.mutable.HashMap
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
-import net.lshift.diffa.kernel.config.{CategoryDescriptor, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import net.lshift.diffa.agent.itest.support.TestConstants._
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -37,7 +36,7 @@ class TestEnvironment(val pairKey: String,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
 
-  val serverRoot = "http://localhost:19093/diffa-agent"
+  def serverRoot = agentURL
   val contentType = "application/json"
   val matchingTimeout = 1  // 1 second
 

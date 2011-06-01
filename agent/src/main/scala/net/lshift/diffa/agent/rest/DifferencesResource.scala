@@ -18,7 +18,7 @@ package net.lshift.diffa.agent.rest
 
 import org.springframework.stereotype.Component
 import javax.ws.rs._
-import core.{EntityTag, Context, Request, Response}
+import core._
 import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Description}
@@ -32,7 +32,7 @@ import org.joda.time.{Interval, DateTime}
 
 @Path("/diffs")
 @Component
-class DifferencesResource extends AbstractRestResource {
+class DifferencesResource {
 
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
@@ -40,6 +40,7 @@ class DifferencesResource extends AbstractRestResource {
   val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
 
   @Autowired var sessionManager: SessionManager = null
+  @Context var uriInfo:UriInfo = null
 
   @POST
   @Path("/sessions")
@@ -57,9 +58,10 @@ class DifferencesResource extends AbstractRestResource {
       case null => SessionScope.all
       case _ => SessionScope.forPairs(pairs.split(","): _*)
     }
-
-    log.debug("Creating a subscription for this scope: " + scope)
-    val sessionId = maybe((_: Seq[String]) => sessionManager.start(scope), scope.includedPairs)
+    if (log.isTraceEnabled) {
+      log.debug("Creating a subscription for this scope: " + scope)
+    }
+    val sessionId = sessionManager.start(scope)
     val uri = uriInfo.getBaseUriBuilder.path("diffs/sessions/" + sessionId).build()
     Response.created(uri).`type`("text/plain").build()
   }
@@ -67,10 +69,11 @@ class DifferencesResource extends AbstractRestResource {
   @POST
   @Path("/sessions/{sessionId}/sync")
   @Description("Forces Diffa to execute a synchronisation operation on the pairs underlying the session")
-  @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
-  def synchroniseSession(@PathParam("sessionId") sessionId: String, @Context request: Request): Response = {
-    log.debug("Sync requested for sessionId = " + sessionId)
-
+  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
+  def synchroniseSession(@PathParam("sessionId") sessionId:String, @Context request:Request) : Response = {
+    if (log.isTraceEnabled) {
+      log.trace("Sync requested for sessionId = " + sessionId)
+    }
     sessionManager.runSync(sessionId)
     Response.status(Response.Status.ACCEPTED).build
   }
@@ -105,33 +108,26 @@ class DifferencesResource extends AbstractRestResource {
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))
   @Description("Returns a list of outstanding differences in the current session. ")
-  @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
-  @OptionalParams(Array(new OptionalParam(name = "since", datatype = "integer",
-    description = "This will return differences subsequent to the given sequence number.")))
-  def getDifferences(@PathParam("sessionId") sessionId: String,
-                     @QueryParam("since") since: String,
-                     @Context request: Request): Response = {
-    try {
-      // Evaluate whether the version of the session has changed
-      val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
-      request.evaluatePreconditions(sessionVsn) match {
-        case null => // We'll continue with the request
-        case r => throw new WebApplicationException(r.build)
-      }
+  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
+  @OptionalParams(Array(new OptionalParam(name="since", datatype="integer",
+      description="This will return differences subsequent to the given sequence number.")))
+  def getDifferences(@PathParam("sessionId") sessionId:String,
+                     @QueryParam("since") since:String,
+                     @Context request:Request) : Response = {
 
-      val diffs = since match {
-        case null => sessionManager.retrieveAllEvents(sessionId)
-        case _ => sessionManager.retrieveEventsSince(sessionId, since)
-      }
+    // Evaluate whether the version of the session has changed
+    val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
+    request.evaluatePreconditions(sessionVsn) match {
+      case null => // We'll continue with the request
+      case r    => throw new WebApplicationException(r.build)
+    }
 
-      Response.ok(diffs.toArray).tag(sessionVsn).build
+    val diffs = since match {
+      case null => sessionManager.retrieveAllEvents(sessionId)
+      case _    => sessionManager.retrieveEventsSince(sessionId, since)
     }
-    catch {
-      case e: NoSuchElementException => {
-        log.error("Unsucessful query on sessionId = " + sessionId + "; since = " + since)
-        throw new WebApplicationException(404)
-      }
-    }
+
+    Response.ok(diffs.toArray).tag(sessionVsn).build
   }
 
   @GET
@@ -253,29 +249,8 @@ class DifferencesResource extends AbstractRestResource {
     new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID"),
     new MandatoryParam(name = "participant", datatype = "string", description = "Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
   ))
-  def getDetail(@PathParam("sessionId") sessionId: String,
-                @PathParam("evtSeqId") evtSeqId: String,
-                @PathParam("participant") participant: String): String = {
-    log.trace("Detail params sessionId = " + sessionId + "; sequence = " + evtSeqId + "; participant = " + participant)
-
-    try {
-      sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.withName(participant))
-    }
-    catch {
-      case e: Exception => {
-        log.error("Unsucessful query on sessionId = " + sessionId + "; sequence = " + evtSeqId + " participant = " + participant, e)
-        throw new WebApplicationException(404)
-      }
-    }
-  }
-
-  def maybe(s: String) = {
-    try {
-      parser.parseDateTime(s)
-    }
-    catch {
-      case e: Exception => null
-    }
-  }
-
+  def getDetail(@PathParam("sessionId") sessionId:String,
+                @PathParam("evtSeqId") evtSeqId:String,
+                @PathParam("participant") participant:String) : String =
+    sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.withName(participant))
 }
