@@ -15,7 +15,6 @@
  */
 package net.lshift.diffa.agent.rest
 
-import net.lshift.diffa.kernel.frontend.DiffaConfig
 import java.lang.{String, Class}
 import javax.ws.rs.core.{MultivaluedMap, MediaType}
 import java.lang.annotation.Annotation
@@ -31,6 +30,7 @@ import scala.collection.JavaConversions._
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.differencing.PairSyncState
+import net.lshift.diffa.kernel.frontend.DiffaConfig
 
 /**
  * Provider for encoding and decoding diffa configuration blocks.
@@ -97,16 +97,16 @@ class DiffaCastorSerializableConfig {
     this
   }
 
-  def toDiffaConfig:DiffaConfig = {
-    val users = this.users.toSet
-    val properties = this.properties.map(p => p.key -> p.value).toMap
-    val endpoints = this.endpoints.map(_.toDiffaEndpoint).toSet
-    val groups = this.groups.map(g => PairGroup(g.name)).toSet
-    val pairs = for (g <- this.groups; p <- g.pairs) yield p.toPairDef(g.name)
-    val repairActions = for (g <- this.groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }
+  def toDiffaConfig:DiffaConfig =
+    DiffaConfig(
+      users = users.toSet,
+      properties = properties.map(p => p.key -> p.value).toMap,
+      endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
+      groups = groups.map(g => PairGroup(g.name)).toSet,
+      pairs = (for (g <- groups; p <- g.pairs) yield p.toPairDef(g.name)).toSet,
+      repairActions = (for (g <- groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet
+    )
 
-    DiffaConfig(users, properties, endpoints, groups, pairs.toSet, repairActions.toSet)
-  }
 }
 
 class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String) {
