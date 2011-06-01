@@ -126,10 +126,10 @@ trait CommonDifferenceTests {
     assertEquals(subset, diffs2.size)
 
     // The events aren't guaranteed to come back in any particular order
-    diffs2.sortBy(evt => evt.upstreamVsn)
+    val bySeqId = diffs2.sortBy(evt => evt.seqId)
 
-    assertTrue("Unexpected diff %s; expected to contain vsn_7, all were: %s".format(diffs2(0), diffs2), diffs2(0).upstreamVsn.contains("vsn_7"))
-    assertTrue("Unexpected diff %s; expected to contain vsn_8".format(diffs2(1)), diffs2(1).upstreamVsn.contains("vsn_8"))
+    assertEquals("Unexpected sequence %s; expected to see sequence 7, all were: %s".format(bySeqId(0), bySeqId), "7", bySeqId(0).seqId)
+    assertEquals("Unexpected sequence %s; expected to see sequence 8".format(bySeqId(1)), "8", bySeqId(1).seqId)
   }
 
   @Test
@@ -223,7 +223,7 @@ trait CommonDifferenceTests {
   def pollForAllDifferences(sessionId:String,n:Int = 20, wait:Int = 100) =
     tryAgain((d:DifferencesClient) => d.poll(sessionId),n,wait)
 
-  def tryAgain(poll:DifferencesClient => Seq[SessionEvent], n:Int = 10, wait:Int = 100) : Seq[SessionEvent]= {
+  def tryAgain(poll:DifferencesClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
     var i = n
     var diffs = poll(env.diffClient)
     while(diffs.isEmpty && i > 0) {
