@@ -21,10 +21,10 @@ import com.sun.jersey.core.util.MultivaluedMapImpl
 import com.sun.jersey.api.client.{WebResource, ClientResponse}
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.participants.ParticipantType
-import net.lshift.diffa.messaging.json.AbstractRestClient
-import javax.ws.rs.core.{Response, MediaType}
+import javax.ws.rs.core.MediaType
 import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
+import net.lshift.diffa.messaging.json.{NotFoundException, AbstractRestClient}
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -106,8 +106,9 @@ class DifferencesRestClient(serverRootUrl:String)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
-      case 200 => response.getEntity(classOf[String])
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case 200    => response.getEntity(classOf[String])
+      case 404    => throw new NotFoundException(sessionId)
+      case x:Int  => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
     }
   }
 
