@@ -25,28 +25,22 @@ import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
  */
 class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) extends ActionsClient {
 
-  def listActions(pairKey: String) : Seq[Actionable] = {
-    val pair = config.getPair(pairKey)
-    val repairActions = config.listRepairActionsForPair(pair)
-    def resend() = repairActions.map(Actionable.fromRepairAction).toArray
-    withValidPair(pairKey, resend)
-  }
+  def listActions(pairKey: String) : Seq[Actionable] =
+    withValidPair(pairKey) { pair =>
+      val repairActions = config.listRepairActionsForPair(pair)
+      repairActions.map(Actionable.fromRepairAction)
+    }
 
-  def invoke(request:ActionableRequest) : InvocationResult = {
-
-    def result() = {
-      val pair = config.getPair(request.pairKey)
+  def invoke(request:ActionableRequest) : InvocationResult =
+    withValidPair(request.pairKey) { pair =>
       // TODO I think this creates a new instance for each invocation, not sure whether this is an issue or not
       val participant = factory.createUpstreamParticipant(pair.upstream)
       participant.invoke(request.actionId, request.entityId)
     }
-    
-    withValidPair(request.pairKey, result)
-  }
 
-  def withValidPair[T](pair:String, f: () => T) = {
-    config.getPair(pair)
-    f()
+  def withValidPair[T](pairKey: String)(f: Pair => T): T = {
+    val pair = config.getPair(pairKey)
+    f(pair)
   }
 
 }
