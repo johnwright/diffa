@@ -118,7 +118,9 @@ trait CommonDifferenceTests {
     val offset = 5
 
     val diffs1 = tryAgain((d:DifferencesClient) => d.page(sessionId, start, end, offset, size))
-    assertEquals(size - offset, diffs1.size)
+    val max = size - offset
+    val length = diffs1.size
+    assertTrue("Diffs was %s, but should have been maximally %s".format(length,max), max >= length)
 
     // Select the 7th and 8th differences and validate their content
     val subset = 2

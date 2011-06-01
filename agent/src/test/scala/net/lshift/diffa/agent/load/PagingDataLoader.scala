@@ -32,14 +32,14 @@ import com.eaio.uuid.UUID
 object PagingDataLoader {
 
   def main(args: Array[String]) {
-    val size = args match {
-      case Array(s) => s.toInt
-      case _        => 100
+    val (size, hours, pair) = args match {
+      case Array(s,h,p) => (s.toInt, h.toInt,p)
+      case _            => (100, 2, new UUID().toString)
     }
-    loadData(size)
+    loadData(size, hours, pair)
   }
 
-  def loadData(size:Int) = {
+  def loadData(size:Int, hours:Int, pair:String) = {
     val host = "http://localhost:19093/diffa-agent/"
 
     println("Loading %s events onto %s".format(size,host))
@@ -48,7 +48,6 @@ object PagingDataLoader {
     val changesClient = new ChangesRestClient(host)
     val diffsClient = new DifferencesRestClient(host)
 
-    val pair = new UUID().toString
     val up = "up"
     val down = "down"
 
@@ -62,7 +61,7 @@ object PagingDataLoader {
     configClient.declareGroup(group)
     configClient.declarePair(pair, "same", 0, up, down, group)
 
-    val start = new DateTime
+    val start = new DateTime().minusHours(hours)
 
     for (i <- 1 to size) {
       val timestamp = start.plusMinutes(i)
