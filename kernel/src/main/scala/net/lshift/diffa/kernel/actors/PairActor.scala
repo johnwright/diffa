@@ -139,6 +139,7 @@ case class PairActor(pairKey:String,
             flushBufferedEvents
             dropPendingScans
             leaveScanState(PairScanState.CANCELLED)
+            self.reply(true)
           }
           case c:VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
           case d:Deferrable                      => deferred.enqueue(d)
@@ -165,12 +166,26 @@ case class PairActor(pairKey:String,
     case c:ChangeMessage                   => handleChangeMessage(c)
     case d:DifferenceMessage               => handleDifferenceMessage(d)
     case FlushWriterMessage                => writer.flush()
-    case c:VersionCorrelationWriterCommand =>  {
+    case CancelMessage                     => {
+      if (logger.isDebugEnabled) {
+          logger.debug("%s : Received cancellation request in non-scanning state, ignoring".format(AlertCodes.CANCELLATION_REQUEST))
+      }
+      self.reply(true)
+    }
+    case c:VersionCorrelationWriterCommand => {
       logger.error("%s: Received command (%s) in non-scanning state - potential bug"
                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, c), c.exception)
     }
-    case ScanFailed(uuid)               => {
+    case ScanFailed(uuid)                  => {
       logger.error("%s: Received scan failure (%s) in non-scanning state - potential bug"
+                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, uuid))
+    }
+    case UpstreamScanSuccess(uuid)         => {
+      logger.warn("%s: Received upstream scan success (%s) in non-scanning state; potentially due to cancellation"
+                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, uuid))
+    }
+    case DownstreamScanSuccess(uuid)         => {
+      logger.warn("%s: Received downstream scan success (%s) in non-scanning state; potentially due to cancellation"
                    .format(AlertCodes.OUT_OF_ORDER_MESSAGE, uuid))
     }
     case x            =>
@@ -370,5 +385,5 @@ trait PairPolicyClient {
    * Cancels any scan operation that may be in process.
    * This is a blocking call, so it will only return after all current and pending scans have been cancelled.
    */
-  def cancelAllScans(pairKey:String) : Unit
+  def cancelAllScans(pairKey:String) : Boolean
 }

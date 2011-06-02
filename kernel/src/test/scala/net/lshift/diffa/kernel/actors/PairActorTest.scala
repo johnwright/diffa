@@ -32,6 +32,7 @@ import ch.qos.logback.core.AppenderBase
 import ch.qos.logback.classic.spi.ILoggingEvent
 import java.lang.RuntimeException
 import net.lshift.diffa.kernel.util.AlertCodes
+import akka.actor._
 
 class PairActorTest {
 
@@ -217,6 +218,62 @@ class PairActorTest {
     verify(syncListener)
   }
 
+  @Test
+  def shouldHandleCancellationWhilstNotScanning = {
+    supervisor.startActor(pair)
+    assertTrue(supervisor.cancelAllScans(pairKey))
+  }
+
+
+  @Test
+  def shouldHandleCancellationWhilstScanning = {
+
+    val cancelMonitor = new Object
+    val responseMonitor = new Object
+
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = {
+        Actor.spawn {
+          // Request a cancellation in a background thread so that the pair actor can be scheduled
+          // in to process the cancellation. Notifying the main test thread that the request
+          // returned true is the same thing as assertTrue(supervisor.cancelAllScans(pairKey))
+          // except that the assertion is effectively on the main test thread.
+          if (supervisor.cancelAllScans(pairKey)) {
+            responseMonitor.synchronized{ responseMonitor.notifyAll() }
+          }
+        }
+      }
+    })
+
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.CANCELLED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = cancelMonitor.synchronized{ cancelMonitor.notifyAll() }
+    })
+
+    expectScans.andAnswer(new IAnswer[Unit] {
+      def answer = {
+        // Put the sub actor into a sufficiently long pause so that the cancellation request
+        // has enough time to get processed by the parent actor, have it trigger the
+        // the scan state listener and send a response back the thread that requested the
+        // cancellation
+        Thread.sleep(10000)
+      }
+    })
+
+    replay(versionPolicy, syncListener)
+
+    supervisor.startActor(pair)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
+
+    responseMonitor.synchronized {
+      responseMonitor.wait(1000)
+    }
+
+    cancelMonitor.synchronized {
+      cancelMonitor.wait(1000)
+    }
+
+    verify(versionPolicy, syncListener)
+  }
 
   @Test
   def shouldReportScanFailure = {
