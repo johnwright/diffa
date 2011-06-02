@@ -18,10 +18,10 @@ package net.lshift.diffa.agent.rest
 import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.frontend.DiffaConfig
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import net.lshift.diffa.agent.util.ConfigComparisonUtil
+import net.lshift.diffa.kernel.config._
 
 /*
 * Test cases for the DiffaConfigReaderWriter.
@@ -46,7 +46,10 @@ class DiffaConfigReaderWriterTest {
       groups = Set(PairGroup("gaa"), PairGroup("gbb")),
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
-        PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb"))
+        PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
+      repairActions = Set(
+        RepairAction(name="Resend Sauce", scope="entity", actionId="resend", pairKey="ab")
+      )
     )
 
     val readerWriter = new DiffaConfigReaderWriter
@@ -72,7 +75,9 @@ class DiffaConfigReaderWriterTest {
           <prefix-category name="d" prefix-length="1" max-length="6" step="1"/>
         </endpoint>
         <group name="gaa">
-          <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>
+          <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5">
+            <repair-action id="resend" name="Resend Sauce" scope="entity" />
+          </pair>
         </group>
         <group name="gbb">
           <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>

@@ -20,10 +20,10 @@ import javax.ws.rs._
 import core.{UriInfo, Context}
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
-import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient, Actionable}
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
+import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 
 @Path("/actions")
 @Component

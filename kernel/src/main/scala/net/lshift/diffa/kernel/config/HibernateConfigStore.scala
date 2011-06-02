@@ -41,6 +41,17 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     listQuery[Endpoint](s, "allEndpoints", Map())
   })
 
+  def createOrUpdateRepairAction(a: RepairAction) {
+    sessionFactory.withSession(_.saveOrUpdate(a))
+  }
+
+  def deleteRepairAction(name: String, pairKey: String) {
+    sessionFactory.withSession(s => {
+      val action = getRepairAction(s, name, pairKey)
+      s.delete(action)
+    })
+  }
+
   def createOrUpdatePair(p: PairDef): Unit = sessionFactory.withSession(s => {
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
@@ -51,6 +62,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
   def deletePair(key: String): Unit = sessionFactory.withSession(s => {
     val pair = getPair(s, key)
+    listRepairActionsForPair(pair).foreach(s.delete)
     s.delete(pair)
   })
 
@@ -61,8 +73,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
     // Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
     // which would create an infinite loop in computing the hashCode of pairs and groups
-    getPairsInGroup(s, group).foreach(x => s.delete(x))
-
+    getPairsInGroup(s, group).foreach(p => deletePair(p.key))
     s.delete(group)
   })
 
@@ -76,6 +87,15 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
      .asInstanceOf[java.util.List[Pair]]
      .toSeq
   }
+
+  def listRepairActionsForPair(pair: Pair): Seq[RepairAction] =
+    sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
+
+  private def getRepairActionsInPair(s: Session, pair: Pair): Seq[RepairAction] =
+    listQuery[RepairAction](s, "repairActionsByPair", Map("pairKey" -> pair.key))
+
+  def listRepairActions: Seq[RepairAction] = sessionFactory.withSession(s =>
+    listQuery[RepairAction](s, "allRepairActions", Map()))
 
   def listGroups: Seq[GroupContainer] = sessionFactory.withSession(s => {
     val groups = listQuery[PairGroup](s, "allGroups", Map())
@@ -112,6 +132,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def getPair(key: String) = sessionFactory.withSession(s => getPair(s, key))
   def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
+  def getRepairAction(name: String, pairKey: String) = sessionFactory.withSession(s => getRepairAction(s, name, pairKey))
 
   def allConfigOptions = {
     sessionFactory.withSession(s => {
@@ -142,6 +163,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     val co = s.get(classOf[ConfigOption], key) match {
       case null =>
       case current:ConfigOption =>  s.delete(current)
+
     }
   })
 
@@ -152,4 +174,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getPairOpt(s: Session, key: String) = singleQueryOpt[Pair](s, "pairByKey", Map("key" -> key))
   private def getGroup(s: Session, key: String) = singleQuery[PairGroup](s, "groupByKey", Map("key" -> key), "group")
   private def getGroupOpt(s: Session, key: String) = singleQueryOpt[PairGroup](s, "groupByKey", Map("key" -> key))
+  private def getRepairAction(s: Session, name: String, pairKey: String) =
+    singleQuery[RepairAction](s, "repairActionByNameAndPairKey", Map("name" -> name, "pairKey" -> pairKey), "repair action")
+
 }

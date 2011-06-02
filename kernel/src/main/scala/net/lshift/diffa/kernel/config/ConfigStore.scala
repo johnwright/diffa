@@ -17,9 +17,7 @@
 package net.lshift.diffa.kernel.config
 
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
@@ -32,15 +30,21 @@ trait ConfigStore {
   def createOrUpdatePair(pairDef: PairDef): Unit
   def deletePair(key: String): Unit
 
+  def createOrUpdateRepairAction(action: RepairAction): Unit
+  def deleteRepairAction(name: String, pairKey: String): Unit
+
   def createOrUpdateGroup(group: PairGroup): Unit
   def deleteGroup(key: String): Unit
   def getPairsInGroup(group: PairGroup): Seq[Pair]
   def listGroups: Seq[GroupContainer]
+  def listRepairActions: Seq[RepairAction]
+  def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair
   def getGroup(key: String): PairGroup
   def getUser(name: String) : User
+  def getRepairAction(name: String, pairKey: String): RepairAction
 
   def createOrUpdateUser(user: User): Unit
   def deleteUser(name: String): Unit
@@ -168,6 +172,15 @@ case class PairDef(
   @BeanProperty var groupKey: String) {
 
   def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
+}
+
+case class RepairAction(
+  @BeanProperty var name: String,
+  @BeanProperty var actionId: String,
+  @BeanProperty var scope: String,
+  @BeanProperty var pairKey: String
+) {
+  def this() = this(null, null, null, null)
 }
 
 case class User(@BeanProperty var name: String,

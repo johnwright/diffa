@@ -33,7 +33,7 @@ trait CommonActionTests {
     val actions = env.actionsClient.listActions(env.pairKey)
     assertNotNull(actions)
     assertEquals(1, actions.size)
-    assertEquals("resend", actions(0).id)
+    assertEquals("Resend Source", actions(0).name)
   }
 
   @Test
@@ -47,4 +47,13 @@ trait CommonActionTests {
     assertNotNull(response)
     assertEquals("success", response.result)    
   }
+
+  @Test
+  def canDeleteAction {
+    def actionKey = env.actionsClient.listActions(env.pairKey).headOption.map(_.name)
+    assertEquals(Some(env.actionName), actionKey)
+    env.configurationClient.removeRepairAction(env.actionName, env.pairKey)
+    assertEquals(None, actionKey)
+  }
+
 }

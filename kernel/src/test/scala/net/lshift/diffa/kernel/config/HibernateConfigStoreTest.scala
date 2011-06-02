@@ -60,7 +60,10 @@ class HibernateConfigStoreTest {
   val pairKey = "TEST_PAIR"
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name, groupKey1)
-
+  val repairAction = new RepairAction(name="REPAIR_ACTION_NAME",
+                                      scope="entity",
+                                      actionId="resend",
+                                      pairKey=pairKey)
 
   val groupKey2 = "TEST_GROUP2"
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
@@ -69,13 +72,14 @@ class HibernateConfigStoreTest {
 
   val TEST_USER = User("foo","foo@bar.com")
 
-  def declareAll: Unit = {
+  def declareAll() {
     configStore.createOrUpdateEndpoint(upstream1)
     configStore.createOrUpdateEndpoint(upstream2)
     configStore.createOrUpdateEndpoint(downstream1)
     configStore.createOrUpdateEndpoint(downstream2)
     configStore.createOrUpdateGroup(group)
     configStore.createOrUpdatePair(pairDef)
+    configStore.createOrUpdateRepairAction(repairAction)
   }
 
   @Before
@@ -121,6 +125,12 @@ class HibernateConfigStoreTest {
     assertEquals(groupKey1, retrPair.group.key)
     assertEquals(versionPolicyName1, retrPair.versionPolicyName)
     assertEquals(matchingTimeout, retrPair.matchingTimeout)
+
+    // Declare a repair action
+    configStore.createOrUpdateRepairAction(repairAction)
+    val retrActions = configStore.listRepairActionsForPair(retrPair)
+    assertEquals(1, retrActions.length)
+    assertEquals(Some(pairKey), retrActions.headOption.map(_.pairKey))
   }
 
   @Test
@@ -232,6 +242,27 @@ class HibernateConfigStoreTest {
     configStore.deletePair(pairKey)
     expectMissingObject("pair") {
       configStore.getPair(pairKey)
+    }
+  }
+
+  @Test
+  def testDeletePairCascade {
+    declareAll()
+    assertEquals(Some(repairAction.name), configStore.listRepairActions.headOption.map(_.name))
+    configStore.deletePair(pairKey)
+    expectMissingObject("repair action") {
+      configStore.getRepairAction(repairAction.name, pairKey)
+    }
+  }
+
+  @Test
+  def testDeleteRepairAction {
+    declareAll
+    assertEquals(Some(repairAction.name), configStore.listRepairActions.headOption.map(_.name))
+
+    configStore.deleteRepairAction(repairAction.name, pairKey)
+    expectMissingObject("repair action") {
+      configStore.getRepairAction(repairAction.name, pairKey)
     }
   }
 
@@ -448,17 +479,21 @@ class HibernateConfigStoreTest {
 }
 
 object HibernateConfigStoreTest {
-  private val config = new Configuration().
-          addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-          setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-          setProperty("hibernate.connection.url", "jdbc:derby:target/configStore;create=true").
-          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
+  private val config =
+      new Configuration().
+        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
+        setProperty("hibernate.connection.url", "jdbc:derby:target/configStore;create=true").
+        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
 
-  val sessionFactory = {
+  val sessionFactory = try {
     val sf = config.buildSessionFactory
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
-
     sf
+  }
+  catch {
+    case e => e.printStackTrace()
+    exit()
   }
   val configStore = new HibernateConfigStore(sessionFactory)
 
@@ -469,6 +504,7 @@ object HibernateConfigStoreTest {
     s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
+    s.createCriteria(classOf[RepairAction]).list.foreach(s.delete)
     s.flush
     s.close
   }
