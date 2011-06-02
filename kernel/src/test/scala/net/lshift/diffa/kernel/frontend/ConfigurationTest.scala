@@ -126,7 +126,8 @@ class ConfigurationTest {
         PairDef("ab", "same", 5, "upstream1", "downstream2", "gcc"),
           // ac is gone
         PairDef("ad", "same", 5, "upstream1", "downstream2", "gbb")),
-      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab"))
+      // name of repair action is changed
+      repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab"))
     )
 
     expect(pairManager.stopActor("ab")).once
@@ -147,7 +148,11 @@ class ConfigurationTest {
     replayAll
 
     configuration.applyConfiguration(config)
-    assertEquals(config, configuration.retrieveConfiguration)
+    val newConfig = configuration.retrieveConfiguration
+    assertEquals(config, newConfig)
+
+    // check that the action was updated
+    assertEquals(Set(RepairAction("Resend Source", "resend", "pair", "ab")), newConfig.repairActions)
     verifyAll
   }
 

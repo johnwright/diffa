@@ -48,6 +48,12 @@ class Configuration(val configStore: ConfigStore,
     diffaConfig.endpoints.foreach(e => createOrUpdateEndpoint(e))
     diffaConfig.groups.foreach(g => createOrUpdateGroup(g))
     diffaConfig.pairs.foreach(p => createOrUpdatePair(p))
+
+    // Remove missing repair actions, and create/update the rest
+    val removedActions =
+      configStore.listRepairActions.filter(a => diffaConfig.repairActions
+        .find(newA => newA.name == a.name && newA.pairKey == a.pairKey).isEmpty)
+    removedActions.foreach(a => deleteRepairAction(a.name, a.pairKey))
     diffaConfig.repairActions.foreach(createOrUpdateRepairAction)
 
     // Remove old pairs and endpoints
