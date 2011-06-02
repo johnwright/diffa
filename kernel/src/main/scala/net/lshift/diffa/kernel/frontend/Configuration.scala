@@ -181,13 +181,13 @@ class Configuration(val configStore: ConfigStore,
   }
 
   def createOrUpdateRepairAction(action: RepairAction) {
-    log.debug("Processing repair action declare/update request: " + action.key)
+    log.debug("Processing repair action declare/update request: " + action.name)
     configStore.createOrUpdateRepairAction(action)
   }
 
-  def deleteRepairAction(key: String) {
-    log.debug("Processing repair action delete request: " + key)
-    configStore.deleteRepairAction(key)
+  def deleteRepairAction(name: String, pairKey: String) {
+    log.debug("Processing repair action delete request: (name="+name+", pairKey="+pairKey+")")
+    configStore.deleteRepairAction(name, pairKey)
   }
 
   def listRepairActions: Seq[RepairAction] = {

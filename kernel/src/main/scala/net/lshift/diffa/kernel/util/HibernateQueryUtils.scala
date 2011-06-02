@@ -55,7 +55,7 @@ trait HibernateQueryUtils {
   }
 
   /**
-   * Executes a query that may return a single result in the current session. Returns either None or Some(x) for the
+   * Executes a query that may returnjava.lang.NoClassDefFoundError: Could not initialize class a single result in the current session. Returns either None or Some(x) for the
    * object.
    */
   def singleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] = {

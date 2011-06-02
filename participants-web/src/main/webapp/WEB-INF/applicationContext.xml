@@ -112,7 +112,6 @@
     <property name="targetMethod" value="declareRepairAction" />
     <property name="arguments">
       <list>
-        <value>${demo.repairAction.key}</value>
         <value>${demo.repairAction.name}</value>
         <value>${demo.repairAction.id}</value>
         <value>${demo.repairAction.scope}</value>

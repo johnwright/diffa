@@ -21,8 +21,6 @@ import scala.collection.JavaConversions._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
-import util.matching.Regex
-import net.lshift.diffa.kernel.client.Actionable
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -33,7 +31,7 @@ trait ConfigStore {
   def deletePair(key: String): Unit
 
   def createOrUpdateRepairAction(action: RepairAction): Unit
-  def deleteRepairAction(key: String): Unit
+  def deleteRepairAction(name: String, pairKey: String): Unit
 
   def createOrUpdateGroup(group: PairGroup): Unit
   def deleteGroup(key: String): Unit
@@ -46,7 +44,7 @@ trait ConfigStore {
   def getPair(key: String): Pair
   def getGroup(key: String): PairGroup
   def getUser(name: String) : User
-  def getRepairAction(key: String): RepairAction
+  def getRepairAction(name: String, pairKey: String): RepairAction
 
   def createOrUpdateUser(user: User): Unit
   def deleteUser(name: String): Unit
@@ -177,13 +175,19 @@ case class PairDef(
 }
 
 case class RepairAction(
-  @BeanProperty var key: String,
   @BeanProperty var name: String,
-  @BeanProperty var id: String,
+  @BeanProperty var actionId: String,
   @BeanProperty var scope: String,
   @BeanProperty var pairKey: String
 ) {
-  def this() = this(null, null, null, null, null)
+  def this() = this(null, null, null, null)
+}
+
+case class RepairActionKey(
+  @BeanProperty var name: String,
+  @BeanProperty var pairKey: String
+) {
+  def this() = this(null, null)
 }
 
 case class User(@BeanProperty var name: String,

@@ -66,12 +66,6 @@ class ConfigurationResource extends AbstractRestResource {
   @Description("Returns a list of all the repair actions registered with the agent.")
   def listRepairActions: Array[RepairAction] = config.listRepairActions.toArray
 
-  @DELETE
-  @Path("/repair-actions/{id}")
-  @Description("Removes an action that is registered with the agent.")
-  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Action ID")))
-  def deleteRepairAction(@PathParam("id") id:String) = maybe[Unit](config.deleteRepairAction _, id)
-
   @GET
   @Produces(Array("application/json"))
   @Path("/endpoints/{id}")
@@ -130,7 +124,17 @@ class ConfigurationResource extends AbstractRestResource {
   @Path("/pairs/{id}/repair-actions")
   @Consumes(Array("application/json"))
   @Description("Creates a new repair action associated with a pair that is registered with the agent.")
-  def createRepairAction(a: RepairAction) = create[RepairAction](a, config.createOrUpdateRepairAction, _.key)
+  def createRepairAction(a: RepairAction) =
+    create[RepairAction](a, config.createOrUpdateRepairAction, a => a.name -> a.pairKey)
+
+  @DELETE
+  @Path("/pairs/{pairKey}/repair-actions/{name}")
+  @Description("Removes an action that is registered with the agent.")
+  @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair ID"),
+                         new MandatoryParam(name="name", datatype="string", description="Action name")))
+  def deleteRepairAction(@PathParam("name") name: String, @PathParam("pairKey") pairKey: String) {
+    maybe[Unit]((params: Seq[String]) => config.deleteRepairAction(params.head, params.last), Seq(name, pairKey))
+  }
 
   @POST
   @Path("/groups")

@@ -50,9 +50,9 @@ trait CommonActionTests {
 
   @Test
   def canDeleteAction {
-    def actionKey = env.actionsClient.listActions(env.pairKey).headOption.map(_.key)
-    assertEquals(Some(env.actionKey), actionKey)
-    env.configurationClient.removeRepairAction(env.actionKey)
+    def actionKey = env.actionsClient.listActions(env.pairKey).headOption.map(_.name)
+    assertEquals(Some(env.actionName), actionKey)
+    env.configurationClient.removeRepairAction(env.actionName, env.pairKey)
     assertEquals(None, actionKey)
   }
 

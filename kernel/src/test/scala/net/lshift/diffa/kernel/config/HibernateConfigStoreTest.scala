@@ -60,11 +60,10 @@ class HibernateConfigStoreTest {
   val pairKey = "TEST_PAIR"
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name, groupKey1)
-  val repairAction = new RepairAction(key="action-1",
-                                         name="REPAIR_ACTION_NAME",
-                                         scope="entity",
-                                         id="resend",
-                                         pairKey=pairKey)
+  val repairAction = new RepairAction(name="REPAIR_ACTION_NAME",
+                                      scope="entity",
+                                      actionId="resend",
+                                      pairKey=pairKey)
 
   val groupKey2 = "TEST_GROUP2"
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
@@ -249,21 +248,21 @@ class HibernateConfigStoreTest {
   @Test
   def testDeletePairCascade {
     declareAll()
-    assertEquals(Some(repairAction.key), configStore.listRepairActions.headOption.map(_.key))
+    assertEquals(Some(repairAction.name), configStore.listRepairActions.headOption.map(_.name))
     configStore.deletePair(pairKey)
     expectMissingObject("repair action") {
-      configStore.getRepairAction(repairAction.key)
+      configStore.getRepairAction(repairAction.name, pairKey)
     }
   }
 
   @Test
   def testDeleteRepairAction {
     declareAll
-    assertEquals(Some(repairAction.key), configStore.listRepairActions.headOption.map(_.key))
+    assertEquals(Some(repairAction.name), configStore.listRepairActions.headOption.map(_.name))
 
-    configStore.deleteRepairAction(repairAction.key)
+    configStore.deleteRepairAction(repairAction.name, pairKey)
     expectMissingObject("repair action") {
-      configStore.getRepairAction(repairAction.key)
+      configStore.getRepairAction(repairAction.name, pairKey)
     }
   }
 
@@ -480,17 +479,21 @@ class HibernateConfigStoreTest {
 }
 
 object HibernateConfigStoreTest {
-  private val config = new Configuration().
-          addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-          setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-          setProperty("hibernate.connection.url", "jdbc:derby:target/configStore;create=true").
-          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
+  private val config =
+      new Configuration().
+        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
+        setProperty("hibernate.connection.url", "jdbc:derby:target/configStore;create=true").
+        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
 
-  val sessionFactory = {
+  val sessionFactory = try {
     val sf = config.buildSessionFactory
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
-
     sf
+  }
+  catch {
+    case e => e.printStackTrace()
+    exit()
   }
   val configStore = new HibernateConfigStore(sessionFactory)
 

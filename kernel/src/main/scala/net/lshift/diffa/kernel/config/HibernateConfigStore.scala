@@ -45,9 +45,9 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     sessionFactory.withSession(_.saveOrUpdate(a))
   }
 
-  def deleteRepairAction(key: String) {
+  def deleteRepairAction(name: String, pairKey: String) {
     sessionFactory.withSession(s => {
-      val action = getRepairAction(s, key)
+      val action = getRepairAction(s, name, pairKey)
       s.delete(action)
     })
   }
@@ -132,7 +132,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def getPair(key: String) = sessionFactory.withSession(s => getPair(s, key))
   def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
-  def getRepairAction(key: String) = sessionFactory.withSession(s => getRepairAction(s, key))
+  def getRepairAction(name: String, pairKey: String) = sessionFactory.withSession(s => getRepairAction(s, name, pairKey))
 
   def allConfigOptions = {
     sessionFactory.withSession(s => {
@@ -163,6 +163,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     val co = s.get(classOf[ConfigOption], key) match {
       case null =>
       case current:ConfigOption =>  s.delete(current)
+
     }
   })
 
@@ -173,7 +174,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getPairOpt(s: Session, key: String) = singleQueryOpt[Pair](s, "pairByKey", Map("key" -> key))
   private def getGroup(s: Session, key: String) = singleQuery[PairGroup](s, "groupByKey", Map("key" -> key), "group")
   private def getGroupOpt(s: Session, key: String) = singleQueryOpt[PairGroup](s, "groupByKey", Map("key" -> key))
-  private def getRepairAction(s: Session, key: String) =
-    singleQuery[RepairAction](s, "repairActionByKey", Map("key" -> key), "repair action")
+  private def getRepairAction(s: Session, name: String, pairKey: String) =
+    singleQuery[RepairAction](s, "repairActionByNameAndPairKey", Map("name" -> name, "pairKey" -> pairKey), "repair action")
 
 }

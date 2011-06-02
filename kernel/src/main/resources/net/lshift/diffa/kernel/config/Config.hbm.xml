@@ -93,11 +93,12 @@
   </class>
 
   <class name="RepairAction" table="repair_actions" abstract="false">
-    <id name="key" type="string" column="act_key" />
-    <property name="name" type="string" column="name" />
+    <composite-id mapped="true">
+      <key-property name="name" type="string" column="name" />
+      <key-property name="pairKey" type="string" column="pair_key" />
+    </composite-id>
+    <property name="actionId" type="string" column="action_id" />
     <property name="scope" type="string" column="scope" />
-    <property name="id" type="string" column="id" />
-    <property name="pairKey" type="string" column="pair_key" />
   </class>
 
   <query name="endpointByName">
@@ -116,8 +117,8 @@
     select g from PairGroup g where g.key = :key
   </query>
 
-  <query name="repairActionByKey">
-    select a from RepairAction a where a.key = :key
+  <query name="repairActionByNameAndPairKey">
+    select a from RepairAction a where a.name = :name and a.pairKey = :pairKey
   </query>
 
   <query name="allEndpoints">

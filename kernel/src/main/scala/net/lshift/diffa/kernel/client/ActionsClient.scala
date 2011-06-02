@@ -38,19 +38,18 @@ trait ActionsClient {
 }
 
 case class Actionable (
-  @BeanProperty var key:String,
   @BeanProperty var name:String,
   @BeanProperty var scope:String,
   @BeanProperty var path:String,
   @BeanProperty var pairKey:String) {
 
- def this() = this(null, null, null, null, null)
+ def this() = this(null, null, null, null)
 }
 
 object Actionable {
   def fromRepairAction(a: RepairAction): Actionable = {
-    val path = "/actions/"+a.pairKey+"/"+a.id+"/${id}" // TODO support entity-scoped actions
-    new Actionable(a.key, a.name, a.scope, path, a.pairKey)
+    val path = "/actions/"+a.pairKey+"/"+a.actionId+"/${id}" // TODO support entity-scoped actions
+    new Actionable(a.name, a.scope, path, a.pairKey)
   }
 }
 

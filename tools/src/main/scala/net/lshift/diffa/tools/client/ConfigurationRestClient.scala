@@ -18,7 +18,6 @@ package net.lshift.diffa.tools.client
 
 import net.lshift.diffa.kernel.client.ConfigurationClient
 import net.lshift.diffa.messaging.json.AbstractRestClient
-import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
 
@@ -45,14 +44,14 @@ class ConfigurationRestClient(serverRootUrl:String)
     p
   }
 
-  def declareRepairAction(key: String, name: String, id: String, scope: String, pairKey: String) = {
-    val action = new RepairAction(key, name, id, scope, pairKey)
+  def declareRepairAction(name: String, id: String, scope: String, pairKey: String) = {
+    val action = new RepairAction(name, id, scope, pairKey)
     create("/pairs/"+pairKey+"/repair-actions", action)
     action
   }
 
-  def removeRepairAction(key: String) {
-    delete("/repair-actions/"+key)
+  def removeRepairAction(name: String, pairKey: String) {
+    delete("/pairs/"+pairKey+"/repair-actions/"+name)
   }
 
 }

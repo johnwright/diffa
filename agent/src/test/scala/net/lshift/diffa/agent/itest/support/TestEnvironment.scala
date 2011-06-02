@@ -20,13 +20,11 @@ import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, Downstre
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
-import net.lshift.diffa.messaging.json.{ChangesRestClient, UpstreamParticipantRestClient, DownstreamParticipantRestClient}
 import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
-import collection.mutable.HashMap
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
-import net.lshift.diffa.kernel.config.{CategoryDescriptor, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -59,7 +57,6 @@ class TestEnvironment(val pairKey: String,
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
   // Actions
-  val actionKey = "action-1"
   val actionName = "Resend Source"
   val actionId = "resend"
 
@@ -75,7 +72,7 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
-  configurationClient.declareRepairAction(actionKey, actionName, actionId, "entity", pairKey)
+  configurationClient.declareRepairAction(actionName, actionId, "entity", pairKey)
 
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
