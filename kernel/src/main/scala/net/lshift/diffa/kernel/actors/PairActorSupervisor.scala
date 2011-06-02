@@ -84,7 +84,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   def scanPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) =
     findActor(pairKey) ! ScanMessage(diffListener, pairSyncListener)
 
-  def cancelAllScans(pairKey:String) = {
+  def cancelScans(pairKey:String) = {
     (findActor(pairKey) !! CancelMessage) match {
       case Some(flag) => true
       case None       => false

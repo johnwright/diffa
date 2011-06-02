@@ -221,7 +221,7 @@ class PairActorTest {
   @Test
   def shouldHandleCancellationWhilstNotScanning = {
     supervisor.startActor(pair)
-    assertTrue(supervisor.cancelAllScans(pairKey))
+    assertTrue(supervisor.cancelScans(pairKey))
   }
 
 
@@ -236,9 +236,9 @@ class PairActorTest {
         Actor.spawn {
           // Request a cancellation in a background thread so that the pair actor can be scheduled
           // in to process the cancellation. Notifying the main test thread that the request
-          // returned true is the same thing as assertTrue(supervisor.cancelAllScans(pairKey))
+          // returned true is the same thing as assertTrue(supervisor.cancelScans(pairKey))
           // except that the assertion is effectively on the main test thread.
-          if (supervisor.cancelAllScans(pairKey)) {
+          if (supervisor.cancelScans(pairKey)) {
             responseMonitor.synchronized{ responseMonitor.notifyAll() }
           }
         }

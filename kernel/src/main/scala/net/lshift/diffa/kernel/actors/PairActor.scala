@@ -385,5 +385,5 @@ trait PairPolicyClient {
    * Cancels any scan operation that may be in process.
    * This is a blocking call, so it will only return after all current and pending scans have been cancelled.
    */
-  def cancelAllScans(pairKey:String) : Boolean
+  def cancelScans(pairKey:String) : Boolean
 }
