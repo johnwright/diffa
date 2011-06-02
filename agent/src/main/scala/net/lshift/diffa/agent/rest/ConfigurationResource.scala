@@ -20,11 +20,13 @@ import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
 import org.slf4j.{Logger, LoggerFactory}
 import javax.ws.rs._
+import core.{UriInfo, Context}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.frontend.{DiffaConfig, Configuration}
 import scala.collection.JavaConversions._
+import net.lshift.diffa.agent.rest.ResponseUtils._
 
 /**
  * This is a REST interface the Configuration abstraction.
@@ -32,11 +34,10 @@ import scala.collection.JavaConversions._
  */
 @Path("/config")
 @Component
-class ConfigurationResource extends AbstractRestResource {
-
-  private val log:Logger = LoggerFactory.getLogger(getClass)
+class ConfigurationResource {
 
   @Autowired var config:Configuration = null
+  @Context var uriInfo:UriInfo = null
 
   @GET
   @Path("/xml")
@@ -71,13 +72,16 @@ class ConfigurationResource extends AbstractRestResource {
   @Path("/endpoints/{id}")
   @Description("Returns an endpoint by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
-  def getEndpoint(@PathParam("id") id:String) = maybe[Endpoint]( x => config.getEndpoint(x), id )
+  def getEndpoint(@PathParam("id") id:String) = config.getEndpoint(id)
 
   @POST
   @Path("/endpoints")
   @Consumes(Array("application/json"))
   @Description("Registers a new endpoint with the agent.")
-  def createEndpoint(e:Endpoint) = create[Endpoint] (e, (x:Endpoint) => config.createOrUpdateEndpoint(x), (x:Endpoint) => x.name )
+  def createEndpoint(e:Endpoint) = {
+    config.createOrUpdateEndpoint(e)
+    resourceCreated(e.name, uriInfo)
+  }
 
   @PUT
   @Consumes(Array("application/json"))
@@ -85,19 +89,25 @@ class ConfigurationResource extends AbstractRestResource {
   @Path("/endpoints/{id}")
   @Description("Updates the attributes of an endpoint that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
-  def updateEndpoint(@PathParam("id") id:String, e:Endpoint) = maybeReturn[Endpoint]( e, x => config.createOrUpdateEndpoint(x) )
+  def updateEndpoint(@PathParam("id") id:String, e:Endpoint) = {
+    config.createOrUpdateEndpoint(e)
+    e
+  }
 
   @DELETE
   @Path("/endpoints/{id}")
   @Description("Removes an endpoint that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
-  def deleteEndpoint(@PathParam("id") id:String) = maybe[Unit]( x => config.deleteEndpoint(x), id )
+  def deleteEndpoint(@PathParam("id") id:String) = config.deleteEndpoint(id)
 
   @POST
   @Path("/pairs")
   @Consumes(Array("application/json"))
   @Description("Creates a new pairing between two endpoints that are already registered with the agent.")
-  def createPair(p:PairDef) = create[PairDef] (p, (x:PairDef) => config.createOrUpdatePair(x), (x:PairDef) => x.pairKey )
+  def createPair(p:PairDef) = {
+    config.createOrUpdatePair(p)
+    resourceCreated(p.pairKey, uriInfo)
+  }
 
   @PUT
   @Consumes(Array("application/json"))
@@ -105,13 +115,16 @@ class ConfigurationResource extends AbstractRestResource {
   @Path("/pairs/{id}")
   @Description("Updates the attributes of a pairing between two endpoints that are already registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
-  def updatePair(@PathParam("id") id:String, p:PairDef) = maybeReturn[PairDef]( p, x => config.createOrUpdatePair(x) )
+  def updatePair(@PathParam("id") id:String, p:PairDef) = {
+    config.createOrUpdatePair(p)
+    p
+  }
 
   @DELETE
   @Path("/pairs/{id}")
   @Description("Removes a pairing between two endpoints that are registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
-  def deletePair(@PathParam("id") id:String) = maybe[Unit]( x => config.deletePair(x), id )
+  def deletePair(@PathParam("id") id:String) = config.deletePair(id)
 
   @GET
   @Path("/pairs/{id}/repair-actions")
@@ -123,9 +136,12 @@ class ConfigurationResource extends AbstractRestResource {
   @POST
   @Path("/pairs/{id}/repair-actions")
   @Consumes(Array("application/json"))
+  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   @Description("Creates a new repair action associated with a pair that is registered with the agent.")
-  def createRepairAction(a: RepairAction) =
-    create[RepairAction](a, config.createOrUpdateRepairAction, a => a.name -> a.pairKey)
+  def createRepairAction(a: RepairAction) = {
+    config.createOrUpdateRepairAction(a)
+    resourceCreated(a.name, uriInfo)
+  }
 
   @DELETE
   @Path("/pairs/{pairKey}/repair-actions/{name}")
@@ -133,14 +149,17 @@ class ConfigurationResource extends AbstractRestResource {
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair ID"),
                          new MandatoryParam(name="name", datatype="string", description="Action name")))
   def deleteRepairAction(@PathParam("name") name: String, @PathParam("pairKey") pairKey: String) {
-    maybe[Unit]((params: Seq[String]) => config.deleteRepairAction(params.head, params.last), Seq(name, pairKey))
+    config.deleteRepairAction(name, pairKey)
   }
 
   @POST
   @Path("/groups")
   @Consumes(Array("application/json"))
   @Description("Creates a new group that can be used to aggregate pairings of endpoints.")
-  def createGroup(g:PairGroup) = create[PairGroup] (g, (x:PairGroup) => config.createOrUpdateGroup(x), (x:PairGroup) => x.key )
+  def createGroup(g:PairGroup) = {
+    config.createOrUpdateGroup(g)
+    resourceCreated(g.key, uriInfo)
+  }
 
   @PUT
   @Consumes(Array("application/json"))
@@ -148,26 +167,29 @@ class ConfigurationResource extends AbstractRestResource {
   @Path("/groups/{id}")
   @Description("Updates the attributes of a group of endpoint pairings.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
-  def updateGroup(@PathParam("id") id:String, g:PairGroup) = maybeReturn[PairGroup]( g, x => config.createOrUpdateGroup(x) )
+  def updateGroup(@PathParam("id") id:String, g:PairGroup) = {
+    config.createOrUpdateGroup(g)
+    g
+  }
 
   @DELETE
   @Path("/groups/{id}")
   @Description("Removes a group of endpoint pairings.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
-  def deleteGroup(@PathParam("id") id:String) = maybe[Unit]( x => config.deleteGroup(x), id )
+  def deleteGroup(@PathParam("id") id:String) = config.deleteGroup(id)
 
   @GET
   @Produces(Array("application/json"))
   @Path("/pairs/{id}")
   @Description("Returns an endpoint pairing by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
-  def getPair(@PathParam("id") id:String) = maybe[Pair]( x => config.getPair(x),id )
+  def getPair(@PathParam("id") id:String) = config.getPair(id)
 
   @GET
   @Produces(Array("application/json"))
   @Path("/groups/{id}")
   @Description("Returns a group of endpoint pairings by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
-  def getGroup(@PathParam("id") id:String) = maybe[PairGroup]( x => config.getGroup(x), id )
+  def getGroup(@PathParam("id") id:String) = config.getGroup(id)
 
 }

@@ -28,4 +28,6 @@ trait ConfigurationClient {
                   upstreamName: String, downstreamName: String, groupKey: String):PairDef
   def declareRepairAction(name: String, id: String, scope: String, pairKey: String): RepairAction
   def removeRepairAction(name: String, pairKey: String)
+  def deletePair(pairKey: String) : Unit
+  def getEndpoint(name:String) : Endpoint
 }

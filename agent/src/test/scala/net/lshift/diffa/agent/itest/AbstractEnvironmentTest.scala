@@ -17,19 +17,27 @@
 package net.lshift.diffa.agent.itest
 
 import net.lshift.diffa.agent.itest.support.TestEnvironment
-import org.junit.Before
+import org.junit.{After, Before}
 
 /**
  * Common base for a difference test.
  */
 abstract class AbstractEnvironmentTest {
+  def envFactory:(String => TestEnvironment)
+
   /**
    * The environment under test.
    */
-  def env:TestEnvironment
+  var env:TestEnvironment = null
 
   @Before
   def setup {
+    env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
     env.clearParticipants
+  }
+
+  @After
+  def removePair {
+    env.deletePair
   }
 }

@@ -21,11 +21,4 @@ import support.TestEnvironment
  * Tests that can be applied to an environment to validate that matching functionality works appropriately.
  */
 trait CommonMatchingTests {
-  /**
-   * The environment under test.
-   */
-  def env:TestEnvironment
-
-  
-
 }

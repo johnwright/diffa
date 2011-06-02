@@ -27,5 +27,5 @@ class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
     with CommonDifferenceTests
     with CommonActionTests {
   
-  val env = TestEnvironments.abCorrelated
+  def envFactory = TestEnvironments.correlated _
 }

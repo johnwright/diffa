@@ -25,6 +25,7 @@ import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import net.lshift.diffa.agent.itest.support.TestConstants._
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -35,7 +36,7 @@ class TestEnvironment(val pairKey: String,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
 
-  val serverRoot = "http://localhost:19093/diffa-agent"
+  def serverRoot = agentURL
   val contentType = "application/json"
   val matchingTimeout = 1  // 1 second
 
@@ -71,9 +72,12 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
   configurationClient.declareRepairAction(actionName, actionId, "entity", pairKey)
+  createPair
 
+  def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
+  def deletePair = configurationClient.deletePair(pairKey)
+  
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
   val downstreamClient: DownstreamParticipant = participants.downstreamClient

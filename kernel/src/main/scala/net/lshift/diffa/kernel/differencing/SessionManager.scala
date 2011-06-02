@@ -17,9 +17,9 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
-import org.joda.time.DateTime
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.ParticipantType
+import org.joda.time.{Interval, DateTime}
 
 /**
  * A SessionManager provides a stateful view of the differencing of pairs, and provides mechanisms for polling
@@ -104,6 +104,21 @@ trait SessionManager {
    * @throws InvalidSessionIDException if the requested session does not exist or has expired.
    */
   def retrieveAllEvents(sessionID:String):Seq[SessionEvent]
+
+  /**
+   *  Retrieves all events known to this session in the given interval. Will only include unmatched events.
+   *  @throws InvalidSessionIDException if the requested session does not exist or has expired.
+   */
+  def retrieveAllEventsInInterval(sessionID:String, interval:Interval) : Seq[SessionEvent]
+
+  /**
+   *
+   * Retrieves all events known to this session. Will only include unmatched events.
+   * This pages the results to only contain events that are contained with the specified interval
+   * and returns a subset of the underlying data set that corresponds to the offset and length specified.
+   * @throws InvalidSessionIDException if the requested session does not exist or has expired.
+   */
+  def retrievePagedEvents(sessionId:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
    * Retrieves all events that have occurred within a session since the provided sequence id.

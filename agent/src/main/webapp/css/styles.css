@@ -56,7 +56,7 @@ circle.disabled {
 
 #diffListContainer {
 	height: 520px;
-	overflow: auto;
+	overflow:visible;
 }
 
 /* BUTTONS - from http://particletree.com/features/rediscovering-the-button-element/ */

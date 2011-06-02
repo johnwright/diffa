@@ -49,7 +49,7 @@
 
   <body>
     <decorator:body/>
-    <div class="footer jbasewrap">&copy;2010 LShift Ltd</div>
+    <!--div class="footer">&copy;2010-2011 LShift Ltd</div-->
   </body>
 
 </html>

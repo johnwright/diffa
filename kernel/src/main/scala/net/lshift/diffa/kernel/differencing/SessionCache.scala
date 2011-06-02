@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
-import org.joda.time.DateTime
+import org.joda.time.{Interval, DateTime}
 
 /**
  * The session cache provides facilities for storing difference events that occur, and managing the states of these
@@ -80,6 +80,19 @@ trait SessionCache {
    * Retrieves all unmatched events that have been added to the cache.
    */
   def retrieveAllUnmatchedEvents:Seq[SessionEvent]
+
+  /**
+   * Retrieves all unmatched events that have been added to the cache where their detection timestamp
+   * falls within the specified period
+   */
+  def retrieveUnmatchedEvents(interval:Interval) : Seq[SessionEvent]
+
+  /**
+   * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
+   * interval. The result return a range of the underlying data set that corresponds to the offset and length
+   * supplied.
+   */
+  def retrievePagedEvents(interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
    * Retrieves all events that have occurred within a session since the provided sequence id.

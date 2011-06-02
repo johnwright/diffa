@@ -17,6 +17,7 @@
 package net.lshift.diffa.agent.rest
 
 import javax.ws.rs._
+import core.{UriInfo, Context}
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
@@ -26,18 +27,17 @@ import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsCli
 
 @Path("/actions")
 @Component
-class ActionsResource extends AbstractRestResource {
+class ActionsResource {
 
   @Autowired var proxy:ActionsClient = null
+  @Context var uriInfo:UriInfo = null
 
   @GET
   @Path("/{pairId}")
   @Produces(Array("application/json"))
   @Description("Returns a list of actions that can be invoked on the pair. ")
   @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
-  def listActions(@PathParam("pairId") pairId:String) : Array[Actionable] = {
-    maybe( (x:String) => proxy.listActions(x).toArray, pairId )
-  }
+  def listActions(@PathParam("pairId") pairId:String) : Array[Actionable] = proxy.listActions(pairId).toArray
 
   @POST
   @Path("/{pairId}/{actionId}/{entityId}")
@@ -50,8 +50,7 @@ class ActionsResource extends AbstractRestResource {
   ))
   def invokeAction(@PathParam("pairId") pairId:String,
                    @PathParam("actionId") actionId:String,
-                   @PathParam("entityId") entityId:String) : InvocationResult = {
-    maybe( (x:String) => proxy.invoke(ActionableRequest(x, actionId, entityId)), pairId )
-  }
+                   @PathParam("entityId") entityId:String) : InvocationResult
+    = proxy.invoke(ActionableRequest(pairId, actionId, entityId))
 
 }

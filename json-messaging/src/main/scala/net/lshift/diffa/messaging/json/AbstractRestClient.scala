@@ -19,10 +19,11 @@ package net.lshift.diffa.messaging.json
 import com.sun.jersey.api.client.config.{ClientConfig, DefaultClientConfig}
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider
 import javax.ws.rs.core.MediaType
-import com.sun.jersey.api.client.{ClientResponse, Client}
 import org.slf4j.{LoggerFactory, Logger}
 import org.apache.commons.io.IOUtils
 import java.io.Closeable
+import java.lang.RuntimeException
+import com.sun.jersey.api.client.{UniformInterfaceException, ClientResponse, Client}
 
 abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubUrl:String) extends Closeable {
 
@@ -72,7 +73,21 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
     response
   }
 
-  def rpc[T](path:String, t:Class[T]) = resource.path(path).get(t)
+  def rpc[T](path:String, t:Class[T]) = {
+    try{
+      resource.path(path).get(t)
+    }
+    catch {
+      case x:UniformInterfaceException => {
+        if (x.getResponse.getStatus == 404) {
+          throw new NotFoundException(path)
+        }
+        else {
+          throw x
+        }
+      }
+    }
+  }
 
   def create (where:String, what:Any) {
     val endpoint = resource.path(where)
@@ -100,3 +115,8 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
     }
   }
 }
+
+/**
+ * This exception denotes an HTTP 404 exception
+ */
+class NotFoundException(resource:String) extends RuntimeException(resource)

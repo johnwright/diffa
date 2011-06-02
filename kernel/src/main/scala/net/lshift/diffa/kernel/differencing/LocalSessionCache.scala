@@ -19,8 +19,8 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import java.lang.String
 import java.util.concurrent.atomic.AtomicInteger
-import org.joda.time.DateTime
 import collection.mutable.{LinkedHashMap, HashMap}
+import org.joda.time.{Interval, DateTime}
 
 /**
  * Local implementation of the session cache trait. In no way clustered or crash tolerant.
@@ -90,6 +90,12 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
 
   def retrieveAllUnmatchedEvents:Seq[SessionEvent] =
     events.filter(p => p._2.state == MatchState.UNMATCHED).values.toSeq
+
+  def retrieveUnmatchedEvents(interval:Interval) =
+    retrieveAllUnmatchedEvents.filter(e => interval.contains(e.detectedAt))
+
+  def retrievePagedEvents(interval:Interval, offset:Int, length:Int) =
+    retrieveUnmatchedEvents(interval).slice(offset, offset + length)
 
   def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent] = {
     val seqIdNum = Integer.parseInt(evtSeqId)
