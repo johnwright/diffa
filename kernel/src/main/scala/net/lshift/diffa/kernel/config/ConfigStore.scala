@@ -183,13 +183,6 @@ case class RepairAction(
   def this() = this(null, null, null, null)
 }
 
-case class RepairActionKey(
-  @BeanProperty var name: String,
-  @BeanProperty var pairKey: String
-) {
-  def this() = this(null, null)
-}
-
 case class User(@BeanProperty var name: String,
                 @BeanProperty var email: String) {
   def this() = this(null, null)
