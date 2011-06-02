@@ -25,6 +25,7 @@ import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
 import net.lshift.diffa.kernel.config._
 import scala.collection.JavaConversions._
 import org.easymock.IArgumentMatcher
+import net.lshift.diffa.kernel.frontend.DiffaConfig._
 
 /**
  * Test cases for the Configuration frontend.
@@ -75,7 +76,8 @@ class ConfigurationTest {
       groups = Set(PairGroup("gaa"), PairGroup("gbb")),
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
-        PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb"))
+        PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
+      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab"))
     )
 
     expect(endpointListener.onEndpointAvailable(ep1)).once
@@ -123,7 +125,9 @@ class ConfigurationTest {
           // ab has moved from gaa to gcc
         PairDef("ab", "same", 5, "upstream1", "downstream2", "gcc"),
           // ac is gone
-        PairDef("ad", "same", 5, "upstream1", "downstream2", "gbb"))
+        PairDef("ad", "same", 5, "upstream1", "downstream2", "gbb")),
+      // name of repair action is changed
+      repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab"))
     )
 
     expect(pairManager.stopActor("ab")).once
@@ -144,7 +148,11 @@ class ConfigurationTest {
     replayAll
 
     configuration.applyConfiguration(config)
-    assertEquals(config, configuration.retrieveConfiguration)
+    val newConfig = configuration.retrieveConfiguration
+    assertEquals(config, newConfig)
+
+    // check that the action was updated
+    assertEquals(Set(RepairAction("Resend Source", "resend", "pair", "ab")), newConfig.repairActions)
     verifyAll
   }
 

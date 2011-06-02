@@ -16,7 +16,7 @@
 
 package net.lshift.diffa.kernel.client
 
-import net.lshift.diffa.kernel.config.{CategoryDescriptor, PairDef, Endpoint, PairGroup}
+import net.lshift.diffa.kernel.config._
 
 /**
  * Interface supported by clients capable of configuring the diffa agent.
@@ -26,6 +26,8 @@ trait ConfigurationClient {
   def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean, categories:java.util.Map[String,CategoryDescriptor]) : Endpoint
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int,
                   upstreamName: String, downstreamName: String, groupKey: String):PairDef
+  def declareRepairAction(name: String, id: String, scope: String, pairKey: String): RepairAction
+  def removeRepairAction(name: String, pairKey: String)
   def deletePair(pairKey: String) : Unit
   def getEndpoint(name:String) : Endpoint
 }

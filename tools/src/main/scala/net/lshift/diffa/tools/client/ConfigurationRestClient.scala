@@ -18,10 +18,8 @@ package net.lshift.diffa.tools.client
 
 import net.lshift.diffa.kernel.client.ConfigurationClient
 import net.lshift.diffa.messaging.json.AbstractRestClient
-import scala.collection.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{CategoryDescriptor, Endpoint, PairDef, PairGroup}
-import javax.ws.rs.core.MediaType
+import net.lshift.diffa.kernel.config._
 import com.sun.jersey.api.client.ClientResponse
 
 class ConfigurationRestClient(serverRootUrl:String)
@@ -45,6 +43,16 @@ class ConfigurationRestClient(serverRootUrl:String)
     val p = new PairDef(pairKey, versionPolicyName, matchingTimeout, upstreamName, downstreamName, groupKey)
     create("pairs", p)
     p
+  }
+
+  def declareRepairAction(name: String, id: String, scope: String, pairKey: String) = {
+    val action = new RepairAction(name, id, scope, pairKey)
+    create("/pairs/"+pairKey+"/repair-actions", action)
+    action
+  }
+
+  def removeRepairAction(name: String, pairKey: String) {
+    delete("/pairs/"+pairKey+"/repair-actions/"+name)
   }
 
   def deletePair(pairKey: String) = {

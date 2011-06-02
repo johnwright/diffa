@@ -89,7 +89,7 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
     }
   }
 
-  def create (where:String, what:Any) = {
+  def create (where:String, what:Any) {
     val endpoint = resource.path(where)
     val media = endpoint.`type`(MediaType.APPLICATION_JSON_TYPE)
     val response = media.post(classOf[ClientResponse], what)
@@ -97,7 +97,20 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
       case 201 => ()
       case _   => {
         log.error(response.getStatus + "")
-        throw new RuntimeException(response.getStatus() + "")
+        throw new RuntimeException(response.getStatus + "")
+      }
+    }
+  }
+
+  def delete(where: String) {
+    val endpoint = resource.path(where)
+    val media = endpoint.`type`(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.delete(classOf[ClientResponse])
+    response.getStatus match {
+      case 200 | 204 => ()
+      case _ => {
+        log.error(response.getStatus.toString)
+        throw new RuntimeException(response.getStatus.toString)
       }
     }
   }

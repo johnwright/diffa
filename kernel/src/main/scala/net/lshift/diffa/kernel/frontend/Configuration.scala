@@ -49,6 +49,13 @@ class Configuration(val configStore: ConfigStore,
     diffaConfig.groups.foreach(g => createOrUpdateGroup(g))
     diffaConfig.pairs.foreach(p => createOrUpdatePair(p))
 
+    // Remove missing repair actions, and create/update the rest
+    val removedActions =
+      configStore.listRepairActions.filter(a => diffaConfig.repairActions
+        .find(newA => newA.name == a.name && newA.pairKey == a.pairKey).isEmpty)
+    removedActions.foreach(a => deleteRepairAction(a.name, a.pairKey))
+    diffaConfig.repairActions.foreach(createOrUpdateRepairAction)
+
     // Remove old pairs and endpoints
     val removedPairs = configStore.listGroups.flatMap(_.pairs.filter(currP => diffaConfig.pairs.find(newP => newP.pairKey == currP.key).isEmpty))
     removedPairs.foreach(p => deletePair(p.key))
@@ -66,7 +73,8 @@ class Configuration(val configStore: ConfigStore,
       endpoints = configStore.listEndpoints.toSet,
       groups = configStore.listGroups.map(g => g.group).toSet,
       pairs = configStore.listGroups.flatMap(g => g.pairs.map(
-        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toSet
+        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toSet,
+      repairActions = configStore.listRepairActions.toSet
     )
   }
 
@@ -172,5 +180,29 @@ class Configuration(val configStore: ConfigStore,
   def listGroups: Seq[GroupContainer] = {
     log.debug("Processing group list request")
     configStore.listGroups
+  }
+
+  def declareRepairAction(action: RepairAction) {
+    createOrUpdateRepairAction(action)
+  }
+
+  def createOrUpdateRepairAction(action: RepairAction) {
+    log.debug("Processing repair action declare/update request: " + action.name)
+    configStore.createOrUpdateRepairAction(action)
+  }
+
+  def deleteRepairAction(name: String, pairKey: String) {
+    log.debug("Processing repair action delete request: (name="+name+", pairKey="+pairKey+")")
+    configStore.deleteRepairAction(name, pairKey)
+  }
+
+  def listRepairActions: Seq[RepairAction] = {
+    log.debug("Processing repair action list request")
+    configStore.listRepairActions
+  }
+
+  def listRepairActionsForPair(pairKey: String): Seq[RepairAction] = {
+    val pair = configStore.getPair(pairKey)
+    configStore.listRepairActionsForPair(pair)
   }
 }

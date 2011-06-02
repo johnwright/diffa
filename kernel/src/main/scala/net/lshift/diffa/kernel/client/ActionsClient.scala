@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.client
 
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-
+import net.lshift.diffa.kernel.config.RepairAction
 
 /**
  * Interface supported by clients capable of listing and invoking actions for pairs.
@@ -37,23 +37,27 @@ trait ActionsClient {
   
 }
 
+case class Actionable (
+  @BeanProperty var name:String,
+  @BeanProperty var scope:String,
+  @BeanProperty var path:String,
+  @BeanProperty var pairKey:String) {
+
+ def this() = this(null, null, null, null)
+}
+
+object Actionable {
+  def fromRepairAction(a: RepairAction): Actionable = {
+    val path = "/actions/"+a.pairKey+"/"+a.actionId+"/${id}" // TODO support entity-scoped actions
+    new Actionable(a.name, a.scope, path, a.pairKey)
+  }
+}
+
 case class ActionableRequest (
   @BeanProperty var pairKey:String,
   @BeanProperty var actionId:String,
   @BeanProperty var entityId:String) {
 
  def this() = this(null, null, null)
-
-}
-
-case class Actionable (
-  @BeanProperty var id:String,
-  @BeanProperty var name:String,
-  @BeanProperty var `type`:String,
-  @BeanProperty var action:String,
-  @BeanProperty var method:String) {
-
- def this() = this(null, null, null, null, null)
- def this(id:String, n:String, t:String, a:String) = this(id, n, t, a, null)
 
 }

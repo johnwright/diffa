@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.tools.client
 
-import net.lshift.diffa.kernel.client.{ActionableRequest, Actionable, ActionsClient}
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
+import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 
 class ActionsRestClient(serverRootUrl:String)
         extends AbstractRestClient(serverRootUrl, "rest/actions/")

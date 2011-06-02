@@ -62,6 +62,12 @@ class ConfigurationResource {
   def listGroups: Array[GroupContainer] = config.listGroups.toArray
 
   @GET
+  @Path("/repair-actions")
+  @Produces(Array("application/json"))
+  @Description("Returns a list of all the repair actions registered with the agent.")
+  def listRepairActions: Array[RepairAction] = config.listRepairActions.toArray
+
+  @GET
   @Produces(Array("application/json"))
   @Path("/endpoints/{id}")
   @Description("Returns an endpoint by its identifier.")
@@ -119,6 +125,32 @@ class ConfigurationResource {
   @Description("Removes a pairing between two endpoints that are registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   def deletePair(@PathParam("id") id:String) = config.deletePair(id)
+
+  @GET
+  @Path("/pairs/{id}/repair-actions")
+  @Produces(Array("application/json"))
+  @Description("Returns a list of the repair actions associated with a pair")
+  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
+  def listRepairActionsForPair(@PathParam("id") pairKey: String) = config.listRepairActionsForPair(pairKey).toArray
+
+  @POST
+  @Path("/pairs/{id}/repair-actions")
+  @Consumes(Array("application/json"))
+  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
+  @Description("Creates a new repair action associated with a pair that is registered with the agent.")
+  def createRepairAction(a: RepairAction) = {
+    config.createOrUpdateRepairAction(a)
+    resourceCreated(a.name, uriInfo)
+  }
+
+  @DELETE
+  @Path("/pairs/{pairKey}/repair-actions/{name}")
+  @Description("Removes an action that is registered with the agent.")
+  @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair ID"),
+                         new MandatoryParam(name="name", datatype="string", description="Action name")))
+  def deleteRepairAction(@PathParam("name") name: String, @PathParam("pairKey") pairKey: String) {
+    config.deleteRepairAction(name, pairKey)
+  }
 
   @POST
   @Path("/groups")
