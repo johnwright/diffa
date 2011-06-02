@@ -33,9 +33,13 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
 
   def invoke(request:ActionableRequest) : InvocationResult =
     withValidPair(request.pairKey) { pair =>
-      // TODO I think this creates a new instance for each invocation, not sure whether this is an issue or not
       val participant = factory.createUpstreamParticipant(pair.upstream)
-      participant.invoke(request.actionId, request.entityId)
+      try {
+        participant.invoke(request.actionId, request.entityId)
+      }
+      finally {
+        participant.close()
+      }
     }
 
   def withValidPair[T](pairKey: String)(f: Pair => T): T = {
