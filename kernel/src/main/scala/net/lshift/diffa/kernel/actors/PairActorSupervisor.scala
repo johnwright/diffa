@@ -84,6 +84,8 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   def scanPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) =
     findActor(pairKey) ! ScanMessage(diffListener, pairSyncListener)
 
+  def cancelAllScans(pairKey:String) = (findActor(pairKey) !! CancelMessage); ()
+
   def findActor(pairKey:String) = {
     val actors = Actor.registry.actorsFor(pairKey)
     actors.length match {

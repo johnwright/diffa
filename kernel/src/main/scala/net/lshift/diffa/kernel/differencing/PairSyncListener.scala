@@ -23,5 +23,5 @@ trait PairSyncListener {
   /**
    * Indicates that the sync state of the given pair has changed.
    */
-  def pairSyncStateChanged(pairKey:String, syncState:PairSyncState)
+  def pairSyncStateChanged(pairKey:String, syncState:PairScanState)
 }

@@ -29,7 +29,7 @@ import javax.xml.transform.stream.{StreamSource, StreamResult}
 import scala.collection.JavaConversions._
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config._
-import net.lshift.diffa.kernel.differencing.PairSyncState
+import net.lshift.diffa.kernel.differencing.PairScanState
 import net.lshift.diffa.kernel.frontend.DiffaConfig
 
 /**

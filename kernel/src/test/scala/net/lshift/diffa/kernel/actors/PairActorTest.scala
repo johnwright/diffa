@@ -139,13 +139,13 @@ class PairActorTest {
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
 
     expectScans
 
     expect(versionPolicy.difference(pairKey, diffListener))
 
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
     replay(versionPolicy, syncListener)
@@ -168,8 +168,8 @@ class PairActorTest {
     val vsn = "foobar"
     val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
 
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
     })
     replay(syncListener)
@@ -226,11 +226,11 @@ class PairActorTest {
     expect(writer.rollback())
     replay(writer)
 
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
 
     expectScans.andThrow(new RuntimeException("Deliberate runtime excecption, this should be handled"))
 
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })
     replay(versionPolicy, syncListener)

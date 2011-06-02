@@ -133,8 +133,14 @@ case class PairActor(pairKey:String,
       lastUUID = new UUID
       if (handleScanMessage(s)) {
         become {
-          case c:VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
           case FlushWriterMessage                => // ignore flushes in this state - we may want to roll the index back
+          case CancelMessage                     => {
+            logger.info("%s: Scan for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
+            flushBufferedEvents
+            dropPendingScans
+            leaveScanState(PairScanState.CANCELLED)
+          }
+          case c:VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
           case d:Deferrable                      => deferred.enqueue(d)
           case UpstreamScanSuccess(uuid)         => {
             logger.trace("Received upstream success: %s".format(uuid))
@@ -148,7 +154,7 @@ case class PairActor(pairKey:String,
           }
           case ScanFailed(uuid)                  => {
             logger.error("Received scan failure: %s".format(uuid))
-            leaveScanState(PairSyncState.FAILED)
+            leaveScanState(PairScanState.FAILED)
           }
           case x =>
             // TODO should the scan state be exited at this stage?
@@ -181,23 +187,25 @@ case class PairActor(pairKey:String,
       logger.trace("Finished scan %s".format(lastUUID))
 
       // Feed all of the match events out to the interested parties
-      bufferedMatchEvents.dequeueAll(e => {e.command(currentDiffListener); true})
+      flushBufferedEvents
 
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
       policy.difference(pairKey, currentDiffListener)
 
       // Re-queue all buffered commands
-      leaveScanState(PairSyncState.UP_TO_DATE)
+      leaveScanState(PairScanState.UP_TO_DATE)
     }
   }
+
+  def flushBufferedEvents = bufferedMatchEvents.dequeueAll(e => {e.command(currentDiffListener); true})
 
   /**
    * Ensures that the scan state is left cleanly
    */
-  def leaveScanState(state:PairSyncState) = {
+  def leaveScanState(state:PairScanState) = {
 
-    if (state == PairSyncState.FAILED) {
+    if (state == PairScanState.FAILED || state == PairScanState.CANCELLED) {
       writer.rollback()
     }
 
@@ -214,7 +222,7 @@ case class PairActor(pairKey:String,
   /**
    * Resets the state of the actor and processes any pending messages that may have arrived during a scan phase.
    */
-  def processBacklog(state:PairSyncState) = {
+  def processBacklog(state:PairScanState) = {
     if (currentScanListener != null) {
       currentScanListener.pairSyncStateChanged(pairKey, state)
     }
@@ -222,6 +230,8 @@ case class PairActor(pairKey:String,
     currentScanListener = null
     deferred.dequeueAll(d => {self ! d; true})
   }
+
+  def dropPendingScans = deferred.dequeueAll(d => d.isInstanceOf[ScanMessage])
 
   /**
    * Events out normal changes.
@@ -264,7 +274,7 @@ case class PairActor(pairKey:String,
       bufferedMatchEvents.clear()
     }
 
-    message.pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING)
+    message.pairSyncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING)
 
     try {
       writer.flush()
@@ -300,7 +310,7 @@ case class PairActor(pairKey:String,
     } catch {
       case x: Exception => {
         logger.error("Failed to initiate scan for pair: " + pairKey, x)
-        processBacklog(PairSyncState.FAILED)
+        processBacklog(PairScanState.FAILED)
         false
       }
     }
@@ -323,6 +333,10 @@ case class ChangeMessage(event: PairChangeEvent) extends Deferrable
 case class DifferenceMessage(diffListener: DifferencingListener) extends Deferrable
 case class ScanMessage(diffListener: DifferencingListener, pairSyncListener: PairSyncListener) extends Deferrable
 
+/**
+ * This message indicates that this actor should cancel all current and pending scan operations.
+ */
+case object CancelMessage
 /**
  * An internal command that indicates to the actor that the underlying writer should be flushed
  */
@@ -351,4 +365,10 @@ trait PairPolicyClient {
    * concurrent operations to be submitted safely against the same pair concurrently.
    */
   def scanPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) : Unit
+
+  /**
+   * Cancels any scan operation that may be in process.
+   * This is a blocking call, so it will only return after all current and pending scans have been cancelled.
+   */
+  def cancelAllScans(pairKey:String) : Unit
 }

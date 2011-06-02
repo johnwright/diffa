@@ -63,7 +63,7 @@ class DefaultSessionManager(
 
   private val participants = new HashMap[Endpoint, Participant]
 
-  private val pairStates = new HashMap[String, PairSyncState]
+  private val pairStates = new HashMap[String, PairScanState]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
@@ -159,7 +159,7 @@ class DefaultSessionManager(
   def pairScanStates(scope:SessionScope) = {
     val pairKeys = pairKeysForScope(scope)
     pairStates.synchronized {
-      pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairSyncState.UNKNOWN)).toMap
+      pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairScanState.UNKNOWN)).toMap
     }
   }
 
@@ -302,7 +302,7 @@ class DefaultSessionManager(
   // Pair Sync Notifications
   //
 
-  def pairSyncStateChanged(pairKey: String, syncState: PairSyncState) = updatePairSyncState(pairKey, syncState)
+  def pairSyncStateChanged(pairKey: String, syncState: PairScanState) = updatePairSyncState(pairKey, syncState)
 
 
   //
@@ -340,7 +340,7 @@ class DefaultSessionManager(
       // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
       // asynchronously, we might have returned before then, and this may potentially result in clients seeing
       // a "Up To Date" view, even though we're just about to transition out of that state.
-      updatePairSyncState(pairKey, PairSyncState.SYNCHRONIZING)
+      updatePairSyncState(pairKey, PairScanState.SYNCHRONIZING)
 
       pairPolicyClient.scanPair(pairKey, listener, this)
     })
@@ -426,7 +426,7 @@ class DefaultSessionManager(
     f()
   }
 
-  def updatePairSyncState(pairKey:String, state:PairSyncState) = {
+  def updatePairSyncState(pairKey:String, state:PairScanState) = {
     pairStates.synchronized {
       pairStates(pairKey) = state
     }

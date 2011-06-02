@@ -22,7 +22,7 @@ import com.sun.jersey.api.client.{WebResource, ClientResponse}
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.participants.ParticipantType
 import javax.ws.rs.core.{Response, MediaType}
-import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionScope, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.messaging.json.{NotFoundException, AbstractRestClient}
 import org.joda.time.format.ISODateTimeFormat
@@ -82,7 +82,7 @@ class DifferencesRestClient(serverRootUrl:String)
     status.getStatusCode match {
       case 200 => {
         val responseData = response.getEntity(classOf[java.util.Map[String, String]])
-        responseData.map {case (k, v) => k -> PairSyncState.valueOf(v) }.toMap
+        responseData.map {case (k, v) => k -> PairScanState.valueOf(v) }.toMap
       }
       case x:Int   => handleHTTPError(x, path, status)
     }

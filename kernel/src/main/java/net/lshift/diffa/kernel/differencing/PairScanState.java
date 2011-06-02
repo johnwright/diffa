@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.differencing;
 /**
  * Enumeration of the synchronization states that a pair can be in.
  */
-public enum PairSyncState {
+public enum PairScanState {
   /**
    * The state of the pair is unknown, and no sync is currently pending.
    */
@@ -29,6 +29,11 @@ public enum PairSyncState {
    * The last synchronization operation for the pair failed.
    */
   FAILED,
+
+  /**
+   * The scan was cancelled on request
+   */
+  CANCELLED,
 
   /**
    * The pair is up to date.
