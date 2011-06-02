@@ -124,7 +124,7 @@ function loadBuckets() {
 	});
 }
 
-function renderActions(pairKey, itemID) {
+function renderEntityScopedActions(pairKey, itemID) {
 	var $actionListContainer = $("#actionlist").empty();
 	var actionListCallback = function(actionList, status, xhr) {
 		if (!actionList) {
@@ -132,6 +132,8 @@ function renderActions(pairKey, itemID) {
 		}
 		var $repairStatus = $('#repairstatus');
 		$.each(actionList, function(i, action) {
+            // filter out pair-scoped actions
+            if (action.scope == "pair") return;
 
 			$("<label>" + action.name + "</label>").appendTo($actionListContainer);
 			$('<button class="repair">Go</button>')
@@ -215,7 +217,7 @@ function renderEvent(event) {
         getContent("#item2 pre", downstreamLabel, "downstream");
     });
 
-    renderActions(pairKey, itemID);
+    renderEntityScopedActions(pairKey, itemID);
 }
 
 function selectFromList(event) {
