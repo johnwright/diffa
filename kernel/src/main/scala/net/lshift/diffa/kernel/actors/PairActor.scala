@@ -28,6 +28,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.AlertCodes
 import com.eaio.uuid.UUID
 import akka.actor._
+import collection.mutable.LinkedHashMap
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -51,6 +52,8 @@ case class PairActor(pairKey:String,
   private var currentScanListener:PairSyncListener = null
   private var upstreamSuccess = false
   private var downstreamSuccess = false
+
+  private val bufferedMatchEvents:LinkedHashMap[VersionID,MatchEvent] = null
 
   lazy val writer = store.openWriter()
 
@@ -95,6 +98,23 @@ case class PairActor(pairKey:String,
     def get(f:Option[Any]) = f.get.asInstanceOf[Correlation]
   }
 
+  case class MatchEvent(id: VersionID, command:(DifferencingListener => Unit))
+
+  private val diffListenerProxy = new DifferencingListener {
+    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String) = self ! MatchEvent(id, _.onMismatch(id,update,uvsn,dvsn))
+    def onMatch(id:VersionID, vsn:String) = self ! MatchEvent(id, _.onMatch(id, vsn))
+  }
+
+
+
+//    def flush = matchEvents.foreach{case (id,event) =>
+//      event match {
+//        case Matched(vsn)                       => underlying.onMatch(id, vsn)
+//        case Unmatched(lastUpdated, uvsn, dvsn) => underlying.onMismatch(id, lastUpdated, uvsn, dvsn)
+//      }
+//      matchEvents
+//    }
+
   override def preStart = {
     // schedule a recurring message to flush the writer
     scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
@@ -113,6 +133,10 @@ case class PairActor(pairKey:String,
       if (handleScanMessage(s)) {
         become {
           case c:VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
+          case m:MatchEvent                      => bufferedMatchEvents(m.id) = m
+          case FlushWriterMessage                => {
+            // ignore in this state
+          }
           case d:Deferrable                      => deferred.enqueue(d)
           case UpstreamScanSuccess(uuid)         => {
             logger.trace("Received upstream success: %s".format(uuid))
@@ -231,7 +255,7 @@ case class PairActor(pairKey:String,
 
       Actor.spawn {
         try {
-          policy.scanUpstream(pairKey, writerProxy, us, currentDiffListener)
+          policy.scanUpstream(pairKey, writerProxy, us, diffListenerProxy)
           self ! UpstreamScanSuccess(lastUUID)
         }
         catch {
@@ -244,7 +268,7 @@ case class PairActor(pairKey:String,
 
       Actor.spawn {
         try {
-          policy.scanDownstream(pairKey, writerProxy, us, ds, currentDiffListener)
+          policy.scanDownstream(pairKey, writerProxy, us, ds, diffListenerProxy)
           self ! DownstreamScanSuccess(lastUUID)
         }
         catch {
