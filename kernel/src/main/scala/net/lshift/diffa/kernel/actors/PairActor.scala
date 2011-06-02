@@ -21,14 +21,13 @@ import org.slf4j.{Logger, LoggerFactory}
 import net.jcip.annotations.ThreadSafe
 import java.util.concurrent.ScheduledFuture
 import net.lshift.diffa.kernel.differencing._
-import collection.mutable.Queue
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.AlertCodes
 import com.eaio.uuid.UUID
 import akka.actor._
-import collection.mutable.LinkedHashMap
+import collection.mutable.{SynchronizedQueue, Queue}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -53,7 +52,11 @@ case class PairActor(pairKey:String,
   private var upstreamSuccess = false
   private var downstreamSuccess = false
 
-  private val bufferedMatchEvents:LinkedHashMap[VersionID,MatchEvent] = null
+  /**
+   * Thread safe buffer of match events that will be accessed directly by different sub actors
+   */
+  @ThreadSafe
+  private val bufferedMatchEvents = new SynchronizedQueue[MatchEvent]
 
   lazy val writer = store.openWriter()
 
@@ -100,20 +103,18 @@ case class PairActor(pairKey:String,
 
   case class MatchEvent(id: VersionID, command:(DifferencingListener => Unit))
 
-  private val diffListenerProxy = new DifferencingListener {
-    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String) = self ! MatchEvent(id, _.onMismatch(id,update,uvsn,dvsn))
-    def onMatch(id:VersionID, vsn:String) = self ! MatchEvent(id, _.onMatch(id, vsn))
+  private val bufferingListener = new DifferencingListener {
+
+    /**
+     * Buffer up the match event because these won't be replayed by a subsequent difference operation.
+     */
+    def onMatch(id:VersionID, vsn:String) = bufferedMatchEvents.enqueue(MatchEvent(id, _.onMatch(id, vsn)))
+
+    /**
+     * Drop the mismatch, since we will be doing a full difference and the end of the scan process.
+     */
+    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String) = ()
   }
-
-
-
-//    def flush = matchEvents.foreach{case (id,event) =>
-//      event match {
-//        case Matched(vsn)                       => underlying.onMatch(id, vsn)
-//        case Unmatched(lastUpdated, uvsn, dvsn) => underlying.onMismatch(id, lastUpdated, uvsn, dvsn)
-//      }
-//      matchEvents
-//    }
 
   override def preStart = {
     // schedule a recurring message to flush the writer
@@ -133,10 +134,7 @@ case class PairActor(pairKey:String,
       if (handleScanMessage(s)) {
         become {
           case c:VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
-          case m:MatchEvent                      => bufferedMatchEvents(m.id) = m
-          case FlushWriterMessage                => {
-            // ignore in this state
-          }
+          case FlushWriterMessage                => // ignore flushes in this state - we may want to roll the index back
           case d:Deferrable                      => deferred.enqueue(d)
           case UpstreamScanSuccess(uuid)         => {
             logger.trace("Received upstream success: %s".format(uuid))
@@ -152,7 +150,8 @@ case class PairActor(pairKey:String,
             logger.error("Received scan failure: %s".format(uuid))
             leaveScanState(PairSyncState.FAILED)
           }
-          case x                                 =>
+          case x =>
+            // TODO should the scan state be exited at this stage?
             logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
         }
       }
@@ -181,7 +180,10 @@ case class PairActor(pairKey:String,
       upstreamSuccess = false
       logger.trace("Finished scan %s".format(lastUUID))
 
-      // Notify all interested parties
+      // Feed all of the match events out to the interested parties
+      bufferedMatchEvents.dequeueAll(e => {e.command(currentDiffListener); true})
+
+      // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
       policy.difference(pairKey, currentDiffListener)
 
@@ -194,8 +196,16 @@ case class PairActor(pairKey:String,
    * Ensures that the scan state is left cleanly
    */
   def leaveScanState(state:PairSyncState) = {
+
+    if (state == PairSyncState.FAILED) {
+      writer.rollback()
+    }
+
     // Re-queue all buffered commands
     processBacklog(state)
+
+    // Make sure that the event queue is empty for the next scan
+    bufferedMatchEvents.clear()
 
     // Leave the scan state
     unbecome()
@@ -248,6 +258,12 @@ case class PairActor(pairKey:String,
     currentDiffListener = message.diffListener
     currentScanListener = message.pairSyncListener
 
+    // Make sure that the event buffer is empty for this scan
+    if (bufferedMatchEvents.size > 0) {
+      logger.warn("Found %s match events in the buffer, possible bug".format(bufferedMatchEvents.size))
+      bufferedMatchEvents.clear()
+    }
+
     message.pairSyncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING)
 
     try {
@@ -255,7 +271,7 @@ case class PairActor(pairKey:String,
 
       Actor.spawn {
         try {
-          policy.scanUpstream(pairKey, writerProxy, us, diffListenerProxy)
+          policy.scanUpstream(pairKey, writerProxy, us, bufferingListener)
           self ! UpstreamScanSuccess(lastUUID)
         }
         catch {
@@ -268,7 +284,7 @@ case class PairActor(pairKey:String,
 
       Actor.spawn {
         try {
-          policy.scanDownstream(pairKey, writerProxy, us, ds, diffListenerProxy)
+          policy.scanDownstream(pairKey, writerProxy, us, ds, bufferingListener)
           self ! DownstreamScanSuccess(lastUUID)
         }
         catch {

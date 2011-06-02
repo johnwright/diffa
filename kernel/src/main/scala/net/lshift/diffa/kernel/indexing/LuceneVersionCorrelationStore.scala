@@ -283,6 +283,11 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends ExtendedVersio
 
   def isDirty = bufferSize > 0
 
+  def rollback() = {
+    writer.rollback()
+    log.info("Writer rolled back")
+  }
+
   def flush() {
     if (isDirty) {
       updatedDocs.foreach { case (id, doc) =>

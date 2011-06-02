@@ -108,8 +108,10 @@ class PairActorTest {
   }
 
   def expectScans() = {
-    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
-    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(ds), EasyMock.eq(diffListener)))
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+                                      EasyMock.eq(us), EasyMock.isA(classOf[DifferencingListener])))
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+                                        EasyMock.eq(us), EasyMock.eq(ds), EasyMock.isA(classOf[DifferencingListener])))
   }
 
   @Test
@@ -221,7 +223,9 @@ class PairActorTest {
     val monitor = new Object
 
     expect(writer.flush()).atLeastOnce
+    expect(writer.rollback())
     replay(writer)
+
     syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
 
     expectScans.andThrow(new RuntimeException("Deliberate runtime excecption, this should be handled"))
