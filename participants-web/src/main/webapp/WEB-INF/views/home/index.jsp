@@ -66,8 +66,7 @@
 
       <div class="add">
         <label><input type="text" name="id" value="id"></label>
-        <%--<label><input type="text" name="lastUpdated" value="2010-10-06T08:08:00"></label>--%>
-        <label><input type="text" name="body" value="Put your content here ..."></label>
+        <textarea name="body" value="Put your content here ..." rows="10" cols="40"></textarea>
         <input type="button" name="add" value="Add">
       </div>
     </form>
@@ -81,8 +80,7 @@
 
       <div class="add">
         <label><input type="text" name="id" value="id"></label>
-        <%--<label><input type="text" name="lastUpdated" value="2010-10-06T08:08:00"></label>--%>
-        <label><input type="text" name="body" value="Put your content here ..."></label>
+        <textarea name="body" value="Put your content here ..." rows="10" cols="40"></textarea>
         <input type="button" name="add" value="Add">
       </div>
     </form>
@@ -127,9 +125,8 @@
 
       $(listId + ' input[name="add"]').click(function() {
         var newId = $(listId + ' input[name="id"]').val();
-//        var newLastUpdated = $(listId + ' input[name="lastUpdated"]').val();
         var newLastUpdated = new Date().toString("yyyy-MM-ddTHH:mm:ss");
-        var newBody = $(listId + ' input[name="body"]').val();
+        var newBody = $(listId + ' textarea[name="body"]').val();
         addAndStoreEntity(listType, newId, newLastUpdated, newBody);
       });
     }
