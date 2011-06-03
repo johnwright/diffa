@@ -36,6 +36,7 @@ class ScanningTest {
   @Test(expected = classOf[NotFoundException])
   def nonExistentPairShouldGenerateNotFoundError = {
     scanClient.cancelScanning(new UUID().toString)
+    ()
   }
 
   def existentPairShouldNotGenerateError = {
