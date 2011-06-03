@@ -50,10 +50,15 @@ trait CommonActionTests {
 
   @Test
   def canDeleteAction {
-    def actionKey = env.actionsClient.listActions(env.pairKey).headOption.map(_.name)
-    assertEquals(Some(env.actionName), actionKey)
+    def actionName = env.actionsClient.listActions(env.pairKey).headOption.map(_.name)
+    assertEquals(Some(env.actionName), actionName)
     env.configurationClient.removeRepairAction(env.actionName, env.pairKey)
-    assertEquals(None, actionKey)
+    assertEquals(None, actionName)
+  }
+
+  @Test(expected=classOf[RuntimeException])
+  def shouldRejectInvalidActionScope {
+    env.configurationClient.declareRepairAction(env.actionName, "resend", "INVALID SCOPE", env.pairKey)
   }
 
 }

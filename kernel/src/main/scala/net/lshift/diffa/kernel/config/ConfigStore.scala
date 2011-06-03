@@ -177,10 +177,21 @@ case class PairDef(
 case class RepairAction(
   @BeanProperty var name: String,
   @BeanProperty var actionId: String,
-  @BeanProperty var scope: String,
+                var scope: String,
   @BeanProperty var pairKey: String
 ) {
+  import RepairAction._
+
   def this() = this(null, null, null, null)
+
+  def getScope = scope
+
+  def setScope(scope: String) {
+    this.scope = scope match {
+      case ENTITY_SCOPE | PAIR_SCOPE => scope
+      case _ => throw new IllegalArgumentException("Invalid action scope: "+scope)
+    }
+  }
 }
 
 object RepairAction {
