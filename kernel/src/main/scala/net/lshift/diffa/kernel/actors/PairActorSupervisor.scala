@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 import net.lshift.diffa.kernel.differencing.{PairSyncListener, DifferencingListener, VersionPolicyManager, VersionCorrelationStoreFactory}
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                config:ConfigStore,
@@ -97,7 +98,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
       case 1 => actors(0)
       case 0 => {
         log.error("Could not resolve actor for key: " + pairKey)
-        throw new RuntimeException("Unresolvable pair: " + pairKey)
+        throw new MissingObjectException(pairKey)
       }
       case x => {
         log.error("Too many actors for key: " + pairKey + "; actors = " + x)
