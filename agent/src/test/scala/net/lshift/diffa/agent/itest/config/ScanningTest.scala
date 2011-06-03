@@ -20,15 +20,40 @@ import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.messaging.json.NotFoundException
-import net.lshift.diffa.tools.client.ScanningRestClient
 import com.eaio.uuid.UUID
+import net.lshift.diffa.tools.client.{ConfigurationRestClient, ScanningRestClient}
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import scala.collection.JavaConversions._
 
+/**
+ * Smoke tests for the scan interface.
+ */
 class ScanningTest {
 
-  val client = new ScanningRestClient(agentURL)
+  val scanClient = new ScanningRestClient(agentURL)
+  val configClient = new ConfigurationRestClient(agentURL)
 
   @Test(expected = classOf[NotFoundException])
   def nonExistentPairShouldGenerateNotFoundError = {
-    client.cancelScanning(new UUID().toString)
+    scanClient.cancelScanning(new UUID().toString)
+  }
+
+  def existentPairShouldNotGenerateError = {
+    val up = new UUID().toString
+    val down = new UUID().toString
+    val pair = new UUID().toString
+    val group = new UUID().toString
+
+    val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
+
+    configClient.declareEndpoint(up, "http://upstream.com", "application/json", null,null, true, categories)
+    configClient.declareEndpoint(down, "http://downstream.com", "application/json", null,null, true, categories)
+    configClient.declareGroup(group)
+    configClient.declarePair(pair, "same", 1, up, down, group)
+
+    // Simple smoke test - you could kick off a scan and verify that it gets interrupted,
+    // but this code path is tested in the unit test
+
+    assertTrue(scanClient.cancelScanning(pair))
   }
 }

@@ -21,5 +21,5 @@ trait ScanningClient {
   /**
    * Cancels any running and/or pending scans for the given pair.
    */
-  def cancelScanning(pairKey:String) : Unit
+  def cancelScanning(pairKey:String) : Boolean
 }

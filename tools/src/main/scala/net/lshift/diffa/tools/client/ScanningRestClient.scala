@@ -24,5 +24,8 @@ import net.lshift.diffa.kernel.client.ScanningClient
  */
 class ScanningRestClient(u:String) extends AbstractRestClient(u, "rest/scanning/") with ScanningClient {
 
-  def cancelScanning(pairKey: String) = delete("/pairs/" + pairKey + "/scan")
+  def cancelScanning(pairKey: String) = {
+    delete("/pairs/" + pairKey + "/scan")
+    true
+  }
 }
