@@ -486,15 +486,12 @@ object HibernateConfigStoreTest {
         setProperty("hibernate.connection.url", "jdbc:derby:target/configStore;create=true").
         setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
 
-  val sessionFactory = try {
+  val sessionFactory = {
     val sf = config.buildSessionFactory
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
     sf
   }
-  catch {
-    case e => e.printStackTrace()
-    exit()
-  }
+
   val configStore = new HibernateConfigStore(sessionFactory)
 
   def clearAllConfig = {
