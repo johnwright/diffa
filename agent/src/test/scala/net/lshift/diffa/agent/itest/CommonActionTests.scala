@@ -21,15 +21,14 @@ import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.client.ActionableRequest
+import javax.xml.ws.Response
 
 trait CommonActionTests {
 
-
   def env:TestEnvironment
 
-
   @Test
-  def shouldHaveActions = {
+  def shouldHaveActions {
     val actions = env.actionsClient.listActions(env.pairKey)
     assertNotNull(actions)
     assertEquals(1, actions.size)
@@ -37,7 +36,7 @@ trait CommonActionTests {
   }
 
   @Test
-  def invokeAction = {
+  def invokeEntityScopedAction {
     val entityId = "abc"
     env.upstream.addEntity(entityId, env.bizDate(yesterday), yesterday, "abcdef")
     val pairKey = env.pairKey
@@ -49,16 +48,25 @@ trait CommonActionTests {
   }
 
   @Test
+  def invokePairScopedAction {
+    env.createPairScopedAction
+    val request = ActionableRequest(env.pairKey, env.pairScopedActionId, null)
+    val response = env.actionsClient.invoke(request)
+    assertNotNull(response)
+    assertEquals("success", response.result)
+  }
+
+  @Test
   def canDeleteAction {
     def actionName = env.actionsClient.listActions(env.pairKey).headOption.map(_.name)
-    assertEquals(Some(env.actionName), actionName)
-    env.configurationClient.removeRepairAction(env.actionName, env.pairKey)
+    assertEquals(Some(env.entityScopedActionName), actionName)
+    env.configurationClient.removeRepairAction(env.entityScopedActionName, env.pairKey)
     assertEquals(None, actionName)
   }
 
   @Test(expected=classOf[RuntimeException])
   def shouldRejectInvalidActionScope {
-    env.configurationClient.declareRepairAction(env.actionName, "resend", "INVALID SCOPE", env.pairKey)
+    env.configurationClient.declareRepairAction(env.entityScopedActionName, "resend", "INVALID SCOPE", env.pairKey)
   }
 
 }
