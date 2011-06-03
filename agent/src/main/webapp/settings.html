@@ -54,7 +54,8 @@
               $.each(actionList, function(i, action) {
                   // filter out entity-scoped actions
                   if (action.scope != "pair") return;
-                  appendActionButtonToContainer($actionListContainer, action, pairKey, null, $repairStatus)
+                  appendActionButtonToContainer($actionListContainer, action, pairKey, null, $repairStatus);
+                  $actionListContainer.append('<br clear="both" />');
               });
           };
 
@@ -71,7 +72,7 @@
         $('#pairs').append($('<tr><td>' + name + '</td><td>' + renderState(state) + '</td></tr>')
             .append($actionButtonsForPair)
             .append($repairStatusForPair));
-        renderPairScopedActions(name, $actionButtonsForPair, $repairStatusForPair)
+        renderPairScopedActions(name, $actionButtonsForPair, $repairStatusForPair);
       }
 
       $(document).ready(function() {
