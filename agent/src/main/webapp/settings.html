@@ -29,6 +29,7 @@
 
     <script type="text/javascript" src="js/jquery-1.6.min.js"></script>
     <script type="text/javascript" src="js/smartupdater-3.0.02beta.js"></script>
+    <script type="text/javascript" src="js/diffa-common.js" charset="utf-8"></script>
 
     <script type="text/javascript">
       var gLastStates = [];
@@ -46,12 +47,31 @@
         return null;
       }
 
+      function renderPairScopedActions(pairKey, $actionListContainer, $repairStatus) {
+          var actionListCallback = function(actionList, status, xhr) {
+              if (!actionList) return;
+
+              $.each(actionList, function(i, action) {
+                  // filter out entity-scoped actions
+                  if (action.scope != "pair") return;
+                  appendActionButtonToContainer($actionListContainer, action, pairKey, null, $repairStatus)
+              });
+          };
+
+          $.ajax({ url: API_BASE + '/actions/' + pairKey, success: actionListCallback });
+      }
+
       function removeAllPairs() {
         $('#pairs').find('tr').remove();
       }
 
       function addPair(name, state) {
-        $('#pairs').append($('<tr><td>' + name + '</td><td>' + renderState(state) + '</td></tr>'));
+        var $actionButtonsForPair = $('<td></td>');
+        var $repairStatusForPair = $('<td></td>');
+        $('#pairs').append($('<tr><td>' + name + '</td><td>' + renderState(state) + '</td></tr>')
+            .append($actionButtonsForPair)
+            .append($repairStatusForPair));
+        renderPairScopedActions(name, $actionButtonsForPair, $repairStatusForPair)
       }
 
       $(document).ready(function() {
@@ -113,7 +133,7 @@
 
         <table class="pair_states">
           <thead>
-            <tr><td>Pair</td><td>State</td></tr>
+            <tr><td>Pair</td><td>State</td><td>Actions</td><td> </td></tr>
           </thead>
           <tbody id="pairs"/>
         </table>

@@ -183,6 +183,11 @@ case class RepairAction(
   def this() = this(null, null, null, null)
 }
 
+object RepairAction {
+  val ENTITY_SCOPE = "entity"
+  val PAIR_SCOPE = "pair"
+}
+
 case class User(@BeanProperty var name: String,
                 @BeanProperty var email: String) {
   def this() = this(null, null)

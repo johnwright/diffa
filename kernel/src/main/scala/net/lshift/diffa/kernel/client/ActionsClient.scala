@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.client
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.config.RepairAction
+import net.lshift.diffa.kernel.config.RepairAction._
 
 /**
  * Interface supported by clients capable of listing and invoking actions for pairs.
@@ -48,7 +49,10 @@ case class Actionable (
 
 object Actionable {
   def fromRepairAction(a: RepairAction): Actionable = {
-    val path = "/actions/"+a.pairKey+"/"+a.actionId+"/${id}" // TODO support entity-scoped actions
+    val path = "/actions/" + a.pairKey + "/" + a.actionId + (a.scope match {
+      case ENTITY_SCOPE =>  "/${id}"
+      case PAIR_SCOPE => ""
+    })
     new Actionable(a.name, a.scope, path, a.pairKey)
   }
 }

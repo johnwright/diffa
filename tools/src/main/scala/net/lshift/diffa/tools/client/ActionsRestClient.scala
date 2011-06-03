@@ -26,7 +26,7 @@ class ActionsRestClient(serverRootUrl:String)
 
   def listActions(pairKey: String) : Seq[Actionable] = {
     val t = classOf[Array[Actionable]]
-    rpc(pairKey, t)    
+    rpc(pairKey, t)
   }
 
   def invoke(req:ActionableRequest) : InvocationResult = {

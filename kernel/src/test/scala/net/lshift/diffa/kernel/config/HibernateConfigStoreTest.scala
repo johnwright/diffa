@@ -61,7 +61,7 @@ class HibernateConfigStoreTest {
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name, groupKey1)
   val repairAction = new RepairAction(name="REPAIR_ACTION_NAME",
-                                      scope="entity",
+                                      scope=RepairAction.ENTITY_SCOPE,
                                       actionId="resend",
                                       pairKey=pairKey)
 
