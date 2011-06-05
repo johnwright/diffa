@@ -27,12 +27,12 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.participants._
-import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import collection.mutable.{ListBuffer, HashMap, HashSet}
 import net.lshift.diffa.kernel.differencing._
 import org.apache.lucene.document._
 import net.lshift.diffa.kernel.config.ConfigStore
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
+import org.apache.lucene.index.{IndexWriterConfig, IndexReader, Term, IndexWriter}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
@@ -54,8 +54,8 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
       // When new schema versions appear, we can handle their upgrade here
   }
 
-  val analyzer = new StandardAnalyzer(Version.LUCENE_30)
-  val writer = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED)
+  val config = new IndexWriterConfig(Version.LUCENE_32, new StandardAnalyzer(Version.LUCENE_32))
+  val writer = new IndexWriter(index, config)
 
   def openWriter() = new LuceneWriter(index, writer)
 

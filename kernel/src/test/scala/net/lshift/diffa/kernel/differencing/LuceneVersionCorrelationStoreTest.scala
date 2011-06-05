@@ -42,7 +42,7 @@ import org.joda.time.{LocalDate, DateTime}
 class LuceneVersionCorrelationStoreTest {
   import LuceneVersionCorrelationStoreTest._
 
-  private val otherPair = "other-pair"
+
   private val emptyAttributes:Map[String, TypedAttribute] = Map()
   private val emptyStrAttributes:Map[String, String] = Map()
 
@@ -355,7 +355,6 @@ class LuceneVersionCorrelationStoreTest {
   @Test
   def storesMustBeIsolatedByPairKey = {
     val writer = store.openWriter()
-    val otherStore = stores(otherPair)
     val otherWriter = otherStore.openWriter()
 
     otherWriter.storeUpstreamVersion(VersionID(otherPair, "123456789"), emptyAttributes, DEC_1_2009, "up-123456789")
@@ -443,9 +442,10 @@ object LuceneVersionCorrelationStoreTest {
   EasyMock.replay(dummyConfigStore)
 
   val pair = "pair"
+  val otherPair = "other-pair"
   val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore)
-  val indexer = stores(pair)
-  val store:VersionCorrelationStore = indexer
+  val store = stores(pair)
+  val otherStore = stores(otherPair)
 
   // Helper methods for various constraint/attribute scenarios
   def bizDateTimeSeq(d:DateTime) = Seq(d.toString())
@@ -499,6 +499,7 @@ object LuceneVersionCorrelationStoreTest {
   )
 
   def flushStore = {
-    indexer.reset
+    store.reset
+    otherStore.reset
   }
 }
