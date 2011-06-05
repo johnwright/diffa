@@ -24,7 +24,6 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
-import concurrent.{TIMEOUT, MailBox}
 import org.easymock.{EasyMock, IAnswer}
 import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.LoggerContext
@@ -33,6 +32,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import java.lang.RuntimeException
 import net.lshift.diffa.kernel.util.AlertCodes
 import akka.actor._
+import concurrent.{SyncVar, TIMEOUT, MailBox}
 
 class PairActorTest {
 
@@ -110,9 +110,11 @@ class PairActorTest {
 
   def expectScans() = {
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
-                                      EasyMock.eq(us), EasyMock.isA(classOf[DifferencingListener])))
+                                      EasyMock.eq(us), EasyMock.isA(classOf[DifferencingListener]),
+                                      EasyMock.isA(classOf[SyncVar[Boolean]])))
     expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
-                                        EasyMock.eq(us), EasyMock.eq(ds), EasyMock.isA(classOf[DifferencingListener])))
+                                        EasyMock.eq(us), EasyMock.eq(ds), EasyMock.isA(classOf[DifferencingListener]),
+                                        EasyMock.isA(classOf[SyncVar[Boolean]])))
   }
 
   @Test
@@ -187,7 +189,8 @@ class PairActorTest {
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey),
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us),
-           EasyMock.isA(classOf[DifferencingListener]))
+           EasyMock.isA(classOf[DifferencingListener]),
+           EasyMock.isA(classOf[SyncVar[Boolean]]))
     ).andAnswer(new IAnswer[Unit] {
       def answer = {
         // Queue up a change event and block the actor in the scanning state for a 1 sec
@@ -198,7 +201,8 @@ class PairActorTest {
     expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey),
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us), EasyMock.eq(ds),
-           EasyMock.isA(classOf[DifferencingListener])))
+           EasyMock.isA(classOf[DifferencingListener]),
+           EasyMock.isA(classOf[SyncVar[Boolean]])))
 
     expect(versionPolicy.difference(pairKey, diffListener))
 
@@ -231,6 +235,8 @@ class PairActorTest {
     val cancelMonitor = new Object
     val responseMonitor = new Object
 
+    val timeToWait = 2000L
+
     syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = {
         Actor.spawn {
@@ -255,7 +261,7 @@ class PairActorTest {
         // has enough time to get processed by the parent actor, have it trigger the
         // the scan state listener and send a response back the thread that requested the
         // cancellation
-        Thread.sleep(10000)
+        Thread.sleep(timeToWait)
       }
     })
 
@@ -265,11 +271,11 @@ class PairActorTest {
     supervisor.scanPair(pairKey, diffListener, syncListener)
 
     responseMonitor.synchronized {
-      responseMonitor.wait(1000)
+      responseMonitor.wait(timeToWait * 2)
     }
 
     cancelMonitor.synchronized {
-      cancelMonitor.wait(1000)
+      cancelMonitor.wait(timeToWait * 2)
     }
 
     verify(versionPolicy, syncListener)

@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{Endpoint, Pair, ConfigStore}
 import org.slf4j.LoggerFactory
+import concurrent.SyncVar
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -75,16 +76,20 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     generateDifferenceEvents(pair, l)
   }
 
-  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) = {
+  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
+                   listener:DifferencingListener, shouldRun:SyncVar[Boolean]) = {
     val pair = configStore.getPair(pairKey)
     val upstreamConstraints = pair.upstream.groupedConstraints
-    upstreamConstraints.foreach((new UpstreamSyncStrategy).scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener))
+    upstreamConstraints.foreach((new UpstreamSyncStrategy)
+      .scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, shouldRun))
   }
 
-  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) = {
+  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
+                     ds:DownstreamParticipant, listener:DifferencingListener, shouldRun:SyncVar[Boolean]) = {
     val pair = configStore.getPair(pairKey)
     val downstreamConstraints = pair.downstream.groupedConstraints
-    downstreamConstraints.foreach(downstreamStrategy(us,ds).scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener))
+    downstreamConstraints.foreach(downstreamStrategy(us,ds)
+      .scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, shouldRun))
   }
 
 
@@ -112,7 +117,11 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                         bucketing:Map[String, CategoryFunction],
                         constraints:Seq[QueryConstraint],
                         participant:Participant,
-                        listener:DifferencingListener) {
+                        listener:DifferencingListener,
+                        shouldRun:SyncVar[Boolean]) {
+
+      checkForCancellation(shouldRun, pair)
+
       val remoteDigests = participant.queryAggregateDigests(bucketing, constraints)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
 
@@ -125,8 +134,11 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
 
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
         case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
-          scanParticipant(pair, writer, endpoint, narrowBuckets, narrowConstraints, participant, listener)
+          scanParticipant(pair, writer, endpoint, narrowBuckets, narrowConstraints, participant, listener, shouldRun)
         case EntityQueryAction(narrowed)    => {
+
+          checkForCancellation(shouldRun, pair)
+
           val remoteVersions = participant.queryEntityVersions(narrowed)
           val cachedVersions = getEntities(pair.key, narrowed)
 
@@ -139,6 +151,12 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
             .foreach(handleMismatch(pair.key, writer, _, listener))
         }
       })
+    }
+
+    def checkForCancellation(shouldRun:SyncVar[Boolean], pair:Pair) = {
+      if (!shouldRun.get) {
+        throw new ScanCancelledException(pair.key)
+      }
     }
 
     /**

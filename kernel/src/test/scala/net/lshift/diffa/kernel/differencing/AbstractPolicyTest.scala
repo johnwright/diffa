@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.differencing
 
 import scala.collection.mutable.{HashMap}
 import scala.collection.JavaConversions._
+import scala.concurrent.SyncVar
 
 import org.easymock.EasyMock._
 import org.easymock.{IAnswer, EasyMock}
@@ -57,6 +58,9 @@ abstract class AbstractPolicyTest {
     def remove(pairKey: String) {}
     def close {}
   }
+
+  val shouldRun = new SyncVar[Boolean]
+  shouldRun.set(true)
 
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
@@ -241,8 +245,8 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(abPair, writer, usMock, nullListener)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, listener)
+    policy.scanUpstream(abPair, writer, usMock, nullListener, shouldRun)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, shouldRun)
     policy.difference(abPair, listener)
 
     verifyAll

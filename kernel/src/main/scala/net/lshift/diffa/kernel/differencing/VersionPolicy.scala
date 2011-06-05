@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.config.Pair
+import concurrent.SyncVar
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -48,13 +49,24 @@ trait VersionPolicy {
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
+   * @throws If the shouldRun variable is set to false, this will throw a ScanCancelledException
    */
-  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) : Unit
+  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter,
+                   participant:UpstreamParticipant, listener:DifferencingListener,
+                   shouldRun:SyncVar[Boolean]) : Unit
 
   /**
    * Requests that the policy scan the downstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
+   * @throws If the shouldRun variable is set to false, this will throw a ScanCancelledException
    */
-  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Unit
+  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter,
+                     us:UpstreamParticipant, ds:DownstreamParticipant,
+                     listener:DifferencingListener, shouldRun:SyncVar[Boolean]) : Unit
 
 }
+
+/**
+ * Thrown when a scan has been cancelled.
+ */
+class ScanCancelledException(pairKey:String) extends Exception(pairKey)

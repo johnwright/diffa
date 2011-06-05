@@ -34,4 +34,9 @@ object AlertCodes {
    * Occurs when a cancellation for all pending scans to a particular pair is requested.
    */
   val CANCELLATION_REQUEST = "D3"
+
+  /**
+   * Signifies that an actor has timed out waiting for a message to arrive
+   */
+  val MESSAGE_RECEIVE_TIMEOUT = "D4"
 }
