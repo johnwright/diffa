@@ -26,15 +26,42 @@ public class ConstraintsBuilder {
 
   /**
    * Attempt to add a date range constraint for the given attribute. The constraint will be added if
-   * one or both of start-[attrName], end-[attrName] are present in the request.
+   * one or both of [attrName]-start, [attrName]-end are present in the request.
    * @param attrName the name of the attribute
    */
   public void maybeAddDateRangeConstraint(String attrName) {
-    String startVal = req.getParameter("start-" + attrName);
-    String endVal = req.getParameter("end-" + attrName);
+    String startVal = req.getParameter(attrName + "-start");
+    String endVal = req.getParameter(attrName + "-end");
 
-    if (startVal == null && endVal == null) {
+    if (startVal != null || endVal != null) {
       result.add(new DateRangeConstraint(attrName, startVal, endVal));
+    }
+  }
+
+  /**
+   * Attempt to add a time range constraint for the given attribute. The constraint will be added if
+   * one or both of [attrName]-start, [attrName]-end are present in the request.
+   * @param attrName the name of the attribute
+   */
+  public void maybeAddTimeRangeConstraint(String attrName) {
+    String startVal = req.getParameter(attrName + "-start");
+    String endVal = req.getParameter(attrName + "-end");
+
+    if (startVal != null || endVal != null) {
+      result.add(new TimeRangeConstraint(attrName, startVal, endVal));
+    }
+  }
+
+  /**
+   * Attempt to add a set constraint for the given attribute. The constraint will be added if there are
+   * any arguments in the request with the given attribute name.
+   * @param attrName the name of the attribute
+   */
+  public void maybeAddSetConstraint(String attrName) {
+    String[] values = req.getParameterValues(attrName);
+
+    if (values != null && values.length > 0) {
+      result.add(new SetConstraint(attrName, values));
     }
   }
 }

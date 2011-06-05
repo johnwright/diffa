@@ -8,6 +8,6 @@ public interface ScanQueryConstraint {
    * Retrieves the name of the attribute being constrained.
    * @return the name.
    */
-  String getName();
+  String getAttributeName();
 
 }
