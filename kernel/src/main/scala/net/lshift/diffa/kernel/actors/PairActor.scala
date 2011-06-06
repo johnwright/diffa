@@ -231,9 +231,7 @@ case class PairActor(pairKey:String,
         maybeLeaveState
       case ReceiveTimeout =>
         logger.error("%s: Actor timed out for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
-        up = true;
-        down = true;
-        maybeLeaveState
+        up = true; down = true; maybeLeaveState
       case x =>
         logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
     }
