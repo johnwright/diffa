@@ -52,6 +52,8 @@ case class PairActor(pairKey:String,
   private var currentScanListener:PairSyncListener = null
   private var upstreamSuccess = false
   private var downstreamSuccess = false
+  private var upstreamCancelled = false
+  private var downstreamCancelled = false
 
   /**
    * Flag that can be used to signal that scanning should be cancelled.
@@ -193,7 +195,7 @@ case class PairActor(pairKey:String,
             case Up   => upstreamSuccess = true
             case Down => downstreamSuccess = true
           }
-          checkForCompletion
+          maybeLeaveScanningState
         }
       }
     }
@@ -208,33 +210,12 @@ case class PairActor(pairKey:String,
     logger.info("%s: Scan for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
     feedbackHandle.cancel()
 
-    var up, down = false
-    def maybeLeaveState() = if (up && down) {
-      logger.info("%s: Sub actors cancellation completed for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
-      // Drop out of the current cancellation state
-      self.receiveTimeout = None
-      unbecome()
-    }
-
     // Wait for both jobs to signal their respective cancellation
     // Only wait maximally 10 minutes for the cancellation to go through
     self.receiveTimeout = Some(600000L)
 
-    become {
-      case FlushWriterMessage => // ignore flushes in this state - we will roll the index back
-      case s: SelfLoggingMessage =>
-        s.logMessage(logger, Cancelling, AlertCodes.CANCELLATION_REQUEST)
-        s.upOrDown match {
-          case Up   => up = true
-          case Down => down = true
-        }
-        maybeLeaveState
-      case ReceiveTimeout =>
-        logger.error("%s: Actor timed out for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
-        up = true; down = true; maybeLeaveState
-      case x =>
-        logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
-    }
+    // Go to the cancelling state
+    become(receiveWhilstCancelling)
 
     flushBufferedEvents
     dropPendingScans
@@ -243,9 +224,42 @@ case class PairActor(pairKey:String,
   }
 
   /**
-   * Exit the scanning state and notify interested parties
+   * Implementation of the receive loop whilst in a cancelling state.
    */
-  def checkForCompletion = {
+  val receiveWhilstCancelling : Actor.Receive  = {
+    case FlushWriterMessage => // ignore flushes in this state - we will roll the index back
+    case s: SelfLoggingMessage =>
+      s.logMessage(logger, Cancelling, AlertCodes.CANCELLATION_REQUEST)
+      s.upOrDown match {
+        case Up   => upstreamCancelled = true
+        case Down => downstreamCancelled = true
+      }
+      maybeLeaveCancellingState
+    case ReceiveTimeout =>
+      logger.error("%s: Actor timed out for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
+      upstreamCancelled = true; downstreamCancelled = true; maybeLeaveCancellingState
+    case x =>
+      logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
+  }
+
+  /**
+   * Potentially exit the cancelling state
+   */
+  def maybeLeaveCancellingState = {
+    if (upstreamCancelled && downstreamCancelled) {
+      upstreamCancelled = false
+      downstreamCancelled = false
+      logger.info("%s: Sub actors cancellation completed for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
+      // Drop out of the current cancellation state
+      self.receiveTimeout = None
+      unbecome()
+    }
+  }
+
+  /**
+   * Potentially exit the scanning state and notify interested parties
+   */
+  def maybeLeaveScanningState = {
     if (upstreamSuccess && downstreamSuccess) {
       downstreamSuccess = false
       upstreamSuccess = false
