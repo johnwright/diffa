@@ -128,7 +128,7 @@ function loadBuckets() {
 }
 
 function renderEntityScopedActions(pairKey, itemID) {
-  var $actionListContainer = $("#actionlist").empty();
+  var actionListContainer = $("#actionlist").empty();
   var actionListCallback = function(actionList, status, xhr) {
     if (!actionList) {
       return;
@@ -137,9 +137,9 @@ function renderEntityScopedActions(pairKey, itemID) {
       // filter out pair-scoped actions
       if (action.scope != "entity") return;
 
-      var $repairStatus = $('#repairstatus');
-      appendActionButtonToContainer($actionListContainer, action, pairKey, itemID, $repairStatus)
-      $('<br class="clearboth"/>').appendTo($actionListContainer);
+      var repairStatus = $('#repairstatus');
+      appendActionButtonToContainer(actionListContainer, action, pairKey, itemID, repairStatus)
+      $('<br class="clearboth"/>').appendTo(actionListContainer);
     });
   };
 

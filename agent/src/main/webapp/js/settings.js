@@ -30,15 +30,15 @@ function renderState(state) {
   return null;
 }
 
-function renderPairScopedActions(pairKey, $actionListContainer, $repairStatus) {
+function renderPairScopedActions(pairKey, actionListContainer, repairStatus) {
   var actionListCallback = function(actionList, status, xhr) {
     if (!actionList) return;
 
     $.each(actionList, function(i, action) {
       // filter out entity-scoped actions
       if (action.scope != "pair") return;
-      appendActionButtonToContainer($actionListContainer, action, pairKey, null, $repairStatus);
-      $actionListContainer.append('<br clear="both" />');
+      appendActionButtonToContainer(actionListContainer, action, pairKey, null, repairStatus);
+      actionListContainer.append('<br clear="both" />');
     });
   };
 
@@ -50,12 +50,12 @@ function removeAllPairs() {
 }
 
 function addPair(name, state) {
-  var $actionButtonsForPair = $('<td></td>');
-  var $repairStatusForPair = $('<td></td>');
+  var actionButtonsForPair = $('<td></td>');
+  var repairStatusForPair = $('<td></td>');
   $('#pairs').append($('<tr><td>' + name + '</td><td>' + renderState(state) + '</td></tr>')
-      .append($actionButtonsForPair)
-      .append($repairStatusForPair));
-  renderPairScopedActions(name, $actionButtonsForPair, $repairStatusForPair);
+      .append(actionButtonsForPair)
+      .append(repairStatusForPair));
+  renderPairScopedActions(name, actionButtonsForPair, repairStatusForPair);
 }
 
 $(document).ready(function() {
