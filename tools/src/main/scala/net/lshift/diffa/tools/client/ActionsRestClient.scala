@@ -20,6 +20,7 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import sun.reflect.generics.reflectiveObjects.NotImplementedException
+import net.lshift.diffa.kernel.config.RepairAction
 
 class ActionsRestClient(serverRootUrl:String)
         extends AbstractRestClient(serverRootUrl, "rest/actions/")
@@ -32,12 +33,12 @@ class ActionsRestClient(serverRootUrl:String)
   
   def listEntityScopedActions(pairKey: String): Seq[Actionable] = {
     val t = classOf[Array[Actionable]]
-    rpc(pairKey, t, "scope" -> "entity")
+    rpc(pairKey, t, "scope" -> RepairAction.ENTITY_SCOPE)
   }
 
   def listPairScopedActions(pairKey: String): Seq[Actionable] = {
     val t = classOf[Array[Actionable]]
-    rpc(pairKey, t, "scope" -> "pair")
+    rpc(pairKey, t, "scope" -> RepairAction.PAIR_SCOPE)
   }
 
   def invoke(req:ActionableRequest) : InvocationResult = {
