@@ -39,4 +39,9 @@ object AlertCodes {
    * Signifies that an actor has timed out waiting for a message to arrive
    */
   val MESSAGE_RECEIVE_TIMEOUT = "D4"
+
+  /**
+   * Signifies the result of a scanning operation
+   */
+  val SCAN_OPERATION = "D5"
 }

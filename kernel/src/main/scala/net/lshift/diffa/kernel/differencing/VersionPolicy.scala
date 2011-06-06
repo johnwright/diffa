@@ -19,8 +19,6 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
-import net.lshift.diffa.kernel.config.Pair
-import concurrent.SyncVar
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -81,7 +79,7 @@ trait FeedbackHandle {
    */
   def isCancelled : Boolean
 
-  // TODO This is just a definition ATM - this should be plumbed in as part of a subsequent ticket
+  // TODO [#249] This is just a definition ATM - this should be plumbed
   /**
    * This is a conduit that allows the invoker to receive the latest status as a string.
    */
