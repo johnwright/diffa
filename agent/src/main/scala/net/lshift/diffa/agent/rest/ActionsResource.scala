@@ -24,7 +24,7 @@ import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
+import net.lshift.diffa.kernel.config.RepairAction
 
 @Path("/actions")
 @Component
@@ -38,7 +38,12 @@ class ActionsResource {
   @Produces(Array("application/json"))
   @Description("Returns a list of actions that can be invoked on the pair.")
   @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
-  def listActions(@PathParam("pairId") pairId:String) : Array[Actionable] = proxy.listActions(pairId).toArray
+  def listActions(@PathParam("pairId") pairId: String,
+                  @QueryParam("scope") scope: String): Array[Actionable] = (scope match {
+    case RepairAction.ENTITY_SCOPE => proxy.listEntityScopedActions(pairId)
+    case RepairAction.PAIR_SCOPE => proxy.listPairScopedActions(pairId)
+    case _ => proxy.listActions(pairId)
+  }).toArray
 
   @POST
   @Path("/{pairId}/{actionId}")

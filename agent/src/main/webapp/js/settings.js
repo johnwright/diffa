@@ -35,14 +35,12 @@ function renderPairScopedActions(pairKey, actionListContainer, repairStatus) {
     if (!actionList) return;
 
     $.each(actionList, function(i, action) {
-      // filter out entity-scoped actions
-      if (action.scope != "pair") return;
       appendActionButtonToContainer(actionListContainer, action, pairKey, null, repairStatus);
       actionListContainer.append('<br clear="both" />');
     });
   };
 
-  $.ajax({ url: API_BASE + '/actions/' + pairKey, success: actionListCallback });
+  $.ajax({ url: API_BASE + '/actions/' + pairKey + '?scope=pair', success: actionListCallback });
 }
 
 function removeAllPairs() {

@@ -29,8 +29,8 @@ trait CommonActionTests {
   def env:TestEnvironment
 
   @Test
-  def shouldHaveActions {
-    val actions = env.actionsClient.listActions(env.pairKey)
+  def shouldListEntityScopedActions {
+    val actions = env.actionsClient.listEntityScopedActions(env.pairKey)
     assertNotNull(actions)
     assertEquals(1, actions.size)
     assertEquals("Resend Source", actions(0).name)
@@ -41,11 +41,19 @@ trait CommonActionTests {
     val entityId = "abc"
     env.upstream.addEntity(entityId, env.bizDate(yesterday), yesterday, "abcdef")
     val pairKey = env.pairKey
-    val actionId = "resend"    
+    val actionId = "resend"
     val request = ActionableRequest(pairKey, actionId, entityId)
     val response = env.actionsClient.invoke(request)
     assertNotNull(response)
     assertEquals("success", response.result)    
+  }
+
+  @Test
+  def shouldListPairScopedActions {
+    env.createPairScopedAction
+    val actions = env.actionsClient.listPairScopedActions(env.pairKey)
+    assertNotNull(actions)
+    assertEquals(Some(env.pairScopedActionName), actions.headOption.map(_.name))
   }
 
   @Test
@@ -59,7 +67,7 @@ trait CommonActionTests {
 
   @Test
   def canDeleteAction {
-    def actionName = env.actionsClient.listActions(env.pairKey).headOption.map(_.name)
+    def actionName = env.actionsClient.listEntityScopedActions(env.pairKey).headOption.map(_.name)
     assertEquals(Some(env.entityScopedActionName), actionName)
     env.configurationClient.removeRepairAction(env.entityScopedActionName, env.pairKey)
     assertEquals(None, actionName)

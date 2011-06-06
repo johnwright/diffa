@@ -27,14 +27,24 @@ import net.lshift.diffa.kernel.config.RepairAction._
 trait ActionsClient {
 
   /**
-   * Lists the actions that a pairing offers
+   * Lists all actions that a pairing offers
    */
-  def listActions(pairKey: String) : Seq[Actionable]
+  def listActions(pairKey: String): Seq[Actionable]
+
+  /**
+   * Lists the entity-scoped actions that a pairing offers
+   */
+  def listEntityScopedActions(pairKey: String): Seq[Actionable]
+
+  /**
+   * Lists the pair-scoped actions that a pairing offers
+   */
+  def listPairScopedActions(pairKey: String): Seq[Actionable]
 
   /**
    * Invokes an action against a pairing
    */
-  def invoke(request:ActionableRequest) : InvocationResult
+  def invoke(request:ActionableRequest): InvocationResult
   
 }
 

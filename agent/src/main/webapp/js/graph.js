@@ -134,16 +134,13 @@ function renderEntityScopedActions(pairKey, itemID) {
       return;
     }
     $.each(actionList, function(i, action) {
-      // filter out pair-scoped actions
-      if (action.scope != "entity") return;
-
       var repairStatus = $('#repairstatus');
-      appendActionButtonToContainer(actionListContainer, action, pairKey, itemID, repairStatus)
+      appendActionButtonToContainer(actionListContainer, action, pairKey, itemID, repairStatus);
       $('<br class="clearboth"/>').appendTo(actionListContainer);
     });
   };
 
-  $.ajax({ url: API_BASE + '/actions/' + pairKey, success: actionListCallback });
+  $.ajax({ url: API_BASE + '/actions/' + pairKey + '?scope=entity', success: actionListCallback });
 }
 
 function renderEvent(event) {

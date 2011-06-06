@@ -19,17 +19,22 @@ package net.lshift.diffa.kernel.frontend.wire
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
+import sun.reflect.generics.reflectiveObjects.NotImplementedException
+import javax.management.remote.rmi._RMIConnection_Stub
 
 /**
  * This is a conduit to the actions that are provided by participants
  */
 class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) extends ActionsClient {
 
-  def listActions(pairKey: String) : Seq[Actionable] =
+  def listActions(pairKey: String): Seq[Actionable] =
     withValidPair(pairKey) { pair =>
-      val repairActions = config.listRepairActionsForPair(pair)
-      repairActions.map(Actionable.fromRepairAction)
+      config.listRepairActionsForPair(pair).map(Actionable.fromRepairAction)
     }
+
+  def listEntityScopedActions(pairKey: String) = listActions(pairKey).filter(_.scope == RepairAction.ENTITY_SCOPE)
+
+  def listPairScopedActions(pairKey: String) = listActions(pairKey).filter(_.scope == RepairAction.PAIR_SCOPE)
 
   def invoke(request:ActionableRequest) : InvocationResult =
     withValidPair(request.pairKey) { pair =>

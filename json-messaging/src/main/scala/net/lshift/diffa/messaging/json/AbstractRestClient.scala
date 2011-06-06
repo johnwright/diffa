@@ -23,7 +23,7 @@ import org.slf4j.{LoggerFactory, Logger}
 import org.apache.commons.io.IOUtils
 import java.io.Closeable
 import java.lang.RuntimeException
-import com.sun.jersey.api.client.{UniformInterfaceException, ClientResponse, Client}
+import com.sun.jersey.api.client.{WebResource, UniformInterfaceException, ClientResponse, Client}
 
 abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubUrl:String) extends Closeable {
 
@@ -73,9 +73,9 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
     response
   }
 
-  def rpc[T](path:String, t:Class[T]) = {
-    try{
-      resource.path(path).get(t)
+  def rpc[T](path:String, t:Class[T], queryParams: (String, String)*) = {
+    try {
+      queryParams.foldLeft(resource.path(path))((webResource, pair) => webResource.queryParam(pair._1, pair._2)).get(t)
     }
     catch {
       case x:UniformInterfaceException => {
