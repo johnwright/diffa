@@ -32,7 +32,7 @@ import net.lshift.diffa.kernel.differencing._
 import org.apache.lucene.document._
 import net.lshift.diffa.kernel.config.ConfigStore
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
-import org.apache.lucene.index.{IndexWriterConfig, IndexReader, Term, IndexWriter}
+import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
@@ -54,8 +54,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
       // When new schema versions appear, we can handle their upgrade here
   }
 
-  val config = new IndexWriterConfig(Version.LUCENE_32, new StandardAnalyzer(Version.LUCENE_32))
-  val writer = new IndexWriter(index, config)
+  val writer = new IndexWriter(index, new StandardAnalyzer(Version.LUCENE_30), IndexWriter.MaxFieldLength.UNLIMITED)
 
   def openWriter() = new LuceneWriter(index, writer)
 
