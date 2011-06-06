@@ -1,5 +1,4 @@
 
-
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -17,45 +16,45 @@
  */
 
 function appendActionButtonToContainer($container, action, pairKey, itemID, $repairStatus) {
-    $("<label>" + action.name + "</label>").appendTo($container);
-			$('<button class="repair">Go</button>')
-				.click(function(e) {
-					e.preventDefault();
-					var $button = $(this);
-                    var url = API_BASE + ((itemID == null) ? action.path : action.path.replace("${id}", itemID));
+  $("<label>" + action.name + "</label>").appendTo($container);
+  $('<button class="repair">Go</button>')
+      .click(function(e) {
+        e.preventDefault();
+        var $button = $(this);
+        var url = API_BASE + ((itemID == null) ? action.path : action.path.replace("${id}", itemID));
 
-					if ($button.hasClass('disabled')) {
-						return false;
-					}
-					$button.addClass('disabled');
-					$repairStatus.text('Repairing...');
-					$.ajax({
-							type: "POST",
-							url: url,
-							success: function(data, status, xhr) {
-								$repairStatus.html('Repair status: ' + data.result + '<br/>output: ' + data.output);
-							},
-							error: function(xhr, status, ex) {
-								if (console && console.log) {
-									var error = {
-										type: "POST",
-										url: url,
-										status: status,
-										exception: ex,
-										xhr: xhr
-									};
-                                    if (itemID != null)
-									    console.log("error during repair for item " + itemID + ": ", error);
-                                    else
-                                        console.log("error during repair for pair " + pairKey + ": ", error);
-								}
-								$repairStatus.text('Error during repair: ' + (status || ex.message));
-							},
-							complete: function() {
-								$button.removeClass('disabled');
-							}
-						});
-					return false;
-				})
-				.appendTo($container);
+        if ($button.hasClass('disabled')) {
+          return false;
+        }
+        $button.addClass('disabled');
+        $repairStatus.text('Repairing...');
+        $.ajax({
+              type: "POST",
+              url: url,
+              success: function(data, status, xhr) {
+                $repairStatus.html('Repair status: ' + data.result + '<br/>output: ' + data.output);
+              },
+              error: function(xhr, status, ex) {
+                if (console && console.log) {
+                  var error = {
+                    type: "POST",
+                    url: url,
+                    status: status,
+                    exception: ex,
+                    xhr: xhr
+                  };
+                  if (itemID != null)
+                    console.log("error during repair for item " + itemID + ": ", error);
+                  else
+                    console.log("error during repair for pair " + pairKey + ": ", error);
+                }
+                $repairStatus.text('Error during repair: ' + (status || ex.message));
+              },
+              complete: function() {
+                $button.removeClass('disabled');
+              }
+            });
+        return false;
+      })
+      .appendTo($container);
 }
