@@ -57,7 +57,7 @@ case class PairActor(pairKey:String,
    * Flag that can be used to signal that scanning should be cancelled.
    */
   @ThreadSafe
-  private var shouldRunScan:SyncVar[Boolean] = null
+  private var feedbackHandle:FeedbackHandle = null
 
   /**
    * Thread safe buffer of match events that will be accessed directly by different sub actors
@@ -123,6 +123,19 @@ case class PairActor(pairKey:String,
     def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String) = ()
   }
 
+  /**
+   * Provides a simple handle to indicated that a scan should be cancelled.
+   */
+  private class ScanningFeedbackHandle extends FeedbackHandle {
+
+    private val flag = new SyncVar[Boolean]
+    flag.set(false)
+
+    def logStatus(status: String) = logger.debug("Not yet implemented")
+    def isCancelled = flag.get
+    def cancel() = flag.set(true)
+  }
+
   override def preStart = {
     // schedule a recurring message to flush the writer
     scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
@@ -143,7 +156,7 @@ case class PairActor(pairKey:String,
           case FlushWriterMessage                => // ignore flushes in this state - we may want to roll the index back
           case CancelMessage                     => {
             logger.info("%s: Scan for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
-            shouldRunScan.set(false)
+            feedbackHandle.cancel()
 
             var up, down = false
             def maybeLeaveState() = if (up && down) {
@@ -281,7 +294,7 @@ case class PairActor(pairKey:String,
     bufferedMatchEvents.clear()
 
     // Make sure that this flag is zeroed out
-    shouldRunScan = null
+    feedbackHandle = null
 
     // Leave the scan state
     unbecome()
@@ -347,12 +360,11 @@ case class PairActor(pairKey:String,
     try {
       writer.flush()
 
-      shouldRunScan = new SyncVar[Boolean]
-      shouldRunScan.set(true)
+      feedbackHandle = new ScanningFeedbackHandle
 
       Actor.spawn {
         try {
-          policy.scanUpstream(pairKey, writerProxy, us, bufferingListener, shouldRunScan)
+          policy.scanUpstream(pairKey, writerProxy, us, bufferingListener, feedbackHandle)
           self ! UpstreamScanSuccess(lastUUID)
         }
         catch {
@@ -369,7 +381,7 @@ case class PairActor(pairKey:String,
 
       Actor.spawn {
         try {
-          policy.scanDownstream(pairKey, writerProxy, us, ds, bufferingListener, shouldRunScan)
+          policy.scanDownstream(pairKey, writerProxy, us, ds, bufferingListener, feedbackHandle)
           self ! DownstreamScanSuccess(lastUUID)
         }
         catch {

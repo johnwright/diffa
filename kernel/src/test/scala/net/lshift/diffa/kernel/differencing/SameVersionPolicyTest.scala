@@ -100,8 +100,8 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.scanUpstream(abPair, writer, usMock, nullListener, shouldRun)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, shouldRun)
+    policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
     policy.difference(abPair, listener)
 
     verifyAll

@@ -34,6 +34,7 @@ import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
 
 /**
  * Base class for the various policy tests.
@@ -59,8 +60,7 @@ abstract class AbstractPolicyTest {
     def close {}
   }
 
-  val shouldRun = new SyncVar[Boolean]
-  shouldRun.set(true)
+  val feedbackHandle = new NonCancellingFeedbackHandle
 
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
@@ -245,8 +245,8 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(abPair, writer, usMock, nullListener, shouldRun)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, shouldRun)
+    policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
     policy.difference(abPair, listener)
 
     verifyAll

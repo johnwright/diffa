@@ -77,19 +77,19 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   }
 
   def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
-                   listener:DifferencingListener, shouldRun:SyncVar[Boolean]) = {
+                   listener:DifferencingListener, handle:FeedbackHandle) = {
     val pair = configStore.getPair(pairKey)
     val upstreamConstraints = pair.upstream.groupedConstraints
     upstreamConstraints.foreach((new UpstreamSyncStrategy)
-      .scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, shouldRun))
+      .scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
   }
 
   def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
-                     ds:DownstreamParticipant, listener:DifferencingListener, shouldRun:SyncVar[Boolean]) = {
+                     ds:DownstreamParticipant, listener:DifferencingListener, handle:FeedbackHandle) = {
     val pair = configStore.getPair(pairKey)
     val downstreamConstraints = pair.downstream.groupedConstraints
     downstreamConstraints.foreach(downstreamStrategy(us,ds)
-      .scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, shouldRun))
+      .scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
   }
 
 
@@ -118,9 +118,9 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                         constraints:Seq[QueryConstraint],
                         participant:Participant,
                         listener:DifferencingListener,
-                        shouldRun:SyncVar[Boolean]) {
+                        handle:FeedbackHandle) {
 
-      checkForCancellation(shouldRun, pair)
+      checkForCancellation(handle, pair)
 
       val remoteDigests = participant.queryAggregateDigests(bucketing, constraints)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
@@ -134,10 +134,10 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
 
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
         case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
-          scanParticipant(pair, writer, endpoint, narrowBuckets, narrowConstraints, participant, listener, shouldRun)
+          scanParticipant(pair, writer, endpoint, narrowBuckets, narrowConstraints, participant, listener, handle)
         case EntityQueryAction(narrowed)    => {
 
-          checkForCancellation(shouldRun, pair)
+          checkForCancellation(handle, pair)
 
           val remoteVersions = participant.queryEntityVersions(narrowed)
           val cachedVersions = getEntities(pair.key, narrowed)
@@ -153,8 +153,8 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
     }
 
-    def checkForCancellation(shouldRun:SyncVar[Boolean], pair:Pair) = {
-      if (!shouldRun.get) {
+    def checkForCancellation(handle:FeedbackHandle, pair:Pair) = {
+      if (handle.isCancelled) {
         throw new ScanCancelledException(pair.key)
       }
     }

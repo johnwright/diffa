@@ -111,10 +111,10 @@ class PairActorTest {
   def expectScans() = {
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
                                       EasyMock.eq(us), EasyMock.isA(classOf[DifferencingListener]),
-                                      EasyMock.isA(classOf[SyncVar[Boolean]])))
+                                      EasyMock.isA(classOf[FeedbackHandle])))
     expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
                                         EasyMock.eq(us), EasyMock.eq(ds), EasyMock.isA(classOf[DifferencingListener]),
-                                        EasyMock.isA(classOf[SyncVar[Boolean]])))
+                                        EasyMock.isA(classOf[FeedbackHandle])))
   }
 
   @Test
@@ -190,7 +190,7 @@ class PairActorTest {
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us),
            EasyMock.isA(classOf[DifferencingListener]),
-           EasyMock.isA(classOf[SyncVar[Boolean]]))
+           EasyMock.isA(classOf[FeedbackHandle]))
     ).andAnswer(new IAnswer[Unit] {
       def answer = {
         // Queue up a change event and block the actor in the scanning state for a 1 sec
@@ -202,7 +202,7 @@ class PairActorTest {
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us), EasyMock.eq(ds),
            EasyMock.isA(classOf[DifferencingListener]),
-           EasyMock.isA(classOf[SyncVar[Boolean]])))
+           EasyMock.isA(classOf[FeedbackHandle])))
 
     expect(versionPolicy.difference(pairKey, diffListener))
 

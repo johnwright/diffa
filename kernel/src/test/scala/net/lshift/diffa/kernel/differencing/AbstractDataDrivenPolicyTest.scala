@@ -32,6 +32,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config._
 import org.joda.time.{LocalDate, DateTime}
 import concurrent.SyncVar
+import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -59,8 +60,7 @@ abstract class AbstractDataDrivenPolicyTest {
     def close {}
   }
 
-  val shouldRun = new SyncVar[Boolean]
-  shouldRun.set(true)
+  val feedbackHandle = new NonCancellingFeedbackHandle
 
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
@@ -85,8 +85,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, shouldRun)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, shouldRun)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
     policy.difference(scenario.pair.key, listener)
 
     verifyAll
@@ -118,8 +118,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, shouldRun)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, shouldRun)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
     policy.difference(scenario.pair.key, listener)
 
     verifyAll
@@ -155,8 +155,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, shouldRun)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, shouldRun)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
     policy.difference(scenario.pair.key, listener)
 
 
@@ -193,8 +193,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, shouldRun)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, shouldRun)
+    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
     policy.difference(scenario.pair.key, listener)
 
     verifyAll
