@@ -95,6 +95,10 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
     val response = media.post(classOf[ClientResponse], what)
     response.getStatus match {
       case 201 => ()
+      case 400 => {
+        log.error(response.getStatus + "")
+        throw new BadRequestException(response.getStatus + "")
+      }
       case _   => {
         log.error(response.getStatus + "")
         throw new RuntimeException(response.getStatus + "")
@@ -120,3 +124,8 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
  * This exception denotes an HTTP 404 exception
  */
 class NotFoundException(resource:String) extends RuntimeException(resource)
+
+/**
+ * Denotes an invalid request
+ */
+class BadRequestException(resource: String) extends RuntimeException(resource)

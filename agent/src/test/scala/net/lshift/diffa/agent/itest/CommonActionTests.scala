@@ -22,6 +22,7 @@ import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.client.ActionableRequest
 import javax.xml.ws.Response
+import net.lshift.diffa.messaging.json.BadRequestException
 
 trait CommonActionTests {
 
@@ -64,7 +65,7 @@ trait CommonActionTests {
     assertEquals(None, actionName)
   }
 
-  @Test(expected=classOf[RuntimeException])
+  @Test(expected=classOf[BadRequestException])
   def shouldRejectInvalidActionScope {
     env.configurationClient.declareRepairAction(env.entityScopedActionName, "resend", "INVALID SCOPE", env.pairKey)
   }
