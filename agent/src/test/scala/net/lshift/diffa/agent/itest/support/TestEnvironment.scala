@@ -24,8 +24,8 @@ import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestCl
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import net.lshift.diffa.agent.itest.support.TestConstants._
+import net.lshift.diffa.kernel.config.{RepairAction, RangeCategoryDescriptor}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -58,8 +58,10 @@ class TestEnvironment(val pairKey: String,
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
   // Actions
-  val actionName = "Resend Source"
-  val actionId = "resend"
+  val entityScopedActionName = "Resend Source"
+  val entityScopedActionId = "resend"
+  val pairScopedActionName = "Resend All"
+  val pairScopedActionId = "resend-all"
 
   // Categories
   val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
@@ -72,11 +74,12 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declareRepairAction(actionName, actionId, "entity", pairKey)
+  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionId, "entity", pairKey)
   createPair
 
   def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
   def deletePair = configurationClient.deletePair(pairKey)
+  def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionId, RepairAction.PAIR_SCOPE, pairKey)
   
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
