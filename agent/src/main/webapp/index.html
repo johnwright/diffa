@@ -66,33 +66,31 @@
 <body>
 <div class="container showgrid">
 
-    <div class="span-20">
-		<h1>Diffa</h1>
-	</div>
+  <div class="span-20">
+    <h1>Diffa</h1>
+  </div>
 
-	<div class="span-2 last">
-		<a href="settings.html">Settings</a>
-	</div>
+  <div class="span-2 last">
+    <a href="settings.html">Settings</a>
+  </div>
 
-    <hr class="space">
+  <hr class="space">
 
-	<div id="heatmapContainer" class="span-24">
-	    <div id="display" class="span-20 last">
-            <!-- Un-hardcode the dimensions-->
-            <canvas id="underlay" style="z-index:1; background-color: #cfe2f3;" width="800px" height="400px"/>
-            <canvas id="canvas" style="z-index:2;" width="800px" height="400px"/>
-              height="400px"></canvas>
-            <canvas id="overlay" style="z-index:4;" width="800px" height="400px"/>
-              height="400px"></canvas>
-        </div>
-        <div class="span-24">
-            <!-- Un-hardcode the dimensions-->
-            <canvas id="scale" width="800px" height="40px"/>
-        </div>
+  <div id="heatmapContainer" class="span-24">
+    <div id="display" class="span-20 last">
+      <!-- Un-hardcode the dimensions-->
+      <canvas id="underlay" style="z-index:1; background-color: #cfe2f3;" width="800px" height="400px"/>
+      <canvas id="canvas" style="z-index:2;" width="800px" height="400px"/>
+      <canvas id="overlay" style="z-index:4;" width="800px" height="400px"/>
     </div>
+    <div class="span-24">
+      <!-- Un-hardcode the dimensions-->
+      <canvas id="scale" width="800px" height="40px"/>
+    </div>
+  </div>
 
-	<div id="diffListContainer" class="span-16">
-		<table id="diffList">
+  <div id="diffListContainer" class="span-16">
+    <table id="diffList">
       <thead>
       <tr>
         <th class="grid2col">Date</th>
@@ -123,6 +121,7 @@
       </tbody>
     </table>
   </div>
+
   <div id="contentviewer" class="span-8 last">
     <h6>No item selected</h6>
 
