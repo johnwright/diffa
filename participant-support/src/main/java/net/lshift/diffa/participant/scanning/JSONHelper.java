@@ -15,7 +15,7 @@ public class JSONHelper {
     mapper.getSerializationConfig().set(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
   }
 
-  public static void writeQueryResult(OutputStream responseStream, Iterable<QueryResultEntry> entries)
+  public static void writeQueryResult(OutputStream responseStream, Iterable<ScanResultEntry> entries)
       throws IOException {
     try {
       mapper.writeValue(responseStream, entries);

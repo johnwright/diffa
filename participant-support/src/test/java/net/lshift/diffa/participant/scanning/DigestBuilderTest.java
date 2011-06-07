@@ -14,9 +14,9 @@ import static org.junit.Assert.fail;
  * Test cases for the digest builder.
  */
 public class DigestBuilderTest {
-  private static final List<ScanQueryAggregation> aggregations = Arrays.asList(
-      (ScanQueryAggregation) new DateAggregation("bizDate", DateGranularityEnum.Daily),
-      (ScanQueryAggregation) new ByNameAggregation("someString")
+  private static final List<ScanAggregation> aggregations = Arrays.asList(
+      (ScanAggregation) new DateAggregation("bizDate", DateGranularityEnum.Daily),
+      (ScanAggregation) new ByNameAggregation("someString")
     );
 
   private static final DateTime JUN_6_2009_1 = new DateTime(2009, 6, 6, 12, 45, 12, 0, DateTimeZone.UTC);
@@ -39,12 +39,12 @@ public class DigestBuilderTest {
     builder.add("id4", createAttrMap(JUN_6_2009_2, "a"), "vsn4");
 
     assertEquals(
-      new HashSet<QueryResultEntry>(Arrays.asList(
-        QueryResultEntry.forAggregate(DigestUtils.md5Hex("vsn1" + "vsn4"), createAttrMap("2009-06-06", "a")),
-        QueryResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), createAttrMap("2009-06-07", "b")),
-        QueryResultEntry.forAggregate(DigestUtils.md5Hex("vsn3"), createAttrMap("2009-06-06", "c"))
+      new HashSet<ScanResultEntry>(Arrays.asList(
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1" + "vsn4"), createAttrMap("2009-06-06", "a")),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), createAttrMap("2009-06-07", "b")),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn3"), createAttrMap("2009-06-06", "c"))
       )),
-      new HashSet<QueryResultEntry>(builder.toDigests()));
+      new HashSet<ScanResultEntry>(builder.toDigests()));
   }
 
   /**

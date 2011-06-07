@@ -1,26 +1,25 @@
 package net.lshift.diffa.participant.scanning;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Helper for building constraints from a web request.
  */
 public class ConstraintsBuilder {
   private final HttpServletRequest req;
-  private final List<ScanQueryConstraint> result;
+  private final List<ScanConstraint> result;
 
   public ConstraintsBuilder(HttpServletRequest req) {
     this.req = req;
-    this.result = new ArrayList<ScanQueryConstraint>();
+    this.result = new ArrayList<ScanConstraint>();
   }
 
   /**
    * Transforms the builder into a list of constraints.
    * @return the constraint list.
    */
-  public List<ScanQueryConstraint> toList() {
+  public List<ScanConstraint> toList() {
     return result;
   }
 
@@ -61,7 +60,9 @@ public class ConstraintsBuilder {
     String[] values = req.getParameterValues(attrName);
 
     if (values != null && values.length > 0) {
-      result.add(new SetConstraint(attrName, values));
+      HashSet<String> set = new HashSet<String>();
+      Collections.addAll(set,values);
+      result.add(new SetConstraint(attrName,set));
     }
   }
 }

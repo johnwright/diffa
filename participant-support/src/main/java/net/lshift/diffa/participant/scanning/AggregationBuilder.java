@@ -9,18 +9,18 @@ import java.util.List;
  */
 public class AggregationBuilder {
   private final HttpServletRequest req;
-  private final List<ScanQueryAggregation> result;
+  private final List<ScanAggregation> result;
 
   public AggregationBuilder(HttpServletRequest req) {
     this.req = req;
-    this.result = new ArrayList<ScanQueryAggregation>();
+    this.result = new ArrayList<ScanAggregation>();
   }
 
   /**
    * Transforms the builder into a list of aggregations.
    * @return the aggregations.
    */
-  public List<ScanQueryAggregation> toList() {
+  public List<ScanAggregation> toList() {
     return result;
   }
 

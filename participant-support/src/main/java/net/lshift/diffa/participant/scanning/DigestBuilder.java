@@ -15,9 +15,9 @@ import java.util.*;
 public class DigestBuilder {
   private final static Logger log = LoggerFactory.getLogger(DigestBuilder.class);
   private final Map<String, Bucket> digestBuckets;
-  private final List<ScanQueryAggregation> aggregations;
+  private final List<ScanAggregation> aggregations;
 
-  public DigestBuilder(List<ScanQueryAggregation> aggregations) {
+  public DigestBuilder(List<ScanAggregation> aggregations) {
     this.aggregations = aggregations;
     this.digestBuckets = new TreeMap<String,Bucket>();
   }
@@ -34,7 +34,7 @@ public class DigestBuilder {
 
     Map<String, String> partitions = new HashMap<String, String>();
     StringBuilder labelBuilder = new StringBuilder();
-    for (ScanQueryAggregation aggregation : aggregations) {
+    for (ScanAggregation aggregation : aggregations) {
       String attrVal = attributes.get(aggregation.getAttributeName());
       if (attrVal == null) {
         throw new MissingAttributeException(id, aggregation.getAttributeName());
@@ -57,8 +57,8 @@ public class DigestBuilder {
     bucket.add(vsn);
   }
 
-  public List<QueryResultEntry> toDigests() {
-    List<QueryResultEntry> result = new ArrayList<QueryResultEntry>();
+  public List<ScanResultEntry> toDigests() {
+    List<ScanResultEntry> result = new ArrayList<ScanResultEntry>();
     for (Bucket bucket : digestBuckets.values()) {
       result.add(bucket.toDigest());
     }
@@ -84,6 +84,11 @@ public class DigestBuilder {
       }
     }
 
+    /**
+     * Adds a version to be included the digest computation
+     * @param vsn  The version string to add.
+     * @throws SealedBucketException When the digest for the current builder instance has already been computed.
+     */
     public void add(String vsn) {
       if (digest != null) {
         throw new SealedBucketException(vsn, name);
@@ -92,12 +97,12 @@ public class DigestBuilder {
       messageDigest.update(vsnBytes, 0, vsnBytes.length);
     }
 
-    public QueryResultEntry toDigest() {
+    public ScanResultEntry toDigest() {
       if (digest == null) {
         digest = new String(Hex.encodeHex(messageDigest.digest()));
       }
 
-      return QueryResultEntry.forAggregate(digest, attributes);
+      return ScanResultEntry.forAggregate(digest, attributes);
     }
   }
 }

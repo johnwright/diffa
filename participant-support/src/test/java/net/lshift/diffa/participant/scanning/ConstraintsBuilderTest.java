@@ -6,6 +6,9 @@ import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
@@ -57,6 +60,7 @@ public class ConstraintsBuilderTest {
     DateRangeConstraint c = (DateRangeConstraint) builder.toList().get(0);
     assertEquals(new LocalDate(2011, 6, 1), c.getStart());
     assertEquals(new LocalDate(2011, 6, 30), c.getEnd());
+    assertEquals("bizDate",c.getAttributeName());
   }
 
   @Test
@@ -86,7 +90,10 @@ public class ConstraintsBuilderTest {
     assertThat(builder.toList().get(0), is(instanceOf(SetConstraint.class)));
 
     SetConstraint c = (SetConstraint) builder.toList().get(0);
-    assertArrayEquals(new String[]{"a"}, c.getValues());
+
+    Set<String> expected = new HashSet<String>();
+    expected.add("a");
+    assertEquals(expected, c.getValues());
   }
 
   @Test
@@ -102,6 +109,10 @@ public class ConstraintsBuilderTest {
     assertThat(builder.toList().get(0), is(instanceOf(SetConstraint.class)));
 
     SetConstraint c = (SetConstraint) builder.toList().get(0);
-    assertArrayEquals(new String[]{"a", "b", "c"}, c.getValues());
+    Set<String> expected = new HashSet<String>();
+    expected.add("a");
+    expected.add("b");
+    expected.add("c");
+    assertEquals(expected, c.getValues());
   }
 }

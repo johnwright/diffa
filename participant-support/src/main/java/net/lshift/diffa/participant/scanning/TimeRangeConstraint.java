@@ -8,7 +8,7 @@ import org.joda.time.format.ISODateTimeFormat;
 /**
  * Constraint where a given attribute value is between a given start and end.
  */
-public class TimeRangeConstraint extends AbstractScanQueryConstraint {
+public class TimeRangeConstraint extends AbstractScanConstraint {
   private static final DateTimeFormatter formatter = ISODateTimeFormat.dateTimeParser();
   private final DateTime start;
   private final DateTime end;

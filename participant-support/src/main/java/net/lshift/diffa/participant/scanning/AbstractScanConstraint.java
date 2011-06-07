@@ -1,12 +1,12 @@
 package net.lshift.diffa.participant.scanning;
 
 /**
- * Base implementation of a ScanQueryConstraint.
+ * Base implementation of a ScanConstraint.
  */
-public abstract class AbstractScanQueryConstraint implements ScanQueryConstraint {
+public abstract class AbstractScanConstraint implements ScanConstraint {
   private final String attributeName;
 
-  public AbstractScanQueryConstraint(String attributeName) {
+  public AbstractScanConstraint(String attributeName) {
     this.attributeName = attributeName;
   }
 

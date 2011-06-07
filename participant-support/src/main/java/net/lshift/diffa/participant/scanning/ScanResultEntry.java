@@ -9,27 +9,27 @@ import java.util.Map;
  * Describes an element of the response to a scanning query. Can either describe a specific entity, or an aggregate of
  * entities. Aggregates do not contain an id or lastUpdated value.
  */
-public class QueryResultEntry {
+public class ScanResultEntry {
   private final String id;
   private final String version;
   private final DateTime lastUpdated;
   private final Map<String, String> attributes;
 
-  public static QueryResultEntry forAggregate(String version, Map<String, String> attributes) {
-    return new QueryResultEntry(null, version, null, attributes);
+  public static ScanResultEntry forAggregate(String version, Map<String, String> attributes) {
+    return new ScanResultEntry(null, version, null, attributes);
   }
-  public static QueryResultEntry forEntity(String id, String version, DateTime lastUpdated, Map<String, String> attributes) {
-    return new QueryResultEntry(id, version, lastUpdated, attributes);
+  public static ScanResultEntry forEntity(String id, String version, DateTime lastUpdated, Map<String, String> attributes) {
+    return new ScanResultEntry(id, version, lastUpdated, attributes);
   }
-  public static QueryResultEntry forEntity(String id, String version, DateTime lastUpdated) {
-    return new QueryResultEntry(id, version, lastUpdated, null);
+  public static ScanResultEntry forEntity(String id, String version, DateTime lastUpdated) {
+    return new ScanResultEntry(id, version, lastUpdated, null);
   }
 
-  public QueryResultEntry() {
+  public ScanResultEntry() {
     this(null, null, null, null);
   }
 
-  public QueryResultEntry(String id, String version, DateTime lastUpdated, Map<String, String> attributes) {
+  public ScanResultEntry(String id, String version, DateTime lastUpdated, Map<String, String> attributes) {
     this.id = id;
     this.version = version;
     this.lastUpdated = lastUpdated;
@@ -61,7 +61,7 @@ public class QueryResultEntry {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    QueryResultEntry that = (QueryResultEntry) o;
+    ScanResultEntry that = (ScanResultEntry) o;
 
     if (attributes != null ? !attributes.equals(that.attributes) : that.attributes != null) return false;
     if (id != null ? !id.equals(that.id) : that.id != null) return false;
@@ -82,7 +82,7 @@ public class QueryResultEntry {
 
   @Override
   public String toString() {
-    return "QueryResultEntry{" +
+    return "ScanResultEntry{" +
       "id='" + id + '\'' +
       ", version='" + version + '\'' +
       ", lastUpdated=" + lastUpdated +

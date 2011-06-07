@@ -3,7 +3,7 @@ package net.lshift.diffa.participant.scanning;
 /**
  * Describes an aggregation function being applied to a scan query.
  */
-public interface ScanQueryAggregation {
+public interface ScanAggregation {
   /**
    * Retrieves the name of the attribute that is being aggregated on.
    * @return the name of the aggregated attribute.

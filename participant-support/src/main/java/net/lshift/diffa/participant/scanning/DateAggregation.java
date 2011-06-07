@@ -6,7 +6,7 @@ import org.joda.time.format.*;
 /**
  * Aggregation for a date.
  */
-public class DateAggregation extends AbstractScanQueryAggregation {
+public class DateAggregation extends AbstractScanAggregation {
   private DateTimeParser[] parsers = new DateTimeParser[] {
           ISODateTimeFormat.dateTime().getParser(),
           ISODateTimeFormat.date().getParser()

@@ -1,12 +1,12 @@
 package net.lshift.diffa.participant.scanning;
 
 /**
- * Base implementation of a ScanQueryAggregation.
+ * Base implementation of a ScanAggregation.
  */
-public abstract class AbstractScanQueryAggregation implements ScanQueryAggregation {
+public abstract class AbstractScanAggregation implements ScanAggregation {
   private final String attrName;
 
-  public AbstractScanQueryAggregation(String attrName) {
+  public AbstractScanAggregation(String attrName) {
     this.attrName = attrName;
   }
 

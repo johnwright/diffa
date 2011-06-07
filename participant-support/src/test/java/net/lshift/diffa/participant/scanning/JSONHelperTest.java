@@ -18,28 +18,28 @@ import static org.junit.Assert.assertEquals;
 public class JSONHelperTest {
   @Test
   public void shouldSerialiseEmptyList() throws Exception {
-    String emptyRes = serialiseResult(new ArrayList<QueryResultEntry>());
+    String emptyRes = serialiseResult(new ArrayList<ScanResultEntry>());
     assertEquals("[]", emptyRes);
   }
 
   @Test
   public void shouldSerialiseSingleEntityWithNoAttributes() throws Exception {
     String single = serialiseResult(Arrays.asList(
-      QueryResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC))));
+      ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC))));
     assertEquals("[{\"id\":\"id1\",\"version\":\"v1\",\"lastUpdated\":\"2011-06-05T15:03:00.000Z\"}]", single);
   }
 
   @Test
   public void shouldSerialiseSingleEntityWithAttributes() throws Exception {
     String single = serialiseResult(Arrays.asList(
-      QueryResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC),
-        generateAttributes("a1v1", "a2v2"))));
+      ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC),
+          generateAttributes("a1v1", "a2v2"))));
     assertEquals(
       "[{\"id\":\"id1\",\"attributes\":{\"a1\":\"a1v1\",\"a2\":\"a2v2\"},\"version\":\"v1\",\"lastUpdated\":\"2011-06-05T15:03:00.000Z\"}]",
       single);
   }
 
-  private static String serialiseResult(Iterable<QueryResultEntry> entries) throws Exception {
+  private static String serialiseResult(Iterable<ScanResultEntry> entries) throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     JSONHelper.writeQueryResult(baos, entries);
 

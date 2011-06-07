@@ -1,7 +1,5 @@
 package net.lshift.diffa.participant.scanning;
 
-import org.springframework.web.HttpRequestHandler;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,10 +16,10 @@ public abstract class ScanningParticipantServlet extends HttpServlet {
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
 
-    List<ScanQueryConstraint> constraints = determineConstraints(req);
-    List<ScanQueryAggregation> aggregations = determineAggregations(req);
+    List<ScanConstraint> constraints = determineConstraints(req);
+    List<ScanAggregation> aggregations = determineAggregations(req);
 
-    List<QueryResultEntry> entries = doQuery(constraints, aggregations);
+    List<ScanResultEntry> entries = doQuery(constraints, aggregations);
     resp.setContentType("application/json");
     JSONHelper.writeQueryResult(resp.getOutputStream(), entries);
   }
@@ -31,8 +29,8 @@ public abstract class ScanningParticipantServlet extends HttpServlet {
    * @param req the request to check for constraints.
    * @return the constraints. Default implementation is to return no constraints.
    */
-  protected List<ScanQueryConstraint> determineConstraints(HttpServletRequest req) {
-    return new ArrayList<ScanQueryConstraint>();
+  protected List<ScanConstraint> determineConstraints(HttpServletRequest req) {
+    return new ArrayList<ScanConstraint>();
   }
 
   /**
@@ -40,8 +38,8 @@ public abstract class ScanningParticipantServlet extends HttpServlet {
    * @param req the request to check for aggregations.
    * @return the aggregations. Default implementation is to return no aggregations.
    */
-  protected List<ScanQueryAggregation> determineAggregations(HttpServletRequest req) {
-    return new ArrayList<ScanQueryAggregation>();
+  protected List<ScanAggregation> determineAggregations(HttpServletRequest req) {
+    return new ArrayList<ScanAggregation>();
   }
 
   /**
@@ -50,5 +48,5 @@ public abstract class ScanningParticipantServlet extends HttpServlet {
    * @param aggregations the aggregations to apply.
    * @return the result entries.
    */
-  protected abstract List<QueryResultEntry> doQuery(List<ScanQueryConstraint> constraints, List<ScanQueryAggregation> aggregations);
+  protected abstract List<ScanResultEntry> doQuery(List<ScanConstraint> constraints, List<ScanAggregation> aggregations);
 }
