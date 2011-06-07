@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.client
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.config.RepairAction
+import net.lshift.diffa.kernel.config.RepairAction._
 
 /**
  * Interface supported by clients capable of listing and invoking actions for pairs.
@@ -26,14 +27,24 @@ import net.lshift.diffa.kernel.config.RepairAction
 trait ActionsClient {
 
   /**
-   * Lists the actions that a pairing offers
+   * Lists all actions that a pairing offers
    */
-  def listActions(pairKey: String) : Seq[Actionable]
+  def listActions(pairKey: String): Seq[Actionable]
+
+  /**
+   * Lists the entity-scoped actions that a pairing offers
+   */
+  def listEntityScopedActions(pairKey: String): Seq[Actionable]
+
+  /**
+   * Lists the pair-scoped actions that a pairing offers
+   */
+  def listPairScopedActions(pairKey: String): Seq[Actionable]
 
   /**
    * Invokes an action against a pairing
    */
-  def invoke(request:ActionableRequest) : InvocationResult
+  def invoke(request:ActionableRequest): InvocationResult
   
 }
 
@@ -48,7 +59,10 @@ case class Actionable (
 
 object Actionable {
   def fromRepairAction(a: RepairAction): Actionable = {
-    val path = "/actions/"+a.pairKey+"/"+a.actionId+"/${id}" // TODO support entity-scoped actions
+    val path = "/actions/" + a.pairKey + "/" + a.actionId + (a.scope match {
+      case ENTITY_SCOPE =>  "/${id}"
+      case PAIR_SCOPE => ""
+    })
     new Actionable(a.name, a.scope, path, a.pairKey)
   }
 }

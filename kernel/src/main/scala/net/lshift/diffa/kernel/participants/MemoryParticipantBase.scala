@@ -65,6 +65,8 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
           case false => InvocationResult("error", "Unknown Entity:" + entityId)
         }
       }
+      case "resend-all" =>
+        InvocationResult("success", "")
       case _        => InvocationResult("error", "Unknown action:" + actionId)
     }
   }
