@@ -22,12 +22,13 @@
 <head>
 	<title>Diffa</title>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/>
-	<link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/>
-	<link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/>
+
+    <!--link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/-->
+	<!--link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/-->
+	<!--link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/-->
 	<!--<link rel="stylesheet" type="text/css" href="css/stickyfooter.css" media="screen"/>-->
-	<link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
-	<link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/>
+	<!--link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/-->
+	<!--link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/-->
 
 	<script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
 	<script type="text/javascript" src="js/datejs/date-en-GB.js" charset="utf-8"></script>
@@ -62,30 +63,33 @@
 	</style>
 </head>
 <body>
-<div id="wrap" class="jbasewrap">
+<div class="container showgrid">
 
-	<div id="nav_bar">
+    <div class="span-20">
+		<h1>Diffa</h1>
+	</div>
+
+	<div class="span-2 last">
 		<a href="settings.html">Settings</a>
 	</div>
 
-	<h1 class="padtop logo">Diffa</h1>
+    <hr class="space">
 
-	<div id="heatmapContainer" class="margintop">
-		<div id="display" style="position:relative; width:800px;height:400px">
-			<canvas id="underlay" style="z-index:1; position:absolute; left:0px; top:0px; background-color: #cfe2f3"
-							width="800px" height="400px"></canvas>
-			<canvas id="canvas" style="z-index:2; position:absolute; left:0px; top:0px;" width="800px"
-							height="400px"></canvas>
-			<canvas id="overlay" style="z-index:4; position:absolute; left:0px; top:0px;" width="800px"
-							height="400px"></canvas>
-		</div>
-		<div id="scaleHolder" style="position:relative; width:800px; height:40px;">
-			<canvas id="scale" width="800px" height="40px"></canvas>
-		</div>
-	</div>
+	<div id="heatmapContainer" class="span-24">
+	    <div id="display" class="span-20 last">
+            <!-- Un-hardcode the dimensions-->
+            <canvas id="underlay" style="z-index:1; background-color: #cfe2f3;" width="800px" height="400px"/>
+            <canvas id="canvas" style="z-index:2;" width="800px" height="400px"/>
+            <canvas id="overlay" style="z-index:4;" width="800px" height="400px"/>
+        </div>
+        <div class="span-24">
+            <!-- Un-hardcode the dimensions-->
+            <canvas id="scale" width="800px" height="40px"/>
+        </div>
+    </div>
 
-	<div id="diffListContainer" class="left">
-		<table id="diffList" class=" grid14col diffList" width="100%">
+	<div id="diffListContainer" class="span-16">
+		<table id="diffList">
 			<thead>
 			<tr>
 				<th class="grid2col">Date</th>
@@ -116,7 +120,7 @@
 			</tbody>
 		</table>
 	</div>
-	<div id="contentviewer" class="grid9col left marginleft">
+	<div id="contentviewer" class="span-8 last">
 		<h6>No item selected</h6>
 
 		<div>
@@ -150,14 +154,13 @@
 
 	<br class="clearboth"/>
 
-	<div class="push"></div>
 </div>
+
 <script type="text/javascript">
 	$(document).ready(function() {
 		initGraph();
 	});
 </script>
-<!-- end wrap -->
 
 </body>
 </html>
