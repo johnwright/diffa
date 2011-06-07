@@ -17,50 +17,51 @@
 -->
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
-	<title>Diffa</title>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <title>Diffa</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-    <!--link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/-->
-	<!--link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/-->
-	<!--link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/-->
-	<!--<link rel="stylesheet" type="text/css" href="css/stickyfooter.css" media="screen"/>-->
-	<!--link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/-->
-	<!--link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/-->
+  <!--link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/>
+  <link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/>
+  <link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/>
+  <link rel="stylesheet" type="text/css" href="css/stickyfooter.css" media="screen"/>
+  <link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
+  <link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/-->
 
-	<script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
-	<script type="text/javascript" src="js/datejs/date-en-GB.js" charset="utf-8"></script>
-	<script type="text/javascript" src="js/datejs/extras.js" charset="utf-8"></script>
-	<script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
+  <script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
+  <script type="text/javascript" src="js/datejs/date-en-GB.js" charset="utf-8"></script>
+  <script type="text/javascript" src="js/datejs/extras.js" charset="utf-8"></script>
+  <script type="text/javascript" src="js/diffa-common.js" charset="utf-8"></script>
+  <script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
 
-	<style type="text/css">
-		table.diffList {
-			table-layout: fixed;
-			font-size: 0.8em;
-		}
+  <style type="text/css">
+    table.diffList {
+      table-layout: fixed;
+      font-size: 0.8em;
+    }
 
-		table.diffList th {
-			font-weight: bold;
-			text-transform: uppercase;
-			font-size: 1.05em;
-			border-bottom: 1px dotted silver;
-			border-top: 1px dotted silver;
-		}
+    table.diffList th {
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 1.05em;
+      border-bottom: 1px dotted silver;
+      border-top: 1px dotted silver;
+    }
 
-		table.diffList td {
-			word-wrap: break-word;
-		}
+    table.diffList td {
+      word-wrap: break-word;
+    }
 
-		table.diffList tr.selected {
-			background-color: #FFF2CC;
-		}
+    table.diffList tr.selected {
+      background-color: #FFF2CC;
+    }
 
-		table.diffList tbody tr {
-			cursor: pointer;
-		}
-	</style>
+    table.diffList tbody tr {
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 <div class="container showgrid">
@@ -80,7 +81,9 @@
             <!-- Un-hardcode the dimensions-->
             <canvas id="underlay" style="z-index:1; background-color: #cfe2f3;" width="800px" height="400px"/>
             <canvas id="canvas" style="z-index:2;" width="800px" height="400px"/>
+              height="400px"></canvas>
             <canvas id="overlay" style="z-index:4;" width="800px" height="400px"/>
+              height="400px"></canvas>
         </div>
         <div class="span-24">
             <!-- Un-hardcode the dimensions-->
@@ -90,77 +93,71 @@
 
 	<div id="diffListContainer" class="span-16">
 		<table id="diffList">
-			<thead>
-			<tr>
-				<th class="grid2col">Date</th>
-				<th class="grid2col">Time</th>
-				<!--<th class="grid2col">Group</th>-->
-				<th class="grid2col">Pairing</th>
-				<th class="grid4col">Item ID</th>
-				<th class="grid4col">Difference</th>
-			</tr>
-			</thead>
-			<tfoot id="navigation">
-			<tr>
-				<td colspan="5">&nbsp;</td>
-			</tr>
-			<tr>
-				<td colspan="5">&nbsp;</td>
-			</tr>
-			<tr>
-				<th id="previous" colspan="2" align="left"><a href="#">&lt;-Previous</a></th>
-				<th id="pagecount" colspan="2" align="center">nn of XX pages</th>
-				<th id="next" colspan="1"><a href="#">Next-&gt;</a></th>
-			</tr>
-			</tfoot>
-			<tbody>
-			<tr>
-				<td colspan="6">No items loaded yet...</td>
-			</tr>
-			</tbody>
-		</table>
-	</div>
-	<div id="contentviewer" class="span-8 last">
-		<h6>No item selected</h6>
+      <thead>
+      <tr>
+        <th class="grid2col">Date</th>
+        <th class="grid2col">Time</th>
+        <!--<th class="grid2col">Group</th>-->
+        <th class="grid2col">Pairing</th>
+        <th class="grid4col">Item ID</th>
+        <th class="grid4col">Difference</th>
+      </tr>
+      </thead>
+      <tfoot id="navigation">
+      <tr>
+        <td colspan="5">&nbsp;</td>
+      </tr>
+      <tr>
+        <td colspan="5">&nbsp;</td>
+      </tr>
+      <tr>
+        <th id="previous" colspan="2" align="left"><a href="#">&lt;-Previous</a></th>
+        <th id="pagecount" colspan="2" align="center">nn of XX pages</th>
+        <th id="next" colspan="1"><a href="#">Next-&gt;</a></th>
+      </tr>
+      </tfoot>
+      <tbody>
+      <tr>
+        <td colspan="6">No items loaded yet...</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="contentviewer" class="span-8 last">
+    <h6>No item selected</h6>
 
-		<div>
-			<div id="item1" class="diffSet">
-				<div class="diffHash">
-					<span>item 1</span>
-				</div>
-				<div class="codeBox">
-					<pre></pre>
-				</div>
-			</div>
-			<div id="item2" class="diffSet">
-				<div class="diffHash">
-					<span>item 2</span>
-				</div>
-				<div class="codeBox">
-					<pre></pre>
-				</div>
-			</div>
-		</div>
-		<div id="diffRepair">
-			<h6>Repair options</h6>
+    <div>
+      <div id="item1" class="diffSet">
+        <div class="diffHash">
+          <span>item 1</span>
+        </div>
+        <div class="codeBox">
+          <pre></pre>
+        </div>
+      </div>
+      <div id="item2" class="diffSet">
+        <div class="diffHash">
+          <span>item 2</span>
+        </div>
+        <div class="codeBox">
+          <pre></pre>
+        </div>
+      </div>
+    </div>
+    <div id="diffRepair">
+      <h6>Repair options</h6>
 
-			<div id="actionlist">
-			</div>
-			<br class="clearboth"/>
+      <div id="actionlist">
+      </div>
+      <br class="clearboth"/>
 
-			<p id="repairstatus" class="margintopsmall marginleft marginright"><em>No repairs in progress</em></p>
-		</div>
-	</div>
+      <p id="repairstatus" class="margintopsmall marginleft marginright"><em>No repairs in progress</em></p>
+    </div>
+  </div>
 
-	<br class="clearboth"/>
+  <br class="clearboth"/>
 
 </div>
-
-<script type="text/javascript">
-	$(document).ready(function() {
-		initGraph();
-	});
-</script>
 
 </body>
 </html>

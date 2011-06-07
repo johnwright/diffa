@@ -21,27 +21,27 @@ import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.client.ActionableRequest
+import javax.xml.ws.Response
+import net.lshift.diffa.messaging.json.BadRequestException
 
 trait CommonActionTests {
 
-
   def env:TestEnvironment
 
-
   @Test
-  def shouldHaveActions = {
-    val actions = env.actionsClient.listActions(env.pairKey)
+  def shouldListEntityScopedActions {
+    val actions = env.actionsClient.listEntityScopedActions(env.pairKey)
     assertNotNull(actions)
     assertEquals(1, actions.size)
     assertEquals("Resend Source", actions(0).name)
   }
 
   @Test
-  def invokeAction = {
+  def invokeEntityScopedAction {
     val entityId = "abc"
     env.upstream.addEntity(entityId, env.bizDate(yesterday), yesterday, "abcdef")
     val pairKey = env.pairKey
-    val actionId = "resend"    
+    val actionId = "resend"
     val request = ActionableRequest(pairKey, actionId, entityId)
     val response = env.actionsClient.invoke(request)
     assertNotNull(response)
@@ -49,11 +49,33 @@ trait CommonActionTests {
   }
 
   @Test
+  def shouldListPairScopedActions {
+    env.createPairScopedAction
+    val actions = env.actionsClient.listPairScopedActions(env.pairKey)
+    assertNotNull(actions)
+    assertEquals(Some(env.pairScopedActionName), actions.headOption.map(_.name))
+  }
+
+  @Test
+  def invokePairScopedAction {
+    env.createPairScopedAction
+    val request = ActionableRequest(env.pairKey, env.pairScopedActionId, null)
+    val response = env.actionsClient.invoke(request)
+    assertNotNull(response)
+    assertEquals("success", response.result)
+  }
+
+  @Test
   def canDeleteAction {
-    def actionKey = env.actionsClient.listActions(env.pairKey).headOption.map(_.name)
-    assertEquals(Some(env.actionName), actionKey)
-    env.configurationClient.removeRepairAction(env.actionName, env.pairKey)
-    assertEquals(None, actionKey)
+    def actionName = env.actionsClient.listEntityScopedActions(env.pairKey).headOption.map(_.name)
+    assertEquals(Some(env.entityScopedActionName), actionName)
+    env.configurationClient.removeRepairAction(env.entityScopedActionName, env.pairKey)
+    assertEquals(None, actionName)
+  }
+
+  @Test(expected=classOf[BadRequestException])
+  def shouldRejectInvalidActionScope {
+    env.configurationClient.declareRepairAction(env.entityScopedActionName, "resend", "INVALID SCOPE", env.pairKey)
   }
 
 }

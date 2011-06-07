@@ -126,21 +126,30 @@ SILVER 		- DOTTED BORDERS
 	overflow: auto;
 }
 
-#diffRepair label {
+#diffRepair label, .pair_states label {
 	width: 190px;
-	display: block;
-	float: left;
 	margin: 10px 0 0 5px;
 }
 
-.repair {
+#diffRepair label {
+    float: left;
+}
+
+button.repair {
 	width: 80px;
 	color: #333;
 	background-color: #FFFD94;
 	margin: 10px 5px 0 0;
 	border: 1px solid #ccc;
 	cursor: pointer;
-	float: right;
+}
+
+#diffRepair button.repair {
+    float: right;
+}
+
+.pair_states button.repair {
+    margin-left: 10px;
 }
 
 /*--------------------------------------------	WEBKIT SCROLLBAR CSS FROM: (I CAN'T MAKE IT WORK, BUT I THINK IT WOULD LOOK AWESOME)
