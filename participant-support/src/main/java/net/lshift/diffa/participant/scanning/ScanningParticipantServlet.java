@@ -13,19 +13,7 @@ import java.util.List;
 /**
  * Base support servlet for implementing a Diffa scanning participant.
  */
-public abstract class ScanningParticipantServlet
-  extends HttpServlet
-  implements HttpRequestHandler {
-
-  /**
-   * Delegate the Spring handleRequest implementation to the standard service dispatcher method.
-   */
-  @Override
-  public void handleRequest(HttpServletRequest request, HttpServletResponse response)
-      throws ServletException, IOException {
-    service(request, response);
-  }
-
+public abstract class ScanningParticipantServlet extends HttpServlet {
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
