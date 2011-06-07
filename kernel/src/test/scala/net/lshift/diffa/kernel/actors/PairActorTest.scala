@@ -166,10 +166,7 @@ class PairActorTest {
     val flushMonitor = new Object
     val eventMonitor = new Object
 
-    val id = VersionID(pairKey, "foo")
-    val lastUpdate = new DateTime
-    val vsn = "foobar"
-    val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
+    val event = buildUpstreamEvent()
 
     syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
@@ -235,6 +232,8 @@ class PairActorTest {
     val cancelMonitor = new Object
     val responseMonitor = new Object
 
+    val event = buildUpstreamEvent()
+
     val timeToWait = 2000L
 
     syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
@@ -257,6 +256,11 @@ class PairActorTest {
 
     expectScans.andAnswer(new IAnswer[Unit] {
       def answer = {
+        // Push a change event through in the cancellation state
+        // The actor should drop this message and hence no invocation
+        // should be made against the versionPolicy mock object
+        supervisor.propagateChangeEvent(event)
+
         // Put the sub actor into a sufficiently long pause so that the cancellation request
         // has enough time to get processed by the parent actor, have it trigger the
         // the scan state listener and send a response back the thread that requested the
@@ -352,6 +356,13 @@ class PairActorTest {
     supervisor.startActor(pair)
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
+  }
+
+  def buildUpstreamEvent() = {
+    val id = VersionID(pairKey, "foo")
+    val lastUpdate = new DateTime
+    val vsn = "foobar"
+    UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
   }
 
 }

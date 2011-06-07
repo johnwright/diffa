@@ -80,6 +80,11 @@ case class PairActor(pairKey:String,
   var lastUUID = new UUID
 
   /**
+   * This is the address of the client that requested the last cancellation
+   */
+  private var cancellationRequester:Channel[Any] = null
+
+  /**
    * This allows tracing of spurious messages, but is only enabled in when the log level is set to TRACE
    */
   abstract class TraceableCommand(uuid:UUID) {
@@ -173,7 +178,7 @@ case class PairActor(pairKey:String,
     }
     case s:SelfLoggingMessage              => s.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
     case x                                 =>
-      logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
+      logger.error("%s: Spurious message during ready loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
 
   /**
@@ -183,7 +188,10 @@ case class PairActor(pairKey:String,
    */
   val receiveWhilstScanning : Actor.Receive  = {
     case FlushWriterMessage                 => // ignore flushes in this state - we may want to roll the index back
-    case CancelMessage                      => handleCancellation()
+    case CancelMessage                      =>
+      // Squirrel away the address of the client that requested the cancellation
+      cancellationRequester = self.channel
+      handleCancellation()
     case c: VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
     case d: Deferrable                      => deferred.enqueue(d)
     case s: SelfLoggingMessage              => {
@@ -200,7 +208,7 @@ case class PairActor(pairKey:String,
       }
     }
     case x                                  =>
-      logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
+      logger.error("%s: Spurious message during scanning loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
 
   /**
@@ -216,18 +224,14 @@ case class PairActor(pairKey:String,
 
     // Go to the cancelling state
     become(receiveWhilstCancelling)
-
-    flushBufferedEvents
-    dropPendingScans
-    leaveScanState(PairScanState.CANCELLED)
-    self.reply(true)
   }
 
   /**
    * Implementation of the receive loop whilst in a cancelling state.
    */
   val receiveWhilstCancelling : Actor.Receive  = {
-    case FlushWriterMessage => // ignore flushes in this state - we will roll the index back
+    case FlushWriterMessage    => // ignore flushes in this state - we will roll the index back
+    case d: Deferrable         => // ignore any deferrable messages whilst cancelling
     case s: SelfLoggingMessage =>
       s.logMessage(logger, Cancelling, AlertCodes.CANCELLATION_REQUEST)
       s.upOrDown match {
@@ -235,11 +239,11 @@ case class PairActor(pairKey:String,
         case Down => downstreamCancelled = true
       }
       maybeLeaveCancellingState
-    case ReceiveTimeout =>
+    case ReceiveTimeout       =>
       logger.error("%s: Actor timed out for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
       upstreamCancelled = true; downstreamCancelled = true; maybeLeaveCancellingState
-    case x =>
-      logger.error("%s: Spurious message: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
+    case x                    =>
+      logger.error("%s: Spurious message during cancellation loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
 
   /**
@@ -249,10 +253,16 @@ case class PairActor(pairKey:String,
     if (upstreamCancelled && downstreamCancelled) {
       upstreamCancelled = false
       downstreamCancelled = false
-      logger.info("%s: Sub actors cancellation completed for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
+      logger.info("%s: Sub actors cancellation completed for pair: %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
       // Drop out of the current cancellation state
       self.receiveTimeout = None
-      unbecome()
+
+      deferred.clear()
+
+      // Reply to the original requester
+      cancellationRequester ! true
+
+      leaveScanState(PairScanState.CANCELLED)
     }
   }
 
@@ -297,6 +307,9 @@ case class PairActor(pairKey:String,
     // Make sure that this flag is zeroed out
     feedbackHandle = null
 
+    // Make sure there is no dangling back address
+    cancellationRequester = null
+
     // Leave the scan state
     unbecome()
   }
@@ -312,8 +325,6 @@ case class PairActor(pairKey:String,
     currentScanListener = null
     deferred.dequeueAll(d => {self ! d; true})
   }
-
-  def dropPendingScans = deferred.dequeueAll(d => d.isInstanceOf[ScanMessage])
 
   /**
    * Events out normal changes.
