@@ -190,7 +190,7 @@ case class PairActor(pairKey:String,
       logger.error("%s: Received command (%s) in non-scanning state - potential bug"
                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, c), c.exception)
     }
-    case s:SelfLoggingMessage              => s.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
+    case a:ChildActorCompletionMessage     => a.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
     case x                                 =>
       logger.error("%s: Spurious message during ready loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
@@ -207,13 +207,14 @@ case class PairActor(pairKey:String,
       cancellationRequester = self.channel
       handleCancellation()
     case c: VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
+    case ScanMessage                        => // ignore any scan requests whilst cancelling
     case d: Deferrable                      => deferred.enqueue(d)
-    case s: SelfLoggingMessage              => {
-      s.logMessage(logger, Scanning, AlertCodes.SCAN_OPERATION)
-      s.result match {
+    case a: ChildActorCompletionMessage     => {
+      a.logMessage(logger, Scanning, AlertCodes.SCAN_OPERATION)
+      a.result match {
         case Failure => leaveScanState(PairScanState.FAILED)
         case Success => {
-          s.upOrDown match {
+          a.upOrDown match {
             case Up   => upstreamSuccess = true
             case Down => downstreamSuccess = true
           }
@@ -244,19 +245,20 @@ case class PairActor(pairKey:String,
    * Implementation of the receive loop whilst in a cancelling state.
    */
   val receiveWhilstCancelling : Actor.Receive  = {
-    case FlushWriterMessage    => // ignore flushes in this state - we will roll the index back
-    case d: Deferrable         => // ignore any deferrable messages whilst cancelling
-    case s: SelfLoggingMessage =>
-      s.logMessage(logger, Cancelling, AlertCodes.CANCELLATION_REQUEST)
-      s.upOrDown match {
+    case FlushWriterMessage            => // ignore flushes in this state - we will roll the index back
+    case ScanMessage                   => // ignore any scan requests whilst cancelling
+    case d:Deferrable                  => deferred.enqueue(d)
+    case a:ChildActorCompletionMessage =>
+      a.logMessage(logger, Cancelling, AlertCodes.CANCELLATION_REQUEST)
+      a.upOrDown match {
         case Up   => upstreamCancelled = true
         case Down => downstreamCancelled = true
       }
       maybeLeaveCancellingState
-    case ReceiveTimeout       =>
+    case ReceiveTimeout                 =>
       logger.error("%s: Actor timed out for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
       upstreamCancelled = true; downstreamCancelled = true; maybeLeaveCancellingState
-    case x                    =>
+    case x                              =>
       logger.error("%s: Spurious message during cancellation loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
 
@@ -270,8 +272,6 @@ case class PairActor(pairKey:String,
       logger.info("%s: Sub actors cancellation completed for pair: %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
       // Drop out of the current cancellation state
       self.receiveTimeout = None
-
-      deferred.clear()
 
       // Reply to the original requester
       cancellationRequester ! true
@@ -391,16 +391,16 @@ case class PairActor(pairKey:String,
       Actor.spawn {
         try {
           policy.scanUpstream(pairKey, writerProxy, us, bufferingListener, feedbackHandle)
-          self ! SelfLoggingMessage(lastUUID, Up, Success)
+          self ! ChildActorCompletionMessage(lastUUID, Up, Success)
         }
         catch {
           case c:ScanCancelledException => {
             logger.warn("Upstream scan on pair %s was cancelled".format(pairKey))
-            self ! SelfLoggingMessage(lastUUID, Up, Cancellation)
+            self ! ChildActorCompletionMessage(lastUUID, Up, Cancellation)
           }
           case e:Exception => {
             logger.error("Upstream scan failed: " + pairKey, e)
-            self ! SelfLoggingMessage(lastUUID, Up, Failure)
+            self ! ChildActorCompletionMessage(lastUUID, Up, Failure)
           }
         }
       }
@@ -408,16 +408,16 @@ case class PairActor(pairKey:String,
       Actor.spawn {
         try {
           policy.scanDownstream(pairKey, writerProxy, us, ds, bufferingListener, feedbackHandle)
-          self ! SelfLoggingMessage(lastUUID, Down, Success)
+          self ! ChildActorCompletionMessage(lastUUID, Down, Success)
         }
         catch {
           case c:ScanCancelledException => {
             logger.warn("Downstream scan on pair %s was cancelled".format(pairKey))
-            self ! SelfLoggingMessage(lastUUID, Down, Cancellation)
+            self ! ChildActorCompletionMessage(lastUUID, Down, Cancellation)
           }
           case e:Exception => {
             logger.error("Downstream scan failed: " + pairKey, e)
-            self ! SelfLoggingMessage(lastUUID, Down, Failure)
+            self ! ChildActorCompletionMessage(lastUUID, Down, Failure)
           }
         }
       }
@@ -460,7 +460,7 @@ case object Cancellation extends Result
 /**
  * Marker messages to let the actor know that a portion of the scan has successfully completed.
  */
-case class SelfLoggingMessage(uuid:UUID, upOrDown:UpOrDown, result:Result) {
+case class ChildActorCompletionMessage(uuid:UUID, upOrDown:UpOrDown, result:Result) {
   def logMessage(l:Logger, s:ActorState, code:String)
     = l.debug("%s: UUID[%s] -> Received %s %s in %s state".format(code, uuid, upOrDown, result, s))
 }
@@ -471,7 +471,7 @@ case class SelfLoggingMessage(uuid:UUID, upOrDown:UpOrDown, result:Result) {
 abstract class Deferrable
 case class ChangeMessage(event: PairChangeEvent) extends Deferrable
 case class DifferenceMessage(diffListener: DifferencingListener) extends Deferrable
-case class ScanMessage(diffListener: DifferencingListener, pairSyncListener: PairSyncListener) extends Deferrable
+case class ScanMessage(diffListener: DifferencingListener, pairSyncListener: PairSyncListener)
 
 /**
  * This message indicates that this actor should cancel all current and pending scan operations.
