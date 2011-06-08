@@ -14,12 +14,12 @@ import java.util.*;
  */
 public class DigestBuilder {
   private final static Logger log = LoggerFactory.getLogger(DigestBuilder.class);
-  private final Map<String, Bucket> digestBuckets;
+  private final Map<BucketKey, Bucket> digestBuckets;
   private final List<ScanAggregation> aggregations;
 
   public DigestBuilder(List<ScanAggregation> aggregations) {
     this.aggregations = aggregations;
-    this.digestBuckets = new TreeMap<String,Bucket>();
+    this.digestBuckets = new HashMap<BucketKey, Bucket>();
   }
 
   /**
@@ -33,7 +33,7 @@ public class DigestBuilder {
     log.trace("Adding to bucket: " + id + ", " + attributes + ", " + vsn);
 
     Map<String, String> partitions = new HashMap<String, String>();
-    StringBuilder labelBuilder = new StringBuilder();
+    partitions.putAll(attributes);    // Default partitions to the initial attribute set
     for (ScanAggregation aggregation : aggregations) {
       String attrVal = attributes.get(aggregation.getAttributeName());
       if (attrVal == null) {
@@ -42,16 +42,13 @@ public class DigestBuilder {
 
       String bucket = aggregation.bucket(attrVal);
       partitions.put(aggregation.getAttributeName(), bucket);
-
-      if (labelBuilder.length() > 0) labelBuilder.append("_");
-      labelBuilder.append(bucket);
     }
 
-    String label = labelBuilder.toString();
-    Bucket bucket = digestBuckets.get(label);
+    BucketKey key = new BucketKey(partitions);
+    Bucket bucket = digestBuckets.get(key);
     if (bucket == null) {
-      bucket = new Bucket(label, partitions);
-      digestBuckets.put(label, bucket);
+      bucket = new Bucket(key, partitions);
+      digestBuckets.put(key, bucket);
     }
 
     bucket.add(vsn);
@@ -66,15 +63,40 @@ public class DigestBuilder {
     return result;
   }
 
+  private static class BucketKey {
+    private final Map<String, String> attributes;
+
+    public BucketKey(Map<String, String> attributes) {
+      this.attributes = attributes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      BucketKey bucketKey = (BucketKey) o;
+
+      if (attributes != null ? !attributes.equals(bucketKey.attributes) : bucketKey.attributes != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return attributes != null ? attributes.hashCode() : 0;
+    }
+  }
+
   private static class Bucket {
-    private final String name;
+    private final BucketKey key;
     private final Map<String, String> attributes;
     private final String digestAlgorithm = "MD5";
     private final MessageDigest messageDigest;
     private String digest = null;
 
-    public Bucket(String name, Map<String, String> attributes) {
-      this.name = name;
+    public Bucket(BucketKey key, Map<String, String> attributes) {
+      this.key = key;
       this.attributes = attributes;
 
       try {
@@ -91,7 +113,7 @@ public class DigestBuilder {
      */
     public void add(String vsn) {
       if (digest != null) {
-        throw new SealedBucketException(vsn, name);
+        throw new SealedBucketException(vsn, getLabel());
       }
       byte[] vsnBytes = vsn.getBytes(Charset.forName("UTF-8"));
       messageDigest.update(vsnBytes, 0, vsnBytes.length);
@@ -103,6 +125,19 @@ public class DigestBuilder {
       }
 
       return ScanResultEntry.forAggregate(digest, attributes);
+    }
+
+    public String getLabel() {
+      StringBuilder labelBuilder = new StringBuilder();
+      String[] keys = attributes.keySet().toArray(new String[attributes.size()]);
+      Arrays.sort(keys);
+
+      for(String key : keys) {
+        if (labelBuilder.length() > 0) labelBuilder.append("_");
+        labelBuilder.append(attributes.get(key));
+      }
+
+      return labelBuilder.toString();
     }
   }
 }
