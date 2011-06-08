@@ -44,4 +44,9 @@ object AlertCodes {
    * Signifies the result of a scanning operation
    */
   val SCAN_OPERATION = "D5"
+
+  /**
+   * Occurs when a send and blocking receive times out.
+   */
+  val RECEIVE_TIMEOUT = "D6"
 }

@@ -72,12 +72,13 @@ function clearScale() {
 
 var sessionId = null;
 
-function createSession() {
+function createSession(withValidSessionId) {
   var handleSessionId = function(data, status, req) {
     var location = req.getResponseHeader('Location');
     var parts = location.split("/");
     var sessionID = parts[parts.length - 1];
     sessionId = sessionID;
+    withValidSessionId();
   };
   $.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
 }
@@ -526,9 +527,8 @@ function mouseOver(e) {
 }
 
 function initGraph() {
-  createSession();
+  createSession(startPolling);
   initCanvas();
-  startPolling();
 
   $(document).mouseup(mouseUp);
   $("#display").mousedown(mouseDown);
