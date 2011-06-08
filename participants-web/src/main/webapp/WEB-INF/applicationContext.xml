@@ -113,7 +113,7 @@
     <property name="arguments">
       <list>
         <value>${demo.repairAction.name}</value>
-        <value>${demo.repairAction.id}</value>
+        <value>${demo.repairAction.url}</value>
         <value>${demo.repairAction.scope}</value>
         <value>${demo.repairAction.pairKey}</value>
       </list>

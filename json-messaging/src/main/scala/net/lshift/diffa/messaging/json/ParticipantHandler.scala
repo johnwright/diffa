@@ -46,10 +46,6 @@ abstract class ParticipantHandler(val participant:Participant) extends AbstractJ
                                          andThen (digestsToWire _)
                                          andThen (serializeDigests _)),
 
-    "invoke" -> skeleton((deserializeActionRequest _)
-                          andThen (req => participant.invoke(req.actionId, req.entityId))
-                          andThen (serializeActionResult _)),
-
     "retrieve_content" -> skeleton((deserializeEntityContentRequest _)
                                     andThen (participant.retrieveContent _)
                                     andThen (serializeEntityContent _))

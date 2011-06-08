@@ -176,7 +176,7 @@ case class PairDef(
 
 case class RepairAction(
   @BeanProperty var name: String,
-  @BeanProperty var actionId: String,
+  @BeanProperty var url: String,
                 var scope: String,
   @BeanProperty var pairKey: String
 ) {

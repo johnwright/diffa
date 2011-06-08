@@ -21,7 +21,6 @@ import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.client.ActionableRequest
-import javax.xml.ws.Response
 import net.lshift.diffa.messaging.json.BadRequestException
 
 trait CommonActionTests {
@@ -40,12 +39,10 @@ trait CommonActionTests {
   def invokeEntityScopedAction {
     val entityId = "abc"
     env.upstream.addEntity(entityId, env.bizDate(yesterday), yesterday, "abcdef")
-    val pairKey = env.pairKey
-    val actionId = "resend"
-    val request = ActionableRequest(pairKey, actionId, entityId)
+    val request = ActionableRequest(env.pairKey, env.entityScopedActionName, "abc")
     val response = env.actionsClient.invoke(request)
     assertNotNull(response)
-    assertEquals("success", response.result)    
+    assertEquals("error", response.result)
   }
 
   @Test
@@ -59,10 +56,10 @@ trait CommonActionTests {
   @Test
   def invokePairScopedAction {
     env.createPairScopedAction
-    val request = ActionableRequest(env.pairKey, env.pairScopedActionId, null)
+    val request = ActionableRequest(env.pairKey, env.pairScopedActionName, null)
     val response = env.actionsClient.invoke(request)
     assertNotNull(response)
-    assertEquals("success", response.result)
+    assertEquals("error", response.result)
   }
 
   @Test

@@ -19,7 +19,6 @@ package net.lshift.diffa.kernel.participants
 import org.joda.time.DateTime
 import collection.mutable.HashMap
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
 
 /**
@@ -30,6 +29,8 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   val log = LoggerFactory.getLogger(getClass)
 
   protected val entities = new HashMap[String, TestEntity]
+
+  def entityIds: Seq[String] = entities.keys.toList
 
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     log.trace("Running version query: " + constraints)
@@ -57,20 +58,6 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
     case None => null
   }
 
-  def invoke(actionId:String, entityId:String) : InvocationResult = {
-    actionId match {
-      case "resend" => {
-        entities.contains(entityId) match {
-          case true  => InvocationResult("success", entities(entityId).toString)
-          case false => InvocationResult("error", "Unknown Entity:" + entityId)
-        }
-      }
-      case "resend-all" =>
-        InvocationResult("success", "")
-      case _        => InvocationResult("error", "Unknown action:" + actionId)
-    }
-  }
-  
   def addEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String): Unit = {
     entities += ((id, TestEntity(id, attributes, lastUpdated, body)))
   }

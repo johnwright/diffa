@@ -36,7 +36,6 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
   def createDownstreamParticipant(address: String, protocol: String) = {
     new DownstreamParticipant() {
       def generateVersion(entityBody:String) = null
-      def invoke(actionId:String, entityId:String)  = null
       def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
       def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
       def retrieveContent(id:String) = null
@@ -47,7 +46,6 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
     new UpstreamParticipant() {
       def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
       def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
-      def invoke(actionId:String, entityId:String)  = null
       def retrieveContent(id:String) = null
       def close() = ()
     }

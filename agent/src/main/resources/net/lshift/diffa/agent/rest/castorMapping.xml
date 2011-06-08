@@ -138,8 +138,8 @@
     <field name="name" type="string">
       <bind-xml name="name" node="attribute" />
     </field>
-    <field name="actionId" type="string">
-      <bind-xml name="id" node="attribute" />
+    <field name="url" type="string">
+      <bind-xml name="url" node="attribute" />
     </field>
     <field name="scope" type="string">
       <bind-xml name="scope" node="attribute" />

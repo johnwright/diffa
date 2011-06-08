@@ -31,13 +31,13 @@ abstract class AbstractEnvironmentTest {
   var env:TestEnvironment = null
 
   @Before
-  def setup {
+  def setup() {
     env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
-    env.clearParticipants
+    env.clearParticipants()
   }
 
   @After
-  def removePair {
-    env.deletePair
+  def removePair() {
+    env.deletePair()
   }
 }

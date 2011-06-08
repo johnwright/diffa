@@ -19,6 +19,9 @@ package net.lshift.diffa.kernel.frontend.wire
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
+import org.apache.http.impl.client.DefaultHttpClient
+import org.apache.http.client.methods.HttpPost
+import io.Source
 
 /**
  * This is a conduit to the actions that are provided by participants
@@ -34,14 +37,20 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
 
   def listPairScopedActions(pairKey: String) = listActions(pairKey).filter(_.scope == RepairAction.PAIR_SCOPE)
 
-  def invoke(request:ActionableRequest) : InvocationResult =
+  def invoke(request: ActionableRequest): InvocationResult =
     withValidPair(request.pairKey) { pair =>
-      val participant = factory.createUpstreamParticipant(pair.upstream)
-      try {
-        participant.invoke(request.actionId, request.entityId)
+      val client = new DefaultHttpClient
+      val repairAction = config.getRepairAction(request.actionId, request.pairKey)
+      val url = repairAction.scope match {
+        case RepairAction.ENTITY_SCOPE => repairAction.url.replace("{id}", request.entityId)
+        case RepairAction.PAIR_SCOPE => repairAction.url
       }
-      finally {
-        participant.close()
+      try {
+        val httpResponse = client.execute(new HttpPost(url))
+        InvocationResult("success", Source.fromInputStream(httpResponse.getEntity.getContent).mkString)
+      }
+      catch {
+        case e => InvocationResult("error", e.getMessage + "\n" + e.getStackTraceString)
       }
     }
 

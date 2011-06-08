@@ -59,9 +59,9 @@ class TestEnvironment(val pairKey: String,
 
   // Actions
   val entityScopedActionName = "Resend Source"
-  val entityScopedActionId = "resend"
+  val entityScopedActionUrl = "http://localhost:19293/participant-demo/actions/resend/{id}"
   val pairScopedActionName = "Resend All"
-  val pairScopedActionId = "resend-all"
+  val pairScopedActionUrl = "http://localhost:19293/participant-demo/actions/resend-all"
 
   // Categories
   val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
@@ -74,12 +74,14 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionId, "entity", pairKey)
+  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
   createPair
 
   def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
-  def deletePair = configurationClient.deletePair(pairKey)
-  def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionId, RepairAction.PAIR_SCOPE, pairKey)
+  def deletePair() {
+   configurationClient.deletePair(pairKey)
+  }
+  def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionUrl, RepairAction.PAIR_SCOPE, pairKey)
   
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
@@ -93,16 +95,16 @@ class TestEnvironment(val pairKey: String,
   /**
    * Requests that the environment remove all stored state from the participants.
    */
-  def clearParticipants {
+  def clearParticipants() {
     upstream.clearEntities
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, attributes:Map[String, String], content:String) = {
+  def addAndNotifyUpstream(id:String, attributes:Map[String, String], content:String) {
     upstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
     changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, attributes:Map[String, String], content:String) = {
+  def addAndNotifyDownstream(id:String, attributes:Map[String, String], content:String) {
     downstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
