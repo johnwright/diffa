@@ -207,7 +207,7 @@ case class PairActor(pairKey:String,
       cancellationRequester = self.channel
       handleCancellation()
     case c: VersionCorrelationWriterCommand => self.reply(c.invokeWriter(writer))
-    case ScanMessage                        => // ignore any scan requests whilst cancelling
+    case _: ScanMessage                     => // ignore any scan requests whilst cancelling
     case d: Deferrable                      => deferred.enqueue(d)
     case a: ChildActorCompletionMessage     => {
       a.logMessage(logger, Scanning, AlertCodes.SCAN_OPERATION)
@@ -246,7 +246,7 @@ case class PairActor(pairKey:String,
    */
   val receiveWhilstCancelling : Actor.Receive  = {
     case FlushWriterMessage            => // ignore flushes in this state - we will roll the index back
-    case ScanMessage                   => // ignore any scan requests whilst cancelling
+    case _: ScanMessage                => // ignore any scan requests whilst cancelling
     case d:Deferrable                  => deferred.enqueue(d)
     case a:ChildActorCompletionMessage =>
       a.logMessage(logger, Cancelling, AlertCodes.CANCELLATION_REQUEST)
