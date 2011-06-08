@@ -19,8 +19,6 @@ package net.lshift.diffa.kernel.frontend.wire
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
-import javax.management.remote.rmi._RMIConnection_Stub
 
 /**
  * This is a conduit to the actions that are provided by participants
