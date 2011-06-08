@@ -77,8 +77,10 @@ case class PairActor(pairKey:String,
   /**
    * This is the set of commands that the writer proxy understands
    */
-  case class VersionCorrelationWriterCommand(_uuid:UUID, invokeWriter:(LimitedVersionCorrelationWriter => Correlation))
-      extends TraceableCommand(_uuid)
+  case class VersionCorrelationWriterCommand(id:UUID, invokeWriter:(LimitedVersionCorrelationWriter => Correlation))
+      extends TraceableCommand(id) {
+    override def toString = id.toString
+  }
 
   /**
    * This proxy is presented to clients that need access to a LimitedVersionCorrelationWriter.
@@ -86,13 +88,25 @@ case class PairActor(pairKey:String,
    * thus allowing parallel access to the writer.
    */
   private val writerProxy = new LimitedVersionCorrelationWriter() {
-    def clearUpstreamVersion(id: VersionID) = get(self !! VersionCorrelationWriterCommand(lastUUID, _.clearUpstreamVersion(id) ) )
-    def clearDownstreamVersion(id: VersionID) = get(self !! VersionCorrelationWriterCommand(lastUUID, _.clearUpstreamVersion(id) ) )
+    // The receive timeout in seconds
+    val timeout = 60
+
+    def clearUpstreamVersion(id: VersionID) = call( _.clearUpstreamVersion(id) )
+    def clearDownstreamVersion(id: VersionID) = call( _.clearUpstreamVersion(id) )
     def storeDownstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String)
-      = get(self !! VersionCorrelationWriterCommand(lastUUID, _.storeDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn) ) )
+      = call( _.storeDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn) )
     def storeUpstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, vsn: String)
-      = get(self !! VersionCorrelationWriterCommand(lastUUID, _.storeUpstreamVersion(id, attributes, lastUpdated, vsn) ) )
-    def get(f:Option[Any]) = f.get.asInstanceOf[Correlation]
+      = call( _.storeUpstreamVersion(id, attributes, lastUpdated, vsn) )
+    def call(command:(LimitedVersionCorrelationWriter => Correlation)) = {
+      val message = VersionCorrelationWriterCommand(lastUUID, command)
+      (self !!(message, 1000L * timeout)) match {
+        case Some(result) => result.asInstanceOf[Correlation]
+        case None         =>
+          logger.error("%s: Writer proxy timed out after %s seconds processing command: %s "
+                       .format(AlertCodes.RECEIVE_TIMEOUT, timeout, message), new Exception().fillInStackTrace())
+          throw new RuntimeException("Writer proxy timeout")
+      }
+    }
   }
 
   override def preStart = {

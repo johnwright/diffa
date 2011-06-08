@@ -29,4 +29,9 @@ object AlertCodes {
    * Occurs when an actor receives an unexpected message. This generally indicates a bug in Diffa.
    */
   val SPURIOUS_ACTOR_MESSAGE = "D2"
+
+  /**
+   * Occurs when a send and blocking receive times out.
+   */
+  val RECEIVE_TIMEOUT = "D3"
 }
