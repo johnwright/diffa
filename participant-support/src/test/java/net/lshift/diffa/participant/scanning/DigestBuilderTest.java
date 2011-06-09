@@ -14,10 +14,12 @@ import static org.junit.Assert.fail;
  * Test cases for the digest builder.
  */
 public class DigestBuilderTest {
+  private static final ScanAggregation bizDateAggregation =
+      new DateAggregation("bizDate", DateGranularityEnum.Daily);
+  private static final ScanAggregation someStringAggregation =
+      new ByNameAggregation("someString");
   private static final List<ScanAggregation> aggregations = Arrays.asList(
-      (ScanAggregation) new DateAggregation("bizDate", DateGranularityEnum.Daily),
-      (ScanAggregation) new ByNameAggregation("someString")
-    );
+      bizDateAggregation, someStringAggregation);
 
   private static final DateTime JUN_6_2009_1 = new DateTime(2009, 6, 6, 12, 45, 12, 0, DateTimeZone.UTC);
   private static final DateTime JUN_6_2009_2 = new DateTime(2009, 6, 6, 15, 32, 16, 0, DateTimeZone.UTC);
@@ -32,6 +34,24 @@ public class DigestBuilderTest {
   @Test
   public void shouldObserveAllAggregationFactors() {
     DigestBuilder builder = new DigestBuilder(aggregations);
+
+    builder.add("id1", createAttrMap(JUN_6_2009_1, "a"), "vsn1");
+    builder.add("id2", createAttrMap(JUN_7_2009_1, "b"), "vsn2");
+    builder.add("id3", createAttrMap(JUN_6_2009_2, "c"), "vsn3");
+    builder.add("id4", createAttrMap(JUN_6_2009_2, "a"), "vsn4");
+
+    assertEquals(
+      new HashSet<ScanResultEntry>(Arrays.asList(
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1" + "vsn4"), createAttrMap("2009-06-06", "a")),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), createAttrMap("2009-06-07", "b")),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn3"), createAttrMap("2009-06-06", "c"))
+      )),
+      new HashSet<ScanResultEntry>(builder.toDigests()));
+  }
+
+  @Test
+  public void shouldObserveAttributesThatArentAggregationFactors() {
+    DigestBuilder builder = new DigestBuilder(Arrays.asList(bizDateAggregation));
 
     builder.add("id1", createAttrMap(JUN_6_2009_1, "a"), "vsn1");
     builder.add("id2", createAttrMap(JUN_7_2009_1, "b"), "vsn2");
