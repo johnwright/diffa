@@ -17,15 +17,25 @@
 package net.lshift.diffa.agent.itest
 
 import support.TestEnvironment
-import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.client.ActionableRequest
 import net.lshift.diffa.messaging.json.BadRequestException
+import org.junit._
 
 trait CommonActionTests {
 
   def env:TestEnvironment
+
+  @Before
+  def startActionServer {
+    env.repairActionsComponent.start()
+  }
+
+  @After
+  def stopActionServer {
+    env.repairActionsComponent.stop()
+  }
 
   @Test
   def shouldListEntityScopedActions {
@@ -37,12 +47,10 @@ trait CommonActionTests {
 
   @Test
   def invokeEntityScopedAction {
-    val entityId = "abc"
-    env.upstream.addEntity(entityId, env.bizDate(yesterday), yesterday, "abcdef")
     val request = ActionableRequest(env.pairKey, env.entityScopedActionName, "abc")
     val response = env.actionsClient.invoke(request)
     assertNotNull(response)
-    assertEquals("error", response.result)
+    assertEquals("success", response.result)
   }
 
   @Test
@@ -59,7 +67,8 @@ trait CommonActionTests {
     val request = ActionableRequest(env.pairKey, env.pairScopedActionName, null)
     val response = env.actionsClient.invoke(request)
     assertNotNull(response)
-    assertEquals("error", response.result)
+    assertEquals("success", response.result)
+    assertEquals("resending all", response.output)
   }
 
   @Test

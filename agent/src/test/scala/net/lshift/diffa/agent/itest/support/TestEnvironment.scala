@@ -26,6 +26,10 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.config.{RepairAction, RangeCategoryDescriptor}
+import org.restlet.data.Protocol
+import org.restlet.routing.Router
+import org.restlet.{Application, Component}
+import org.restlet.resource.{ServerResource, Post}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -35,6 +39,13 @@ class TestEnvironment(val pairKey: String,
                       val participants: Participants,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
+
+  val repairActionsComponent = {
+    val component = new Component
+    component.getServers.add(Protocol.HTTP, 8123)
+    component.getDefaultHost.attach("/repair", new RepairActionsApplication)
+    component
+  }
 
   def serverRoot = agentURL
   val contentType = "application/json"
@@ -59,9 +70,9 @@ class TestEnvironment(val pairKey: String,
 
   // Actions
   val entityScopedActionName = "Resend Source"
-  val entityScopedActionUrl = "http://localhost:19293/participant-demo/actions/resend/{id}"
+  val entityScopedActionUrl = "http://localhost:8123/repair/resend/{id}"
   val pairScopedActionName = "Resend All"
-  val pairScopedActionUrl = "http://localhost:19293/participant-demo/actions/resend-all"
+  val pairScopedActionUrl = "http://localhost:8123/repair/resend-all"
 
   // Categories
   val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
@@ -119,6 +130,21 @@ class TestEnvironment(val pairKey: String,
   def bizDate(d:DateTime) = Map("bizDate" -> d.toString())
   def bizDateValues(d:DateTime) = Seq(d.toString())
 
+}
+
+class ResendAllResource extends ServerResource {
+  @Post def resendAll = "resending all"
+}
+class ResendEntityResource extends ServerResource {
+  @Post def resend = "resending entity"
+}
+class RepairActionsApplication extends Application {
+  override def createInboundRoot = {
+    val router = new Router(getContext)
+    router.attach("/resend-all", classOf[ResendAllResource])
+    router.attach("/resend/abc", classOf[ResendEntityResource])
+    router
+  }
 }
 
 abstract class VersionScheme {

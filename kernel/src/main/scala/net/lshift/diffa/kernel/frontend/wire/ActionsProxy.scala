@@ -47,10 +47,13 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
       }
       try {
         val httpResponse = client.execute(new HttpPost(url))
-        InvocationResult("success", Source.fromInputStream(httpResponse.getEntity.getContent).mkString)
+        httpResponse.getStatusLine.getStatusCode match {
+          case 200 => InvocationResult("success", Source.fromInputStream(httpResponse.getEntity.getContent).mkString)
+          case code => InvocationResult("error", code.toString)
+        }
       }
       catch {
-        case e => InvocationResult("error", e.getMessage + "\n" + e.getStackTraceString)
+        case e => InvocationResult("error", e.getStackTraceString)
       }
     }
 
