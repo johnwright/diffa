@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.frontend.wire
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
+import InvocationResult._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
 import io.Source
@@ -48,12 +49,13 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
       try {
         val httpResponse = client.execute(new HttpPost(url))
         httpResponse.getStatusLine.getStatusCode match {
-          case 200 => InvocationResult("success", Source.fromInputStream(httpResponse.getEntity.getContent).mkString)
-          case code => InvocationResult("error", code.toString)
+          case code if isSuccessfulHttpCode(code) =>
+            InvocationResult.success(Source.fromInputStream(httpResponse.getEntity.getContent).mkString)
+          case code => InvocationResult.httpError(httpResponse.getStatusLine.toString)
         }
       }
       catch {
-        case e => InvocationResult("error", e.getStackTraceString)
+        case e => InvocationResult.failure(e)
       }
     }
 
@@ -61,5 +63,7 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
     val pair = config.getPair(pairKey)
     f(pair)
   }
+
+  private def isSuccessfulHttpCode(httpCode: Int) = httpCode / 100 == 2
 
 }
