@@ -18,7 +18,6 @@ package net.lshift.diffa.agent.itest
 
 import support.TestEnvironment
 import org.junit.Assert._
-import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.client.ActionableRequest
 import net.lshift.diffa.messaging.json.BadRequestException
 import org.junit._
@@ -26,16 +25,6 @@ import org.junit._
 trait CommonActionTests {
 
   def env:TestEnvironment
-
-  @Before
-  def startActionServer {
-    env.repairActionsComponent.start()
-  }
-
-  @After
-  def stopActionServer {
-    env.repairActionsComponent.stop()
-  }
 
   @Test
   def shouldListEntityScopedActions {
@@ -47,10 +36,13 @@ trait CommonActionTests {
 
   @Test
   def invokeEntityScopedAction {
-    val request = ActionableRequest(env.pairKey, env.entityScopedActionName, "abc")
-    val response = env.actionsClient.invoke(request)
-    assertNotNull(response)
-    assertEquals("success", response.result)
+    withActionsServer {
+      val request = ActionableRequest(env.pairKey, env.entityScopedActionName, "abc")
+      val response = env.actionsClient.invoke(request)
+      assertNotNull(response)
+      assertEquals("success", response.result)
+      assertEquals("resending entity", response.output)
+    }
   }
 
   @Test
@@ -63,12 +55,14 @@ trait CommonActionTests {
 
   @Test
   def invokePairScopedAction {
-    env.createPairScopedAction
-    val request = ActionableRequest(env.pairKey, env.pairScopedActionName, null)
-    val response = env.actionsClient.invoke(request)
-    assertNotNull(response)
-    assertEquals("success", response.result)
-    assertEquals("resending all", response.output)
+    withActionsServer {
+      env.createPairScopedAction
+      val request = ActionableRequest(env.pairKey, env.pairScopedActionName, null)
+      val response = env.actionsClient.invoke(request)
+      assertNotNull(response)
+      assertEquals("success", response.result)
+      assertEquals("resending all", response.output)
+    }
   }
 
   @Test
@@ -82,6 +76,16 @@ trait CommonActionTests {
   @Test(expected=classOf[BadRequestException])
   def shouldRejectInvalidActionScope {
     env.configurationClient.declareRepairAction(env.entityScopedActionName, "resend", "INVALID SCOPE", env.pairKey)
+  }
+
+  private def withActionsServer(op: => Unit) {
+    try {
+      env.startActionServer()
+      op
+    }
+    finally {
+      env.stopActionServer()
+    }
   }
 
 }

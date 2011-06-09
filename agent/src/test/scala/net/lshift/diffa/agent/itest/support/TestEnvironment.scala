@@ -40,11 +40,19 @@ class TestEnvironment(val pairKey: String,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
 
-  val repairActionsComponent = {
+  private val repairActionsComponent = {
     val component = new Component
     component.getServers.add(Protocol.HTTP, 8123)
     component.getDefaultHost.attach("/repair", new RepairActionsApplication)
     component
+  }
+
+  def startActionServer() {
+    repairActionsComponent.start()
+  }
+
+  def stopActionServer() {
+    repairActionsComponent.stop()
   }
 
   def serverRoot = agentURL
