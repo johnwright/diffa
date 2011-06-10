@@ -16,6 +16,18 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.restlet.jse</groupId>
+      <artifactId>org.restlet</artifactId>
+      <version>2.1-M3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.restlet.jse</groupId>
+      <artifactId>org.restlet.ext.simple</artifactId>
+      <version>2.1-M3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-json-messaging</artifactId>
       <version>${project.version}</version>
