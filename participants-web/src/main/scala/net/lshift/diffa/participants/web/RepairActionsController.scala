@@ -26,18 +26,19 @@ import java.lang.IllegalArgumentException
 @RequestMapping(Array("/actions"))
 class RepairActionsController(upstream: UpstreamWebParticipant) {
 
-  @ResponseStatus(HttpStatus.NOT_FOUND)
   @RequestMapping(value=Array("resend/{entityId}"), method=Array(RequestMethod.POST))
-  def resend(@PathVariable("entityId") entityId: String) = {
+  def resend(@PathVariable("entityId") entityId: String) =
     if (upstream.entityIds.contains(entityId)) {
       "json/empty"
     }
     else {
-      throw new IllegalArgumentException
+      throw new EntityNotFoundException
     }
-  }
 
   @RequestMapping(value=Array("resend-all"), method=Array(RequestMethod.POST))
   def resendAll() = "json/empty"
 
 }
+
+@ResponseStatus(HttpStatus.NOT_FOUND)
+class EntityNotFoundException extends IllegalArgumentException
