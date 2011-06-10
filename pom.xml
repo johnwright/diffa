@@ -18,7 +18,6 @@
     <module>amqp-messaging</module>
     <module>participants</module>
     <module>participant-support</module>
-    <module>tools</module>
     <module>participants-web</module>
     <module>docgen-maven-plugin</module>
     <module>dist</module>
