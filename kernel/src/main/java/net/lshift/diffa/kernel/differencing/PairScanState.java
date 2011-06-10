@@ -1,3 +1,4 @@
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,15 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.kernel.differencing;
 
 /**
- * Listener that receives notifications when the synchronization state of the given pair changes.
+ * Enumeration of the synchronization states that a pair can be in.
  */
-trait PairSyncListener {
+public enum PairScanState {
   /**
-   * Indicates that the sync state of the given pair has changed.
+   * The state of the pair is unknown, and no sync is currently pending.
    */
-  def pairSyncStateChanged(pairKey:String, syncState:PairScanState)
+  UNKNOWN,
+
+  /**
+   * The last synchronization operation for the pair failed.
+   */
+  FAILED,
+
+  /**
+   * The scan was cancelled on request
+   */
+  CANCELLED,
+
+  /**
+   * The pair is up to date.
+   */
+  UP_TO_DATE,
+
+  /**
+   * The pair is currently being synchronized.
+   */
+  SYNCHRONIZING
 }

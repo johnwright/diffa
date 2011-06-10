@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.differencing
 
 import scala.collection.mutable.{HashMap}
 import scala.collection.JavaConversions._
+import scala.concurrent.SyncVar
 
 import org.easymock.EasyMock._
 import org.easymock.{IAnswer, EasyMock}
@@ -33,6 +34,7 @@ import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
 
 /**
  * Base class for the various policy tests.
@@ -57,6 +59,8 @@ abstract class AbstractPolicyTest {
     def remove(pairKey: String) {}
     def close {}
   }
+
+  val feedbackHandle = new NonCancellingFeedbackHandle
 
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
@@ -241,8 +245,8 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(abPair, writer, usMock, nullListener)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, listener)
+    policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
     policy.difference(abPair, listener)
 
     verifyAll

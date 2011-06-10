@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.kernel.util
+
+import net.lshift.diffa.kernel.differencing.FeedbackHandle
 
 /**
- * Listener that receives notifications when the synchronization state of the given pair changes.
+ * Simple implementation of a feedback handle that doesn't cancel.
+ * This is used for testing when no cancellation is required.
  */
-trait PairSyncListener {
-  /**
-   * Indicates that the sync state of the given pair has changed.
-   */
-  def pairSyncStateChanged(pairKey:String, syncState:PairScanState)
+class NonCancellingFeedbackHandle extends FeedbackHandle {
+  def logStatus(status: String) = null
+  def isCancelled = false
+  def cancel() = null
 }

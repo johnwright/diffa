@@ -1,4 +1,3 @@
-
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -14,29 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.differencing;
 
-/**
- * Enumeration of the synchronization states that a pair can be in.
- */
-public enum PairSyncState {
-  /**
-   * The state of the pair is unknown, and no sync is currently pending.
-   */
-  UNKNOWN,
+package net.lshift.diffa.kernel.client
+
+trait ScanningClient {
 
   /**
-   * The last synchronization operation for the pair failed.
+   * Cancels any running and/or pending scans for the given pair.
    */
-  FAILED,
-
-  /**
-   * The pair is up to date.
-   */
-  UP_TO_DATE,
-
-  /**
-   * The pair is currently being synchronized.
-   */
-  SYNCHRONIZING
+  def cancelScanning(pairKey:String) : Boolean
 }

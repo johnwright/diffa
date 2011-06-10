@@ -24,7 +24,6 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
 import net.lshift.diffa.kernel.participants._
-import concurrent.{TIMEOUT, MailBox}
 import org.easymock.{EasyMock, IAnswer}
 import org.slf4j.LoggerFactory
 import ch.qos.logback.classic.LoggerContext
@@ -32,6 +31,8 @@ import ch.qos.logback.core.AppenderBase
 import ch.qos.logback.classic.spi.ILoggingEvent
 import java.lang.RuntimeException
 import net.lshift.diffa.kernel.util.AlertCodes
+import akka.actor._
+import concurrent.{SyncVar, TIMEOUT, MailBox}
 
 class PairActorTest {
 
@@ -108,8 +109,12 @@ class PairActorTest {
   }
 
   def expectScans() = {
-    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(diffListener)))
-    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]), EasyMock.eq(us), EasyMock.eq(ds), EasyMock.eq(diffListener)))
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+                                      EasyMock.eq(us), EasyMock.isA(classOf[DifferencingListener]),
+                                      EasyMock.isA(classOf[FeedbackHandle])))
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+                                        EasyMock.eq(us), EasyMock.eq(ds), EasyMock.isA(classOf[DifferencingListener]),
+                                        EasyMock.isA(classOf[FeedbackHandle])))
   }
 
   @Test
@@ -137,13 +142,13 @@ class PairActorTest {
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
 
     expectScans
 
     expect(versionPolicy.difference(pairKey, diffListener))
 
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
     replay(versionPolicy, syncListener)
@@ -161,13 +166,10 @@ class PairActorTest {
     val flushMonitor = new Object
     val eventMonitor = new Object
 
-    val id = VersionID(pairKey, "foo")
-    val lastUpdate = new DateTime
-    val vsn = "foobar"
-    val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
+    val event = buildUpstreamEvent()
 
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
     })
     replay(syncListener)
@@ -184,7 +186,8 @@ class PairActorTest {
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey),
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us),
-           EasyMock.isA(classOf[DifferencingListener]))
+           EasyMock.isA(classOf[DifferencingListener]),
+           EasyMock.isA(classOf[FeedbackHandle]))
     ).andAnswer(new IAnswer[Unit] {
       def answer = {
         // Queue up a change event and block the actor in the scanning state for a 1 sec
@@ -195,7 +198,8 @@ class PairActorTest {
     expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey),
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us), EasyMock.eq(ds),
-           EasyMock.isA(classOf[DifferencingListener])))
+           EasyMock.isA(classOf[DifferencingListener]),
+           EasyMock.isA(classOf[FeedbackHandle])))
 
     expect(versionPolicy.difference(pairKey, diffListener))
 
@@ -215,18 +219,85 @@ class PairActorTest {
     verify(syncListener)
   }
 
+  @Test
+  def shouldHandleCancellationWhilstNotScanning = {
+    supervisor.startActor(pair)
+    assertTrue(supervisor.cancelScans(pairKey))
+  }
+
+
+  @Test
+  def shouldHandleCancellationWhilstScanning = {
+
+    val cancelMonitor = new Object
+    val responseMonitor = new Object
+
+    val event = buildUpstreamEvent()
+
+    val timeToWait = 2000L
+
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = {
+        Actor.spawn {
+          // Request a cancellation in a background thread so that the pair actor can be scheduled
+          // in to process the cancellation. Notifying the main test thread that the request
+          // returned true is the same thing as assertTrue(supervisor.cancelScans(pairKey))
+          // except that the assertion is effectively on the main test thread.
+          if (supervisor.cancelScans(pairKey)) {
+            responseMonitor.synchronized{ responseMonitor.notifyAll() }
+          }
+        }
+      }
+    })
+
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.CANCELLED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = cancelMonitor.synchronized{ cancelMonitor.notifyAll() }
+    })
+
+    expectScans.andAnswer(new IAnswer[Unit] {
+      def answer = {
+        // Push a change event through in the cancellation state
+        // The actor should drop this message and hence no invocation
+        // should be made against the versionPolicy mock object
+        supervisor.propagateChangeEvent(event)
+
+        // Put the sub actor into a sufficiently long pause so that the cancellation request
+        // has enough time to get processed by the parent actor, have it trigger the
+        // the scan state listener and send a response back the thread that requested the
+        // cancellation
+        Thread.sleep(timeToWait)
+      }
+    })
+
+    replay(versionPolicy, syncListener)
+
+    supervisor.startActor(pair)
+    supervisor.scanPair(pairKey, diffListener, syncListener)
+
+    responseMonitor.synchronized {
+      responseMonitor.wait(timeToWait * 2)
+    }
+
+    cancelMonitor.synchronized {
+      cancelMonitor.wait(timeToWait * 2)
+    }
+
+    verify(versionPolicy, syncListener)
+  }
 
   @Test
   def shouldReportScanFailure = {
     val monitor = new Object
 
     expect(writer.flush()).atLeastOnce
+    expect(writer.rollback())
     replay(writer)
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.SYNCHRONIZING); expectLastCall
+
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
 
     expectScans.andThrow(new RuntimeException("Deliberate runtime excecption, this should be handled"))
 
-    syncListener.pairSyncStateChanged(pairKey, PairSyncState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })
     replay(versionPolicy, syncListener)
@@ -285,6 +356,13 @@ class PairActorTest {
     supervisor.startActor(pair)
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
+  }
+
+  def buildUpstreamEvent() = {
+    val id = VersionID(pairKey, "foo")
+    val lastUpdate = new DateTime
+    val vsn = "foobar"
+    UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
   }
 
 }

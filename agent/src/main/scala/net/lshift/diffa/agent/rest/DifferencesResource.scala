@@ -29,6 +29,7 @@ import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
 import org.joda.time.{Interval, DateTime}
+import net.lshift.diffa.kernel.actors.PairPolicyClient
 
 @Path("/diffs")
 @Component

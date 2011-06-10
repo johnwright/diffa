@@ -31,13 +31,22 @@ object AlertCodes {
   val SPURIOUS_ACTOR_MESSAGE = "D2"
 
   /**
-   * Occurs when a send and blocking receive times out.
+   * Occurs when a cancellation for all pending scans to a particular pair is requested.
    */
-  val RECEIVE_TIMEOUT = "D3"
+  val CANCELLATION_REQUEST = "D3"
+
+  /**
+   * Signifies that an actor has timed out waiting for a message to arrive
+   */
+  val MESSAGE_RECEIVE_TIMEOUT = "D4"
+
+  /**
+   * Signifies the result of a scanning operation
+   */
+  val SCAN_OPERATION = "D5"
 
   /**
    * Occurs when the agent fails to establish communication with a repair action endpoint
    */
-  val ACTION_ENDPOINT_FAILURE = "D4"
-
+  val ACTION_ENDPOINT_FAILURE = "D6"
 }

@@ -19,7 +19,6 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
-import net.lshift.diffa.kernel.config.Pair
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -48,13 +47,47 @@ trait VersionPolicy {
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
+   * @throws If the shouldRun variable is set to false, this will throw a ScanCancelledException
    */
-  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant, listener:DifferencingListener) : Unit
+  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter,
+                   participant:UpstreamParticipant, listener:DifferencingListener,
+                   handle:FeedbackHandle)
 
   /**
    * Requests that the policy scan the downstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
+   * @throws If the shouldRun variable is set to false, this will throw a ScanCancelledException
    */
-  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant, ds:DownstreamParticipant, listener:DifferencingListener) : Unit
+  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter,
+                     us:UpstreamParticipant, ds:DownstreamParticipant,
+                     listener:DifferencingListener, handle:FeedbackHandle)
 
 }
+
+/**
+ * This provides an invoker with the ability to notify an invokee that a submitted task should be cancelled.
+ * In addition to this, the invokee can report the current status back to the invoker.
+ */
+trait FeedbackHandle {
+  /**
+   * This cancels the current running task.
+   */
+  def cancel()
+
+  /**
+   * This indicates whether the current running task has been cancelled.
+   */
+  def isCancelled : Boolean
+
+  // TODO [#249] This is just a definition ATM - this should be plumbed
+  /**
+   * This is a conduit that allows the invoker to receive the latest status as a string.
+   */
+  def logStatus(status:String)
+
+}
+
+/**
+ * Thrown when a scan has been cancelled.
+ */
+class ScanCancelledException(pairKey:String) extends Exception(pairKey)

@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.client
 
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants.ParticipantType
-import net.lshift.diffa.kernel.differencing.{PairSyncState, SessionEvent, SessionScope}
+import net.lshift.diffa.kernel.differencing.{PairScanState, SessionEvent, SessionScope}
 
 /**
  * Interface supported by clients capable of retrieving differences from the server.
@@ -53,7 +53,7 @@ trait DifferencesClient {
   /**
    * Retrieves the sync status of all the pairs associated with the session.
    */
-  def getScanStatus(sessionId: String):Map[String, PairSyncState]
+  def getScanStatus(sessionId: String):Map[String, PairScanState]
 
   /**
    * Polls the identified session for all events since the start of the session.

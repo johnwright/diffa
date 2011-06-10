@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.differencing
+package net.lshift.diffa.tools.client
+
+import net.lshift.diffa.messaging.json.AbstractRestClient
+import net.lshift.diffa.kernel.client.ScanningClient
 
 /**
- * Listener that receives notifications when the synchronization state of the given pair changes.
+ * A RESTful client to manage participant scanning.
  */
-trait PairSyncListener {
-  /**
-   * Indicates that the sync state of the given pair has changed.
-   */
-  def pairSyncStateChanged(pairKey:String, syncState:PairScanState)
+class ScanningRestClient(u:String) extends AbstractRestClient(u, "rest/scanning/") with ScanningClient {
+
+  def cancelScanning(pairKey: String) = {
+    delete("/pairs/" + pairKey + "/scan")
+    true
+  }
 }
