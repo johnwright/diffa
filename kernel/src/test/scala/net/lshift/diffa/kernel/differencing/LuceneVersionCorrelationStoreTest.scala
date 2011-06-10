@@ -68,6 +68,20 @@ class LuceneVersionCorrelationStoreTest {
   }
 
   @Test
+  def rollbackChanges = {
+    val writer = store.openWriter()
+    writer.storeUpstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn")
+    writer.flush
+
+    writer.storeDownstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
+    writer.rollback()
+
+    val unmatched = store.unmatchedVersions(Seq(NoConstraint("datetime")), Seq(NoConstraint("datetime")))
+    assertEquals(1, unmatched.size)
+    assertEquals("id1", unmatched(0).id)
+  }
+
+  @Test
   def constrainedMatchedPairsWithDifferentCategories = {
     val writer = store.openWriter()
     writer.storeUpstreamVersion(VersionID(pair, "id1"), dateTimeAttributes, JUL_1_2010_1, "upstreamVsn")

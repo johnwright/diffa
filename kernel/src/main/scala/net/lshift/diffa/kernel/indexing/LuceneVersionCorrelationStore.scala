@@ -54,9 +54,9 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
       // When new schema versions appear, we can handle their upgrade here
   }
 
-  val writer = new IndexWriter(index, new StandardAnalyzer(Version.LUCENE_30), IndexWriter.MaxFieldLength.UNLIMITED)
+  val writer = new LuceneWriter(index)
 
-  def openWriter() = new LuceneWriter(index, writer)
+  def openWriter() = writer
 
   def unmatchedVersions(usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) = {
     val query = new BooleanQuery
@@ -157,8 +157,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   }
 
   def reset() = {
-    writer.deleteAll
-    writer.commit
+    writer.reset
   }
 }
 
@@ -218,7 +217,7 @@ object LuceneVersionCorrelationStore {
   def formatDate(dt:LocalDate) = dt.toString
 }
 
-class LuceneWriter(index: Directory, writer: IndexWriter) extends ExtendedVersionCorrelationWriter {
+class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationStore._
 
   private val log = LoggerFactory.getLogger(getClass)
@@ -227,6 +226,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends ExtendedVersio
 
   private val updatedDocs = HashMap[VersionID, Document]()
   private val deletedDocs = HashSet[VersionID]()
+  private var writer = createIndexWriter
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.trace("Indexing upstream " + id + " with attributes: " + attributes)
@@ -284,6 +284,7 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends ExtendedVersio
 
   def rollback() = {
     writer.rollback()
+    writer = createIndexWriter    // We need to create a new writer, since rollback will have closed the previous one
     log.info("Writer rolled back")
   }
 
@@ -301,6 +302,18 @@ class LuceneWriter(index: Directory, writer: IndexWriter) extends ExtendedVersio
       log.trace("Writer flushed")
     }
   }
+
+  def reset() {
+    writer.deleteAll()
+    writer.commit()
+  }
+
+  def close() {
+    writer.close()
+  }
+
+  private def createIndexWriter() =
+      new IndexWriter(index, new StandardAnalyzer(Version.LUCENE_30), IndexWriter.MaxFieldLength.UNLIMITED)  
 
   private def bufferSize = updatedDocs.size + deletedDocs.size
 

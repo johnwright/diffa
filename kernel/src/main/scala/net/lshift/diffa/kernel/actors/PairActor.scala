@@ -50,11 +50,7 @@ case class PairActor(pairKey:String,
 
   private var currentDiffListener:DifferencingListener = null
   private var currentScanListener:PairSyncListener = null
-  private var upstreamSuccess = false
-  private var downstreamSuccess = false
-  private var upstreamCancelled = false
-  private var downstreamCancelled = false
-
+  
   /**
    * Flag that can be used to signal that scanning should be cancelled.
    */
@@ -75,9 +71,15 @@ case class PairActor(pairKey:String,
   private val deferred = new Queue[Deferrable]
 
   /**
-   * This UUID is used to group messages of with in the same scan operation
+   * Detail of the current scan-in-progress. Contains a UUID that lets us identify operations that belong to it.
    */
-  var activeScanUuid:UUID = null
+  private var activeScan:OutstandingScan = null
+
+  /**
+   * Keep track of scans that are still outstanding. This lets us know whether messages that arrive
+   * are entirely spurious, or just jobs cleaning themselves up.
+   */
+  private val outstandingScans = collection.mutable.Map[UUID, OutstandingScan]()
 
   /**
    * This is the address of the client that requested the last cancellation
@@ -95,11 +97,35 @@ case class PairActor(pairKey:String,
   }
 
   /**
+   * Describes a message coming from a child actor running as part of a scan
+   */
+  trait ChildActorScanMessage {
+    def scanUuid:UUID   // The uuid of the scan that this message is coming from
+  }
+
+  private case class OutstandingScan(uuid:UUID) {
+    var upstreamCompleted = false
+    var downstreamCompleted = false
+
+    def isCompleted = upstreamCompleted && downstreamCompleted
+  }
+
+  /**
    * This is the set of commands that the writer proxy understands
    */
-  case class VersionCorrelationWriterCommand(id:UUID, invokeWriter:(LimitedVersionCorrelationWriter => Correlation))
-      extends TraceableCommand(id) {
-    override def toString = id.toString
+  case class VersionCorrelationWriterCommand(scanUuid:UUID, invokeWriter:(LimitedVersionCorrelationWriter => Correlation))
+      extends TraceableCommand(scanUuid)
+      with ChildActorScanMessage {
+    override def toString = scanUuid.toString
+  }
+
+  /**
+   * Marker messages to let the actor know that a portion of the scan has successfully completed.
+   */
+  case class ChildActorCompletionMessage(scanUuid:UUID, upOrDown:UpOrDown, result:Result)
+      extends ChildActorScanMessage {
+    def logMessage(l:Logger, s:ActorState, code:String)
+      = l.debug("%s: UUID[%s] -> Received %s %s in %s state".format(code, scanUuid, upOrDown, result, s))
   }
 
   /**
@@ -171,8 +197,7 @@ case class PairActor(pairKey:String,
    */
   def receive = {
     case s:ScanMessage => {
-      activeScanUuid = new UUID
-      if (handleScanMessage(s, activeScanUuid)) {
+      if (handleScanMessage(s)) {
         // Go into the scanning state
         become(receiveWhilstScanning)
       }
@@ -180,6 +205,8 @@ case class PairActor(pairKey:String,
     case c:ChangeMessage                   => handleChangeMessage(c)
     case d:DifferenceMessage               => handleDifferenceMessage(d)
     case FlushWriterMessage                => writer.flush()
+    case camsg:ChildActorScanMessage if isOwnedByOutstandingScan(camsg) =>
+      updateOutstandingScans(camsg)     // Allow outstanding cancelled scans to clean themselves up nicely
     case CancelMessage                     => {
       if (logger.isDebugEnabled) {
           logger.debug("%s : Received cancellation request in non-scanning state, ignoring".format(AlertCodes.CANCELLATION_REQUEST))
@@ -190,7 +217,8 @@ case class PairActor(pairKey:String,
       logger.error("%s: Received command (%s) in non-scanning state - potential bug"
                   .format(AlertCodes.OUT_OF_ORDER_MESSAGE, c), c.exception)
     }
-    case a:ChildActorCompletionMessage     => a.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
+    case a:ChildActorCompletionMessage     =>
+      a.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
     case x                                 =>
       logger.error("%s: Spurious message during ready loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
@@ -203,26 +231,23 @@ case class PairActor(pairKey:String,
   val receiveWhilstScanning : Actor.Receive  = {
     case FlushWriterMessage                 => // ignore flushes in this state - we may want to roll the index back
     case CancelMessage                      =>
-      // Squirrel away the address of the client that requested the cancellation
-      cancellationRequester = self.channel
       handleCancellation()
-    case c: VersionCorrelationWriterCommand if c.id == activeScanUuid =>
+      self.reply(true)
+    case c: VersionCorrelationWriterCommand if isOwnedByActiveScan(c) =>
       self.reply(c.invokeWriter(writer))
     case _: ScanMessage                     => // ignore any scan requests whilst scanning
     case d: Deferrable                      => deferred.enqueue(d)
-    case a: ChildActorCompletionMessage     if a.uuid == activeScanUuid => {
+    case a: ChildActorCompletionMessage     if isOwnedByActiveScan(a) => {
       a.logMessage(logger, Scanning, AlertCodes.SCAN_OPERATION)
+      updateOutstandingScans(a)
+
       a.result match {
         case Failure => leaveScanState(PairScanState.FAILED)
-        case Success => {
-          a.upOrDown match {
-            case Up   => upstreamSuccess = true
-            case Down => downstreamSuccess = true
-          }
-          maybeLeaveScanningState
-        }
+        case Success => maybeLeaveScanningState
       }
     }
+    case camsg:ChildActorScanMessage if isOwnedByOutstandingScan(camsg) =>
+      updateOutstandingScans(camsg)     // Allow outstanding cancelled scans to clean themselves up nicely
     case x                                  =>
       logger.error("%s: Spurious message during scanning loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
   }
@@ -231,70 +256,19 @@ case class PairActor(pairKey:String,
    * Handles all messages that arrive whilst the actor is cancelling a scan
    */
   def handleCancellation() = {
-    logger.info("%s: Scan %s for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, activeScanUuid, pairKey))
+    logger.info("%s: Scan %s for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, activeScan.uuid, pairKey))
     feedbackHandle.cancel()
 
-    // Clear the UUID of the active scan
-    activeScanUuid = null
-    
-    // Wait for both jobs to signal their respective cancellation
-    // Only wait maximally 10 minutes for the cancellation to go through
-    self.receiveTimeout = Some(600000L)
-
-    // Go to the cancelling state
-    become(receiveWhilstCancelling)
-  }
-
-  /**
-   * Implementation of the receive loop whilst in a cancelling state.
-   */
-  val receiveWhilstCancelling : Actor.Receive  = {
-    case FlushWriterMessage            => // ignore flushes in this state - we will roll the index back
-    case _: ScanMessage                => // ignore any scan requests whilst cancelling
-    case d:Deferrable                  => deferred.enqueue(d)
-    case a:ChildActorCompletionMessage =>
-      a.logMessage(logger, Cancelling, AlertCodes.CANCELLATION_REQUEST)
-      a.upOrDown match {
-        case Up   => upstreamCancelled = true
-        case Down => downstreamCancelled = true
-      }
-      maybeLeaveCancellingState
-    case ReceiveTimeout                 =>
-      logger.error("%s: Actor timed out for pair %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
-      upstreamCancelled = true; downstreamCancelled = true; maybeLeaveCancellingState
-    case x                              =>
-      logger.error("%s: Spurious message during cancellation loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
-  }
-
-  /**
-   * Potentially exit the cancelling state
-   */
-  def maybeLeaveCancellingState = {
-    if (upstreamCancelled && downstreamCancelled) {
-      upstreamCancelled = false
-      downstreamCancelled = false
-      logger.info("%s: Sub actors cancellation completed for pair: %s".format(AlertCodes.CANCELLATION_REQUEST, pairKey))
-      // Drop out of the current cancellation state
-      self.receiveTimeout = None
-
-      // Reply to the original requester
-      cancellationRequester ! true
-
-      leaveScanState(PairScanState.CANCELLED)
-    }
+    // Leave the scanning state as cancelled
+    leaveScanState(PairScanState.CANCELLED)
   }
 
   /**
    * Potentially exit the scanning state and notify interested parties
    */
   def maybeLeaveScanningState = {
-    if (upstreamSuccess && downstreamSuccess) {
-      downstreamSuccess = false
-      upstreamSuccess = false
-      logger.trace("Finished scan %s".format(activeScanUuid))
-
-      // Clear the UUID of the active scan
-      activeScanUuid = null
+    if (activeScan.isCompleted) {
+      logger.trace("Finished scan %s".format(activeScan.uuid))
 
       // Feed all of the match events out to the interested parties
       flushBufferedEvents
@@ -318,6 +292,9 @@ case class PairActor(pairKey:String,
     if (state == PairScanState.FAILED || state == PairScanState.CANCELLED) {
       writer.rollback()
     }
+
+    // Remove the record of the active scan
+    activeScan = null
 
     // Re-queue all buffered commands
     processBacklog(state)
@@ -377,13 +354,15 @@ case class PairActor(pairKey:String,
    * Implements the top half of the request to scan the participants for digests.
    * This actor will still be in the scan state after this callback has returned.
    */
-  def handleScanMessage(message:ScanMessage, scanUuid:UUID) : Boolean = {
+  def handleScanMessage(message:ScanMessage) : Boolean = {
+    val createdScan = OutstandingScan(new UUID)
+
     // squirrel some callbacks away for invocation in subsequent receives in the scanning state
     currentDiffListener = message.diffListener
     currentScanListener = message.pairSyncListener
 
     // allocate a writer proxy
-    val writerProxy = createWriterProxy(scanUuid)
+    val writerProxy = createWriterProxy(createdScan.uuid)
 
     // Make sure that the event buffer is empty for this scan
     if (bufferedMatchEvents.size > 0) {
@@ -401,16 +380,16 @@ case class PairActor(pairKey:String,
       Actor.spawn {
         try {
           policy.scanUpstream(pairKey, writerProxy, us, bufferingListener, feedbackHandle)
-          self ! ChildActorCompletionMessage(scanUuid, Up, Success)
+          self ! ChildActorCompletionMessage(createdScan.uuid, Up, Success)
         }
         catch {
           case c:ScanCancelledException => {
             logger.warn("Upstream scan on pair %s was cancelled".format(pairKey))
-            self ! ChildActorCompletionMessage(scanUuid, Up, Cancellation)
+            self ! ChildActorCompletionMessage(createdScan.uuid, Up, Cancellation)
           }
           case e:Exception => {
             logger.error("Upstream scan failed: " + pairKey, e)
-            self ! ChildActorCompletionMessage(scanUuid, Up, Failure)
+            self ! ChildActorCompletionMessage(createdScan.uuid, Up, Failure)
           }
         }
       }
@@ -418,19 +397,25 @@ case class PairActor(pairKey:String,
       Actor.spawn {
         try {
           policy.scanDownstream(pairKey, writerProxy, us, ds, bufferingListener, feedbackHandle)
-          self ! ChildActorCompletionMessage(scanUuid, Down, Success)
+          self ! ChildActorCompletionMessage(createdScan.uuid, Down, Success)
         }
         catch {
           case c:ScanCancelledException => {
             logger.warn("Downstream scan on pair %s was cancelled".format(pairKey))
-            self ! ChildActorCompletionMessage(scanUuid, Down, Cancellation)
+            self ! ChildActorCompletionMessage(createdScan.uuid, Down, Cancellation)
           }
           case e:Exception => {
             logger.error("Downstream scan failed: " + pairKey, e)
-            self ! ChildActorCompletionMessage(scanUuid, Down, Failure)
+            self ! ChildActorCompletionMessage(createdScan.uuid, Down, Failure)
           }
         }
       }
+
+      // Mark the initiated scan as active and outstanding. We don't record this until the end because something
+      // might go wrong during the setup, and we'd then need to remove it. Only the main actor looks at activeScan,
+      // so even though the child actors are running by now, it is safe not to have activeScan set.
+      activeScan = createdScan
+      outstandingScans(activeScan.uuid) = activeScan
 
       true
 
@@ -441,6 +426,29 @@ case class PairActor(pairKey:String,
         false
       }
     }
+  }
+
+  private def isOwnedByActiveScan(msg:ChildActorScanMessage) = activeScan != null && activeScan.uuid == msg.scanUuid
+  private def isOwnedByOutstandingScan(msg:ChildActorScanMessage) = outstandingScans.contains(msg.scanUuid)
+  private def updateOutstandingScans(msg:ChildActorScanMessage) = {
+    msg match {
+      case completion:ChildActorCompletionMessage =>
+        outstandingScans.get(completion.scanUuid) match {
+          case Some(scan) =>
+            // Update the completion status flags, and remove it if it has reached a totally completed state
+            completion.upOrDown match {
+              case Up   => scan.upstreamCompleted = true
+              case Down => scan.downstreamCompleted = true
+            }
+            if (scan.isCompleted) {
+              outstandingScans.remove(scan.uuid)
+            }
+          case None       => // Doesn't match an outstanding scan. Ignore.
+        }
+      case _ => // Doesn't affect the outstanding scan set. Ignore.
+    }
+
+
   }
 }
 
@@ -466,14 +474,6 @@ abstract class Result
 case object Success extends Result
 case object Failure extends Result
 case object Cancellation extends Result
-
-/**
- * Marker messages to let the actor know that a portion of the scan has successfully completed.
- */
-case class ChildActorCompletionMessage(uuid:UUID, upOrDown:UpOrDown, result:Result) {
-  def logMessage(l:Logger, s:ActorState, code:String)
-    = l.debug("%s: UUID[%s] -> Received %s %s in %s state".format(code, uuid, upOrDown, result, s))
-}
 
 /**
  * This is the group of all commands that should be buffered when the actor is the scan state.
