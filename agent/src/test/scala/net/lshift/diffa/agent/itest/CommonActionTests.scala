@@ -21,6 +21,7 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.client.ActionableRequest
 import net.lshift.diffa.messaging.json.BadRequestException
 import org.junit._
+import net.lshift.diffa.kernel.util.AlertCodes
 
 trait CommonActionTests {
 
@@ -40,9 +41,17 @@ trait CommonActionTests {
       val request = ActionableRequest(env.pairKey, env.entityScopedActionName, "abc")
       val response = env.actionsClient.invoke(request)
       assertNotNull(response)
-      assertEquals("success", response.result)
+      assertEquals("200", response.code)
       assertEquals("resending entity", response.output)
     }
+  }
+
+  @Test
+  def invokeInvalidAction {
+    // Note: Actions test server should NOT be running for this test
+    val request = ActionableRequest(env.pairKey, env.entityScopedActionName, "abc")
+    val response = env.actionsClient.invoke(request)
+    assertEquals(AlertCodes.ACTION_ENDPOINT_FAILURE, response.code)
   }
 
   @Test
@@ -60,7 +69,7 @@ trait CommonActionTests {
       val request = ActionableRequest(env.pairKey, env.pairScopedActionName, null)
       val response = env.actionsClient.invoke(request)
       assertNotNull(response)
-      assertEquals("success", response.result)
+      assertEquals("200", response.code)
       assertEquals("resending all", response.output)
     }
   }

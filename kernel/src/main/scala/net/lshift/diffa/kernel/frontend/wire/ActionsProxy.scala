@@ -48,11 +48,9 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
       }
       try {
         val httpResponse = client.execute(new HttpPost(url))
-        httpResponse.getStatusLine.getStatusCode match {
-          case code if isSuccessfulHttpCode(code) =>
-            InvocationResult.success(Source.fromInputStream(httpResponse.getEntity.getContent).mkString)
-          case code => InvocationResult.httpError(httpResponse.getStatusLine.toString)
-        }
+        val httpCode = httpResponse.getStatusLine.getStatusCode
+        val httpEntity = Source.fromInputStream(httpResponse.getEntity.getContent).mkString
+        InvocationResult.received(httpCode, httpEntity)
       }
       catch {
         case e => InvocationResult.failure(e)
@@ -63,7 +61,5 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
     val pair = config.getPair(pairKey)
     f(pair)
   }
-
-  private def isSuccessfulHttpCode(httpCode: Int) = httpCode / 100 == 2
 
 }
