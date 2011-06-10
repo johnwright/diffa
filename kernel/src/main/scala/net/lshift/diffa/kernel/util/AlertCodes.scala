@@ -36,17 +36,12 @@ object AlertCodes {
   val CANCELLATION_REQUEST = "D3"
 
   /**
-   * Signifies that an actor has timed out waiting for a message to arrive
-   */
-  val MESSAGE_RECEIVE_TIMEOUT = "D4"
-
-  /**
    * Signifies the result of a scanning operation
    */
-  val SCAN_OPERATION = "D5"
+  val SCAN_OPERATION = "D4"
 
   /**
    * Occurs when a send and blocking receive times out.
    */
-  val RECEIVE_TIMEOUT = "D6"
+  val RECEIVE_TIMEOUT = "D5"
 }
