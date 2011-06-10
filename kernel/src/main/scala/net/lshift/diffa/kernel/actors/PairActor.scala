@@ -149,7 +149,7 @@ case class PairActor(pairKey:String,
         case Some(result) => result.asInstanceOf[Correlation]
         case None         =>
           logger.error("%s: Writer proxy timed out after %s seconds processing command: %s "
-                       .format(AlertCodes.RECEIVE_TIMEOUT, timeout, message), new Exception().fillInStackTrace())
+                       .format(AlertCodes.MESSAGE_RECEIVE_TIMEOUT, timeout, message), new Exception().fillInStackTrace())
           throw new RuntimeException("Writer proxy timeout")
       }
     }
