@@ -77,7 +77,7 @@ case class PairActor(pairKey:String,
   /**
    * This UUID is used to group messages of with in the same scan operation
    */
-  var activeScanUuid = new UUID
+  var activeScanUuid:UUID = null
 
   /**
    * This is the address of the client that requested the last cancellation
