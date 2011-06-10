@@ -49,4 +49,10 @@ object AlertCodes {
    * Occurs when a send and blocking receive times out.
    */
   val RECEIVE_TIMEOUT = "D6"
+
+  /**
+   * Occurs when the agent fails to establish communication with a repair action endpoint
+   */
+  val ACTION_ENDPOINT_FAILURE = "D7"
+
 }

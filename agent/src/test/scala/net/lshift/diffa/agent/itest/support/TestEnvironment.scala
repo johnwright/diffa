@@ -26,6 +26,10 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.config.{RepairAction, RangeCategoryDescriptor}
+import org.restlet.data.Protocol
+import org.restlet.routing.Router
+import org.restlet.{Application, Component}
+import org.restlet.resource.{ServerResource, Post}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -35,6 +39,21 @@ class TestEnvironment(val pairKey: String,
                       val participants: Participants,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
+
+  private val repairActionsComponent = {
+    val component = new Component
+    component.getServers.add(Protocol.HTTP, 8123)
+    component.getDefaultHost.attach("/repair", new RepairActionsApplication)
+    component
+  }
+
+  def startActionServer() {
+    repairActionsComponent.start()
+  }
+
+  def stopActionServer() {
+    repairActionsComponent.stop()
+  }
 
   def serverRoot = agentURL
   val contentType = "application/json"
@@ -59,9 +78,9 @@ class TestEnvironment(val pairKey: String,
 
   // Actions
   val entityScopedActionName = "Resend Source"
-  val entityScopedActionId = "resend"
+  val entityScopedActionUrl = "http://localhost:8123/repair/resend/{id}"
   val pairScopedActionName = "Resend All"
-  val pairScopedActionId = "resend-all"
+  val pairScopedActionUrl = "http://localhost:8123/repair/resend-all"
 
   // Categories
   val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
@@ -74,12 +93,14 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionId, "entity", pairKey)
+  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
   createPair
 
   def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
-  def deletePair = configurationClient.deletePair(pairKey)
-  def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionId, RepairAction.PAIR_SCOPE, pairKey)
+  def deletePair() {
+   configurationClient.deletePair(pairKey)
+  }
+  def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionUrl, RepairAction.PAIR_SCOPE, pairKey)
   
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
@@ -93,16 +114,16 @@ class TestEnvironment(val pairKey: String,
   /**
    * Requests that the environment remove all stored state from the participants.
    */
-  def clearParticipants {
+  def clearParticipants() {
     upstream.clearEntities
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, attributes:Map[String, String], content:String) = {
+  def addAndNotifyUpstream(id:String, attributes:Map[String, String], content:String) {
     upstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
     changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, attributes:Map[String, String], content:String) = {
+  def addAndNotifyDownstream(id:String, attributes:Map[String, String], content:String) {
     downstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
@@ -117,6 +138,21 @@ class TestEnvironment(val pairKey: String,
   def bizDate(d:DateTime) = Map("bizDate" -> d.toString())
   def bizDateValues(d:DateTime) = Seq(d.toString())
 
+}
+
+class ResendAllResource extends ServerResource {
+  @Post def resendAll = "resending all"
+}
+class ResendEntityResource extends ServerResource {
+  @Post def resend = "resending entity"
+}
+class RepairActionsApplication extends Application {
+  override def createInboundRoot = {
+    val router = new Router(getContext)
+    router.attach("/resend-all", classOf[ResendAllResource])
+    router.attach("/resend/abc", classOf[ResendEntityResource])
+    router
+  }
 }
 
 abstract class VersionScheme {

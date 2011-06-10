@@ -52,13 +52,6 @@ abstract class ParticipantAmqpClient(connector: Connector,
      apply (constraints)
   )
 
-  def invoke(actionId: String, entityId: String): InvocationResult = (
-    (serializeActionRequest _)
-     andThen (call("invoke", _, timeout))
-     andThen (deserializeActionResult _)
-     apply (ActionInvocation(actionId, entityId))
-  )
-
   def retrieveContent(identifier: String): String = (
     (serializeEntityContentRequest _)
      andThen (call("retrieve_content", _, timeout))

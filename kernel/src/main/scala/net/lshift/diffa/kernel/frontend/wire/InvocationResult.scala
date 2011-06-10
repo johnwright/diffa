@@ -17,14 +17,26 @@
 package net.lshift.diffa.kernel.frontend.wire
 
 import reflect.BeanProperty
+import net.lshift.diffa.kernel.util.AlertCodes
 
 /**
  * This encapsulates the result of invoking an action against a participant
  */
 case class InvocationResult (
-  @BeanProperty var result:String,
+  @BeanProperty var code:String,
   @BeanProperty var output:String) {
 
   def this() = this(null, null)
+}
 
+object InvocationResult {
+  /**
+   * Factory for a InvocationResult indicating that the agent received a response from the endpoint
+   */
+  def received(httpStatus: Int, httpEntity: String) = InvocationResult(httpStatus.toString, httpEntity)
+
+  /**
+   * Factory for an InvocationResult indicating that the agent could not communicate with the endpoint
+   */
+  def failure(thrown: Throwable) = InvocationResult(AlertCodes.ACTION_ENDPOINT_FAILURE, thrown.getStackTraceString)
 }

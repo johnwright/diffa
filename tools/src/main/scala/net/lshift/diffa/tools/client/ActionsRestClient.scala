@@ -19,7 +19,6 @@ package net.lshift.diffa.tools.client
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import sun.reflect.generics.reflectiveObjects.NotImplementedException
 import net.lshift.diffa.kernel.config.RepairAction
 
 class ActionsRestClient(serverRootUrl:String)
@@ -42,7 +41,7 @@ class ActionsRestClient(serverRootUrl:String)
   }
 
   def invoke(req:ActionableRequest) : InvocationResult = {
-    val path = req.pairKey + "/" + req.actionId + "/" + req.entityId
+    val path = Option(req.entityId).foldLeft(req.pairKey + "/" + req.actionId)((base, id) => base + "/" + id)
     val p = resource.path(path)
     val response = p.post(classOf[InvocationResult])
     response

@@ -54,13 +54,6 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     }
   }
 
-  override def invoke(actionId:String, entityId:String) : InvocationResult = {
-    executeRpc("invoke", serializeActionRequest(ActionInvocation(actionId, entityId))) match {
-      case Some(r) => deserializeActionResult(r)
-      case None    => null
-    }
-  }
-
   private def pack(seq:Seq[QueryConstraint]) = serializeQueryConstraints(seq.map(_.wireFormat))
   private def pack(buckets:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
     val wireBuckets = buckets.map { case (name, cf) => name -> cf.name }.toMap

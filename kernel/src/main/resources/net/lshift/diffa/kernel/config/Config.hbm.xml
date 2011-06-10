@@ -97,7 +97,7 @@
       <key-property name="name" type="string" column="name" />
       <key-property name="pairKey" type="string" column="pair_key" />
     </composite-id>
-    <property name="actionId" type="string" column="action_id" />
+    <property name="url" type="string" column="url" />
     <property name="scope" type="string" column="scope" />
   </class>
 
