@@ -14,30 +14,18 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
+package net.lshift.diffa.tools.client
 
-import net.lshift.diffa.agent.itest.support.TestEnvironment
-import org.junit.{After, Before}
+import net.lshift.diffa.messaging.json.AbstractRestClient
+import net.lshift.diffa.kernel.client.ScanningClient
 
 /**
- * Common base for a difference test.
+ * A RESTful client to manage participant scanning.
  */
-abstract class AbstractEnvironmentTest {
-  def envFactory:(String => TestEnvironment)
+class ScanningRestClient(u:String) extends AbstractRestClient(u, "rest/scanning/") with ScanningClient {
 
-  /**
-   * The environment under test.
-   */
-  var env:TestEnvironment = null
-
-  @Before
-  def setup() {
-    env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
-    env.clearParticipants()
-  }
-
-  @After
-  def removePair() {
-    env.deletePair()
+  def cancelScanning(pairKey: String) = {
+    delete("/pairs/" + pairKey + "/scan")
+    true
   }
 }

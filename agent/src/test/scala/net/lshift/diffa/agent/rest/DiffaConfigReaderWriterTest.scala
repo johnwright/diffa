@@ -48,7 +48,7 @@ class DiffaConfigReaderWriterTest {
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
       repairActions = Set(
-        RepairAction(name="Resend Sauce", scope="entity", actionId="resend", pairKey="ab")
+        RepairAction(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pairKey="ab")
       )
     )
 
@@ -76,7 +76,7 @@ class DiffaConfigReaderWriterTest {
         </endpoint>
         <group name="gaa">
           <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5">
-            <repair-action id="resend" name="Resend Sauce" scope="entity" />
+            <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
           </pair>
         </group>
         <group name="gbb">

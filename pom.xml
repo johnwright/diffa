@@ -39,7 +39,7 @@
     <commons.io.version>1.4</commons.io.version>
     <jersey.version>1.7</jersey.version>
     <jackson.version>1.7.1</jackson.version>
-    <lucene.version>3.0.2</lucene.version>
+    <lucene.version>3.0.3</lucene.version>
     <jodatime.version>1.6</jodatime.version>
     <javamail.file.transport.version>1.0</javamail.file.transport.version>
     <slf4j.version>1.6.1</slf4j.version>

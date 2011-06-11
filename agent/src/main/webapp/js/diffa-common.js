@@ -32,7 +32,7 @@ function appendActionButtonToContainer($container, action, pairKey, itemID, $rep
             type: "POST",
             url: url,
             success: function(data, status, xhr) {
-              $repairStatus.html('Repair status: ' + data.result + '<br/>output: ' + data.output);
+              $repairStatus.html('Repair status: ' + data.code + '<br/>output: ' + data.output);
             },
             error: function(xhr, status, ex) {
               if (console && console.log) {

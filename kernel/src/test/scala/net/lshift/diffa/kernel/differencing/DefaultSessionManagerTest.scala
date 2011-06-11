@@ -36,7 +36,6 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
   def createDownstreamParticipant(address: String, protocol: String) = {
     new DownstreamParticipant() {
       def generateVersion(entityBody:String) = null
-      def invoke(actionId:String, entityId:String)  = null
       def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
       def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
       def retrieveContent(id:String) = null
@@ -47,7 +46,6 @@ class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
     new UpstreamParticipant() {
       def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
       def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
-      def invoke(actionId:String, entityId:String)  = null
       def retrieveContent(id:String) = null
       def close() = ()
     }
@@ -243,26 +241,26 @@ class DefaultSessionManagerTest {
     val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
 
     // Initial state of all pairs should be "unknown"
-    assertEquals(Map("pair" -> PairSyncState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
+    assertEquals(Map("pair" -> PairScanState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
 
     // Start the initial sync
     manager.runSync(sessionId)
 
     // Query for the states associated. We should get back an entry for pair in "synchronising", since the stubs
     // don't notify of completion
-    assertEquals(Map("pair" -> PairSyncState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
+    assertEquals(Map("pair" -> PairScanState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
 
     // Notify that the pair is now in Synchronised state
-    manager.pairSyncStateChanged("pair", PairSyncState.UP_TO_DATE)
-    assertEquals(Map("pair" -> PairSyncState.UP_TO_DATE), manager.retrievePairSyncStates(sessionId))
+    manager.pairSyncStateChanged("pair", PairScanState.UP_TO_DATE)
+    assertEquals(Map("pair" -> PairScanState.UP_TO_DATE), manager.retrievePairSyncStates(sessionId))
 
     // Start a sync. We should enter the synchronising state again
     manager.runSync(sessionId)
-    assertEquals(Map("pair" -> PairSyncState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
+    assertEquals(Map("pair" -> PairScanState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
 
     // Notify that the pair is now in Failed state
-    manager.pairSyncStateChanged("pair", PairSyncState.FAILED)
-    assertEquals(Map("pair" -> PairSyncState.FAILED), manager.retrievePairSyncStates(sessionId))
+    manager.pairSyncStateChanged("pair", PairScanState.FAILED)
+    assertEquals(Map("pair" -> PairScanState.FAILED), manager.retrievePairSyncStates(sessionId))
   }
 
   @Test
@@ -273,34 +271,34 @@ class DefaultSessionManagerTest {
     val sessionId = manager.start(SessionScope.all, listener1)
 
     // Query for the states associated. We should get back an entry for pair in "unknown"
-    assertEquals(Map("pair1" -> PairSyncState.UNKNOWN, "pair2" -> PairSyncState.UNKNOWN),
+    assertEquals(Map("pair1" -> PairScanState.UNKNOWN, "pair2" -> PairScanState.UNKNOWN),
       manager.retrievePairSyncStates(sessionId))
 
-    assertEquals(Map("pair1" -> PairSyncState.UNKNOWN, "pair2" -> PairSyncState.UNKNOWN),
+    assertEquals(Map("pair1" -> PairScanState.UNKNOWN, "pair2" -> PairScanState.UNKNOWN),
       manager.retrieveAllPairScanStates)
 
     // Notify that the pair1 is now in Synchronised state
-    manager.pairSyncStateChanged("pair1", PairSyncState.UP_TO_DATE)
-    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.UNKNOWN),
+    manager.pairSyncStateChanged("pair1", PairScanState.UP_TO_DATE)
+    assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.UNKNOWN),
       manager.retrievePairSyncStates(sessionId))
 
-    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.UNKNOWN),
+    assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.UNKNOWN),
       manager.retrieveAllPairScanStates)
 
     // Notify that the pair2 is now in Failed state
-    manager.pairSyncStateChanged("pair2", PairSyncState.FAILED)
-    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.FAILED),
+    manager.pairSyncStateChanged("pair2", PairScanState.FAILED)
+    assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.FAILED),
       manager.retrievePairSyncStates(sessionId))
 
-    assertEquals(Map("pair1" -> PairSyncState.UP_TO_DATE, "pair2" -> PairSyncState.FAILED),
+    assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.FAILED),
       manager.retrieveAllPairScanStates)
 
     // Start a sync. We should enter the synchronising state again
     manager.runSync(sessionId)
-    assertEquals(Map("pair1" -> PairSyncState.SYNCHRONIZING, "pair2" -> PairSyncState.SYNCHRONIZING),
+    assertEquals(Map("pair1" -> PairScanState.SYNCHRONIZING, "pair2" -> PairScanState.SYNCHRONIZING),
       manager.retrievePairSyncStates(sessionId))
 
-    assertEquals(Map("pair1" -> PairSyncState.SYNCHRONIZING, "pair2" -> PairSyncState.SYNCHRONIZING),
+    assertEquals(Map("pair1" -> PairScanState.SYNCHRONIZING, "pair2" -> PairScanState.SYNCHRONIZING),
       manager.retrieveAllPairScanStates)
   }
 
@@ -313,7 +311,7 @@ class DefaultSessionManagerTest {
 
     // If we delete the pair, then the sync state should return the pair with an Unknown status
     manager.onDeletePair("pair")
-    assertEquals(Map("pair" -> PairSyncState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
+    assertEquals(Map("pair" -> PairScanState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
   }
 
   private def replayAll = replay(listener1, listener2)

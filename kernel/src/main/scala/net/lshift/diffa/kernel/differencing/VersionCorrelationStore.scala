@@ -134,6 +134,11 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
    * Flushes any pending changes to the store, making them permanent.
    */
   def flush(): Unit
+
+  /**
+   * Rolls back any pending changes to the store and deletes any temporary data.
+   */
+  def rollback() : Unit
 }
 
 /**

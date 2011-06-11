@@ -1,3 +1,4 @@
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,31 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.agent.itest
-
-import net.lshift.diffa.agent.itest.support.TestEnvironment
-import org.junit.{After, Before}
+package net.lshift.diffa.kernel.differencing;
 
 /**
- * Common base for a difference test.
+ * Enumeration of the synchronization states that a pair can be in.
  */
-abstract class AbstractEnvironmentTest {
-  def envFactory:(String => TestEnvironment)
+public enum PairScanState {
+  /**
+   * The state of the pair is unknown, and no sync is currently pending.
+   */
+  UNKNOWN,
 
   /**
-   * The environment under test.
+   * The last synchronization operation for the pair failed.
    */
-  var env:TestEnvironment = null
+  FAILED,
 
-  @Before
-  def setup() {
-    env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
-    env.clearParticipants()
-  }
+  /**
+   * The scan was cancelled on request
+   */
+  CANCELLED,
 
-  @After
-  def removePair() {
-    env.deletePair()
-  }
+  /**
+   * The pair is up to date.
+   */
+  UP_TO_DATE,
+
+  /**
+   * The pair is currently being synchronized.
+   */
+  SYNCHRONIZING
 }

@@ -40,11 +40,6 @@ trait Participant extends Closeable
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
 
   /**
-   *  This invokes a request against the participant for the the named action and supplies it with the id entity
-   * for which the action should be executed on.
-   */
-  def invoke(actionId:String, entityId:String) : InvocationResult
-  /**
    * Requests that the participant return a serialized form of the item with the given identifier.
    */
   def retrieveContent(identifier:String): String

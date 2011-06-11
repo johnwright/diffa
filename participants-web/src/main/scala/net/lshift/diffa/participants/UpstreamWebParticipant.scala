@@ -19,9 +19,8 @@ package net.lshift.diffa.participants
 import net.lshift.diffa.kernel.participants.UpstreamMemoryParticipant
 import org.joda.time.DateTime
 import java.lang.String
-import net.lshift.diffa.kernel.events.{VersionID, UpstreamChangeEvent}
+import net.lshift.diffa.kernel.events.UpstreamChangeEvent
 import org.apache.commons.codec.digest.DigestUtils
-import collection.mutable.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 /**

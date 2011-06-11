@@ -112,6 +112,7 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
     val response = media.delete(classOf[ClientResponse])
     response.getStatus match {
       case 200 | 204 => ()
+      case 404 => throw new NotFoundException(where)
       case _ => {
         log.error(response.getStatus.toString)
         throw new RuntimeException(response.getStatus.toString)

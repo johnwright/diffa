@@ -14,30 +14,16 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
+package net.lshift.diffa.kernel.util
 
-import net.lshift.diffa.agent.itest.support.TestEnvironment
-import org.junit.{After, Before}
+import net.lshift.diffa.kernel.differencing.FeedbackHandle
 
 /**
- * Common base for a difference test.
+ * Simple implementation of a feedback handle that doesn't cancel.
+ * This is used for testing when no cancellation is required.
  */
-abstract class AbstractEnvironmentTest {
-  def envFactory:(String => TestEnvironment)
-
-  /**
-   * The environment under test.
-   */
-  var env:TestEnvironment = null
-
-  @Before
-  def setup() {
-    env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
-    env.clearParticipants()
-  }
-
-  @After
-  def removePair() {
-    env.deletePair()
-  }
+class NonCancellingFeedbackHandle extends FeedbackHandle {
+  def logStatus(status: String) = null
+  def isCancelled = false
+  def cancel() = null
 }
