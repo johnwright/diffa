@@ -461,6 +461,8 @@ var dragged = false;
 function mouseDown(e) {
   dragging = e;
   dragged = false;
+  e.target.style.cursor = "move";
+  return false;
 }
 
 function togglePolling(c) {
@@ -487,6 +489,7 @@ function mouseUp(e) {
     }
   }
   dragged = false;
+  e.target.style.cursor = "default";
 }
 
 function mouseMove(e) {
