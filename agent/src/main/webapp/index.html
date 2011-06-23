@@ -36,7 +36,7 @@
   <script type="text/javascript" src="js/diffa-common.js" charset="utf-8"></script>
   <script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
 
-  <style type="text/css">
+  <!--style type="text/css">
     table.diffList {
       table-layout: fixed;
       font-size: 0.8em;
@@ -61,7 +61,7 @@
     table.diffList tbody tr {
       cursor: pointer;
     }
-  </style>
+  </style-->
 </head>
 <body>
 <div class="container showgrid">
@@ -76,50 +76,37 @@
 
   <hr class="space">
 
-  <div id="heatmapContainer" class="span-24">
-    <div id="display" class="span-20 last">
-      <!-- Un-hardcode the dimensions-->
-      <canvas id="underlay" style="z-index:1; background-color: #cfe2f3;" width="800px" height="400px"/>
-      <canvas id="canvas" style="z-index:2;" width="800px" height="400px"/>
-      <canvas id="overlay" style="z-index:4;" width="800px" height="400px"/>
-    </div>
-    <div class="span-24">
-      <!-- Un-hardcode the dimensions-->
-      <canvas id="scale" width="800px" height="40px"/>
-    </div>
+  <div id="heatmap" class="span-20">
+    <canvas id="underlay" style="background-color: #cfe2f3;width: inherit; position: relative;" ></canvas>
+    <canvas id="scale" style="width: inherit;"></canvas>
   </div>
 
   <div id="diffListContainer" class="span-16">
-    <table id="diffList">
-      <thead>
-      <tr>
-        <th class="grid2col">Date</th>
-        <th class="grid2col">Time</th>
-        <!--<th class="grid2col">Group</th>-->
-        <th class="grid2col">Pairing</th>
-        <th class="grid4col">Item ID</th>
-        <th class="grid4col">Difference</th>
-      </tr>
-      </thead>
-      <tfoot id="navigation">
-      <tr>
-        <td colspan="5">&nbsp;</td>
-      </tr>
-      <tr>
-        <td colspan="5">&nbsp;</td>
-      </tr>
-      <tr>
-        <th id="previous" colspan="2" align="left"><a href="#">&lt;-Previous</a></th>
-        <th id="pagecount" colspan="2" align="center">nn of XX pages</th>
-        <th id="next" colspan="1"><a href="#">Next-&gt;</a></th>
-      </tr>
-      </tfoot>
-      <tbody>
-      <tr>
-        <td colspan="6">No items loaded yet...</td>
-      </tr>
-      </tbody>
-    </table>
+
+    <div id="diffList">
+
+      <div class="span-2">Date</div>
+      <div class="span-2">Time</div>
+      <div class="span-3">Pairing</div>
+      <div class="span-3">Item ID</div>
+      <div class="span-6 last">Difference</div>
+
+      <hr class="space"/>
+
+      <div id="difflist-row">
+        <div class="span-16 last">No items loaded yet...</div>
+      </div>
+
+    </div>
+
+    <hr class="space"/>
+
+    <div id="navigation">
+      <div class="span-6"><a href="#">&lt;-Previous</a></div>
+      <div class="span-4">nn of XX pages</div>
+      <div class="span-6 last"><a href="#">Next-&gt;</a></div>
+    </div>
+
   </div>
 
   <div id="contentviewer" class="span-8 last">
