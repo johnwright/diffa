@@ -85,11 +85,13 @@
 
     <div id="diffList">
 
-      <div class="span-2">Date</div>
-      <div class="span-2">Time</div>
-      <div class="span-3">Pairing</div>
-      <div class="span-3">Item ID</div>
-      <div class="span-6 last">Difference</div>
+      <div id="difflist-header">
+        <div class="span-2">Date</div>
+        <div class="span-2">Time</div>
+        <div class="span-3">Pairing</div>
+        <div class="span-3">Item ID</div>
+        <div class="span-6 last">Difference</div>
+      </div>
 
       <hr class="space"/>
 
@@ -110,26 +112,34 @@
   </div>
 
   <div id="contentviewer" class="span-8 last">
-    <h6>No item selected</h6>
+    <div>No item selected</div>
 
     <div>
-      <div id="item1" class="diffSet">
+
+      <div id="item1" class="span-2 diffSet">
         <div class="diffHash">
-          <span>item 1</span>
+          <span>upstream</span>
         </div>
         <div class="codeBox">
           <pre></pre>
         </div>
       </div>
-      <div id="item2" class="diffSet">
-        <div class="diffHash">
-          <span>item 2</span>
+
+      <hr class="space"/>
+
+      <div id="item2" class="span-2 diffSet">
+        <div class="span-6 last diffHash">
+          <span>downstream</span>
         </div>
         <div class="codeBox">
           <pre></pre>
         </div>
       </div>
+
     </div>
+
+    <hr class="space"/>
+
     <div id="diffRepair">
       <h6>Repair options</h6>
 

@@ -209,7 +209,7 @@ function renderEvent(event) {
       downstreamVersion = event.downstreamVsn || "no version";
 
   $('#contentviewer h6').eq(0).text('Content for item ID: ' + itemID);
-  $('#item1 .diffHash').html('<span>' + upstreamLabel + '</span>' + upstreamVersion);
+  $('#item1 .diffHash').html('<div class="span-2">' + upstreamLabel + '</div><div class="span-6 last">' + upstreamVersion + '</div>');
   $('#item2 .diffHash').html('<span>' + downstreamLabel + '</span>' + downstreamVersion);
 
   var getContent = function(selector, label, upOrDown) {
@@ -242,10 +242,17 @@ function selectFromList(event) {
   if (!event) {
     return false;
   }
-  var row = event.target.nodeName === "tr" ? $(event.target) : $(event.target).closest('tr');
-  renderEvent(row.data("event"));
-  if (row.data("event") != null) {
-    $('#diffList').find('tbody tr').removeClass("specific_selected");
+
+  if (event.target.parentNode.id === "difflist-header") {
+    return false;
+  }
+
+  // TODO This selector is a real hack
+  var row = $(event.target).closest('div[id*="evt_"]');
+  var event = row.data("event");
+  if (event != null) {
+    renderEvent(event);
+    $('#diffList').find('div').removeClass("specific_selected");
     $('#evt_' + row.data("event").seqId).addClass("specific_selected");
   }
 }
