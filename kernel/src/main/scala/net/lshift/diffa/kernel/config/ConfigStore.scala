@@ -148,9 +148,10 @@ case class Pair(
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var group: PairGroup = null,
   @BeanProperty var versionPolicyName: String = null,
-  @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING) {
+  @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
+  @BeanProperty var scanCronSpec: String = null) {
 
-  def this() = this(null, null, null, null, null, Pair.NO_MATCHING)
+  def this() = this(key = null)
 }
 
 object Pair {
@@ -164,14 +165,15 @@ case class PairGroup(@BeanProperty var key: String) {
 case class GroupContainer(@BeanProperty group: PairGroup, @BeanProperty pairs: Array[Pair])
 
 case class PairDef(
-  @BeanProperty var pairKey: String,
-  @BeanProperty var versionPolicyName: String,
-  @BeanProperty var matchingTimeout: Int,
-  @BeanProperty var upstreamName: String,
-  @BeanProperty var downstreamName: String,
-  @BeanProperty var groupKey: String) {
+  @BeanProperty var pairKey: String = null,
+  @BeanProperty var versionPolicyName: String = null,
+  @BeanProperty var matchingTimeout: Int = 0,
+  @BeanProperty var upstreamName: String = null,
+  @BeanProperty var downstreamName: String = null,
+  @BeanProperty var groupKey: String = null,
+  @BeanProperty var scanCronSpec: String = null) {
 
-  def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
+  def this() = this(pairKey = null)
 }
 
 case class RepairAction(
