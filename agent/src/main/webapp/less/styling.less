@@ -1,0 +1,49 @@
+@yellow-background: #FFF2CC;
+@background-grey: #757575;
+@text-grey: #545454;
+@link-orange: #fca961;
+@eight-columns-minus-2-px: 308px;
+
+/* Wrap long items in columns */
+div.wrappable {
+  word-wrap: break-word;
+}
+
+/* Highlight the currently selected row in the diff list*/
+div.specific_selected {
+  background-color: @yellow-background;
+}
+
+div.section-label {
+  background-color: @yellow-background;
+  width: @eight-columns-minus-2-px;
+}
+
+div.endpoint-label {
+  background-color: @background-grey;
+  color: white;
+}
+
+#contentviewer {
+  border: 1px dotted silver;
+  width: @eight-columns-minus-2-px;
+}
+
+/* General body work*/
+
+body {
+  font-family: andale mono, courier new, courier, mono;
+  color: @text-grey;
+}
+
+/* This was the original sizing, preserving it for consistency's sake */
+h1 {
+  font-size: 2.25em;      /* 31.5px */
+  line-height: 1.333em;   /* ie. 42px, seven 6px increments */
+  margin-bottom: 0.381em; /* ie 12px */
+}
+
+a {
+	color: @link-orange;
+	text-decoration: underline;
+}

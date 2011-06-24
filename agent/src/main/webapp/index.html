@@ -23,18 +23,16 @@
   <title>Diffa</title>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-  <!--link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/stickyfooter.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
-  <link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/-->
-
   <script type="text/javascript" src="js/jquery-1.6.min.js" charset="utf-8"></script>
   <script type="text/javascript" src="js/datejs/date-en-GB.js" charset="utf-8"></script>
   <script type="text/javascript" src="js/datejs/extras.js" charset="utf-8"></script>
   <script type="text/javascript" src="js/diffa-common.js" charset="utf-8"></script>
   <script type="text/javascript" src="js/graph.js" charset="utf-8"></script>
+
+  <script type="text/javascript" charset="utf-8">
+    less.env = "development";
+    less.watch();
+  </script>
 
   <!--style type="text/css">
     table.diffList {
@@ -64,9 +62,9 @@
   </style-->
 </head>
 <body>
-<div class="container showgrid">
+<div class="container">
 
-  <div class="span-20">
+  <div class="prepend-top prepend-1 span-19">
     <h1>Diffa</h1>
   </div>
 
@@ -74,9 +72,7 @@
     <a href="settings.html">Settings</a>
   </div>
 
-  <hr class="space">
-
-  <div id="heatmap" class="span-20">
+  <div id="heatmap" class="prepend-top span-20">
     <canvas id="underlay" style="background-color: #cfe2f3;width: inherit; position: relative;" ></canvas>
     <canvas id="scale" style="width: inherit;"></canvas>
   </div>
@@ -104,18 +100,18 @@
     <hr class="space"/>
 
     <div id="navigation">
-      <div class="span-6"><a href="#">&lt;-Previous</a></div>
-      <div class="span-4">nn of XX pages</div>
-      <div class="span-6 last"><a href="#">Next-&gt;</a></div>
+      <div id="previous" class="span-6"><a href="#">&lt;-Previous</a></div>
+      <div id="pagecount" class="span-4">nn of XX pages</div>
+      <div id="next" class="span-6 last"><a href="#">Next-&gt;</a></div>
     </div>
 
   </div>
 
   <div id="contentviewer" class="span-8 last">
-    <div id="contentLabel" class="span-8 last ">No item selected</div>
+    <div id="contentLabel" class="span-8 last section-label">No item selected</div>
 
     <div id="item1" class="span-8 last diffSet">
-      <div class="span-2 upstreamLabel">upstream</div>
+      <div class="span-2 endpoint-label upstreamLabel">upstream</div>
       <div class="span-6 last diffHash"></div>
       <div class="span-8 last codeBox">
         <pre></pre>
@@ -123,7 +119,7 @@
     </div>
 
     <div id="item2" class="span-8 last diffSet">
-      <div class="span-2 upstreamLabel">downstream</div>
+      <div class="span-2 endpoint-label downstreamLabel">downstream</div>
       <div class="span-6 last diffHash"></div>
       <div class="span-8 codeBox">
         <pre></pre>
@@ -131,7 +127,7 @@
     </div>
 
     <div id="diffRepair">
-      <div class="span-8 last">Repair options</div>
+      <div class="span-8 last section-label">Repair options</div>
       <div class="span-8 last" id="actionlist"> </div>
       <div class="span-8 last" id="repairstatus">No repairs in progress</div>
     </div>

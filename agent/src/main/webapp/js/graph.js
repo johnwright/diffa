@@ -196,6 +196,10 @@ function renderEntityScopedActions(pairKey, itemID) {
   $.ajax({ url: API_BASE + '/actions/' + pairKey + '?scope=entity', success: actionListCallback });
 }
 
+/**
+ * Renders a difference event in the content viewer panel
+ * @param event
+ */
 function renderEvent(event) {
   if (event == null) return;
 
@@ -268,11 +272,11 @@ function selectFromList(event) {
 function addRow(table, event) {
   var time = new Date(event.detectedAt).toString("HH:mm:ss");
   var date = new Date(event.detectedAt).toString("dd/MM/yyyy");
-  var row = $("<div id='evt_" + event.seqId + "'></div>")
+  var row = $("<div class='span-16' id='evt_" + event.seqId + "'></div>")
       .append("<div class='span-2'>" + date + "</div>")
       .append("<div class='span-2'>" + time + "</div>")
-      .append("<div class='span-3'>" + event.objId.pairKey + "</div>")
-      .append("<div class='span-3'>" + event.objId.id + "</div>")
+      .append("<div class='span-3 wrappable'>" + event.objId.pairKey + "</div>")
+      .append("<div class='span-3 wrappable'>" + event.objId.id + "</div>")
       .data("event", event);
 
   if (!event.upstreamVsn) {
