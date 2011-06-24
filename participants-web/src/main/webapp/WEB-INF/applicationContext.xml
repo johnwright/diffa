@@ -107,15 +107,28 @@
     </property>
   </bean>
 
-  <bean id="declareRepairAction" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+  <bean id="declareEntityRepairAction" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient" />
     <property name="targetMethod" value="declareRepairAction" />
     <property name="arguments">
       <list>
-        <value>${demo.repairAction.name}</value>
-        <value>${demo.repairAction.url}</value>
-        <value>${demo.repairAction.scope}</value>
-        <value>${demo.repairAction.pairKey}</value>
+        <value>${demo.entity.repairAction.name}</value>
+        <value>${demo.entity.repairAction.url}</value>
+        <value>${demo.entity.repairAction.scope}</value>
+        <value>${demo.entity.repairAction.pairKey}</value>
+      </list>
+    </property>
+  </bean>
+
+  <bean id="declarePairRepairAction" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="configClient" />
+    <property name="targetMethod" value="declareRepairAction" />
+    <property name="arguments">
+      <list>
+        <value>${demo.pair.repairAction.name}</value>
+        <value>${demo.pair.repairAction.url}</value>
+        <value>${demo.pair.repairAction.scope}</value>
+        <value>${demo.pair.repairAction.pairKey}</value>
       </list>
     </property>
   </bean>

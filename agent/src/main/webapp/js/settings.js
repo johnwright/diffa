@@ -36,7 +36,6 @@ function renderPairScopedActions(pairKey, actionListContainer, repairStatus) {
 
     $.each(actionList, function(i, action) {
       appendActionButtonToContainer(actionListContainer, action, pairKey, null, repairStatus);
-      actionListContainer.append('<br clear="both" />');
     });
   };
 
@@ -44,15 +43,19 @@ function renderPairScopedActions(pairKey, actionListContainer, repairStatus) {
 }
 
 function removeAllPairs() {
-  $('#pairs').find('tr').remove();
+  $('#pairs').find('div').remove();
 }
 
 function addPair(name, state) {
-  var actionButtonsForPair = $('<td></td>');
-  var repairStatusForPair = $('<td></td>');
-  $('#pairs').append($('<tr><td>' + name + '</td><td>' + renderState(state) + '</td></tr>')
-      .append(actionButtonsForPair)
-      .append(repairStatusForPair));
+  // Column layout is: 2,4,4,4
+  // TODO The column alignment duplicates the definitions in the HTML
+  var actionButtonsForPair = $('<div class="span-4"></div>');
+  var repairStatusForPair = $('<div class="span-4 last"></div>');
+
+  $('#pairs').append($('<div class="span-2">' + name + '</div>'))
+             .append($('<div class="span-4">' + renderState(state) + '</div>'))
+             .append(actionButtonsForPair)
+             .append(repairStatusForPair);
   renderPairScopedActions(name, actionButtonsForPair, repairStatusForPair);
 }
 
