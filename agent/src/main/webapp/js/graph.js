@@ -190,7 +190,6 @@ function renderEntityScopedActions(pairKey, itemID) {
     $.each(actionList, function(i, action) {
       var repairStatus = $('#repairstatus');
       appendActionButtonToContainer(actionListContainer, action, pairKey, itemID, repairStatus);
-      $('<br class="clearboth"/>').appendTo(actionListContainer);
     });
   };
 
@@ -208,9 +207,13 @@ function renderEvent(event) {
       downstreamLabel = "downstream",
       downstreamVersion = event.downstreamVsn || "no version";
 
-  $('#contentviewer h6').eq(0).text('Content for item ID: ' + itemID);
-  $('#item1 .diffHash').html('<div class="span-2">' + upstreamLabel + '</div><div class="span-6 last">' + upstreamVersion + '</div>');
-  $('#item2 .diffHash').html('<span>' + downstreamLabel + '</span>' + downstreamVersion);
+  $('#contentLabel').text('Content for item ID: ' + itemID);
+
+  $('#item1 .upstreamLabel').text(upstreamLabel);
+  $('#item1 .diffHash').text(upstreamVersion);
+
+  $('#item2 .downstreamLabel').text(downstreamLabel);
+  $('#item2 .diffHash').text(downstreamVersion);
 
   var getContent = function(selector, label, upOrDown) {
     $.ajax({

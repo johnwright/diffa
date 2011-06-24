@@ -16,8 +16,9 @@
  */
 
 function appendActionButtonToContainer($container, action, pairKey, itemID, $repairStatus) {
-  $("<label>" + action.name + "</label>").appendTo($container);
-  $('<button class="repair">Go</button>')
+  // Reset the status box
+  $repairStatus.text("No repairs in progress");
+  $('<button class="repair">' + action.name +  '</button>')
     .click(function(e) {
       e.preventDefault();
       var $button = $(this);
