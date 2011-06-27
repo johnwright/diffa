@@ -128,7 +128,7 @@ class ConfigurationTest {
       groups = Set(PairGroup("gcc"), PairGroup("gbb")),
       pairs = Set(
           // ab has moved from gaa to gcc
-        PairDef("ab", "same", 5, "upstream1", "downstream2", "gcc"),
+        PairDef("ab", "same", 5, "upstream1", "downstream2", "gcc", "0 * * * * ?"),
           // ac is gone
         PairDef("ad", "same", 5, "upstream1", "downstream2", "gbb")),
       // name of repair action is changed

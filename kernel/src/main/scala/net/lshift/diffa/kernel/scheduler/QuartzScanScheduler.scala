@@ -67,10 +67,12 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
     val existingJob = jobForPair(pair.key)
 
     def unschedulePair() {
+      log.debug("Removing schedule for pair %s".format(pair.key))
       scheduler.deleteJob(pair.key, Scheduler.DEFAULT_GROUP)
     }
 
     def schedulePair() {
+      log.debug("Applying schedule '%s' for pair %s".format(pair.scanCronSpec, pair.key))
       val trigger = new CronTrigger(pair.key, Scheduler.DEFAULT_GROUP, pair.scanCronSpec)
       val job = new JobDetail(pair.key, classOf[NoOpJob])
       scheduler.scheduleJob(job, trigger)
