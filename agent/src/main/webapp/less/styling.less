@@ -1,8 +1,16 @@
+/* Define all of the colors used throughout */
 @yellow-background: #FFF2CC;
 @background-grey: #757575;
 @text-grey: #545454;
 @link-orange: #fca961;
-@eight-columns-minus-2-px: 308px;
+
+/* The column width and right margin are taken from Blueprint's definitions */
+@column-width: 30px;
+@right-margin: 10px;
+@border-thickness: 1px;
+
+/* Shave the width of an 8 column wide area that needs to fit the border in */
+@content-viwer-width: 7 * (@column-width + @right-margin) + @column-width - 2 * @border-thickness;
 
 /* Wrap long items in columns */
 div.wrappable {
@@ -16,7 +24,7 @@ div.specific_selected {
 
 div.section-label {
   background-color: @yellow-background;
-  width: @eight-columns-minus-2-px;
+  width: @content-viwer-width;
 }
 
 div.endpoint-label {
@@ -25,8 +33,8 @@ div.endpoint-label {
 }
 
 #contentviewer {
-  border: 1px dotted silver;
-  width: @eight-columns-minus-2-px;
+  border: @border-thickness dotted silver;
+  width: @content-viwer-width;
 }
 
 /* General body work*/
