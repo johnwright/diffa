@@ -4,6 +4,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
@@ -23,6 +24,17 @@ public class JSONHelper {
       throw ex;
     } catch (Exception ex) {
       throw new IOException("Failed to serialise result to JSON", ex);
+    }
+  }
+
+  public static ScanResultEntry[] readQueryResult(InputStream stream)
+      throws IOException {
+    try {
+      return mapper.readValue(stream, ScanResultEntry[].class);
+    } catch (IOException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new IOException("Failed to deserialise result from JSON", ex);
     }
   }
 }

@@ -10,10 +10,10 @@ import java.util.Map;
  * entities. Aggregates do not contain an id or lastUpdated value.
  */
 public class ScanResultEntry {
-  private final String id;
-  private final String version;
-  private final DateTime lastUpdated;
-  private final Map<String, String> attributes;
+  private String id;
+  private String version;
+  private DateTime lastUpdated;
+  private Map<String, String> attributes;
 
   public static ScanResultEntry forAggregate(String version, Map<String, String> attributes) {
     return new ScanResultEntry(null, version, null, attributes);
@@ -40,20 +40,32 @@ public class ScanResultEntry {
   public String getId() {
     return id;
   }
+  public void setId(String id) {
+    this.id = id;
+  }
 
   @JsonSerialize(include = JsonSerialize.Inclusion.NON_DEFAULT)
   public String getVersion() {
     return version;
+  }
+  public void setVersion(String version) {
+    this.version = version;
   }
 
   @JsonSerialize(include = JsonSerialize.Inclusion.NON_DEFAULT)
   public DateTime getLastUpdated() {
     return lastUpdated;
   }
+  public void setLastUpdated(DateTime lastUpdated) {
+    this.lastUpdated = lastUpdated;
+  }
 
   @JsonSerialize(include = JsonSerialize.Inclusion.NON_DEFAULT)
   public Map<String, String> getAttributes() {
     return attributes;
+  }
+  public void setAttributes(Map<String, String> attributes) {
+    this.attributes = attributes;
   }
 
   @Override

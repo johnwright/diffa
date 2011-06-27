@@ -6,6 +6,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -33,6 +34,16 @@ public class JSONHelperTest {
   }
 
   @Test
+  public void shouldRoundtripSingleEntityWithNoAttributes() throws Exception {
+    ScanResultEntry entry = ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC));
+    String single = serialiseResult(Arrays.asList(entry));
+    ScanResultEntry[] deserialised = deserialiseResult(single);
+
+    assertEquals(1, deserialised.length);
+    assertEquals(entry, deserialised[0]);
+  }
+
+  @Test
   public void shouldSerialiseSingleEntityWithAttributes() throws Exception {
     String single = serialiseResult(Arrays.asList(
       ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC),
@@ -42,11 +53,26 @@ public class JSONHelperTest {
       single);
   }
 
+  @Test
+  public void shouldRoundtripSingleEntityWithAttributes() throws Exception {
+    ScanResultEntry entry = ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), generateAttributes("a1v1", "a2v2"));
+    String single = serialiseResult(Arrays.asList(entry));
+    ScanResultEntry[] deserialised = deserialiseResult(single);
+
+    assertEquals(1, deserialised.length);
+    assertEquals(entry, deserialised[0]);
+  }
+
   private static String serialiseResult(Iterable<ScanResultEntry> entries) throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     JSONHelper.writeQueryResult(baos, entries);
 
     return new String(baos.toByteArray(), "UTF-8");
+  }
+
+  private static ScanResultEntry[] deserialiseResult(String s) throws Exception {
+    ByteArrayInputStream bais = new ByteArrayInputStream(s.getBytes("UTF-8"));
+    return JSONHelper.readQueryResult(new ByteArrayInputStream(s.getBytes("UTF-8")));
   }
 
   private static Map<String, String> generateAttributes(String a1, String a2) {
