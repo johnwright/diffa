@@ -49,4 +49,14 @@ object AlertCodes {
    * Occurs when the agent fails to establish communication with a repair action endpoint
    */
   val ACTION_ENDPOINT_FAILURE = "D6"
+
+  /**
+   * Indicates that the scan scheduler is starting a scan.
+   */
+  val SCHEDULED_SCAN_STARTING = "D7"
+
+  /**
+   * Indicates the scheduler failed to start a scheduled scan.
+   */
+  val SCHEDULED_SCAN_FAILURE = "D8"
 }
