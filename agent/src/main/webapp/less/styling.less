@@ -3,14 +3,19 @@
 @background-grey: #757575;
 @text-grey: #545454;
 @link-orange: #fca961;
+@light-grey-background: #edece1;
+@bright-yellow: #FFFD94;
+@dark-text: #333;
+@light-border: #ccc;
 
 /* The column width and right margin are taken from Blueprint's definitions */
 @column-width: 30px;
 @right-margin: 10px;
 @border-thickness: 1px;
+@text-padding: 0 5px;
 
-/* Shave the width of an 8 column wide area that needs to fit the border in */
-@content-viwer-width: 7 * (@column-width + @right-margin) + @column-width - 2 * @border-thickness;
+/* Shave the width of an 9 column wide area that needs to fit the border in */
+@content-viwer-width: 8 * (@column-width + @right-margin) + @column-width - 2 * @border-thickness;
 
 /* Wrap long items in columns */
 div.wrappable {
@@ -24,17 +29,42 @@ div.specific_selected {
 
 div.section-label {
   background-color: @yellow-background;
-  width: @content-viwer-width;
+  padding: @text-padding;
 }
 
 div.endpoint-label {
   background-color: @background-grey;
   color: white;
+  padding: @text-padding;
 }
 
 #contentviewer {
   border: @border-thickness dotted silver;
   width: @content-viwer-width;
+}
+
+div.diff-set {
+  width: @content-viwer-width;
+  height: 150px;
+}
+
+div.diff-repair {
+  width: @content-viwer-width;
+  min-height: 100px;
+}
+
+div.action-item {
+  padding: 0 0 10px 10px;
+}
+
+div.diffHash {
+  background-color: @light-grey-background;
+  // Add the height of 1 row as the minimum height so that an empty div will be colored in correctly
+  min-height: 18px;
+}
+
+div.code-box {
+  padding: @text-padding;
 }
 
 /* General body work*/
@@ -54,4 +84,12 @@ h1 {
 a {
 	color: @link-orange;
 	text-decoration: underline;
+}
+
+button.repair {
+  color: @dark-text;
+  background-color: @bright-yellow;
+  margin: 10px 5px 0 0;
+  border: 1px solid @light-border;
+  cursor: pointer;
 }

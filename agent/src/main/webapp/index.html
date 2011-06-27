@@ -77,7 +77,7 @@
     <canvas id="scale" style="width: inherit;"></canvas>
   </div>
 
-  <div id="diffListContainer" class="span-16">
+  <div id="diffListContainer" class="span-14 append-1">
 
     <div id="diffList">
 
@@ -86,13 +86,13 @@
         <div class="span-2">Time</div>
         <div class="span-3">Pairing</div>
         <div class="span-3">Item ID</div>
-        <div class="span-6 last">Difference</div>
+        <div class="span-4 last">Difference</div>
       </div>
 
       <hr class="space"/>
 
       <div id="difflist-row">
-        <div class="span-16 last">No items loaded yet...</div>
+        <div class="span-14 last">No items loaded yet...</div>
       </div>
 
     </div>
@@ -100,36 +100,36 @@
     <hr class="space"/>
 
     <div id="navigation">
-      <div id="previous" class="span-6"><a href="#">&lt;-Previous</a></div>
+      <div id="previous" class="span-5"><a href="#">&lt;-Previous</a></div>
       <div id="pagecount" class="span-4">nn of XX pages</div>
-      <div id="next" class="span-6 last"><a href="#">Next-&gt;</a></div>
+      <div id="next" class="span-5 last"><a href="#">Next-&gt;</a></div>
     </div>
 
   </div>
 
-  <div id="contentviewer" class="span-8 last">
-    <div id="contentLabel" class="span-8 last section-label">No item selected</div>
+  <div id="contentviewer" class="span-9 last">
+    <div id="contentLabel" class="last section-label">No item selected</div>
 
-    <div id="item1" class="span-8 last diffSet">
+    <div id="item1" class="span-9 last diff-set">
       <div class="span-2 endpoint-label upstreamLabel">upstream</div>
-      <div class="span-6 last diffHash"></div>
-      <div class="span-8 last codeBox">
+      <div class="last diffHash"></div>
+      <div class="span-9 last code-box">
         <pre></pre>
       </div>
     </div>
 
-    <div id="item2" class="span-8 last diffSet">
+    <div id="item2" class="span-9 last diff-set">
       <div class="span-2 endpoint-label downstreamLabel">downstream</div>
-      <div class="span-6 last diffHash"></div>
-      <div class="span-8 codeBox">
+      <div class="last diffHash"></div>
+      <div class="span-9 code-box">
         <pre></pre>
       </div>
     </div>
 
-    <div id="diffRepair">
-      <div class="span-8 last section-label">Repair options</div>
-      <div class="span-8 last" id="actionlist"> </div>
-      <div class="span-8 last" id="repairstatus">No repairs in progress</div>
+    <div id="diffRepair" class="span-9 last diff-repair">
+      <div class="last section-label">Repair options</div>
+      <div class="last action-item" id="actionlist"> </div>
+      <div class="last action-item" id="repairstatus">No repairs in progress</div>
     </div>
   </div>
 
