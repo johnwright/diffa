@@ -20,11 +20,14 @@ import org.joda.time.DateTime
 import collection.mutable.HashMap
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
+import javax.servlet.http.HttpServletRequest
+import net.lshift.diffa.participant.scanning._
+import scala.collection.JavaConversions._
 
 /**
  * Base class for test participants.
  */
-class MemoryParticipantBase(nativeVsnGen: String => String) {
+class MemoryParticipantBase(nativeVsnGen: String => String) extends ScanningParticipantRequestHandler {
 
   val log = LoggerFactory.getLogger(getClass)
 
@@ -71,6 +74,23 @@ class MemoryParticipantBase(nativeVsnGen: String => String) {
   }
 
   def close() = entities.clear
+
+  protected override def determineAggregations(req: HttpServletRequest) = {
+    val builder = new AggregationBuilder(req)
+      // No aggregations supported yet
+    builder.toList
+  }
+
+  protected override def determineConstraints(req: HttpServletRequest) = {
+    val builder = new ConstraintsBuilder(req)
+      // No constraints supported yet
+    builder.toList
+  }
+
+  protected def doQuery(constraints: java.util.List[ScanConstraint], aggregations: java.util.List[ScanAggregation]):java.util.List[ScanResultEntry] = {
+    val entitiesInRange = entities.values.toList    // TODO: Constrain when participant has a proper data model
+    entitiesInRange.sortWith(_.id < _.id).map { e => new ScanResultEntry(e.id, e.body, e.lastUpdated, e.attributes) }
+  }
 }
 
 case class TestEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String)
