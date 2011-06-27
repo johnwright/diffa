@@ -8,6 +8,8 @@
 @dark-text: #333;
 @light-border: #ccc;
 
+@min-line-height: 18px;
+
 /* The column width and right margin are taken from Blueprint's definitions */
 @column-width: 30px;
 @right-margin: 10px;
@@ -16,6 +18,10 @@
 
 /* Shave the width of an 9 column wide area that needs to fit the border in */
 @content-viwer-width: 8 * (@column-width + @right-margin) + @column-width - 2 * @border-thickness;
+
+@dotted-border: @border-thickness dotted silver;
+
+// DIFF LIST
 
 /* Wrap long items in columns */
 div.wrappable {
@@ -26,6 +32,27 @@ div.wrappable {
 div.specific_selected {
   background-color: @yellow-background;
 }
+
+#difflist-header {
+  min-height: @min-line-height;
+  border-bottom: @dotted-border;
+  border-top: @dotted-border;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+#difflist-row {
+  cursor: pointer;
+  font-size: 0.85em;
+}
+
+#navigation {
+  border-top: @dotted-border;
+  min-height: @min-line-height;
+  border-bottom: @dotted-border;
+}
+
+// CONTENT VIEWER
 
 div.section-label {
   background-color: @yellow-background;
@@ -39,7 +66,7 @@ div.endpoint-label {
 }
 
 #contentviewer {
-  border: @border-thickness dotted silver;
+  border: @dotted-border;
   width: @content-viwer-width;
 }
 
@@ -60,14 +87,14 @@ div.action-item {
 div.diffHash {
   background-color: @light-grey-background;
   // Add the height of 1 row as the minimum height so that an empty div will be colored in correctly
-  min-height: 18px;
+  min-height: @min-line-height;
 }
 
 div.code-box {
   padding: @text-padding;
 }
 
-/* General body work*/
+// GENERAL BODY WORK
 
 body {
   font-family: andale mono, courier new, courier, mono;

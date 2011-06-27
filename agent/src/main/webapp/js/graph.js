@@ -272,7 +272,7 @@ function selectFromList(event) {
 function addRow(table, event) {
   var time = new Date(event.detectedAt).toString("HH:mm:ss");
   var date = new Date(event.detectedAt).toString("dd/MM/yyyy");
-  var row = $("<div class='span-16' id='evt_" + event.seqId + "'></div>")
+  var row = $("<div class='span-14' id='evt_" + event.seqId + "'></div>")
       .append("<div class='span-2'>" + date + "</div>")
       .append("<div class='span-2'>" + time + "</div>")
       .append("<div class='span-3 wrappable'>" + event.objId.pairKey + "</div>")
@@ -280,13 +280,13 @@ function addRow(table, event) {
       .data("event", event);
 
   if (!event.upstreamVsn) {
-    row.append("<div class='span-6 last'>Missing from upstream</div>");
+    row.append("<div class='span-4 last'>Missing from upstream</div>");
   }
   else if (!event.downstreamVsn) {
-    row.append("<div class='span-6 last'>Missing from downstream</div>");
+    row.append("<div class='span-4 last'>Missing from downstream</div>");
   }
   else {
-    row.append("<div class='span-6 last'>Data difference</div>");
+    row.append("<div class='span-4 last'>Data difference</div>");
   }
 
   table.append(row);
