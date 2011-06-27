@@ -176,13 +176,14 @@ class HibernateConfigStoreTest {
     }
 
     configStore.createOrUpdatePair(new PairDef(pairRenamed, versionPolicyName2, Pair.NO_MATCHING,
-      downstream1.name, upstream1.name, groupKey2))
+      downstream1.name, upstream1.name, groupKey2, "0 0 * 0 0 0"))
     
     val retrieved = configStore.getPair(pairRenamed)
     assertEquals(pairRenamed, retrieved.key)
     assertEquals(downstream1.name, retrieved.upstream.name) // check endpoints are swapped
     assertEquals(upstream1.name, retrieved.downstream.name)
     assertEquals(versionPolicyName2, retrieved.versionPolicyName)
+    assertEquals("0 0 * 0 0 0", retrieved.scanCronSpec)
     assertEquals(Pair.NO_MATCHING, retrieved.matchingTimeout)
   }
 
