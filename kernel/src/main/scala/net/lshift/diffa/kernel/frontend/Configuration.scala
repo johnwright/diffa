@@ -23,13 +23,15 @@ import net.lshift.diffa.kernel.differencing.{SessionManager, VersionCorrelationS
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.actors.{ActivePairManager}
 import net.lshift.diffa.kernel.participants.{EndpointLifecycleListener, InboundEndpointManager}
+import net.lshift.diffa.kernel.scheduler.ScanScheduler
 
 class Configuration(val configStore: ConfigStore,
                     val matchingManager: MatchingManager,
                     val versionCorrelationStoreFactory: VersionCorrelationStoreFactory,
                     val supervisor:ActivePairManager,
                     val sessionManager: SessionManager,
-                    val endpointListener: EndpointLifecycleListener) {
+                    val endpointListener: EndpointLifecycleListener,
+                    val scanScheduler: ScanScheduler) {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -136,6 +138,7 @@ class Configuration(val configStore: ConfigStore,
     configStore.createOrUpdatePair(pairDef)
     supervisor.startActor(configStore.getPair(pairDef.pairKey))
     matchingManager.onUpdatePair(pairDef.pairKey)
+    scanScheduler.onUpdatePair(pairDef.pairKey)
     sessionManager.onUpdatePair(pairDef.pairKey)
   }
 
@@ -145,6 +148,7 @@ class Configuration(val configStore: ConfigStore,
     configStore.deletePair(key)
     versionCorrelationStoreFactory.remove(key)
     matchingManager.onDeletePair(key)
+    scanScheduler.onDeletePair(key)
     sessionManager.onDeletePair(key)
   }
 
