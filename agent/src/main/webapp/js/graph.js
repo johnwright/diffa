@@ -47,33 +47,14 @@ $(document).ready(function() {
 function initCanvas() {
   heatmap = document.getElementById("heatmap");
   underlay = document.getElementById("underlay");
-  //overlay = document.getElementById("overlay");
-  //canvas = document.getElementById("canvas");
 
-  //underlay = createLayer(display, 1);
   resizeLayer(underlay, underlay.offsetWidth);
   canvas = createLayer(heatmap, 2);
   overlay = createLayer(heatmap, 4);
-  //underlay.style.backgroundColor = "#cfe2f3";
-
-
-  //resizeLayer(underlay);
-  //resizeLayer(overlay);
-  //resizeLayer(canvas);
 
   scale = document.getElementById("scale");
-
-  //scale = document.createElement("canvas");
-  //document.body.appendChild(layer);
-  //scale.style.position = "relative";
-  //scale.style.top = 100;
-  //scale.width = display.offsetWidth;
-  //scale.height = scaleHeight;
-
-
   scale.width = scale.offsetWidth;
   scale.height = scaleHeight;
-
 
   context = canvas.getContext("2d");
   overlayContext = overlay.getContext("2d");

@@ -24,6 +24,13 @@
 
 @dotted-border: @border-thickness dotted silver;
 
+/* Common border definition */
+.top-and-bottom-borders {
+  min-height: @min-line-height;
+  border-bottom: @dotted-border;
+  border-top: @dotted-border;
+}
+
 // DIFF LIST
 
 /* Wrap long items in columns */
@@ -37,9 +44,7 @@ div.specific_selected {
 }
 
 #difflist-header {
-  min-height: @min-line-height;
-  border-bottom: @dotted-border;
-  border-top: @dotted-border;
+  .top-and-bottom-borders;
   font-weight: bold;
   text-transform: uppercase;
 }
@@ -50,9 +55,7 @@ div.specific_selected {
 }
 
 #navigation {
-  border-top: @dotted-border;
-  min-height: @min-line-height;
-  border-bottom: @dotted-border;
+  .top-and-bottom-borders;
 }
 
 #next {
