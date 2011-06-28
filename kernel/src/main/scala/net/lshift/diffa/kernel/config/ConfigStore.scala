@@ -216,7 +216,7 @@ case class RepairAction(
       ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey)),
       "repair-action", Map("name" -> name))
 
-    // Ensure that the scope is support
+    // Ensure that the scope is supported
     this.scope = scope match {
       case ENTITY_SCOPE | PAIR_SCOPE => scope
       case _ => throw new ConfigValidationException(actionPath, "Invalid action scope: "+scope)
