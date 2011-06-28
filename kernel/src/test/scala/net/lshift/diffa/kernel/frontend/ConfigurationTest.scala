@@ -61,6 +61,27 @@ class ConfigurationTest {
   }
 
   @Test
+  def shouldGenerateExceptionWhenInvalidConfigurationIsApplied() {
+    val ep1 = Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
+          inboundUrl = "http://inbound", inboundContentType = "application/xml")
+    val ep2 = Endpoint(name = "downstream1", url = "http://localhost:5432", contentType = "application/json")
+    val config = new DiffaConfig(
+      endpoints = Set(ep1, ep2),
+      groups = Set(PairGroup("gaa")),
+      pairs = Set(
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa", "bad-cron-spec"))
+    )
+
+    try {
+      configuration.applyConfiguration(config)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case ex:ConfigValidationException =>
+        assertEquals("config/pair[key=ab]: Schedule 'bad-cron-spec' is not a valid: Illegal characters for this position: 'BAD'", ex.getMessage)
+    }
+  }
+
+  @Test
   def shouldApplyConfigurationToEmptySystem() {
     val ep1 = Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
