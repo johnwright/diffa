@@ -78,6 +78,17 @@
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
       <version>${spring.version}</version>
     </dependency>
@@ -167,6 +178,11 @@
       <version>${slf4j.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
       <groupId>javassist</groupId>
       <artifactId>javassist</artifactId>
       <version>3.4.GA</version>
@@ -195,6 +211,12 @@
       <groupId>org.quartz-scheduler</groupId>
       <artifactId>quartz</artifactId>
       <version>1.7.3</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -245,6 +267,12 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
       <version>4.0-beta2</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>javax.mail</groupId>
