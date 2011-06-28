@@ -21,6 +21,7 @@ import scala.collection.JavaConversions._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
+import org.quartz.CronExpression
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -140,6 +141,10 @@ case class Endpoint(
         }
       }
     }).toList
+
+  def validate(path:String = null) {
+    // TODO: Add validation of endpoint parameters
+  }
 }
 
 case class Pair(
@@ -148,9 +153,10 @@ case class Pair(
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var group: PairGroup = null,
   @BeanProperty var versionPolicyName: String = null,
-  @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING) {
+  @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
+  @BeanProperty var scanCronSpec: String = null) {
 
-  def this() = this(null, null, null, null, null, Pair.NO_MATCHING)
+  def this() = this(key = null)
 }
 
 object Pair {
@@ -159,37 +165,61 @@ object Pair {
 
 case class PairGroup(@BeanProperty var key: String) {
   def this() = this(null)
+
+  def validate(path:String = null) {
+    // Nothing to validate
+  }
 }
 
 case class GroupContainer(@BeanProperty group: PairGroup, @BeanProperty pairs: Array[Pair])
 
 case class PairDef(
-  @BeanProperty var pairKey: String,
-  @BeanProperty var versionPolicyName: String,
-  @BeanProperty var matchingTimeout: Int,
-  @BeanProperty var upstreamName: String,
-  @BeanProperty var downstreamName: String,
-  @BeanProperty var groupKey: String) {
+  @BeanProperty var pairKey: String = null,
+  @BeanProperty var versionPolicyName: String = null,
+  @BeanProperty var matchingTimeout: Int = 0,
+  @BeanProperty var upstreamName: String = null,
+  @BeanProperty var downstreamName: String = null,
+  @BeanProperty var groupKey: String = null,
+  @BeanProperty var scanCronSpec: String = null) {
 
-  def this() = this(null, null, null.asInstanceOf[Int], null, null, null)
+  def this() = this(pairKey = null)
+
+  def validate(path:String = null) {
+    val pairPath = ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey))
+
+    // Ensure that cron specs are valid
+    if (scanCronSpec != null) {
+      try {
+        // Will throw an exception if the expression is invalid. The exception message will also include useful
+        // diagnostics of why it is wrong.
+        new CronExpression(scanCronSpec)
+      } catch {
+        case ex =>
+          throw new ConfigValidationException(pairPath, "Schedule '" + scanCronSpec + "' is not a valid: " + ex.getMessage)
+      }
+    }
+  }
 }
 
 case class RepairAction(
   @BeanProperty var name: String,
   @BeanProperty var url: String,
-                var scope: String,
+  @BeanProperty var scope: String,
   @BeanProperty var pairKey: String
 ) {
   import RepairAction._
 
   def this() = this(null, null, null, null)
 
-  def getScope = scope
+  def validate(path:String = null) {
+    val actionPath = ValidationUtil.buildPath(
+      ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey)),
+      "repair-action", Map("name" -> name))
 
-  def setScope(scope: String) {
+    // Ensure that the scope is support
     this.scope = scope match {
       case ENTITY_SCOPE | PAIR_SCOPE => scope
-      case _ => throw new IllegalArgumentException("Invalid action scope: "+scope)
+      case _ => throw new ConfigValidationException(actionPath, "Invalid action scope: "+scope)
     }
   }
 }
@@ -202,6 +232,10 @@ object RepairAction {
 case class User(@BeanProperty var name: String,
                 @BeanProperty var email: String) {
   def this() = this(null, null)
+
+  def validate(path:String = null) {
+    // Nothing to validate
+  }
 }
 
 case class ConfigOption(@BeanProperty var key:String,

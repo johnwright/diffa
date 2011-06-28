@@ -13,29 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config._
+package net.lshift.diffa.kernel.scheduler
 
 /**
- * Describes a complete diffa configuration.
+ * Trait to be implemented by Scan Scheduler implementations.
  */
-case class DiffaConfig(
-  users:Set[User] = Set(),
-  properties:Map[String, String] = Map(),
-  endpoints:Set[Endpoint] = Set(),
-  groups:Set[PairGroup] = Set(),
-  pairs:Set[PairDef] = Set(),
-  repairActions:Set[RepairAction] = Set()
-) {
+trait ScanScheduler {
+  /**
+   * Handler for new pair creation or update of an existing one. This method will ensure that the scheduler
+   * takes account of the given pair's configuration.
+   */
+  def onUpdatePair(pairKey:String)
 
-  def validate() {
-    val path = "config"
-
-    users.foreach(_.validate(path))
-    endpoints.foreach(_.validate(path))
-    groups.foreach(_.validate(path))
-    pairs.foreach(_.validate(path))
-    repairActions.foreach(_.validate(path))
-  }
+  /**
+   * Handler for pair deletion.
+   */
+  def onDeletePair(pairKey:String)
 }

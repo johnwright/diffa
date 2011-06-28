@@ -75,6 +75,7 @@
     <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false"/>
     <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false"/>
     <many-to-one name="group" column="name" class="PairGroup" not-null="true" lazy="false" fetch="join"/>
+    <property name="scanCronSpec" type="string" column="scan_cron_spec" not-null="false"/>
   </class>
 
   <class name="PairGroup" table="pair_group" abstract="false">

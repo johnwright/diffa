@@ -184,21 +184,22 @@ class CastorSerializableGroup(
 }
 
 class CastorSerializablePair(
-  @BeanProperty var key: String,
-  @BeanProperty var upstream: String,
-  @BeanProperty var downstream: String,
-  @BeanProperty var versionPolicy: String,
-  @BeanProperty var matchingTimeout: Int,
-  @BeanProperty var repairActions: java.util.List[RepairAction]
+  @BeanProperty var key: String = null,
+  @BeanProperty var upstream: String = null,
+  @BeanProperty var downstream: String = null,
+  @BeanProperty var versionPolicy: String = null,
+  @BeanProperty var matchingTimeout: Int = 0,
+  @BeanProperty var repairActions: java.util.List[RepairAction] = new java.util.ArrayList[RepairAction],
+  @BeanProperty var scanCronSpec: String = null
 ) {
-  def this() = this(null, null, null, null, 0, new java.util.ArrayList[RepairAction])
+  def this() = this(key = null)
 
   def toPairDef(groupKey: String): PairDef =
-    new PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, groupKey)
+    new PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, groupKey, scanCronSpec)
 }
 
 object CastorSerializablePair {
   def fromPairDef(p: PairDef, repairActions: java.util.List[RepairAction]): CastorSerializablePair =
     new CastorSerializablePair(p.pairKey, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
-                               repairActions)
+                               repairActions, p.scanCronSpec)
 }

@@ -13,29 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config._
+package net.lshift.diffa.kernel.config
 
 /**
- * Describes a complete diffa configuration.
+ * Exception indicating that a given configuration element is invalid.
  */
-case class DiffaConfig(
-  users:Set[User] = Set(),
-  properties:Map[String, String] = Map(),
-  endpoints:Set[Endpoint] = Set(),
-  groups:Set[PairGroup] = Set(),
-  pairs:Set[PairDef] = Set(),
-  repairActions:Set[RepairAction] = Set()
-) {
 
-  def validate() {
-    val path = "config"
+class ConfigValidationException(path:String, msg:String) extends Exception(path + ": " + msg) {
 
-    users.foreach(_.validate(path))
-    endpoints.foreach(_.validate(path))
-    groups.foreach(_.validate(path))
-    pairs.foreach(_.validate(path))
-    repairActions.foreach(_.validate(path))
-  }
 }
