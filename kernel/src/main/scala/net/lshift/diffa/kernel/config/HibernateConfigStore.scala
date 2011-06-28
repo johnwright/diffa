@@ -53,6 +53,8 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   }
 
   def createOrUpdatePair(p: PairDef): Unit = sessionFactory.withSession(s => {
+    p.validate()
+
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
     val group = getGroup(s, p.groupKey)
