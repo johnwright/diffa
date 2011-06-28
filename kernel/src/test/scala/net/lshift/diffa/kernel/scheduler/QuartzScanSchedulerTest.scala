@@ -22,11 +22,11 @@ import org.junit.Assert._
 import org.joda.time.DateTime
 import org.easymock.IAnswer
 import net.lshift.diffa.kernel.differencing.SessionManager
-import concurrent.{TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Pair}
 import org.junit.runner.RunWith
 import net.lshift.diffa.kernel.util.{Concurrent, ConcurrentJunitRunner}
 import net.lshift.diffa.kernel.util.Concurrent._
+import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 
 /**
  * Test cases for the QuartzScanScheduler.
@@ -39,7 +39,7 @@ class QuartzScanSchedulerTest {
 
   @Test
   def shouldAllowScheduleCreation() {
-    val mb = createExecuteListenerMb
+    val mb = createExecuteListenerQueue
     
     expect(config.listGroups).andReturn(Seq())
     expect(config.getPair("PairA")).andReturn(Pair(key = "PairA", scanCronSpec = generateNowishCronSpec))
@@ -48,8 +48,8 @@ class QuartzScanSchedulerTest {
     withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowScheduleCreation")) { scheduler =>
       scheduler.onUpdatePair("PairA")
       
-      mb.receiveWithin(3000) {
-        case TIMEOUT => fail("Scan was not triggered")
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null => fail("Scan was not triggered")
         case key:String => assertEquals("PairA", key)
       }
     }
@@ -57,14 +57,14 @@ class QuartzScanSchedulerTest {
 
   @Test
   def shouldRestoreSchedulesOnStartup() {
-    val mb = createExecuteListenerMb
+    val mb = createExecuteListenerQueue
     
     expect(config.listGroups).andReturn(Seq(GroupContainer(null, Array(Pair(key = "PairB", scanCronSpec = generateNowishCronSpec)))))
     replayAll()
 
     withScheduler(new QuartzScanScheduler(config, sessions, "shouldRestoreSchedulesOnStartup")) { scheduler =>
-      mb.receiveWithin(3000) {
-        case TIMEOUT => fail("Scan was not triggered")
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null => fail("Scan was not triggered")
         case key:String => assertEquals("PairB", key)
       }
     }
@@ -72,7 +72,7 @@ class QuartzScanSchedulerTest {
 
   @Test
   def shouldAllowSchedulesToBeDeleted() {
-    val mb = createExecuteListenerMb
+    val mb = createExecuteListenerQueue
 
     expect(config.listGroups).andReturn(Seq(GroupContainer(null, Array(Pair(key = "PairC", scanCronSpec = generateNowishCronSpec)))))
     replayAll()
@@ -80,8 +80,8 @@ class QuartzScanSchedulerTest {
     withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowSchedulesToBeDeleted")) { scheduler =>
       scheduler.onDeletePair("PairC")
 
-      mb.receiveWithin(3000) {
-        case TIMEOUT =>
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null =>
         case key:String => fail("Scheduler should not have started scan for pair " + key)
       }
     }
@@ -89,7 +89,7 @@ class QuartzScanSchedulerTest {
 
   @Test
   def shouldAllowSchedulesToBeUpdated() {
-    val mb = createExecuteListenerMb
+    val mb = createExecuteListenerQueue
 
     expect(config.listGroups).andReturn(Seq())
     expect(config.getPair("PairD")).andReturn(Pair(key = "PairD", scanCronSpec = generateOldCronSpec)).once()
@@ -101,8 +101,8 @@ class QuartzScanSchedulerTest {
       scheduler.onUpdatePair("PairD")   // We'll get a different pair result on each call
       scheduler.onUpdatePair("PairD")
 
-      mb.receiveWithin(3000) {
-        case TIMEOUT => fail("Scan was not triggered")
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null => fail("Scan was not triggered")
         case key:String => assertEquals("PairD", key)
       }
 
@@ -130,15 +130,15 @@ class QuartzScanSchedulerTest {
     nowish.getSecondOfMinute + " " + nowish.getMinuteOfHour + " " + nowish.getHourOfDay + " * * ?"
   }
 
-  private def createExecuteListenerMb = {
-    val mb = new MailBox
+  private def createExecuteListenerQueue = {
+    val q = new LinkedBlockingQueue[String]
     expect(sessions.runScanForPair(anyObject.asInstanceOf[String])).andAnswer(new IAnswer[Unit] {
       def answer = {
-        val pairKey = getCurrentArguments()(0)
-        mb.send(pairKey)
+        val pairKey = getCurrentArguments()(0).asInstanceOf[String]
+        q.add(pairKey)
       }
     })
 
-    mb
+    q
   }
 }
