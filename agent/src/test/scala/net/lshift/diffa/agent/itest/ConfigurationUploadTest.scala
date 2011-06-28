@@ -16,6 +16,7 @@
 package net.lshift.diffa.agent.itest
 
 import org.junit.Test
+import org.junit.Assert._
 import support.TestEnvironments
 import net.lshift.diffa.agent.util.ConfigComparisonUtil
 import org.apache.commons.io.IOUtils
@@ -58,6 +59,22 @@ class ConfigurationUploadTest {
 
   }
 
+  @Test
+  def shouldRejectInvalidConfig() {
+    val invalid = <diffa-config>
+        <endpoint name="invalid1" url="http://localhost:1234/invalid" content-type="application/json" />
+        <endpoint name="invalid2" url="http://localhost:1235/invalid" content-type="application/json" />
+
+        <group name="invalidGroup">
+          <pair key="invalidPair" upstream="invalid1" downstream="invalid2" matching-timeout="3" version-policy="same" scan-schedule="invalid" />
+        </group>
+      </diffa-config>.toString
+
+    val (status, responseContent) = uploadConfigRaw(invalid)
+    assertEquals(400, status)
+    assertEquals("config/pair[key=invalidPair]: Schedule 'invalid' is not a valid: Illegal characters for this position: 'INV'", responseContent)
+  }
+
   // Create our own Client here, since this mechanism doesn't really fit any of the other REST clients
 
   val config = new DefaultClientConfig()
@@ -67,13 +84,17 @@ class ConfigurationUploadTest {
   val serverRootResource = client.resource("http://localhost:19093/diffa-agent")
   val resource = serverRootResource.path("rest/config/xml").`type`(MediaType.APPLICATION_XML_TYPE)
 
-  def uploadConfig(body:String) = {
+  def uploadConfigRaw(body:String):Tuple2[Int, String] = {
     val response = resource.post(classOf[ClientResponse], body)
     val responseContent = IOUtils.toString(response.getEntityInputStream, "UTF-8")
+    (response.getStatus, responseContent)
+  }
+  def uploadConfig(body:String) = {
+    val (status, responseContent) = uploadConfigRaw(body)
 
-    response.getStatus match {
+    status match {
       case 204 => responseContent
-      case _   => throw new RuntimeException("Unexpected response: " + response.getStatus + ": " + responseContent)
+      case _   => throw new RuntimeException("Unexpected response: " + status + ": " + responseContent)
     }
   }
   def retrieveConfig() = {

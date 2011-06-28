@@ -77,6 +77,17 @@
   </bean>
 
   <!--
+    ==============
+      Scheduling
+    ==============
+  -->
+  <bean id="scanScheduler" class="net.lshift.diffa.kernel.scheduler.QuartzScanScheduler" destroy-method="close">
+    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="sessionManager" />
+    <constructor-arg value="DiffaScanScheduler" />
+  </bean>
+
+  <!--
     ============
       Sessions
     ============
@@ -247,6 +258,7 @@
     <constructor-arg ref="pairActorSupervisor"/>
     <constructor-arg ref="sessionManager"/>
     <constructor-arg ref="inboundEndpointManager" />
+    <constructor-arg ref="scanScheduler" />
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
     <constructor-arg ref="diffaConfigStore"/>

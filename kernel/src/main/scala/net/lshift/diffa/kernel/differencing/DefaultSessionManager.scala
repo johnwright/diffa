@@ -163,7 +163,13 @@ class DefaultSessionManager(
     }
   }
 
-  def runScanForAllPairings = runSyncForScope(SessionScope.all, null, null, this)
+  def runScanForAllPairings() {
+    runSyncForScope(SessionScope.all, null, null, this)
+  }
+
+  def runScanForPair(pairKey: String) {
+    withPair[Unit](pairKey)(() => runSyncForPair(pairKey, this))
+  }
 
   def runSync(sessionID:String) = {
     sessionsByKey.get(sessionID) match {
@@ -333,20 +339,22 @@ class DefaultSessionManager(
     pairStates.synchronized { pairStates.remove(pairKey) }
   }
 
-  def withPair[T](pair:String, f:Function0[T]) = withValidPair(pair, f)
+  def withPair[T](pair:String)(f:Function0[T]) = withValidPair(pair, f)
 
-  def runSyncForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
-    pairKeysForScope(scope).foreach(pairKey => {
-      // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
-      // asynchronously, we might have returned before then, and this may potentially result in clients seeing
-      // a "Up To Date" view, even though we're just about to transition out of that state.
-      updatePairSyncState(pairKey, PairScanState.SYNCHRONIZING)
-
-      pairPolicyClient.scanPair(pairKey, listener, this)
-    })
+  def runSyncForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) {
+    pairKeysForScope(scope).foreach(runSyncForPair(_, listener))
   }
 
-  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) : Unit = {
+  def runSyncForPair(pairKey:String, listener:DifferencingListener) {
+    // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
+    // asynchronously, we might have returned before then, and this may potentially result in clients seeing
+    // a "Up To Date" view, even though we're just about to transition out of that state.
+    updatePairSyncState(pairKey, PairScanState.SYNCHRONIZING)
+
+    pairPolicyClient.scanPair(pairKey, listener, this)
+  }
+
+  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) {
     pairKeysForScope(scope).foreach(pairKey => {
       pairPolicyClient.difference(pairKey, listener)
     })

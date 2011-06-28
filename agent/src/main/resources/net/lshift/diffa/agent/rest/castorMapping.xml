@@ -129,6 +129,9 @@
     <field name="matchingTimeout" type="int">
       <bind-xml name="matching-timeout" node="attribute" />
     </field>
+    <field name="scanCronSpec" type="string">
+      <bind-xml name="scan-schedule" node="attribute" />
+    </field>
     <field name="repairActions" type="net.lshift.diffa.kernel.config.RepairAction" collection="arraylist">
       <bind-xml name="repair-action" />
     </field>
