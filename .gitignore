@@ -23,7 +23,6 @@ kernel/target/*
 participants/target/*
 protocol/target/*
 target/*
-tools/target/*
 /*.iws
 /*.ipr
 /*.7z

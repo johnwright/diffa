@@ -34,9 +34,9 @@
     </property>
   </bean>
 
-  <bean id="configClient" class="net.lshift.diffa.tools.client.ConfigurationRestClient">
+  <!--bean id="configClient" class="net.lshift.diffa.tools.client.ConfigurationRestClient">
     <constructor-arg value="${demo.agentUrl}" />
-  </bean>
+  </bean-->
 
   <bean id="declareGroup" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="configClient"/>

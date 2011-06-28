@@ -31,12 +31,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>net.lshift.diffa</groupId>
-      <artifactId>diffa-tools</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-jaxrs</artifactId>
       <version>${jackson.version}</version>
