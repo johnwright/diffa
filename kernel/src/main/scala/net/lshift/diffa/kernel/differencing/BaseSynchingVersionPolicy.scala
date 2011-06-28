@@ -122,7 +122,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
 
       checkForCancellation(handle, pair)
 
-      val remoteDigests = participant.queryAggregateDigests(bucketing, constraints)
+      val remoteDigests = participant.scan(constraints, bucketing)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
 
       if (log.isTraceEnabled) {
@@ -139,7 +139,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
 
           checkForCancellation(handle, pair)
 
-          val remoteVersions = participant.queryEntityVersions(narrowed)
+          val remoteVersions = participant.scan(narrowed, Map())
           val cachedVersions = getEntities(pair.key, narrowed)
 
           if (log.isTraceEnabled) {

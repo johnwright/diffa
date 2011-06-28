@@ -38,6 +38,9 @@ object AttributesUtil {
   def toTypedMap(categories:Map[String, CategoryDescriptor], attrs:Seq[String]):Map[String, TypedAttribute] = {
     (categories.keys.toSeq.sorted, attrs).zip.map { case(name, value) => name -> asTyped(name, value, categories) }.toMap
   }
+  def toTypedMap(categories:Map[String, CategoryDescriptor], attrs:Map[String, String]):Map[String, TypedAttribute] = {
+    categories.keys.map { name => name -> asTyped(name, attrs(name), categories) }.toMap
+  }
 
   def asTyped(name:String, value:String, categories:Map[String, CategoryDescriptor]) = {
     categories(name) match {

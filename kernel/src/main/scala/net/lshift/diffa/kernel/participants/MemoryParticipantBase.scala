@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
 import javax.servlet.http.HttpServletRequest
 import net.lshift.diffa.participant.scanning._
 import scala.collection.JavaConversions._
+import java.util.ArrayList
 
 /**
  * Base class for test participants.
@@ -34,6 +35,12 @@ class MemoryParticipantBase(nativeVsnGen: String => String) extends ScanningPart
   protected val entities = new HashMap[String, TestEntity]
 
   def entityIds: Seq[String] = entities.keys.toList
+
+  /**
+   * Scans this participant with the given constraints and aggregations.
+   */
+  def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry] =
+    doQuery(new java.util.ArrayList[ScanConstraint], new java.util.ArrayList[ScanAggregation]).toSeq
 
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     log.trace("Running version query: " + constraints)

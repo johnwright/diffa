@@ -21,11 +21,41 @@ import JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.wire.WireResponse._
 import net.lshift.diffa.kernel.frontend.wire.{WireDigest, ActionInvocation, InvocationResult, WireAggregateRequest}
 import scala.collection.JavaConversions._
+import javax.ws.rs.core.MediaType
+import com.sun.jersey.api.client.ClientResponse
+import net.lshift.diffa.participant.scanning.JSONHelper
+import java.lang.Exception
+import org.apache.commons.io.IOUtils
+import com.sun.jersey.core.util.MultivaluedMapImpl
 
 /**
  * Rest client for participant communication.
  */
 class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") with Participant {
+
+  def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = {
+    val params = new MultivaluedMapImpl()
+    constraints.foreach {
+      case sqc:SetQueryConstraint   =>
+        sqc.values.foreach(v => params.add(sqc.category, v))
+      case rqc:RangeQueryConstraint =>
+        params.add(rqc.category + "-start", rqc.lower)
+        params.add(rqc.category + "-end", rqc.upper)
+      case nvc:NonValueConstraint =>    // Ignore non-value constraints
+    }
+    aggregations.foreach { case (k, f) =>
+        params.add(k + "-granularity", f.name)
+    }
+
+    val jsonEndpoint = resource.queryParams(params).`type`(MediaType.APPLICATION_JSON_TYPE)
+    val response = jsonEndpoint.get(classOf[ClientResponse])
+    response.getStatus match {
+      case 200 => JSONHelper.readQueryResult(response.getEntityInputStream)
+      case _   =>
+        log.error(response.getStatus + "")
+        throw new Exception("Participant scan failed: " + response.getStatus + "\n" + IOUtils.toString(response.getEntityInputStream, "UTF-8"))
+    }
+  }
 
   override def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     executeRpc("query_entity_versions", pack(constraints)) match {

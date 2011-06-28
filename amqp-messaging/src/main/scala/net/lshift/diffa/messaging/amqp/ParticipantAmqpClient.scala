@@ -32,6 +32,9 @@ abstract class ParticipantAmqpClient(connector: Connector,
   extends AmqpRpcClient(connector, queueName)
   with Participant {
 
+    // Scanning in this manner is not supported via AMQP.
+  def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = Seq()
+
   def queryAggregateDigests(buckets: Map[String, CategoryFunction], constraints: Seq[QueryConstraint]): Seq[AggregateDigest] = {
     val wireBuckets = buckets.map { case (name, cf) => name -> cf.name }.toMap
     val wireConstraints = constraints.map(_.wireFormat).toList

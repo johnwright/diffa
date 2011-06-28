@@ -35,6 +35,7 @@ import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
+import net.lshift.diffa.participant.scanning.ScanResultEntry
 
 /**
  * Base class for the various policy tests.
@@ -94,23 +95,23 @@ abstract class AbstractPolicyTest {
   protected val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
   protected val thousands = AutoNarrowingIntegerCategoryFunction(1000, 10)
 
-  def Up(id: String, okey:String, o:Any, s: String): UpstreamVersion = Up(VersionID(abPair, id), okey, o, s)
-  def Up(v:VersionID, okey:String, o:Any, s:String): UpstreamVersion = UpstreamVersion(v, Map(okey -> o.toString()), new DateTime, s)
-  def Down(id: String, okey:String, o:Any, s1: String, s2: String): DownstreamVersion = Down(VersionID(abPair, id), okey, o, s1, s2)
-  def Down(v:VersionID, okey:String, o:Any, s1:String, s2:String): DownstreamVersion = DownstreamVersion(v, Map(okey -> o.toString()), new DateTime, s1, s2)
+  def Up(id: String, o:Map[String, String], s: String): UpstreamVersion = Up(VersionID(abPair, id), o, s)
+  def Up(v:VersionID, o:Map[String, String], s:String): UpstreamVersion = UpstreamVersion(v, o, new DateTime, s)
+  def Down(id: String, o:Map[String, String], s1: String, s2: String): DownstreamVersion = Down(VersionID(abPair, id), o, s1, s2)
+  def Down(v:VersionID, o:Map[String, String], s1:String, s2:String): DownstreamVersion = DownstreamVersion(v, o, new DateTime, s1, s2)
 
   def bizDateMap(d:DateTime) = Map("bizDate" -> DateTimeAttribute(d))
   def bizDateSeq(d:DateTime) = Seq(d.toString())
+  def bizDateStrMap(d:DateTime) = Map("bizDate" -> d.toString())
 
   case class PolicyTestData(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
     bucketing:Seq[Map[String, CategoryFunction]],
     constraints: Seq[Seq[QueryConstraint]],
-    attributes: Seq[Seq[String]],
+    attributes: Seq[Map[String, String]],
     downstreamAttributes: Seq[Map[String, TypedAttribute]],
-    valueKey: String,
-    values: Seq[Any]
+    values: Seq[Map[String, String]]
   ) {
     def upstreamAttributes = downstreamAttributes
   }
@@ -126,10 +127,9 @@ abstract class AbstractPolicyTest {
                       Seq(DateTimeRangeConstraint("bizDate", START_2010, END_2010)),
                       Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)),
                       Seq(DateTimeRangeConstraint("bizDate", JUL_8_2010, endOfDay(JUL_8_2010)))),
-    attributes = Seq(Seq("2009"), Seq("2010"), Seq("2010-07"), Seq("2010-07-08")),
+    attributes = Seq(Map("bizDate" -> "2009"), Map("bizDate" -> "2010"), Map("bizDate" -> "2010-07"), Map("bizDate" -> "2010-07-08")),
     downstreamAttributes = Seq(bizDateMap(JUN_6_2009_1), bizDateMap(JUL_8_2010_1)),
-    valueKey = "bizDate",
-    values = Seq(JUN_6_2009_1, JUL_8_2010_1)
+    values = Seq(Map("bizDate" -> JUN_6_2009_1.toString), Map("bizDate" -> JUL_8_2010_1.toString))
   )
 
   val integerCategoryData = PolicyTestData(
@@ -143,10 +143,9 @@ abstract class AbstractPolicyTest {
                       Seq(IntegerRangeConstraint("someInt", 2000, 2999)),
                       Seq(IntegerRangeConstraint("someInt", 2300, 2399)),
                       Seq(IntegerRangeConstraint("someInt", 2340, 2349))),
-    attributes = Seq(Seq("1000"), Seq("2000"), Seq("2300"), Seq("2340")),
+    attributes = Seq(Map("someInt" -> "1000"), Map("someInt" -> "2000"), Map("someInt" -> "2300"), Map("someInt" -> "2340")),
     downstreamAttributes = Seq(Map("someInt" -> IntegerAttribute(1234)), Map("someInt" -> IntegerAttribute(2345))),
-    valueKey = "someInt",
-    values = Seq(1234, 2345)
+    values = Seq(Map("someInt" -> "1234"), Map("someInt" -> "2345"))
   )
 
   @Test
@@ -174,7 +173,7 @@ abstract class AbstractPolicyTest {
     shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
       upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
-      attributes = bizDateSeq(JUL_8_2010_2),
+      attributes = bizDateStrMap(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
@@ -182,7 +181,7 @@ abstract class AbstractPolicyTest {
     shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
       upstreamCategories = Map("someInt" -> intCategoryDescriptor),
       downstreamCategories = Map("someInt" -> intCategoryDescriptor),
-      attributes = Seq("1234"),
+      attributes = Map("someInt" -> "1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   @Test
@@ -190,7 +189,7 @@ abstract class AbstractPolicyTest {
     shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
       upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
-      attributes = bizDateSeq(JUL_8_2010_2),
+      attributes = bizDateStrMap(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
@@ -198,7 +197,7 @@ abstract class AbstractPolicyTest {
     shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
       upstreamCategories = Map("someInt" -> intCategoryDescriptor),
       downstreamCategories = Map("someInt" -> intCategoryDescriptor),
-      attributes = Seq("1234"),
+      attributes = Map("someInt" -> "1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   @Test
@@ -206,7 +205,7 @@ abstract class AbstractPolicyTest {
     shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
       upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
-      attributes = bizDateSeq(JUL_8_2010_2),
+      attributes = bizDateStrMap(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
@@ -214,7 +213,7 @@ abstract class AbstractPolicyTest {
     shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
       upstreamCategories = Map("someInt" -> intCategoryDescriptor),
       downstreamCategories = Map("someInt" -> intCategoryDescriptor),
-      attributes = Seq("1234"),
+      attributes = Map("someInt" -> "1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   protected def shouldReportMismatchesReportedByUnderlyingStore(testData: PolicyTestData) {
@@ -224,17 +223,17 @@ abstract class AbstractPolicyTest {
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex("vsn2"))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1"), testData.attributes(0)),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), testData.attributes(1))),
       VersionsFromStore(
-        Up("id1", testData.valueKey, testData.values(0), "vsn1"),
-        Up("id2", testData.valueKey, testData.values(1), "vsn2")))
+        Up("id1", testData.values(0), "vsn1"),
+        Up("id2", testData.values(1), "vsn2")))
     expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex(downstreamVersionFor("vsn1a"))),
-        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex(downstreamVersionFor("vsn2a")))),
-      VersionsFromStore(Down("id1", testData.valueKey, testData.values(0), "vsn1a", downstreamVersionFor("vsn1a")),
-                        Down("id2", testData.valueKey, testData.values(1), "vsn2a", downstreamVersionFor("vsn2a"))))
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn1a")), testData.attributes(0)),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2a")), testData.attributes(1))),
+      VersionsFromStore(Down("id1", testData.values(0), "vsn1a", downstreamVersionFor("vsn1a")),
+                        Down("id2", testData.values(1), "vsn2a", downstreamVersionFor("vsn2a"))))
 
     // If the version check returns mismatches, we should see differences generated
     expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
@@ -275,7 +274,7 @@ abstract class AbstractPolicyTest {
   protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
-    attributes: Seq[String],
+    attributes: Map[String, String],
     downstreamAttributes: Map[String, TypedAttribute]
   ) {
     pair.upstream.categories = upstreamCategories
@@ -287,14 +286,14 @@ abstract class AbstractPolicyTest {
     listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1"); expectLastCall
     replayAll
 
-    policy.onChange(writer, DownstreamPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1"))
+    policy.onChange(writer, DownstreamPairChangeEvent(VersionID(abPair, "id1"), AttributesUtil.toSeq(attributes), JUL_8_2010_2, "vsn1"))
     verifyAll
   }
 
   protected def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
-    attributes: Seq[String],
+    attributes: Map[String, String],
     downstreamAttributes: Map[String, TypedAttribute]
   ) {
     pair.upstream.categories = upstreamCategories
@@ -305,14 +304,14 @@ abstract class AbstractPolicyTest {
     listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1"); expectLastCall
     replayAll
 
-    policy.onChange(writer, DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1", "vsn2"))
+    policy.onChange(writer, DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), AttributesUtil.toSeq(attributes), JUL_8_2010_2, "vsn1", "vsn2"))
     verifyAll
   }
 
   protected def shouldRaiseMatchEventWhenDownstreamCausesMatchOfUpstream(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
-    attributes: Seq[String],
+    attributes: Map[String, String],
     downstreamAttributes: Map[String, TypedAttribute]
   ) {
     pair.upstream.categories = upstreamCategories
@@ -323,7 +322,7 @@ abstract class AbstractPolicyTest {
     listener.onMatch(VersionID(abPair, "id1"), "vsn1"); expectLastCall
     replayAll
 
-    policy.onChange(writer, DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1", "vsn2"))
+    policy.onChange(writer, DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), AttributesUtil.toSeq(attributes), JUL_8_2010_2, "vsn1", "vsn2"))
     verifyAll
   }
 
@@ -354,36 +353,36 @@ abstract class AbstractPolicyTest {
     }
   }
 
-  protected def expectUpstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[AggregateDigest],
+  protected def expectUpstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[ScanResultEntry],
                                             storeResp: Seq[UpstreamVersion]) {
     expectUpstreamAggregateSync(abPair, bucketing, constraints, partResp, storeResp: Seq[UpstreamVersion])
   }
 
-  protected def expectUpstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[AggregateDigest], storeResp:Seq[UpstreamVersion]) {
-    expect(usMock.queryAggregateDigests(bucketing, constraints)).andReturn(partResp)
+  protected def expectUpstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
+    expect(usMock.scan(constraints, bucketing)).andReturn(partResp)
     store.queryUpstreams(EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(storeResp))
   }
 
-  protected def expectDownstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[AggregateDigest],
+  protected def expectDownstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[ScanResultEntry],
                                               storeResp: Seq[DownstreamVersion]) {
     expectDownstreamAggregateSync(abPair, bucketing, constraints, partResp, storeResp)
   }
 
-  protected def expectDownstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[AggregateDigest], storeResp:Seq[DownstreamVersion]) {
-    expect(dsMock.queryAggregateDigests(bucketing, constraints)).andReturn(partResp)
+  protected def expectDownstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
+    expect(dsMock.scan(constraints, bucketing)).andReturn(partResp)
     store.queryDownstreams(EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
   }
 
-  protected def expectUpstreamEntitySync(constraints: Seq[QueryConstraint], partResp: Seq[EntityVersion],
+  protected def expectUpstreamEntitySync(constraints: Seq[QueryConstraint], partResp: Seq[ScanResultEntry],
                                          storeResp: Seq[UpstreamVersion]) {
     expectUpstreamEntitySync(abPair, constraints, partResp, storeResp)
   }
 
-  protected def expectUpstreamEntitySync(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[EntityVersion], storeResp:Seq[UpstreamVersion]) {
+  protected def expectUpstreamEntitySync(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
     val pairDef = configStore.getPair(pair)
-    expect(usMock.queryEntityVersions(constraints)).andReturn(partResp)
+    expect(usMock.scan(constraints, Map())).andReturn(partResp)
     val correlations = storeResp.map(r => {
       val c = new Correlation()
       c.id = r.id.id
@@ -395,9 +394,9 @@ abstract class AbstractPolicyTest {
 
     expect(store.queryUpstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
-  protected def expectDownstreamEntitySync2(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[EntityVersion], storeResp:Seq[DownstreamVersion]) {
+  protected def expectDownstreamEntitySync2(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
     val pairDef = configStore.getPair(pair)
-    expect(dsMock.queryEntityVersions(constraints)).andReturn(partResp)
+    expect(dsMock.scan(constraints, Map())).andReturn(partResp)
     val correlations = storeResp.map(r => {
       val c = new Correlation      
       c.id = r.id.id

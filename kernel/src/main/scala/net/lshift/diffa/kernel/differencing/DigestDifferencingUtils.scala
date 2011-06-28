@@ -19,6 +19,8 @@ package net.lshift.diffa.kernel.differencing
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.config.CategoryDescriptor
+import net.lshift.diffa.participant.scanning.ScanResultEntry
+import scala.collection.JavaConversions._
 
 /**
  * Utility methods for differencing sequences of digests.
@@ -26,21 +28,21 @@ import net.lshift.diffa.kernel.config.CategoryDescriptor
 object DigestDifferencingUtils {
 
   def differenceEntities(categories:Map[String, CategoryDescriptor],
-                         ds1:Seq[EntityVersion],
+                         ds1:Seq[ScanResultEntry],
                          ds2:Seq[EntityVersion],
                          constraints:Seq[QueryConstraint]) : Seq[VersionMismatch] = {
     val result = new ListBuffer[VersionMismatch]
-    val ds1Ids = indexById(ds1)
+    val ds1Ids = indexScanResultById(ds1)
     val ds2Ids = indexById(ds2)
 
     ds1Ids.foreach { case (label, ds1Digest) => {
       val (otherMatches, otherDigest, otherDigestUpdated) = ds2Ids.remove(label) match {
-        case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest, hs2Digest.lastUpdated)
+        case Some(hs2Digest) => (ds1Digest.getVersion == hs2Digest.digest, hs2Digest.digest, hs2Digest.lastUpdated)
         case None => (false, null, null)
       }
 
       if (!otherMatches) {
-        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, ds1Digest.attributes), ds1Digest.lastUpdated, ds1Digest.digest, otherDigest)
+        result += VersionMismatch(label, AttributesUtil.toTypedMap(categories, ds1Digest.getAttributes.toMap), ds1Digest.getLastUpdated, ds1Digest.getVersion, otherDigest)
       }
     }}
 
@@ -58,14 +60,14 @@ object DigestDifferencingUtils {
     result
   }
 
-  def differenceAggregates(ds1:Seq[AggregateDigest],
+  def differenceAggregates(ds1:Seq[ScanResultEntry],
                            ds2:Seq[AggregateDigest],
                            bucketing:Map[String, CategoryFunction],
                            constraints:Seq[QueryConstraint]) : Seq[QueryAction] = {
     var preemptVersionQuery = false
     val results = new ListBuffer[QueryAction]
-    val ds1Ids = indexByAttributeValues(ds1)
-    val ds2Ids = indexByAttributeValues(ds2)
+    val ds1Ids = indexScanResultByAttributeValues(ds1)
+    val ds2Ids = indexByAttributeValues(constraints, ds2)
 
     def evaluate(partitions:Map[String, String]) = try {
         val empty = ds1.isEmpty || ds2.isEmpty
@@ -103,12 +105,12 @@ object DigestDifferencingUtils {
 
     ds1Ids.foreach { case (label, ds1Digest) => {
       val (otherMatches, otherDigest) = ds2Ids.remove(label) match {
-        case Some(hs2Digest) => (ds1Digest.digest == hs2Digest.digest, hs2Digest.digest)
+        case Some(hs2Digest) => (ds1Digest.getVersion == hs2Digest.digest, hs2Digest.digest)
         case None => (false, null)
       }
 
       if (!otherMatches) {
-        evaluate(AttributesUtil.toMap(bucketing.keys, ds1Digest.attributes))
+        evaluate(ds1Digest.getAttributes.toMap)
       }
     }}
 
@@ -135,9 +137,19 @@ object DigestDifferencingUtils {
     hs.foreach(d => res(d.id) = d)
     res
   }
-  private def indexByAttributeValues(hs:Seq[Digest]) = {
-    val res = new HashMap[String, Digest]
-    hs.foreach(d => res(d.attributes.reduceLeft(_+_)) = d)
+  private def indexScanResultById(hs:Seq[ScanResultEntry]) = {
+    val res = new HashMap[String, ScanResultEntry]
+    hs.foreach(d => res(d.getId) = d)
+    res
+  }
+  private def indexByAttributeValues(constraints:Seq[QueryConstraint], hs:Seq[Digest]) = {
+    val res = new HashMap[Map[String, String], Digest]
+    hs.foreach(d => res(AttributesUtil.toMap(constraints.map(c => c.category).sorted, d.attributes)) = d)
+    res
+  }
+  private def indexScanResultByAttributeValues(hs:Seq[ScanResultEntry]) = {
+    val res = new HashMap[Map[String, String], ScanResultEntry]
+    hs.foreach(d => res(d.getAttributes.toMap) = d)
     res
   }
 

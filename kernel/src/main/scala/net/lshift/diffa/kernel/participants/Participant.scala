@@ -18,12 +18,18 @@ package net.lshift.diffa.kernel.participants
 
 import java.io.Closeable
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
+import net.lshift.diffa.participant.scanning.ScanResultEntry
 
 /**
  * Trait supported by various RPC bindings providing communications with participants.
  */
 trait Participant extends Closeable
 {
+  /**
+   * Scans this participant with the given constraints and aggregations.
+   */
+  def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry]
+
   /**
    * Retrieves aggregated details about a participant's native versions. The participant is expected to aggregate
    * and filter their data based on the provided constraints. The digest is expected to be built upon well known
