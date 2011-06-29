@@ -116,7 +116,7 @@ object Declare extends DiffaTool {
       // TODO support alternate content type for inbound endpoint
       configClient.declareEndpoint(
         Endpoint(name = name, url = url, contentType = contentType, inboundUrl = inboundUrl,
-          inboundContentType = contentType, online = true, categories = categories))
+          inboundContentType = contentType, categories = categories))
       true
     } else {
       false

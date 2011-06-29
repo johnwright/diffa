@@ -46,9 +46,9 @@ class ParticipantFactoryTest {
   expect(protocol2.supportsAddress("amqp://localhost", json)).andReturn(true).anyTimes
   expect(protocol2.supportsAddress(anyString, anyString)).andReturn(false).anyTimes
 
-  val invalid = Endpoint("invalid", null, null, null, null, true)
-  val jsonOverHttp = Endpoint("jsonOverHttp", "http://localhost", json, null, null, true)
-  val jsonOverAmqp = Endpoint("jsonOverAmqp", "amqp://localhost", json, "changes-queue", json, true)
+  val invalid = Endpoint(name = "invalid")
+  val jsonOverHttp = Endpoint(name = "jsonOverHttp", url = "http://localhost", contentType = json)
+  val jsonOverAmqp = Endpoint(name = "jsonOverAmqp", url = "amqp://localhost", contentType = json, inboundUrl = "changes-queue", inboundContentType = json)
 
   @Test
   def shouldNotCreateUpstreamParticipantWhenNoFactoryAcceptsAddress {

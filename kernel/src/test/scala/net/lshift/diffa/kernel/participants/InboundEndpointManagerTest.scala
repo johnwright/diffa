@@ -38,19 +38,19 @@ class InboundEndpointManagerTest {
   @Test
   def shouldIgnoreEndpointWhereNoInboundUrlIsConfigured {
     // TODO [#146] Wire in log verification for this test
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", null, null, true))
+    manager.onEndpointAvailable(Endpoint(name = "e", url = "http://localhost/1234", contentType = "application/json"))
   }
 
   @Test
   def shouldHandleEndpointWhereInboundUrlIsNotSupported {
     // TODO [#146] Wire in log verification for this test
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", "application/foo+json", true))
+    manager.onEndpointAvailable(Endpoint(name = "e", url = "http://localhost/1234", contentType = "application/json", inboundUrl = "amqp:queue.name", inboundContentType = "application/foo+json"))
   }
 
   @Test
   def shouldInformFactoryWhenValidEndpointIsAvailable {
     manager.registerFactory(jsonFactory)
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", "application/foo+json", true))
+    manager.onEndpointAvailable(Endpoint(name = "e", url = "http://localhost/1234", contentType = "application/json", inboundUrl = "amqp:queue.name", inboundContentType = "application/foo+json"))
 
     assertNotNull(jsonFactory.lastEp)
     assertEquals("e", jsonFactory.lastEp.name)
@@ -59,7 +59,7 @@ class InboundEndpointManagerTest {
   @Test
   def shouldNotInformFactoryWhenEndpointIsNotAcceptable {
     manager.registerFactory(jsonFactory)
-    manager.onEndpointAvailable(Endpoint("e", "http://localhost/1234", "application/xml", "amqp:queue.name", "application/foo+xml", true))
+    manager.onEndpointAvailable(Endpoint(name = "e", url = "http://localhost/1234", contentType = "application/xml", inboundUrl = "amqp:queue.name", inboundContentType = "application/foo+xml"))
 
     assertNull(jsonFactory.lastEp)
   }
@@ -68,7 +68,7 @@ class InboundEndpointManagerTest {
   def shouldActivateStoredEndpoint {
     manager.registerFactory(jsonFactory)
 
-    expect(configStore.listEndpoints).andReturn(Seq(Endpoint("e", "http://localhost/1234", "application/json", "amqp:queue.name", "application/foo+json", true)))
+    expect(configStore.listEndpoints).andReturn(Seq(Endpoint(name = "e", url = "http://localhost/1234", contentType = "application/json", inboundUrl = "amqp:queue.name", inboundContentType = "application/foo+json")))
     replay(configStore)
 
     manager.onAgentAssemblyCompleted

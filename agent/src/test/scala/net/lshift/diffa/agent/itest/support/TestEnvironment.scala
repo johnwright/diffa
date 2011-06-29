@@ -91,8 +91,8 @@ class TestEnvironment(val pairKey: String,
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(Endpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories))
-  configurationClient.declareEndpoint(Endpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories))
+  configurationClient.declareEndpoint(Endpoint(name = upstreamEpName, url = participants.upstreamUrl, contentType = contentType, inboundUrl = participants.inboundUrl, inboundContentType = contentType, categories = categories))
+  configurationClient.declareEndpoint(Endpoint(name = downstreamEpName, url = participants.downstreamUrl, contentType = contentType, inboundUrl = participants.inboundUrl, inboundContentType = contentType, categories = categories))
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
   createPair
 
