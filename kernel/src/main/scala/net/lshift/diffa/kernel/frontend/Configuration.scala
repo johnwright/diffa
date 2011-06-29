@@ -23,17 +23,22 @@ import net.lshift.diffa.kernel.differencing.{SessionManager, VersionCorrelationS
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.actors.{ActivePairManager}
 import net.lshift.diffa.kernel.participants.{EndpointLifecycleListener, InboundEndpointManager}
+import net.lshift.diffa.kernel.scheduler.ScanScheduler
 
 class Configuration(val configStore: ConfigStore,
                     val matchingManager: MatchingManager,
                     val versionCorrelationStoreFactory: VersionCorrelationStoreFactory,
                     val supervisor:ActivePairManager,
                     val sessionManager: SessionManager,
-                    val endpointListener: EndpointLifecycleListener) {
+                    val endpointListener: EndpointLifecycleListener,
+                    val scanScheduler: ScanScheduler) {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   def applyConfiguration(diffaConfig:DiffaConfig) = {
+    // Ensure that the configuration is valid upfront
+    diffaConfig.validate()
+    
     // Apply configuration updates
     val removedProps = configStore.allConfigOptions.keys.filter(currK => !diffaConfig.properties.contains(currK))
     removedProps.foreach(p => configStore.clearConfigOption(p))
@@ -73,7 +78,7 @@ class Configuration(val configStore: ConfigStore,
       endpoints = configStore.listEndpoints.toSet,
       groups = configStore.listGroups.map(g => g.group).toSet,
       pairs = configStore.listGroups.flatMap(g => g.pairs.map(
-        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key))).toSet,
+        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key, p.scanCronSpec))).toSet,
       repairActions = configStore.listRepairActions.toSet
     )
   }
@@ -85,6 +90,7 @@ class Configuration(val configStore: ConfigStore,
 
   def createOrUpdateEndpoint(endpoint: Endpoint) = {
     log.debug("Processing endpoint declare/update request: " +  endpoint.name)
+    endpoint.validate()
     configStore.createOrUpdateEndpoint(endpoint)
     endpointListener.onEndpointAvailable(endpoint)
   }
@@ -117,6 +123,7 @@ class Configuration(val configStore: ConfigStore,
 
   def createOrUpdateUser(u: User): Unit = {
     log.debug("Processing user declare/update request: " + u)
+    u.validate()
     configStore.createOrUpdateUser(u)
   }
 
@@ -131,11 +138,13 @@ class Configuration(val configStore: ConfigStore,
 
   def createOrUpdatePair(pairDef: PairDef): Unit = {
     log.debug("Processing pair declare/update request: " + pairDef.pairKey)
+    pairDef.validate()
     // Stop a running actor, if there is one
     withCurrentPair(pairDef, (k:String) => supervisor.stopActor(k) )
     configStore.createOrUpdatePair(pairDef)
     supervisor.startActor(configStore.getPair(pairDef.pairKey))
     matchingManager.onUpdatePair(pairDef.pairKey)
+    scanScheduler.onUpdatePair(pairDef.pairKey)
     sessionManager.onUpdatePair(pairDef.pairKey)
   }
 
@@ -145,6 +154,7 @@ class Configuration(val configStore: ConfigStore,
     configStore.deletePair(key)
     versionCorrelationStoreFactory.remove(key)
     matchingManager.onDeletePair(key)
+    scanScheduler.onDeletePair(key)
     sessionManager.onDeletePair(key)
   }
 
@@ -163,6 +173,7 @@ class Configuration(val configStore: ConfigStore,
   * */
   def createOrUpdateGroup(group: PairGroup): Unit = {
     log.debug("Processing group declare/update request: " + group.key)
+    group.validate()
     configStore.createOrUpdateGroup(group)
   }
 
@@ -188,6 +199,7 @@ class Configuration(val configStore: ConfigStore,
 
   def createOrUpdateRepairAction(action: RepairAction) {
     log.debug("Processing repair action declare/update request: " + action.name)
+    action.validate()
     configStore.createOrUpdateRepairAction(action)
   }
 

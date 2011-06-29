@@ -87,12 +87,17 @@ trait SessionManager {
    * Requests that a synchronization be run on all pairs associated with the given session.
    * @param sessionID the session.
    */
-  def runSync(sessionID:String):Unit
+  def runSync(sessionID:String)
 
   /**
    * Requests that all configured pairs in the system be scanned for differences.
    */
-  def runScanForAllPairings : Unit
+  def runScanForAllPairings()
+
+  /**
+   * Requests that a scan be run for the given pair.
+   */
+  def runScanForPair(pair:String)
 
   /**
    * Retrieves a version for the given session.
