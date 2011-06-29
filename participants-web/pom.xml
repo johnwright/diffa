@@ -142,10 +142,6 @@
               <name>demo.agentUrl</name>
               <value>http://localhost:19093/diffa-agent</value>
             </systemProperty>
-            <systemProperty>
-              <name>logback.configurationFile</name>
-              <value>${basedir}/src/test/resources/logback-test.xml</value>
-            </systemProperty>
           </systemProperties>
           <connectors>
             <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
@@ -186,6 +182,10 @@
                 <systemProperty>
                   <name>demo.agentUrl</name>
                   <value>http://localhost:19293/diffa-agent</value>
+                </systemProperty>
+                <systemProperty>
+                  <name>logback.configurationFile</name>
+                  <value>${basedir}/src/test/conf/logback.xml</value>
                 </systemProperty>
               </systemProperties>
             </configuration>
