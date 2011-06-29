@@ -28,7 +28,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
-import net.lshift.diffa.kernel.config.{PairDef, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
 
 /**
  * Integration test for change events over AMQP in an example JSON format.
@@ -47,15 +47,14 @@ class ExampleEventFormatMapperIntegrationTest {
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
     config.declareGroup("g1")
-    config.declareEndpoint("upstream",
-                           "http://upstream.com", "application/json",
-                           "amqp://localhost//queues/exampleChanges", "application/example+json",
-                           true, categories)
+    config.declareEndpoint(Endpoint(name = "upstream",
+                                     url = "http://upstream.com", contentType = "application/json",
+                                     inboundUrl = "amqp://localhost//queues/exampleChanges", inboundContentType = "application/example+json",
+                                     categories = categories))
 
-    config.declareEndpoint("downstream",
-                           "http://downstream.com", "application/json",
-                           null, null,
-                           true, categories)
+    config.declareEndpoint(Endpoint(name = "downstream",
+                                     url = "http://downstream.com", contentType = "application/json",
+                                     categories = categories))
 
     config.declarePair(PairDef("pair", "same", 1, "upstream", "downstream", "g1"))
 

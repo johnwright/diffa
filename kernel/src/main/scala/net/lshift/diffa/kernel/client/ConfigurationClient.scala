@@ -23,7 +23,7 @@ import net.lshift.diffa.kernel.config._
  */
 trait ConfigurationClient {
   def declareGroup(name: String):PairGroup
-  def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean, categories:java.util.Map[String,CategoryDescriptor]) : Endpoint
+  def declareEndpoint(e:Endpoint) : Endpoint
   def declarePair(p:PairDef):PairDef
   def declareRepairAction(name: String, url: String, scope: String, pairKey: String): RepairAction
   def removeRepairAction(name: String, pairKey: String)

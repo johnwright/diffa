@@ -22,8 +22,8 @@ import org.junit.Test
 import com.eaio.uuid.UUID
 import net.lshift.diffa.messaging.json.NotFoundException
 import org.junit.Assert._
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{Endpoint, RangeCategoryDescriptor}
 
 /**
  * A bunch of smoke tests for the config of a known agent
@@ -34,10 +34,9 @@ class AgentConfigTest {
 
   @Test
   def shouldFindExistentEndpoint = {
-    client.declareEndpoint("some-endpoint",
-                           "http://some-endpoint.com", "application/json",
-                           null ,null,
-                           true, Map("bizDate" -> new RangeCategoryDescriptor("datetime")))
+    client.declareEndpoint(Endpoint(name = "some-endpoint",
+                                     url = "http://some-endpoint.com", contentType = "application/json",
+                                     categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))))
     val endpoint = client.getEndpoint("some-endpoint")
     assertNotNull(endpoint)
     assertEquals("some-endpoint", endpoint.name)

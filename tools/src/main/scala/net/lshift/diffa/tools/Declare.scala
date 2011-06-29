@@ -22,7 +22,7 @@ import net.lshift.diffa.kernel.client.ConfigurationClient
 import collection.mutable.HashMap
 import collection.mutable.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{PairDef, RangeCategoryDescriptor, CategoryDescriptor}
+import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor, CategoryDescriptor}
 
 /**
  * Utility class for declaring a differencing configuration.
@@ -114,7 +114,9 @@ object Declare extends DiffaTool {
 
       println("Declaring endpoint: " + name + " -> " + url)
       // TODO support alternate content type for inbound endpoint
-      configClient.declareEndpoint(name, url, contentType, inboundUrl, contentType, true, categories)
+      configClient.declareEndpoint(
+        Endpoint(name = name, url = url, contentType = contentType, inboundUrl = inboundUrl,
+          inboundContentType = contentType, online = true, categories = categories))
       true
     } else {
       false

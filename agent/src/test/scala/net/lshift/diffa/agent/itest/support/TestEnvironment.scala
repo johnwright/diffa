@@ -29,7 +29,7 @@ import org.restlet.data.Protocol
 import org.restlet.routing.Router
 import org.restlet.{Application, Component}
 import org.restlet.resource.{ServerResource, Post}
-import net.lshift.diffa.kernel.config.{PairDef, RepairAction, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RepairAction, RangeCategoryDescriptor}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -91,8 +91,8 @@ class TestEnvironment(val pairKey: String,
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
+  configurationClient.declareEndpoint(Endpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories))
+  configurationClient.declareEndpoint(Endpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories))
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
   createPair
 
