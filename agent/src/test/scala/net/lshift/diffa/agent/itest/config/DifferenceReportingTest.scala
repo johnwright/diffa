@@ -17,7 +17,7 @@
 package net.lshift.diffa.agent.itest.config
 
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.tools.client.DifferencesRestClient
+import net.lshift.diffa.agent.client.DifferencesRestClient
 import net.lshift.diffa.kernel.participants.ParticipantType
 import com.eaio.uuid.UUID
 import org.junit.Test

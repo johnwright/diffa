@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.events.UpstreamChangeEvent
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
-import net.lshift.diffa.tools.client.{DifferencesRestClient, ConfigurationRestClient}
+import net.lshift.diffa.agent.client.{DifferencesRestClient, ConfigurationRestClient}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}

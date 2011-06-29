@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.itest.events
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -14,21 +16,23 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.example.itest
-
 import org.junit.Assert._
 import org.junit.Assume.assumeTrue
-import org.junit.Test
 import net.lshift.diffa.messaging.amqp.{ConnectorHolder, AmqpProducer, AmqpConnectionChecker}
 import org.apache.commons.io.IOUtils
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient}
+import org.junit.{Before, Test}
+import org.apache.http.entity.FileEntity
+import org.apache.http.client.methods.HttpPost
+import org.apache.http.impl.client.DefaultHttpClient
 import net.lshift.diffa.kernel.differencing.MatchState.UNMATCHED
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import org.springframework.core.io.ClassPathResource
+import net.lshift.diffa.agent.client.DifferencesRestClient
 
 /**
  * Integration test for change events over AMQP in an example JSON format.
@@ -39,30 +43,28 @@ class ExampleEventFormatMapperIntegrationTest {
 
   private val log = LoggerFactory.getLogger(getClass)
 
+  val httpClient = new DefaultHttpClient()
+  val serverRoot = "http://localhost:19093/diffa-agent"
+
+  @Before
+  def setup {
+    val resource = new ClassPathResource("diffa-config.xml")
+    val entity = new FileEntity(resource.getFile, "application/xml")
+    val post = new HttpPost(serverRoot + "/rest/config/xml")
+    post.setEntity(entity)
+
+    val response = httpClient.execute(post)
+    assertEquals(response.getStatusLine.getStatusCode, 204)
+  }
+
   @Test
   def integrationTest() {
-    val serverRoot = "http://localhost:19095/diffa-agent"
-    val diffClient = new DifferencesRestClient(serverRoot)
-    val config = new ConfigurationRestClient(serverRoot)
-    val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
-
-    config.declareGroup("g1")
-    config.declareEndpoint("upstream",
-                           "http://upstream.com", "application/json",
-                           "amqp://localhost//queues/exampleChanges", "application/example+json",
-                           true, categories)
-
-    config.declareEndpoint("downstream",
-                           "http://downstream.com", "application/json",
-                           null, null,
-                           true, categories)
-
-    config.declarePair("pair", "same", 1, "upstream", "downstream", "g1")
 
     val connectorHolder = new ConnectorHolder()
     val queueName = "exampleChanges"
     val changeEventProducer = new AmqpProducer(connectorHolder.connector, queueName)
 
+    val diffClient = new DifferencesRestClient(serverRoot)
     val sessionId = diffClient.subscribe(SessionScope.forPairs("pair"))
 
     log.info("Sending change event")

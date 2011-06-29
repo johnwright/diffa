@@ -233,6 +233,10 @@
               <name>diffa.maildir</name>
               <value>${basedir}/target/messages</value>
             </systemProperty>
+            <systemProperty>
+              <name>logback.configurationFile</name>
+              <value>${basedir}/src/test/resources/logback-test.xml</value>
+            </systemProperty>
           </systemProperties>
           <connectors>
             <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">

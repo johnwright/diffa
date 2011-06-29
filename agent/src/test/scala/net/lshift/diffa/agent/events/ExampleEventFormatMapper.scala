@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.events
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.messaging.example
 
 import net.lshift.diffa.kernel.participants.EventFormatMapper
 import org.codehaus.jackson.map.ObjectMapper

@@ -21,7 +21,7 @@ import org.junit.Assert._
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.messaging.json.NotFoundException
 import com.eaio.uuid.UUID
-import net.lshift.diffa.tools.client.{ConfigurationRestClient, ScanningRestClient}
+import net.lshift.diffa.agent.client.{ConfigurationRestClient, ScanningRestClient}
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
 

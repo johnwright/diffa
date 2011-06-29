@@ -1,0 +1,21 @@
+<diffa-config>
+
+  <endpoint name="upstream"
+            url="http://upstream.com"
+            content-type="application/json"
+            inbound-url="amqp://localhost//queues/exampleChanges"
+            inbound-content-type="application/example+json">
+    <range-category name="bizDate" data-type="datetime"/>
+  </endpoint>
+
+  <endpoint name="downstream"
+            url="http://downstream.com"
+            content-type="application/json">
+    <range-category name="bizDate" data-type="datetime"/>
+  </endpoint>
+
+  <group name="g1">
+    <pair key="pair" upstream="upstream" downstream="downstream" match-timeout="1" version-policy="same"/>
+  </group>
+
+</diffa-config>
