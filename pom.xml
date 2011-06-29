@@ -21,7 +21,6 @@
     <module>participants-web</module>
     <module>docgen-maven-plugin</module>
     <module>dist</module>
-    <module>amqp-changes-test</module>
   </modules>
 
   <properties>
