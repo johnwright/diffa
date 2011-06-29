@@ -21,20 +21,25 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import org.eclipse.jetty.server.{Request, Server}
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 import java.io.OutputStream
+import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
 
-class ParticipantRpcServer(port: Int, handler: ProtocolHandler) {
+class ParticipantRpcServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler) {
 
   private val server = new Server(port)
   server.setHandler(new AbstractHandler {
     override def handle(target: String, jettyReq: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
-      val os = response.getOutputStream
-      val tRequest = new TransportRequest(request.getPathInfo.substring(1), request.getInputStream)
-      val tResponse = new TransportResponse {
-        def setStatusCode(code: Int) = response.setStatus(code)
-        def withOutputStream(f: (OutputStream) => Unit) = f(response.getOutputStream)
-      }
+      if (target.startsWith("/scan")) {
+        scanning.handleRequest(request, response)
+      } else {
+        val os = response.getOutputStream
+        val tRequest = new TransportRequest(request.getPathInfo.substring(1), request.getInputStream)
+        val tResponse = new TransportResponse {
+          def setStatusCode(code: Int) = response.setStatus(code)
+          def withOutputStream(f: (OutputStream) => Unit) = f(response.getOutputStream)
+        }
 
-      handler.handleRequest(tRequest, tResponse)
+        handler.handleRequest(tRequest, tResponse)
+      }
 
       jettyReq.setHandled(true)
     }

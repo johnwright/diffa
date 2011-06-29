@@ -38,9 +38,7 @@ class ConfigurationRestClient(serverRootUrl:String)
     e
   }
 
-  def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int, upstreamName: String,
-                  downstreamName: String, groupKey: String) = {
-    val p = new PairDef(pairKey, versionPolicyName, matchingTimeout, upstreamName, downstreamName, groupKey)
+  def declarePair(p:PairDef) = {
     create("pairs", p)
     p
   }

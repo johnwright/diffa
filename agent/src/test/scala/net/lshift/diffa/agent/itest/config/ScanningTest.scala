@@ -22,8 +22,8 @@ import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.messaging.json.NotFoundException
 import com.eaio.uuid.UUID
 import net.lshift.diffa.tools.client.{ConfigurationRestClient, ScanningRestClient}
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{PairDef, RangeCategoryDescriptor}
 
 /**
  * Smoke tests for the scan interface.
@@ -50,7 +50,7 @@ class ScanningTest {
     configClient.declareEndpoint(up, "http://upstream.com", "application/json", null,null, true, categories)
     configClient.declareEndpoint(down, "http://downstream.com", "application/json", null,null, true, categories)
     configClient.declareGroup(group)
-    configClient.declarePair(pair, "same", 1, up, down, group)
+    configClient.declarePair(PairDef(pair, "same", 1, up, down, group))
 
     // Simple smoke test - you could kick off a scan and verify that it gets interrupted,
     // but this code path is tested in the unit test

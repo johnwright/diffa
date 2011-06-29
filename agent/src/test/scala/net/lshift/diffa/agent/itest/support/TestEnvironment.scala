@@ -25,11 +25,11 @@ import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.kernel.config.{RepairAction, RangeCategoryDescriptor}
 import org.restlet.data.Protocol
 import org.restlet.routing.Router
 import org.restlet.{Application, Component}
 import org.restlet.resource.{ServerResource, Post}
+import net.lshift.diffa.kernel.config.{PairDef, RepairAction, RangeCategoryDescriptor}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -86,8 +86,8 @@ class TestEnvironment(val pairKey: String,
   val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
   
   // Participants' RPC server setup
-  participants.startUpstreamServer(upstream)
-  participants.startDownstreamServer(downstream)
+  participants.startUpstreamServer(upstream, upstream)
+  participants.startDownstreamServer(downstream, downstream)
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
@@ -96,7 +96,7 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
   createPair
 
-  def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
+  def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1"))
   def deletePair() {
    configurationClient.deletePair(pairKey)
   }

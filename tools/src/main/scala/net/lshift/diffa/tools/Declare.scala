@@ -22,7 +22,7 @@ import net.lshift.diffa.kernel.client.ConfigurationClient
 import collection.mutable.HashMap
 import collection.mutable.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{RangeCategoryDescriptor,CategoryDescriptor}
+import net.lshift.diffa.kernel.config.{PairDef, RangeCategoryDescriptor, CategoryDescriptor}
 
 /**
  * Utility class for declaring a differencing configuration.
@@ -75,7 +75,7 @@ object Declare extends DiffaTool {
         }
 
       println("Declaring pair: " + group + "." + pairKey + " -> (" + upstreamName + " <= {" + versionPolicy + "} => " + downstreamName + ")")
-      configClient.declarePair(pairKey, versionPolicy, matchTimeout, upstreamName, downstreamName, group)
+      configClient.declarePair(PairDef(pairKey, versionPolicy, matchTimeout, upstreamName, downstreamName, group))
       hasDeclared = true
     }
 

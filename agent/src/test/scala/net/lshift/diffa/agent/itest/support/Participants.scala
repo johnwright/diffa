@@ -17,12 +17,13 @@
 package net.lshift.diffa.agent.itest.support
 
 import net.lshift.diffa.kernel.protocol.ProtocolHandler
-import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import net.lshift.diffa.participants.ParticipantRpcServer
 import concurrent.SyncVar
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.messaging.json.{DownstreamParticipantRestClient, UpstreamParticipantRestClient, DownstreamParticipantHandler, UpstreamParticipantHandler}
 import net.lshift.diffa.messaging.amqp._
+import net.lshift.diffa.kernel.participants.{Participant, DownstreamParticipant, UpstreamParticipant}
+import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
 
 /**
  * Helper objects for creation of HTTP/AMQP RPC chain for remote-controlling participants
@@ -35,9 +36,9 @@ trait Participants {
 
   val inboundUrl: String
 
-  def startUpstreamServer(upstream: UpstreamParticipant): Unit
+  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler): Unit
 
-  def startDownstreamServer(downstream: DownstreamParticipant): Unit
+  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler): Unit
 
   def upstreamClient: UpstreamParticipant
 
@@ -55,14 +56,14 @@ class HttpParticipants(usPort: Int, dsPort: Int) extends Participants {
 
   val inboundUrl = null
 
-  def startUpstreamServer(upstream: UpstreamParticipant) =
-    forkServer(usPort, new UpstreamParticipantHandler(upstream))
+  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler) =
+    forkServer(usPort, new UpstreamParticipantHandler(upstream), scanning)
 
-  def startDownstreamServer(downstream: DownstreamParticipant) =
-    forkServer(dsPort, new DownstreamParticipantHandler(downstream))
+  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler) =
+    forkServer(dsPort, new DownstreamParticipantHandler(downstream), scanning)
 
-  private def forkServer(port: Int, handler: ProtocolHandler) {
-    val server = new ParticipantRpcServer(port, handler)
+  private def forkServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler) {
+    val server = new ParticipantRpcServer(port, handler, scanning)
     val startupSync = new SyncVar[Boolean]
     new Thread {
       override def run = {
@@ -104,13 +105,13 @@ case class AmqpParticipants(connectorHolder: ConnectorHolder,
   val downstreamUrl = AmqpQueueUrl(dsQueue).toString
   val inboundUrl = AmqpQueueUrl(inboundQueue).toString
 
-  def startUpstreamServer(upstream: UpstreamParticipant) = {
+  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler) = {
     val server = new AmqpRpcServer(connectorHolder.connector, usQueue, new UpstreamParticipantHandler(upstream))
     server.start()
     usServer = Some(server)
   }
 
-  def startDownstreamServer(downstream: DownstreamParticipant) = {
+  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler) = {
     val server = new AmqpRpcServer(connectorHolder.connector, dsQueue, new DownstreamParticipantHandler(downstream))
     server.start()
     dsServer = Some(server)

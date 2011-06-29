@@ -28,7 +28,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import net.lshift.diffa.kernel.config.{PairDef, RangeCategoryDescriptor}
 
 /**
  * Integration test for change events over AMQP in an example JSON format.
@@ -57,7 +57,7 @@ class ExampleEventFormatMapperIntegrationTest {
                            null, null,
                            true, categories)
 
-    config.declarePair("pair", "same", 1, "upstream", "downstream", "g1")
+    config.declarePair(PairDef("pair", "same", 1, "upstream", "downstream", "g1"))
 
     val connectorHolder = new ConnectorHolder()
     val queueName = "exampleChanges"

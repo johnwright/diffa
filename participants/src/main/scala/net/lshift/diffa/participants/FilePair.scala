@@ -19,6 +19,7 @@ package net.lshift.diffa.participants
 import net.lshift.diffa.kernel.protocol.ProtocolHandler
 import java.io.File
 import net.lshift.diffa.messaging.json.{DownstreamParticipantHandler, UpstreamParticipantHandler}
+import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
 
 /**
  * Application entry 
@@ -33,15 +34,15 @@ object FilePair extends Application {
   val upstream = new UpstreamFileParticipant("a", "target/upstream", "http://localhost:19093/diffa-agent")
   val downstream = new DownstreamFileParticipant("b", "target/downstream", "http://localhost:19093/diffa-agent")
 
-  forkServer(upstreamPort, new UpstreamParticipantHandler(upstream))
-  forkServer(downstreamPort, new DownstreamParticipantHandler(downstream))
+  forkServer(upstreamPort, new UpstreamParticipantHandler(upstream), null)
+  forkServer(downstreamPort, new DownstreamParticipantHandler(downstream), null)
 
   private def ensureDir(path:String) {
     (new File(path)).mkdirs
   }
 
-  private def forkServer(port:Int, handler:ProtocolHandler):Unit = {
-    val server = new ParticipantRpcServer(port, handler)
+  private def forkServer(port:Int, handler:ProtocolHandler, scanning:ScanningParticipantRequestHandler):Unit = {
+    val server = new ParticipantRpcServer(port, handler, scanning)
     new Thread { override def run = server.start }.start
   }
 }
