@@ -34,88 +34,25 @@
     </property>
   </bean>
 
-  <!--bean id="configClient" class="net.lshift.diffa.tools.client.ConfigurationRestClient">
-    <constructor-arg value="${demo.agentUrl}" />
-  </bean-->
+  <bean id="httpClient" class="org.apache.http.impl.client.DefaultHttpClient"/>
 
-  <bean id="declareGroup" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="configClient"/>
-    <property name="targetMethod" value="declareGroup"/>
-    <property name="arguments">
-      <list>
-        <value>${demo.group}</value>
-      </list>
+  <bean id="httpPost" class="org.apache.http.client.methods.HttpPost">
+    <constructor-arg value="${demo.agentUrl}/rest/config/xml"/>
+    <property name="entity">
+      <bean class="org.apache.http.entity.FileEntity">
+        <constructor-arg value="classpath:diffa-config.xml">
+        </constructor-arg>
+        <constructor-arg value="application/xml"/>
+      </bean>
     </property>
   </bean>
 
-  <bean id="declareUpstream" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="configClient"/>
-    <property name="targetMethod" value="declareEndpoint"/>
+  <bean id="postConfig" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="httpClient"/>
+    <property name="targetMethod" value="execute"/>
     <property name="arguments">
       <list>
-        <value>${demo.upstreamName}</value>
-        <value>${demo.upstreamUrl}</value>
-        <value>${demo.upstream.contentType}</value>
-        <value>null</value>
-        <value>null</value>
-        <value>true</value>
-        <util:map>
-          <entry key="bizDate">
-            <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
-              <property name="dataType" value="datetime"/>
-            </bean>
-          </entry>
-        </util:map>
-      </list>
-    </property>
-  </bean>
-
-  <bean id="declareDownstream" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="configClient"/>
-    <property name="targetMethod" value="declareEndpoint"/>
-    <property name="arguments">
-      <list>
-        <value>${demo.downstreamName}</value>
-        <value>${demo.downstreamUrl}</value>
-        <value>${demo.downstream.contentType}</value>
-        <value>null</value>
-        <value>null</value>
-        <value>true</value>
-        <util:map>
-          <entry key="bizDate">
-            <bean class="net.lshift.diffa.kernel.config.RangeCategoryDescriptor">
-              <property name="dataType" value="datetime"/>
-            </bean>
-          </entry>
-        </util:map>
-      </list>
-    </property>
-  </bean>
-
-  <bean id="declarePair" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="configClient"/>
-    <property name="targetMethod" value="declarePair"/>
-    <property name="arguments">
-      <list>
-        <value>${demo.pair.key}</value>
-        <value>${demo.versionPolicy}</value>
-        <value>${demo.matchTimeout}</value>
-        <value>${demo.upstreamName}</value>
-        <value>${demo.downstreamName}</value>
-        <value>${demo.group}</value>
-      </list>
-    </property>
-  </bean>
-
-  <bean id="declareRepairAction" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="configClient" />
-    <property name="targetMethod" value="declareRepairAction" />
-    <property name="arguments">
-      <list>
-        <value>${demo.repairAction.name}</value>
-        <value>${demo.repairAction.url}</value>
-        <value>${demo.repairAction.scope}</value>
-        <value>${demo.repairAction.pairKey}</value>
+        <ref bean="httpPost"/>
       </list>
     </property>
   </bean>
