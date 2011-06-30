@@ -18,8 +18,12 @@
 
 /* Reference the blueprint definitions in files renamed from .css to .less so that we can mix them in */
 @import "blueprint/screen.less";
+
+/* Bind in all of the constituent parts of the stylesheet */
 @import "difflist.less";
 @import "contentviewer.less";
+@import "heatmap.less";
+@import "settings.less";
 
 /* Define all of the colors used throughout */
 @yellow-background: #FFF2CC;
@@ -54,21 +58,16 @@
   border-top: @dotted-border;
 }
 
-// Mixin certain Blueprint definitions into various selected objects
-#main-logo {
+// Mixin certain Blueprint definitions into various object classes
+div.main-logo {
   .prepend-top;
   .prepend-1;
   .span-19;
 }
 
-#top-navigation-link {
+div.top-navigation-link {
   .span-2;
   .last;
-}
-
-#heatmap {
-  .span-20;
-  .prepend-top;
 }
 
 // GENERAL BODY WORK

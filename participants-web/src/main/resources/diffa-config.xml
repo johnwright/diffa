@@ -13,6 +13,7 @@
   <group name="mygroup">
     <pair key="WEB-1" upstream="a" downstream="b" match-timeout="5" version-policy="same">
       <repair-action name="Resend Source" url="http://localhost:19293/participant-demo/actions/resend/{id}" scope="entity"/>
+      <repair-action name="Resend All" url="http://localhost:19293/participant-demo/actions/resend-all" scope="pair"/>
     </pair>
   </group>
 
