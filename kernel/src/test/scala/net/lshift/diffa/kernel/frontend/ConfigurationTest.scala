@@ -17,6 +17,7 @@ package net.lshift.diffa.kernel.frontend
 
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.matching.MatchingManager
+import net.lshift.diffa.kernel.scheduler.ScanScheduler
 import net.lshift.diffa.kernel.actors.ActivePairManager
 import net.lshift.diffa.kernel.differencing.{SessionManager, VersionCorrelationStoreFactory}
 import org.junit.{Test, Before}
@@ -36,13 +37,15 @@ class ConfigurationTest {
   private val pairManager = createMock("pairManager", classOf[ActivePairManager])
   private val sessionManager = createMock("sessionManager", classOf[SessionManager])
   private val endpointListener = createMock("endpointListener", classOf[EndpointLifecycleListener])
+  private val scanScheduler = createMock("endpointListener", classOf[ScanScheduler])
 
   private val configuration = new Configuration(HibernateConfigStoreTest.configStore,
                                                 matchingManager,
                                                 versionCorrelationStoreFactory,
                                                 pairManager,
                                                 sessionManager,
-                                                endpointListener)
+                                                endpointListener,
+                                                scanScheduler)
 
   @Before
   def clearConfig {
@@ -55,6 +58,27 @@ class ConfigurationTest {
 
     configuration.applyConfiguration(DiffaConfig())
     assertEquals(DiffaConfig(), configuration.retrieveConfiguration)
+  }
+
+  @Test
+  def shouldGenerateExceptionWhenInvalidConfigurationIsApplied() {
+    val ep1 = Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
+          inboundUrl = "http://inbound", inboundContentType = "application/xml")
+    val ep2 = Endpoint(name = "downstream1", url = "http://localhost:5432", contentType = "application/json")
+    val config = new DiffaConfig(
+      endpoints = Set(ep1, ep2),
+      groups = Set(PairGroup("gaa")),
+      pairs = Set(
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa", "bad-cron-spec"))
+    )
+
+    try {
+      configuration.applyConfiguration(config)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case ex:ConfigValidationException =>
+        assertEquals("config/pair[key=ab]: Schedule 'bad-cron-spec' is not a valid: Illegal characters for this position: 'BAD'", ex.getMessage)
+    }
   }
 
   @Test
@@ -84,9 +108,11 @@ class ConfigurationTest {
     expect(endpointListener.onEndpointAvailable(ep2)).once
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair("ab")).once
+    expect(scanScheduler.onUpdatePair("ab")).once
     expect(sessionManager.onUpdatePair("ab")).once
     expect(pairManager.startActor(pairInstance("ac"))).once
     expect(matchingManager.onUpdatePair("ac")).once
+    expect(scanScheduler.onUpdatePair("ac")).once
     expect(sessionManager.onUpdatePair("ac")).once
     replayAll
 
@@ -123,7 +149,7 @@ class ConfigurationTest {
       groups = Set(PairGroup("gcc"), PairGroup("gbb")),
       pairs = Set(
           // ab has moved from gaa to gcc
-        PairDef("ab", "same", 5, "upstream1", "downstream2", "gcc"),
+        PairDef("ab", "same", 5, "upstream1", "downstream2", "gcc", "0 * * * * ?"),
           // ac is gone
         PairDef("ad", "same", 5, "upstream1", "downstream2", "gbb")),
       // name of repair action is changed
@@ -133,13 +159,16 @@ class ConfigurationTest {
     expect(pairManager.stopActor("ab")).once
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair("ab")).once
+    expect(scanScheduler.onUpdatePair("ab")).once
     expect(sessionManager.onUpdatePair("ab")).once
     expect(pairManager.stopActor("ac")).once
     expect(matchingManager.onDeletePair("ac")).once
+    expect(scanScheduler.onDeletePair("ac")).once
     expect(versionCorrelationStoreFactory.remove("ac")).once
     expect(sessionManager.onDeletePair("ac")).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair("ad")).once
+    expect(scanScheduler.onUpdatePair("ad")).once
     expect(sessionManager.onUpdatePair("ad")).once
 
     expect(endpointListener.onEndpointRemoved("downstream1")).once
@@ -166,6 +195,8 @@ class ConfigurationTest {
     expect(pairManager.stopActor("ac")).once
     expect(matchingManager.onDeletePair("ab")).once
     expect(matchingManager.onDeletePair("ac")).once
+    expect(scanScheduler.onDeletePair("ab")).once
+    expect(scanScheduler.onDeletePair("ac")).once
     expect(versionCorrelationStoreFactory.remove("ab")).once
     expect(versionCorrelationStoreFactory.remove("ac")).once
     expect(sessionManager.onDeletePair("ab")).once
@@ -179,9 +210,9 @@ class ConfigurationTest {
     verifyAll
   }
 
-  private def replayAll = replay(matchingManager, pairManager, sessionManager, endpointListener)
-  private def verifyAll = verify(matchingManager, pairManager, sessionManager, endpointListener)
-  private def resetAll = reset(matchingManager, pairManager, sessionManager, endpointListener)
+  private def replayAll = replay(matchingManager, pairManager, sessionManager, endpointListener, scanScheduler)
+  private def verifyAll = verify(matchingManager, pairManager, sessionManager, endpointListener, scanScheduler)
+  private def resetAll = reset(matchingManager, pairManager, sessionManager, endpointListener, scanScheduler)
   private def pairInstance(key:String):Pair = {
     reportMatcher(new IArgumentMatcher {
       def appendTo(buffer: StringBuffer) = buffer.append("pair with key " + key)

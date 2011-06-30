@@ -45,7 +45,7 @@ class DiffaConfigReaderWriterTest {
           ))),
       groups = Set(PairGroup("gaa"), PairGroup("gbb")),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa", "0 0 0 * 0 0"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
       repairActions = Set(
         RepairAction(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pairKey="ab")
@@ -75,7 +75,7 @@ class DiffaConfigReaderWriterTest {
           <prefix-category name="d" prefix-length="1" max-length="6" step="1"/>
         </endpoint>
         <group name="gaa">
-          <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5">
+          <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5" scan-schedule="0 0 0 * 0 0">
             <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
           </pair>
         </group>

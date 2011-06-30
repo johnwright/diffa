@@ -134,6 +134,33 @@ class HibernateConfigStoreTest {
   }
 
   @Test
+  def testPairsAreValidatedBeforeUpdate() {
+    // Declare endpoints
+    configStore.createOrUpdateEndpoint(upstream1)
+    exists(upstream1, 1)
+
+    configStore.createOrUpdateEndpoint(downstream1)
+    exists(downstream1, 2)
+
+    // Declare a group
+    configStore.createOrUpdateGroup(group)
+    val retrGroups = configStore.listGroups
+    assertEquals(1, retrGroups.length)
+    assertEquals(groupKey1, retrGroups.first.group.key)
+    assertEquals(0, retrGroups.first.pairs.length)
+
+    pairDef.scanCronSpec = "invalid"
+
+    try {
+      configStore.createOrUpdatePair(pairDef)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case ex:ConfigValidationException =>
+        assertEquals("pair[key=TEST_PAIR]: Schedule 'invalid' is not a valid: Illegal characters for this position: 'INV'", ex.getMessage)
+    }
+  }
+
+  @Test
   def testEndpointsWithSameURL {
     configStore.createOrUpdateEndpoint(upstream1)
 
@@ -176,13 +203,14 @@ class HibernateConfigStoreTest {
     }
 
     configStore.createOrUpdatePair(new PairDef(pairRenamed, versionPolicyName2, Pair.NO_MATCHING,
-      downstream1.name, upstream1.name, groupKey2))
+      downstream1.name, upstream1.name, groupKey2, "0 0 * * * ?"))
     
     val retrieved = configStore.getPair(pairRenamed)
     assertEquals(pairRenamed, retrieved.key)
     assertEquals(downstream1.name, retrieved.upstream.name) // check endpoints are swapped
     assertEquals(upstream1.name, retrieved.downstream.name)
     assertEquals(versionPolicyName2, retrieved.versionPolicyName)
+    assertEquals("0 0 * * * ?", retrieved.scanCronSpec)
     assertEquals(Pair.NO_MATCHING, retrieved.matchingTimeout)
   }
 

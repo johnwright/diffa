@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, Downstre
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
-import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
+import net.lshift.diffa.agent.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil

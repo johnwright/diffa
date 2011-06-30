@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.client
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,29 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.messaging.json.AbstractRestClient
+import net.lshift.diffa.kernel.client.ScanningClient
 
 /**
- * Describes a complete diffa configuration.
+ * A RESTful client to manage participant scanning.
  */
-case class DiffaConfig(
-  users:Set[User] = Set(),
-  properties:Map[String, String] = Map(),
-  endpoints:Set[Endpoint] = Set(),
-  groups:Set[PairGroup] = Set(),
-  pairs:Set[PairDef] = Set(),
-  repairActions:Set[RepairAction] = Set()
-) {
+class ScanningRestClient(u:String) extends AbstractRestClient(u, "rest/scanning/") with ScanningClient {
 
-  def validate() {
-    val path = "config"
-
-    users.foreach(_.validate(path))
-    endpoints.foreach(_.validate(path))
-    groups.foreach(_.validate(path))
-    pairs.foreach(_.validate(path))
-    repairActions.foreach(_.validate(path))
+  def cancelScanning(pairKey: String) = {
+    delete("/pairs/" + pairKey + "/scan")
+    true
   }
 }
