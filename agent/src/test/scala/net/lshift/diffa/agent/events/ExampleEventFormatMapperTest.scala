@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.events
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -14,8 +16,6 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.example
-
 import org.junit.Assert._
 import org.junit.Test
 import org.apache.commons.io.IOUtils
@@ -23,7 +23,7 @@ import org.apache.commons.io.IOUtils
 /**
  * Unit test for example event format mapper.
  */
-class ExampleEventFormatMapperTests {
+class ExampleEventFormatMapperTest {
 
   @Test
   def mapsExampleJson() {

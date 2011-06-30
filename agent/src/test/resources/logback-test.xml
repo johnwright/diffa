@@ -25,14 +25,10 @@
     </encoder>
   </appender>
 
-  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-    <file>target/diffa-test.log</file>
-    <encoder>
-      <Pattern>%d{HH:mm:ss.SSS} [%thread] %level %logger{0}:%line - %msg%n</Pattern>
-    </encoder>
-  </appender>
 
   <logger name="org.hibernate" level="WARN" />
+  <logger name="org.exolab" level="WARN" />
+  <logger name="org.springframework" level="WARN" />
 
   <!--
     Test cases that valid rejection cause way too much log noise since Hibernate logs and rethrows.
@@ -43,9 +39,8 @@
 
   <logger name="org.eclipse.jetty.util.log" level="ERROR" />
 
-  <root level="debug">
+  <root level="info">
     <appender-ref ref="STDOUT" />
-    <appender-ref ref="FILE" />
   </root>
 
 </configuration>

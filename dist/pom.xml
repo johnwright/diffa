@@ -91,13 +91,6 @@
       <version>${dbcp.version}</version>
       <scope>compile</scope>
     </dependency>
-
-    <!-- Tools -->
-    <dependency>
-      <groupId>net.lshift.diffa</groupId>
-      <artifactId>diffa-tools</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 
   <build>

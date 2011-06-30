@@ -6,7 +6,7 @@
   <artifactId>participant-support</artifactId>
   <version>0.9-SNAPSHOT</version>
 
-  <name>Diffa Participant Support</name>
+  <name>LShift Diffa Participant Support</name>
 
   <description>Diffa Participant Support provides tools for implementing Diffa participants in Java (and other JVM languages)</description>
 

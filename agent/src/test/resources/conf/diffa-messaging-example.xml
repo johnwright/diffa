@@ -24,7 +24,7 @@
     <property name="targetObject" ref="eventFormatMapperManager" />
     <property name="targetMethod" value="registerMapper" />
     <property name="arguments">
-      <bean class="net.lshift.diffa.messaging.example.ExampleEventFormatMapper" />
+      <bean class="net.lshift.diffa.agent.events.ExampleEventFormatMapper" />
     </property>
   </bean>
 
