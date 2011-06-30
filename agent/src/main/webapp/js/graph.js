@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-var display;
+var heatmap;
 var canvas;
 var context;
 var overlay;
@@ -26,9 +26,16 @@ var scale;
 var scaleContext;
 var buckets = [];
 var maxColumns = 96;
+var minRows = 5;
 var maxRows = 10;
 var gridSize = 30;
 var gutterSize = 24;
+
+var scaleHeight = 40;
+
+// The original version of the heatmap was statically sized to 800x400 with 5 swimlanes @ 78 plus a 10 pixel gutter
+// When #232 lands, this will probably be calculated differently.
+var bottomGutter = 10;
 
 var rightLimit = 0;
 var selectedBucket;
@@ -38,20 +45,47 @@ $(document).ready(function() {
 });
 
 function initCanvas() {
-  display = document.getElementById("display");
-
-  canvas = document.getElementById("canvas");
-  context = canvas.getContext("2d");
-  overlay = document.getElementById("overlay");
-  overlayContext = overlay.getContext("2d");
-
+  heatmap = document.getElementById("heatmap");
   underlay = document.getElementById("underlay");
-  underlayContext = underlay.getContext("2d");
+
+  resizeLayer(underlay, underlay.offsetWidth);
+  canvas = createLayer(heatmap, 2);
+  overlay = createLayer(heatmap, 4);
 
   scale = document.getElementById("scale");
+  scale.width = scale.offsetWidth;
+  scale.height = scaleHeight;
+
+  context = canvas.getContext("2d");
+  overlayContext = overlay.getContext("2d");
+  underlayContext = underlay.getContext("2d");
   scaleContext = scale.getContext("2d");
 
   rightLimit = (maxColumns * gridSize) - canvas.width;
+}
+
+function createLayer(parent, z_index) {
+  var layer = document.createElement("canvas");
+  document.body.appendChild(layer);
+  layer.style.position = "absolute";
+  layer.style.left = parent.offsetLeft;
+  layer.style.top = parent.offsetTop;
+
+  layer.style.zIndex = z_index;
+
+  resizeLayer(layer, parent.offsetWidth);
+
+  return layer;
+}
+
+// TODO consider patching this in
+function resizeLayer(layer, width) {
+  layer.width = width;
+  layer.height = minRows * swimlaneHeight() + bottomGutter;
+}
+
+function swimlaneHeight() {
+  return 2 * gutterSize + gridSize;
 }
 
 function clearCanvas() {
@@ -137,13 +171,16 @@ function renderEntityScopedActions(pairKey, itemID) {
     $.each(actionList, function(i, action) {
       var repairStatus = $('#repairstatus');
       appendActionButtonToContainer(actionListContainer, action, pairKey, itemID, repairStatus);
-      $('<br class="clearboth"/>').appendTo(actionListContainer);
     });
   };
 
   $.ajax({ url: API_BASE + '/actions/' + pairKey + '?scope=entity', success: actionListCallback });
 }
 
+/**
+ * Renders a difference event in the content viewer panel
+ * @param event
+ */
 function renderEvent(event) {
   if (event == null) return;
 
@@ -155,9 +192,13 @@ function renderEvent(event) {
       downstreamLabel = "downstream",
       downstreamVersion = event.downstreamVsn || "no version";
 
-  $('#contentviewer h6').eq(0).text('Content for item ID: ' + itemID);
-  $('#item1 .diffHash').html('<span>' + upstreamLabel + '</span>' + upstreamVersion);
-  $('#item2 .diffHash').html('<span>' + downstreamLabel + '</span>' + downstreamVersion);
+  $('#content-label').text('Content for item ID: ' + itemID);
+
+  $('#item1 .upstreamLabel').text(upstreamLabel);
+  $('#item1 .diff-hash').text(upstreamVersion);
+
+  $('#item2 .downstreamLabel').text(downstreamLabel);
+  $('#item2 .diff-hash').text(downstreamVersion);
 
   var getContent = function(selector, label, upOrDown) {
     $.ajax({
@@ -189,33 +230,44 @@ function selectFromList(event) {
   if (!event) {
     return false;
   }
-  var row = event.target.nodeName === "tr" ? $(event.target) : $(event.target).closest('tr');
-  renderEvent(row.data("event"));
-  if (row.data("event") != null) {
-    $('#diffList').find('tbody tr').removeClass("specific_selected");
+
+  if (event.target.parentNode.id === "difflist-header") {
+    return false;
+  }
+
+  // TODO This selector is a real hack
+  var row = $(event.target).closest('div[id*="evt_"]');
+  var event = row.data("event");
+  if (event != null) {
+    renderEvent(event);
+    $('#diffList').find('div').removeClass("specific_selected");
     $('#evt_' + row.data("event").seqId).addClass("specific_selected");
   }
 }
 
+/**
+ * Appends a row to the difflist table
+ * @param table
+ * @param event
+ */
 function addRow(table, event) {
   var time = new Date(event.detectedAt).toString("HH:mm:ss");
   var date = new Date(event.detectedAt).toString("dd/MM/yyyy");
-  var row = $("<tr id='evt_" + event.seqId + "'></tr>")
-      .append("<td class='date'>" + date + "</td>")
-      .append("<td>" + time + "</td>")
-    /*.append("<td id='" + event.detectedAt + "_" + event.objId.pairKey + "_group'></td>")*/
-      .append("<td>" + event.objId.pairKey + "</td>")
-      .append("<td>" + event.objId.id + "</td>")
+  var row = $("<div class='span-14' id='evt_" + event.seqId + "'></div>")
+      .append("<div class='span-2'>" + date + "</div>")
+      .append("<div class='span-2'>" + time + "</div>")
+      .append("<div class='span-3 wrappable'>" + event.objId.pairKey + "</div>")
+      .append("<div class='span-3 wrappable'>" + event.objId.id + "</div>")
       .data("event", event);
 
   if (!event.upstreamVsn) {
-    row.append("<td>Missing from upstream</td>");
+    row.append("<div class='span-4 last'>Missing from upstream</div>");
   }
   else if (!event.downstreamVsn) {
-    row.append("<td>Missing from downstream</td>");
+    row.append("<div class='span-4 last'>Missing from downstream</div>");
   }
   else {
-    row.append("<td>Data difference</td>");
+    row.append("<div class='span-4 last'>Data difference</div>");
   }
 
   table.append(row);
@@ -256,7 +308,7 @@ function fetchData() {
 
       $.get(url, function(data) {
         renderEvent(data[0]);
-        var list = $('#diffList').find('tbody').empty().end();
+        var list = $('#difflist-row').empty();
         $.each(data, function(i, event) {
           addRow(list, event);
         });
@@ -357,7 +409,8 @@ function drawGrid() {
   }
 
   var lane = 0;
-  for (var s = 0.5 + (2 * gutterSize + gridSize); s < canvas.height; s += (2 * gutterSize + gridSize)) {
+  var laneHeight = swimlaneHeight();
+  for (var s = 0.5 + laneHeight; s < canvas.height; s += laneHeight) {
     dashedLine(underlayContext, 0, s, canvas.width, s, 2);
     if (swimlaneLabels[lane] != null) {
       underlayContext.font = "11px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
@@ -436,8 +489,8 @@ function coords(e) {
     y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
   }
 
-  x -= display.offsetLeft;
-  y -= display.offsetTop;
+  x -= heatmap.offsetLeft;
+  y -= heatmap.offsetTop;
 
   return { "x":x, "y":y };
 }
@@ -534,11 +587,12 @@ function initGraph() {
   initCanvas();
 
   $(document).mouseup(mouseUp);
-  $("#display").mousedown(mouseDown);
   $(document).mousemove(mouseMove);
 
+  // Register the handling for dragging the heatmap on the highest layer
+  overlay.onmousedown = mouseDown;
 
-  $("#display").bind("contextmenu", function(e) {
+  $("#heatmap").bind("contextmenu", function(e) {
     return false;
   });
   $("#diffList").click(function(e) {

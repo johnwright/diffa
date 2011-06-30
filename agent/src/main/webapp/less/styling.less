@@ -1,0 +1,93 @@
+/*
+
+    Copyright (C) 2010-2011 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+*/
+
+/* Reference the blueprint definitions in files renamed from .css to .less so that we can mix them in */
+@import "blueprint/screen.less";
+
+/* Bind in all of the constituent parts of the stylesheet */
+@import "difflist.less";
+@import "contentviewer.less";
+@import "heatmap.less";
+@import "settings.less";
+
+/* Define all of the colors used throughout */
+@yellow-background: #FFF2CC;
+@background-grey: #757575;
+@text-grey: #545454;
+@link-orange: #fca961;
+@light-grey-background: #edece1;
+@bright-yellow: #FFFD94;
+@dark-text: #333;
+@light-border: #ccc;
+
+@min-line-height: 18px;
+
+@small-font-size: 0.85em;
+
+/* The column width and right margin are taken from Blueprint's definitions */
+@column-width: 30px;
+@right-margin: 10px;
+@border-thickness: 1px;
+
+@dotted-border: @border-thickness dotted silver;
+
+/* Common border definition */
+.top-and-bottom-borders {
+  min-height: @min-line-height;
+  border-bottom: @dotted-border;
+  border-top: @dotted-border;
+}
+
+// Mixin certain Blueprint definitions into various object classes
+div.main-logo {
+  .prepend-top;
+  .prepend-1;
+  .span-19;
+}
+
+div.top-navigation-link {
+  .span-2;
+  .last;
+}
+
+// GENERAL BODY WORK
+
+body {
+  font-family: andale mono, courier new, courier, mono;
+  color: @text-grey;
+}
+
+/* This was the original sizing, preserving it for consistency's sake */
+h1 {
+  font-size: 2.25em;      /* 31.5px */
+  line-height: 1.333em;   /* ie. 42px, seven 6px increments */
+  margin-bottom: 0.381em; /* ie 12px */
+}
+
+a {
+  color: @link-orange;
+  text-decoration: underline;
+}
+
+button.repair {
+  color: @dark-text;
+  background-color: @bright-yellow;
+  margin: 10px 5px 0 0;
+  border: 1px solid @light-border;
+  cursor: pointer;
+}
