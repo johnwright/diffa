@@ -16,6 +16,9 @@
 
 */
 
+/* Reference the blueprint definitions in files renamed from .css to .less so that we can mix them in */
+@import "blueprint/screen.less";
+
 /* Define all of the colors used throughout */
 @yellow-background: #FFF2CC;
 @background-grey: #757575;
@@ -49,7 +52,29 @@
   border-top: @dotted-border;
 }
 
+// Mixin certain Blueprint definitions into various selected objects
+#main-logo {
+  .prepend-top;
+  .prepend-1;
+  .span-19;
+}
+
+#top-navigation-link {
+  .span-2;
+  .last;
+}
+
+#heatmap {
+  .span-20;
+  .prepend-top;
+}
+
 // DIFF LIST
+
+#diff-list-container {
+  .span-14;
+  .append-1;
+}
 
 /* Wrap long items in columns */
 div.wrappable {
@@ -68,6 +93,8 @@ div.specific_selected {
 }
 
 #difflist-row {
+  .span-14;
+  .last;
   cursor: pointer;
   font-size: @small-font-size;
 }
@@ -76,11 +103,18 @@ div.specific_selected {
   .top-and-bottom-borders;
 }
 
+#previous {
+  .span-2;
+}
+
 #next {
+  .span-2;
+  .last;
   text-align: right;
 }
 
 #pagecount {
+  .span-10;
   text-align: center;
 }
 

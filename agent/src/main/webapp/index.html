@@ -31,31 +31,32 @@
 
   <!--
   This can be used to reload the less templates automatically in dev mode
+  -->
   <script type="text/javascript" charset="utf-8">
     less.env = "development";
     less.watch();
   </script>
-  -->
+
 
 </head>
 
   <body>
   <div class="container">
 
-    <div class="prepend-top prepend-1 span-19">
+    <div id="main-logo">
       <h1>Diffa</h1>
     </div>
 
-    <div class="span-2 last">
+    <div id="top-navigation-link">
       <a href="settings.html">Settings</a>
     </div>
 
-    <div id="heatmap" class="prepend-top span-20">
+    <div id="heatmap">
       <canvas id="underlay" style="background-color: #cfe2f3;width: inherit; position: relative;" ></canvas>
       <canvas id="scale" style="width: inherit;"></canvas>
     </div>
 
-    <div id="diffListContainer" class="span-14 append-1">
+    <div id="diff-list-container">
 
       <div id="diffList">
 
@@ -70,7 +71,7 @@
         <hr class="space"/>
 
         <div id="difflist-row">
-          <div class="span-14 last">No items loaded yet...</div>
+          <div>No items loaded yet...</div>
         </div>
 
       </div>
@@ -78,9 +79,9 @@
       <hr class="space"/>
 
       <div id="navigation">
-        <div id="previous" class="span-2"><a href="#">&lt;-Previous</a></div>
-        <div id="pagecount" class="span-10">nn of XX pages</div>
-        <div id="next" class="span-2 last"><a href="#">Next-&gt;</a></div>
+        <div id="previous"><a href="#">&lt;-Previous</a></div>
+        <div id="pagecount">nn of XX pages</div>
+        <div id="next"><a href="#">Next-&gt;</a></div>
       </div>
 
     </div>
