@@ -1,0 +1,48 @@
+/* Styles the difflist container */
+
+#diff-list-container {
+  .span-14;
+  .append-1;
+}
+
+/* Wrap long items in columns */
+div.wrappable {
+  word-wrap: break-word;
+}
+
+/* Highlight the currently selected row in the diff list*/
+div.specific_selected {
+  background-color: @yellow-background;
+}
+
+#difflist-header {
+  .top-and-bottom-borders;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+#difflist-row {
+  .span-14;
+  .last;
+  cursor: pointer;
+  font-size: @small-font-size;
+}
+
+#navigation {
+  .top-and-bottom-borders;
+}
+
+#previous {
+  .span-2;
+}
+
+#next {
+  .span-2;
+  .last;
+  text-align: right;
+}
+
+#pagecount {
+  .span-10;
+  text-align: center;
+}

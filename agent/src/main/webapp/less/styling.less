@@ -18,6 +18,8 @@
 
 /* Reference the blueprint definitions in files renamed from .css to .less so that we can mix them in */
 @import "blueprint/screen.less";
+@import "difflist.less";
+@import "contentviewer.less";
 
 /* Define all of the colors used throughout */
 @yellow-background: #FFF2CC;
@@ -69,109 +71,6 @@
   .prepend-top;
 }
 
-// DIFF LIST
-
-#diff-list-container {
-  .span-14;
-  .append-1;
-}
-
-/* Wrap long items in columns */
-div.wrappable {
-  word-wrap: break-word;
-}
-
-/* Highlight the currently selected row in the diff list*/
-div.specific_selected {
-  background-color: @yellow-background;
-}
-
-#difflist-header {
-  .top-and-bottom-borders;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-#difflist-row {
-  .span-14;
-  .last;
-  cursor: pointer;
-  font-size: @small-font-size;
-}
-
-#navigation {
-  .top-and-bottom-borders;
-}
-
-#previous {
-  .span-2;
-}
-
-#next {
-  .span-2;
-  .last;
-  text-align: right;
-}
-
-#pagecount {
-  .span-10;
-  text-align: center;
-}
-
-// CONTENT VIEWER
-
-div.section-label {
-  background-color: @yellow-background;
-  padding: @text-padding;
-}
-
-div.endpoint-label {
-  background-color: @background-grey;
-  color: white;
-  padding: @text-padding;
-}
-
-#contentviewer {
-  border: @dotted-border;
-  width: @content-viwer-width;
-}
-
-div.diff-set {
-  width: @content-viwer-width;
-  height: @content-viewer-height;
-}
-
-div.diff-repair {
-  width: @content-viwer-width;
-  min-height: @content-viewer-height / 1.5;
-}
-
-div.action-item {
-  padding: 0 0 10px 10px;
-}
-
-div.diffHash {
-  background-color: @light-grey-background;
-  // Add the height of 1 row as the minimum height so that an empty div will be colored in correctly
-  min-height: @min-line-height;
-}
-
-#contentviewer pre {
-  font-size: @small-font-size;
-  font-family: lucida mono, monospace, andale mono;
-  max-height: @content-viewer-height - @min-line-height - 10;
-  max-width: 100%;
-  display: block;
-  overflow: auto;
-  white-space: pre;
-  padding: 5px;
-  margin: 0;
-}
-
-#repairstatus {
-  font-style: italic;
-}
-
 // GENERAL BODY WORK
 
 body {
@@ -187,8 +86,8 @@ h1 {
 }
 
 a {
-	color: @link-orange;
-	text-decoration: underline;
+  color: @link-orange;
+  text-decoration: underline;
 }
 
 button.repair {

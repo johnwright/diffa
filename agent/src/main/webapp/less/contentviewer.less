@@ -1,0 +1,53 @@
+/* Styles the content viewer panel */
+
+div.section-label {
+  background-color: @yellow-background;
+  padding: @text-padding;
+}
+
+div.endpoint-label {
+  background-color: @background-grey;
+  color: white;
+  padding: @text-padding;
+}
+
+#contentviewer {
+  border: @dotted-border;
+  width: @content-viwer-width;
+}
+
+div.diff-set {
+  width: @content-viwer-width;
+  height: @content-viewer-height;
+}
+
+div.diff-repair {
+  width: @content-viwer-width;
+  min-height: @content-viewer-height / 1.5;
+}
+
+div.action-item {
+  padding: 0 0 10px 10px;
+}
+
+div.diffHash {
+  background-color: @light-grey-background;
+  // Add the height of 1 row as the minimum height so that an empty div will be colored in correctly
+  min-height: @min-line-height;
+}
+
+#contentviewer pre {
+  font-size: @small-font-size;
+  font-family: lucida mono, monospace, andale mono;
+  max-height: @content-viewer-height - @min-line-height - 10;
+  max-width: 100%;
+  display: block;
+  overflow: auto;
+  white-space: pre;
+  padding: 5px;
+  margin: 0;
+}
+
+#repairstatus {
+  font-style: italic;
+}
