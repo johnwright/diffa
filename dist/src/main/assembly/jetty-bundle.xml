@@ -48,7 +48,7 @@
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
 
-    <!-- Jetty Booter, Tool Jars -->
+    <!-- Jetty Booter -->
     <dependencySet>
       <useTransitiveFiltering>false</useTransitiveFiltering>
       <useStrictFiltering>true</useStrictFiltering>
@@ -57,17 +57,6 @@
       </includes>
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
-    <dependencySet>
-      <useTransitiveFiltering>false</useTransitiveFiltering>
-      <useStrictFiltering>true</useStrictFiltering>
-      <outputDirectory>tools/</outputDirectory>
-      <includes>
-        <include>net.lshift.diffa:diffa-tools</include>
-        <include>commons-cli:commons-cli</include>
-      </includes>
-      <useProjectArtifact>false</useProjectArtifact>
-    </dependencySet>
-
 
     <!-- Jetty Runtime -->
     <dependencySet>

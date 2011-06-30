@@ -19,13 +19,6 @@
 <html>
   <head>
     <title>Diffa Settings</title>
-    <link rel="stylesheet" type="text/css" href="css/reset.css" media="screen"/>
-    <link rel="stylesheet" type="text/css" href="css/grid24.css" media="screen"/>
-    <link rel="stylesheet" type="text/css" href="css/jbase.css" media="screen"/>
-    <link rel="stylesheet" type="text/css" href="css/stickyfooter.css" media="screen"/>
-    <link rel="stylesheet" type="text/css" href="css/jquery-ui-slider.1.8.5.css" media="screen"/>
-    <link rel="stylesheet" type="text/css" href="css/style.css" media="screen"/>
-    <link rel="stylesheet" type="text/css" href="css/styles.css" media="screen"/>
 
     <script type="text/javascript" src="js/jquery-1.6.min.js"></script>
     <script type="text/javascript" src="js/smartupdater-3.0.02beta.js"></script>
@@ -37,20 +30,33 @@
 
   <body>
 
-    <div id="wrap" class="jbasewrap">
+    <div class="container">
 
-      <h1 class="padtop logo">Diffa Settings</h1>
+      <div class="main-logo">
+        <h1>Diffa Settings</h1>
+      </div>
 
-      <div class="admin_action">
+      <div class="top-navigation-link">
+        <a href="index.html">Diffa</a>
+      </div>
+
+      <div id="all-pairings">
         <a id="scan_all" href="#">Scan All Pairings For Differences</a>
-        <p>Polling: <span id="pollState"></span> every <span id="pollFrequency"></span> ms</p>
+        <div class="prepend-top">Polling: <span id="pollState"></span> every <span id="pollFrequency"></span> ms</div>
+      </div>
 
-        <table class="pair_states">
-          <thead>
-            <tr><td>Pair</td><td>State</td><td>Actions</td><td> </td></tr>
-          </thead>
-          <tbody id="pairs"/>
-        </table>
+      <div id="pair-list">
+
+        <div id="pairlist-header">
+          <div class="pair-name-span">Pair</div>
+          <div class="pair-state-span">State</div>
+          <div class="pair-action-span">Actions</div>
+        </div>
+
+        <hr class="space"/>
+
+        <div id="pairs"></div>
+
       </div>
 
     </div>

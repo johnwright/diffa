@@ -1,0 +1,20 @@
+<diffa-config>
+
+  <endpoint name="a"
+            url="http://localhost:19293/participant-demo/p/upstream"
+            content-type="application/json">
+  </endpoint>
+
+  <endpoint name="b"
+            url="http://localhost:19293/participant-demo/p/downstream"
+            content-type="application/json">
+  </endpoint>
+
+  <group name="mygroup">
+    <pair key="WEB-1" upstream="a" downstream="b" match-timeout="5" version-policy="same">
+      <repair-action name="Resend Source" url="http://localhost:19293/participant-demo/actions/resend/{id}" scope="entity"/>
+      <repair-action name="Resend All" url="http://localhost:19293/participant-demo/actions/resend-all" scope="pair"/>
+    </pair>
+  </group>
+
+</diffa-config>

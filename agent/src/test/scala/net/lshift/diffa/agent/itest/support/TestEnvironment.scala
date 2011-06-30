@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, Downstre
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
-import net.lshift.diffa.tools.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
+import net.lshift.diffa.agent.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
@@ -29,7 +29,7 @@ import org.restlet.data.Protocol
 import org.restlet.routing.Router
 import org.restlet.{Application, Component}
 import org.restlet.resource.{ServerResource, Post}
-import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RepairAction, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config._
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -83,7 +83,7 @@ class TestEnvironment(val pairKey: String,
   val pairScopedActionUrl = "http://localhost:8123/repair/resend-all"
 
   // Categories
-  val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
+  val categories = Map("someDate" -> new RangeCategoryDescriptor("datetime"), "someString" -> new SetCategoryDescriptor(Set("ss")))
   
   // Participants' RPC server setup
   participants.startUpstreamServer(upstream, upstream)
@@ -125,12 +125,16 @@ class TestEnvironment(val pairKey: String,
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, attributes:Map[String, String], content:String) {
-    upstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
+  def addAndNotifyUpstream(id:String, content:String, someDate:DateTime, someString:String) {
+    val attributes = Map("someDate" -> someDate.toString(), "someString" -> someString)
+
+    upstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, attributes:Map[String, String], content:String) {
-    downstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
+  def addAndNotifyDownstream(id:String, content:String, someDate:DateTime, someString:String) {
+    val attributes = Map("someDate" -> someDate.toString(), "someString" -> someString)
+
+    downstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
         changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))

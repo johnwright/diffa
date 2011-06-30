@@ -1,0 +1,92 @@
+/*
+
+    Copyright (C) 2010-2011 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+*/
+
+/* Styles the difflist container */
+
+#diff-list-container {
+  .span-14;
+  .append-1;
+}
+
+/* Wrap long items in columns */
+div.wrappable {
+  word-wrap: break-word;
+}
+
+/* Highlight the currently selected row in the diff list*/
+div.specific_selected {
+  background-color: @yellow-background;
+}
+
+#difflist-header {
+  .top-and-bottom-borders;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+#difflist-row {
+  .span-14;
+  .last;
+  cursor: pointer;
+  font-size: @small-font-size;
+}
+
+#navigation {
+  .top-and-bottom-borders;
+}
+
+#previous {
+  .span-2;
+}
+
+#next {
+  .span-2;
+  .last;
+  text-align: right;
+}
+
+#pagecount {
+  .span-10;
+  text-align: center;
+}
+
+/* Width of the date column*/
+div.date-span {
+  .span-2;
+}
+
+/* Width of the time column*/
+div.time-span {
+  .span-2;
+}
+
+/* Width of the pairing column*/
+div.pairing-span {
+  .span-3;
+}
+
+/* Width of the item-id column*/
+div.item-id-span {
+  .span-3;
+}
+
+/* Width of the difference column*/
+div.difference-span {
+  .span-4;
+  .last;
+}

@@ -1,0 +1,110 @@
+/*
+
+    Copyright (C) 2010-2011 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+*/
+
+/* Styles the content viewer panel */
+
+/* Shave the width of an 9 column wide area that needs to fit the border in */
+@content-viewer-width: 8 * (@column-width + @right-margin) + @column-width - 2 * @border-thickness;
+@content-viewer-height: 150px;
+
+@text-padding: 0 5px;
+
+div.section-label {
+  background-color: @yellow-background;
+  padding: @text-padding;
+  .last;
+}
+
+/* Common width definition */
+.viewer-outer-span {
+  .span-9;
+}
+
+/* Common width definition */
+.viewer-inner-span {
+  .span-2;
+}
+
+#contentviewer {
+  .viewer-outer-span;
+  .last;
+  border: @dotted-border;
+  width: @content-viewer-width;
+}
+
+.endpoint-label {
+  .viewer-inner-span;
+  background-color: @background-grey;
+  color: white;
+  padding: @text-padding;
+}
+
+div.upstreamLabel {
+  .endpoint-label;
+}
+
+div.downstreamLabel {
+  .endpoint-label;
+}
+
+div.diff-set {
+  .viewer-outer-span;
+  .last;
+  width: @content-viewer-width;
+  height: @content-viewer-height;
+}
+
+div.codebox {
+  .viewer-outer-span;
+  .last;
+}
+
+div.diff-repair {
+  .viewer-outer-span;
+  .last;
+  width: @content-viewer-width;
+  min-height: @content-viewer-height / 1.5;
+}
+
+div.action-item {
+  .last;
+  padding: 0 0 10px 10px;
+}
+
+div.diff-hash {
+  .last;
+  background-color: @light-grey-background;
+  // Add the height of 1 row as the minimum height so that an empty div will be colored in correctly
+  min-height: @min-line-height;
+}
+
+#contentviewer pre {
+  font-size: @small-font-size;
+  font-family: lucida mono, monospace, andale mono;
+  max-height: @content-viewer-height - @min-line-height - 10;
+  max-width: 100%;
+  display: block;
+  overflow: auto;
+  white-space: pre;
+  padding: 5px;
+  margin: 0;
+}
+
+#repairstatus {
+  font-style: italic;
+}

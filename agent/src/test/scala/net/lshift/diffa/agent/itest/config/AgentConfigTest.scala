@@ -17,7 +17,7 @@
 package net.lshift.diffa.agent.itest.config
 
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.tools.client.ConfigurationRestClient
+import net.lshift.diffa.agent.client.ConfigurationRestClient
 import org.junit.Test
 import com.eaio.uuid.UUID
 import net.lshift.diffa.messaging.json.NotFoundException

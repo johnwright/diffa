@@ -21,9 +21,9 @@ import collection.mutable.HashMap
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
 import javax.servlet.http.HttpServletRequest
-import net.lshift.diffa.participant.scanning._
 import scala.collection.JavaConversions._
 import java.util.ArrayList
+import net.lshift.diffa.participant.scanning._
 
 /**
  * Base class for test participants.
@@ -45,14 +45,14 @@ class MemoryParticipantBase(nativeVsnGen: String => String) extends ScanningPart
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     log.trace("Running version query: " + constraints)
     val constrained = constrainEntities(constraints)
-    constrained.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.attributes), e.lastUpdated,nativeVsnGen(e.body)))
+    constrained.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.toAttributes), e.lastUpdated,nativeVsnGen(e.body)))
   }
 
   def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
     log.trace("Running aggregate query: " + constraints)
     val constrained = constrainEntities(constraints)
     val b = new DigestBuilder(bucketing)
-    constrained foreach (ent => b.add(ent.id, ent.attributes, ent.lastUpdated, nativeVsnGen(ent.body)))
+    constrained foreach (ent => b.add(ent.id, ent.toAttributes, ent.lastUpdated, nativeVsnGen(ent.body)))
     b.digests
   }
 
@@ -68,8 +68,8 @@ class MemoryParticipantBase(nativeVsnGen: String => String) extends ScanningPart
     case None => null
   }
 
-  def addEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String): Unit = {
-    entities += ((id, TestEntity(id, attributes, lastUpdated, body)))
+  def addEntity(id: String, datetime:DateTime, someString:String, lastUpdated:DateTime, body: String): Unit = {
+    entities += ((id, TestEntity(id, datetime, someString, lastUpdated, body)))
   }
 
   def removeEntity(id:String) {
@@ -84,20 +84,42 @@ class MemoryParticipantBase(nativeVsnGen: String => String) extends ScanningPart
 
   protected override def determineAggregations(req: HttpServletRequest) = {
     val builder = new AggregationBuilder(req)
-      // No aggregations supported yet
+    builder.maybeAddDateAggregation("someDate")
+    builder.maybeAddByNameAggregation("someString")
     builder.toList
   }
 
   protected override def determineConstraints(req: HttpServletRequest) = {
     val builder = new ConstraintsBuilder(req)
-      // No constraints supported yet
+    builder.maybeAddTimeRangeConstraint("someDate")
+    builder.maybeAddSetConstraint("someString")
     builder.toList
   }
 
   protected def doQuery(constraints: java.util.List[ScanConstraint], aggregations: java.util.List[ScanAggregation]):java.util.List[ScanResultEntry] = {
-    val entitiesInRange = entities.values.toList    // TODO: Constrain when participant has a proper data model
-    entitiesInRange.sortWith(_.id < _.id).map { e => new ScanResultEntry(e.id, e.body, e.lastUpdated, e.attributes) }
+    val entitiesInRange = entities.values.filter(e => {
+      constraints.forall {
+        case drc:net.lshift.diffa.participant.scanning.TimeRangeConstraint =>
+          (drc.getStart == null || !e.someDate.isBefore(drc.getStart)) &&
+              (drc.getEnd == null || !e.someDate.isAfter(drc.getEnd))
+        case sc:net.lshift.diffa.participant.scanning.SetConstraint =>
+          sc.getValues.contains(e.someString)
+        case _ =>
+          false   // We can't satisfy other constraints
+      }
+    }).toList
+    val asScanResults = entitiesInRange.sortWith(_.id < _.id).map { e => new ScanResultEntry(e.id, e.body, e.lastUpdated, e.toAttributes) }
+
+    if (aggregations.length > 0) {
+      val digester = new net.lshift.diffa.participant.scanning.DigestBuilder(aggregations)
+      asScanResults.foreach(digester.add(_))
+      digester.toDigests
+    } else {
+      asScanResults
+    }
   }
 }
 
-case class TestEntity(id: String, attributes:Map[String, String], lastUpdated:DateTime, body: String)
+case class TestEntity(id: String, someDate:DateTime, someString:String, lastUpdated:DateTime, body: String) {
+  def toAttributes:Map[String, String] = Map("someDate" -> someDate.toString(), "someString" -> someString)
+}

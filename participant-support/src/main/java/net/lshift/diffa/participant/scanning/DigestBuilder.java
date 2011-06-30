@@ -23,6 +23,15 @@ public class DigestBuilder {
   }
 
   /**
+   * Adds a scan result entry. Note that this entry is expected to be for an entity - ie, it should have it's ID
+   * property present.
+   * @param entry the entry to add.
+   */
+  public void add(ScanResultEntry entry) {
+    add(entry.getId(), entry.getAttributes(), entry.getVersion());
+  }
+
+  /**
    * Adds a new version into the builder.
    * @param id the id of the entity being added
    * @param attributes the attributes of the entity being added. The builder expects that an attribute will be present
