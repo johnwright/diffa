@@ -19,11 +19,11 @@ package net.lshift.diffa.kernel.participants
 /**
  * Factory for creating participants that communicate over a given protocol/transport.
  */
-trait ParticipantProtocolFactory {
+trait ParticipantProtocolFactory extends AddressDrivenFactory {
   /**
-   * Queries whether the factory supports the given address/protocol combination.
+   * Queries whether the factory supports the given address/contentType combination.
    */
-  def supportsAddress(address:String, protocol:String):Boolean
+  def supportsAddress(address:String, contentType:String):Boolean
 
   /**
    * Creates an upstream participant using the given address and protocol. It is expected the factory has already

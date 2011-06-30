@@ -31,8 +31,10 @@ import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
 trait Participants {
 
   val upstreamUrl: String
+  val upstreamScanUrl: String
 
   val downstreamUrl: String
+  val downstreamScanUrl: String
 
   val inboundUrl: String
 
@@ -51,8 +53,10 @@ class HttpParticipants(usPort: Int, dsPort: Int) extends Participants {
   val log = LoggerFactory.getLogger(getClass)
 
   val upstreamUrl = "http://localhost:" + usPort
+  val upstreamScanUrl = upstreamUrl + "/scan"
 
   val downstreamUrl = "http://localhost:" + dsPort
+  val downstreamScanUrl = downstreamUrl + "/scan"
 
   val inboundUrl = null
 
@@ -102,7 +106,9 @@ case class AmqpParticipants(connectorHolder: ConnectorHolder,
   private var dsServer: Option[AmqpRpcServer] = None
 
   val upstreamUrl = AmqpQueueUrl(usQueue).toString
+  val upstreamScanUrl = null
   val downstreamUrl = AmqpQueueUrl(dsQueue).toString
+  val downstreamScanUrl = null
   val inboundUrl = AmqpQueueUrl(inboundQueue).toString
 
   def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler) = {
