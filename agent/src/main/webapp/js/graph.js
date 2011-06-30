@@ -192,13 +192,13 @@ function renderEvent(event) {
       downstreamLabel = "downstream",
       downstreamVersion = event.downstreamVsn || "no version";
 
-  $('#contentLabel').text('Content for item ID: ' + itemID);
+  $('#content-label').text('Content for item ID: ' + itemID);
 
   $('#item1 .upstreamLabel').text(upstreamLabel);
-  $('#item1 .diffHash').text(upstreamVersion);
+  $('#item1 .diff-hash').text(upstreamVersion);
 
   $('#item2 .downstreamLabel').text(downstreamLabel);
-  $('#item2 .diffHash').text(downstreamVersion);
+  $('#item2 .diff-hash').text(downstreamVersion);
 
   var getContent = function(selector, label, upOrDown) {
     $.ajax({

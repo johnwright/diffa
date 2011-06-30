@@ -3,22 +3,51 @@
 div.section-label {
   background-color: @yellow-background;
   padding: @text-padding;
+  .last;
 }
 
-div.endpoint-label {
+/* Common width definition */
+.viewer-outer-span {
+  .span-9;
+}
+
+/* Common width definition */
+.viewer-inner-span {
+  .span-2;
+}
+
+#contentviewer {
+  .viewer-outer-span;
+  .last;
+  border: @dotted-border;
+  width: @content-viwer-width;
+}
+
+.endpoint-label {
+  .viewer-inner-span;
   background-color: @background-grey;
   color: white;
   padding: @text-padding;
 }
 
-#contentviewer {
-  border: @dotted-border;
-  width: @content-viwer-width;
+div.upstreamLabel {
+  .endpoint-label;
+}
+
+div.downstreamLabel {
+  .endpoint-label;
 }
 
 div.diff-set {
+  .viewer-outer-span;
+  .last;
   width: @content-viwer-width;
   height: @content-viewer-height;
+}
+
+div.codebox {
+  .viewer-outer-span;
+  .last;
 }
 
 div.diff-repair {
@@ -27,10 +56,12 @@ div.diff-repair {
 }
 
 div.action-item {
+  .last;
   padding: 0 0 10px 10px;
 }
 
-div.diffHash {
+div.diff-hash {
+  .last;
   background-color: @light-grey-background;
   // Add the height of 1 row as the minimum height so that an empty div will be colored in correctly
   min-height: @min-line-height;
