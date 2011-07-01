@@ -201,10 +201,17 @@ function renderEvent(event) {
   $('#item2 .diff-hash').text(downstreamVersion);
 
   var getContent = function(selector, label, upOrDown) {
+    $(selector).hide();
+    var busy = $(selector).prev();
+    busy.show();
     $.ajax({
           url: "rest/diffs/events/" + sessionId + "/" + seqID + "/" + upOrDown,
           success: function(data) {
             $(selector).text(data || "no content found for " + upOrDown);
+          },
+          complete: function() {
+            busy.fadeOut('fast');
+            $(selector).show();
           },
           error: function(xhr, status, ex) {
             if (console && console.log) {
