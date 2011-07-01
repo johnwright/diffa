@@ -40,6 +40,12 @@ var bottomGutter = 10;
 var rightLimit = 0;
 var selectedBucket;
 
+// These global variables store pending requests so that all entity detail requests can be handled in a LIFO
+// fashion by aborting the previous request
+var pendingUpstreamRequest;
+var pendingDownstreamRequest;
+
+
 $(document).ready(function() {
   initGraph();
 });
@@ -200,25 +206,37 @@ function renderEvent(event) {
   $('#item2 .downstreamLabel').text(downstreamLabel);
   $('#item2 .diff-hash').text(downstreamVersion);
 
-  var getContent = function(selector, label, upOrDown) {
+  var getContent = function(selector, label, upOrDown, pendingRequest) {
+
+    if (pendingRequest) {
+      pendingRequest.abort();
+    }
+
     $(selector).hide();
     var busy = $(selector).prev();
     busy.show();
-    $.ajax({
+
+    pendingRequest = $.ajax({
           url: "rest/diffs/events/" + sessionId + "/" + seqID + "/" + upOrDown,
           success: function(data) {
             $(selector).text(data || "no content found for " + upOrDown);
           },
-          complete: function() {
-            busy.fadeOut('fast');
-            $(selector).show();
+          complete: function(x,status) {
+            // If the reason for completion is an abort, then leave the busy spinner in focus
+            // otherwise, fade it out and let the element get rendered again
+            if (status != "abort") {
+              pendingRequest = undefined;
+              busy.fadeOut('fast');
+              $(selector).show();
+            }
           },
           error: function(xhr, status, ex) {
-            if (console && console.log) {
+            if (status != "abort" && console && console.log) {
               console.log('error getting the content for ' + (label || "(no label)"), status, ex, xhr);
             }
           }
         });
+    return pendingRequest;
   };
 
   $.get("rest/config/pairs/" + pairKey, function(data, status, xhr) {
@@ -226,8 +244,8 @@ function renderEvent(event) {
     $("#item1 h6").text(upstreamLabel);
     downstreamLabel = data.downstream.name;
     $("#item2 h6").text(downstreamLabel);
-    getContent("#item1 pre", upstreamLabel, "upstream");
-    getContent("#item2 pre", downstreamLabel, "downstream");
+    pendingUpstreamRequest = getContent("#item1 pre", upstreamLabel, "upstream", pendingUpstreamRequest);
+    pendingDownstreamRequest = getContent("#item2 pre", downstreamLabel, "downstream", pendingDownstreamRequest);
   });
 
   renderEntityScopedActions(pairKey, itemID);
