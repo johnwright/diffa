@@ -62,9 +62,9 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     val query = new BooleanQuery
     query.add(new TermQuery(new Term("isMatched", "0")), BooleanClause.Occur.MUST)
 
-    applyConstraints(query, usConstraints, "up.")
-    applyConstraints(query, dsConstraints, "down.")
-
+    applyConstraints(query, usConstraints, Upstream, true)
+    applyConstraints(query, dsConstraints, Downstream, true)
+    
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
     searcher.search(query, idOnlyCollector)
@@ -80,7 +80,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
 
   def queryUpstreams(constraints:Seq[QueryConstraint]) = {
     val query = new BooleanQuery
-    applyConstraints(query, constraints, "up.")
+    applyConstraints(query, constraints, Upstream, false)
       // TODO: There doesn't seem to be a good way to filter for documents that have upstream versions. Currently,
       // we're having to do it after the documents are loaded.
 
@@ -92,7 +92,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   }
   def queryDownstreams(constraints:Seq[QueryConstraint]) = {
     val query = new BooleanQuery
-    applyConstraints(query, constraints, "down.")
+    applyConstraints(query, constraints, Downstream, false)
       // TODO: There doesn't seem to be a good way to filter for documents that have downstream versions. Currently,
       // we're having to do it after the documents are loaded.
 
@@ -102,8 +102,11 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.downstreamUVsn != null)
   }
 
-  private def applyConstraints(query:BooleanQuery, constraints:Seq[QueryConstraint], prefix:String) = {
-    // Apply all upstream constraints
+  private def applyConstraints(query:BooleanQuery, constraints:Seq[QueryConstraint], partType:StoreParticipantType, allowMissing:Boolean) = {
+    val prefix = partType.prefix
+
+    // Apply all upstream constraints to a subquery
+    val partQuery = new BooleanQuery
     constraints.foreach {
       case r:NoConstraint                  =>   // No constraints to add
       case u:UnboundedRangeQueryConstraint =>   // No constraints to add
@@ -113,16 +116,34 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
           case DateRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDate(lowerDate), formatDate(upperDate), true, true)
           case IntegerRangeConstraint(category, lowerInt, upperInt) => NumericRangeQuery.newIntRange(prefix + category, lowerInt, upperInt, true, true)
         }
-        query.add(tq, BooleanClause.Occur.MUST)
+        partQuery.add(tq, BooleanClause.Occur.MUST)
       }
       case s:PrefixQueryConstraint => {
         val wq = new WildcardQuery(new Term(prefix + s.category, s.prefix + "*"))
-        query.add(wq, BooleanClause.Occur.MUST)
+        partQuery.add(wq, BooleanClause.Occur.MUST)
       }
       case s:SetQueryConstraint  => {
         val setMatchQuery = new BooleanQuery
         s.values.foreach(x => setMatchQuery.add(new TermQuery(new Term(prefix + s.category, x)), BooleanClause.Occur.SHOULD))
-        query.add(setMatchQuery, BooleanClause.Occur.MUST)
+        partQuery.add(setMatchQuery, BooleanClause.Occur.MUST)
+      }
+    }
+
+    // We don't want to add our sub-query unless it has terms, since an empty MUST matches nothing.
+    if (partQuery.clauses().length > 0) {
+      if (allowMissing) {
+        // Since we allow the participant values to be missing (ie, only the other participant has a value for this id),
+        // then we need to insert an OR query where either the value is missing or it matches the constraints.
+
+        val missingOrMatchingQuery = new BooleanQuery
+        missingOrMatchingQuery.add(new TermQuery(new Term(partType.presenceIndicator, "0")), BooleanClause.Occur.SHOULD)
+        missingOrMatchingQuery.add(partQuery, BooleanClause.Occur.SHOULD)
+
+        query.add(missingOrMatchingQuery, BooleanClause.Occur.MUST)
+      } else {
+        // If we don't allow this part to be missing, then enforce that it's requirement is present and correct.
+        partQuery.add(new TermQuery(new Term(partType.presenceIndicator, "1")), BooleanClause.Occur.MUST)
+        query.add(partQuery, BooleanClause.Occur.MUST)
       }
     }
   }
@@ -162,6 +183,18 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
 }
 
 object LuceneVersionCorrelationStore {
+  trait StoreParticipantType {
+    def prefix:String
+    def presenceIndicator:String
+  }
+  case object Upstream extends StoreParticipantType {
+    val prefix = "up."
+    val presenceIndicator = "hasUpstream"
+  }
+  case object Downstream extends StoreParticipantType {
+    val prefix = "down."
+    val presenceIndicator = "hasDownstream"
+  }
 
   def retrieveCurrentDoc(index: Directory, id:VersionID) = {
     val searcher = new IndexSearcher(index, false)
@@ -233,6 +266,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
+      updateField(doc, boolField(Upstream.presenceIndicator, true))
       updateField(doc, stringField("uvsn", vsn))
     })
   }
@@ -242,6 +276,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
+      updateField(doc, boolField(Downstream.presenceIndicator, true))
       updateField(doc, stringField("duvsn", uvsn))
       updateField(doc, stringField("ddvsn", dvsn))
     })
@@ -256,6 +291,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
         doc.getFields.toList.foreach(f => {
           if (f.name.startsWith("up.")) doc.removeField(f.name)
         })
+        updateField(doc, boolField(Upstream.presenceIndicator, false))
         doc.removeField("uvsn")
 
         true  // Keep the document
@@ -272,6 +308,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
         doc.getFields.toList.foreach(f => {
           if (f.name.startsWith("down.")) doc.removeField(f.name)
         })
+        updateField(doc, boolField(Downstream.presenceIndicator, false))
         doc.removeField("duvsn")
         doc.removeField("ddvsn")
 
@@ -352,6 +389,8 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
           // Nothing in the index yet for this document, or it's pending deletion
           val doc = new Document
           doc.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+          doc.add(new Field(Upstream.presenceIndicator, "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+          doc.add(new Field(Downstream.presenceIndicator, "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
           doc
         }
         case Some(doc) => doc

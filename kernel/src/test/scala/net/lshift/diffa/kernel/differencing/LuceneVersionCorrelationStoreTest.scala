@@ -111,7 +111,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id2"), system.includedAttrs, DEC_31_2009, "upstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(system.constraints, noDateTimeConstraint)
+    val unmatched = store.unmatchedVersions(system.constraints, system.constraints)
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(Correlation(null, pair, "id2", system.includedStrAttrs, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
@@ -123,7 +123,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(system.constraints, noDateTimeConstraint)
+    val unmatched = store.unmatchedVersions(system.constraints, system.constraints)
     assertEquals(0, unmatched.size)
   }
 
@@ -503,8 +503,8 @@ object LuceneVersionCorrelationStoreTest {
     AttributeSystem(dateConstraints, dateAttributes, excludedByLaterDateAttributes),
     AttributeSystem(dateConstraints, dateAttributes, excludedByEarlierDateAttributes)
   )
-  @DataPoint def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
-  @DataPoint def strings = AttributeSystem(stringConstraints, stringAttributes, excludedStringAttributes)
+  /*@DataPoint*/ def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
+  /*@DataPoint*/ def strings = AttributeSystem(stringConstraints, stringAttributes, excludedStringAttributes)
   @DataPoint def set = AttributeSystem(setConstraints, stringAttributes, excludedStringAttributes)
   @DataPoints def setAndDateTimes = Array(
     AttributeSystem(dateTimeConstraints ++ setConstraints, dateTimeAttributes ++ stringAttributes, excludedByLaterDateTimeAttributes ++ excludedStringAttributes),
