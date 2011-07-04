@@ -503,8 +503,8 @@ object LuceneVersionCorrelationStoreTest {
     AttributeSystem(dateConstraints, dateAttributes, excludedByLaterDateAttributes),
     AttributeSystem(dateConstraints, dateAttributes, excludedByEarlierDateAttributes)
   )
-  /*@DataPoint*/ def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
-  /*@DataPoint*/ def strings = AttributeSystem(stringConstraints, stringAttributes, excludedStringAttributes)
+  @DataPoint def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
+  @DataPoint def strings = AttributeSystem(stringConstraints, stringAttributes, excludedStringAttributes)
   @DataPoint def set = AttributeSystem(setConstraints, stringAttributes, excludedStringAttributes)
   @DataPoints def setAndDateTimes = Array(
     AttributeSystem(dateTimeConstraints ++ setConstraints, dateTimeAttributes ++ stringAttributes, excludedByLaterDateTimeAttributes ++ excludedStringAttributes),
