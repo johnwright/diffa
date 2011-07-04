@@ -126,7 +126,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(abPair, writer, usMock, dsMock, nullListener, feedbackHandle)
-    policy.difference(abPair, nullListener)
+    policy.replayUnmatchedDifferences(abPair, nullListener)
 
     verifyAll
   }
@@ -169,7 +169,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(usMock.retrieveContent("id3")).andReturn("content3a")
     expect(dsMock.generateVersion("content3a")).andReturn(ProcessingResponse("id3", Seq(testData.values(1).toString), "vsn3a", downstreamVersionFor("vsn3a")))
 
-    // We should see a difference being generated
+    // We should see a replayStoredDifferences being generated
     listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), LiveWindow); expectLastCall
 
     // We should still see an unmatched version check
@@ -178,7 +178,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     policy.scanUpstream(abPair, writer, usMock, listener, feedbackHandle)
     policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(abPair, nullListener)
+    policy.replayUnmatchedDifferences(abPair, nullListener)
 
     verifyAll
   }

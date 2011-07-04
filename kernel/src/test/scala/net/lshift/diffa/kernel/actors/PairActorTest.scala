@@ -120,7 +120,7 @@ class PairActorTest {
   @Test
   def runDifference = {
     val monitor = new Object
-    expect(versionPolicy.difference(pairKey, diffListener)).andAnswer(new IAnswer[Unit] {
+    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener)).andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
 
@@ -146,7 +146,7 @@ class PairActorTest {
 
     expectScans
 
-    expect(versionPolicy.difference(pairKey, diffListener))
+    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
 
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
@@ -201,7 +201,7 @@ class PairActorTest {
            EasyMock.isA(classOf[DifferencingListener]),
            EasyMock.isA(classOf[FeedbackHandle])))
 
-    expect(versionPolicy.difference(pairKey, diffListener))
+    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
 
     replay(versionPolicy)
 

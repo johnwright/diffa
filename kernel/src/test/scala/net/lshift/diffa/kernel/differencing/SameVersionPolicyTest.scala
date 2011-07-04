@@ -102,7 +102,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
 
     policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(abPair, listener)
+    policy.replayUnmatchedDifferences(abPair, listener)
 
     verifyAll
   }

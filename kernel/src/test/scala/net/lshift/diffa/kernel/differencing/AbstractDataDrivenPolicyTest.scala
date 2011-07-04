@@ -87,7 +87,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
     verifyAll
   }
@@ -120,7 +120,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
     verifyAll
   }
@@ -157,7 +157,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
 
 
@@ -195,7 +195,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
     verifyAll
   }

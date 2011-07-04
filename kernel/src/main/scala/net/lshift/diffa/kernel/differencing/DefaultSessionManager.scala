@@ -259,6 +259,11 @@ class DefaultSessionManager(
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, antecedent:MatchingAntecedent) = {
     log.debug("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
+    antecedent match {
+      case ScanTrigger => log.info("Triggered by scan")
+      case _ =>
+    }
+
     matching.getMatcher(id.pairKey) match {
       case Some(matcher) => {
         matcher.isVersionIDActive(id) match {
