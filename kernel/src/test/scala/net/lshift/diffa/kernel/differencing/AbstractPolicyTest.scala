@@ -240,8 +240,8 @@ abstract class AbstractPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
       Correlation(null, abPair, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
       Correlation(null, abPair, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
-    listener.onMismatch(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", LiveWindow); expectLastCall
-    listener.onMismatch(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", LiveWindow); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", ScanTrigger); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", ScanTrigger); expectLastCall
 
     replayAll
 
