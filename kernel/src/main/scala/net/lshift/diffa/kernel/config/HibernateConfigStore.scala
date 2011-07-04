@@ -93,6 +93,8 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction] =
     sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
 
+  def listEscalationsForPair(pair: Pair) = listRepairActionsForPair(pair).filter(_.escalate)
+
   private def getRepairActionsInPair(s: Session, pair: Pair): Seq[RepairAction] =
     listQuery[RepairAction](s, "repairActionsByPair", Map("pairKey" -> pair.key))
 

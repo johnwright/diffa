@@ -100,6 +100,7 @@
     </composite-id>
     <property name="url" type="string" column="url" />
     <property name="scope" type="string" column="scope" />
+    <property name="escalate" type="boolean" column="escalate" />
   </class>
 
   <query name="endpointByName">

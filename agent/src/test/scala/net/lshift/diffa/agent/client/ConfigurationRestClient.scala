@@ -45,8 +45,8 @@ class ConfigurationRestClient(serverRootUrl:String)
     p
   }
 
-  def declareRepairAction(name: String, id: String, scope: String, pairKey: String) = {
-    val action = new RepairAction(name, id, scope, pairKey)
+  def declareRepairAction(name: String, id: String, scope: String, pairKey: String, escalate:Boolean) = {
+    val action = new RepairAction(name, id, scope, pairKey, escalate)
     create("/pairs/"+pairKey+"/repair-actions", action)
     action
   }

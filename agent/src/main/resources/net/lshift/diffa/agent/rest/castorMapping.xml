@@ -147,6 +147,9 @@
     <field name="scope" type="string">
       <bind-xml name="scope" node="attribute" />
     </field>
+    <field name="escalate" type="boolean">
+      <bind-xml name="escalate" node="attribute" />
+    </field>
   </class>
 
   <class name="net.lshift.diffa.agent.rest.DiffaCastorSerializableConfig">

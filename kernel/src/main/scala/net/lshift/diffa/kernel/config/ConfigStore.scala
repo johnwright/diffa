@@ -41,6 +41,8 @@ trait ConfigStore {
   def listRepairActions: Seq[RepairAction]
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
+  def listEscalationsForPair(pair: Pair): Seq[RepairAction]
+
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair
   def getGroup(key: String): PairGroup
@@ -205,11 +207,12 @@ case class RepairAction(
   @BeanProperty var name: String,
   @BeanProperty var url: String,
   @BeanProperty var scope: String,
-  @BeanProperty var pairKey: String
+  @BeanProperty var pairKey: String,
+  @BeanProperty var escalate: Boolean
 ) {
   import RepairAction._
 
-  def this() = this(null, null, null, null)
+  def this() = this(null, null, null, null, false)
 
   def validate(path:String = null) {
     val actionPath = ValidationUtil.buildPath(
@@ -220,6 +223,11 @@ case class RepairAction(
     this.scope = scope match {
       case ENTITY_SCOPE | PAIR_SCOPE => scope
       case _ => throw new ConfigValidationException(actionPath, "Invalid action scope: "+scope)
+    }
+
+    // Only allow escalation for entity based actions
+    if (escalate && scope.equals(PAIR_SCOPE)) {
+      throw new ConfigValidationException(actionPath, "Escalation only available for entity scoped actions")
     }
   }
 }
