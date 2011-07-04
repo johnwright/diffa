@@ -81,8 +81,6 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   def queryUpstreams(constraints:Seq[QueryConstraint]) = {
     val query = new BooleanQuery
     applyConstraints(query, constraints, Upstream, false)
-      // TODO: There doesn't seem to be a good way to filter for documents that have upstream versions. Currently,
-      // we're having to do it after the documents are loaded.
 
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
@@ -93,8 +91,6 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   def queryDownstreams(constraints:Seq[QueryConstraint]) = {
     val query = new BooleanQuery
     applyConstraints(query, constraints, Downstream, false)
-      // TODO: There doesn't seem to be a good way to filter for documents that have downstream versions. Currently,
-      // we're having to do it after the documents are loaded.
 
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(index, false)
