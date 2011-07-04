@@ -162,12 +162,13 @@ case class PairActor(pairKey:String,
     /**
      * Buffer up the match event because these won't be replayed by a subsequent difference operation.
      */
-    def onMatch(id:VersionID, vsn:String) = bufferedMatchEvents.enqueue(MatchEvent(id, _.onMatch(id, vsn)))
+    def onMatch(id:VersionID, vsn:String, antecedent:MatchingAntecedent)
+    = bufferedMatchEvents.enqueue(MatchEvent(id, _.onMatch(id, vsn, LiveWindow)))
 
     /**
      * Drop the mismatch, since we will be doing a full difference and the end of the scan process.
      */
-    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String) = ()
+    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String, antecedent:MatchingAntecedent) = ()
   }
 
   /**

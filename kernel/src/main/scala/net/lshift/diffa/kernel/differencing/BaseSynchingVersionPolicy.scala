@@ -58,9 +58,9 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
 
     if (corr.isMatched.booleanValue) {
-      listener.onMatch(evt.id, corr.upstreamVsn)
+      listener.onMatch(evt.id, corr.upstreamVsn, LiveWindow)
     } else {
-      listener.onMismatch(evt.id, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn)
+      listener.onMismatch(evt.id, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, LiveWindow)
     }
   }
 
@@ -96,7 +96,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   private def generateDifferenceEvents(pair:Pair, l:DifferencingListener) {
     // Run a query for mismatched versions, and report each one
     stores(pair.key).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
-      corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn))
+      corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, LiveWindow))
   }
 
   /**
@@ -167,7 +167,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       // Unmatched versions will be evented at the end of the sync. Matched versions should be evented immediately, as
       // we won't know what went from unmatched -> matched later.
       if (corr.isMatched.booleanValue) {
-        listener.onMatch(VersionID(corr.pairing, corr.id), corr.upstreamVsn)
+        listener.onMatch(VersionID(corr.pairing, corr.id), corr.upstreamVsn, LiveWindow)
       }
     }
 
