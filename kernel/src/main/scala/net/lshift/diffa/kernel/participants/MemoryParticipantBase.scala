@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletRequest
 import scala.collection.JavaConversions._
 import java.util.ArrayList
 import net.lshift.diffa.participant.scanning._
+import net.lshift.diffa.participant.content.ContentParticipantHandler
+import net.lshift.diffa.participant.correlation.VersioningParticipantHandler
 
 /**
  * Base class for test participants.
@@ -110,7 +112,7 @@ class MemoryParticipantBase(nativeVsnGen: String => String)
           false   // We can't satisfy other constraints
       }
     }).toList
-    val asScanResults = entitiesInRange.sortWith(_.id < _.id).map { e => new ScanResultEntry(e.id, e.body, e.lastUpdated, e.toAttributes) }
+    val asScanResults = entitiesInRange.sortWith(_.id < _.id).map { e => new ScanResultEntry(e.id, nativeVsnGen(e.body), e.lastUpdated, e.toAttributes) }
 
     if (aggregations.length > 0) {
       val digester = new net.lshift.diffa.participant.scanning.DigestBuilder(aggregations)

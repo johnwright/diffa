@@ -1,5 +1,7 @@
 package net.lshift.diffa.participant.scanning;
 
+import net.lshift.diffa.participant.common.JSONHelper;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;

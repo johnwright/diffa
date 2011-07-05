@@ -87,7 +87,7 @@ class TestEnvironment(val pairKey: String,
   
   // Participants' RPC server setup
   participants.startUpstreamServer(upstream, upstream, upstream)
-  participants.startDownstreamServer(downstream, downstream, downstream)
+  participants.startDownstreamServer(downstream, downstream, downstream, downstream)
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
@@ -96,7 +96,8 @@ class TestEnvironment(val pairKey: String,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
   configurationClient.declareEndpoint(Endpoint(name = downstreamEpName,
-    url = participants.downstreamUrl, scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl, contentType = contentType,
+    url = participants.downstreamUrl, scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
+    versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)

@@ -1,4 +1,6 @@
-package net.lshift.diffa.participant.scanning;
+package net.lshift.diffa.participant.content;
+
+import net.lshift.diffa.participant.common.ServletHelper;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -18,15 +20,15 @@ public abstract class ContentParticipantServlet extends HttpServlet {
     String identifier = req.getParameter("identifier");
     if (identifier == null) {
       resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-      writeResponse(resp, "Missing identifier parameter");
+      ServletHelper.writeResponse(resp, "Missing identifier parameter");
     } else {
       String content = retrieveContent(identifier);
       if (content == null) {
         resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        writeResponse(resp, "Identifier " + identifier + " is unknown");
+        ServletHelper.writeResponse(resp, "Identifier " + identifier + " is unknown");
       } else {
         resp.setStatus(HttpServletResponse.SC_OK);
-        writeResponse(resp, content);
+        ServletHelper.writeResponse(resp, content);
       }
     }
   }
@@ -37,13 +39,4 @@ public abstract class ContentParticipantServlet extends HttpServlet {
    * @return the entity content, or null if the entity is unknown.
    */
   protected abstract String retrieveContent(String identifier);
-
-  private void writeResponse(HttpServletResponse response, String content) throws IOException {
-    OutputStream output = response.getOutputStream();
-    try {
-      output.write(content.getBytes("UTF-8"));
-    } finally {
-      output.close();
-    }
-  }
 }

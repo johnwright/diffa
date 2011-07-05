@@ -1,13 +1,13 @@
-package net.lshift.diffa.participant.scanning;
+package net.lshift.diffa.participant.content;
 
 /**
  * Adapter allowing a ContentParticipant to be implemented without requiring it to sub-class the
  * ContentParticipantRequestHandler or the ContentParticipantServlet, and instead be delegated to.
  */
-public class ContentParticipantAdapter extends ContentParticipantRequestHandler {
+public class ContentParticipantDelegator extends ContentParticipantRequestHandler {
   private final ContentParticipantHandler handler;
 
-  public ContentParticipantAdapter(ContentParticipantHandler handler) {
+  public ContentParticipantDelegator(ContentParticipantHandler handler) {
     this.handler = handler;
   }
 

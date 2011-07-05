@@ -18,15 +18,15 @@ package net.lshift.diffa.kernel.participants
 
 import java.lang.String
 import net.lshift.diffa.kernel.differencing.AttributesUtil
-import net.lshift.diffa.participant.scanning.ProcessingResponse
+import net.lshift.diffa.participant.correlation.{ProcessingResponse, VersioningParticipantHandler}
 import scala.collection.JavaConversions._
-
 /**
  * Downstream participant stub for use in test cases.
  */
 class DownstreamMemoryParticipant(val uvsnGen: String => String, val dvsnGen: String => String)
         extends MemoryParticipantBase(dvsnGen)
-        with DownstreamParticipant {
+        with DownstreamParticipant
+        with VersioningParticipantHandler {
 
   def generateVersion(entityBody: String) = {
     entities.values.toList.find(ent => entityBody.equals(ent.body)) match {

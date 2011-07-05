@@ -24,12 +24,9 @@ import org.junit.Test
  * to detect and report on them. The participants in this test require correlation between their versioning schemes,
  * and will produce different versions for a given piece of content.
  */
-class CorrelatedEnvironmentTest /*extends AbstractEnvironmentTest
+class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
     with CommonDifferenceTests
-    with CommonActionTests */{
+    with CommonActionTests {
   
-//  def envFactory = TestEnvironments.correlated _
-
-  @Test
-  def truth() {}
+  def envFactory = TestEnvironments.correlated _
 }

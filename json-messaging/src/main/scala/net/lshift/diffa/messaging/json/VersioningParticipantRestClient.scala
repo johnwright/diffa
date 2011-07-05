@@ -20,7 +20,8 @@ import net.lshift.diffa.kernel.participants._
 import com.sun.jersey.api.client.ClientResponse
 import org.apache.commons.io.IOUtils
 import javax.ws.rs.core.MediaType
-import net.lshift.diffa.participant.scanning.{JSONHelper, ProcessingResponse}
+import net.lshift.diffa.participant.common.JSONHelper
+import net.lshift.diffa.participant.correlation.ProcessingResponse
 
 /**
  * JSON/REST versioning participant client.
@@ -34,8 +35,8 @@ class VersioningParticipantRestClient(scanUrl:String)
     val params = new MultivaluedMapImpl()
     params.add("body", entityBody)
 
-    val jsonEndpoint = resource.`type`(MediaType.APPLICATION_JSON_TYPE)
-    val response = jsonEndpoint.post(classOf[ClientResponse], params)
+    val formEndpoint = resource.`type`("application/x-www-form-urlencoded")
+    val response = formEndpoint.post(classOf[ClientResponse], params)
     response.getStatus match {
       case 200 => JSONHelper.readProcessingResponse(response.getEntityInputStream)
       case _   =>

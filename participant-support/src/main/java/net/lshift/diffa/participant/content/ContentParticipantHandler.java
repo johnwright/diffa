@@ -1,4 +1,4 @@
-package net.lshift.diffa.participant.scanning;
+package net.lshift.diffa.participant.content;
 
 /**
  * Handler interface that can be implemented in client libraries to allow for content queries.

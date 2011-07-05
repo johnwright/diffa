@@ -29,7 +29,8 @@ import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.util.FullDateTimes._
 
 import scala.collection.JavaConversions._
-import net.lshift.diffa.participant.scanning.{ScanResultEntry,ProcessingResponse}
+import net.lshift.diffa.participant.correlation.ProcessingResponse
+import net.lshift.diffa.participant.scanning.ScanResultEntry
 
 /**
  * Test cases for the correlated version policy test.

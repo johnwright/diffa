@@ -19,7 +19,7 @@ import com.sun.jersey.core.util.MultivaluedMapImpl
 import net.lshift.diffa.kernel.participants._
 import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
-import net.lshift.diffa.participant.scanning.JSONHelper
+import net.lshift.diffa.participant.common.JSONHelper
 import org.apache.commons.io.IOUtils
 
 /**

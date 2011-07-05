@@ -21,10 +21,13 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import org.eclipse.jetty.server.{Request, Server}
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 import java.io.OutputStream
-import net.lshift.diffa.participant.scanning.{ContentParticipantAdapter, ContentParticipantHandler, ScanningParticipantRequestHandler}
+import net.lshift.diffa.participant.content.{ContentParticipantHandler, ContentParticipantDelegator}
+import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
+import net.lshift.diffa.participant.correlation.{VersioningParticipantHandler, VersioningParticipantDelegator}
 
-class ParticipantRpcServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) {
-  private val contentAdapter = new ContentParticipantAdapter(content)
+class ParticipantRpcServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler, versioning:VersioningParticipantHandler) {
+  private val contentAdapter = new ContentParticipantDelegator(content)
+  private val versioningAdapter = new VersioningParticipantDelegator(versioning)
 
   private val server = new Server(port)
   server.setHandler(new AbstractHandler {
@@ -33,6 +36,8 @@ class ParticipantRpcServer(port: Int, handler: ProtocolHandler, scanning:Scannin
         scanning.handleRequest(request, response)
       } else if (target.startsWith("/content")) {
         contentAdapter.handleRequest(request, response);
+      } else if (versioning != null && target.startsWith("/corr-version")) {
+        versioningAdapter.handleRequest(request, response);
       } else {
         val os = response.getOutputStream
         val tRequest = new TransportRequest(request.getPathInfo.substring(1), request.getInputStream)

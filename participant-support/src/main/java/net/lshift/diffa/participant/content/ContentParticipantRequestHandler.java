@@ -1,4 +1,4 @@
-package net.lshift.diffa.participant.scanning;
+package net.lshift.diffa.participant.content;
 
 import org.springframework.web.HttpRequestHandler;
 

@@ -17,7 +17,8 @@
 package net.lshift.diffa.kernel.participants
 
 import java.io.Closeable
-import net.lshift.diffa.participant.scanning.{ScanResultEntry,ProcessingResponse}
+import net.lshift.diffa.participant.correlation.ProcessingResponse
+import net.lshift.diffa.participant.scanning.ScanResultEntry
 
 /**
  * Trait supported by various RPC bindings providing communications with participants.

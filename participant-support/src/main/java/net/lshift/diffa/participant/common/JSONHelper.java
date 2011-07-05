@@ -1,5 +1,7 @@
-package net.lshift.diffa.participant.scanning;
+package net.lshift.diffa.participant.common;
 
+import net.lshift.diffa.participant.correlation.ProcessingResponse;
+import net.lshift.diffa.participant.scanning.ScanResultEntry;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 

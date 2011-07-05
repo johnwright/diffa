@@ -1,7 +1,7 @@
 package net.lshift.diffa.kernel.participants
 
 import java.io.Closeable
-import net.lshift.diffa.participant.scanning.ProcessingResponse
+import net.lshift.diffa.participant.correlation.ProcessingResponse
 
 /**
  * Reference to a version generating participant. This allows for version information to be recovered in a correlated

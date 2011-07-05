@@ -1,4 +1,4 @@
-package net.lshift.diffa.participant.scanning;
+package net.lshift.diffa.participant.correlation;
 
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
