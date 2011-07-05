@@ -19,12 +19,13 @@ package net.lshift.diffa.kernel.escalation
 import org.junit.Test
 import org.easymock.EasyMock._
 import org.easymock.EasyMock
-import net.lshift.diffa.kernel.config.{RepairAction, ConfigStore, Pair => Pair}
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.differencing.TriggeredByScan
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
+import net.lshift.diffa.kernel.config.{Escalation, ConfigStore, Pair => Pair}
+import net.lshift.diffa.kernel.config.{EscalationActionType, EscalationOrigin, EscalationEvent}
 
 class EscalationManagerTest {
 
@@ -36,7 +37,7 @@ class EscalationManagerTest {
   expect(configStore.getPair(pairKey)).andReturn(Pair())
 
   expect(configStore.listEscalationsForPair(EasyMock.isA(classOf[Pair]))).andReturn(
-    List(RepairAction("foo", "url", RepairAction.ENTITY_SCOPE, pairKey, true))
+    List(Escalation("foo", pairKey, "bar", EscalationActionType.REPAIR, EscalationEvent.MISMATCH, EscalationOrigin.SCAN))
   )
 
   expect(actionsClient.invoke(EasyMock.isA(classOf[ActionableRequest]))).andReturn(InvocationResult("200", "Success"))

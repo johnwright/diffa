@@ -63,8 +63,7 @@ class HibernateConfigStoreTest {
   val repairAction = new RepairAction(name="REPAIR_ACTION_NAME",
                                       scope=RepairAction.ENTITY_SCOPE,
                                       url="resend",
-                                      pairKey=pairKey,
-                                      escalate=false)
+                                      pairKey=pairKey)
 
   val groupKey2 = "TEST_GROUP2"
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"

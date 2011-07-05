@@ -100,7 +100,17 @@
     </composite-id>
     <property name="url" type="string" column="url" />
     <property name="scope" type="string" column="scope" />
-    <property name="escalate" type="boolean" column="escalate" />
+  </class>
+
+  <class name="Escalation" table="escalations" abstract="false">
+    <composite-id mapped="true">
+      <key-property name="name" type="string" column="name" />
+      <key-property name="pairKey" type="string" column="pair_key" />
+    </composite-id>
+    <property name="action" type="string" column="action" not-null="true" />
+    <property name="actionType" type="string" column="action_type" not-null="true"/>
+    <property name="event" type="string" column="event" not-null="true"/>
+    <property name="origin" type="string" column="origin" not-null="true"/>
   </class>
 
   <query name="endpointByName">
@@ -121,6 +131,10 @@
 
   <query name="repairActionByNameAndPairKey">
     select a from RepairAction a where a.name = :name and a.pairKey = :pairKey
+  </query>
+
+  <query name="escalationsByPairKey">
+    select e from Escalation e where e.pairKey = :pairKey
   </query>
 
   <query name="allEndpoints">

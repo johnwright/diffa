@@ -101,7 +101,7 @@ class ConfigurationTest {
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
-      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab", false))
+      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab"))
     )
 
     expect(endpointListener.onEndpointAvailable(ep1)).once
@@ -153,7 +153,7 @@ class ConfigurationTest {
           // ac is gone
         PairDef("ad", "same", 5, "upstream1", "downstream2", "gbb")),
       // name of repair action is changed
-      repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab", false))
+      repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab"))
     )
 
     expect(pairManager.stopActor("ab")).once
@@ -181,7 +181,7 @@ class ConfigurationTest {
     assertEquals(config, newConfig)
 
     // check that the action was updated
-    assertEquals(Set(RepairAction("Resend Source", "resend", "pair", "ab", false)), newConfig.repairActions)
+    assertEquals(Set(RepairAction("Resend Source", "resend", "pair", "ab")), newConfig.repairActions)
     verifyAll
   }
 
