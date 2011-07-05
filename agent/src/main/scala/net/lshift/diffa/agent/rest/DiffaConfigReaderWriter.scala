@@ -106,7 +106,8 @@ class DiffaCastorSerializableConfig {
       endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
       groups = groups.map(g => PairGroup(g.name)).toSet,
       pairs = (for (g <- groups; p <- g.pairs) yield p.toPairDef(g.name)).toSet,
-      repairActions = (for (g <- groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet
+      repairActions = (for (g <- groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet,
+      escalations = (for (g <- groups; p <- g.pairs; e <- p.escalations) yield { e.pairKey = p.key ; e }).toSet
     )
 
 }
