@@ -45,13 +45,22 @@ class ParticipantRestClient(root:String) extends AbstractRestClient(root, "") wi
     executeRpc("retrieve_content", serializeEntityContentRequest(identifier)) match {
       case Some(r) => {
         val content = deserializeEntityContent(r)
-        if (content.equals("")) {
-          log.warn("Returning default value for id: " + identifier)
+        isEmpty(content) match {
+          case false => content
+          case true  => {
+            log.warn("Returning default value for id: " + identifier)
+            ""
+          }
         }
-        content
       }
       case None => ""
     }
+  }
+
+  def isEmpty(s:String) = s match {
+    case null => true
+    case ""   => true
+    case _    => false
   }
 
   private def pack(seq:Seq[QueryConstraint]) = serializeQueryConstraints(seq.map(_.wireFormat))
