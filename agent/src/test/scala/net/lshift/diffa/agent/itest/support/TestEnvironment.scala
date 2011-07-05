@@ -86,8 +86,8 @@ class TestEnvironment(val pairKey: String,
   val categories = Map("someDate" -> new RangeCategoryDescriptor("datetime"), "someString" -> new SetCategoryDescriptor(Set("ss")))
   
   // Participants' RPC server setup
-  participants.startUpstreamServer(upstream, upstream, upstream)
-  participants.startDownstreamServer(downstream, downstream, downstream, downstream)
+  participants.startUpstreamServer(upstream, upstream)
+  participants.startDownstreamServer(downstream, downstream, downstream)
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
@@ -109,11 +109,6 @@ class TestEnvironment(val pairKey: String,
   }
   def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionUrl, RepairAction.PAIR_SCOPE, pairKey)
   
-  // Participants' RPC client setup
-//  val upstreamClient: UpstreamParticipant = participants.upstreamClient
-//  val downstreamClient: DownstreamParticipant = participants.downstreamClient
-
-
   val username = "foo"
   val mail = "foo@bar.com"
   usersClient.declareUser(username,mail)

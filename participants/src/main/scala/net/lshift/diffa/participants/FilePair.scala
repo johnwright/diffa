@@ -34,15 +34,15 @@ object FilePair extends Application {
   val upstream = new UpstreamFileParticipant("a", "target/upstream", "http://localhost:19093/diffa-agent")
   val downstream = new DownstreamFileParticipant("b", "target/downstream", "http://localhost:19093/diffa-agent")
 
-  forkServer(upstreamPort, new UpstreamParticipantHandler(upstream), null)
-  forkServer(downstreamPort, new DownstreamParticipantHandler(downstream), null)
+  forkServer(upstreamPort, null)
+  forkServer(downstreamPort, null)
 
   private def ensureDir(path:String) {
     (new File(path)).mkdirs
   }
 
-  private def forkServer(port:Int, handler:ProtocolHandler, scanning:ScanningParticipantRequestHandler):Unit = {
-    val server = new ParticipantRpcServer(port, handler, scanning, null, null)
+  private def forkServer(port:Int, scanning:ScanningParticipantRequestHandler):Unit = {
+    val server = new ParticipantRpcServer(port, scanning, null, null)
     new Thread { override def run = server.start }.start
   }
 }
