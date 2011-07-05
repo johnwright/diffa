@@ -474,7 +474,6 @@ object LuceneVersionCorrelationStoreTest {
   private val excludedByEarlierDateTimeAttributes = bizDateTimeMap(FEB_15_2010)
   private val excludedByLaterDateTimeAttributes = bizDateTimeMap(AUG_11_2010_1)
   private val dateTimeConstraints = Seq(DateTimeRangeConstraint("bizDateTime", JUL_2010, END_JUL_2010))
-  private val noDateTimeConstraint = Seq(NoConstraint("bizDateTime"))
 
   private val dateAttributes = bizDateMap(JUL_1_2010.toLocalDate)
   private val excludedByEarlierDateAttributes = bizDateMap(FEB_15_2010.toLocalDate)
