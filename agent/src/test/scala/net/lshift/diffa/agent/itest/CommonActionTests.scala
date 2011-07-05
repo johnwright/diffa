@@ -84,7 +84,7 @@ trait CommonActionTests {
 
   @Test(expected=classOf[BadRequestException])
   def shouldRejectInvalidActionScope {
-    env.configurationClient.declareRepairAction(env.entityScopedActionName, "resend", "INVALID SCOPE", env.pairKey)
+    env.configurationClient.declareRepairAction(env.entityScopedActionName, "resend", "INVALID SCOPE", env.pairKey, false)
   }
 
   private def withActionsServer(op: => Unit) {
