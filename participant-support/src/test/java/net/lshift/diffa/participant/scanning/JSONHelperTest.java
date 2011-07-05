@@ -63,6 +63,24 @@ public class JSONHelperTest {
     assertEquals(entry, deserialised[0]);
   }
 
+  @Test
+  public void shouldRoundtripProcessingResponseWithoutAttributes() throws Exception {
+    ProcessingResponse resp = new ProcessingResponse("id1", "uv1", "dv1");
+    String respJ = serialiseResponse(resp);
+    ProcessingResponse deserialized = deserialiseResponse(respJ);
+
+    assertEquals(resp, deserialized);
+  }
+
+  @Test
+  public void shouldRoundtripProcessingResponseWithAttributes() throws Exception {
+    ProcessingResponse resp = new ProcessingResponse("id1", generateAttributes("a1v1", "a1v2"), "uv1", "dv1");
+    String respJ = serialiseResponse(resp);
+    ProcessingResponse deserialized = deserialiseResponse(respJ);
+
+    assertEquals(resp, deserialized);
+  }
+
   private static String serialiseResult(Iterable<ScanResultEntry> entries) throws Exception {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     JSONHelper.writeQueryResult(baos, entries);
@@ -70,9 +88,21 @@ public class JSONHelperTest {
     return new String(baos.toByteArray(), "UTF-8");
   }
 
+  private static String serialiseResponse(ProcessingResponse response) throws Exception {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    JSONHelper.writeProcessingResponse(baos, response);
+
+    return new String(baos.toByteArray(), "UTF-8");
+  }
+
   private static ScanResultEntry[] deserialiseResult(String s) throws Exception {
     ByteArrayInputStream bais = new ByteArrayInputStream(s.getBytes("UTF-8"));
     return JSONHelper.readQueryResult(new ByteArrayInputStream(s.getBytes("UTF-8")));
+  }
+
+  private static ProcessingResponse deserialiseResponse(String s) throws Exception {
+    ByteArrayInputStream bais = new ByteArrayInputStream(s.getBytes("UTF-8"));
+    return JSONHelper.readProcessingResponse(new ByteArrayInputStream(s.getBytes("UTF-8")));
   }
 
   private static Map<String, String> generateAttributes(String a1, String a2) {

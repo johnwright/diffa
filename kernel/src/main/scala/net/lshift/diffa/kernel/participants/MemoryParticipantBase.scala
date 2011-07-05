@@ -28,7 +28,9 @@ import net.lshift.diffa.participant.scanning._
 /**
  * Base class for test participants.
  */
-class MemoryParticipantBase(nativeVsnGen: String => String) extends ScanningParticipantRequestHandler {
+class MemoryParticipantBase(nativeVsnGen: String => String)
+    extends ScanningParticipantRequestHandler
+    with ContentParticipantHandler {
 
   val log = LoggerFactory.getLogger(getClass)
 

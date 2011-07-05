@@ -42,7 +42,7 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
 
   // Register the outbound participant factory for JSON/AMQP
   val factory = new JsonAmqpParticipantProtocolFactory(connectorHolder, timeoutMillis)
-  participantFactory.registerFactory(factory)
+//  participantFactory.registerFactory(factory)
 
   // Register the inbound changes handler
   inboundEndpointManager.registerFactory(new InboundEndpointFactory {

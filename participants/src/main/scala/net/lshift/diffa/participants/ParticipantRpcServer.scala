@@ -21,15 +21,18 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import org.eclipse.jetty.server.{Request, Server}
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 import java.io.OutputStream
-import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
+import net.lshift.diffa.participant.scanning.{ContentParticipantAdapter, ContentParticipantHandler, ScanningParticipantRequestHandler}
 
-class ParticipantRpcServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler) {
+class ParticipantRpcServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) {
+  private val contentAdapter = new ContentParticipantAdapter(content)
 
   private val server = new Server(port)
   server.setHandler(new AbstractHandler {
     override def handle(target: String, jettyReq: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
       if (target.startsWith("/scan")) {
         scanning.handleRequest(request, response)
+      } else if (target.startsWith("/content")) {
+        contentAdapter.handleRequest(request, response);
       } else {
         val os = response.getOutputStream
         val tRequest = new TransportRequest(request.getPathInfo.substring(1), request.getInputStream)

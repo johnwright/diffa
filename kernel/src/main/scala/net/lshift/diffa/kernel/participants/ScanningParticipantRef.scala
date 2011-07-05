@@ -12,3 +12,8 @@ trait ScanningParticipantRef extends Closeable {
    */
   def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry]
 }
+
+/**
+ * Factory for creating scanning participant references.
+ */
+trait ScanningParticipantFactory extends AddressDrivenFactory[ScanningParticipantRef]

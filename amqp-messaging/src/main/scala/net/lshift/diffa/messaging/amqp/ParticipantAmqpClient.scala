@@ -20,6 +20,7 @@ import com.rabbitmq.messagepatterns.unicast.Connector
 import net.lshift.diffa.messaging.json.JSONEncodingUtils._
 import net.lshift.diffa.kernel.frontend.wire.{ActionInvocation, InvocationResult, WireAggregateRequest, WireDigest, WireResponse}
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.participant.scanning.ProcessingResponse
 import scala.collection.JavaConversions._
 
 /**

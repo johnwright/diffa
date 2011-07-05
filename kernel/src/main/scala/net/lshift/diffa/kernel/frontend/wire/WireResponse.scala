@@ -18,8 +18,9 @@ package net.lshift.diffa.kernel.frontend.wire
 
 import reflect.BeanProperty
 import java.util.List
-import net.lshift.diffa.kernel.participants.ProcessingResponse
+import net.lshift.diffa.participant.scanning.ProcessingResponse
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 
 /**
  * This represents a processing response in a simple easy to format fashion.
@@ -36,6 +37,6 @@ case class WireResponse(
 
 object WireResponse {
 
-  def toWire(r:ProcessingResponse) = WireResponse(r.id, r.uvsn, r.dvsn, r.attributes)
-  def fromWire(r:WireResponse) = ProcessingResponse(r.id, r.attributes, r.uvsn, r.dvsn)
+  def toWire(r:ProcessingResponse) = WireResponse(r.getId, r.getUvsn, r.getDvsn, AttributesUtil.toSeq(r.getAttributes.toMap))
+  def fromWire(r:WireResponse) = new ProcessingResponse(r.id, new java.util.HashMap, r.uvsn, r.dvsn)
 }

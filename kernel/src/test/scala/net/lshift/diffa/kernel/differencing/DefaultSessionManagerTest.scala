@@ -31,28 +31,15 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 /**
  * Test cases for the default session manager.
  */
-class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
+class StubParticipantProtocolFactory
+    extends ScanningParticipantFactory {
 
-  def createDownstreamParticipant(address: String, protocol: String) = {
-    new DownstreamParticipant() {
-      def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = null
-      def generateVersion(entityBody:String) = null
-      def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
-      def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
-      def retrieveContent(id:String) = null
-      def close() = ()
-    }
-  }
-  def createUpstreamParticipant(address:String, protocol:String) = {
-    new UpstreamParticipant() {
-      def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = null
-      def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
-      def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
-      def retrieveContent(id:String) = null
-      def close() = ()
-    }
-  }
   def supportsAddress(address:String, protocol:String) = true
+
+  def createParticipantRef(address: String, protocol: String) = new ScanningParticipantRef {
+    def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = null
+    def close() {}
+  }
 }
 
 class DefaultSessionManagerTest {
@@ -80,8 +67,8 @@ class DefaultSessionManagerTest {
   private val protocol2 = new StubParticipantProtocolFactory()
 
   val participantFactory = new ParticipantFactory()
-  participantFactory.registerFactory(protocol1)
-  participantFactory.registerFactory(protocol2)
+  participantFactory.registerScanningFactory(protocol1)
+  participantFactory.registerScanningFactory(protocol2)
 
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
   EasyMock.checkOrder(pairPolicyClient, false)

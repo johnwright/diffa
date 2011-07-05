@@ -29,22 +29,22 @@ import scala.collection.JavaConversions._
 abstract class ParticipantHandler(val participant:Participant) extends AbstractJSONHandler {
 
   protected val commonEndpoints = Map(
-    "query_aggregate_digests" -> skeleton((deserializeWireAggregateRequest _)
-                                           andThen { req =>
-                                             val constraints = constraintsFromWire(req.constraints)
-                                             val buckets = req.buckets.map { case (name, value) =>
-                                               name -> CategoryFunctionRegistry.resolve(value)
-                                             }.toMap
-                                             participant.queryAggregateDigests(buckets, constraints)
-                                           }
-                                           andThen (digestsToWire _)
-                                           andThen (serializeDigests _)),
-
-    "query_entity_versions" -> skeleton((deserializeQueryConstraints _)
-                                         andThen (constraintsFromWire _)
-                                         andThen (participant.queryEntityVersions _)
-                                         andThen (digestsToWire _)
-                                         andThen (serializeDigests _)),
+//    "query_aggregate_digests" -> skeleton((deserializeWireAggregateRequest _)
+//                                           andThen { req =>
+//                                             val constraints = constraintsFromWire(req.constraints)
+//                                             val buckets = req.buckets.map { case (name, value) =>
+//                                               name -> CategoryFunctionRegistry.resolve(value)
+//                                             }.toMap
+//                                             participant.queryAggregateDigests(buckets, constraints)
+//                                           }
+//                                           andThen (digestsToWire _)
+//                                           andThen (serializeDigests _)),
+//
+//    "query_entity_versions" -> skeleton((deserializeQueryConstraints _)
+//                                         andThen (constraintsFromWire _)
+//                                         andThen (participant.queryEntityVersions _)
+//                                         andThen (digestsToWire _)
+//                                         andThen (serializeDigests _)),
 
     "retrieve_content" -> skeleton((deserializeEntityContentRequest _)
                                     andThen (participant.retrieveContent _)

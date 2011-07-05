@@ -26,25 +26,25 @@ import org.junit.{Ignore, Test}
  * Test cases for the participant factory.
  */
 class ParticipantFactoryTest {
-  private val protocol1 = createStrictMock("protocol1", classOf[ParticipantProtocolFactory])
-  private val protocol2 = createStrictMock("protocol2", classOf[ParticipantProtocolFactory])
+  private val scanning1 = createStrictMock("scanning1", classOf[ScanningParticipantFactory])
+  private val scanning2 = createStrictMock("scanning2", classOf[ScanningParticipantFactory])
 
   private val factory = new ParticipantFactory()
-  factory.registerFactory(protocol1)
-  factory.registerFactory(protocol2)
+  factory.registerScanningFactory(scanning1)
+  factory.registerScanningFactory(scanning2)
 
-  private val upstream1 = createStrictMock("upstream1", classOf[UpstreamParticipant])
-  private val downstream1 = createStrictMock("downstream1", classOf[DownstreamParticipant])
+  private val upstream1 = createStrictMock("upstream1", classOf[ScanningParticipantRef])
+  private val downstream1 = createStrictMock("downstream1", classOf[ScanningParticipantRef])
 
     // TODO: Should not be hardcoding
   private val json = "application/json"
 
-  checkOrder(protocol1, false)
-  checkOrder(protocol2, false)
-  expect(protocol1.supportsAddress("http://localhost", json)).andReturn(true).anyTimes
-  expect(protocol1.supportsAddress(anyString, anyString)).andReturn(false).anyTimes
-  expect(protocol2.supportsAddress("amqp://localhost", json)).andReturn(true).anyTimes
-  expect(protocol2.supportsAddress(anyString, anyString)).andReturn(false).anyTimes
+  checkOrder(scanning1, false)
+  checkOrder(scanning2, false)
+  expect(scanning1.supportsAddress("http://localhost", json)).andReturn(true).anyTimes
+  expect(scanning1.supportsAddress(anyString, anyString)).andReturn(false).anyTimes
+  expect(scanning2.supportsAddress("amqp://localhost", json)).andReturn(true).anyTimes
+  expect(scanning2.supportsAddress(anyString, anyString)).andReturn(false).anyTimes
 
   val invalid = Endpoint(name = "invalid")
   val jsonOverHttp = Endpoint(name = "jsonOverHttp", url = "http://localhost", contentType = json)
@@ -53,7 +53,7 @@ class ParticipantFactoryTest {
   @Test
   @Ignore("Participant changes are WIP")
   def shouldNotCreateUpstreamParticipantWhenNoFactoryAcceptsAddress {
-    replay(protocol1, protocol2)
+    replay(scanning1, scanning2)
 
     expectsInvalidParticipantException {
       factory.createUpstreamParticipant(invalid)
@@ -63,7 +63,7 @@ class ParticipantFactoryTest {
   @Test
   @Ignore("Participant changes are WIP")
   def shouldNotCreateDownstreamParticipantWhenNoFactoryAcceptsAddress {
-    replay(protocol1, protocol2)
+    replay(scanning1, scanning2)
 
     expectsInvalidParticipantException {
       factory.createDownstreamParticipant(invalid)
@@ -74,41 +74,41 @@ class ParticipantFactoryTest {
   @Ignore("Participant changes are WIP")
   def shouldCreateUpstreamParticipantWhenFirstProtocolRespondsToAddress {
 
-    expect(protocol1.createUpstreamParticipant(jsonOverHttp.url, jsonOverHttp.contentType)).andReturn(upstream1)
-    replay(protocol1, protocol2)
+    expect(scanning1.createParticipantRef(jsonOverHttp.scanUrl, jsonOverHttp.contentType)).andReturn(upstream1)
+    replay(scanning1, scanning2)
 
     assertEquals(upstream1, factory.createUpstreamParticipant(jsonOverHttp))
-    verify(protocol1, protocol2)
+    verify(scanning1, scanning2)
   }
 
   @Test
   @Ignore("Participant changes are WIP")
   def shouldCreateUpstreamParticipantWhenSecondProtocolRespondsToAddress {
-    expect(protocol2.createUpstreamParticipant(jsonOverAmqp.url,jsonOverAmqp.contentType)).andReturn(upstream1)
-    replay(protocol1, protocol2)
+    expect(scanning2.createParticipantRef(jsonOverAmqp.url,jsonOverAmqp.contentType)).andReturn(upstream1)
+    replay(scanning1, scanning2)
 
     assertEquals(upstream1, factory.createUpstreamParticipant(jsonOverAmqp))
-    verify(protocol1, protocol2)
+    verify(scanning1, scanning2)
   }
 
   @Test
   @Ignore("Participant changes are WIP")
   def shouldCreateDownstreamParticipantWhenFirstProtocolRespondsToAddress {
-    expect(protocol1.createDownstreamParticipant(jsonOverHttp.url, jsonOverHttp.contentType)).andReturn(downstream1)
-    replay(protocol1, protocol2)
+    expect(scanning1.createParticipantRef(jsonOverHttp.url, jsonOverHttp.contentType)).andReturn(downstream1)
+    replay(scanning1, scanning2)
 
     assertEquals(downstream1, factory.createDownstreamParticipant(jsonOverHttp))
-    verify(protocol1, protocol2)
+    verify(scanning1, scanning2)
   }
 
   @Test
   @Ignore("Participant changes are WIP")
   def shouldCreateDownstreamParticipantWhenSecondProtocolRespondsToAddress {
-    expect(protocol2.createDownstreamParticipant(jsonOverAmqp.url, jsonOverHttp.contentType)).andReturn(downstream1)
-    replay(protocol1, protocol2)
+    expect(scanning2.createParticipantRef(jsonOverAmqp.url, jsonOverHttp.contentType)).andReturn(downstream1)
+    replay(scanning1, scanning2)
 
     assertEquals(downstream1, factory.createDownstreamParticipant(jsonOverAmqp))
-    verify(protocol1, protocol2)
+    verify(scanning1, scanning2)
   }
 
   def expectsInvalidParticipantException(f: => Unit) {

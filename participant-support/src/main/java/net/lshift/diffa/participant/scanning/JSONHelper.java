@@ -37,4 +37,26 @@ public class JSONHelper {
       throw new IOException("Failed to deserialise result from JSON", ex);
     }
   }
+
+  public static void writeProcessingResponse(OutputStream responseStream, ProcessingResponse response)
+      throws IOException {
+    try {
+      mapper.writeValue(responseStream, response);
+    } catch (IOException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new IOException("Failed to serialise result to JSON", ex);
+    }
+  }
+
+  public static ProcessingResponse readProcessingResponse(InputStream stream)
+      throws IOException {
+    try {
+      return mapper.readValue(stream, ProcessingResponse.class);
+    } catch (IOException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      throw new IOException("Failed to deserialise result from JSON", ex);
+    }
+  }
 }

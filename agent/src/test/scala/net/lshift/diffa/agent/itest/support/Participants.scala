@@ -20,10 +20,11 @@ import net.lshift.diffa.kernel.protocol.ProtocolHandler
 import net.lshift.diffa.participants.ParticipantRpcServer
 import concurrent.SyncVar
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.messaging.json.{DownstreamParticipantRestClient, UpstreamParticipantRestClient, DownstreamParticipantHandler, UpstreamParticipantHandler}
 import net.lshift.diffa.messaging.amqp._
-import net.lshift.diffa.kernel.participants.{Participant, DownstreamParticipant, UpstreamParticipant}
-import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
+import net.lshift.diffa.kernel.config.Endpoint
+import net.lshift.diffa.kernel.participants.{ParticipantFactory, Participant, DownstreamParticipant, UpstreamParticipant}
+import net.lshift.diffa.messaging.json._
+import net.lshift.diffa.participant.scanning.{ContentParticipantHandler, ScanningParticipantRequestHandler}
 
 /**
  * Helper objects for creation of HTTP/AMQP RPC chain for remote-controlling participants
@@ -32,19 +33,21 @@ trait Participants {
 
   val upstreamUrl: String
   val upstreamScanUrl: String
+  val upstreamContentUrl: String
 
   val downstreamUrl: String
   val downstreamScanUrl: String
+  val downstreamContentUrl: String
 
   val inboundUrl: String
 
-  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler): Unit
+  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler): Unit
 
-  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler): Unit
+  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler): Unit
 
-  def upstreamClient: UpstreamParticipant
+//  def upstreamClient: UpstreamParticipant
 
-  def downstreamClient: DownstreamParticipant
+//  def downstreamClient: DownstreamParticipant
 
 }
 
@@ -54,20 +57,23 @@ class HttpParticipants(usPort: Int, dsPort: Int) extends Participants {
 
   val upstreamUrl = "http://localhost:" + usPort
   val upstreamScanUrl = upstreamUrl + "/scan"
+  val upstreamContentUrl = upstreamUrl + "/content"
+
 
   val downstreamUrl = "http://localhost:" + dsPort
   val downstreamScanUrl = downstreamUrl + "/scan"
+  val downstreamContentUrl = downstreamUrl + "/content"
 
   val inboundUrl = null
 
-  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler) =
-    forkServer(usPort, new UpstreamParticipantHandler(upstream), scanning)
+  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) =
+    forkServer(usPort, new UpstreamParticipantHandler(upstream), scanning, content)
 
-  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler) =
-    forkServer(dsPort, new DownstreamParticipantHandler(downstream), scanning)
+  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) =
+    forkServer(dsPort, new DownstreamParticipantHandler(downstream), scanning, content)
 
-  private def forkServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler) {
-    val server = new ParticipantRpcServer(port, handler, scanning)
+  private def forkServer(port: Int, handler: ProtocolHandler, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) {
+    val server = new ParticipantRpcServer(port, handler, scanning, content)
     val startupSync = new SyncVar[Boolean]
     new Thread {
       override def run = {
@@ -90,9 +96,9 @@ class HttpParticipants(usPort: Int, dsPort: Int) extends Participants {
     }
   }
 
-  lazy val upstreamClient = new UpstreamParticipantRestClient(upstreamUrl)
+//  lazy val upstreamClient = new UpstreamParticipantRestClient(upstreamUrl)
 
-  lazy val downstreamClient = new DownstreamParticipantRestClient(downstreamUrl)
+//  lazy val downstreamClient = new DownstreamParticipantRestClient(downstreamUrl)
 }
 
 case class AmqpParticipants(connectorHolder: ConnectorHolder,
@@ -107,25 +113,27 @@ case class AmqpParticipants(connectorHolder: ConnectorHolder,
 
   val upstreamUrl = AmqpQueueUrl(usQueue).toString
   val upstreamScanUrl = null
+  val upstreamContentUrl = null
   val downstreamUrl = AmqpQueueUrl(dsQueue).toString
   val downstreamScanUrl = null
+  val downstreamContentUrl = null
   val inboundUrl = AmqpQueueUrl(inboundQueue).toString
 
-  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler) = {
+  def startUpstreamServer(upstream: UpstreamParticipant, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) = {
     val server = new AmqpRpcServer(connectorHolder.connector, usQueue, new UpstreamParticipantHandler(upstream))
     server.start()
     usServer = Some(server)
   }
 
-  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler) = {
+  def startDownstreamServer(downstream: DownstreamParticipant, scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) = {
     val server = new AmqpRpcServer(connectorHolder.connector, dsQueue, new DownstreamParticipantHandler(downstream))
     server.start()
     dsServer = Some(server)
   }
 
-  lazy val upstreamClient =
-    new UpstreamParticipantAmqpClient(connectorHolder.connector, usQueue, timeout)
-
-  lazy val downstreamClient =
-    new DownstreamParticipantAmqpClient(connectorHolder.connector, dsQueue, timeout)
+//  lazy val upstreamClient =
+//    new UpstreamParticipantAmqpClient(connectorHolder.connector, usQueue, timeout)
+//
+//  lazy val downstreamClient =
+//    new DownstreamParticipantAmqpClient(connectorHolder.connector, dsQueue, timeout)
 }

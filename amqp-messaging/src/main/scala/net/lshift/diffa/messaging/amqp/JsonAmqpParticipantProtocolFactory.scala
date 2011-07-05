@@ -16,13 +16,11 @@
 
 package net.lshift.diffa.messaging.amqp
 
-import net.lshift.diffa.kernel.participants.ParticipantProtocolFactory
-
 /**
  * JSON over AMQP participant connector factory.
  */
 class JsonAmqpParticipantProtocolFactory(connectorHolder: ConnectorHolder,
-                                         timeoutMillis: Long) extends ParticipantProtocolFactory {
+                                         timeoutMillis: Long) {
 
   def supportsAddress(address: String, protocol: String) =
     protocol == "application/json" && address.startsWith("amqp://")

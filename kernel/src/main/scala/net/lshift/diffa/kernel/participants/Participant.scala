@@ -17,8 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import java.io.Closeable
-import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-import net.lshift.diffa.participant.scanning.ScanResultEntry
+import net.lshift.diffa.participant.scanning.{ScanResultEntry,ProcessingResponse}
 
 /**
  * Trait supported by various RPC bindings providing communications with participants.
@@ -29,21 +28,6 @@ trait Participant extends Closeable
    * Scans this participant with the given constraints and aggregations.
    */
   def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry]
-
-  /**
-   * Retrieves aggregated details about a participant's native versions. The participant is expected to aggregate
-   * and filter their data based on the provided constraints. The digest is expected to be built upon well known
-   * functions that are embodied in each QueryConstraint. Note that when no QueryConstraint is specified, i.e.
-   * an empty list is passed in, the entire data set of the participant will be returned.
-   */
-  def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest]
-
-  /**
-   * Retrieves details about a participant's native versions at the level of individual entities. The participant
-   * is expected to filter their data based on the provided constraints. Note that when no QueryConstraint is specified, i.e.
-   * an empty list is passed in, the entire data set of the participant will be returned.
-   */
-  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion]
 
   /**
    * Requests that the participant return a serialized form of the item with the given identifier.

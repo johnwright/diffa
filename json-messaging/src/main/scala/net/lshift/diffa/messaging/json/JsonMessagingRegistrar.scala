@@ -18,8 +18,8 @@ package net.lshift.diffa.messaging.json
 
 import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.kernel.frontend.Changes
-import net.lshift.diffa.kernel.participants.{EventFormatMapperManager, ParticipantFactory}
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
+import net.lshift.diffa.kernel.participants._
 
 /**
  * Utility class responsible for registering the JSON protocol support with necessary factories
@@ -31,12 +31,23 @@ class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
                              val changes:Changes)
   extends AgentLifecycleAware {
 
-  val factory = new JSONRestParticipantProtocolFactory()
-  val scanningFactory = new JSONRestScanningParticipantFactory
+  val scanningFactory = new ScanningParticipantFactory {
+    def supportsAddress(address: String, protocol: String) = isValidProtocol(address, protocol)
+    def createParticipantRef(address: String, protocol: String) = new ScanningParticipantRestClient(address)
+  }
+  val contentFactory = new ContentParticipantFactory {
+    def supportsAddress(address: String, protocol: String) = isValidProtocol(address, protocol)
+    def createParticipantRef(address: String, protocol: String) = new ContentParticipantRestClient(address)
+  }
+  val versioningFactory = new VersioningParticipantFactory {
+    def supportsAddress(address: String, protocol: String) = isValidProtocol(address, protocol)
+    def createParticipantRef(address: String, protocol: String) = new VersioningParticipantRestClient(address)
+  }
 
   // Register the outbound participant factory for JSON/HTTP
-  participantFactory.registerFactory(factory)
   participantFactory.registerScanningFactory(scanningFactory)
+  participantFactory.registerContentFactory(contentFactory)
+  participantFactory.registerVersioningFactory(versioningFactory)
 
   override def onAgentAssemblyCompleted {
     // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
@@ -45,4 +56,6 @@ class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
     protocolMapper.registerHandler("changes", changesHandler)
   }
 
+  private def isValidProtocol(address: String, protocol: String) =
+      protocol == "application/json" && address.startsWith("http://")
 }

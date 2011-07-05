@@ -86,17 +86,17 @@ class TestEnvironment(val pairKey: String,
   val categories = Map("someDate" -> new RangeCategoryDescriptor("datetime"), "someString" -> new SetCategoryDescriptor(Set("ss")))
   
   // Participants' RPC server setup
-  participants.startUpstreamServer(upstream, upstream)
-  participants.startDownstreamServer(downstream, downstream)
+  participants.startUpstreamServer(upstream, upstream, upstream)
+  participants.startDownstreamServer(downstream, downstream, downstream)
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(Endpoint(name = upstreamEpName,
-    url = participants.upstreamUrl, scanUrl = participants.upstreamScanUrl, contentType = contentType,
+    url = participants.upstreamUrl, scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
   configurationClient.declareEndpoint(Endpoint(name = downstreamEpName,
-    url = participants.downstreamUrl, scanUrl = participants.downstreamScanUrl, contentType = contentType,
+    url = participants.downstreamUrl, scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
@@ -109,8 +109,8 @@ class TestEnvironment(val pairKey: String,
   def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionUrl, RepairAction.PAIR_SCOPE, pairKey)
   
   // Participants' RPC client setup
-  val upstreamClient: UpstreamParticipant = participants.upstreamClient
-  val downstreamClient: DownstreamParticipant = participants.downstreamClient
+//  val upstreamClient: UpstreamParticipant = participants.upstreamClient
+//  val downstreamClient: DownstreamParticipant = participants.downstreamClient
 
 
   val username = "foo"
