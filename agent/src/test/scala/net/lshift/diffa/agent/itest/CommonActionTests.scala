@@ -37,7 +37,7 @@ trait CommonActionTests {
 
   @Test
   def invokeEntityScopedAction {
-    withActionsServer {
+    env.withActionsServer {
       val request = ActionableRequest(env.pairKey, env.entityScopedActionName, "abc")
       val response = env.actionsClient.invoke(request)
       assertNotNull(response)
@@ -64,7 +64,7 @@ trait CommonActionTests {
 
   @Test
   def invokePairScopedAction {
-    withActionsServer {
+    env.withActionsServer {
       env.createPairScopedAction
       val request = ActionableRequest(env.pairKey, env.pairScopedActionName, null)
       val response = env.actionsClient.invoke(request)
@@ -87,14 +87,6 @@ trait CommonActionTests {
     env.configurationClient.declareRepairAction(env.entityScopedActionName, "resend", "INVALID SCOPE", env.pairKey, false)
   }
 
-  private def withActionsServer(op: => Unit) {
-    try {
-      env.startActionServer()
-      op
-    }
-    finally {
-      env.stopActionServer()
-    }
-  }
+
 
 }

@@ -77,7 +77,9 @@ class PairActorTest {
   expect(stores.apply(pairKey)).andReturn(store)
   replay(stores)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, participantFactory, stores, 50, 100)
+  val escalationListener = createMock(classOf[DifferencingListener])
+
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, escalationListener, participantFactory, stores, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
@@ -147,6 +149,7 @@ class PairActorTest {
     expectScans
 
     expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
+    expect(versionPolicy.replayUnmatchedDifferences(pairKey, escalationListener))
 
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
@@ -202,6 +205,7 @@ class PairActorTest {
            EasyMock.isA(classOf[FeedbackHandle])))
 
     expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
+    expect(versionPolicy.replayUnmatchedDifferences(pairKey, escalationListener))
 
     replay(versionPolicy)
 

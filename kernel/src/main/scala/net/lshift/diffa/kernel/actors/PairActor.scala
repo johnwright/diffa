@@ -38,6 +38,7 @@ case class PairActor(pairKey:String,
                      ds:DownstreamParticipant,
                      policy:VersionPolicy,
                      store:VersionCorrelationStore,
+                     escalationListener:DifferencingListener,
                      changeEventBusyTimeoutMillis: Long,
                      changeEventQuietTimeoutMillis: Long) extends Actor {
 
@@ -277,6 +278,7 @@ case class PairActor(pairKey:String,
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
       policy.replayUnmatchedDifferences(pairKey, currentDiffListener)
+      policy.replayUnmatchedDifferences(pairKey, escalationListener)
 
       // Re-queue all buffered commands
       leaveScanState(PairScanState.UP_TO_DATE)

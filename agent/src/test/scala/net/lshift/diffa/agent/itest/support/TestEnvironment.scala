@@ -28,8 +28,10 @@ import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.kernel.config.{RepairAction, RangeCategoryDescriptor}
 import org.restlet.data.Protocol
 import org.restlet.routing.Router
-import org.restlet.{Application, Component}
 import org.restlet.resource.{ServerResource, Post}
+import org.restlet.{Application, Component}
+import collection.mutable.HashMap
+import org.junit.Before
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -40,10 +42,14 @@ class TestEnvironment(val pairKey: String,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
 
+  // Keep a tally of the amount of requested resends
+  val entityResendTally = new HashMap[String,Int]
+  @Before def resetTally = entityResendTally.clear()
+
   private val repairActionsComponent = {
     val component = new Component
     component.getServers.add(Protocol.HTTP, 8123)
-    component.getDefaultHost.attach("/repair", new RepairActionsApplication)
+    component.getDefaultHost.attach("/repair", new RepairActionsApplication(entityResendTally))
     component
   }
 
@@ -53,6 +59,16 @@ class TestEnvironment(val pairKey: String,
 
   def stopActionServer() {
     repairActionsComponent.stop()
+  }
+
+  def withActionsServer(op: => Unit) {
+    try {
+      startActionServer()
+      op
+    }
+    finally {
+      stopActionServer()
+    }
   }
 
   def serverRoot = agentURL
@@ -93,7 +109,7 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey, false)
+  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey, true)
   createPair
 
   def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
@@ -144,10 +160,27 @@ class ResendAllResource extends ServerResource {
   @Post def resendAll = "resending all"
 }
 class ResendEntityResource extends ServerResource {
-  @Post def resend = "resending entity"
+
+  /**
+   * Update the resend tally for each entity
+   */
+  @Post def resend = {
+    val entityId = getRequest.getResourceRef.getLastSegment
+    val tally = getContext.getAttributes.get("tally").asInstanceOf[HashMap[String,Int]]
+    tally.get(entityId) match {
+      case Some(x) => tally(entityId) = x + 1
+      case None    => tally(entityId) = 1
+    }
+    "resending entity"
+  }
 }
-class RepairActionsApplication extends Application {
+class RepairActionsApplication(tally:HashMap[String,Int]) extends Application {
   override def createInboundRoot = {
+
+    // Pass the tally to the underlying resource
+    // NOTE: This is due to Restlets API - it feels like they should provide a resource that you can constructor inject
+    getContext.setAttributes(Map("tally"-> tally))
+
     val router = new Router(getContext)
     router.attach("/resend-all", classOf[ResendAllResource])
     router.attach("/resend/abc", classOf[ResendEntityResource])
