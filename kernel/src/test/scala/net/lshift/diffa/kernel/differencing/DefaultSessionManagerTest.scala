@@ -83,8 +83,8 @@ class DefaultSessionManagerTest {
     // i.e. only stub out the behavior that actually care about and want to test
     // so in this example, everything above this comment should be expect() calls
     // and everything below should be stub() calls on a factory
-    val u = Endpoint(name = "1", url = "http://foo.com", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
-    val d = Endpoint(name = "2", url = "http://bar.com", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+    val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+    val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
 
     participantFactory.createUpstreamParticipant(u)
     participantFactory.createDownstreamParticipant(d)

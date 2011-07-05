@@ -83,7 +83,6 @@ trait ConfigStore {
 
 case class Endpoint(
   @BeanProperty var name: String = null,
-  @BeanProperty var url: String = null,
   @BeanProperty var scanUrl: String = null,
   @BeanProperty var contentRetrievalUrl: String = null,
   @BeanProperty var versionGenerationUrl: String = null,

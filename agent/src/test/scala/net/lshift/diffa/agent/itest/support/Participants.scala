@@ -33,11 +33,9 @@ import net.lshift.diffa.participant.correlation.VersioningParticipantHandler
  */
 trait Participants {
 
-  val upstreamUrl: String
   val upstreamScanUrl: String
   val upstreamContentUrl: String
 
-  val downstreamUrl: String
   val downstreamScanUrl: String
   val downstreamContentUrl: String
   val downstreamVersionUrl: String

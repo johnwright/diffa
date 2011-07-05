@@ -80,9 +80,6 @@
     <field name="name" type="string">
       <bind-xml name="name" node="attribute" />
     </field>
-    <field name="url" type="string">
-      <bind-xml name="url" node="attribute" />
-    </field>
     <field name="scanUrl" type="string">
       <bind-xml name="scan-url" node="attribute" />
     </field>

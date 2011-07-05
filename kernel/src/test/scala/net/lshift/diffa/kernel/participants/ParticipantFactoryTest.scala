@@ -47,8 +47,8 @@ class ParticipantFactoryTest {
   expect(scanning2.supportsAddress(anyString, anyString)).andReturn(false).anyTimes
 
   val invalid = Endpoint(name = "invalid")
-  val jsonOverHttp = Endpoint(name = "jsonOverHttp", url = "http://localhost", contentType = json)
-  val jsonOverAmqp = Endpoint(name = "jsonOverAmqp", url = "amqp://localhost", contentType = json, inboundUrl = "changes-queue", inboundContentType = json)
+  val jsonOverHttp = Endpoint(name = "jsonOverHttp", scanUrl = "http://localhost", contentType = json)
+  val jsonOverAmqp = Endpoint(name = "jsonOverAmqp", scanUrl = "amqp://localhost", contentType = json, inboundUrl = "changes-queue", inboundContentType = json)
 
   @Test
   @Ignore("Participant changes are WIP")
@@ -84,7 +84,7 @@ class ParticipantFactoryTest {
   @Test
   @Ignore("Participant changes are WIP")
   def shouldCreateUpstreamParticipantWhenSecondProtocolRespondsToAddress {
-    expect(scanning2.createParticipantRef(jsonOverAmqp.url,jsonOverAmqp.contentType)).andReturn(upstream1)
+    expect(scanning2.createParticipantRef(jsonOverAmqp.scanUrl,jsonOverAmqp.contentType)).andReturn(upstream1)
     replay(scanning1, scanning2)
 
     assertEquals(upstream1, factory.createUpstreamParticipant(jsonOverAmqp))
@@ -94,7 +94,7 @@ class ParticipantFactoryTest {
   @Test
   @Ignore("Participant changes are WIP")
   def shouldCreateDownstreamParticipantWhenFirstProtocolRespondsToAddress {
-    expect(scanning1.createParticipantRef(jsonOverHttp.url, jsonOverHttp.contentType)).andReturn(downstream1)
+    expect(scanning1.createParticipantRef(jsonOverHttp.scanUrl, jsonOverHttp.contentType)).andReturn(downstream1)
     replay(scanning1, scanning2)
 
     assertEquals(downstream1, factory.createDownstreamParticipant(jsonOverHttp))
@@ -104,7 +104,7 @@ class ParticipantFactoryTest {
   @Test
   @Ignore("Participant changes are WIP")
   def shouldCreateDownstreamParticipantWhenSecondProtocolRespondsToAddress {
-    expect(scanning2.createParticipantRef(jsonOverAmqp.url, jsonOverHttp.contentType)).andReturn(downstream1)
+    expect(scanning2.createParticipantRef(jsonOverAmqp.scanUrl, jsonOverHttp.contentType)).andReturn(downstream1)
     replay(scanning1, scanning2)
 
     assertEquals(downstream1, factory.createDownstreamParticipant(jsonOverAmqp))

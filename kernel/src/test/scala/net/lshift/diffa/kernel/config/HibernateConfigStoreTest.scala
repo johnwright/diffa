@@ -47,11 +47,11 @@ class HibernateConfigStoreTest {
 
   val stringPrefixCategoriesMap = Map(stringCategoryName -> new PrefixCategoryDescriptor(1, 3, 1))
 
-  val upstream1 = new Endpoint(name = "TEST_UPSTREAM", url = "TEST_UPSTREAM_URL", scanUrl = "testScanUrl1", contentType = "application/json", categories = dateRangeCategoriesMap)
-  val upstream2 = new Endpoint(name = "TEST_UPSTREAM_ALT", url = "TEST_UPSTREAM_URL_ALT", scanUrl = "testScanUrl2",
+  val upstream1 = new Endpoint(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1", contentType = "application/json", categories = dateRangeCategoriesMap)
+  val upstream2 = new Endpoint(name = "TEST_UPSTREAM_ALT", scanUrl = "testScanUrl2",
     contentRetrievalUrl = "contentRetrieveUrl1", contentType = "application/json", categories = setCategoriesMap)
-  val downstream1 = new Endpoint(name = "TEST_DOWNSTREAM", url = "TEST_DOWNSTREAM_URL", scanUrl = "testScanUrl3", contentType = "application/json", categories = intRangeCategoriesMap)
-  val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", url = "TEST_DOWNSTREAM_URL_ALT", scanUrl = "testScanUrl4",
+  val downstream1 = new Endpoint(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3", contentType = "application/json", categories = intRangeCategoriesMap)
+  val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", scanUrl = "testScanUrl4",
     versionGenerationUrl = "generateVersionUrl1", contentType = "application/json", categories = stringPrefixCategoriesMap)
 
   val groupKey1 = "TEST_GROUP"
@@ -93,7 +93,6 @@ class HibernateConfigStoreTest {
     val endpoints = configStore.listEndpoints
     assertEquals(count, endpoints.length)
     assertEquals(e.name, endpoints(offset).name)
-    assertEquals(e.url, endpoints(offset).url)
     assertEquals(e.inboundUrl, endpoints(offset).inboundUrl)
     assertEquals(e.inboundContentType, endpoints(offset).inboundContentType)
     assertEquals(e.scanUrl, endpoints(offset).scanUrl)
@@ -167,10 +166,10 @@ class HibernateConfigStoreTest {
   }
 
   @Test
-  def testEndpointsWithSameURL {
+  def testEndpointsWithSameScanURL {
     configStore.createOrUpdateEndpoint(upstream1)
 
-    upstream2.url = upstream1.url
+    upstream2.scanUrl = upstream1.scanUrl
     configStore.createOrUpdateEndpoint(upstream2)
 
     exists(upstream1, 2, 0)
@@ -190,7 +189,7 @@ class HibernateConfigStoreTest {
     }
         
     // Change its name
-    configStore.createOrUpdateEndpoint(Endpoint(name = upstreamRenamed, url = upstream1.url, contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
+    configStore.createOrUpdateEndpoint(Endpoint(name = upstreamRenamed, scanUrl = upstream1.scanUrl, contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
 
     val retrieved = configStore.getEndpoint(upstreamRenamed)
     assertEquals(upstreamRenamed, retrieved.name)
@@ -350,9 +349,9 @@ class HibernateConfigStoreTest {
   @Test
   def testRedeclareEndpointSucceeds = {
     configStore.createOrUpdateEndpoint(upstream1)
-    configStore.createOrUpdateEndpoint(Endpoint(name = upstream1.name, url = "DIFFERENT_URL", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
+    configStore.createOrUpdateEndpoint(Endpoint(name = upstream1.name, scanUrl = "DIFFERENT_URL", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
     assertEquals(1, configStore.listEndpoints.length)
-    assertEquals("DIFFERENT_URL", configStore.getEndpoint(upstream1.name).url)
+    assertEquals("DIFFERENT_URL", configStore.getEndpoint(upstream1.name).scanUrl)
   }
 
   @Test

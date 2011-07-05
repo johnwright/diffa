@@ -33,13 +33,13 @@ class DiffaConfigReaderWriterTest {
       properties = Map("diffa.host" -> "localhost:1234", "a" -> "b"),
       users = Set(User("abc", "a@example.com")),
       endpoints = Set(
-        Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
+        Endpoint(name = "upstream1", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           scanUrl = "http://localhost:1234/scan", contentRetrievalUrl = "http://localhost:1234/content",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c")))),
-        Endpoint(name = "downstream1", url = "http://localhost:5432", contentType = "application/json",
+        Endpoint(name = "downstream1", contentType = "application/json",
           scanUrl = "http://localhost:5432/scan", versionGenerationUrl = "http://localhost:5432/generate-version",
           categories = Map(
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
@@ -63,7 +63,7 @@ class DiffaConfigReaderWriterTest {
         <property key="diffa.host">localhost:1234</property>
         <property key="a">b</property>
         <user name="abc" email="a@example.com"/>
-        <endpoint name="upstream1" url="http://localhost:1234" content-type="application/json"
+        <endpoint name="upstream1" content-type="application/json"
                   inbound-url="http://inbound" inbound-content-type="application/xml"
                   scan-url="http://localhost:1234/scan" content-url="http://localhost:1234/content">
           <range-category name="a" data-type="date" lower="2009" upper="2010"/>
@@ -73,7 +73,7 @@ class DiffaConfigReaderWriterTest {
             <value>c</value>
           </set-category>
         </endpoint>
-        <endpoint name="downstream1" url="http://localhost:5432" content-type="application/json"
+        <endpoint name="downstream1" content-type="application/json"
                   scan-url="http://localhost:5432/scan" version-url="http://localhost:5432/generate-version">
           <prefix-category name="c" prefix-length="1" max-length="5" step="1"/>
           <prefix-category name="d" prefix-length="1" max-length="6" step="1"/>

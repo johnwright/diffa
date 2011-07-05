@@ -56,8 +56,8 @@ object PagingDataLoader {
 
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
-    configClient.declareEndpoint(Endpoint(name = up, url = host, contentType = content, categories = categories))
-    configClient.declareEndpoint(Endpoint(name = down, url = host, contentType = content, categories = categories))
+    configClient.declareEndpoint(Endpoint(name = up, scanUrl = host, contentType = content, categories = categories))
+    configClient.declareEndpoint(Endpoint(name = down, scanUrl = host, contentType = content, categories = categories))
     configClient.declareGroup(group)
     configClient.declarePair(PairDef(pair, "same", 0, up, down, group))
 

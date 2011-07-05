@@ -92,11 +92,11 @@ class TestEnvironment(val pairKey: String,
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(Endpoint(name = upstreamEpName,
-    url = participants.upstreamUrl, scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
+    scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
   configurationClient.declareEndpoint(Endpoint(name = downstreamEpName,
-    url = participants.downstreamUrl, scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
+    scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
     versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
