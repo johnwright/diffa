@@ -48,9 +48,11 @@ class HibernateConfigStoreTest {
   val stringPrefixCategoriesMap = Map(stringCategoryName -> new PrefixCategoryDescriptor(1, 3, 1))
 
   val upstream1 = new Endpoint(name = "TEST_UPSTREAM", url = "TEST_UPSTREAM_URL", scanUrl = "testScanUrl1", contentType = "application/json", categories = dateRangeCategoriesMap)
-  val upstream2 = new Endpoint(name = "TEST_UPSTREAM_ALT", url = "TEST_UPSTREAM_URL_ALT", scanUrl = "testScanUrl2", contentType = "application/json", categories = setCategoriesMap)
+  val upstream2 = new Endpoint(name = "TEST_UPSTREAM_ALT", url = "TEST_UPSTREAM_URL_ALT", scanUrl = "testScanUrl2",
+    contentRetrievalUrl = "contentRetrieveUrl1", contentType = "application/json", categories = setCategoriesMap)
   val downstream1 = new Endpoint(name = "TEST_DOWNSTREAM", url = "TEST_DOWNSTREAM_URL", scanUrl = "testScanUrl3", contentType = "application/json", categories = intRangeCategoriesMap)
-  val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", url = "TEST_DOWNSTREAM_URL_ALT", scanUrl = "testScanUrl4", contentType = "application/json", categories = stringPrefixCategoriesMap)
+  val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", url = "TEST_DOWNSTREAM_URL_ALT", scanUrl = "testScanUrl4",
+    versionGenerationUrl = "generateVersionUrl1", contentType = "application/json", categories = stringPrefixCategoriesMap)
 
   val groupKey1 = "TEST_GROUP"
   val group = new PairGroup(groupKey1)
@@ -95,6 +97,8 @@ class HibernateConfigStoreTest {
     assertEquals(e.inboundUrl, endpoints(offset).inboundUrl)
     assertEquals(e.inboundContentType, endpoints(offset).inboundContentType)
     assertEquals(e.scanUrl, endpoints(offset).scanUrl)
+    assertEquals(e.contentRetrievalUrl, endpoints(offset).contentRetrievalUrl)
+    assertEquals(e.versionGenerationUrl, endpoints(offset).versionGenerationUrl)
   }
 
   def exists (e:Endpoint, count:Int) : Unit = exists(e, count, count - 1)

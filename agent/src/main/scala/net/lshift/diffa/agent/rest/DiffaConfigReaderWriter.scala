@@ -116,6 +116,9 @@ class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String
 class CastorSerializableEndpoint {
   @BeanProperty var name: String = null
   @BeanProperty var url: String = null
+  @BeanProperty var scanUrl: String = null
+  @BeanProperty var contentRetrievalUrl: String = null
+  @BeanProperty var versionGenerationUrl: String = null
   @BeanProperty var contentType: String = null
   @BeanProperty var inboundUrl: String = null
   @BeanProperty var inboundContentType: String = null
@@ -126,6 +129,9 @@ class CastorSerializableEndpoint {
   def fromDiffaEndpoint(e:Endpoint) = {
     this.name = e.name
     this.url = e.url
+    this.scanUrl = e.scanUrl
+    this.contentRetrievalUrl = e.contentRetrievalUrl
+    this.versionGenerationUrl = e.versionGenerationUrl
     this.contentType = e.contentType
     this.inboundUrl = e.inboundUrl
     this.inboundContentType = e.inboundContentType
@@ -143,6 +149,7 @@ class CastorSerializableEndpoint {
   def toDiffaEndpoint =
     Endpoint(
       name = name, url = url, contentType = contentType, inboundUrl = inboundUrl, inboundContentType = inboundContentType,
+      scanUrl = scanUrl, contentRetrievalUrl = contentRetrievalUrl, versionGenerationUrl = versionGenerationUrl,
       categories =
         rangeCategories.map(c => c.name -> c.toRangeCategoryDescriptor).toMap[String, CategoryDescriptor] ++
         prefixCategories.map(c => c.name -> c.toPrefixCategoryDescriptor).toMap[String, CategoryDescriptor] ++

@@ -58,6 +58,8 @@
     <id name="name" type="string"/>
     <property name="url" type="string" not-null="true" unique="false"/>
     <property name="scanUrl" column="scan_url" type="string" not-null="false" unique="false"/>
+    <property name="contentRetrievalUrl" column="content_url" type="string" not-null="false" unique="false"/>
+    <property name="versionGenerationUrl" column="gen_version_url" type="string" not-null="false" unique="false"/>
     <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false"/>
     <property name="contentType" column="content_type" type="string" not-null="true"/>
     <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
