@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.escalation
 
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{ScanTrigger, MatchingAntecedent, DifferencingListener}
+import net.lshift.diffa.kernel.differencing.{TriggeredByScan, MatchOrigin, DifferencingListener}
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation
@@ -49,14 +49,14 @@ class EscalationManager(val config:ConfigStore,
   /**
    * Since escalations are currently only driven off mismatches, matches can be safely ignored.
    */
-  def onMatch(id: VersionID, vsn: String, antecedent: MatchingAntecedent) = ()
+  def onMatch(id: VersionID, vsn: String, origin: MatchOrigin) = ()
 
   /**
    * Escalate matches that occur as part of a scan.
    */
   def onMismatch(id: VersionID, lastUpdated: DateTime, upstreamVsn: String, downstreamVsn: String,
-                 antecedent: MatchingAntecedent) = antecedent match{
-    case ScanTrigger => {
+                 origin: MatchOrigin) = origin match {
+    case TriggeredByScan => {
       val pair = config.getPair(id.pairKey)
       val escalations = config.listEscalationsForPair(pair)
       escalations.foreach( e => {

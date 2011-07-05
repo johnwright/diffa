@@ -212,7 +212,7 @@ abstract class AbstractDataDrivenPolicyTest {
   protected def expectUnmatchedVersionCheck(scenario:Scenario) = {
     val us = scenario.pair.upstream.defaultConstraints
     val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq()).times(2)
+    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
   }
 
   protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],

@@ -256,13 +256,8 @@ class DefaultSessionManager(
    * If yes -> just record it as a pending event. Don't tell clients anything yet.
    * If no -> this is a reportable event. Record it in the active list, and emit an event to our clients.
    */
-  def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, antecedent:MatchingAntecedent) = {
+  def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin) = {
     log.debug("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
-
-    antecedent match {
-      case ScanTrigger => log.info("Triggered by scan")
-      case _ =>
-    }
 
     matching.getMatcher(id.pairKey) match {
       case Some(matcher) => {
@@ -285,7 +280,7 @@ class DefaultSessionManager(
    * If the ID is current in our list of pending events, then just end the id from our list of events.
    * If we don't know about this id (no mismatches for this id reported), just ignore.
    */
-  def onMatch(id: VersionID, vsn: String, antecedent:MatchingAntecedent) {
+  def onMatch(id: VersionID, vsn: String, origin:MatchOrigin) {
     log.debug("Processing match for " + id + " with vsn '" + vsn + "'")
 
     // Rest API

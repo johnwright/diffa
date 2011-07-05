@@ -97,7 +97,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     listener.onMatch(VersionID(abPair, "id4"), null, LiveWindow); expectLastCall
 
     // We should still see an unmatched version check
-    expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq()).times(2)
+    expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)

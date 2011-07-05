@@ -22,7 +22,7 @@ import org.easymock.EasyMock
 import net.lshift.diffa.kernel.config.{RepairAction, ConfigStore, Pair => Pair}
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.differencing.ScanTrigger
+import net.lshift.diffa.kernel.differencing.TriggeredByScan
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 
@@ -48,7 +48,7 @@ class EscalationManagerTest {
   @Test
   def shouldEscalateActionsAfterScan = {
 
-    escalationManager.onMismatch(VersionID(pairKey, "id"), new DateTime(), "uvsn", "dvsn", ScanTrigger)
+    escalationManager.onMismatch(VersionID(pairKey, "id"), new DateTime(), "uvsn", "dvsn", TriggeredByScan)
 
     verify(configStore, actionsClient)
   }

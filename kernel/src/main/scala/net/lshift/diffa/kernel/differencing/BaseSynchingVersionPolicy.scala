@@ -71,9 +71,9 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
-  def replayUnmatchedDifferences(pairKey:String, l:DifferencingListener, antecedent:MatchingAntecedent) {
+  def replayUnmatchedDifferences(pairKey:String, l:DifferencingListener, origin:MatchOrigin) {
     val pair = configStore.getPair(pairKey)
-    generateDifferenceEvents(pair, l, antecedent)
+    generateDifferenceEvents(pair, l, origin)
   }
 
   def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
@@ -93,10 +93,10 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   }
 
 
-  private def generateDifferenceEvents(pair:Pair, l:DifferencingListener, antecedent:MatchingAntecedent) {
+  private def generateDifferenceEvents(pair:Pair, l:DifferencingListener, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
     stores(pair.key).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
-      corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, antecedent))
+      corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
   }
 
   /**

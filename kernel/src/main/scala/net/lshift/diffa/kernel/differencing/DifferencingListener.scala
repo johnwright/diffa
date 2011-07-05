@@ -27,7 +27,7 @@ trait DifferencingListener {
    * Raised when an upstream and downstream version disagree (either by the values being different, or one being
    * missing).
    */
-  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, antecedent:MatchingAntecedent)
+  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin)
   
   /**
    * Raised when an upstream and downstream have entered a matched version state. This callback will only be
@@ -40,20 +40,20 @@ trait DifferencingListener {
    * - If there were older events when a client starts a session, only the mismatch events would be reported anyway. 
    *
    */
-  def onMatch(id:VersionID, vsn:String, antecedent:MatchingAntecedent)
+  def onMatch(id:VersionID, vsn:String, origin:MatchOrigin)
 }
 
 /**
  * Defines the type of origin of a match event.
  */
-abstract class MatchingAntecedent
+abstract class MatchOrigin
 
 /**
  * The match event originates from the expiration of a live sliding window.
  */
-case object LiveWindow extends MatchingAntecedent
+case object LiveWindow extends MatchOrigin
 
 /**
  * The match event originates from a scan
  */
-case object ScanTrigger extends MatchingAntecedent
+case object TriggeredByScan extends MatchOrigin

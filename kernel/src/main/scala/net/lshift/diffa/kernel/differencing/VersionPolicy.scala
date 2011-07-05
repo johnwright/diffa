@@ -39,17 +39,17 @@ trait VersionPolicy {
 
   /**
    * Invokes the underlying <code>replayUnmatchedDifferences</code> call,
-   * defaulting the antecedent to <code>ScanTrigger</code>.
+   * defaulting the origin to <code>TriggeredByScan</code>.
    */
   def replayUnmatchedDifferences(pairKey:String, listener:DifferencingListener) : Unit =
-    replayUnmatchedDifferences(pairKey, listener, ScanTrigger)
+    replayUnmatchedDifferences(pairKey, listener, TriggeredByScan)
 
   /**
    * Requests that the policy generate a series of events describing the differences between the endpoints
    * within the given pair. This does not perform any endpoint scanning, it operates entirely from
    * local data stores.
    */
-  def replayUnmatchedDifferences(pairKey:String, listener:DifferencingListener, antecedent:MatchingAntecedent) : Unit
+  def replayUnmatchedDifferences(pairKey:String, listener:DifferencingListener, origin:MatchOrigin) : Unit
 
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are
