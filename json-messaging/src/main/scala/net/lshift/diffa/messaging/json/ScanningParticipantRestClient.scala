@@ -42,7 +42,10 @@ class ScanningParticipantRestClient(scanUrl:String)
         params.add(pc.category + "-prefix", pc.prefix)
       case nvc:NonValueConstraint =>    // Ignore non-value constraints
     }
-    aggregations.foreach { case (k, f) =>
+    aggregations.foreach {
+      case (k, spf:StringPrefixCategoryFunction) =>
+        params.add(k + "-length", spf.prefixLength.toString)
+      case (k, f) =>
         params.add(k + "-granularity", f.name)
     }
 

@@ -13,7 +13,8 @@ import scala.collection.JavaConversions._
 import org.joda.time.{DateTimeZone, DateTime, LocalDate}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning.{ConstraintsBuilder, AggregationBuilder, ScanningParticipantHandler, ScanConstraint, ScanAggregation}
-import net.lshift.diffa.participant.scanning.{ScanningParticipantDelegator, ScanResultEntry, DateGranularityEnum, DateAggregation, ByNameAggregation, IntegerAggregation}
+import net.lshift.diffa.participant.scanning.{ScanningParticipantDelegator, ScanResultEntry, DateGranularityEnum, DateAggregation, ByNameAggregation}
+import net.lshift.diffa.participant.scanning.{StringPrefixAggregation, IntegerAggregation}
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -156,6 +157,20 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(), Map("someInt" -> IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction(100, 10)))
+  }
+
+  @Test
+  def shouldBeAbleToPerformPrefixAggregatedScan() {
+    stubAggregationBuilder(req => {
+      val builder = new AggregationBuilder(req)
+      builder.maybeAddStringPrefixAggregation("someString")
+      builder
+    })
+    stubConstraintBuilder(req => new ConstraintsBuilder(req))
+    expectQuery(Seq(), Seq(new StringPrefixAggregation("someString", 2)))
+    replayAll()
+
+    scanningRestClient.scan(Seq(), Map("someString" -> StringPrefixCategoryFunction(2, 10, 2)))
   }
 }
 

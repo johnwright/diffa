@@ -96,4 +96,50 @@ public class AggregationBuilderTest {
     IntegerAggregation a = (IntegerAggregation) builder.toList().get(0);
     assertEquals("500", a.bucket("523"));
   }
+
+  @Test
+  public void shouldNotAddStringPrefixAggregationForEmptyRequest() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    AggregationBuilder builder = new AggregationBuilder(req);
+
+    builder.maybeAddStringPrefixAggregation("test");
+    assertEquals(0, builder.toList().size());
+  }
+
+  @Test
+  public void shouldAddStringPrefixAggregationWhenParameterIsAvailable() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someString-length", "5");
+    AggregationBuilder builder = new AggregationBuilder(req);
+
+    builder.maybeAddStringPrefixAggregation("someString");
+    assertEquals(1, builder.toList().size());
+    assertThat(builder.toList().get(0), is(instanceOf(StringPrefixAggregation.class)));
+
+    StringPrefixAggregation a = (StringPrefixAggregation) builder.toList().get(0);
+    assertEquals("someString", a.getAttributeName());
+    assertEquals(5, a.getLength());
+  }
+
+  @Test
+  public void shouldBucketStringPrefix() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someString-length", "4");
+    AggregationBuilder builder = new AggregationBuilder(req);
+    builder.maybeAddStringPrefixAggregation("someString");
+
+    StringPrefixAggregation a = (StringPrefixAggregation) builder.toList().get(0);
+    assertEquals("abcd", a.bucket("abcdef"));
+  }
+
+  @Test
+  public void shouldBucketStringPrefixWithShortString() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someString-length", "3");
+    AggregationBuilder builder = new AggregationBuilder(req);
+    builder.maybeAddStringPrefixAggregation("someString");
+
+    StringPrefixAggregation a = (StringPrefixAggregation) builder.toList().get(0);
+    assertEquals("ab", a.bucket("ab"));
+  }
 }

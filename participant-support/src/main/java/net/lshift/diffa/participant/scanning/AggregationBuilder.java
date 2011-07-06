@@ -30,7 +30,7 @@ public class AggregationBuilder {
    * @param attrName the name of the attribute
    */
   public void maybeAddDateAggregation(String attrName) {
-    String attrGranularity = req.getParameter(attrName + "-granularity");
+    String attrGranularity = getGranularityAttr(attrName);
     if (attrGranularity != null) {
       result.add(new DateAggregation(attrName, attrGranularity));
     }
@@ -41,7 +41,7 @@ public class AggregationBuilder {
    * @param attrName
    */
   public void maybeAddByNameAggregation(String attrName) {
-    String attrGranularity = req.getParameter(attrName + "-granularity");
+    String attrGranularity = getGranularityAttr(attrName);
     if (attrGranularity != null && attrGranularity.equals("by-name")) {
       result.add(new ByNameAggregation(attrName));
     }
@@ -53,9 +53,25 @@ public class AggregationBuilder {
    * @param attrName the name of the attribute
    */
   public void maybeAddIntegerAggregation(String attrName) {
-    String attrGranularity = req.getParameter(attrName + "-granularity");
+    String attrGranularity = getGranularityAttr(attrName);
     if (attrGranularity != null) {
       result.add(new IntegerAggregation(attrName, attrGranularity));
     }
+  }
+
+  /**
+   * Attempt to add a string prefix aggregation for the given attribute. The aggregation will be added if
+   * [attrName]-length is present in the request.
+   * @param attrName the name of the attribute
+   */
+  public void maybeAddStringPrefixAggregation(String attrName) {
+    String length = req.getParameter(attrName + "-length");
+    if (length != null) {
+      result.add(new StringPrefixAggregation(attrName, length));
+    }
+  }
+
+  private String getGranularityAttr(String attrName) {
+    return req.getParameter(attrName + "-granularity");
   }
 }
