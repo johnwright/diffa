@@ -27,7 +27,7 @@ trait QueryAction
  *                  be bucketed
  * @param constraints the constraints to apply to the aggregation
  */
-case class AggregateQueryAction(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) extends QueryAction
+case class AggregateQueryAction(bucketing:Seq[CategoryFunction], constraints:Seq[QueryConstraint]) extends QueryAction
 
 /**
  * The next action should query on an individual level

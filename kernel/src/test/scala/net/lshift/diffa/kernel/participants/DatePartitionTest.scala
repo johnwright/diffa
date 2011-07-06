@@ -38,72 +38,72 @@ class DatePartitionTest {
   @Test
   def dailyPartition = {
     val date = new DateTime(2012, 5, 5 ,8, 4, 2, 0)
-    val function = DailyCategoryFunction
-    val partition = function.owningPartition(date.toString)
+    val function = DailyCategoryFunction("bizDate")
+    val partition = function.bucket(date.toString)
     assertEquals("2012-05-05", partition)
   }
 
   @Test
   def monthlyPartition = {
     val date = new DateTime(2017, 9, 17 , 9, 9, 6, 0)
-    val function = MonthlyCategoryFunction
-    val partition = function.owningPartition(date.toString)
+    val function = MonthlyCategoryFunction("bizDate")
+    val partition = function.bucket(date.toString)
     assertEquals("2017-09", partition)
   }
   
   @Test
   def yearlyPartition = {
     val date = new DateTime(1998, 11, 21 , 15, 49, 55, 0)
-    val function = YearlyCategoryFunction
-    val partition = function.owningPartition(date.toString)
+    val function = YearlyCategoryFunction("bizDate")
+    val partition = function.bucket(date.toString)
     assertEquals("1998", partition)
   }
 
   @Test
   def shouldParseFullIsoDate = {
     val date = "1998-11-21T15:49:55.000Z"
-    val function = DailyCategoryFunction
-    val partition = function.owningPartition(date)
+    val function = DailyCategoryFunction("bizDate")
+    val partition = function.bucket(date)
     assertEquals("1998-11-21", partition)
   }
 
   @Test
   def shouldParseYYYYMMddDate = {
     val date = "1998-11-21"
-    val function = DailyCategoryFunction
-    val partition = function.owningPartition(date)
+    val function = DailyCategoryFunction("bizDate")
+    val partition = function.bucket(date)
     assertEquals("1998-11-21", partition)
   }
 
   @Test
   def shouldNotWidenConstrainedRangeForYearlyPartition = {
     val constraint = DateRangeConstraint("someDate", new LocalDate(1979,7,3), new LocalDate(1979,8,15))
-    assertEquals(constraint, YearlyCategoryFunction.constrain(constraint, "1979"))
+    assertEquals(constraint, YearlyCategoryFunction("bizDate").constrain(constraint, "1979"))
   }
 
   @Test
   def shouldNotWidenConstrainedRangeForMonthlyPartition = {
     val constraint = DateRangeConstraint("someDate", new LocalDate(1991,2,2), new LocalDate(1991,2,27))
-    assertEquals(constraint, MonthlyCategoryFunction.constrain(constraint, "1991-02"))
+    assertEquals(constraint, MonthlyCategoryFunction("bizDate").constrain(constraint, "1991-02"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])
   def shouldThrowInvalidCategoryExceptionIfValueIsNotDate {
-    DailyCategoryFunction.owningPartition("NOT_A_DATE")
+    DailyCategoryFunction("bizDate").bucket("NOT_A_DATE")
   }
 
   @Test
   def descendFromYearlyCategoryFunction {
     val expectedStart = new DateTime(1986, 01, 01, 0, 0, 0, 0)
     val expectedEnd = new DateTime(1987, 01, 01, 0, 0, 0, 0).minusMillis(1)
-    assertEquals(Some(MonthlyCategoryFunction), YearlyCategoryFunction.descend)
+    assertEquals(Some(MonthlyCategoryFunction), YearlyCategoryFunction("bizDate").descend)
     assertEquals(DateTimeRangeConstraint("someDateTime", expectedStart, expectedEnd),
-      YearlyCategoryFunction.constrain(dateTimeConstraint, "1986"))
+      YearlyCategoryFunction("bizDate").constrain(dateTimeConstraint, "1986"))
 
     val expectedStartAsLocal = expectedStart.toLocalDate
     val expectedEndAsLocal = expectedEnd.toLocalDate
     assertEquals(DateRangeConstraint("someDate", expectedStartAsLocal, expectedEndAsLocal),
-      YearlyCategoryFunction.constrain(dateConstraint, "1986"))
+      YearlyCategoryFunction("bizDate").constrain(dateConstraint, "1986"))
   }
 
 }

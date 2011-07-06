@@ -17,20 +17,16 @@
 package net.lshift.diffa.kernel.participants
 
 import org.joda.time.LocalDate
-import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat, DateTimeFormatter, DateTimeFormat}
+import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import net.lshift.diffa.kernel.config.{DateTypeDescriptor,DateTimeTypeDescriptor}
+import net.lshift.diffa.participant.scanning.{DateGranularityEnum, DateAggregation}
 
 /**
- * Provides basic functionality required to narrow down date based categories.
+ * Extension of the DateCategoryFunction to support internal functions.
  */
-abstract case class DateCategoryFunction extends CategoryFunction {
-
-  val parsers = Array(
-          ISODateTimeFormat.dateTime().getParser,
-          ISODateTimeFormat.date().getParser
-  )
-  protected val formatter = new DateTimeFormatterBuilder().append( null, parsers ).toFormatter
-
+abstract class DateCategoryFunction(attrName:String, granularity:DateGranularityEnum)
+  extends DateAggregation(attrName, granularity)
+  with CategoryFunction {
 
   def pattern:DateTimeFormatter
   def descend:Option[CategoryFunction]
@@ -66,43 +62,34 @@ abstract case class DateCategoryFunction extends CategoryFunction {
   def eod(d:LocalDate) = d.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1)
 
   def shouldBucket() = true
-
-  override def owningPartition(value:String) =
-    try {
-      val date = formatter.parseDateTime(value)
-      pattern.print(date)
-    }
-    catch {
-      case e: IllegalArgumentException => throw new InvalidAttributeValueException("Value is not a date: "+value)
-    }
 }
 
 /**
  * This function partitions by whole days.
  */
-case object DailyCategoryFunction extends DateCategoryFunction {
+case class DailyCategoryFunction(attrName:String) extends DateCategoryFunction(attrName, DateGranularityEnum.Daily) {
   def name = "daily"
   def pattern = DateTimeFormat.forPattern("yyyy-MM-dd")
-  def descend = Some(IndividualCategoryFunction)
+  def descend = None
   def pointToBounds(point:LocalDate) = (point,point)
 }
 
 /**
  * This function partitions by whole calendar months.
  */
-case object MonthlyCategoryFunction extends DateCategoryFunction {
+case class MonthlyCategoryFunction(attrName:String) extends DateCategoryFunction(attrName, DateGranularityEnum.Monthly) {
   def name = "monthly"
   def pattern = DateTimeFormat.forPattern("yyyy-MM")
-  def descend = Some(DailyCategoryFunction)
+  def descend = Some(DailyCategoryFunction(attrName))
   def pointToBounds(point:LocalDate) = (point.withDayOfMonth(1), point.plusMonths(1).minusDays(1))
 }
 
 /**
  * This function partitions by whole years.
  */
-case object YearlyCategoryFunction extends DateCategoryFunction {
+case class YearlyCategoryFunction(attrName:String) extends DateCategoryFunction(attrName, DateGranularityEnum.Yearly) {
   def name = "yearly"
   def pattern = DateTimeFormat.forPattern("yyyy")
-  def descend = Some(MonthlyCategoryFunction)
+  def descend = Some(MonthlyCategoryFunction(attrName))
   def pointToBounds(point:LocalDate) = (point.withMonthOfYear(1).withDayOfMonth(1), point.withMonthOfYear(12).withDayOfMonth(31))
 }

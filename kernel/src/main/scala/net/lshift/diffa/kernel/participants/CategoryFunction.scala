@@ -16,6 +16,8 @@
 
 package net.lshift.diffa.kernel.participants
 
+import net.lshift.diffa.participant.scanning.ScanAggregation
+
 /**
  * This is a struct for desceding partition requests. 
  */
@@ -27,7 +29,7 @@ case class IntermediateResult(constraint:QueryConstraint, next:CategoryFunction)
  * - Given the value of a partition, it can determine what the relevant upper and lower bounds are for
  *   any further introspection.
  */
-trait CategoryFunction {
+trait CategoryFunction extends ScanAggregation {
 
   /**
    * The external name of this function.
@@ -55,24 +57,6 @@ trait CategoryFunction {
    * Indicates whether this function supports bucketing.
    */
   def shouldBucket() : Boolean
-
-  /**
-   * Given a particular value from the value domain (encoded as a string), returns the name of the partition it
-   * belongs to.
-   */
-  def owningPartition(value:String) : String
-}
-
-/**
- * A special type of function that indicates that no further partitioning should take place.
- *
- */
-case object IndividualCategoryFunction extends CategoryFunction {
-  def name = "individual"
-  def descend = None
-  def constrain(constraint:QueryConstraint, partition:String) = new SetQueryConstraint(constraint.category, Set(partition))
-  def shouldBucket() = false
-  def owningPartition(value:String) = value
 }
 
 /**

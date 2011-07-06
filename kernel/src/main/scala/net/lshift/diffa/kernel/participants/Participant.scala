@@ -28,7 +28,7 @@ trait Participant extends Closeable
   /**
    * Scans this participant with the given constraints and aggregations.
    */
-  def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry]
+  def scan(constraints:Seq[QueryConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry]
 
   /**
    * Requests that the participant return a serialized form of the item with the given identifier.

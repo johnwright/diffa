@@ -30,7 +30,7 @@ class ScanningParticipantRestClient(scanUrl:String)
     extends AbstractRestClient(scanUrl, "")
     with ScanningParticipantRef {
 
-  def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = {
+  def scan(constraints: Seq[QueryConstraint], aggregations: Seq[CategoryFunction]) = {
     val params = new MultivaluedMapImpl()
     constraints.foreach {
       case sqc:SetQueryConstraint   =>
@@ -43,10 +43,10 @@ class ScanningParticipantRestClient(scanUrl:String)
       case nvc:NonValueConstraint =>    // Ignore non-value constraints
     }
     aggregations.foreach {
-      case (k, spf:StringPrefixCategoryFunction) =>
-        params.add(k + "-length", spf.prefixLength.toString)
-      case (k, f) =>
-        params.add(k + "-granularity", f.name)
+      case spf:StringPrefixCategoryFunction =>
+        params.add(spf.getAttributeName + "-length", spf.prefixLength.toString)
+      case f =>
+        params.add(f.getAttributeName + "-granularity", f.name)
     }
 
     val jsonEndpoint = resource.queryParams(params).`type`(MediaType.APPLICATION_JSON_TYPE)

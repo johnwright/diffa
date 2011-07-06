@@ -16,9 +16,7 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.participants.IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction
-import net.lshift.diffa.kernel.participants.{EasyConstraints, YearlyCategoryFunction}
-
+import net.lshift.diffa.kernel.participants.{CategoryFunction, IntegerCategoryFunction, EasyConstraints, YearlyCategoryFunction}
 
 /**
  * Simple registry to be allow to dispatching on RangeCategoryDescriptors by their data type.
@@ -31,10 +29,10 @@ object RangeTypeRegistry {
   /**
    * Resolve the default category function for any given data type name
    */
-  def defaultCategoryFunction(dataType:String) = dataType match {
-    case "date"     => YearlyCategoryFunction
-    case "datetime" => YearlyCategoryFunction
-    case "int"      => AutoNarrowingIntegerCategoryFunction(1000, 10)
+  def defaultCategoryFunction(attrName:String, dataType:String):CategoryFunction = dataType match {
+    case "date"     => YearlyCategoryFunction(attrName)
+    case "datetime" => YearlyCategoryFunction(attrName)
+    case "int"      => IntegerCategoryFunction(attrName, 1000, 10)
   }
 
   /**

@@ -86,14 +86,15 @@ abstract class AbstractPolicyTest {
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)
   def VersionsFromStore[T](vals:T*) = Seq[T](vals:_*)
 
-  protected val yearly = YearlyCategoryFunction
-  protected val monthly = MonthlyCategoryFunction
-  protected val daily = DailyCategoryFunction
-  protected val individual = IndividualCategoryFunction
+  def yearly(attrName:String) = YearlyCategoryFunction(attrName)
+  def monthly(attrName:String) = MonthlyCategoryFunction(attrName)
+  def daily(attrName:String) = DailyCategoryFunction(attrName)
 
-  protected val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
-  protected val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
-  protected val thousands = AutoNarrowingIntegerCategoryFunction(1000, 10)
+  def byName(attrName:String) = ByNameCategoryFunction(attrName)
+
+  def thousands(attrName:String) = IntegerCategoryFunction(attrName, 1000, 10)
+  def hundreds(attrName:String) = IntegerCategoryFunction(attrName, 100, 10)
+  def tens(attrName:String) = IntegerCategoryFunction(attrName, 10, 10)
 
   def Up(id: String, o:Map[String, String], s: String): UpstreamVersion = Up(VersionID(abPair, id), o, s)
   def Up(v:VersionID, o:Map[String, String], s:String): UpstreamVersion = UpstreamVersion(v, o, new DateTime, s)
@@ -107,7 +108,7 @@ abstract class AbstractPolicyTest {
   case class PolicyTestData(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
-    bucketing:Seq[Map[String, CategoryFunction]],
+    bucketing:Seq[Seq[CategoryFunction]],
     constraints: Seq[Seq[QueryConstraint]],
     attributes: Seq[Map[String, String]],
     downstreamAttributes: Seq[Map[String, TypedAttribute]],
@@ -119,10 +120,10 @@ abstract class AbstractPolicyTest {
   val dateCategoryData = PolicyTestData(
     upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
     downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
-    bucketing = Seq(Map("bizDate" -> YearlyCategoryFunction),
-                    Map("bizDate" -> MonthlyCategoryFunction),
-                    Map("bizDate" -> DailyCategoryFunction),
-                    Map("bizDate" -> IndividualCategoryFunction)),
+    bucketing = Seq(Seq(YearlyCategoryFunction("bizDate")),
+                    Seq(MonthlyCategoryFunction("bizDate")),
+                    Seq(DailyCategoryFunction("bizDate")),
+                    Seq()),
     constraints = Seq(Seq(unconstrainedDateTime("bizDate")),
                       Seq(DateTimeRangeConstraint("bizDate", START_2010, END_2010)),
                       Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)),
@@ -135,10 +136,10 @@ abstract class AbstractPolicyTest {
   val integerCategoryData = PolicyTestData(
     upstreamCategories = Map("someInt" -> intCategoryDescriptor),
     downstreamCategories = Map("someInt" -> intCategoryDescriptor),
-    bucketing = Seq(Map("someInt" -> thousands),
-                    Map("someInt" -> hundreds),
-                    Map("someInt" -> tens),
-                    Map("someInt" -> IndividualCategoryFunction)),
+    bucketing = Seq(Seq(thousands("someInt")),
+                    Seq(hundreds("someInt")),
+                    Seq(tens("someInt")),
+                    Seq()),
     constraints = Seq(Seq(unconstrainedInt("someInt")),
                       Seq(IntegerRangeConstraint("someInt", 2000, 2999)),
                       Seq(IntegerRangeConstraint("someInt", 2300, 2399)),
@@ -353,23 +354,23 @@ abstract class AbstractPolicyTest {
     }
   }
 
-  protected def expectUpstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[ScanResultEntry],
+  protected def expectUpstreamAggregateSync(bucketing:Seq[CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[ScanResultEntry],
                                             storeResp: Seq[UpstreamVersion]) {
     expectUpstreamAggregateSync(abPair, bucketing, constraints, partResp, storeResp: Seq[UpstreamVersion])
   }
 
-  protected def expectUpstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
+  protected def expectUpstreamAggregateSync(pair:String, bucketing:Seq[CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
     expect(usMock.scan(constraints, bucketing)).andReturn(partResp)
     store.queryUpstreams(EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(storeResp))
   }
 
-  protected def expectDownstreamAggregateSync(bucketing:Map[String, CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[ScanResultEntry],
+  protected def expectDownstreamAggregateSync(bucketing:Seq[CategoryFunction], constraints: Seq[QueryConstraint], partResp: Seq[ScanResultEntry],
                                               storeResp: Seq[DownstreamVersion]) {
     expectDownstreamAggregateSync(abPair, bucketing, constraints, partResp, storeResp)
   }
 
-  protected def expectDownstreamAggregateSync(pair:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
+  protected def expectDownstreamAggregateSync(pair:String, bucketing:Seq[CategoryFunction], constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
     expect(dsMock.scan(constraints, bucketing)).andReturn(partResp)
     store.queryDownstreams(EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
@@ -382,7 +383,7 @@ abstract class AbstractPolicyTest {
 
   protected def expectUpstreamEntitySync(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
     val pairDef = configStore.getPair(pair)
-    expect(usMock.scan(constraints, Map())).andReturn(partResp)
+    expect(usMock.scan(constraints, Seq())).andReturn(partResp)
     val correlations = storeResp.map(r => {
       val c = new Correlation()
       c.id = r.id.id
@@ -396,7 +397,7 @@ abstract class AbstractPolicyTest {
   }
   protected def expectDownstreamEntitySync2(pair:String, constraints:Seq[QueryConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
     val pairDef = configStore.getPair(pair)
-    expect(dsMock.scan(constraints, Map())).andReturn(partResp)
+    expect(dsMock.scan(constraints, Seq())).andReturn(partResp)
     val correlations = storeResp.map(r => {
       val c = new Correlation      
       c.id = r.id.id

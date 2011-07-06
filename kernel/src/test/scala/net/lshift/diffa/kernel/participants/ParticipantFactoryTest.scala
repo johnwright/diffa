@@ -137,7 +137,7 @@ class ParticipantFactoryTest {
     val part = factory.createUpstreamParticipant(e.endpoint)
     if (e.scan == Fails) {
       expectsInvalidParticipantOperationException {
-        part.scan(Seq(), Map())
+        part.scan(Seq(), Seq())
       }
     }
     if (e.retrieveContent == Fails) {
@@ -156,7 +156,7 @@ class ParticipantFactoryTest {
     val part = factory.createDownstreamParticipant(e.endpoint)
     if (e.scan == Fails) {
       expectsInvalidParticipantOperationException {
-        part.scan(Seq(), Map())
+        part.scan(Seq(), Seq())
       }
     }
     if (e.retrieveContent == Fails) {
@@ -174,7 +174,7 @@ class ParticipantFactoryTest {
   @Theory
   def shouldDelegateToValidRefsInUpstreamParticipant(e:EndpointConfig) {
     val constraints = Seq(createStrictMock(classOf[QueryConstraint]))
-    val aggregations = Map("a" -> createStrictMock(classOf[CategoryFunction]))
+    val aggregations = Seq(createStrictMock(classOf[CategoryFunction]))
     val scanEntries = Seq(ScanResultEntry.forAggregate("v1", Map[String, String]()))
 
     assumeTrue(e.validUpstream)
@@ -201,7 +201,7 @@ class ParticipantFactoryTest {
   @Theory
   def shouldDelegateToValidRefsInDownstreamParticipant(e:EndpointConfig) {
     val constraints = Seq(createStrictMock(classOf[QueryConstraint]))
-    val aggregations = Map("a" -> createStrictMock(classOf[CategoryFunction]))
+    val aggregations = Seq(createStrictMock(classOf[CategoryFunction]))
     val scanEntries = Seq(ScanResultEntry.forAggregate("v1", Map[String, String]()))
     val procResponse = new ProcessingResponse("id", "uvsn", "dvsn")
 

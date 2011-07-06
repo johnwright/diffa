@@ -24,34 +24,10 @@ import net.lshift.diffa.kernel.participants._
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend.wire._
-import net.lshift.diffa.kernel.frontend.wire.WireDigest._
 
 class JSONEncodingUtilsTest {
 
   def time() = new DateTime().toString()
-
-  @Test
-  def wireAggregateRequestRoundTrip() = {
-    val r1 = WireAggregateRequest(
-      Map("some_key" -> "some_value", "id" -> "1000s"),
-          Seq(
-            new WireConstraint("foo", Map("upper" -> "abc", "lower" -> "def"), Seq("a","b","c")),
-            new WireConstraint("bar", Map("upper" -> "123", "lower" -> "456"), Seq("1","2","3"))))
-    requestRoundTrip(r1)
-  }
-  @Test
-  def aggregateDigestRoundTrip() = {
-    val d1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1"), Seq("foo","bar"))
-    val d2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2"), Seq("baz","who"))
-    digestRoundTrip(d1,d2)
-  }
-
-  @Test
-  def entityVersionRoundTrip() = {
-    val v1 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d1", "id" -> "id1"), Seq("foo","bar"))
-    val v2 = WireDigest(Map("lastUpdated" -> time(), "digest" -> "d2", "id" -> "id2"), Seq("baz","who"))
-    digestRoundTrip(v1,v2)
-  }
 
   @Test
   def queryConstraintRoundTrip = {
@@ -141,29 +117,5 @@ class JSONEncodingUtilsTest {
     val deserialized = JSONEncodingUtils.deserializeActionResult(serialized)
     assertNotNull(deserialized)
     assertEquals(response, deserialized)
-  }
-
-  def digestRoundTrip(d1:WireDigest, d2:WireDigest) = {
-    val serialized = JSONEncodingUtils.serializeDigests(Seq(d1,d2))
-    val deserialized = JSONEncodingUtils.deserializeDigests(serialized)
-    assertNotNull(deserialized)
-    assertEquals(2, deserialized.length)
-    (Seq(d1,d2), deserialized).zip.foreach(x=> compareDigests(x._1,x._2))
-  }
-
-  def compareDigests(expected:WireDigest, actual:WireDigest) = {
-    assertEquals(expected.metadata(LAST_UPDATED), actual.metadata(LAST_UPDATED))
-    assertEquals(expected.metadata(DIGEST), actual.metadata(DIGEST))
-    (expected.attributes, actual.attributes).zip.foreach(x=> assertEquals(x._1,x._2))
-    if (expected.metadata.containsKey(ID)) {
-      assertEquals(expected.metadata(ID), actual.metadata(ID))
-    }
-  }
-
-  def requestRoundTrip(r1:WireAggregateRequest) = {
-    val serialized = JSONEncodingUtils.serializeWireAggregateRequest(r1)
-    val deserialized = JSONEncodingUtils.deserializeWireAggregateRequest(serialized)
-    assertNotNull(deserialized)
-    assertEquals(r1, deserialized)
   }
 }

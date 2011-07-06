@@ -105,16 +105,16 @@ case class Endpoint(
    */
   def schematize(runtimeValues:Seq[String]) = AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
 
-  def defaultBucketing() : Map[String, CategoryFunction] = {
+  def defaultBucketing() : Seq[CategoryFunction] = {
     categories.map {
       case (name, categoryType) => {
         categoryType match {
-          case s:SetCategoryDescriptor    => name -> ByNameCategoryFunction
-          case r:RangeCategoryDescriptor  => name -> RangeTypeRegistry.defaultCategoryFunction(r.dataType)
-          case p:PrefixCategoryDescriptor => name -> StringPrefixCategoryFunction(p.prefixLength, p.maxLength, p.step)
+          case s:SetCategoryDescriptor    => ByNameCategoryFunction(name)
+          case r:RangeCategoryDescriptor  => RangeTypeRegistry.defaultCategoryFunction(name, r.dataType)
+          case p:PrefixCategoryDescriptor => StringPrefixCategoryFunction(name, p.prefixLength, p.maxLength, p.step)
         }
       }
-    }.toMap
+    }.toSeq
   }
 
   /**

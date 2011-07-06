@@ -37,7 +37,7 @@ class StubParticipantProtocolFactory
   def supportsAddress(address:String, protocol:String) = true
 
   def createParticipantRef(address: String, protocol: String) = new ScanningParticipantRef {
-    def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = null
+    def scan(constraints: Seq[QueryConstraint], aggregations: Seq[CategoryFunction]) = null
     def close() {}
   }
 }

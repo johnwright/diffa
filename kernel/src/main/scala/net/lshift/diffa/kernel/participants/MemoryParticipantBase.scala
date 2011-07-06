@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.participants
 import org.joda.time.DateTime
 import collection.mutable.HashMap
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
+import net.lshift.diffa.kernel.differencing.AttributesUtil
 import javax.servlet.http.HttpServletRequest
 import scala.collection.JavaConversions._
 import java.util.ArrayList
@@ -43,8 +43,8 @@ class MemoryParticipantBase(nativeVsnGen: String => String)
   /**
    * Scans this participant with the given constraints and aggregations.
    */
-  def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry] =
-    doQuery(new java.util.ArrayList[ScanConstraint], new java.util.ArrayList[ScanAggregation]).toSeq
+  def scan(constraints:Seq[QueryConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry] =
+    doQuery(new java.util.ArrayList[ScanConstraint], aggregations).toSeq
 
   def retrieveContent(identifier: String) = entities.get(identifier) match {
     case Some(entity) => entity.body
@@ -94,7 +94,7 @@ class MemoryParticipantBase(nativeVsnGen: String => String)
     val asScanResults = entitiesInRange.sortWith(_.id < _.id).map { e => new ScanResultEntry(e.id, nativeVsnGen(e.body), e.lastUpdated, e.toAttributes) }
 
     if (aggregations.length > 0) {
-      val digester = new net.lshift.diffa.participant.scanning.DigestBuilder(aggregations)
+      val digester = new DigestBuilder(aggregations)
       asScanResults.foreach(digester.add(_))
       digester.toDigests
     } else {

@@ -23,8 +23,8 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 
 class IntegerPartitionTest {
 
-  protected val tens = AutoNarrowingIntegerCategoryFunction(10, 10)
-  protected val hundreds = AutoNarrowingIntegerCategoryFunction(100, 10)
+  protected val tens = IntegerCategoryFunction("someInt", 10, 10)
+  protected val hundreds = IntegerCategoryFunction("someInt", 100, 10)
 
   val constraint = new QueryConstraint {
     def category = "someInt"
@@ -43,33 +43,24 @@ class IntegerPartitionTest {
 
   @Test
   def tensPartition {
-    assertEquals("120", tens.owningPartition("123"))
-    assertEquals("10", tens.owningPartition("12"))
-    assertEquals("0", tens.owningPartition("1"))
+    assertEquals("120", tens.bucket("123"))
+    assertEquals("10", tens.bucket("12"))
+    assertEquals("0", tens.bucket("1"))
   }
 
   @Test
   def hundredsPartition {
-    assertEquals("1200", hundreds.owningPartition("1234"))
-    assertEquals("100", hundreds.owningPartition("123"))
-    assertEquals("0", hundreds.owningPartition("12"))
-    assertEquals("0", hundreds.owningPartition("1"))
-  }
-
-  @Test
-  def arbitraryPartition {
-    object ArbitraryCategoryFunction extends IntegerCategoryFunction(1337) {
-      def name = "arbitrary-1337"
-      def descend = Some(IndividualCategoryFunction)
-    }
-    assertEquals("2674", ArbitraryCategoryFunction.owningPartition("3456"))
+    assertEquals("1200", hundreds.bucket("1234"))
+    assertEquals("100", hundreds.bucket("123"))
+    assertEquals("0", hundreds.bucket("12"))
+    assertEquals("0", hundreds.bucket("1"))
   }
 
   @Test
   def autoDescendingIntegerCategoryFunction {
-    def binaryCategoryFunction(denom: Int) = AutoNarrowingIntegerCategoryFunction(denom, 2)
+    def binaryCategoryFunction(denom: Int) = IntegerCategoryFunction("someInt", denom, 2)
     val myBinaryCategoryFunction = binaryCategoryFunction(128)
-    assertEquals("256", myBinaryCategoryFunction.owningPartition("300"))
+    assertEquals("256", myBinaryCategoryFunction.bucket("300"))
     assertEquals(IntegerRangeConstraint("someInt", 256, 383),
                  myBinaryCategoryFunction.constrain(constraint, "256"))
     assertEquals(Some(binaryCategoryFunction(64)), myBinaryCategoryFunction.descend)
@@ -77,7 +68,7 @@ class IntegerPartitionTest {
 
   @Test
   def descendFromTensPartition {
-    assertEquals(Some(IndividualCategoryFunction), tens.descend)
+    assertEquals(None, tens.descend)
     assertEquals(IntegerRangeConstraint("someInt", 10, 19), tens.constrain(constraint, "10"))
   }
 
@@ -99,7 +90,7 @@ class IntegerPartitionTest {
 
   @Test(expected=classOf[IllegalArgumentException])
   def autoDescendingIntegerCategoryShouldThrowIllegalArgumentExceptionIfInstantiatedWithInvalidArgs {
-    new AutoNarrowingIntegerCategoryFunction(100, 3) // 3 is not a factor of 100
+    new IntegerCategoryFunction("someInt", 100, 3) // 3 is not a factor of 100
   }
 
 }

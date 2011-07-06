@@ -17,8 +17,31 @@
 package net.lshift.diffa.kernel.participants
 
 import java.lang.Integer.parseInt
+import net.lshift.diffa.participant.scanning.IntegerAggregation
 
-abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunction {
+/**
+ * This function partitions by groups of size `denominator`.
+ * When `next` is called, it will return another with the same `factor` and with a `denominator` which is
+ * `factor` times smaller.
+ *
+ * For example:
+ *
+ *     val HundredsCategoryFunction = IntegerCategoryFunction(100, 10)
+ */
+case class IntegerCategoryFunction(attrName:String, denominator: Int, factor:Int)
+  extends IntegerAggregation(attrName, denominator)
+  with CategoryFunction {
+
+  def name = denominator.toString + "s"
+  def descend = {
+    val nextDenominator = denominator / factor
+    if (nextDenominator <= 1) {
+      None
+    }
+    else {
+      Some(IntegerCategoryFunction(attrName, nextDenominator, factor))
+    }
+  }
 
   def shouldBucket = true
 
@@ -39,41 +62,4 @@ abstract class IntegerCategoryFunction(denominator: Int) extends CategoryFunctio
     val end = (parsedPartition + denominator - 1)
     IntegerRangeConstraint(constraint.category, start, end)
   }
-}
-
-object IntegerCategoryFunction {
-
-  /**
-   * This function partitions by groups of size `denominator`.
-   * When `next` is called, it will return another with the same `factor` and with a `denominator` which is
-   * `factor` times smaller.
-   *
-   * For example:
-   *
-   *     val HundredsCategoryFunction = AutoNarrowingIntegerCategoryFunction(100, 10)
-   *
-   */
-  case class AutoNarrowingIntegerCategoryFunction(denominator: Int, factor: Int)
-    extends IntegerCategoryFunction(denominator) {
-
-      if (denominator % factor > 0) {
-        throw new IllegalArgumentException(factor+" is not a factor of "+denominator)
-      }
-
-      def name = denominator.toString + "s"
-      def descend = {
-        val nextDenominator = denominator / factor
-        if (nextDenominator <= 1) {
-          Some(IndividualCategoryFunction)
-        }
-        else {
-          Some(AutoNarrowingIntegerCategoryFunction(nextDenominator, factor))
-        }
-      }
-  }
-
-  /**
-   * Convenience instance of AutoDescendingIntegerCategory
-   */
-  lazy val DefaultIntegerCategoryFunction = AutoNarrowingIntegerCategoryFunction(1000, 10)
 }

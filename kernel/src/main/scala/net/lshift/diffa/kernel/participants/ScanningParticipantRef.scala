@@ -13,7 +13,7 @@ trait ScanningParticipantRef extends Closeable {
   /**
    * Scans this participant with the given constraints and aggregations.
    */
-  def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry]
+  def scan(constraints:Seq[QueryConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry]
 }
 
 /**

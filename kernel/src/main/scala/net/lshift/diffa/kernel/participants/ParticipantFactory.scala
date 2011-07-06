@@ -69,7 +69,7 @@ class ParticipantFactory() {
       case Some(cpart)  => cpart.retrieveContent(identifier)
     }
 
-    def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = scanning match {
+    def scan(constraints: Seq[QueryConstraint], aggregations: Seq[CategoryFunction]) = scanning match {
       case None        => throw new InvalidParticipantOperationException(partName, "scanning")
       case Some(spart) => spart.scan(constraints, aggregations)
     }

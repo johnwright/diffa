@@ -17,24 +17,28 @@
 package net.lshift.diffa.kernel.participants
 
 import scala.util.matching.Regex
+import net.lshift.diffa.participant.scanning.StringPrefixAggregation
 
 /**
  * Category function for partitioning on prefixes of strings.
  *
  */
-case class StringPrefixCategoryFunction(prefixLength: Int,
+case class StringPrefixCategoryFunction(attrName:String,
+                                        prefixLength: Int,
                                         maxLength: Int,
-                                        step: Int) extends CategoryFunction {
+                                        step: Int)
+  extends StringPrefixAggregation(attrName, prefixLength)
+  with CategoryFunction {
 
   def name = "prefix(%d,%d,%d)".format(prefixLength, maxLength, step)
 
   def descend =
     if (prefixLength == maxLength)
-      Some(IndividualCategoryFunction)
+      None
     else if (prefixLength + step > maxLength)
-      Some(StringPrefixCategoryFunction(maxLength, maxLength, step))
+      Some(StringPrefixCategoryFunction(attrName, maxLength, maxLength, step))
     else
-      Some(StringPrefixCategoryFunction(prefixLength + step, maxLength, step))
+      Some(StringPrefixCategoryFunction(attrName, prefixLength + step, maxLength, step))
 
   def constrain(constraint: QueryConstraint, partition: String) =
     if (partition.length < prefixLength)
@@ -46,24 +50,4 @@ case class StringPrefixCategoryFunction(prefixLength: Int,
       PrefixQueryConstraint(constraint.category, partition)
 
   val shouldBucket = true
-
-  def owningPartition(value: String) =
-    if (value.length < prefixLength)
-      value
-    else
-      value.substring(0, prefixLength)
-}
-
-object StringPrefixCategoryFunction {
-
-  private val pattern = new Regex("""prefix\((\d+),(\d+),(\d+)\)""")
-
-  def parse(str: String) = str match {
-    case pattern(prefixLength, maxLength, step) =>
-      StringPrefixCategoryFunction(prefixLength.toInt,
-                                   maxLength.toInt,
-                                   step.toInt)
-    case _ =>
-      throw new IllegalArgumentException("Bad format for StringPrefixCategoryFunction name: " + str)
-  }
 }

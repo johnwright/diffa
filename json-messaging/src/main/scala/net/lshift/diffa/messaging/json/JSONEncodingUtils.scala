@@ -48,12 +48,6 @@ object JSONEncodingUtils {
   def serializeQueryConstraints(constraints:Seq[WireConstraint]) : String = mapper.writeValueAsString(constraints.toArray)
   def deserializeQueryConstraints(wire:String) : Seq[WireConstraint]= mapper.readValue(wire, classOf[Array[WireConstraint]])
 
-  def serializeWireAggregateRequest(req:WireAggregateRequest) : String = mapper.writeValueAsString(req)
-  def deserializeWireAggregateRequest(wire:String) : WireAggregateRequest = mapper.readValue(wire, classOf[WireAggregateRequest])
-
-  def deserializeDigests(wire:String) : Seq[WireDigest] = mapper.readValue(wire, classOf[Array[WireDigest]])
-  def serializeDigests(digests:Seq[WireDigest]) : String = mapper.writeValueAsString(digests.toArray)
-
   def deserializeEvent(wire:String) : WireEvent = mapper.readValue(wire, classOf[WireEvent])
   def serializeEvent(event:WireEvent) = mapper.writeValueAsString(event)
 

@@ -16,15 +16,17 @@
 
 package net.lshift.diffa.kernel.participants
 
+import net.lshift.diffa.participant.scanning.ByNameAggregation
+
 /**
  * This function partitions based on a set of attribute names who individually form single level buckets.
  */
-case object ByNameCategoryFunction extends CategoryFunction {
+case class ByNameCategoryFunction(attrName:String)
+  extends ByNameAggregation(attrName)
+  with CategoryFunction {
 
   def name = "by-name"
   def shouldBucket() = true
-  def owningPartition(value: String) = value
-  def descend = Some(IndividualCategoryFunction)
+  def descend = None
   def constrain(constraint:QueryConstraint, partition: String) = SetQueryConstraint(constraint.category, Set(partition))
-
 }
