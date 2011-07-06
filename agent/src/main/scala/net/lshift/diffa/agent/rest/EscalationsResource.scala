@@ -25,6 +25,12 @@ import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.kernel.frontend.Configuration
 
+/**
+ * ATM this resource proxies directly through to the underlying configuration, because the current scope of
+ * escalations is quite minimal.
+ *
+ * This is likely to change when #274 lands
+ */
 @Path("/escalations")
 @Component
 class EscalationsResource {

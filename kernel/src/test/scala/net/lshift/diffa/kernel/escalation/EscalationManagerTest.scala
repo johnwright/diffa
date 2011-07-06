@@ -16,42 +16,83 @@
 
 package net.lshift.diffa.kernel.escalation
 
-import org.junit.Test
 import org.easymock.EasyMock._
 import org.easymock.EasyMock
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.differencing.TriggeredByScan
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-import net.lshift.diffa.kernel.config.{Escalation, ConfigStore, Pair => Pair}
-import net.lshift.diffa.kernel.config.{EscalationActionType, EscalationOrigin, EscalationEvent}
+import org.junit.runner.RunWith
+import net.lshift.diffa.kernel.differencing.{MatchOrigin, LiveWindow, TriggeredByScan}
+import net.lshift.diffa.kernel.escalation.EscalationManagerTest.Scenario
+import net.lshift.diffa.kernel.config._
+import org.junit.experimental.theories.{DataPoints, DataPoint, Theories, Theory}
 
+@RunWith(classOf[Theories])
 class EscalationManagerTest {
 
   var pairKey = "some pair key"
 
   val configStore = createMock(classOf[ConfigStore])
   val actionsClient = createStrictMock(classOf[ActionsClient])
-
-  expect(configStore.getPair(pairKey)).andReturn(Pair())
-
-  expect(configStore.listEscalationsForPair(EasyMock.isA(classOf[Pair]))).andReturn(
-    List(Escalation("foo", pairKey, "bar", EscalationActionType.REPAIR, EscalationEvent.MISMATCH, EscalationOrigin.SCAN))
-  )
-
-  expect(actionsClient.invoke(EasyMock.isA(classOf[ActionableRequest]))).andReturn(InvocationResult("200", "Success"))
-
-  replay(configStore, actionsClient)
-
   val escalationManager = new EscalationManager(configStore, actionsClient)
 
-  @Test
-  def shouldEscalateActionsAfterScan = {
+  def expectConfigStore(event:String) = {
+    expect(configStore.getPair(pairKey)).andReturn(Pair()).anyTimes()
 
-    escalationManager.onMismatch(VersionID(pairKey, "id"), new DateTime(), "uvsn", "dvsn", TriggeredByScan)
+    expect(configStore.listEscalationsForPair(EasyMock.isA(classOf[Pair]))).andReturn(
+      List(Escalation("foo", pairKey, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
+    ).anyTimes()
+
+    replay(configStore)
+  }
+
+  def expectActionsClient(count:Int) = {
+    if (count > 0) {
+      expect(actionsClient.invoke(EasyMock.isA(classOf[ActionableRequest]))).andReturn(InvocationResult("200", "Success")).times(count)
+    }
+    replay(actionsClient)
+  }
+
+  @Theory
+  def escalationsSometimesTriggerActions(scenario:Scenario) = {
+
+    expectConfigStore(scenario.event)
+    expectActionsClient(scenario.invocations)
+
+    escalationManager.onMismatch(VersionID(pairKey, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
 
     verify(configStore, actionsClient)
   }
+}
+
+object EscalationManagerTest {
+
+  case class Scenario(uvsn:String,
+                      dvsn:String,
+                      event:String,
+                      matchOrigin:MatchOrigin,
+                      invocations:Int)
+
+  @DataPoints def mismatchShouldBeEscalated = Array (
+    Scenario("uvsn", "dsvn", EscalationEvent.MISMATCH, TriggeredByScan, 1),
+    Scenario("uvsn", "", EscalationEvent.MISMATCH, TriggeredByScan, 0),
+    Scenario("", "dsvn", EscalationEvent.MISMATCH, TriggeredByScan, 0)
+  )
+
+  @DataPoints def missingDownstreamShouldBeEscalated = Array (
+    Scenario("uvsn", "", EscalationEvent.DOWNSTREAM_MISSING, TriggeredByScan, 1),
+    Scenario("uvsn", "dvsn", EscalationEvent.DOWNSTREAM_MISSING, TriggeredByScan, 0),
+    Scenario("", "dvsn", EscalationEvent.DOWNSTREAM_MISSING, TriggeredByScan, 0)
+  )
+
+  @DataPoints def missingUpstreamShouldBeEscalated = Array (
+    Scenario("uvsn", "", EscalationEvent.UPSTREAM_MISSING, TriggeredByScan, 0),
+    Scenario("uvsn", "dvsn", EscalationEvent.UPSTREAM_MISSING, TriggeredByScan, 0),
+    Scenario("", "dvsn", EscalationEvent.UPSTREAM_MISSING, TriggeredByScan, 1)
+  )
+
+  @DataPoint def liveWindowShouldNotGetEscalated =
+    Scenario("uvsn", "dvsn", EscalationEvent.MISMATCH, LiveWindow, 0)
 
 }
