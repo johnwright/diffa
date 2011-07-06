@@ -26,6 +26,11 @@ import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.differencing.SessionManager
 import org.quartz.simpl.{RAMJobStore, SimpleThreadPool}
 import org.quartz._
+import org.quartz.JobKey.jobKey
+import org.quartz.TriggerBuilder.newTrigger
+import org.quartz.TriggerKey.triggerKey
+import org.quartz.CronScheduleBuilder.cronSchedule
+import org.quartz.JobBuilder.newJob
 
 /**
  * Quartz backed implementation of the ScanScheduler.
@@ -40,9 +45,9 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
   // way to get stateful invocations whereby we can call other bean components.
   private val scheduler = createScheduler()
   scheduler.start()
-  scheduler.addGlobalTriggerListener(new TriggerListenerSupport {
+  scheduler.getListenerManager.addTriggerListener(new TriggerListenerSupport {
     override def triggerFired(trigger: Trigger, context: JobExecutionContext) {
-      val pairKey = trigger.getName
+      val pairKey = trigger.getKey.getName
 
       log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
       try {
@@ -68,13 +73,18 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
 
     def unschedulePair() {
       log.debug("Removing schedule for pair %s".format(pair.key))
-      scheduler.deleteJob(pair.key, Scheduler.DEFAULT_GROUP)
+      scheduler.deleteJob(jobKey(pair.key))
     }
 
     def schedulePair() {
       log.debug("Applying schedule '%s' for pair %s".format(pair.scanCronSpec, pair.key))
-      val trigger = new CronTrigger(pair.key, Scheduler.DEFAULT_GROUP, pair.scanCronSpec)
-      val job = new JobDetail(pair.key, classOf[NoOpJob])
+      val trigger = newTrigger()
+        .withIdentity(triggerKey(pair.key))
+        .withSchedule(cronSchedule(pair.scanCronSpec))
+        .build()
+      val job = newJob(classOf[NoOpJob])
+        .withIdentity(jobKey(pair.key))
+        .build()
       scheduler.scheduleJob(job, trigger)
     }
 
@@ -82,11 +92,11 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
       // No scan spec present, so just delete the schedule
       unschedulePair()
     } else if (existingJob != null) {
-      val triggers = scheduler.getTriggersOfJob(pair.key, Scheduler.DEFAULT_GROUP)
-      if (triggers.length != 1)
+      val triggers = scheduler.getTriggersOfJob(jobKey(pair.key))
+      if (triggers.size != 1)
         throw new IllegalStateException("Expected exactly 1 trigger for " + pair.key + ", but instead found " + triggers)
 
-      val currentExpr = triggers.head.asInstanceOf[CronTrigger].getCronExpression
+      val currentExpr = triggers.get(0).asInstanceOf[CronTrigger].getCronExpression
       if (pair.scanCronSpec != currentExpr) {   // Only re-schedule if the cronspec has changed
         unschedulePair()
         schedulePair()
@@ -99,7 +109,7 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
   def onDeletePair(pairKey: String) {
     val existingJob = jobForPair(pairKey)
     if (existingJob != null) {
-      scheduler.deleteJob(pairKey, Scheduler.DEFAULT_GROUP)
+      scheduler.deleteJob(jobKey(pairKey))
     }
   }
 
@@ -107,7 +117,7 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
     scheduler.shutdown()
   }
 
-  private def jobForPair(key:String) = scheduler.getJobDetail(key, Scheduler.DEFAULT_GROUP)
+  private def jobForPair(key:String) = scheduler.getJobDetail(jobKey(key))
   private def createScheduler() = {
     val threadPool = new SimpleThreadPool(1, Thread.NORM_PRIORITY)
     threadPool.initialize()
@@ -118,4 +128,5 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
     // Retrieve it
     DirectSchedulerFactory.getInstance().getScheduler(name)
   }
+
 }
