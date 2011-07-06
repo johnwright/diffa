@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.frontend.DiffaConfig
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import net.lshift.diffa.agent.util.ConfigComparisonUtil
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.frontend.DiffaConfig._
 
 /*
 * Test cases for the DiffaConfigReaderWriter.
@@ -48,7 +49,13 @@ class DiffaConfigReaderWriterTest {
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa", "0 0 0 * 0 0"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
       repairActions = Set(
-        RepairAction(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pairKey="ab")
+        RepairAction(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pairKey="ab"),
+        RepairAction(name="Delete Result", scope="entity", url="http://example.com/delete/{id}", pairKey="ab")
+      ),
+      escalations = Set(
+        Escalation(name="Delete From Upstream", action="Delete Result", actionType="repair", event="upstream-missing", origin="scan", pairKey="ab"),
+        Escalation(name="Resend Missing Downstream", action="Resend Sauce", actionType="repair", event="downstream-missing", origin="scan", pairKey="ab"),
+        Escalation(name="Resend On Mismatch", action="Resend Sauce", actionType="repair", event="mismatch", origin="scan", pairKey="ab")
       )
     )
 
@@ -77,6 +84,10 @@ class DiffaConfigReaderWriterTest {
         <group name="gaa">
           <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5" scan-schedule="0 0 0 * 0 0">
             <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
+            <repair-action url="http://example.com/delete/{id}" name="Delete Result" scope="entity" />
+            <escalation name="Delete From Upstream" action="Delete Result" type="repair" event="upstream-missing" origin="scan" />
+            <escalation name="Resend Missing Downstream" action="Resend Sauce" type="repair" event="downstream-missing" origin="scan" />
+            <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
           </pair>
         </group>
         <group name="gbb">

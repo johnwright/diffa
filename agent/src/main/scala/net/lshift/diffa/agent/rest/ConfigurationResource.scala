@@ -18,7 +18,6 @@ package net.lshift.diffa.agent.rest
 
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
-import org.slf4j.{Logger, LoggerFactory}
 import javax.ws.rs._
 import core.{UriInfo, Context}
 import net.lshift.diffa.kernel.config._
@@ -150,6 +149,25 @@ class ConfigurationResource {
                          new MandatoryParam(name="name", datatype="string", description="Action name")))
   def deleteRepairAction(@PathParam("name") name: String, @PathParam("pairKey") pairKey: String) {
     config.deleteRepairAction(name, pairKey)
+  }
+
+  @POST
+  @Path("/pairs/{id}/escalations")
+  @Consumes(Array("application/json"))
+  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
+  @Description("Creates a new escalation associated with a pair that is registered with the agent.")
+  def createEscalation(e: Escalation) = {
+    config.createOrUpdateEscalation(e)
+    resourceCreated(e.name, uriInfo)
+  }
+
+  @DELETE
+  @Path("/pairs/{pairKey}/escalations/{name}")
+  @Description("Removes an escalation that is registered with the agent.")
+  @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair ID"),
+                         new MandatoryParam(name="name", datatype="string", description="Escalation name")))
+  def deleteEscalation(@PathParam("name") name: String, @PathParam("pairKey") pairKey: String) {
+    config.deleteEscalation(name, pairKey)
   }
 
   @POST

@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import java.lang.String
 import collection.mutable.{ListBuffer, HashMap}
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
@@ -257,7 +256,7 @@ class DefaultSessionManager(
    * If yes -> just record it as a pending event. Don't tell clients anything yet.
    * If no -> this is a reportable event. Record it in the active list, and emit an event to our clients.
    */
-  def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String) = {
+  def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin) = {
     log.debug("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
     matching.getMatcher(id.pairKey) match {
@@ -281,14 +280,14 @@ class DefaultSessionManager(
    * If the ID is current in our list of pending events, then just end the id from our list of events.
    * If we don't know about this id (no mismatches for this id reported), just ignore.
    */
-  def onMatch(id: VersionID, vsn: String) {
+  def onMatch(id: VersionID, vsn: String, origin:MatchOrigin) {
     log.debug("Processing match for " + id + " with vsn '" + vsn + "'")
 
     // Rest API
     addMatched(id, vsn)
 
     // Streaming API
-    forEachSession(id, s => forEachSessionListener(s, l => l.onMatch(id, vsn)))
+    forEachSession(id, s => forEachSessionListener(s, l => l.onMatch(id, vsn, LiveWindow)))
   }
   
   //
@@ -394,7 +393,7 @@ class DefaultSessionManager(
       s.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
 
       // Streaming API
-      forEachSessionListener(s, l => l.onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn))
+      forEachSessionListener(s, l => l.onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, LiveWindow))
     })
   }
 
@@ -406,7 +405,7 @@ class DefaultSessionManager(
         log.debug("Processing upgrade from pending to unmatched for " + id)
 
         val timestamp = new DateTime()
-        forEachSessionListener(s, l => l.onMismatch(id, timestamp, evt.upstreamVsn, evt.downstreamVsn))
+        forEachSessionListener(s, l => l.onMismatch(id, timestamp, evt.upstreamVsn, evt.downstreamVsn, LiveWindow))
       } else {
         log.debug("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
       }

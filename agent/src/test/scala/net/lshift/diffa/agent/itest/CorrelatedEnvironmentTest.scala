@@ -25,6 +25,7 @@ import net.lshift.diffa.agent.itest.support.TestEnvironments
  */
 class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
     with CommonDifferenceTests
+    with CommonEscalationTests
     with CommonActionTests {
   
   def envFactory = TestEnvironments.correlated _

@@ -41,6 +41,11 @@ trait ConfigStore {
   def listRepairActions: Seq[RepairAction]
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
+  def listEscalations: Seq[Escalation]
+  def deleteEscalation(s: String, s1: String)
+  def createOrUpdateEscalation(escalation: Escalation)
+  def listEscalationsForPair(pair: Pair): Seq[Escalation]
+
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair
   def getGroup(key: String): PairGroup
@@ -227,6 +232,68 @@ case class RepairAction(
 object RepairAction {
   val ENTITY_SCOPE = "entity"
   val PAIR_SCOPE = "pair"
+}
+/**
+ * Defines a step for escalating a detected difference.
+ */
+case class Escalation (
+  @BeanProperty var name: String,
+  @BeanProperty var pairKey: String,
+  @BeanProperty var action: String,
+  @BeanProperty var actionType: String,
+  @BeanProperty var event: String,
+  @BeanProperty var origin: String
+) {
+  import EscalationEvent._
+  import EscalationOrigin._
+  import EscalationActionType._
+
+  def this() = this(null, null, null, null, null, null)
+
+  def validate(path:String = null) {
+    val escalationPath = ValidationUtil.buildPath(
+      ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey)),
+      "escalation", Map("name" -> name))
+
+    // Ensure that the event is supported
+    this.event = event match {
+      case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
+      case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
+    }
+    // Ensure that the origin is supported
+    this.origin = origin match {
+      case SCAN => origin
+      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
+    }
+    // Ensure that the action type is supported
+    this.actionType = actionType match {
+      case REPAIR => actionType
+      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
+    }
+  }
+}
+
+/**
+ * Enumeration of valid types that an escalating difference should trigger.
+ */
+object EscalationEvent {
+  val UPSTREAM_MISSING = "upstream-missing"
+  val DOWNSTREAM_MISSING = "downstream-missing"
+  val MISMATCH = "mismatch"
+}
+
+/**
+ * Enumeration of valid origins for escalating a difference.
+ */
+object EscalationOrigin {
+  val SCAN = "scan"
+}
+
+/**
+ * Enumeration of valid action types for escalating a difference.
+ */
+object EscalationActionType {
+  val REPAIR = "repair"
 }
 
 case class User(@BeanProperty var name: String,

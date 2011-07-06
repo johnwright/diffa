@@ -18,11 +18,11 @@ package net.lshift.diffa.kernel.notifications
 
 import org.easymock.EasyMock._
 import org.junit.Assert._
-import net.lshift.diffa.kernel.differencing.SessionManager
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.config.{User, ConfigStore}
 import org.joda.time.{Period, DateTime}
+import net.lshift.diffa.kernel.differencing.{LiveWindow, SessionManager}
 
 class EventNotifierTest {
 
@@ -58,12 +58,12 @@ class EventNotifierTest {
     Thread.sleep(quietTimeMillis)
 
     notifier.registerProvider(provider)
-    notifier.onMismatch(id, timestamp, up, down)
+    notifier.onMismatch(id, timestamp, up, down, LiveWindow)
     assertEquals(1,notifications)
-    notifier.onMismatch(id, timestamp, up, down)
+    notifier.onMismatch(id, timestamp, up, down, LiveWindow)
     assertEquals(1,notifications)
     Thread.sleep(quietTimeMillis * 110/100)
-    notifier.onMismatch(id, timestamp, up, down)
+    notifier.onMismatch(id, timestamp, up, down, LiveWindow)
     assertEquals(2,notifications)
   }
 }

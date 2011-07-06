@@ -240,14 +240,14 @@ abstract class AbstractPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
       Correlation(null, abPair, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
       Correlation(null, abPair, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
-    listener.onMismatch(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", "vsn1a"); expectLastCall
-    listener.onMismatch(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", "vsn2a"); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", TriggeredByScan); expectLastCall
 
     replayAll
 
     policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(abPair, listener)
+    policy.replayUnmatchedDifferences(abPair, listener)
 
     verifyAll
   }
@@ -265,7 +265,7 @@ abstract class AbstractPolicyTest {
       case Some(x)  => (x, x, () => writer.storeUpstreamVersion(VersionID(abPair, "id1"), attrs, x, "vsn1"))
     }
     expect(f()).andReturn(Correlation(null, abPair, "id1", toStrMap(attrs), null, update, timestamp, "vsn1", null, null, false))
-    listener.onMismatch(VersionID(abPair, "id1"), update, "vsn1", null); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id1"), update, "vsn1", null, LiveWindow); expectLastCall
     replayAll
 
     policy.onChange(writer, UpstreamPairChangeEvent(VersionID(abPair, "id1"), toStrMap(attrs).values.toSeq, observationDate, "vsn1"))
@@ -284,7 +284,7 @@ abstract class AbstractPolicyTest {
 
     expect(writer.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn1")).
       andReturn(Correlation(null, abPair, "id1", Map(), Map(), JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
-    listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1"); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1", LiveWindow); expectLastCall
     replayAll
 
     policy.onChange(writer, DownstreamPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1"))
@@ -302,7 +302,7 @@ abstract class AbstractPolicyTest {
     val timestamp = new DateTime
     expect(writer.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn2")).
       andReturn(Correlation(null, abPair, "id1", null, toStrMap(downstreamAttributes), JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
-    listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1"); expectLastCall
+    listener.onMismatch(VersionID(abPair, "id1"), JUL_8_2010_2, null, "vsn1", LiveWindow); expectLastCall
     replayAll
 
     policy.onChange(writer, DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1", "vsn2"))
@@ -320,7 +320,7 @@ abstract class AbstractPolicyTest {
     val timestamp = new DateTime
     expect(writer.storeDownstreamVersion(VersionID(abPair, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn2")).
       andReturn(Correlation(null, abPair, "id1", null, toStrMap(downstreamAttributes), JUL_8_2010_2, timestamp, "vsn1", "vsn1", "vsn2", true))
-    listener.onMatch(VersionID(abPair, "id1"), "vsn1"); expectLastCall
+    listener.onMatch(VersionID(abPair, "id1"), "vsn1", LiveWindow); expectLastCall
     replayAll
 
     policy.onChange(writer, DownstreamCorrelatedPairChangeEvent(VersionID(abPair, "id1"), attributes, JUL_8_2010_2, "vsn1", "vsn2"))

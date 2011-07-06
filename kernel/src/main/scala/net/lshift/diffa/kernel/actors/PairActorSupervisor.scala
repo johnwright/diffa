@@ -27,6 +27,7 @@ import net.lshift.diffa.kernel.util.MissingObjectException
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                config:ConfigStore,
+                               escalationListener:DifferencingListener,
                                participantFactory:ParticipantFactory,
                                stores:VersionCorrelationStoreFactory,
                                changeEventBusyTimeoutMillis:Long,
@@ -51,7 +52,10 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
           case Some(p) => {
             val us = participantFactory.createUpstreamParticipant(pair.upstream)
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
-            val pairActor = Actor.actorOf(new PairActor(pair.key, us, ds, p, stores(pair.key), changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis))
+            val pairActor = Actor.actorOf(
+              new PairActor(pair.key, us, ds, p, stores(pair.key),
+                            escalationListener, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
+            )
             pairActor.start
             log.info("Started actor for key: " + pair.key)
           }

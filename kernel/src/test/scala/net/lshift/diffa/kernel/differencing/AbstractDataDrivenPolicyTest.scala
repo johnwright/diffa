@@ -87,7 +87,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
     verifyAll
   }
@@ -120,7 +120,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
     verifyAll
   }
@@ -145,7 +145,7 @@ abstract class AbstractDataDrivenPolicyTest {
       expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
 
       // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
-      listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
+      listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
 
       // Expect only a top-level sync on the downstream
       expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
@@ -157,7 +157,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
 
 
@@ -186,7 +186,7 @@ abstract class AbstractDataDrivenPolicyTest {
       expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
 
       // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
-      listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn)
+      listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
     }
 
     expectUnmatchedVersionCheck(scenario)
@@ -195,7 +195,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(scenario.pair.key, listener)
+    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
 
     verifyAll
   }

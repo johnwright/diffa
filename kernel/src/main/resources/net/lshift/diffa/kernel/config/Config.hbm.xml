@@ -102,6 +102,17 @@
     <property name="scope" type="string" column="scope" />
   </class>
 
+  <class name="Escalation" table="escalations" abstract="false">
+    <composite-id mapped="true">
+      <key-property name="name" type="string" column="name" />
+      <key-property name="pairKey" type="string" column="pair_key" />
+    </composite-id>
+    <property name="action" type="string" column="action" not-null="true" />
+    <property name="actionType" type="string" column="action_type" not-null="true"/>
+    <property name="event" type="string" column="event" not-null="true"/>
+    <property name="origin" type="string" column="origin" not-null="true"/>
+  </class>
+
   <query name="endpointByName">
     select e from Endpoint e where e.name = :name
   </query>
@@ -122,6 +133,14 @@
     select a from RepairAction a where a.name = :name and a.pairKey = :pairKey
   </query>
 
+  <query name="escalationByNameAndPairKey">
+    select e from Escalation e where e.name = :name and e.pairKey = :pairKey
+  </query>
+
+  <query name="escalationsByPairKey">
+    select e from Escalation e where e.pairKey = :pairKey
+  </query>
+
   <query name="allEndpoints">
     select e from Endpoint e
   </query>
@@ -136,6 +155,10 @@
 
   <query name="allRepairActions">
     select a from RepairAction a
+  </query>
+
+  <query name="allEscalations">
+    select e from Escalation e
   </query>
 
   <query name="pairsByGroup">

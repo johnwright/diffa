@@ -38,6 +38,7 @@ case class PairActor(pairKey:String,
                      ds:DownstreamParticipant,
                      policy:VersionPolicy,
                      store:VersionCorrelationStore,
+                     escalationListener:DifferencingListener,
                      changeEventBusyTimeoutMillis: Long,
                      changeEventQuietTimeoutMillis: Long) extends Actor {
 
@@ -160,14 +161,15 @@ case class PairActor(pairKey:String,
   private val bufferingListener = new DifferencingListener {
 
     /**
-     * Buffer up the match event because these won't be replayed by a subsequent difference operation.
+     * Buffer up the match event because these won't be replayed by a subsequent replayUnmatchedDifferences operation.
      */
-    def onMatch(id:VersionID, vsn:String) = bufferedMatchEvents.enqueue(MatchEvent(id, _.onMatch(id, vsn)))
+    def onMatch(id:VersionID, vsn:String, origin:MatchOrigin)
+    = bufferedMatchEvents.enqueue(MatchEvent(id, _.onMatch(id, vsn, LiveWindow)))
 
     /**
-     * Drop the mismatch, since we will be doing a full difference and the end of the scan process.
+     * Drop the mismatch, since we will be doing a full replayUnmatchedDifferences and the end of the scan process.
      */
-    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String) = ()
+    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String, origin:MatchOrigin) = ()
   }
 
   /**
@@ -275,7 +277,8 @@ case class PairActor(pairKey:String,
 
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
-      policy.difference(pairKey, currentDiffListener)
+      policy.replayUnmatchedDifferences(pairKey, currentDiffListener)
+      policy.replayUnmatchedDifferences(pairKey, escalationListener)
 
       // Re-queue all buffered commands
       leaveScanState(PairScanState.UP_TO_DATE)
@@ -337,12 +340,12 @@ case class PairActor(pairKey:String,
   }
 
   /**
-   * Runs a simple difference for the pair.
+   * Runs a simple replayUnmatchedDifferences for the pair.
    */
   def handleDifferenceMessage(message:DifferenceMessage) = {
     try {
       writer.flush()
-      policy.difference(pairKey, message.diffListener)
+      policy.replayUnmatchedDifferences(pairKey, message.diffListener)
     } catch {
       case ex => {
         logger.error("Failed to difference pair " + pairKey, ex)
@@ -491,34 +494,3 @@ case object CancelMessage
  * An internal command that indicates to the actor that the underlying writer should be flushed
  */
 private case object FlushWriterMessage extends Deferrable
-
-/**
- * This is a thread safe entry point to an underlying version policy.
- */
-@ThreadSafe
-trait PairPolicyClient {
-
-  /**
-   * Propagates the change event to the underlying policy implementation in a serial fashion.
-   */
-  def propagateChangeEvent(event:PairChangeEvent) : Unit
-
-  /**
-   * Runs a difference report based on stored data for the given pair. Does not synchronise with the participants
-   * beforehand - use <code>scanPair</code> to do the sync first.
-   */
-  def difference(pairKey:String, diffListener:DifferencingListener)
-
-  /**
-   * Synchronises the participants belonging to the given pair, then generates a different report.
-   * Activities are performed on the underlying policy in a thread safe manner, allowing multiple
-   * concurrent operations to be submitted safely against the same pair concurrently.
-   */
-  def scanPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) : Unit
-
-  /**
-   * Cancels any scan operation that may be in process.
-   * This is a blocking call, so it will only return after all current and pending scans have been cancelled.
-   */
-  def cancelScans(pairKey:String) : Boolean
-}

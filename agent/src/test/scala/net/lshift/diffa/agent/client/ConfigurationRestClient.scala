@@ -55,6 +55,16 @@ class ConfigurationRestClient(serverRootUrl:String)
     delete("/pairs/"+pairKey+"/repair-actions/"+name)
   }
 
+  def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) = {
+    val escalation = new Escalation(name, pairKey, action, actionType, event, origin)
+    create("/pairs/"+pairKey+"/escalations", escalation)
+    escalation
+  }
+
+  def removeEscalation(name: String, pairKey: String) = {
+    delete("/pairs/" + pairKey + "/escalations/" + name)
+  }
+
   def deletePair(pairKey: String) = {
     val response = resource.path("pairs").path(pairKey).delete(classOf[ClientResponse])
     val status = response.getClientResponseStatus
