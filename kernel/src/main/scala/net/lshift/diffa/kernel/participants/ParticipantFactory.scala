@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.participants
 
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.config.Endpoint
-import java.lang.{IllegalArgumentException, IllegalStateException}
 
 /**
  * Factory that will resolve participant addresses to participant instances for querying.
@@ -29,30 +28,6 @@ class ParticipantFactory() {
   private val contentFactories = new ListBuffer[ContentParticipantFactory]
   private val versioningFactories = new ListBuffer[VersioningParticipantFactory]
 
-  /**
-   * Simplified registration method that inspects the factory and allows it support multiple references without
-   * needing to register multiple times.
-   */
-  /*def registerFactory(f:Object) {
-    var seenFactory = false
-
-    if (f.isInstanceOf[ScanningParticipantFactory]) {
-      registerScanningFactory(f.asInstanceOf[ScanningParticipantFactory])
-      seenFactory = true
-    }
-    if (f.isInstanceOf[ContentParticipantFactory]) {
-      registerContentFactory(f.asInstanceOf[ContentParticipantFactory])
-      seenFactory = true
-    }
-    if (f.isInstanceOf[VersioningParticipantFactory]) {
-      registerVersioningFactory(f.asInstanceOf[VersioningParticipantFactory])
-      seenFactory = true
-    }
-
-    if (!seenFactory) {
-      throw new IllegalArgumentException("Provided factory did not implement any participant factory interface")
-    }
-  }*/
   def registerScanningFactory(f:ScanningParticipantFactory) = scanningFactories += f
   def registerContentFactory(f:ContentParticipantFactory) = contentFactories += f
   def registerVersioningFactory(f:VersioningParticipantFactory) = versioningFactories += f
@@ -61,7 +36,7 @@ class ParticipantFactory() {
     val scanningParticipant = createScanningParticipant(endpoint)
     val contentParticipant = createContentParticipant(endpoint)
 
-    new CompositeUpstreamParticipant(scanningParticipant, contentParticipant)
+    new CompositeUpstreamParticipant(endpoint.name, scanningParticipant, contentParticipant)
   }
 
   def createDownstreamParticipant(endpoint:Endpoint): DownstreamParticipant = {
@@ -69,7 +44,7 @@ class ParticipantFactory() {
     val contentParticipant = createContentParticipant(endpoint)
     val versioningParticipant = createVersioningParticipant(endpoint)
 
-    new CompositeDownstreamParticipant(scanningParticipant, contentParticipant, versioningParticipant)
+    new CompositeDownstreamParticipant(endpoint.name, scanningParticipant, contentParticipant, versioningParticipant)
   }
 
   def createScanningParticipant(endpoint:Endpoint): Option[ScanningParticipantRef] =
@@ -88,14 +63,14 @@ class ParticipantFactory() {
       }
   }
 
-  private class CompositeParticipant(scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef]) extends Participant {
+  private class CompositeParticipant(partName:String, scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef]) extends Participant {
     def retrieveContent(identifier: String) = content match {
-      case None         => throw new IllegalStateException("This participant doesn't support content retrieval")
+      case None         => throw new InvalidParticipantOperationException(partName, "content retrieval")
       case Some(cpart)  => cpart.retrieveContent(identifier)
     }
 
     def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = scanning match {
-      case None        => throw new IllegalStateException("This participant doesn't support scanning")
+      case None        => throw new InvalidParticipantOperationException(partName, "scanning")
       case Some(spart) => spart.scan(constraints, aggregations)
     }
 
@@ -105,17 +80,17 @@ class ParticipantFactory() {
     }
   }
 
-  private class CompositeUpstreamParticipant(scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef])
-      extends CompositeParticipant(scanning, content)
+  private class CompositeUpstreamParticipant(partName:String, scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef])
+      extends CompositeParticipant(partName, scanning, content)
       with UpstreamParticipant {
   }
 
-  private class CompositeDownstreamParticipant (scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef], versioning:Option[VersioningParticipantRef])
-      extends CompositeParticipant(scanning, content)
+  private class CompositeDownstreamParticipant(partName:String, scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef], versioning:Option[VersioningParticipantRef])
+      extends CompositeParticipant(partName, scanning, content)
       with DownstreamParticipant {
     
     def generateVersion(entityBody: String) = versioning match {
-      case None        => throw new IllegalStateException("This participant doesn't support version recovery")
+      case None        => throw new InvalidParticipantOperationException(partName, "version recovery")
       case Some(vpart) => vpart.generateVersion(entityBody)
     }
   }
@@ -123,3 +98,5 @@ class ParticipantFactory() {
 
 class InvalidParticipantAddressException(addr:String, contentType:String)
     extends Exception("The address " + addr + " is not a valid participant address for the content type " + contentType)
+class InvalidParticipantOperationException(partName:String, op:String)
+    extends Exception("The participant " + partName + " does not support " + op)
