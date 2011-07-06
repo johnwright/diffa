@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.participants
 
 import org.junit.Test
 import org.junit.Assert._
-import net.lshift.diffa.kernel.frontend.wire.WireConstraint
 import scala.collection.JavaConversions._
 
 class StringPartitionTest {
@@ -90,11 +89,5 @@ class StringPartitionTest {
   @Test
   def nameShouldBeQuestionMarksFollowedByStar {
     assertEquals("prefix(2,1,1)", StringPrefixCategoryFunction("ss", 2, 1, 1).name)
-  }
-
-  @Test
-  def prefixQueryConstraintMustImplementWireFormat {
-    assertEquals(WireConstraint("foo", Map("prefix" -> "abc"), null),
-               PrefixQueryConstraint("foo", "abc").wireFormat)
   }
 }

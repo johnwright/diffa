@@ -16,8 +16,6 @@
 
 package net.lshift.diffa.kernel.participants
 
-import net.lshift.diffa.kernel.frontend.wire.WireConstraint
-import net.lshift.diffa.kernel.frontend.wire.WireConstraint._
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
@@ -33,11 +31,6 @@ trait QueryConstraint {
    * The name of the category to constrain entities or aggregates by.
    */
   def category:String
-
-  /**
-   *  Returns a simplified representation of this constraint that is suitable for packing
-   */
-  def wireFormat : WireConstraint
 
   /**
    * This allows a concrete constraint to define how it would group itself into multiple batches for
@@ -57,8 +50,6 @@ abstract case class BaseQueryConstraint(category:String) extends QueryConstraint
  *  This type of constraint is to be interpreted as a set of values to constrain with.
  */
 case class SetQueryConstraint(c:String, values:Set[String]) extends BaseQueryConstraint(c) {
-  def wireFormat() = setConstraint(category, values)
-
   /**
    * #203: By default, set elements should be sent out individually - in the future, this may be configurable
    */
@@ -72,16 +63,13 @@ case class SetQueryConstraint(c:String, values:Set[String]) extends BaseQueryCon
  * upper and lower bounds of the constraint.
  */
 case class RangeQueryConstraint(c:String, lower:String, upper:String) extends BaseQueryConstraint(c) {
-  def wireFormat() = rangeConstraint(category, lower, upper)
 }
 
 case class PrefixQueryConstraint(c: String, prefix: String) extends BaseQueryConstraint(c) {
-  def wireFormat() = prefixConstraint(c, prefix)
   override def dataType = StringTypeDescriptor
 }
 
 abstract case class NonValueConstraint(c:String) extends BaseQueryConstraint(c) {
-  def wireFormat() = unbounded(category)
 }
 
 /**

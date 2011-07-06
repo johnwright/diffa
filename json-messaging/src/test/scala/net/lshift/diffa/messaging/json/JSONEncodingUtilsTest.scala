@@ -30,33 +30,6 @@ class JSONEncodingUtilsTest {
   def time() = new DateTime().toString()
 
   @Test
-  def queryConstraintRoundTrip = {
-
-    val constraint1 = new WireConstraint("foo", Map("upper" -> "abc",
-                                                    "lower" -> "def",
-                                                    "function" -> "xyz"), Seq("a","b","c"))
-
-    val constraint2 = new WireConstraint("bar", Map("upper" -> "qed",
-                                                    "lower" -> "fud",
-                                                    "function" -> "yes"), Seq("x","y"))
-
-    val serialized = JSONEncodingUtils.serializeQueryConstraints(Seq(constraint1, constraint2))
-    val deserialized = JSONEncodingUtils.deserializeQueryConstraints(serialized)
-    assertNotNull(deserialized)
-    assertEquals(2, deserialized.length)
-    assertEquals(constraint1, deserialized(0))
-    assertEquals(constraint2, deserialized(1))
-  }
-
-  @Test
-  def emptyList = {
-    val serialized = JSONEncodingUtils.serializeQueryConstraints(Seq())
-    val deserialized = JSONEncodingUtils.deserializeQueryConstraints(serialized)
-    assertNotNull(deserialized)
-    assertEquals(0, deserialized.length)
-  }
-
-  @Test
   def wireEventRoundTrip = {
     val event = WireEvent("baz", Map("foo" -> "bar"), List("a", "b", "c"))
     val serialized = JSONEncodingUtils.serializeEvent(event)
