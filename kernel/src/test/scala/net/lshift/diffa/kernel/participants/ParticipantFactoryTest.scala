@@ -69,7 +69,7 @@ class ParticipantFactoryTest {
   allFactories.foreach(f => expect(f.supportsAddress(anyString, anyString)).andReturn(false).anyTimes)
 
   @Theory
-  def shouldFailToCreateUpstreamWhenAddressOrContentTypeIsInvalid(e:TestEndpoint) {
+  def shouldFailToCreateUpstreamWhenAddressOrContentTypeIsInvalid(e:EndpointConfig) {
     assumeTrue(!e.validUpstream)
     replayAll()
 
@@ -79,7 +79,7 @@ class ParticipantFactoryTest {
   }
 
   @Theory
-  def shouldFailToCreateDownstreamWhenAddressOrContentTypeIsInvalid(e:TestEndpoint) {
+  def shouldFailToCreateDownstreamWhenAddressOrContentTypeIsInvalid(e:EndpointConfig) {
     assumeTrue(!e.validDownstream)
     replayAll()
 
@@ -89,7 +89,7 @@ class ParticipantFactoryTest {
   }
 
   @Theory
-  def shouldCreateUpstreamParticipantEvenWhenUrlsAreMissingButFailOperation(e:TestEndpoint) {
+  def shouldCreateUpstreamParticipantEvenWhenUrlsAreMissingButFailOperation(e:EndpointConfig) {
     assumeTrue(e.validUpstream)
     expectParticipantCreation(e)
     replayAll()
@@ -108,7 +108,7 @@ class ParticipantFactoryTest {
   }
 
   @Theory
-  def shouldCreateDownstreamParticipantEvenWhenUrlsAreMissingButFailOperation(e:TestEndpoint) {
+  def shouldCreateDownstreamParticipantEvenWhenUrlsAreMissingButFailOperation(e:EndpointConfig) {
     assumeTrue(e.validDownstream)
     expectParticipantCreation(e)
     replayAll()
@@ -132,7 +132,7 @@ class ParticipantFactoryTest {
   }
 
   @Theory
-  def shouldDelegateToValidRefsInUpstreamParticipant(e:TestEndpoint) {
+  def shouldDelegateToValidRefsInUpstreamParticipant(e:EndpointConfig) {
     val constraints = Seq(createStrictMock(classOf[QueryConstraint]))
     val aggregations = Map("a" -> createStrictMock(classOf[CategoryFunction]))
     val scanEntries = Seq(ScanResultEntry.forAggregate("v1", Map[String, String]()))
@@ -159,7 +159,7 @@ class ParticipantFactoryTest {
   }
   
   @Theory
-  def shouldDelegateToValidRefsInDownstreamParticipant(e:TestEndpoint) {
+  def shouldDelegateToValidRefsInDownstreamParticipant(e:EndpointConfig) {
     val constraints = Seq(createStrictMock(classOf[QueryConstraint]))
     val aggregations = Map("a" -> createStrictMock(classOf[CategoryFunction]))
     val scanEntries = Seq(ScanResultEntry.forAggregate("v1", Map[String, String]()))
@@ -195,7 +195,7 @@ class ParticipantFactoryTest {
   def replayAll() { replay(allFactories: _*); replay(allRefs: _*) }
   def verifyAll() { verify(allFactories: _*); verify(allRefs: _*) }
 
-  def expectParticipantCreation(e:TestEndpoint) {
+  def expectParticipantCreation(e:EndpointConfig) {
     e.scan match {
       case Fails     =>
       case UseFirst  => expect(scanning1.createParticipantRef(e.endpoint.scanUrl, e.endpoint.contentType)).andReturn(scanningRef).anyTimes
@@ -237,65 +237,65 @@ case object Fails extends OperationTarget
 case object UseFirst extends OperationTarget
 case object UseSecond extends OperationTarget
 
-case class TestEndpoint(endpoint:Endpoint,
-                        validUpstream:Boolean = true, validDownstream:Boolean = true,
-                        scan:OperationTarget = Fails, retrieveContent:OperationTarget = Fails, correlateVersion:OperationTarget = Fails)
+case class EndpointConfig(endpoint:Endpoint,
+                          validUpstream:Boolean = true, validDownstream:Boolean = true,
+                          scan:OperationTarget = Fails, retrieveContent:OperationTarget = Fails, correlateVersion:OperationTarget = Fails)
 
 object ParticipantFactoryTest {
-  @DataPoint def noUrls = TestEndpoint(
+  @DataPoint def noUrls = EndpointConfig(
     Endpoint(name = "invalid"))
 
-  @DataPoint def allUrls = TestEndpoint(
+  @DataPoint def allUrls = EndpointConfig(
     Endpoint(name = "allUrls",
       scanUrl = "http://localhost/scan", contentRetrievalUrl = "http://localhost/content",
       versionGenerationUrl = "http://localhost/corr-version", contentType = "application/json"),
     scan = UseFirst, retrieveContent = UseFirst, correlateVersion = UseFirst)
 
-  @DataPoint def invalidScanUrl = TestEndpoint(
+  @DataPoint def invalidScanUrl = EndpointConfig(
     Endpoint(name = "invalidScanUrl", scanUrl = "ftp://blah", contentType = "application/json"),
     validUpstream = false, validDownstream = false)
 
-  @DataPoint def invalidScanUrlContentType = TestEndpoint(
+  @DataPoint def invalidScanUrlContentType = EndpointConfig(
     Endpoint(name = "invalidScanUrl", scanUrl = "http://localhost/scan", contentType = "application/xml"),
     validUpstream = false, validDownstream = false)
 
-  @DataPoint def firstScanUrl = TestEndpoint(
+  @DataPoint def firstScanUrl = EndpointConfig(
     Endpoint(name = "firstScanUrl", scanUrl = "http://localhost/scan", contentType = "application/json"),
     scan = UseFirst)
 
-  @DataPoint def secondScanUrl = TestEndpoint(
+  @DataPoint def secondScanUrl = EndpointConfig(
     Endpoint(name = "secondScanUrl", scanUrl = "amqp://localhost/scan", contentType = "application/json"),
     scan = UseSecond)
 
-  @DataPoint def invalidContentUrl = TestEndpoint(
+  @DataPoint def invalidContentUrl = EndpointConfig(
     Endpoint(name = "invalidContentUrl", contentRetrievalUrl = "ftp://blah", contentType = "application/json"),
     validUpstream = false, validDownstream = false)
 
-  @DataPoint def invalidContentUrlContentType = TestEndpoint(
+  @DataPoint def invalidContentUrlContentType = EndpointConfig(
     Endpoint(name = "invalidContentUrl", contentRetrievalUrl = "http://localhost/content", contentType = "application/xml"),
     validUpstream = false, validDownstream = false)
 
-  @DataPoint def firstContentUrl = TestEndpoint(
+  @DataPoint def firstContentUrl = EndpointConfig(
     Endpoint(name = "firstContentUrl", contentRetrievalUrl = "http://localhost/content", contentType = "application/json"),
     retrieveContent = UseFirst)
 
-  @DataPoint def secondContentUrl = TestEndpoint(
+  @DataPoint def secondContentUrl = EndpointConfig(
     Endpoint(name = "secondContentUrl", contentRetrievalUrl = "amqp://localhost/content", contentType = "application/json"),
     retrieveContent = UseSecond)
   
-  @DataPoint def invalidVersionUrl = TestEndpoint(
+  @DataPoint def invalidVersionUrl = EndpointConfig(
     Endpoint(name = "invalidVersionUrl", versionGenerationUrl = "ftp://blah", contentType = "application/json"),
     validUpstream = true, validDownstream = false)
 
-  @DataPoint def invalidVersionUrlVersionType = TestEndpoint(
+  @DataPoint def invalidVersionUrlVersionType = EndpointConfig(
     Endpoint(name = "invalidVersionUrl", versionGenerationUrl = "http://localhost/corr-version", contentType = "application/xml"),
     validUpstream = true, validDownstream = false)
 
-  @DataPoint def firstVersionUrl = TestEndpoint(
+  @DataPoint def firstVersionUrl = EndpointConfig(
     Endpoint(name = "firstVersionUrl", versionGenerationUrl = "http://localhost/corr-version", contentType = "application/json"),
     correlateVersion = UseFirst)
 
-  @DataPoint def secondVersionUrl = TestEndpoint(
+  @DataPoint def secondVersionUrl = EndpointConfig(
     Endpoint(name = "secondVersionUrl", versionGenerationUrl = "amqp://localhost/corr-version", contentType = "application/json"),
     correlateVersion = UseSecond)
 }

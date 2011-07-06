@@ -13,7 +13,7 @@ import scala.collection.JavaConversions._
 import org.joda.time.{DateTimeZone, DateTime, LocalDate}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning.{ConstraintsBuilder, AggregationBuilder, ScanningParticipantHandler, ScanConstraint, ScanAggregation}
-import net.lshift.diffa.participant.scanning.{ScanningParticipantDelegator, ScanResultEntry}
+import net.lshift.diffa.participant.scanning.{ScanningParticipantDelegator, ScanResultEntry, DateGranularityEnum, DateAggregation, ByNameAggregation, IntegerAggregation}
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -109,6 +109,53 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(PrefixQueryConstraint("someString", "bl")), Map())
+  }
+
+  @Test
+  def shouldBeAbleToPerformDateAggregatedScan() {
+    stubAggregationBuilder(req => {
+      val builder = new AggregationBuilder(req)
+      builder.maybeAddDateAggregation("bizDate")
+      builder.maybeAddDateAggregation("bizDate2")
+      builder.maybeAddDateAggregation("bizDate3")
+      builder
+    })
+    stubConstraintBuilder(req => new ConstraintsBuilder(req))
+    expectQuery(Seq(), Seq(
+      new DateAggregation("bizDate", DateGranularityEnum.Yearly),
+      new DateAggregation("bizDate2", DateGranularityEnum.Monthly),
+      new DateAggregation("bizDate3", DateGranularityEnum.Daily)))
+    replayAll()
+
+    scanningRestClient.scan(Seq(), Map("bizDate" -> YearlyCategoryFunction, "bizDate2" -> MonthlyCategoryFunction, "bizDate3" -> DailyCategoryFunction))
+  }
+
+  @Test
+  def shouldBeAbleToPerformByNameAggregatedScan() {
+    stubAggregationBuilder(req => {
+      val builder = new AggregationBuilder(req)
+      builder.maybeAddByNameAggregation("someString")
+      builder
+    })
+    stubConstraintBuilder(req => new ConstraintsBuilder(req))
+    expectQuery(Seq(), Seq(new ByNameAggregation("someString")))
+    replayAll()
+
+    scanningRestClient.scan(Seq(), Map("someString" -> ByNameCategoryFunction))
+  }
+
+  @Test
+  def shouldBeAbleToPerformIntegerAggregatedScan() {
+    stubAggregationBuilder(req => {
+      val builder = new AggregationBuilder(req)
+      builder.maybeAddIntegerAggregation("someInt")
+      builder
+    })
+    stubConstraintBuilder(req => new ConstraintsBuilder(req))
+    expectQuery(Seq(), Seq(new IntegerAggregation("someInt", 100)))
+    replayAll()
+
+    scanningRestClient.scan(Seq(), Map("someInt" -> IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction(100, 10)))
   }
 }
 

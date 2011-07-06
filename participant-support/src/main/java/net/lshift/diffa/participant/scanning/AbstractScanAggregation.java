@@ -14,4 +14,21 @@ public abstract class AbstractScanAggregation implements ScanAggregation {
   public String getAttributeName() {
     return attrName;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    AbstractScanAggregation that = (AbstractScanAggregation) o;
+
+    if (attrName != null ? !attrName.equals(that.attrName) : that.attrName != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return attrName != null ? attrName.hashCode() : 0;
+  }
 }

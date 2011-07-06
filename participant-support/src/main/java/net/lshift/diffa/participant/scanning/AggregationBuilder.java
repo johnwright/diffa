@@ -42,8 +42,20 @@ public class AggregationBuilder {
    */
   public void maybeAddByNameAggregation(String attrName) {
     String attrGranularity = req.getParameter(attrName + "-granularity");
-    if (attrGranularity != null && attrGranularity == "by-name") {
+    if (attrGranularity != null && attrGranularity.equals("by-name")) {
       result.add(new ByNameAggregation(attrName));
+    }
+  }
+
+  /**
+   * Attempt to add a integer aggregation for the given attribute. The aggregation will be added if
+   * [attrName]-granularity is present in the request.
+   * @param attrName the name of the attribute
+   */
+  public void maybeAddIntegerAggregation(String attrName) {
+    String attrGranularity = req.getParameter(attrName + "-granularity");
+    if (attrGranularity != null) {
+      result.add(new IntegerAggregation(attrName, attrGranularity));
     }
   }
 }
