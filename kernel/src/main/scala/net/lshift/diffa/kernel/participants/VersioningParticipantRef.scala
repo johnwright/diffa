@@ -4,8 +4,11 @@ import java.io.Closeable
 import net.lshift.diffa.participant.correlation.ProcessingResponse
 
 /**
- * Reference to a version generating participant. This allows for version information to be recovered in a correlated
- * version system.
+ * Provides a reference to a version generation participant. This allows for version information to be
+ * recovered in a correlated version system. An implementation of this will be provided via a
+ * ScanningParticipantFactory implementation, and will generally be an accessor to a remote resource. The
+ * implementation of this will be responsible for handling argument serialisation, RPC execution and result
+ * deserialisation.
  */
 trait VersioningParticipantRef extends Closeable {
   /**

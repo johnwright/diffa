@@ -46,27 +46,6 @@ class MemoryParticipantBase(nativeVsnGen: String => String)
   def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry] =
     doQuery(new java.util.ArrayList[ScanConstraint], new java.util.ArrayList[ScanAggregation]).toSeq
 
-  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    log.trace("Running version query: " + constraints)
-    val constrained = constrainEntities(constraints)
-    constrained.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.toAttributes), e.lastUpdated,nativeVsnGen(e.body)))
-  }
-
-  def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    log.trace("Running aggregate query: " + constraints)
-    val constrained = constrainEntities(constraints)
-    val b = new DigestBuilder(bucketing)
-    constrained foreach (ent => b.add(ent.id, ent.toAttributes, ent.lastUpdated, nativeVsnGen(ent.body)))
-    b.digests
-  }
-
-  def constrainEntities(constraints:Seq[QueryConstraint]) = {
-    // Filter on date interval & sort entries by ID into a list
-    // TODO [#2] this is not really constraining yet
-    val entitiesInRange = entities.values.filter(e => true).toList
-    entitiesInRange.sort(_.id < _.id)
-  }
-
   def retrieveContent(identifier: String) = entities.get(identifier) match {
     case Some(entity) => entity.body
     case None => null

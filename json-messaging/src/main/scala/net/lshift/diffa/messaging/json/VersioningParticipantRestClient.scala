@@ -44,18 +44,4 @@ class VersioningParticipantRestClient(scanUrl:String)
         throw new Exception("Participant version generation failed: " + response.getStatus + "\n" + IOUtils.toString(response.getEntityInputStream, "UTF-8"))
     }
   }
-
-  def retrieveContent(identifier: String) = {
-    val params = new MultivaluedMapImpl()
-    params.add("identifier", identifier)
-
-    val jsonEndpoint = resource.queryParams(params)
-    val response = jsonEndpoint.get(classOf[ClientResponse])
-    response.getStatus match {
-      case 200 => IOUtils.toString(response.getEntityInputStream)
-      case _   =>
-        log.error(response.getStatus + "")
-        throw new Exception("Participant content retrieval failed: " + response.getStatus + "\n" + IOUtils.toString(response.getEntityInputStream, "UTF-8"))
-    }
-  }
 }

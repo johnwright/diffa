@@ -55,6 +55,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(), Map())
+    verifyAll()
   }
 
   @Test
@@ -69,6 +70,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(DateRangeConstraint("bizDate", new LocalDate(2011, 7, 1), new LocalDate(2011, 7, 31))), Map())
+    verifyAll()
   }
 
   @Test
@@ -83,6 +85,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(DateTimeRangeConstraint("bizTime", new DateTime(2011, 7, 1, 10, 36, 0, 0, DateTimeZone.UTC), new DateTime(2011, 7, 31, 11, 36, 0, 0, DateTimeZone.UTC))), Map())
+    verifyAll()
   }
 
   @Test
@@ -97,6 +100,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(SetQueryConstraint("someString", Set("aa", "bb"))), Map())
+    verifyAll()
   }
 
   @Test
@@ -111,6 +115,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(IntegerRangeConstraint("someInt", 5, 20)), Map())
+    verifyAll()
   }
 
   @Test
@@ -125,6 +130,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(PrefixQueryConstraint("someString", "bl")), Map())
+    verifyAll()
   }
 
   @Test
@@ -144,6 +150,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(), Map("bizDate" -> YearlyCategoryFunction, "bizDate2" -> MonthlyCategoryFunction, "bizDate3" -> DailyCategoryFunction))
+    verifyAll()
   }
 
   @Test
@@ -158,6 +165,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(), Map("someString" -> ByNameCategoryFunction))
+    verifyAll()
   }
 
   @Test
@@ -172,6 +180,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(), Map("someInt" -> IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction(100, 10)))
+    verifyAll()
   }
 
   @Test
@@ -186,6 +195,7 @@ class ScanCompatibilityTest {
     replayAll()
 
     scanningRestClient.scan(Seq(), Map("someString" -> StringPrefixCategoryFunction(2, 10, 2)))
+    verifyAll()
   }
 }
 
@@ -228,6 +238,10 @@ object ScanCompatibilityTest {
 
   def resetAll() {
     reset(scanningParticipant)
+  }
+
+  def verifyAll() {
+    verify(scanningParticipant)
   }
 }
 

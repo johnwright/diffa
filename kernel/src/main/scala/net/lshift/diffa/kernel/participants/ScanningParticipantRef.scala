@@ -4,7 +4,10 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry
 import java.io.Closeable
 
 /**
- * Reference to a scanning participant.
+ * Provides a reference to a scanning participant. An implementation of this will be provided via a
+ * ScanningParticipantFactory implementation, and will generally be an accessor to a remote resource. The
+ * implementation of this will be responsible for handling argument serialisation, RPC execution and result
+ * deserialisation.
  */
 trait ScanningParticipantRef extends Closeable {
   /**

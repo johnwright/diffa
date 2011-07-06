@@ -122,13 +122,13 @@ class TestEnvironment(val pairKey: String,
   }
 
   def addAndNotifyUpstream(id:String, content:String, someDate:DateTime, someString:String) {
-    val attributes = Map("someDate" -> someDate.toString(), "someString" -> someString)
+    val attributes = pack(someDate = someDate, someString = someString)
 
     upstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
   def addAndNotifyDownstream(id:String, content:String, someDate:DateTime, someString:String) {
-    val attributes = Map("someDate" -> someDate.toString(), "someString" -> someString)
+    val attributes = pack(someDate = someDate, someString = someString)
 
     downstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     versionScheme match {
@@ -140,9 +140,7 @@ class TestEnvironment(val pairKey: String,
     }
   }
 
-  // TODO Maybe this can be accomplished using an implicit definition somewhere
-  def bizDate(d:DateTime) = Map("bizDate" -> d.toString())
-  def bizDateValues(d:DateTime) = Seq(d.toString())
+  def pack(someDate:DateTime, someString:String) = Map("someDate" -> someDate.toString(), "someString" -> someString)
 
 }
 
