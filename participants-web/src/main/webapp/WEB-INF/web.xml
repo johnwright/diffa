@@ -52,21 +52,46 @@
   </filter-mapping>
 
   <servlet>
-    <servlet-name>upstreamRequestHandler</servlet-name>
+    <servlet-name>upstreamPart</servlet-name>
     <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>upstreamRequestHandler</servlet-name>
-    <url-pattern>/p/upstream/*</url-pattern>
+    <servlet-name>upstreamPart</servlet-name>
+    <url-pattern>/p/upstream/scan</url-pattern>
   </servlet-mapping>
 
   <servlet>
-    <servlet-name>downstreamRequestHandler</servlet-name>
+    <servlet-name>upstreamContentHandler</servlet-name>
     <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>downstreamRequestHandler</servlet-name>
-    <url-pattern>/p/downstream/*</url-pattern>
+    <servlet-name>upstreamContentHandler</servlet-name>
+    <url-pattern>/p/upstream/content</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>downstreamPart</servlet-name>
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>downstreamPart</servlet-name>
+    <url-pattern>/p/downstream/scan</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>downstreamContentHandler</servlet-name>
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>downstreamContentHandler</servlet-name>
+    <url-pattern>/p/downstream/content</url-pattern>
+  </servlet-mapping>
+  <servlet>
+    <servlet-name>downstreamVersionHandler</servlet-name>
+    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>downstreamVersionHandler</servlet-name>
+    <url-pattern>/p/downstream/corr-version</url-pattern>
   </servlet-mapping>
 
   <!-- Map normal resources under /static -->

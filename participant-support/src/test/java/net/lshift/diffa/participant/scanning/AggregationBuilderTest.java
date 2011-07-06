@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) 2010-2011 LShift Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.lshift.diffa.participant.scanning;
 
 import org.junit.Test;
@@ -60,5 +75,86 @@ public class AggregationBuilderTest {
     builder.maybeAddByNameAggregation("someString");
     assertEquals(1, builder.toList().size());
     assertThat(builder.toList().get(0), is(instanceOf(ByNameAggregation.class)));
+  }
+
+  @Test
+  public void shouldNotAddIntegerAggregationForEmptyRequest() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    AggregationBuilder builder = new AggregationBuilder(req);
+
+    builder.maybeAddIntegerAggregation("test");
+    assertEquals(0, builder.toList().size());
+  }
+
+  @Test
+  public void shouldAddIntegerAggregationWhenParameterIsAvailable() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someInt-granularity", "1000s");
+    AggregationBuilder builder = new AggregationBuilder(req);
+
+    builder.maybeAddIntegerAggregation("someInt");
+    assertEquals(1, builder.toList().size());
+    assertThat(builder.toList().get(0), is(instanceOf(IntegerAggregation.class)));
+
+    IntegerAggregation a = (IntegerAggregation) builder.toList().get(0);
+    assertEquals("someInt", a.getAttributeName());
+    assertEquals(1000, a.getGranularity());
+  }
+
+  @Test
+  public void shouldBucketInteger() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someInt-granularity", "100s");
+    AggregationBuilder builder = new AggregationBuilder(req);
+    builder.maybeAddIntegerAggregation("someInt");
+
+    IntegerAggregation a = (IntegerAggregation) builder.toList().get(0);
+    assertEquals("500", a.bucket("523"));
+  }
+
+  @Test
+  public void shouldNotAddStringPrefixAggregationForEmptyRequest() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    AggregationBuilder builder = new AggregationBuilder(req);
+
+    builder.maybeAddStringPrefixAggregation("test");
+    assertEquals(0, builder.toList().size());
+  }
+
+  @Test
+  public void shouldAddStringPrefixAggregationWhenParameterIsAvailable() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someString-length", "5");
+    AggregationBuilder builder = new AggregationBuilder(req);
+
+    builder.maybeAddStringPrefixAggregation("someString");
+    assertEquals(1, builder.toList().size());
+    assertThat(builder.toList().get(0), is(instanceOf(StringPrefixAggregation.class)));
+
+    StringPrefixAggregation a = (StringPrefixAggregation) builder.toList().get(0);
+    assertEquals("someString", a.getAttributeName());
+    assertEquals(5, a.getLength());
+  }
+
+  @Test
+  public void shouldBucketStringPrefix() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someString-length", "4");
+    AggregationBuilder builder = new AggregationBuilder(req);
+    builder.maybeAddStringPrefixAggregation("someString");
+
+    StringPrefixAggregation a = (StringPrefixAggregation) builder.toList().get(0);
+    assertEquals("abcd", a.bucket("abcdef"));
+  }
+
+  @Test
+  public void shouldBucketStringPrefixWithShortString() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someString-length", "3");
+    AggregationBuilder builder = new AggregationBuilder(req);
+    builder.maybeAddStringPrefixAggregation("someString");
+
+    StringPrefixAggregation a = (StringPrefixAggregation) builder.toList().get(0);
+    assertEquals("ab", a.bucket("ab"));
   }
 }

@@ -26,6 +26,7 @@ import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
+import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanAggregation, ScanConstraint}
 
 /**
  * Basic functionality requried for a file-based participant.
@@ -38,6 +39,10 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
   val changesClient = new ChangesRestClient(agentRoot)
 
   val isoFormat = ISODateTimeFormat.dateTime()
+
+  def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]):Seq[ScanResultEntry] =
+      // TODO
+    Seq[ScanResultEntry]()
 
   def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
     // Validate the constraints

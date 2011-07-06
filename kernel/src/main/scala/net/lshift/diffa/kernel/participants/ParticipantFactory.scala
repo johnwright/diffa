@@ -24,26 +24,85 @@ import net.lshift.diffa.kernel.config.Endpoint
  */
 class ParticipantFactory() {
 
-  private val protocolFactories = new ListBuffer[ParticipantProtocolFactory]
+  private val scanningFactories = new ListBuffer[ScanningParticipantFactory]
+  private val contentFactories = new ListBuffer[ContentParticipantFactory]
+  private val versioningFactories = new ListBuffer[VersioningParticipantFactory]
 
-  def registerFactory(f:ParticipantProtocolFactory) = protocolFactories += f
+  def registerScanningFactory(f:ScanningParticipantFactory) = scanningFactories += f
+  def registerContentFactory(f:ContentParticipantFactory) = contentFactories += f
+  def registerVersioningFactory(f:VersioningParticipantFactory) = versioningFactories += f
 
   def createUpstreamParticipant(endpoint:Endpoint): UpstreamParticipant = {
-    val (address, protocol) = (endpoint.url, endpoint.contentType)
-    findFactory(address, protocol).createUpstreamParticipant(address, protocol)
+    val scanningParticipant = createScanningParticipant(endpoint)
+    val contentParticipant = createContentParticipant(endpoint)
+
+    new CompositeUpstreamParticipant(endpoint.name, scanningParticipant, contentParticipant)
   }
 
   def createDownstreamParticipant(endpoint:Endpoint): DownstreamParticipant = {
-    val (address, protocol) = (endpoint.url, endpoint.contentType)
-    findFactory(address, protocol).createDownstreamParticipant(address, protocol)
+    val scanningParticipant = createScanningParticipant(endpoint)
+    val contentParticipant = createContentParticipant(endpoint)
+    val versioningParticipant = createVersioningParticipant(endpoint)
+
+    new CompositeDownstreamParticipant(endpoint.name, scanningParticipant, contentParticipant, versioningParticipant)
   }
 
-  private def findFactory(address:String, protocol:String) =
-    protocolFactories.find(f => f.supportsAddress(address, protocol)) match {
-      case None => throw new InvalidParticipantAddressException(address, protocol)
-      case Some(f) => f
+  def createScanningParticipant(endpoint:Endpoint): Option[ScanningParticipantRef] =
+    createParticipant(scanningFactories, endpoint.scanUrl, endpoint.contentType)
+  def createContentParticipant(endpoint:Endpoint): Option[ContentParticipantRef] =
+    createParticipant(contentFactories, endpoint.contentRetrievalUrl, endpoint.contentType)
+  def createVersioningParticipant(endpoint:Endpoint): Option[VersioningParticipantRef] =
+    createParticipant(versioningFactories, endpoint.versionGenerationUrl, endpoint.contentType)
+
+  private def createParticipant[T](factories:Seq[AddressDrivenFactory[T]], url:String, contentType:String):Option[T] = url match {
+    case null => None
+    case _ =>
+      factories.find(f => f.supportsAddress(url, contentType)) match {
+        case None     => throw new InvalidParticipantAddressException(url, contentType)
+        case Some(f)  => Some(f.createParticipantRef(url, contentType))
+      }
+  }
+
+  private class CompositeParticipant(partName:String, scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef]) extends Participant {
+    def retrieveContent(identifier: String) = content match {
+      case None         => throw new InvalidParticipantOperationException(partName, "content retrieval")
+      case Some(cpart)  => cpart.retrieveContent(identifier)
     }
+
+    def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = scanning match {
+      case None        => throw new InvalidParticipantOperationException(partName, "scanning")
+      case Some(spart) => spart.scan(constraints, aggregations)
+    }
+
+    def close() {
+      scanning.foreach(_.close())
+      content.foreach(_.close())
+    }
+  }
+
+  private class CompositeUpstreamParticipant(partName:String, scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef])
+      extends CompositeParticipant(partName, scanning, content)
+      with UpstreamParticipant {
+  }
+
+  private class CompositeDownstreamParticipant(partName:String, scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef], versioning:Option[VersioningParticipantRef])
+      extends CompositeParticipant(partName, scanning, content)
+      with DownstreamParticipant {
+    
+    def generateVersion(entityBody: String) = versioning match {
+      case None        => throw new InvalidParticipantOperationException(partName, "version recovery")
+      case Some(vpart) => vpart.generateVersion(entityBody)
+    }
+
+    override def close() {
+      super.close()
+      
+      versioning.foreach(_.close())
+    }
+  }
 }
 
-class InvalidParticipantAddressException(addr:String, protocol:String)
-    extends Exception("The address " + addr + " is not a valid participant address for the protocol " + protocol)
+class InvalidParticipantAddressException(addr:String, contentType:String)
+    extends Exception("The address " + addr + " is not a valid participant address for the content type " + contentType)
+class InvalidParticipantOperationException(partName:String, op:String)
+    extends Exception("The participant " + partName + " does not support " + op)

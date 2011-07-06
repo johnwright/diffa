@@ -29,6 +29,8 @@ import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.util.FullDateTimes._
 
 import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.correlation.ProcessingResponse
+import net.lshift.diffa.participant.scanning.ScanResultEntry
 
 /**
  * Test cases for the correlated version policy test.
@@ -66,54 +68,54 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // Expect only a top-level sync for the upstream, but a full sync for the downstream
     expectUpstreamAggregateSync(abPair, testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex("vsn2"))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1"), testData.attributes(0)),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), testData.attributes(1))),
       VersionsFromStore(
-        Up("id1", testData.valueKey, testData.values(0), "vsn1"),
-        Up("id2", testData.valueKey, testData.values(1), "vsn2")))
+        Up("id1", testData.values(0), "vsn1"),
+        Up("id2", testData.values(1), "vsn2")))
 
     expectDownstreamAggregateSync(abPair, testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex(downstreamVersionFor("vsn1"))),
-        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn1")), testData.attributes(0)),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")), testData.attributes(1))),
       VersionsFromStore(
-        Down("id1", testData.valueKey, testData.values(0), "vsn1", downstreamVersionFor("vsn1")),
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
-        Down("id4", testData.valueKey, testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
-        Down("id5", testData.valueKey, testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id1", testData.values(0), "vsn1", downstreamVersionFor("vsn1")),
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamAggregateSync(abPair, testData.bucketing(1), testData.constraints(1),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(2), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")), testData.attributes(2))),
       VersionsFromStore(
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
-        Down("id4", testData.valueKey, testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
-        Down("id5", testData.valueKey, testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamAggregateSync(abPair, testData.bucketing(2), testData.constraints(2),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(3), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")), testData.attributes(3))),
       VersionsFromStore(
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
-        Down("id4", testData.valueKey, testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
-        Down("id5", testData.valueKey, testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
     expectDownstreamEntitySync2(abPair, testData.constraints(3),
       DigestsFromParticipant(
-        EntityVersion("id2", Seq(testData.values(1).toString), JUL_8_2010_1, downstreamVersionFor("vsn2")),
-        EntityVersion("id3", Seq(testData.values(1).toString), JUL_8_2010_1, downstreamVersionFor("vsn3")),
-        EntityVersion("id5", Seq(testData.values(1).toString), JUL_8_2010_1, downstreamVersionFor("vsn5a"))),
+        ScanResultEntry.forEntity("id2", downstreamVersionFor("vsn2"), JUL_8_2010_1, testData.values(1)),
+        ScanResultEntry.forEntity("id3", downstreamVersionFor("vsn3"), JUL_8_2010_1, testData.values(1)),
+        ScanResultEntry.forEntity("id5", downstreamVersionFor("vsn5a"), JUL_8_2010_1, testData.values(1))),
       VersionsFromStore(
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
-        Down("id4", testData.valueKey, testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
-        Down("id5", testData.valueKey, testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
+        Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
+        Down("id5", testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
 
     // We should see id3 re-run through the system, and id4 be removed
     expect(usMock.retrieveContent("id3")).andReturn("content3")
-    expect(dsMock.generateVersion("content3")).andReturn(ProcessingResponse("id3", Seq(testData.values(1).toString), "vsn3", downstreamVersionFor("vsn3")))
+    expect(dsMock.generateVersion("content3")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3", downstreamVersionFor("vsn3")))
     expect(writer.storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
       andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
     expect(writer.clearDownstreamVersion(VersionID(abPair, "id4"))).
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
     expect(usMock.retrieveContent("id5")).andReturn("content5")
-    expect(dsMock.generateVersion("content5")).andReturn(ProcessingResponse("id5", Seq(testData.values(1).toString), "vsn5a", downstreamVersionFor("vsn5a")))
+    expect(dsMock.generateVersion("content5")).andReturn(new ProcessingResponse("id5", testData.values(1), "vsn5a", downstreamVersionFor("vsn5a")))
     expect(writer.storeDownstreamVersion(VersionID(abPair, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
         andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
@@ -137,37 +139,37 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // Expect only a top-level sync between the pairs
     expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(0), DigestUtils.md5Hex("vsn1")),
-        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex("vsn2"))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1"), testData.attributes(0)),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), testData.attributes(1))),
       VersionsFromStore(
-        Up("id1", testData.valueKey, testData.values(0), "vsn1"),
-        Up("id2", testData.valueKey, testData.values(1), "vsn2")))
+        Up("id1", testData.values(0), "vsn1"),
+        Up("id2", testData.values(1), "vsn2")))
 
     expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(1), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")), testData.attributes(1))),
       VersionsFromStore(
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamAggregateSync(testData.bucketing(1), testData.constraints(1),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(2), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")), testData.attributes(2))),
       VersionsFromStore(
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamAggregateSync(testData.bucketing(2), testData.constraints(2),
       DigestsFromParticipant(
-        AggregateDigest(testData.attributes(3), DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")))),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")), testData.attributes(3))),
       VersionsFromStore(
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
     expectDownstreamEntitySync2(abPair, testData.constraints(3),
       DigestsFromParticipant(
-        EntityVersion("id2", Seq(testData.values(1).toString), JUL_8_2010_1, downstreamVersionFor("vsn2")),
-        EntityVersion("id3", Seq(testData.values(1).toString), JUL_8_2010_1, downstreamVersionFor("vsn3"))),
+        ScanResultEntry.forEntity("id2", downstreamVersionFor("vsn2"), JUL_8_2010_1, testData.values(1)),
+        ScanResultEntry.forEntity("id3", downstreamVersionFor("vsn3"), JUL_8_2010_1, testData.values(1))),
       VersionsFromStore(
-        Down("id2", testData.valueKey, testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
+        Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
 
     // We should see id3 re-run through the system, but not be stored since the version on the downstream is different
     expect(usMock.retrieveContent("id3")).andReturn("content3a")
-    expect(dsMock.generateVersion("content3a")).andReturn(ProcessingResponse("id3", Seq(testData.values(1).toString), "vsn3a", downstreamVersionFor("vsn3a")))
+    expect(dsMock.generateVersion("content3a")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3a", downstreamVersionFor("vsn3a")))
 
     // We should see a replayStoredDifferences being generated
     listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan); expectLastCall

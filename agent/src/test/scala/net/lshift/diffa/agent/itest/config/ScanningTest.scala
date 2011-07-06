@@ -24,6 +24,7 @@ import com.eaio.uuid.UUID
 import net.lshift.diffa.agent.client.{ConfigurationRestClient, ScanningRestClient}
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
 
 /**
  * Smoke tests for the scan interface.
@@ -47,10 +48,10 @@ class ScanningTest {
 
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
-    configClient.declareEndpoint(up, "http://upstream.com", "application/json", null,null, true, categories)
-    configClient.declareEndpoint(down, "http://downstream.com", "application/json", null,null, true, categories)
+    configClient.declareEndpoint(Endpoint(name = up, scanUrl = "http://upstream.com", contentType = "application/json", categories = categories))
+    configClient.declareEndpoint(Endpoint(name = down, scanUrl = "http://downstream.com", contentType = "application/json", categories = categories))
     configClient.declareGroup(group)
-    configClient.declarePair(pair, "same", 1, up, down, group)
+    configClient.declarePair(PairDef(pair, "same", 1, up, down, group))
 
     // Simple smoke test - you could kick off a scan and verify that it gets interrupted,
     // but this code path is tested in the unit test

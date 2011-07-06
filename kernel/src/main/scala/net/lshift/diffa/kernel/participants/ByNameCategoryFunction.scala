@@ -21,7 +21,7 @@ package net.lshift.diffa.kernel.participants
  */
 case object ByNameCategoryFunction extends CategoryFunction {
 
-  def name = "by name"
+  def name = "by-name"
   def shouldBucket() = true
   def owningPartition(value: String) = value
   def descend = Some(IndividualCategoryFunction)

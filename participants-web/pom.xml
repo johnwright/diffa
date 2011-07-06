@@ -28,6 +28,11 @@
 
     <dependency>
       <groupId>net.lshift.diffa</groupId>
+      <artifactId>participant-support</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-kernel</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -64,9 +69,9 @@
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
-      <version>2.5</version>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

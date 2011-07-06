@@ -31,26 +31,15 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 /**
  * Test cases for the default session manager.
  */
-class StubParticipantProtocolFactory extends ParticipantProtocolFactory {
+class StubParticipantProtocolFactory
+    extends ScanningParticipantFactory {
 
-  def createDownstreamParticipant(address: String, protocol: String) = {
-    new DownstreamParticipant() {
-      def generateVersion(entityBody:String) = null
-      def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
-      def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
-      def retrieveContent(id:String) = null
-      def close() = ()
-    }
-  }
-  def createUpstreamParticipant(address:String, protocol:String) = {
-    new UpstreamParticipant() {
-      def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = null
-      def queryEntityVersions(constraints:Seq[QueryConstraint]) = null
-      def retrieveContent(id:String) = null
-      def close() = ()
-    }
-  }
   def supportsAddress(address:String, protocol:String) = true
+
+  def createParticipantRef(address: String, protocol: String) = new ScanningParticipantRef {
+    def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = null
+    def close() {}
+  }
 }
 
 class DefaultSessionManagerTest {
@@ -78,8 +67,8 @@ class DefaultSessionManagerTest {
   private val protocol2 = new StubParticipantProtocolFactory()
 
   val participantFactory = new ParticipantFactory()
-  participantFactory.registerFactory(protocol1)
-  participantFactory.registerFactory(protocol2)
+  participantFactory.registerScanningFactory(protocol1)
+  participantFactory.registerScanningFactory(protocol2)
 
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
   EasyMock.checkOrder(pairPolicyClient, false)
@@ -94,8 +83,8 @@ class DefaultSessionManagerTest {
     // i.e. only stub out the behavior that actually care about and want to test
     // so in this example, everything above this comment should be expect() calls
     // and everything below should be stub() calls on a factory
-    val u = Endpoint("1","http://foo.com", "application/json", "changes", "application/json", true)
-    val d = Endpoint("2","http://bar.com", "application/json", "changes", "application/json", true)
+    val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+    val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
 
     participantFactory.createUpstreamParticipant(u)
     participantFactory.createDownstreamParticipant(d)

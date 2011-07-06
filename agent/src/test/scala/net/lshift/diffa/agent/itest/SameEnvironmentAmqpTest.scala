@@ -25,8 +25,9 @@ import net.lshift.diffa.messaging.amqp.AmqpConnectionChecker
  * to detect and report on them. The participants in this test use the same versioning scheme, and thus will produce
  * the same versions for a given content item.
  */
-class SameEnvironmentAmqpTest extends AbstractEnvironmentTest
-  with CommonDifferenceTests {
+class SameEnvironmentAmqpTest
+    extends AbstractEnvironmentTest
+    with CommonDifferenceTests {
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
 

@@ -33,6 +33,7 @@ import net.lshift.diffa.kernel.config._
 import org.joda.time.{LocalDate, DateTime}
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
+import net.lshift.diffa.participant.scanning.ScanResultEntry
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -217,19 +218,19 @@ abstract class AbstractDataDrivenPolicyTest {
 
   protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                             partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
-    expect(usMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantDigestResponse(partResp))
+    expect(usMock.scan(constraints, bucketing)).andReturn(participantDigestResponse(partResp))
     store.queryUpstreams(EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(pair, storeResp))
   }
   protected def expectDownstreamAggregateSync(pair:Pair, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint],
                                               partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
-    expect(dsMock.queryAggregateDigests(bucketing, constraints)).andReturn(participantDigestResponse(partResp))
+    expect(dsMock.scan(constraints, bucketing)).andReturn(participantDigestResponse(partResp))
     store.queryDownstreams(EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(pair, storeResp))
   }
 
   protected def expectUpstreamEntitySync(pair:Pair, constraints:Seq[QueryConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
-    expect(usMock.queryEntityVersions(constraints)).andReturn(participantEntityResponse(partResp))
+    expect(usMock.scan(constraints, Map())).andReturn(participantEntityResponse(partResp))
     val correlations = storeResp.map(v=> {
       Correlation(id = v.id, upstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, upstreamVsn = v.vsn)
     })
@@ -237,7 +238,7 @@ abstract class AbstractDataDrivenPolicyTest {
     expect(store.queryUpstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
   protected def expectDownstreamEntitySync(pair:Pair, constraints:Seq[QueryConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
-    expect(dsMock.queryEntityVersions(constraints)).andReturn(participantEntityResponse(partResp))
+    expect(dsMock.scan(constraints, Map())).andReturn(participantEntityResponse(partResp))
     val correlations = storeResp.map(v=> {
       Correlation(id = v.id, downstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, downstreamDVsn = v.vsn)
     })
@@ -262,10 +263,10 @@ abstract class AbstractDataDrivenPolicyTest {
     })
   }
 
-  protected def participantDigestResponse(buckets:Seq[Bucket]):Seq[AggregateDigest] =
-    buckets.map(b => AggregateDigest(AttributesUtil.toSeq(b.attrs), b.vsn))
-  protected def participantEntityResponse(entities:Seq[Vsn]):Seq[EntityVersion] =
-    entities.map(e => EntityVersion(e.id, AttributesUtil.toSeq(e.strAttrs), e.lastUpdated, e.vsn))
+  protected def participantDigestResponse(buckets:Seq[Bucket]):Seq[ScanResultEntry] =
+    buckets.map(b => ScanResultEntry.forAggregate(b.vsn, b.attrs))
+  protected def participantEntityResponse(entities:Seq[Vsn]):Seq[ScanResultEntry] =
+    entities.map(e => ScanResultEntry.forEntity(e.id, e.vsn, e.lastUpdated, e.strAttrs))
 
   protected abstract class VersionAnswer[T] extends IAnswer[Unit] {
     def res:Seq[Bucket]

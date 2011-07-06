@@ -24,13 +24,12 @@ import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.kernel.config.{RepairAction, EscalationEvent, EscalationOrigin, EscalationActionType, RangeCategoryDescriptor}
 import org.restlet.data.Protocol
 import org.restlet.routing.Router
 import org.restlet.resource.{ServerResource, Post}
+import net.lshift.diffa.kernel.config._
 import org.restlet.{Application, Component}
 import collection.mutable.HashMap
-import org.junit.Before
 import net.lshift.diffa.agent.client._
 
 /**
@@ -102,31 +101,33 @@ class TestEnvironment(val pairKey: String,
   val escalationName = "Repair By Resending"
 
   // Categories
-  val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
+  val categories = Map("someDate" -> new RangeCategoryDescriptor("datetime"), "someString" -> new SetCategoryDescriptor(Set("ss")))
   
   // Participants' RPC server setup
-  participants.startUpstreamServer(upstream)
-  participants.startDownstreamServer(downstream)
+  participants.startUpstreamServer(upstream, upstream)
+  participants.startDownstreamServer(downstream, downstream, downstream)
 
   // Ensure that the configuration exists
   configurationClient.declareGroup("g1")
-  configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
+  configurationClient.declareEndpoint(Endpoint(name = upstreamEpName,
+    scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
+    inboundUrl = participants.inboundUrl, inboundContentType = contentType,
+    categories = categories))
+  configurationClient.declareEndpoint(Endpoint(name = downstreamEpName,
+    scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
+    versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
+    inboundUrl = participants.inboundUrl, inboundContentType = contentType,
+    categories = categories))
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
   configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
   createPair
 
-  def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
+  def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1"))
   def deletePair() {
    configurationClient.deletePair(pairKey)
   }
   def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionUrl, RepairAction.PAIR_SCOPE, pairKey)
   
-  // Participants' RPC client setup
-  val upstreamClient: UpstreamParticipant = participants.upstreamClient
-  val downstreamClient: DownstreamParticipant = participants.downstreamClient
-
-
   val username = "foo"
   val mail = "foo@bar.com"
   usersClient.declareUser(username,mail)
@@ -139,12 +140,16 @@ class TestEnvironment(val pairKey: String,
     downstream.clearEntities
   }
 
-  def addAndNotifyUpstream(id:String, attributes:Map[String, String], content:String) {
-    upstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
+  def addAndNotifyUpstream(id:String, content:String, someDate:DateTime, someString:String) {
+    val attributes = pack(someDate = someDate, someString = someString)
+
+    upstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
-  def addAndNotifyDownstream(id:String, attributes:Map[String, String], content:String) {
-    downstream.addEntity(id, attributes, Placeholders.dummyLastUpdated, content)
+  def addAndNotifyDownstream(id:String, content:String, someDate:DateTime, someString:String) {
+    val attributes = pack(someDate = someDate, someString = someString)
+
+    downstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
         changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
@@ -154,9 +159,7 @@ class TestEnvironment(val pairKey: String,
     }
   }
 
-  // TODO Maybe this can be accomplished using an implicit definition somewhere
-  def bizDate(d:DateTime) = Map("bizDate" -> d.toString())
-  def bizDateValues(d:DateTime) = Seq(d.toString())
+  def pack(someDate:DateTime, someString:String) = Map("someDate" -> someDate.toString(), "someString" -> someString)
 
 }
 

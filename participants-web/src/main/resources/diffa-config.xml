@@ -1,12 +1,15 @@
 <diffa-config>
 
   <endpoint name="a"
-            url="http://localhost:19293/participant-demo/p/upstream"
+            scan-url="http://localhost:19293/participant-demo/p/upstream/scan"
+            content-url="http://localhost:19293/participant-demo/p/upstream/content"
             content-type="application/json">
   </endpoint>
 
   <endpoint name="b"
-            url="http://localhost:19293/participant-demo/p/downstream"
+            scan-url="http://localhost:19293/participant-demo/p/downstream/scan"
+            content-url="http://localhost:19293/participant-demo/p/downstream/content"
+            version-url="http://localhost:19293/participant-demo/p/downstream/corr-version"
             content-type="application/json">
   </endpoint>
 

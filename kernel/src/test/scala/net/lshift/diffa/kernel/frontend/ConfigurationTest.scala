@@ -62,9 +62,9 @@ class ConfigurationTest {
 
   @Test
   def shouldGenerateExceptionWhenInvalidConfigurationIsApplied() {
-    val ep1 = Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
+    val ep1 = Endpoint(name = "upstream1", scanUrl = "http://localhost:1234/scan", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml")
-    val ep2 = Endpoint(name = "downstream1", url = "http://localhost:5432", contentType = "application/json")
+    val ep2 = Endpoint(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json")
     val config = new DiffaConfig(
       endpoints = Set(ep1, ep2),
       groups = Set(PairGroup("gaa")),
@@ -83,12 +83,12 @@ class ConfigurationTest {
 
   @Test
   def shouldApplyConfigurationToEmptySystem() {
-    val ep1 = Endpoint(name = "upstream1", url = "http://localhost:1234", contentType = "application/json",
+    val ep1 = Endpoint(name = "upstream1", scanUrl = "http://localhost:1234", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
-    val ep2 = Endpoint(name = "downstream1", url = "http://localhost:5432", contentType = "application/json",
+    val ep2 = Endpoint(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json",
           categories = Map(
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
@@ -128,13 +128,13 @@ class ConfigurationTest {
     resetAll
 
       // upstream1 is kept but changed
-    val ep1 = Endpoint(name = "upstream1", url = "http://localhost:6543", contentType = "application/json",
+    val ep1 = Endpoint(name = "upstream1", scanUrl = "http://localhost:6543/scan", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
       // downstream1 is gone, downstream2 is added
-    val ep2 = Endpoint(name = "downstream2", url = "http://localhost:54321", contentType = "application/json",
+    val ep2 = Endpoint(name = "downstream2", scanUrl = "http://localhost:54321/scan", contentType = "application/json",
           categories = Map(
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)

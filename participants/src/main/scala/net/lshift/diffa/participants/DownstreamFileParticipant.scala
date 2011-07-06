@@ -18,9 +18,9 @@ package net.lshift.diffa.participants
 
 import java.lang.String
 import java.io.File
-import net.lshift.diffa.kernel.participants.DownstreamParticipant
 import net.lshift.diffa.kernel.events.DownstreamChangeEvent
 import net.lshift.diffa.kernel.differencing.AttributesUtil
+import net.lshift.diffa.kernel.participants.{CategoryFunction, QueryConstraint, DownstreamParticipant}
 
 /**
  * Downstream participant implementation backed off the filesystem.

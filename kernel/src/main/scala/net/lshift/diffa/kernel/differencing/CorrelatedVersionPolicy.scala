@@ -56,12 +56,12 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)
 
-          if (response.dvsn == partVsn) {
+          if (response.getDvsn == partVsn) {
             // This is the same destination object, so we're safe to store the correlation
-            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.uvsn, response.dvsn))
+            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
           } else {
             // We can't update our datastore, so we just have to generate a mismatch
-            listener.onMismatch(VersionID(pairKey, id), lastUpdated, response.dvsn, partVsn, TriggeredByScan)
+            listener.onMismatch(VersionID(pairKey, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan)
           }
       }
     }

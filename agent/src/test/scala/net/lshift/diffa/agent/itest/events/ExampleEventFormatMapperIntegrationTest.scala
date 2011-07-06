@@ -30,6 +30,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
+import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import org.springframework.core.io.ClassPathResource
 import net.lshift.diffa.agent.client.DifferencesRestClient
@@ -59,7 +60,6 @@ class ExampleEventFormatMapperIntegrationTest {
 
   @Test
   def integrationTest() {
-
     val connectorHolder = new ConnectorHolder()
     val queueName = "exampleChanges"
     val changeEventProducer = new AmqpProducer(connectorHolder.connector, queueName)

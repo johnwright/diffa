@@ -18,13 +18,13 @@ package net.lshift.diffa.agent.load
 import net.lshift.diffa.messaging.json.ChangesRestClient
 import net.lshift.diffa.kernel.events.UpstreamChangeEvent
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
 import net.lshift.diffa.agent.client.{DifferencesRestClient, ConfigurationRestClient}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 import com.eaio.uuid.UUID
+import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
 
 /**
  * Utility class to load lots of unmatched events into the agent.
@@ -56,10 +56,10 @@ object PagingDataLoader {
 
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
-    configClient.declareEndpoint(up, host, content, null, null, true, categories)
-    configClient.declareEndpoint(down, host, content, null, null, true, categories)
+    configClient.declareEndpoint(Endpoint(name = up, scanUrl = host, contentType = content, categories = categories))
+    configClient.declareEndpoint(Endpoint(name = down, scanUrl = host, contentType = content, categories = categories))
     configClient.declareGroup(group)
-    configClient.declarePair(pair, "same", 0, up, down, group)
+    configClient.declarePair(PairDef(pair, "same", 0, up, down, group))
 
     val start = new DateTime().minusHours(hours)
 

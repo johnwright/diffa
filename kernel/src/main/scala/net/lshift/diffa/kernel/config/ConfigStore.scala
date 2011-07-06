@@ -88,14 +88,15 @@ trait ConfigStore {
 
 case class Endpoint(
   @BeanProperty var name: String = null,
-  @BeanProperty var url: String = null,
+  @BeanProperty var scanUrl: String = null,
+  @BeanProperty var contentRetrievalUrl: String = null,
+  @BeanProperty var versionGenerationUrl: String = null,
   @BeanProperty var contentType: String = null,
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
-  @BeanProperty var online: Boolean = false,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
 
-  def this() = this(null, null, null, null, null, false, new HashMap[String, CategoryDescriptor])
+  def this() = this(name = null)
 
   /**
    * Fuses a list of runtime attributes together with their
@@ -122,7 +123,11 @@ case class Endpoint(
    */
   def groupedConstraints() : Seq[Seq[QueryConstraint]] = {
     val constraints = defaultConstraints.map(_.group)
-    constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
+    if (constraints.length > 0) {
+      constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
+    } else {
+      Seq()
+    }
   }
 
   /**

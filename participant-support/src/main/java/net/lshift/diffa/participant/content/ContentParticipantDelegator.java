@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.messaging.json
-
-import net.lshift.diffa.kernel.participants.ParticipantProtocolFactory
+package net.lshift.diffa.participant.content;
 
 /**
- * JSON over REST participant connector factory.
+ * Adapter allowing a ContentParticipant to be implemented without requiring it to sub-class the
+ * ContentParticipantRequestHandler or the ContentParticipantServlet, and instead be delegated to.
  */
+public class ContentParticipantDelegator extends ContentParticipantRequestHandler {
+  private final ContentParticipantHandler handler;
 
-class JSONRestParticipantProtocolFactory extends ParticipantProtocolFactory {
-  def supportsAddress(address: String, protocol: String) =
-    protocol == "application/json" && address.startsWith("http://")
+  public ContentParticipantDelegator(ContentParticipantHandler handler) {
+    this.handler = handler;
+  }
 
-  def createUpstreamParticipant(address: String, protocol: String) =
-    new UpstreamParticipantRestClient(address)
-
-  def createDownstreamParticipant(address: String, protocol: String) =
-    new DownstreamParticipantRestClient(address)
+  @Override
+  protected String retrieveContent(String identifier) {
+    return handler.retrieveContent(identifier);
+  }
 }

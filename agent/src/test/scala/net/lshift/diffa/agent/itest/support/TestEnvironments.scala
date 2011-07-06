@@ -17,7 +17,7 @@
 package net.lshift.diffa.agent.itest.support
 
 import net.lshift.diffa.messaging.json.ChangesRestClient
-import net.lshift.diffa.messaging.amqp.{ConnectorHolder, ChangesAmqpClient}
+import net.lshift.diffa.messaging.amqp.{AmqpQueueUrl, ConnectorHolder, ChangesAmqpClient}
 
 /**
  * Static set of environments that can be used in integration test cases.
@@ -48,10 +48,9 @@ object TestEnvironments {
 
   def sameAmqp(key:String) =
     new TestEnvironment(key,
-                        new AmqpParticipants(amqpConnectorHolder,
-                                             "participant-us-same" + key,
-                                             "participant-ds-same" + key,
-                                             "changes-same" + key),
+                        new HttpParticipants(nextPort, nextPort) {
+                          override val inboundUrl:String = AmqpQueueUrl("changes-same" + key).toString
+                        },
                         { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
                                                      "changes-same" + key,
                                                      10000) },
@@ -59,10 +58,9 @@ object TestEnvironments {
 
   def correlatedAmqp(key:String) =
     new TestEnvironment(key,
-                        new AmqpParticipants(amqpConnectorHolder,
-                                             "participant-us-correlated" + key,
-                                             "participant-ds-correlated" + key,
-                                             "changes-correlated" + key),
+                        new HttpParticipants(nextPort, nextPort) {
+                          override val inboundUrl:String = AmqpQueueUrl("changes-correlated" + key).toString
+                        },
                         { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
                                                      "changes-correlated" + key,
                                                      10000) },

@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) 2010-2011 LShift Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package net.lshift.diffa.participant.scanning;
 
 import org.apache.commons.codec.digest.DigestUtils;
@@ -84,6 +99,24 @@ public class DigestBuilderTest {
       fail("Expected to provoke SealedBucketException");
     } catch (SealedBucketException e) {
     }
+  }
+
+  @Test
+  public void shouldAddViaScanResultEntries() {
+    DigestBuilder builder = new DigestBuilder(aggregations);
+
+    builder.add(ScanResultEntry.forEntity("id1", "vsn1", null, createAttrMap(JUN_6_2009_1, "a")));
+    builder.add(ScanResultEntry.forEntity("id2", "vsn2", null, createAttrMap(JUN_7_2009_1, "b")));
+    builder.add(ScanResultEntry.forEntity("id3", "vsn3", null, createAttrMap(JUN_6_2009_2, "c")));
+    builder.add(ScanResultEntry.forEntity("id4", "vsn4", null, createAttrMap(JUN_6_2009_2, "a")));
+
+    assertEquals(
+      new HashSet<ScanResultEntry>(Arrays.asList(
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1" + "vsn4"), createAttrMap("2009-06-06", "a")),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), createAttrMap("2009-06-07", "b")),
+        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn3"), createAttrMap("2009-06-06", "c"))
+      )),
+      new HashSet<ScanResultEntry>(builder.toDigests()));
   }
 
   private static Map<String, String> createAttrMap(DateTime bizDate, String ss) {
