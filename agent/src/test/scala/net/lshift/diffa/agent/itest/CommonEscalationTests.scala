@@ -27,8 +27,8 @@ trait CommonEscalationTests {
   @Test
   def canDeleteEscalation {
     def escalationName = env.escalationsClient.listEscalations(env.pairKey).headOption.map(_.name)
-    assertEquals(Some(env.entityScopedActionName), escalationName)
-    env.configurationClient.removeEscalation(env.entityScopedActionName, env.pairKey)
+    assertEquals(Some(env.escalationName), escalationName)
+    env.configurationClient.removeEscalation(env.escalationName, env.pairKey)
     assertEquals(None, escalationName)
   }
 }
