@@ -34,6 +34,7 @@ abstract class AbstractEnvironmentTest {
   def setup() {
     env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
     env.clearParticipants()
+    env.entityResendTally.clear()
   }
 
   @After

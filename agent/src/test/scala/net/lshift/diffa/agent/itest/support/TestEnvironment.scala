@@ -44,7 +44,6 @@ class TestEnvironment(val pairKey: String,
 
   // Keep a tally of the amount of requested resends
   val entityResendTally = new HashMap[String,Int]
-  @Before def resetTally = entityResendTally.clear()
 
   private val repairActionsComponent = {
     val component = new Component
