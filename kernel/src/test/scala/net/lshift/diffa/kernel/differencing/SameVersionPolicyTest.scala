@@ -94,7 +94,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
       andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
 
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
-    listener.onMatch(VersionID(abPair, "id4"), null, LiveWindow); expectLastCall
+    listener.onMatch(VersionID(abPair, "id4"), null, TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
     expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())

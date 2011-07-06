@@ -167,7 +167,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       // Unmatched versions will be evented at the end of the sync. Matched versions should be evented immediately, as
       // we won't know what went from unmatched -> matched later.
       if (corr.isMatched.booleanValue) {
-        listener.onMatch(VersionID(corr.pairing, corr.id), corr.upstreamVsn, LiveWindow)
+        listener.onMatch(VersionID(corr.pairing, corr.id), corr.upstreamVsn, TriggeredByScan)
       }
     }
 

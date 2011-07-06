@@ -118,7 +118,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
-    listener.onMatch(VersionID(abPair, "id4"), null, LiveWindow); expectLastCall
+    listener.onMatch(VersionID(abPair, "id4"), null, TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
