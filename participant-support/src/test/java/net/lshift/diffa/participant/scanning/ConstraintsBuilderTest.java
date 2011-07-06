@@ -80,6 +80,36 @@ public class ConstraintsBuilderTest {
   }
 
   @Test
+  public void shouldAddIntegerConstraintWhenBothStartAndEndArePresent() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someInt-start", "5");
+    req.addParameter("someInt-end", "50");
+    ConstraintsBuilder builder = new ConstraintsBuilder(req);
+
+    builder.maybeAddIntegerRangeConstraint("someInt");
+    assertEquals(1, builder.toList().size());
+    assertThat(builder.toList().get(0), is(instanceOf(IntegerRangeConstraint.class)));
+
+    IntegerRangeConstraint c = (IntegerRangeConstraint) builder.toList().get(0);
+    assertEquals(new Integer(5), c.getStart());
+    assertEquals(new Integer(50), c.getEnd());
+  }
+
+  @Test
+  public void shouldAddStringPrefixConstraintWhenPrefixIsPresent() {
+    MockHttpServletRequest req = new MockHttpServletRequest();
+    req.addParameter("someString-prefix", "ab");
+    ConstraintsBuilder builder = new ConstraintsBuilder(req);
+
+    builder.maybeAddStringPrefixConstraint("someString");
+    assertEquals(1, builder.toList().size());
+    assertThat(builder.toList().get(0), is(instanceOf(StringPrefixConstraint.class)));
+
+    StringPrefixConstraint c = (StringPrefixConstraint) builder.toList().get(0);
+    assertEquals("ab", c.getPrefix());
+  }
+
+  @Test
   public void shouldAddSetConstraintWhenSingleValueIsPresent() {
     MockHttpServletRequest req = new MockHttpServletRequest();
     req.addParameter("someString", "a");

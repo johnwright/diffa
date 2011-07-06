@@ -65,4 +65,31 @@ public class ConstraintsBuilder {
       result.add(new SetConstraint(attrName,set));
     }
   }
+
+  /**
+   * Attempt to add a integer range constraint for the given attribute. The constraint will be added if
+   * one or both of [attrName]-start, [attrName]-end are present in the request.
+   * @param attrName the name of the attribute
+   */
+  public void maybeAddIntegerRangeConstraint(String attrName) {
+    String startVal = req.getParameter(attrName + "-start");
+    String endVal = req.getParameter(attrName + "-end");
+
+    if (startVal != null || endVal != null) {
+      result.add(new IntegerRangeConstraint(attrName, startVal, endVal));
+    }
+  }
+
+  /**
+   * Attempt to add a string prefix constraint for the given attribute. The constraint will be added if
+   * [attrName]-prefix is present in the request.
+   * @param attrName the name of the attribute
+   */
+  public void maybeAddStringPrefixConstraint(String attrName) {
+    String prefix = req.getParameter(attrName + "-prefix");
+
+    if (prefix != null) {
+      result.add(new StringPrefixConstraint(attrName, prefix));
+    }
+  }
 }

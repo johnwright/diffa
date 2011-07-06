@@ -38,6 +38,8 @@ class ScanningParticipantRestClient(scanUrl:String)
       case rqc:RangeQueryConstraint =>
         params.add(rqc.category + "-start", rqc.lower)
         params.add(rqc.category + "-end", rqc.upper)
+      case pc:PrefixQueryConstraint =>
+        params.add(pc.category + "-prefix", pc.prefix)
       case nvc:NonValueConstraint =>    // Ignore non-value constraints
     }
     aggregations.foreach { case (k, f) =>

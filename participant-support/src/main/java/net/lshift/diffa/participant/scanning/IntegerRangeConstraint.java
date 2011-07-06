@@ -1,40 +1,35 @@
 package net.lshift.diffa.participant.scanning;
 
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
-
 /**
- * Constraint where a given attribute value is between a given start and end.
+ * Constraint for an integer that should exist (inclusive) within a given range.
  */
-public class DateRangeConstraint extends AbstractScanConstraint {
-  private static final DateTimeFormatter formatter = ISODateTimeFormat.dateParser();
-  private final LocalDate start;
-  private final LocalDate end;
+public class IntegerRangeConstraint extends AbstractScanConstraint {
+  private final Integer start;
+  private final Integer end;
 
-  public DateRangeConstraint(String name, String start, String end) {
+  public IntegerRangeConstraint(String name, String start, String end) {
     this(name, maybeParse(start), maybeParse(end));
   }
-  public DateRangeConstraint(String name, LocalDate start, LocalDate end) {
+  public IntegerRangeConstraint(String name, Integer start, Integer end) {
     super(name);
 
     this.start = start;
     this.end = end;
   }
 
-  public LocalDate getStart() {
+  public Integer getStart() {
     return start;
   }
 
-  public LocalDate getEnd() {
+  public Integer getEnd() {
     return end;
   }
 
-  private static LocalDate maybeParse(String dateStr) {
-    if (dateStr == null) {
+  private static Integer maybeParse(String intStr) {
+    if (intStr == null) {
       return null;
     } else {
-      return formatter.parseDateTime(dateStr).toLocalDate();
+      return Integer.parseInt(intStr);
     }
   }
 
@@ -44,7 +39,7 @@ public class DateRangeConstraint extends AbstractScanConstraint {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
 
-    DateRangeConstraint that = (DateRangeConstraint) o;
+    IntegerRangeConstraint that = (IntegerRangeConstraint) o;
 
     if (end != null ? !end.equals(that.end) : that.end != null) return false;
     if (start != null ? !start.equals(that.start) : that.start != null) return false;
