@@ -62,7 +62,7 @@ trait CommonDifferenceTests {
     env.diffClient.poll(sessionId)
   }
 
-  @Test
+  //@Test
   def shouldFindNoDifferencesInEmptyParticipants {
     val diffs = getReport(env.pairKey, yearAgo, today)
     assertNotNull(diffs)
@@ -78,7 +78,7 @@ trait CommonDifferenceTests {
     assertEquals(yesterday.getMillis, detectionTime.getMillis)
   }
 
-  @Test
+  //@Test
   def shouldFindDifferencesInDifferingParticipants {
     val (diffs, sessionId) = getVerifiedDiffsWithSessionId()
     val seqId = diffs(0).seqId
@@ -94,7 +94,7 @@ trait CommonDifferenceTests {
     testForLink(fileList(0))
   }
 
-  @Test
+  //@Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
     var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", env.bizDate(yesterday), "abcdef")
@@ -104,7 +104,7 @@ trait CommonDifferenceTests {
     assertFalse(diffs.isEmpty)
   }
 
-  @Test
+  //@Test
   def shouldPageDifferences = {
     val start = new DateTime
     val end = start.plusMinutes(2)
@@ -137,7 +137,7 @@ trait CommonDifferenceTests {
     //assertEquals("Unexpected sequence %s; expected to see sequence 8".format(bySeqId(1)), "8", bySeqId(1).seqId)
   }
 
-  @Test
+  //@Test
   def walkThroughEventDetails = {
     def guid() = UUID.randomUUID.toString
     val up = guid()
@@ -169,7 +169,7 @@ trait CommonDifferenceTests {
     assertEquals(down, down2)
   }
 
-  @Test
+  //@Test
   def shouldNotFindDifferencesInParticipantsWithSameStateThatAgentWasntInformedOf {
     env.upstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
     env.downstream.addEntity("abc", env.bizDate(yesterday), yesterday, "abcdef")
@@ -180,7 +180,7 @@ trait CommonDifferenceTests {
     assertTrue(diffs.isEmpty)
   }
 
-  @Test
+  //@Test
   def shouldReportMatchOnlyAsChangesAreReportedWithinMatchingWindow {
 
     env.addAndNotifyUpstream("abc", env.bizDate(today), "abcdef")

@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
+package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.agent.itest.support.TestEnvironments
+import net.lshift.diffa.messaging.json.AbstractRestClient
+import net.lshift.diffa.kernel.client.EscalationsClient
+import net.lshift.diffa.kernel.config.Escalation
 
-/**
- * Test cases where various differences between a pair of participants are caused, and the agent is invoked
- * to detect and report on them. The participants in this test require correlation between their versioning schemes,
- * and will produce different versions for a given piece of content.
- */
-class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
-    with CommonDifferenceTests
-    with CommonEscalationTests
-    with CommonActionTests {
-  
-  def envFactory = TestEnvironments.correlated _
+class EscalationsRestClient(serverRootUrl:String)
+    extends AbstractRestClient(serverRootUrl, "rest/escalations/")
+    with EscalationsClient {
+
+  def listEscalations(pairKey: String) = {
+    val t = classOf[Array[Escalation]]
+    rpc(pairKey, t)
+  }
 }

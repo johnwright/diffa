@@ -41,6 +41,9 @@ trait ConfigStore {
   def listRepairActions: Seq[RepairAction]
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
+  def listEscalations: Seq[Escalation]
+  def deleteEscalation(s: String, s1: String)
+  def createOrUpdateEscalation(escalation: Escalation)
   def listEscalationsForPair(pair: Pair): Seq[Escalation]
 
   def getEndpoint(name: String): Endpoint

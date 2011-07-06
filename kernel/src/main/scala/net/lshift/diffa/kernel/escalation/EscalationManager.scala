@@ -18,11 +18,11 @@ package net.lshift.diffa.kernel.escalation
 
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{TriggeredByScan, MatchOrigin, DifferencingListener}
 import net.lshift.diffa.kernel.config.ConfigStore
+import net.lshift.diffa.kernel.config.EscalationEvent._
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
-import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.differencing._
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -57,13 +57,21 @@ class EscalationManager(val config:ConfigStore,
   def onMismatch(id: VersionID, lastUpdated: DateTime, upstreamVsn: String, downstreamVsn: String,
                  origin: MatchOrigin) = origin match {
     case TriggeredByScan => {
-      val pair = config.getPair(id.pairKey)
-      val escalations = config.listEscalationsForPair(pair)
-      escalations.foreach( e => {
-        val result = actionsClient.invoke(ActionableRequest(id.pairKey, e.name, id.id))
-        log.debug("Escalation result for action [%s] using %s is %s".format(e.name, id, result))
-      })
+      differenceType(upstreamVsn, downstreamVsn) match {
+        case UpstreamMissing     => escalateByEventType(id, UPSTREAM_MISSING)
+        case DownstreamMissing   => escalateByEventType(id, DOWNSTREAM_MISSING)
+        case ConflictingVersions => escalateByEventType(id, MISMATCH)
+      }
     }
-    case _           => // ignore this for now
+    case _               => // ignore this for now
+  }
+
+  def escalateByEventType(id: VersionID, eventType:String) = {
+    val pair = config.getPair(id.pairKey)
+    val escalations = config.listEscalationsForPair(pair).filter(_.event == eventType)
+    escalations.foreach( e => {
+      val result = actionsClient.invoke(ActionableRequest(id.pairKey, e.action, id.id))
+      log.debug("Escalation result for action [%s] using %s is %s".format(e.name, id, result))
+    })
   }
 }

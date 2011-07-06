@@ -45,7 +45,7 @@ class ConfigurationRestClient(serverRootUrl:String)
     p
   }
 
-  def declareRepairAction(name: String, id: String, scope: String, pairKey: String, escalate:Boolean) = {
+  def declareRepairAction(name: String, id: String, scope: String, pairKey: String) = {
     val action = new RepairAction(name, id, scope, pairKey)
     create("/pairs/"+pairKey+"/repair-actions", action)
     action
@@ -53,6 +53,16 @@ class ConfigurationRestClient(serverRootUrl:String)
 
   def removeRepairAction(name: String, pairKey: String) {
     delete("/pairs/"+pairKey+"/repair-actions/"+name)
+  }
+
+  def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) = {
+    val escalation = new Escalation(name, pairKey, action, actionType, event, origin)
+    create("/pairs/"+pairKey+"/escalations", escalation)
+    escalation
+  }
+
+  def removeEscalation(name: String, pairKey: String) = {
+    delete("/pairs/" + pairKey + "/escalations/" + name)
   }
 
   def deletePair(pairKey: String) = {

@@ -14,19 +14,9 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
+package net.lshift.diffa.agent.rest
 
-import net.lshift.diffa.agent.itest.support.TestEnvironments
 
-/**
- * Test cases where various differences between a pair of participants are caused, and the agent is invoked
- * to detect and report on them. The participants in this test require correlation between their versioning schemes,
- * and will produce different versions for a given piece of content.
- */
-class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
-    with CommonDifferenceTests
-    with CommonEscalationTests
-    with CommonActionTests {
-  
-  def envFactory = TestEnvironments.correlated _
+class EscalationsResource {
+
 }

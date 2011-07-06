@@ -16,17 +16,19 @@
 
 package net.lshift.diffa.agent.itest
 
-import net.lshift.diffa.agent.itest.support.TestEnvironments
+import org.junit.Test
+import org.junit.Assert._
+import support.TestEnvironment
 
-/**
- * Test cases where various differences between a pair of participants are caused, and the agent is invoked
- * to detect and report on them. The participants in this test require correlation between their versioning schemes,
- * and will produce different versions for a given piece of content.
- */
-class CorrelatedEnvironmentTest extends AbstractEnvironmentTest
-    with CommonDifferenceTests
-    with CommonEscalationTests
-    with CommonActionTests {
-  
-  def envFactory = TestEnvironments.correlated _
+trait CommonEscalationTests {
+
+  def env:TestEnvironment
+
+  @Test
+  def canDeleteEscalation {
+    def escalationName = env.escalationsClient.listEscalations(env.pairKey).headOption.map(_.name)
+    assertEquals(Some(env.entityScopedActionName), escalationName)
+    env.configurationClient.removeEscalation(env.entityScopedActionName, env.pairKey)
+    assertEquals(None, escalationName)
+  }
 }

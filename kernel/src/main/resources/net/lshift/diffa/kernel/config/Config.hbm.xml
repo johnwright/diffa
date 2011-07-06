@@ -133,6 +133,10 @@
     select a from RepairAction a where a.name = :name and a.pairKey = :pairKey
   </query>
 
+  <query name="escalationByNameAndPairKey">
+    select e from Escalation e where e.name = :name and e.pairKey = :pairKey
+  </query>
+
   <query name="escalationsByPairKey">
     select e from Escalation e where e.pairKey = :pairKey
   </query>
@@ -151,6 +155,10 @@
 
   <query name="allRepairActions">
     select a from RepairAction a
+  </query>
+
+  <query name="allEscalations">
+    select e from Escalation e
   </query>
 
   <query name="pairsByGroup">

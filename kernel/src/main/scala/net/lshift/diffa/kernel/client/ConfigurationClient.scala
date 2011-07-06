@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.client
 
 import net.lshift.diffa.kernel.config._
+import reflect.BeanProperty
 
 /**
  * Interface supported by clients capable of configuring the diffa agent.
@@ -26,8 +27,10 @@ trait ConfigurationClient {
   def declareEndpoint(name: String, url: String, contentType:String, inboundUrl:String, inboundContentType:String, online:Boolean, categories:java.util.Map[String,CategoryDescriptor]) : Endpoint
   def declarePair(pairKey: String, versionPolicyName: String, matchingTimeout:Int,
                   upstreamName: String, downstreamName: String, groupKey: String):PairDef
-  def declareRepairAction(name: String, url: String, scope: String, pairKey: String, escalate:Boolean): RepairAction
+  def declareRepairAction(name: String, url: String, scope: String, pairKey: String): RepairAction
   def removeRepairAction(name: String, pairKey: String)
+  def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) : Escalation
+  def removeEscalation(name: String, pairKey: String)
   def deletePair(pairKey: String) : Unit
   def getEndpoint(name:String) : Endpoint
 }

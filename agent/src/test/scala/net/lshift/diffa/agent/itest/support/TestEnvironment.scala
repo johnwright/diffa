@@ -20,18 +20,18 @@ import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, Downstre
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
-import net.lshift.diffa.agent.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.kernel.config.{RepairAction, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.{RepairAction, EscalationEvent, EscalationOrigin, EscalationActionType, RangeCategoryDescriptor}
 import org.restlet.data.Protocol
 import org.restlet.routing.Router
 import org.restlet.resource.{ServerResource, Post}
 import org.restlet.{Application, Component}
 import collection.mutable.HashMap
 import org.junit.Before
+import net.lshift.diffa.agent.client._
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -83,6 +83,7 @@ class TestEnvironment(val pairKey: String,
   val configurationClient:ConfigurationClient = new ConfigurationRestClient(serverRoot)
   val diffClient:DifferencesClient = new DifferencesRestClient(serverRoot)
   val actionsClient:ActionsClient = new ActionsRestClient(serverRoot)
+  val escalationsClient:EscalationsClient = new EscalationsRestClient(serverRoot)
   val changesClient:ChangesClient = changesClientBuilder(this)
   val usersClient:UsersClient = new UsersRestClient(serverRoot)
 
@@ -98,6 +99,9 @@ class TestEnvironment(val pairKey: String,
   val pairScopedActionName = "Resend All"
   val pairScopedActionUrl = "http://localhost:8123/repair/resend-all"
 
+  // Escalations
+  val escalationName = "Repair By Resending"
+
   // Categories
   val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
   
@@ -109,14 +113,15 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(upstreamEpName, participants.upstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
   configurationClient.declareEndpoint(downstreamEpName, participants.downstreamUrl, contentType, participants.inboundUrl, contentType, true, categories)
-  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey, true)
+  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
+  configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
   createPair
 
   def createPair = configurationClient.declarePair(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1")
   def deletePair() {
    configurationClient.deletePair(pairKey)
   }
-  def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionUrl, RepairAction.PAIR_SCOPE, pairKey, false)
+  def createPairScopedAction = configurationClient.declareRepairAction(pairScopedActionName, pairScopedActionUrl, RepairAction.PAIR_SCOPE, pairKey)
   
   // Participants' RPC client setup
   val upstreamClient: UpstreamParticipant = participants.upstreamClient
