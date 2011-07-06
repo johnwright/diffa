@@ -17,7 +17,6 @@
 package net.lshift.diffa.kernel.client
 
 import net.lshift.diffa.kernel.config._
-import reflect.BeanProperty
 
 /**
  * Interface supported by clients capable of configuring the diffa agent.
