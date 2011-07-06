@@ -27,7 +27,7 @@ trait DifferencingListener {
    * Raised when an upstream and downstream version disagree (either by the values being different, or one being
    * missing).
    */
-  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String)
+  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin)
   
   /**
    * Raised when an upstream and downstream have entered a matched version state. This callback will only be
@@ -40,5 +40,61 @@ trait DifferencingListener {
    * - If there were older events when a client starts a session, only the mismatch events would be reported anyway. 
    *
    */
-  def onMatch(id:VersionID, vsn:String)
+  def onMatch(id:VersionID, vsn:String, origin:MatchOrigin)
+
+  /**
+   * Utility function to establish whether a mismatch is due to either
+   * <li>
+   *   <ul>The upstream version is missing</ul>
+   *   <ul>The downstream version is missing</ul>
+   *   <ul>The two versions are different</ul>
+   * </li>
+   */
+  def differenceType(upstreamVsn: String, downstreamVsn: String) : DifferenceType = {
+    if (null == upstreamVsn || upstreamVsn.isEmpty) {
+      UpstreamMissing
+    }
+    else if (null == downstreamVsn || downstreamVsn.isEmpty) {
+      DownstreamMissing
+    }
+    else {
+      ConflictingVersions
+    }
+  }
 }
+
+/**
+ * Defines the type of a difference.
+ */
+abstract class DifferenceType
+
+/**
+ * Occurs when the upstream  version for an entity does not exist.
+ */
+case object UpstreamMissing extends DifferenceType
+
+/**
+ * Occurs when the upstream version for an entity does not exist.
+ */
+case object DownstreamMissing extends DifferenceType
+
+/**
+ * Occurs when the versions for the upstream and downstream for an entity are different.
+ */
+case object ConflictingVersions extends DifferenceType
+
+
+/**
+ * Defines the type of origin of a match event.
+ */
+abstract class MatchOrigin
+
+/**
+ * The match event originates from the expiration of a live sliding window.
+ */
+case object LiveWindow extends MatchOrigin
+
+/**
+ * The match event originates from a scan
+ */
+case object TriggeredByScan extends MatchOrigin

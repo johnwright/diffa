@@ -16,29 +16,19 @@
 
 package net.lshift.diffa.agent.itest
 
-import net.lshift.diffa.agent.itest.support.TestEnvironment
-import org.junit.{After, Before}
+import org.junit.Test
+import org.junit.Assert._
+import support.TestEnvironment
 
-/**
- * Common base for a difference test.
- */
-abstract class AbstractEnvironmentTest {
-  def envFactory:(String => TestEnvironment)
+trait CommonEscalationTests {
 
-  /**
-   * The environment under test.
-   */
-  var env:TestEnvironment = null
+  def env:TestEnvironment
 
-  @Before
-  def setup() {
-    env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
-    env.clearParticipants()
-    env.entityResendTally.clear()
-  }
-
-  @After
-  def removePair() {
-    env.deletePair()
+  @Test
+  def canDeleteEscalation {
+    def escalationName = env.escalationsClient.listEscalations(env.pairKey).headOption.map(_.name)
+    assertEquals(Some(env.escalationName), escalationName)
+    env.configurationClient.removeEscalation(env.escalationName, env.pairKey)
+    assertEquals(None, escalationName)
   }
 }

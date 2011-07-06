@@ -193,6 +193,15 @@ trait CommonDifferenceTests {
         
   }
 
+  @Test
+  def scanShouldTriggerResend {
+    env.withActionsServer {
+      env.addAndNotifyUpstream("abc", "abcdef", someDate = today, someString = "ss")
+      subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+      assertEquals(1, env.entityResendTally("abc"))
+    }
+  }
+
   def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
     def isUpToDate(states:Map[String, PairScanState]) = states.values.forall(s => s == PairScanState.UP_TO_DATE)
 

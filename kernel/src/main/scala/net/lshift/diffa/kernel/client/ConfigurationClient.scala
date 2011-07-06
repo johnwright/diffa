@@ -27,6 +27,8 @@ trait ConfigurationClient {
   def declarePair(p:PairDef):PairDef
   def declareRepairAction(name: String, url: String, scope: String, pairKey: String): RepairAction
   def removeRepairAction(name: String, pairKey: String)
+  def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) : Escalation
+  def removeEscalation(name: String, pairKey: String)
   def deletePair(pairKey: String) : Unit
   def getEndpoint(name:String) : Endpoint
 }

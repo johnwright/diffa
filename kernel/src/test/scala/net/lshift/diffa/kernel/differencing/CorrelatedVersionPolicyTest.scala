@@ -120,7 +120,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
-    listener.onMatch(VersionID(abPair, "id4"), null); expectLastCall
+    listener.onMatch(VersionID(abPair, "id4"), null, TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
@@ -128,7 +128,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(abPair, writer, usMock, dsMock, nullListener, feedbackHandle)
-    policy.difference(abPair, nullListener)
+    policy.replayUnmatchedDifferences(abPair, nullListener)
 
     verifyAll
   }
@@ -171,8 +171,8 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(usMock.retrieveContent("id3")).andReturn("content3a")
     expect(dsMock.generateVersion("content3a")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3a", downstreamVersionFor("vsn3a")))
 
-    // We should see a difference being generated
-    listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3")); expectLastCall
+    // We should see a replayStoredDifferences being generated
+    listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
     expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
@@ -180,7 +180,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     policy.scanUpstream(abPair, writer, usMock, listener, feedbackHandle)
     policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.difference(abPair, nullListener)
+    policy.replayUnmatchedDifferences(abPair, nullListener)
 
     verifyAll
   }

@@ -217,4 +217,25 @@ class Configuration(val configStore: ConfigStore,
     val pair = configStore.getPair(pairKey)
     configStore.listRepairActionsForPair(pair)
   }
+
+  def createOrUpdateEscalation(escalation: Escalation) {
+    log.debug("Processing escalation declare/update request: " + escalation.name)
+    escalation.validate()
+    configStore.createOrUpdateEscalation(escalation)
+  }
+
+  def deleteEscalation(name: String, pairKey: String) {
+    log.debug("Processing escalation delete request: (name="+name+", pairKey="+pairKey+")")
+    configStore.deleteEscalation(name, pairKey)
+  }
+
+  def listEscalations: Seq[Escalation] = {
+    log.debug("Processing escalation list request")
+    configStore.listEscalations
+  }
+
+  def listEscalationForPair(pairKey: String): Seq[Escalation] = {
+    val pair = configStore.getPair(pairKey)
+    configStore.listEscalationsForPair(pair)
+  }
 }

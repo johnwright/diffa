@@ -27,6 +27,7 @@ import net.lshift.diffa.messaging.amqp.AmqpConnectionChecker
  */
 class CorrelatedEnvironmentAmqpTest extends AbstractEnvironmentTest
   with CommonDifferenceTests
+  with CommonEscalationTests
   with CommonActionTests {
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)

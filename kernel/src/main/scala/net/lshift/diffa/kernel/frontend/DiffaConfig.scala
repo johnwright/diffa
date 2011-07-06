@@ -26,7 +26,8 @@ case class DiffaConfig(
   endpoints:Set[Endpoint] = Set(),
   groups:Set[PairGroup] = Set(),
   pairs:Set[PairDef] = Set(),
-  repairActions:Set[RepairAction] = Set()
+  repairActions:Set[RepairAction] = Set(),
+  escalations:Set[Escalation] = Set()
 ) {
 
   def validate() {
@@ -37,5 +38,6 @@ case class DiffaConfig(
     groups.foreach(_.validate(path))
     pairs.foreach(_.validate(path))
     repairActions.foreach(_.validate(path))
+    escalations.foreach(_.validate(path))
   }
 }

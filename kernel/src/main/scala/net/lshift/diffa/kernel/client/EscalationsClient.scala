@@ -14,31 +14,19 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest
+package net.lshift.diffa.kernel.client
 
-import net.lshift.diffa.agent.itest.support.TestEnvironment
-import org.junit.{After, Before}
+import net.lshift.diffa.kernel.config.Escalation
+
 
 /**
- * Common base for a difference test.
+ * Interface supported by clients capable of listing escalations.
  */
-abstract class AbstractEnvironmentTest {
-  def envFactory:(String => TestEnvironment)
+trait EscalationsClient {
 
   /**
-   * The environment under test.
+   * Lists all escalations that a pairing offers
    */
-  var env:TestEnvironment = null
+  def listEscalations(pairKey: String): Seq[Escalation]
 
-  @Before
-  def setup() {
-    env = envFactory("pair-" + (new com.eaio.uuid.UUID()).toString)
-    env.clearParticipants()
-    env.entityResendTally.clear()
-  }
-
-  @After
-  def removePair() {
-    env.deletePair()
-  }
 }

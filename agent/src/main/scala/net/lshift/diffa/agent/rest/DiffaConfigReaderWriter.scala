@@ -90,7 +90,9 @@ class DiffaCastorSerializableConfig {
     this.endpoints = c.endpoints.map { e => (new CastorSerializableEndpoint).fromDiffaEndpoint(e) }.toList
     this.groups = c.groups.map(g => {
       def repairActionsForPair(pairKey: String) = c.repairActions.filter(_.pairKey == pairKey).toList
-      val pairs = c.pairs.filter(_.groupKey == g.key).map(p => CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.pairKey))).toList
+      def escalationsForPair(pairKey: String) = c.escalations.filter(_.pairKey == pairKey).toList
+      val pairs = c.pairs.filter(_.groupKey == g.key).map(p =>
+        CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.pairKey), escalationsForPair(p.pairKey))).toList
       new CastorSerializableGroup(g.key, pairs)
     }).toList
 
@@ -104,7 +106,8 @@ class DiffaCastorSerializableConfig {
       endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
       groups = groups.map(g => PairGroup(g.name)).toSet,
       pairs = (for (g <- groups; p <- g.pairs) yield p.toPairDef(g.name)).toSet,
-      repairActions = (for (g <- groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet
+      repairActions = (for (g <- groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet,
+      escalations = (for (g <- groups; p <- g.pairs; e <- p.escalations) yield { e.pairKey = p.key ; e }).toSet
     )
 
 }
@@ -195,6 +198,7 @@ class CastorSerializablePair(
   @BeanProperty var versionPolicy: String = null,
   @BeanProperty var matchingTimeout: Int = 0,
   @BeanProperty var repairActions: java.util.List[RepairAction] = new java.util.ArrayList[RepairAction],
+  @BeanProperty var escalations: java.util.List[Escalation] = new java.util.ArrayList[Escalation],
   @BeanProperty var scanCronSpec: String = null
 ) {
   def this() = this(key = null)
@@ -204,7 +208,8 @@ class CastorSerializablePair(
 }
 
 object CastorSerializablePair {
-  def fromPairDef(p: PairDef, repairActions: java.util.List[RepairAction]): CastorSerializablePair =
+  def fromPairDef(p: PairDef, repairActions: java.util.List[RepairAction],
+                              escalations: java.util.List[Escalation]): CastorSerializablePair =
     new CastorSerializablePair(p.pairKey, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
-                               repairActions, p.scanCronSpec)
+                               repairActions, escalations, p.scanCronSpec)
 }

@@ -142,13 +142,13 @@ class DefaultSessionManagerTest {
   @Test
   def shouldAlwaysInformMatchEvents {
 
-    expect(listener1.onMatch(VersionID("pair", "id"), "vsn"))
+    expect(listener1.onMatch(VersionID("pair", "id"), "vsn", LiveWindow))
     replayAll
 
     expectDifferenceForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
-    manager.onMatch(VersionID("pair", "id"), "vsn")
+    manager.onMatch(VersionID("pair", "id"), "vsn", LiveWindow)
 
     verifyAll
   }
@@ -163,21 +163,21 @@ class DefaultSessionManagerTest {
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     
-    manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn")
+    manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 
   @Test
   def shouldTriggerMismatchEventsWhenIdIsInactive {
     val timestamp = new DateTime()
-    expect(listener1.onMismatch(VersionID("pair", "id2"), timestamp, "uvsn", "dvsn"))
+    expect(listener1.onMismatch(VersionID("pair", "id2"), timestamp, "uvsn", "dvsn", LiveWindow))
     replayAll
 
     expectDifferenceForPair("pair")
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
 
-    manager.onMismatch(VersionID("pair", "id2"), timestamp, "uvsn", "dvsn")
+    manager.onMismatch(VersionID("pair", "id2"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 
@@ -191,8 +191,8 @@ class DefaultSessionManagerTest {
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.end("pair", listener1)
-    manager.onMatch(VersionID("pair", "id"), "vsn")
-    manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn")
+    manager.onMatch(VersionID("pair", "id"), "vsn", LiveWindow)
+    manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 
@@ -204,8 +204,8 @@ class DefaultSessionManagerTest {
     expectDifferenceForPair("pair2")
 
     val session = manager.start(SessionScope.forPairs("pair2"), listener1)
-    manager.onMatch(VersionID("pair", "id"), "vsn")
-    manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn")
+    manager.onMatch(VersionID("pair", "id"), "vsn", LiveWindow)
+    manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 

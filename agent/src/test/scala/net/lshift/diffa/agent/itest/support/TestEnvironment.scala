@@ -20,16 +20,17 @@ import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, Downstre
 import net.lshift.diffa.kernel.participants.{UpstreamMemoryParticipant, DownstreamMemoryParticipant, UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.client._
 import net.lshift.diffa.kernel.util.Placeholders
-import net.lshift.diffa.agent.client.{ConfigurationRestClient, DifferencesRestClient, ActionsRestClient, UsersRestClient}
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import org.restlet.data.Protocol
 import org.restlet.routing.Router
-import org.restlet.{Application, Component}
 import org.restlet.resource.{ServerResource, Post}
 import net.lshift.diffa.kernel.config._
+import org.restlet.{Application, Component}
+import collection.mutable.HashMap
+import net.lshift.diffa.agent.client._
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -40,10 +41,13 @@ class TestEnvironment(val pairKey: String,
                       changesClientBuilder: TestEnvironment => ChangesClient,
                       versionScheme: VersionScheme) {
 
+  // Keep a tally of the amount of requested resends
+  val entityResendTally = new HashMap[String,Int]
+
   private val repairActionsComponent = {
     val component = new Component
     component.getServers.add(Protocol.HTTP, 8123)
-    component.getDefaultHost.attach("/repair", new RepairActionsApplication)
+    component.getDefaultHost.attach("/repair", new RepairActionsApplication(entityResendTally))
     component
   }
 
@@ -53,6 +57,16 @@ class TestEnvironment(val pairKey: String,
 
   def stopActionServer() {
     repairActionsComponent.stop()
+  }
+
+  def withActionsServer(op: => Unit) {
+    try {
+      startActionServer()
+      op
+    }
+    finally {
+      stopActionServer()
+    }
   }
 
   def serverRoot = agentURL
@@ -67,6 +81,7 @@ class TestEnvironment(val pairKey: String,
   val configurationClient:ConfigurationClient = new ConfigurationRestClient(serverRoot)
   val diffClient:DifferencesClient = new DifferencesRestClient(serverRoot)
   val actionsClient:ActionsClient = new ActionsRestClient(serverRoot)
+  val escalationsClient:EscalationsClient = new EscalationsRestClient(serverRoot)
   val changesClient:ChangesClient = changesClientBuilder(this)
   val usersClient:UsersClient = new UsersRestClient(serverRoot)
 
@@ -81,6 +96,9 @@ class TestEnvironment(val pairKey: String,
   val entityScopedActionUrl = "http://localhost:8123/repair/resend/{id}"
   val pairScopedActionName = "Resend All"
   val pairScopedActionUrl = "http://localhost:8123/repair/resend-all"
+
+  // Escalations
+  val escalationName = "Repair By Resending"
 
   // Categories
   val categories = Map("someDate" -> new RangeCategoryDescriptor("datetime"), "someString" -> new SetCategoryDescriptor(Set("ss")))
@@ -101,6 +119,7 @@ class TestEnvironment(val pairKey: String,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
+  configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
   createPair
 
   def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1"))
@@ -148,10 +167,27 @@ class ResendAllResource extends ServerResource {
   @Post def resendAll = "resending all"
 }
 class ResendEntityResource extends ServerResource {
-  @Post def resend = "resending entity"
+
+  /**
+   * Update the resend tally for each entity
+   */
+  @Post def resend = {
+    val entityId = getRequest.getResourceRef.getLastSegment
+    val tally = getContext.getAttributes.get("tally").asInstanceOf[HashMap[String,Int]]
+    tally.get(entityId) match {
+      case Some(x) => tally(entityId) = x + 1
+      case None    => tally(entityId) = 1
+    }
+    "resending entity"
+  }
 }
-class RepairActionsApplication extends Application {
+class RepairActionsApplication(tally:HashMap[String,Int]) extends Application {
   override def createInboundRoot = {
+
+    // Pass the tally to the underlying resource
+    // NOTE: This is due to Restlets API - it feels like they should provide a resource that you can constructor inject
+    getContext.setAttributes(Map("tally"-> tally))
+
     val router = new Router(getContext)
     router.attach("/resend-all", classOf[ResendAllResource])
     router.attach("/resend/abc", classOf[ResendEntityResource])
