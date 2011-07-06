@@ -39,6 +39,7 @@ class EndpointTest {
   def defaultConstraintsForEndpointWithNoCategories = {
     val ep = new Endpoint()
     assertEquals(Seq(), ep.defaultConstraints)
+    assertEquals(Seq(), ep.groupedConstraints)
   }
 
   @Theory

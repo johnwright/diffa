@@ -17,7 +17,6 @@
 package net.lshift.diffa.agent.itest
 
 import net.lshift.diffa.agent.itest.support.TestEnvironments
-import org.junit.Test
 
 /**
  * Test cases where various differences between a pair of participants are caused, and the agent is invoked

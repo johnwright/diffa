@@ -16,9 +16,7 @@
 
 package net.lshift.diffa.participants
 
-import net.lshift.diffa.kernel.protocol.ProtocolHandler
 import java.io.File
-import net.lshift.diffa.messaging.json.{DownstreamParticipantHandler, UpstreamParticipantHandler}
 import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
 
 /**

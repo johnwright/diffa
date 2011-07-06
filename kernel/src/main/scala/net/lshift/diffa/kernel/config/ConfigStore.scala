@@ -118,7 +118,11 @@ case class Endpoint(
    */
   def groupedConstraints() : Seq[Seq[QueryConstraint]] = {
     val constraints = defaultConstraints.map(_.group)
-    constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
+    if (constraints.length > 0) {
+      constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
+    } else {
+      Seq()
+    }
   }
 
   /**

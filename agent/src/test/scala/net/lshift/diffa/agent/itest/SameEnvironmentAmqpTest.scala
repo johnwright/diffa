@@ -19,7 +19,6 @@ package net.lshift.diffa.agent.itest
 import org.junit.Assume.assumeTrue
 import support.TestEnvironments
 import net.lshift.diffa.messaging.amqp.AmqpConnectionChecker
-import org.junit.Test
 
 /**
  * Test cases where various differences between a pair of participants are caused, and the agent is invoked

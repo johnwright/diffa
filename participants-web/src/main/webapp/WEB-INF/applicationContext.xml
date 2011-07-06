@@ -65,18 +65,14 @@
     <constructor-arg value="${demo.agentUrl}" />
   </bean>
 
-  <bean id="upstreamRequestHandler" class="net.lshift.diffa.participants.web.ParticipantRequestHandler">
-    <constructor-arg>
-      <bean class="net.lshift.diffa.messaging.json.UpstreamParticipantHandler">
-        <constructor-arg ref="upstreamPart" />
-      </bean>
-    </constructor-arg>
+  <bean id="upstreamContentHandler" class="net.lshift.diffa.participant.content.ContentParticipantDelegator">
+    <constructor-arg ref="upstreamPart"/>
   </bean>
-  <bean id="downstreamRequestHandler" class="net.lshift.diffa.participants.web.ParticipantRequestHandler">
-    <constructor-arg>
-      <bean class="net.lshift.diffa.messaging.json.DownstreamParticipantHandler">
-        <constructor-arg ref="downstreamPart" />
-      </bean>
-    </constructor-arg>
+
+  <bean id="downstreamContentHandler" class="net.lshift.diffa.participant.content.ContentParticipantDelegator">
+    <constructor-arg ref="downstreamPart"/>
+  </bean>
+  <bean id="downstreamVersionHandler" class="net.lshift.diffa.participant.correlation.VersioningParticipantDelegator">
+    <constructor-arg ref="downstreamPart"/>
   </bean>
 </beans>
