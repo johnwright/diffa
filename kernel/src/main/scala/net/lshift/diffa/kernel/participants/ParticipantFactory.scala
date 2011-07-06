@@ -93,6 +93,12 @@ class ParticipantFactory() {
       case None        => throw new InvalidParticipantOperationException(partName, "version recovery")
       case Some(vpart) => vpart.generateVersion(entityBody)
     }
+
+    override def close() {
+      super.close()
+      
+      versioning.foreach(_.close())
+    }
   }
 }
 

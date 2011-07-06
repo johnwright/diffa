@@ -89,6 +89,46 @@ class ParticipantFactoryTest {
   }
 
   @Theory
+  def shouldCloseBothScanningAndContentRefsWhenUpstreamParticipantIsClosed(e:EndpointConfig) {
+    assumeTrue(e.validUpstream)
+    expectParticipantCreation(e)
+    e.scan match {
+      case Fails     =>
+      case _         => scanningRef.close(); expectLastCall()
+    }
+    e.retrieveContent match {
+      case Fails     =>
+      case _         => contentRef.close(); expectLastCall()
+    }
+    replayAll()
+
+    factory.createUpstreamParticipant(e.endpoint).close()
+    verifyAll()
+  }
+
+  @Theory
+  def shouldCloseScanningAndContentAndVersionRefsWhenDownstreamParticipantIsClosed(e:EndpointConfig) {
+    assumeTrue(e.validDownstream)
+    expectParticipantCreation(e)
+    e.scan match {
+      case Fails     =>
+      case _         => scanningRef.close(); expectLastCall()
+    }
+    e.retrieveContent match {
+      case Fails     =>
+      case _         => contentRef.close(); expectLastCall()
+    }
+    e.correlateVersion match {
+      case Fails     =>
+      case _         => versionRef.close(); expectLastCall()
+    }
+    replayAll()
+
+    factory.createDownstreamParticipant(e.endpoint).close()
+    verifyAll()
+  }
+
+  @Theory
   def shouldCreateUpstreamParticipantEvenWhenUrlsAreMissingButFailOperation(e:EndpointConfig) {
     assumeTrue(e.validUpstream)
     expectParticipantCreation(e)
