@@ -22,6 +22,7 @@ import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
 import org.quartz.CronExpression
+import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
 
 trait ConfigStore {
   def createOrUpdateEndpoint(endpoint: Endpoint): Unit
@@ -105,24 +106,32 @@ case class Endpoint(
    */
   def schematize(runtimeValues:Seq[String]) = AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
 
-  def defaultBucketing() : Map[String, CategoryFunction] = {
+  def defaultBucketing() : Seq[CategoryFunction] = {
     categories.map {
       case (name, categoryType) => {
         categoryType match {
-          case s:SetCategoryDescriptor    => name -> ByNameCategoryFunction
-          case r:RangeCategoryDescriptor  => name -> RangeTypeRegistry.defaultCategoryFunction(r.dataType)
-          case p:PrefixCategoryDescriptor => name -> StringPrefixCategoryFunction(p.prefixLength, p.maxLength, p.step)
+          case s:SetCategoryDescriptor    => ByNameCategoryFunction(name)
+          case r:RangeCategoryDescriptor  => RangeTypeRegistry.defaultCategoryFunction(name, r.dataType)
+          case p:PrefixCategoryDescriptor => StringPrefixCategoryFunction(name, p.prefixLength, p.maxLength, p.step)
         }
       }
-    }.toMap
+    }.toSeq
   }
 
   /**
    * Returns a structured group of constraints for the current endpoint that is appropriate for transmission
    * over the wire.
    */
-  def groupedConstraints() : Seq[Seq[QueryConstraint]] = {
-    val constraints = defaultConstraints.map(_.group)
+  def groupedConstraints() : Seq[Seq[ScanConstraint]] = {
+    val constraints = defaultConstraints.map {
+      /**
+       * #203: By default, set elements should be sent out individually - in the future, this may be configurable
+       */
+      case sc:SetConstraint =>
+        sc.getValues.map(v => new SetConstraint(sc.getAttributeName, Set(v))).toSeq
+      case c                =>
+        Seq(c)
+    }
     if (constraints.length > 0) {
       constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
     } else {
@@ -134,20 +143,22 @@ case class Endpoint(
    * Returns a set of the coarsest unbound query constraints for
    * each of the category types that has been configured for this pair.
    */
-  def defaultConstraints() : Seq[QueryConstraint] =
+  def defaultConstraints() : Seq[ScanConstraint] =
     categories.flatMap({
       case (name, categoryType) => {
         categoryType match {
-          case s:SetCategoryDescriptor   => Some(SetQueryConstraint(name, s.values.toSet))
+          case s:SetCategoryDescriptor   =>
+            Some(new SetConstraint(name, s.values))
           case r:RangeCategoryDescriptor => {
             if (r.lower == null && r.upper == null) {
-              Some(RangeTypeRegistry.unboundedConstraint(r.dataType, name))
+              None
             }
             else {
               Some(RangeCategoryParser.buildConstraint(name,r))
             }
           }
-          case p:PrefixCategoryDescriptor => Some(UnboundedRangeQueryConstraint(name))
+          case p:PrefixCategoryDescriptor =>
+            None
         }
       }
     }).toList

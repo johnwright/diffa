@@ -21,6 +21,8 @@ import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
 import net.lshift.diffa.participant.common.JSONHelper
 import org.apache.commons.io.IOUtils
+import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.scanning._
 
 /**
  * JSON/REST scanning participant client.
@@ -30,24 +32,23 @@ class ScanningParticipantRestClient(scanUrl:String)
     extends AbstractRestClient(scanUrl, "")
     with ScanningParticipantRef {
 
-  def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = {
-    log.debug("Querying constraints %s, aggregated by %s".format(constraints, aggregations))
+  def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) = {
+  	log.debug("Querying constraints %s, aggregated by %s".format(constraints, aggregations))
     val params = new MultivaluedMapImpl()
     constraints.foreach {
-      case sqc:SetQueryConstraint   =>
-        sqc.values.foreach(v => params.add(sqc.category, v))
-      case rqc:RangeQueryConstraint =>
-        params.add(rqc.category + "-start", rqc.lower)
-        params.add(rqc.category + "-end", rqc.upper)
-      case pc:PrefixQueryConstraint =>
-        params.add(pc.category + "-prefix", pc.prefix)
-      case nvc:NonValueConstraint =>    // Ignore non-value constraints
+      case sqc:SetConstraint   =>
+        sqc.getValues.foreach(v => params.add(sqc.getAttributeName, v))
+      case rc:RangeConstraint =>
+        params.add(rc.getAttributeName + "-start", rc.getStartText)
+        params.add(rc.getAttributeName + "-end", rc.getEndText)
+      case pc:StringPrefixConstraint =>
+        params.add(pc.getAttributeName + "-prefix", pc.getPrefix)
     }
     aggregations.foreach {
-      case (k, spf:StringPrefixCategoryFunction) =>
-        params.add(k + "-length", spf.prefixLength.toString)
-      case (k, f) =>
-        params.add(k + "-granularity", f.name)
+      case spf:StringPrefixCategoryFunction =>
+        params.add(spf.getAttributeName + "-length", spf.prefixLength.toString)
+      case f =>
+        params.add(f.getAttributeName + "-granularity", f.name)
     }
 
     val jsonEndpoint = resource.queryParams(params).`type`(MediaType.APPLICATION_JSON_TYPE)

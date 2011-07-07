@@ -19,6 +19,8 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
+import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 
 /**
  * Version policy where two events are considered the same based on the downstream reporting the same upstream
@@ -36,15 +38,15 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
   protected class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
       extends SyncStrategy {
     
-    def getAggregates(pairKey:String, bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) = {
+    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
       stores(pairKey).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
-    def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
+    def getEntities(pairKey:String, constraints:Seq[ScanConstraint]) = {
       stores(pairKey).queryDownstreams(constraints).map(x => {
-        EntityVersion(x.id, AttributesUtil.toSeq(x.downstreamAttributes.toMap), x.lastUpdate, x.downstreamDVsn)
+        ScanResultEntry.forEntity(x.id, x.downstreamDVsn, x.lastUpdate, mapAsJavaMap(x.downstreamAttributes))
       })
     }
 

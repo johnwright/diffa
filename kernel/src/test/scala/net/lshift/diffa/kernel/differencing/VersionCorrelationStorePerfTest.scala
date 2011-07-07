@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.events._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 import ch.qos.logback.classic.Level
-import net.lshift.diffa.kernel.participants.DateTimeRangeConstraint
+import net.lshift.diffa.participant.scanning.TimeRangeConstraint
 
 /**
  * Performance test for the version correlation store.
@@ -65,7 +65,7 @@ class VersionCorrelationStorePerfTest {
     }
 
     withTiming("run unmatched version query") {
-      val res = stores(pairKey).unmatchedVersions(Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pairKey).unmatchedVersions(Seq(new TimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(vsnCount, res.length)
     }
@@ -79,7 +79,7 @@ class VersionCorrelationStorePerfTest {
     }
 
     withTiming("run unmatched version query (2)") {
-      val res = stores(pairKey).unmatchedVersions(Seq(DateTimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pairKey).unmatchedVersions(Seq(new TimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(0, res.length)
     }

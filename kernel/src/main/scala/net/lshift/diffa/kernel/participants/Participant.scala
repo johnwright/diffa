@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.participants
 
 import java.io.Closeable
 import net.lshift.diffa.participant.correlation.ProcessingResponse
-import net.lshift.diffa.participant.scanning.ScanResultEntry
+import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 
 /**
  * Trait supported by various RPC bindings providing communications with participants.
@@ -28,7 +28,7 @@ trait Participant extends Closeable
   /**
    * Scans this participant with the given constraints and aggregations.
    */
-  def scan(constraints:Seq[QueryConstraint], aggregations:Map[String, CategoryFunction]): Seq[ScanResultEntry]
+  def scan(constraints:Seq[ScanConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry]
 
   /**
    * Requests that the participant return a serialized form of the item with the given identifier.

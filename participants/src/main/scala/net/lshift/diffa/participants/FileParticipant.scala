@@ -25,8 +25,8 @@ import collection.mutable.{HashMap, ListBuffer}
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
-import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanAggregation, ScanConstraint}
+import net.lshift.diffa.kernel.differencing.{AttributesUtil}
+import net.lshift.diffa.participant.scanning.{TimeRangeConstraint, ScanResultEntry, ScanAggregation, ScanConstraint}
 
 /**
  * Basic functionality requried for a file-based participant.
@@ -40,36 +40,14 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
 
   val isoFormat = ISODateTimeFormat.dateTime()
 
-  def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]):Seq[ScanResultEntry] =
+  def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]):Seq[ScanResultEntry] =
       // TODO
     Seq[ScanResultEntry]()
 
-  def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    // Validate the constraints
-    assert(constraints.length == 1, "FileParticipant requires a single constraint")
-    assert(constraints(0).category == "bizDate", "FileParticipant can only constrain on bizDate")
-
-    val files = queryFiles(constraints(0))
-    files.map(f => EntityVersion(idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
-  }
-
-  def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    // Validate the constraints
-    assert(constraints.length == 1, "FileParticipant requires a single constraint")
-    assert(constraints(0).category == "bizDate", "FileParticipant can only constrain on bizDate")
-    
-    val files = queryFiles(constraints(0))
-    val builder = new DigestBuilder(bucketing)
-    files.sortBy(_.getAbsolutePath).foreach(f => {
-      builder.add(idFor(f), attributesFor(f), dateFor(f), versionFor(f))
-    })
-    builder.digests
-  }
-
-  def queryFiles(constraint:QueryConstraint) = {
-    val rangeConstraint = constraint.asInstanceOf[RangeQueryConstraint]
-    val lower = isoFormat.parseDateTime(rangeConstraint.lower)
-    val upper = isoFormat.parseDateTime(rangeConstraint.upper)
+  def queryFiles(constraint:ScanConstraint) = {
+    val rangeConstraint = constraint.asInstanceOf[TimeRangeConstraint]
+    val lower = rangeConstraint.getStart
+    val upper = rangeConstraint.getEnd
 
     val files = new ListBuffer[File]
 

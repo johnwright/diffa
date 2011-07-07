@@ -20,9 +20,8 @@ import net.lshift.diffa.kernel.config.ConstraintGroupingTest.GroupExpectation
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import org.junit.runner.RunWith
 import org.junit.Assert._
-import net.lshift.diffa.kernel.participants.EasyConstraints._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.{SetQueryConstraint, QueryConstraint}
+import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
 
 @RunWith(classOf[Theories])
 class ConstraintGroupingTest {
@@ -30,12 +29,12 @@ class ConstraintGroupingTest {
   @Theory
   def shouldGroupConstraintsForEndpoint(expectation:GroupExpectation) = {
     val endpoint = new Endpoint{categories = expectation.categories}
-    assertEquals(expectation.grouped, endpoint.groupedConstraints)
+    assertEquals(expectation.grouped.map(s => s.toSet).toSet, endpoint.groupedConstraints.map(s => s.toSet).toSet)
   }
 }
 
 object ConstraintGroupingTest {
-  case class GroupExpectation(categories:Map[String,CategoryDescriptor], grouped:Seq[Seq[QueryConstraint]])
+  case class GroupExpectation(categories:Map[String,CategoryDescriptor], grouped:Seq[Seq[ScanConstraint]])
 
   @DataPoint def rangeOnly =
     GroupExpectation(
@@ -43,12 +42,7 @@ object ConstraintGroupingTest {
         "bizDate" -> new RangeCategoryDescriptor("datetime"),
         "someInt" -> new RangeCategoryDescriptor("int")
       ),
-      grouped = Seq(
-        Seq(
-          unconstrainedDateTime("bizDate"),
-          unconstrainedDateTime("someInt")
-        )
-      )
+      grouped = Seq()
     )
 
   @DataPoint def setOnly =
@@ -57,8 +51,8 @@ object ConstraintGroupingTest {
         "someString" -> new SetCategoryDescriptor(Set("A","B"))
       ),
       grouped = Seq(
-        Seq(SetQueryConstraint("someString", Set("A"))),
-        Seq(SetQueryConstraint("someString", Set("B")))
+        Seq(new SetConstraint("someString", Set("A"))),
+        Seq(new SetConstraint("someString", Set("B")))
       )
     )
 
@@ -69,10 +63,10 @@ object ConstraintGroupingTest {
         "someOtherString" -> new SetCategoryDescriptor(Set("1","2"))
       ),
       grouped = Seq(
-        Seq(SetQueryConstraint("someString", Set("A")),SetQueryConstraint("someOtherString", Set("1"))),
-        Seq(SetQueryConstraint("someString", Set("A")),SetQueryConstraint("someOtherString", Set("2"))),
-        Seq(SetQueryConstraint("someString", Set("B")),SetQueryConstraint("someOtherString", Set("1"))),
-        Seq(SetQueryConstraint("someString", Set("B")),SetQueryConstraint("someOtherString", Set("2")))
+        Seq(new SetConstraint("someString", Set("A")),new SetConstraint("someOtherString", Set("1"))),
+        Seq(new SetConstraint("someString", Set("A")),new SetConstraint("someOtherString", Set("2"))),
+        Seq(new SetConstraint("someString", Set("B")),new SetConstraint("someOtherString", Set("1"))),
+        Seq(new SetConstraint("someString", Set("B")),new SetConstraint("someOtherString", Set("2")))
       )
     )
 
@@ -83,8 +77,8 @@ object ConstraintGroupingTest {
         "someString" -> new SetCategoryDescriptor(Set("A","B"))
       ),
       grouped = Seq(
-        Seq(unconstrainedDateTime("bizDate"), SetQueryConstraint("someString", Set("A"))),
-        Seq(unconstrainedDateTime("bizDate"), SetQueryConstraint("someString", Set("B")))
+        Seq(new SetConstraint("someString", Set("A"))),
+        Seq(new SetConstraint("someString", Set("B")))
       )
     )
 
@@ -97,25 +91,17 @@ object ConstraintGroupingTest {
         "someOtherString" -> new SetCategoryDescriptor(Set("1","2"))
       ),
       grouped = Seq(
-        Seq(unconstrainedDateTime("bizDate"),
-            unconstrainedDateTime("someInt"),
-            SetQueryConstraint("someString", Set("A")),
-            SetQueryConstraint("someOtherString", Set("1"))
+        Seq(new SetConstraint("someString", Set("A")),
+            new SetConstraint("someOtherString", Set("1"))
         ),
-        Seq(unconstrainedDateTime("bizDate"),
-            unconstrainedDateTime("someInt"),
-            SetQueryConstraint("someString", Set("A")),
-            SetQueryConstraint("someOtherString", Set("2"))
+        Seq(new SetConstraint("someString", Set("A")),
+            new SetConstraint("someOtherString", Set("2"))
         ),
-        Seq(unconstrainedDateTime("bizDate"),
-            unconstrainedDateTime("someInt"),
-            SetQueryConstraint("someString", Set("B")),
-            SetQueryConstraint("someOtherString", Set("1"))
+        Seq(new SetConstraint("someString", Set("B")),
+            new SetConstraint("someOtherString", Set("1"))
         ),
-        Seq(unconstrainedDateTime("bizDate"),
-            unconstrainedDateTime("someInt"),
-            SetQueryConstraint("someString", Set("B")),
-            SetQueryConstraint("someOtherString", Set("2"))
+        Seq(new SetConstraint("someString", Set("B")),
+            new SetConstraint("someOtherString", Set("2"))
         )
       )
     )

@@ -23,8 +23,9 @@ import org.joda.time.format.ISODateTimeFormat;
 /**
  * Constraint where a given attribute value is between a given start and end.
  */
-public class TimeRangeConstraint extends AbstractScanConstraint {
-  private static final DateTimeFormatter formatter = ISODateTimeFormat.dateTimeParser();
+public class TimeRangeConstraint extends AbstractScanConstraint implements RangeConstraint  {
+  private static final DateTimeFormatter parser = ISODateTimeFormat.dateTimeParser();
+  private static final DateTimeFormatter formatter = ISODateTimeFormat.dateTime();
   private final DateTime start;
   private final DateTime end;
 
@@ -46,11 +47,21 @@ public class TimeRangeConstraint extends AbstractScanConstraint {
     return end;
   }
 
+  @Override
+  public String getStartText() {
+    return start.toString(formatter);
+  }
+
+  @Override
+  public String getEndText() {
+    return end.toString(formatter);
+  }
+
   private static DateTime maybeParse(String dateStr) {
     if (dateStr == null) {
       return null;
     } else {
-      return formatter.parseDateTime(dateStr).withZone(DateTimeZone.UTC);
+      return parser.parseDateTime(dateStr).withZone(DateTimeZone.UTC);
     }
   }
 
@@ -74,5 +85,14 @@ public class TimeRangeConstraint extends AbstractScanConstraint {
     result = 31 * result + (start != null ? start.hashCode() : 0);
     result = 31 * result + (end != null ? end.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "TimeRangeConstraint{" +
+        "name=" + getAttributeName() +
+        ", start=" + start +
+        ", end=" + end +
+        '}';
   }
 }

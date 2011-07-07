@@ -25,17 +25,16 @@ import net.lshift.diffa.kernel.participants._
 import collection.mutable.HashMap
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
-import net.lshift.diffa.participant.scanning.ScanResultEntry
 import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.scanning.{TimeRangeConstraint, ScanResultEntry}
 
 /**
  * Test cases for the DigestDifferencingUtils object.
  */
 class DigestDifferencingUtilsTest {
 
-  def dateTimeRangeConstraint(start:DateTime, end:DateTime) = DateTimeRangeConstraint("bizDateTime", start, end)
+  def dateTimeRangeConstraint(start:DateTime, end:DateTime) = new TimeRangeConstraint("bizDateTime", start, end)
 
-  val unconstrained = EasyConstraints.unconstrainedDateTime("bizDateTime")
   val dateTimeCategoryDescriptor = new RangeCategoryDescriptor("datetime")
   val dateTimeOnlyAttrs = Map("bizDateTime" -> dateTimeCategoryDescriptor)
 
@@ -49,22 +48,22 @@ class DigestDifferencingUtilsTest {
 
   @Test
   def shouldReportNothingOnMatchingEmptyLists {
-    val actions = DigestDifferencingUtils.differenceAggregates(Seq(), Seq(), Map(), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(Seq(), Seq(), Seq(), Seq())
     assertEquals(0, actions.length)
   }
 
   @Test
   def shouldThrowUsefulExceptionOnBadInputData {
     val a = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010")))
-    val b = Seq(AggregateDigest(Seq("2010-07"), "v2"))
+    val b = Seq(ScanResultEntry.forAggregate("v2", Map("bizDateTime" -> "2010-07")))
 
     try {
-      DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> MonthlyCategoryFunction), Seq(unconstrained))
+      DigestDifferencingUtils.differenceAggregates(a, b, Seq(MonthlyCategoryFunction("bizDateTime", TimeDataType)), Seq())
       fail("Should have thrown Exception")
     } catch {
       case ex =>
         assertEquals(
-          "Invalid format: \"2010\" is too short { bucketing = Map(bizDateTime -> MonthlyCategoryFunction), constraints = List(UnboundedRangeQueryConstraint(bizDateTime)), partitions = Map(bizDateTime -> 2010), results = ListBuffer() }",
+          "Invalid format: \"2010\" is too short { bucketing = List(MonthlyCategoryFunction(bizDateTime,TimeDataType)), constraints = List(), partitions = Map(bizDateTime -> 2010), results = ListBuffer() }",
           ex.getMessage)
     }
   }
@@ -73,10 +72,10 @@ class DigestDifferencingUtilsTest {
   def shouldReportNothingOnMatchingNonEmptyLists {
     val a = Seq(ScanResultEntry.forEntity("id1", "h1", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())),
                 ScanResultEntry.forEntity("id2", "h2", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
-    val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "h1"),
-                EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
+    val b = Seq(ScanResultEntry.forEntity("id1", "h1", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())),
+                ScanResultEntry.forEntity("id2", "h2", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
 
-    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq())
     assertEquals(0, actions.length)
   }
 
@@ -84,19 +83,19 @@ class DigestDifferencingUtilsTest {
   def shouldReportNothingOnMatchingNonEmptyListsEvenWhenTheirOrderDiffers {
     val a = Seq(ScanResultEntry.forEntity("id2", "h2", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())),
                 ScanResultEntry.forEntity("id1", "h1", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
-    val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "h1"),
-                EntityVersion("id2", Seq(JAN_1_2010.toString), JAN_1_2010, "h2"))
+    val b = Seq(ScanResultEntry.forEntity("id1", "h1", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())),
+                ScanResultEntry.forEntity("id2", "h2", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
 
-    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq())
     assertEquals(0, actions.length)
   }
 
   @Test
   def shouldReportMissingIndividualVersionsInFirstList {
     val a = Seq()
-    val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v1"))
+    val b = Seq(ScanResultEntry.forEntity("id1", "v1", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
 
-    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq())
     val attributes = Map("bizDateTime" -> DateTimeAttribute(JAN_1_2010))
     assertEquals(HashSet(VersionMismatch("id1", attributes, JAN_1_2010, null, "v1")), HashSet(actions: _*))
   }
@@ -106,7 +105,7 @@ class DigestDifferencingUtilsTest {
     val a = Seq(ScanResultEntry.forEntity("id1", "v1", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq())
     val attributes = Map("bizDateTime" -> DateTimeAttribute(JAN_1_2010))
     assertEquals(HashSet(VersionMismatch("id1", attributes, JAN_1_2010, "v1", null)), HashSet(actions: _*))
   }
@@ -114,9 +113,9 @@ class DigestDifferencingUtilsTest {
   @Test
   def shouldReportMismatchedIndividualVersions {
     val a = Seq(ScanResultEntry.forEntity("id1", "v1", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
-    val b = Seq(EntityVersion("id1", Seq(JAN_1_2010.toString), JAN_1_2010, "v2"))
+    val b = Seq(ScanResultEntry.forEntity("id1", "v2", JAN_1_2010, Map("bizDateTime" -> JAN_1_2010.toString())))
 
-    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceEntities(dateTimeOnlyAttrs, a, b, Seq())
     val attributes = Map("bizDateTime" -> DateTimeAttribute(JAN_1_2010))
     assertEquals(HashSet(VersionMismatch("id1",  attributes, JAN_1_2010, "v1", "v2")), HashSet(actions: _*))
   }
@@ -124,9 +123,9 @@ class DigestDifferencingUtilsTest {
   @Test
   def shouldRequestIndividualOnMissingDayVersionsInFirstList {
     val a = Seq()
-    val b = Seq(AggregateDigest(Seq("2010-07-08"), "v1"))
+    val b = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010-07-08")))
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> DailyCategoryFunction), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(DailyCategoryFunction("bizDateTime", TimeDataType)), Seq())
     assertEquals(HashSet(EntityQueryAction(Seq(dateTimeRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010))))), HashSet(actions: _*))
   }
 
@@ -135,25 +134,25 @@ class DigestDifferencingUtilsTest {
     val a = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010-07-08")))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> DailyCategoryFunction), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(DailyCategoryFunction("bizDateTime", TimeDataType)), Seq())
     assertEquals(HashSet(EntityQueryAction(Seq(dateTimeRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010))))), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestIndividualOnMismatchedDayVersions {
     val a = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010-07-08")))
-    val b = Seq(AggregateDigest(Seq("2010-07-08"), "v2"))
+    val b = Seq(ScanResultEntry.forAggregate("v2", Map("bizDateTime" -> "2010-07-08")))
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> DailyCategoryFunction), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(DailyCategoryFunction("bizDateTime", TimeDataType)), Seq())
     assertEquals(HashSet(EntityQueryAction(Seq(dateTimeRangeConstraint(JUL_8_2010, endOfDay(JUL_8_2010))))), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestIndividualOnMissingMonthVersionsInFirstList {
     val a = Seq()
-    val b = Seq(AggregateDigest(Seq("2010-07"), "v1"))
+    val b = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010-07")))
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> MonthlyCategoryFunction), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(MonthlyCategoryFunction("bizDateTime", TimeDataType)), Seq())
     assertEquals(HashSet(EntityQueryAction(Seq(dateTimeRangeConstraint(JUL_1_2010, endOfDay(JUL_31_2010))))), HashSet(actions: _*))
   }
 
@@ -162,25 +161,25 @@ class DigestDifferencingUtilsTest {
     val a = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010-07")))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> MonthlyCategoryFunction), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(MonthlyCategoryFunction("bizDateTime", TimeDataType)), Seq())
     assertEquals(HashSet(EntityQueryAction(Seq(dateTimeRangeConstraint(JUL_1_2010, endOfDay(JUL_31_2010))))), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestDayOnMismatchedMonthVersions {
     val a = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010-07")))
-    val b = Seq(AggregateDigest(Seq("2010-07"), "v2"))
+    val b = Seq(ScanResultEntry.forAggregate("v2", Map("bizDateTime" -> "2010-07")))
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> MonthlyCategoryFunction), Seq(unconstrained))
-    assertEquals(HashSet(AggregateQueryAction(Map("bizDateTime" -> DailyCategoryFunction), Seq(dateTimeRangeConstraint(JUL_1_2010, endOfDay(JUL_31_2010))))), HashSet(actions: _*))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(MonthlyCategoryFunction("bizDateTime", TimeDataType)), Seq())
+    assertEquals(HashSet(AggregateQueryAction(Seq(DailyCategoryFunction("bizDateTime", TimeDataType)), Seq(dateTimeRangeConstraint(JUL_1_2010, endOfDay(JUL_31_2010))))), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestIndividualOnMissingYearVersionsInFirstList {
     val a = Seq()
-    val b = Seq(AggregateDigest(Seq("2010"), "v1"))
+    val b = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010")))
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> YearlyCategoryFunction), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(YearlyCategoryFunction("bizDateTime", TimeDataType)), Seq())
     assertEquals(HashSet(EntityQueryAction(Seq(dateTimeRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010))))), HashSet(actions: _*))
   }
 
@@ -189,16 +188,16 @@ class DigestDifferencingUtilsTest {
     val a = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010")))
     val b = Seq()
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> YearlyCategoryFunction), Seq(unconstrained))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(YearlyCategoryFunction("bizDateTime", TimeDataType)), Seq())
     assertEquals(HashSet(EntityQueryAction(Seq(dateTimeRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010))))), HashSet(actions: _*))
   }
 
   @Test
   def shouldRequestMonthOnMismatchedYearVersions {
     val a = Seq(ScanResultEntry.forAggregate("v1", Map("bizDateTime" -> "2010")))
-    val b = Seq(AggregateDigest(Seq("2010"), "v2"))
+    val b = Seq(ScanResultEntry.forAggregate("v2", Map("bizDateTime" -> "2010")))
 
-    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Map("bizDateTime" -> YearlyCategoryFunction), Seq(unconstrained))
-    assertEquals(HashSet(AggregateQueryAction(Map("bizDateTime" -> MonthlyCategoryFunction), Seq(dateTimeRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010))))), HashSet(actions: _*))
+    val actions = DigestDifferencingUtils.differenceAggregates(a, b, Seq(YearlyCategoryFunction("bizDateTime", TimeDataType)), Seq())
+    assertEquals(HashSet(AggregateQueryAction(Seq(MonthlyCategoryFunction("bizDateTime", TimeDataType)), Seq(dateTimeRangeConstraint(JAN_1_2010, endOfDay(DEC_31_2010))))), HashSet(actions: _*))
   }
 }

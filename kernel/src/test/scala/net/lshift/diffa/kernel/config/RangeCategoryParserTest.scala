@@ -18,8 +18,8 @@ package net.lshift.diffa.kernel.config
 
 import org.junit.Test
 import org.junit.Assert._
-import net.lshift.diffa.kernel.participants.DateTimeRangeConstraint
 import org.joda.time.DateTime
+import net.lshift.diffa.participant.scanning.TimeRangeConstraint
 
 class RangeCategoryParserTest {
 
@@ -41,6 +41,6 @@ class RangeCategoryParserTest {
 
   def compare(descriptor:RangeCategoryDescriptor, lower:DateTime, upper:DateTime) = {
     val constraint = RangeCategoryParser.buildConstraint("foo", descriptor)
-    assertEquals(DateTimeRangeConstraint("foo", lower, upper), constraint)
+    assertEquals(new TimeRangeConstraint("foo", lower, upper), constraint)
   }
 }

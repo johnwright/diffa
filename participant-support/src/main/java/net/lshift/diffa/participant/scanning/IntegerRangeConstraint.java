@@ -18,7 +18,7 @@ package net.lshift.diffa.participant.scanning;
 /**
  * Constraint for an integer that should exist (inclusive) within a given range.
  */
-public class IntegerRangeConstraint extends AbstractScanConstraint {
+public class IntegerRangeConstraint extends AbstractScanConstraint implements RangeConstraint {
   private final Integer start;
   private final Integer end;
 
@@ -38,6 +38,16 @@ public class IntegerRangeConstraint extends AbstractScanConstraint {
 
   public Integer getEnd() {
     return end;
+  }
+
+  @Override
+  public String getStartText() {
+    return Integer.toString(start);
+  }
+
+  @Override
+  public String getEndText() {
+    return Integer.toString(end);
   }
 
   private static Integer maybeParse(String intStr) {
@@ -68,5 +78,14 @@ public class IntegerRangeConstraint extends AbstractScanConstraint {
     result = 31 * result + (start != null ? start.hashCode() : 0);
     result = 31 * result + (end != null ? end.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "IntegerRangeConstraint{" +
+        "name=" + getAttributeName() +
+        ", start=" + start +
+        ", end=" + end +
+        '}';
   }
 }

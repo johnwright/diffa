@@ -27,6 +27,7 @@ import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
 import net.lshift.diffa.kernel.config.{GroupContainer, Endpoint, ConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.participant.scanning.ScanConstraint
 
 /**
  * Test cases for the default session manager.
@@ -37,7 +38,7 @@ class StubParticipantProtocolFactory
   def supportsAddress(address:String, protocol:String) = true
 
   def createParticipantRef(address: String, protocol: String) = new ScanningParticipantRef {
-    def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]) = null
+    def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) = null
     def close() {}
   }
 }

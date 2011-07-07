@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.util
 
 import org.joda.time.DateTime
 import org.easymock.{IArgumentMatcher, EasyMock}
+import org.easymock.internal.ArgumentToString
 
 /**
  * Created by IntelliJ IDEA.
@@ -72,6 +73,21 @@ object EasyMockScalaUtils {
         }
       }
       def appendTo(buffer: StringBuffer) = buffer.append("between " + start + " and " + end)
+    })
+    null
+  }
+
+  def asUnorderedList[T](expected:Seq[T]):Seq[T] = {
+    EasyMock.reportMatcher(new IArgumentMatcher() {
+      def matches(argument: Any):Boolean = {
+        val argSeq = argument.asInstanceOf[Seq[T]]
+
+        argSeq.toSet == expected.toSet
+      }
+      
+      def appendTo(buffer: StringBuffer) {
+        ArgumentToString.appendArgument(expected, buffer)
+      }
     })
     null
   }

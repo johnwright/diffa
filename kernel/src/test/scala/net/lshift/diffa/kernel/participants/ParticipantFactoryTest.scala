@@ -23,9 +23,9 @@ import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 import net.lshift.diffa.kernel.config.Endpoint
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import org.junit.runner.RunWith
-import net.lshift.diffa.participant.scanning.ScanResultEntry
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.correlation.ProcessingResponse
+import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 
 /**
  * Test cases for the participant factory.
@@ -137,7 +137,7 @@ class ParticipantFactoryTest {
     val part = factory.createUpstreamParticipant(e.endpoint)
     if (e.scan == Fails) {
       expectsInvalidParticipantOperationException {
-        part.scan(Seq(), Map())
+        part.scan(Seq(), Seq())
       }
     }
     if (e.retrieveContent == Fails) {
@@ -156,7 +156,7 @@ class ParticipantFactoryTest {
     val part = factory.createDownstreamParticipant(e.endpoint)
     if (e.scan == Fails) {
       expectsInvalidParticipantOperationException {
-        part.scan(Seq(), Map())
+        part.scan(Seq(), Seq())
       }
     }
     if (e.retrieveContent == Fails) {
@@ -173,8 +173,8 @@ class ParticipantFactoryTest {
 
   @Theory
   def shouldDelegateToValidRefsInUpstreamParticipant(e:EndpointConfig) {
-    val constraints = Seq(createStrictMock(classOf[QueryConstraint]))
-    val aggregations = Map("a" -> createStrictMock(classOf[CategoryFunction]))
+    val constraints = Seq(createStrictMock(classOf[ScanConstraint]))
+    val aggregations = Seq(createStrictMock(classOf[CategoryFunction]))
     val scanEntries = Seq(ScanResultEntry.forAggregate("v1", Map[String, String]()))
 
     assumeTrue(e.validUpstream)
@@ -200,8 +200,8 @@ class ParticipantFactoryTest {
   
   @Theory
   def shouldDelegateToValidRefsInDownstreamParticipant(e:EndpointConfig) {
-    val constraints = Seq(createStrictMock(classOf[QueryConstraint]))
-    val aggregations = Map("a" -> createStrictMock(classOf[CategoryFunction]))
+    val constraints = Seq(createStrictMock(classOf[ScanConstraint]))
+    val aggregations = Seq(createStrictMock(classOf[CategoryFunction]))
     val scanEntries = Seq(ScanResultEntry.forAggregate("v1", Map[String, String]()))
     val procResponse = new ProcessingResponse("id", "uvsn", "dvsn")
 
