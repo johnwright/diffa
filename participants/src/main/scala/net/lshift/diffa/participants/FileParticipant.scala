@@ -44,28 +44,6 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
       // TODO
     Seq[ScanResultEntry]()
 
-  /*def queryEntityVersions(constraints:Seq[QueryConstraint]) : Seq[EntityVersion] = {
-    // Validate the constraints
-    assert(constraints.length == 1, "FileParticipant requires a single constraint")
-    assert(constraints(0).category == "bizDate", "FileParticipant can only constrain on bizDate")
-
-    val files = queryFiles(constraints(0))
-    files.map(f => EntityVersion(idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
-  }
-
-  def queryAggregateDigests(bucketing:Map[String, CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[AggregateDigest] = {
-    // Validate the constraints
-    assert(constraints.length == 1, "FileParticipant requires a single constraint")
-    assert(constraints(0).category == "bizDate", "FileParticipant can only constrain on bizDate")
-    
-    val files = queryFiles(constraints(0))
-    val builder = new DigestBuilder(bucketing)
-    files.sortBy(_.getAbsolutePath).foreach(f => {
-      builder.add(idFor(f), attributesFor(f), dateFor(f), versionFor(f))
-    })
-    builder.digests
-  }*/
-
   def queryFiles(constraint:ScanConstraint) = {
     val rangeConstraint = constraint.asInstanceOf[TimeRangeConstraint]
     val lower = rangeConstraint.getStart
