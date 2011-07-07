@@ -51,11 +51,13 @@ Requires Authentication
 -----------------------
 no $! TODO Make dynamic !$
 
+$if(resource.example)$
 Example
 -------
-``$resource.example$ ``
-
-JSON Schema
------------
-``$resource.schema$ ``
+$endif$
 </div>
+$if(resource.example)$
+<div id="example">
+<pre class="brush: js">$resource.example$</pre>
+</div>
+$endif$
