@@ -47,10 +47,6 @@ $p.description$
 }$
 $endif$
 
-Requires Authentication
------------------------
-no $! TODO Make dynamic !$
-
 $if(resource.example)$
 Example
 -------
