@@ -19,7 +19,6 @@ package net.lshift.diffa.messaging.json
 import org.junit.Test
 import org.junit.Assert._
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.participants._
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend.wire._

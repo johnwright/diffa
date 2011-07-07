@@ -23,7 +23,8 @@ import org.joda.time.format.ISODateTimeFormat;
  * Constraint where a given attribute value is between a given start and end.
  */
 public class DateRangeConstraint extends AbstractScanConstraint implements RangeConstraint {
-  private static final DateTimeFormatter formatter = ISODateTimeFormat.dateParser();
+  private static final DateTimeFormatter parser = ISODateTimeFormat.dateParser();
+  private static final DateTimeFormatter formatter = ISODateTimeFormat.date();
   private final LocalDate start;
   private final LocalDate end;
 
@@ -45,11 +46,21 @@ public class DateRangeConstraint extends AbstractScanConstraint implements Range
     return end;
   }
 
+  @Override
+  public String getStartText() {
+    return start.toString(formatter);
+  }
+
+  @Override
+  public String getEndText() {
+    return end.toString(formatter);
+  }
+
   private static LocalDate maybeParse(String dateStr) {
     if (dateStr == null) {
       return null;
     } else {
-      return formatter.parseDateTime(dateStr).toLocalDate();
+      return parser.parseDateTime(dateStr).toLocalDate();
     }
   }
 

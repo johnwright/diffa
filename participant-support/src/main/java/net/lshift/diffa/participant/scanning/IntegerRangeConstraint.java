@@ -40,6 +40,16 @@ public class IntegerRangeConstraint extends AbstractScanConstraint implements Ra
     return end;
   }
 
+  @Override
+  public String getStartText() {
+    return Integer.toString(start);
+  }
+
+  @Override
+  public String getEndText() {
+    return Integer.toString(end);
+  }
+
   private static Integer maybeParse(String intStr) {
     if (intStr == null) {
       return null;

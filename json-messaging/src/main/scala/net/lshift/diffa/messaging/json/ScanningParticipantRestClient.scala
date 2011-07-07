@@ -22,7 +22,7 @@ import com.sun.jersey.api.client.ClientResponse
 import net.lshift.diffa.participant.common.JSONHelper
 import org.apache.commons.io.IOUtils
 import scala.collection.JavaConversions._
-import net.lshift.diffa.participant.scanning.{StringPrefixConstraint, SetConstraint, ScanConstraint}
+import net.lshift.diffa.participant.scanning._
 
 /**
  * JSON/REST scanning participant client.
@@ -37,9 +37,9 @@ class ScanningParticipantRestClient(scanUrl:String)
     constraints.foreach {
       case sqc:SetConstraint   =>
         sqc.getValues.foreach(v => params.add(sqc.getAttributeName, v))
-      case rqc:RangeQueryConstraint =>
-        params.add(rqc.category + "-start", rqc.lower)
-        params.add(rqc.category + "-end", rqc.upper)
+      case rc:RangeConstraint =>
+        params.add(rc.getAttributeName + "-start", rc.getStartText)
+        params.add(rc.getAttributeName + "-end", rc.getEndText)
       case pc:StringPrefixConstraint =>
         params.add(pc.getAttributeName + "-prefix", pc.getPrefix)
     }

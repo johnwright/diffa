@@ -52,7 +52,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(), Map())
+    scanningRestClient.scan(Seq(), Seq())
     verifyAll()
   }
 
@@ -67,7 +67,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.DateRangeConstraint("bizDate", new LocalDate(2011, 7, 1), new LocalDate(2011, 7, 31))), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(new DateRangeConstraint("bizDate", new LocalDate(2011, 7, 1), new LocalDate(2011, 7, 31))), Map())
+    scanningRestClient.scan(Seq(new DateRangeConstraint("bizDate", new LocalDate(2011, 7, 1), new LocalDate(2011, 7, 31))), Seq())
     verifyAll()
   }
 
@@ -82,7 +82,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.TimeRangeConstraint("bizTime", new DateTime(2011, 7, 1, 10, 36, 0, 0, DateTimeZone.UTC), new DateTime(2011, 7, 31, 11, 36, 0, 0, DateTimeZone.UTC))), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(new TimeRangeConstraint("bizTime", new DateTime(2011, 7, 1, 10, 36, 0, 0, DateTimeZone.UTC), new DateTime(2011, 7, 31, 11, 36, 0, 0, DateTimeZone.UTC))), Map())
+    scanningRestClient.scan(Seq(new TimeRangeConstraint("bizTime", new DateTime(2011, 7, 1, 10, 36, 0, 0, DateTimeZone.UTC), new DateTime(2011, 7, 31, 11, 36, 0, 0, DateTimeZone.UTC))), Seq())
     verifyAll()
   }
 
@@ -97,7 +97,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.SetConstraint("someString", Set("aa", "bb"))), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(new SetConstraint("someString", Set("aa", "bb"))), Map())
+    scanningRestClient.scan(Seq(new SetConstraint("someString", Set("aa", "bb"))), Seq())
     verifyAll()
   }
 
@@ -112,7 +112,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.IntegerRangeConstraint("someInt", 5, 20)), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(new IntegerRangeConstraint("someInt", 5, 20)), Map())
+    scanningRestClient.scan(Seq(new IntegerRangeConstraint("someInt", 5, 20)), Seq())
     verifyAll()
   }
 
@@ -127,7 +127,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.StringPrefixConstraint("someString", "bl")), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(new StringPrefixConstraint("someString", "bl")), Map())
+    scanningRestClient.scan(Seq(new StringPrefixConstraint("someString", "bl")), Seq())
     verifyAll()
   }
 
@@ -147,7 +147,10 @@ class ScanCompatibilityTest {
       new DateAggregation("bizDate3", DateGranularityEnum.Daily)))
     replayAll()
 
-    scanningRestClient.scan(Seq(), Map("bizDate" -> YearlyCategoryFunction, "bizDate2" -> MonthlyCategoryFunction, "bizDate3" -> DailyCategoryFunction))
+    scanningRestClient.scan(Seq(), Seq(
+      YearlyCategoryFunction("bizDate", DateDataType),
+      MonthlyCategoryFunction("bizDate2", DateDataType),
+      DailyCategoryFunction("bizDate3", DateDataType)))
     verifyAll()
   }
 
@@ -162,7 +165,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(), Seq(new ByNameAggregation("someString")))
     replayAll()
 
-    scanningRestClient.scan(Seq(), Map("someString" -> ByNameCategoryFunction))
+    scanningRestClient.scan(Seq(), Seq(ByNameCategoryFunction("someString")))
     verifyAll()
   }
 
@@ -177,7 +180,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(), Seq(new IntegerAggregation("someInt", 100)))
     replayAll()
 
-    scanningRestClient.scan(Seq(), Map("someInt" -> IntegerCategoryFunction.AutoNarrowingIntegerCategoryFunction(100, 10)))
+    scanningRestClient.scan(Seq(), Seq(IntegerCategoryFunction("someInt", 100, 10)))
     verifyAll()
   }
 
@@ -192,7 +195,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(), Seq(new StringPrefixAggregation("someString", 2)))
     replayAll()
 
-    scanningRestClient.scan(Seq(), Map("someString" -> StringPrefixCategoryFunction(2, 10, 2)))
+    scanningRestClient.scan(Seq(), Seq(StringPrefixCategoryFunction("someString", 2, 10, 2)))
     verifyAll()
   }
 }

@@ -26,7 +26,7 @@ import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.differencing.{AttributesUtil}
-import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanAggregation, ScanConstraint}
+import net.lshift.diffa.participant.scanning.{TimeRangeConstraint, ScanResultEntry, ScanAggregation, ScanConstraint}
 
 /**
  * Basic functionality requried for a file-based participant.
@@ -40,7 +40,7 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
 
   val isoFormat = ISODateTimeFormat.dateTime()
 
-  def scan(constraints: Seq[ScanConstraint], aggregations: Map[String, CategoryFunction]):Seq[ScanResultEntry] =
+  def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]):Seq[ScanResultEntry] =
       // TODO
     Seq[ScanResultEntry]()
 
@@ -64,12 +64,12 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
       builder.add(idFor(f), attributesFor(f), dateFor(f), versionFor(f))
     })
     builder.digests
-  }/*
+  }*/
 
-  def queryFiles(constraint:QueryConstraint) = {
-    val rangeConstraint = constraint.asInstanceOf[RangeQueryConstraint]
-    val lower = isoFormat.parseDateTime(rangeConstraint.lower)
-    val upper = isoFormat.parseDateTime(rangeConstraint.upper)
+  def queryFiles(constraint:ScanConstraint) = {
+    val rangeConstraint = constraint.asInstanceOf[TimeRangeConstraint]
+    val lower = rangeConstraint.getStart
+    val upper = rangeConstraint.getEnd
 
     val files = new ListBuffer[File]
 
