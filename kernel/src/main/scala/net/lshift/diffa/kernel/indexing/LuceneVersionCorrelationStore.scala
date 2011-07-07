@@ -33,6 +33,7 @@ import org.apache.lucene.document._
 import net.lshift.diffa.kernel.config.ConfigStore
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
+import net.lshift.diffa.participant.scanning._
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
@@ -58,7 +59,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
 
   def openWriter() = writer
 
-  def unmatchedVersions(usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) = {
+  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint]) = {
     val query = new BooleanQuery
     query.add(new TermQuery(new Term("isMatched", "0")), BooleanClause.Occur.MUST)
 
@@ -78,7 +79,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     }
   }
 
-  def queryUpstreams(constraints:Seq[QueryConstraint]) = {
+  def queryUpstreams(constraints:Seq[ScanConstraint]) = {
     val query = new BooleanQuery
     applyConstraints(query, constraints, Upstream, false)
 
@@ -88,7 +89,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     searcher.search(preventEmptyQuery(query), idOnlyCollector)
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.upstreamVsn != null)
   }
-  def queryDownstreams(constraints:Seq[QueryConstraint]) = {
+  def queryDownstreams(constraints:Seq[ScanConstraint]) = {
     val query = new BooleanQuery
     applyConstraints(query, constraints, Downstream, false)
 
@@ -98,29 +99,30 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.downstreamUVsn != null)
   }
 
-  private def applyConstraints(query:BooleanQuery, constraints:Seq[QueryConstraint], partType:StoreParticipantType, allowMissing:Boolean) = {
+  private def applyConstraints(query:BooleanQuery, constraints:Seq[ScanConstraint], partType:StoreParticipantType, allowMissing:Boolean) = {
     val prefix = partType.prefix
 
     // Apply all upstream constraints to a subquery
     val partQuery = new BooleanQuery
     constraints.foreach {
-      case r:NoConstraint                  =>   // No constraints to add
-      case u:UnboundedRangeQueryConstraint =>   // No constraints to add
-      case r:RangeQueryConstraint          => {
+      case r:RangeConstraint          => {
         val tq = r match {
-          case DateTimeRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDateTime(lowerDate), formatDateTime(upperDate), true, true)
-          case DateRangeConstraint(category, lowerDate, upperDate) => new TermRangeQuery(prefix + category, formatDate(lowerDate), formatDate(upperDate), true, true)
-          case IntegerRangeConstraint(category, lowerInt, upperInt) => NumericRangeQuery.newIntRange(prefix + category, lowerInt, upperInt, true, true)
+          case t:TimeRangeConstraint =>
+            new TermRangeQuery(prefix + t.getAttributeName, formatDateTime(t.getStart), formatDateTime(t.getEnd), true, true)
+          case d:DateRangeConstraint =>
+            new TermRangeQuery(prefix + d.getAttributeName, formatDate(d.getStart), formatDate(d.getEnd), true, true)
+          case i:IntegerRangeConstraint =>
+            NumericRangeQuery.newIntRange(prefix + i.getAttributeName, i.getStart, i.getEnd, true, true)
         }
         partQuery.add(tq, BooleanClause.Occur.MUST)
       }
-      case s:PrefixQueryConstraint => {
-        val wq = new WildcardQuery(new Term(prefix + s.category, s.prefix + "*"))
+      case s:StringPrefixConstraint => {
+        val wq = new WildcardQuery(new Term(prefix + s.getAttributeName, s.getPrefix + "*"))
         partQuery.add(wq, BooleanClause.Occur.MUST)
       }
-      case s:SetQueryConstraint  => {
+      case s:SetConstraint  => {
         val setMatchQuery = new BooleanQuery
-        s.values.foreach(x => setMatchQuery.add(new TermQuery(new Term(prefix + s.category, x)), BooleanClause.Occur.SHOULD))
+        s.getValues.foreach(x => setMatchQuery.add(new TermQuery(new Term(prefix + s.getAttributeName, x)), BooleanClause.Occur.SHOULD))
         partQuery.add(setMatchQuery, BooleanClause.Occur.MUST)
       }
     }

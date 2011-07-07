@@ -25,7 +25,7 @@ import collection.mutable.{HashMap, ListBuffer}
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-import net.lshift.diffa.kernel.differencing.{AttributesUtil, DigestBuilder}
+import net.lshift.diffa.kernel.differencing.{AttributesUtil}
 import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanAggregation, ScanConstraint}
 
 /**
@@ -40,7 +40,7 @@ abstract class FileParticipant(val dir:String, val agentRoot:String) extends Clo
 
   val isoFormat = ISODateTimeFormat.dateTime()
 
-  def scan(constraints: Seq[QueryConstraint], aggregations: Map[String, CategoryFunction]):Seq[ScanResultEntry] =
+  def scan(constraints: Seq[ScanConstraint], aggregations: Map[String, CategoryFunction]):Seq[ScanResultEntry] =
       // TODO
     Seq[ScanResultEntry]()
 

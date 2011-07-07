@@ -19,13 +19,9 @@ package net.lshift.diffa.kernel.participants
 import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.scanning.{InvalidAttributeValueException, ScanConstraint, SetConstraint, StringPrefixConstraint}
 
 class StringPartitionTest {
-
-  val constraint = new QueryConstraint {
-    def category = "foo"
-    def wireFormat = null
-  }
 
   @Test
   def owningPartitionReturnsShortestPrefix {
@@ -65,20 +61,20 @@ class StringPartitionTest {
 
   @Test
   def generatesConstraintForPartition {
-    val spc = StringPrefixCategoryFunction("ss", prefixLength = 2, maxLength = 2, step = 1)
-    assertEquals(PrefixQueryConstraint("foo", "xx"), spc.constrain(constraint, "xx"))
+    val spc = StringPrefixCategoryFunction("foo", prefixLength = 2, maxLength = 2, step = 1)
+    assertEquals(new StringPrefixConstraint("foo", "xx"), spc.constrain("xx"))
   }
 
   @Test
   def cannotConstrainWhenPartitionIsTooShort {
-    val spc = StringPrefixCategoryFunction("ss", prefixLength = 2, maxLength = 2, step = 1)
-    assertEquals(SetQueryConstraint("foo", Set("x")), spc.constrain(constraint, "x"))
+    val spc = StringPrefixCategoryFunction("foo", prefixLength = 2, maxLength = 2, step = 1)
+    assertEquals(new SetConstraint("foo", Set("x")), spc.constrain("x"))
   }
 
   @Test(expected = classOf[InvalidAttributeValueException])
   def cannotConstrainWhenPartitionIsTooLong {
     val spc = StringPrefixCategoryFunction("ss", prefixLength = 2, maxLength = 2, step = 1)
-    spc.constrain(constraint, "xxx")
+    spc.constrain("xxx")
   }
 
   @Test

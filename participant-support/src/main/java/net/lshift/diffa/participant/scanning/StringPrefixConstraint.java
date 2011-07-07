@@ -50,4 +50,12 @@ public class StringPrefixConstraint extends AbstractScanConstraint {
     result = 31 * result + (prefix != null ? prefix.hashCode() : 0);
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "StringPrefixConstraint{" +
+        "name=" + getAttributeName() +
+        ", prefix='" + prefix + '\'' +
+        '}';
+  }
 }

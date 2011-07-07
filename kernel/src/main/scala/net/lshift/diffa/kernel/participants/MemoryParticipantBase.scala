@@ -43,8 +43,8 @@ class MemoryParticipantBase(nativeVsnGen: String => String)
   /**
    * Scans this participant with the given constraints and aggregations.
    */
-  def scan(constraints:Seq[QueryConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry] =
-    doQuery(new java.util.ArrayList[ScanConstraint], aggregations).toSeq
+  def scan(constraints:Seq[ScanConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry] =
+    doQuery(constraints, aggregations).toSeq
 
   def retrieveContent(identifier: String) = entities.get(identifier) match {
     case Some(entity) => entity.body

@@ -16,12 +16,12 @@
 
 package net.lshift.diffa.kernel.participants
 
-import net.lshift.diffa.participant.scanning.ScanAggregation
+import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanAggregation}
 
 /**
  * This is a struct for desceding partition requests. 
  */
-case class IntermediateResult(constraint:QueryConstraint, next:CategoryFunction)
+case class IntermediateResult(constraint:ScanConstraint, next:CategoryFunction)
 
 /**
  * This is a function definition that can:
@@ -46,20 +46,12 @@ trait CategoryFunction extends ScanAggregation {
 
   /**
    * Given the name of a valid partition, return a query constraint that will further constrain a request to include
-   * only data that exists with the partition. The constraint argument is a reference to the parent constraint
-   * that is used as the context within which a new constraint can be produced. Hence the returned constraint
-   * is the product of the constraint that caused this function to get executed together with the current level
-   * of partitioning.
+   * only data that exists with the partition.
    */
-  def constrain(constraint:QueryConstraint, partition:String) : QueryConstraint
+  def constrain(partition:String) : ScanConstraint
 
   /**
    * Indicates whether this function supports bucketing.
    */
   def shouldBucket() : Boolean
 }
-
-/**
- * Indicates that the chosen category function is not valid for the values being received
- */
-case class InvalidAttributeValueException(msg: String) extends RuntimeException(msg)

@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.participants
 
 import java.lang.Integer.parseInt
-import net.lshift.diffa.participant.scanning.IntegerAggregation
+import net.lshift.diffa.participant.scanning.{InvalidAttributeValueException, IntegerRangeConstraint, ScanConstraint, IntegerAggregation}
 
 /**
  * This function partitions by groups of size `denominator`.
@@ -31,6 +31,10 @@ import net.lshift.diffa.participant.scanning.IntegerAggregation
 case class IntegerCategoryFunction(attrName:String, denominator: Int, factor:Int)
   extends IntegerAggregation(attrName, denominator)
   with CategoryFunction {
+
+  if (denominator % factor > 0) {
+    throw new IllegalArgumentException(factor+" is not a factor of "+denominator)
+  }
 
   def name = denominator.toString + "s"
   def descend = {
@@ -53,13 +57,13 @@ case class IntegerCategoryFunction(attrName:String, denominator: Int, factor:Int
       case e: NumberFormatException => throw new InvalidAttributeValueException("Value is not an integer: "+value)
     }
 
-  def constrain(constraint:QueryConstraint, partition: String) = {
+  def constrain(partition: String) = {
     val parsedPartition = parseInt(partition)
     if (parsedPartition % denominator > 0) {
       throw new InvalidAttributeValueException("Partition "+partition+" does not match denominator "+denominator)
     }
     val start = parsedPartition
     val end = (parsedPartition + denominator - 1)
-    IntegerRangeConstraint(constraint.category, start, end)
+    new IntegerRangeConstraint(attrName, start, end)
   }
 }

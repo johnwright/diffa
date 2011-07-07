@@ -27,9 +27,7 @@ import java.util.{Arrays, ArrayList}
 import scala.collection.JavaConversions._
 import org.joda.time.{DateTimeZone, DateTime, LocalDate}
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.participant.scanning.{ConstraintsBuilder, AggregationBuilder, ScanningParticipantHandler, ScanConstraint, ScanAggregation}
-import net.lshift.diffa.participant.scanning.{ScanningParticipantDelegator, ScanResultEntry, DateGranularityEnum, DateAggregation, ByNameAggregation}
-import net.lshift.diffa.participant.scanning.{StringPrefixAggregation, IntegerAggregation}
+import net.lshift.diffa.participant.scanning._
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -69,7 +67,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.DateRangeConstraint("bizDate", new LocalDate(2011, 7, 1), new LocalDate(2011, 7, 31))), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(DateRangeConstraint("bizDate", new LocalDate(2011, 7, 1), new LocalDate(2011, 7, 31))), Map())
+    scanningRestClient.scan(Seq(new DateRangeConstraint("bizDate", new LocalDate(2011, 7, 1), new LocalDate(2011, 7, 31))), Map())
     verifyAll()
   }
 
@@ -84,7 +82,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.TimeRangeConstraint("bizTime", new DateTime(2011, 7, 1, 10, 36, 0, 0, DateTimeZone.UTC), new DateTime(2011, 7, 31, 11, 36, 0, 0, DateTimeZone.UTC))), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(DateTimeRangeConstraint("bizTime", new DateTime(2011, 7, 1, 10, 36, 0, 0, DateTimeZone.UTC), new DateTime(2011, 7, 31, 11, 36, 0, 0, DateTimeZone.UTC))), Map())
+    scanningRestClient.scan(Seq(new TimeRangeConstraint("bizTime", new DateTime(2011, 7, 1, 10, 36, 0, 0, DateTimeZone.UTC), new DateTime(2011, 7, 31, 11, 36, 0, 0, DateTimeZone.UTC))), Map())
     verifyAll()
   }
 
@@ -99,7 +97,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.SetConstraint("someString", Set("aa", "bb"))), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(SetQueryConstraint("someString", Set("aa", "bb"))), Map())
+    scanningRestClient.scan(Seq(new SetConstraint("someString", Set("aa", "bb"))), Map())
     verifyAll()
   }
 
@@ -114,7 +112,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.IntegerRangeConstraint("someInt", 5, 20)), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(IntegerRangeConstraint("someInt", 5, 20)), Map())
+    scanningRestClient.scan(Seq(new IntegerRangeConstraint("someInt", 5, 20)), Map())
     verifyAll()
   }
 
@@ -129,7 +127,7 @@ class ScanCompatibilityTest {
     expectQuery(Seq(new net.lshift.diffa.participant.scanning.StringPrefixConstraint("someString", "bl")), Seq())
     replayAll()
 
-    scanningRestClient.scan(Seq(PrefixQueryConstraint("someString", "bl")), Map())
+    scanningRestClient.scan(Seq(new StringPrefixConstraint("someString", "bl")), Map())
     verifyAll()
   }
 

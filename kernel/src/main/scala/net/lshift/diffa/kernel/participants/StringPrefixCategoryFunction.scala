@@ -17,7 +17,8 @@
 package net.lshift.diffa.kernel.participants
 
 import scala.util.matching.Regex
-import net.lshift.diffa.participant.scanning.StringPrefixAggregation
+import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.scanning._
 
 /**
  * Category function for partitioning on prefixes of strings.
@@ -40,14 +41,14 @@ case class StringPrefixCategoryFunction(attrName:String,
     else
       Some(StringPrefixCategoryFunction(attrName, prefixLength + step, maxLength, step))
 
-  def constrain(constraint: QueryConstraint, partition: String) =
+  def constrain(partition: String) =
     if (partition.length < prefixLength)
-      SetQueryConstraint(constraint.category, Set(partition))
+      new SetConstraint(attrName, Set(partition))
     else if (partition.length > prefixLength)
       throw new InvalidAttributeValueException(
         "Partition value must be %d characters in length".format(prefixLength))
     else
-      PrefixQueryConstraint(constraint.category, partition)
+      new StringPrefixConstraint(attrName, partition)
 
   val shouldBucket = true
 }

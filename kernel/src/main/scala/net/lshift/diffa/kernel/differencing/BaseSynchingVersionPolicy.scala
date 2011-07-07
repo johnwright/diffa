@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, Pair, ConfigStore}
 import org.slf4j.LoggerFactory
 import concurrent.SyncVar
 import scala.collection.JavaConversions._
-import net.lshift.diffa.participant.scanning.{DigestBuilder, ScanResultEntry}
+import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
 
 /**
  * Standard behaviours supported by synchronising version policies.
@@ -82,7 +82,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                    listener:DifferencingListener, handle:FeedbackHandle) = {
     val pair = configStore.getPair(pairKey)
     val upstreamConstraints = pair.upstream.groupedConstraints
-    upstreamConstraints.foreach((new UpstreamSyncStrategy)
+    constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamSyncStrategy)
       .scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
   }
 
@@ -90,10 +90,15 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                      ds:DownstreamParticipant, listener:DifferencingListener, handle:FeedbackHandle) = {
     val pair = configStore.getPair(pairKey)
     val downstreamConstraints = pair.downstream.groupedConstraints
-    downstreamConstraints.foreach(downstreamStrategy(us,ds)
+    constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds)
       .scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
   }
 
+  private def constraintsOrEmpty(grouped:Seq[Seq[ScanConstraint]]):Seq[Seq[ScanConstraint]] =
+    if (grouped.length > 0)
+      grouped
+    else
+      Seq(Seq())
 
   private def generateDifferenceEvents(pair:Pair, l:DifferencingListener, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
@@ -117,7 +122,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                         writer:LimitedVersionCorrelationWriter,
                         endpoint:Endpoint,
                         bucketing:Seq[CategoryFunction],
-                        constraints:Seq[QueryConstraint],
+                        constraints:Seq[ScanConstraint],
                         participant:Participant,
                         listener:DifferencingListener,
                         handle:FeedbackHandle) {
@@ -173,20 +178,20 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
     }
 
-    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[QueryConstraint]) : Seq[ScanResultEntry]
-    def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) : Seq[ScanResultEntry]
+    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
+    def getEntities(pairKey:String, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
     def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
 
   protected class UpstreamSyncStrategy extends SyncStrategy {
 
-    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[QueryConstraint]) = {
+    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
       stores(pairKey).queryUpstreams(constraints, aggregator.collectUpstream)
       aggregator.digests
     }
 
-    def getEntities(pairKey:String, constraints:Seq[QueryConstraint]) = {
+    def getEntities(pairKey:String, constraints:Seq[ScanConstraint]) = {
       stores(pairKey).queryUpstreams(constraints).map(x => {
         ScanResultEntry.forEntity(x.id, x.upstreamVsn, x.lastUpdate, mapAsJavaMap(x.upstreamAttributes))
       })

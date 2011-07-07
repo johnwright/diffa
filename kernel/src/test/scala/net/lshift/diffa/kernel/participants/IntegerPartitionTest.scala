@@ -20,26 +20,12 @@ import org.junit.Test
 import org.junit.Assert._
 
 import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
+import net.lshift.diffa.participant.scanning.{InvalidAttributeValueException, IntegerRangeConstraint}
 
 class IntegerPartitionTest {
 
   protected val tens = IntegerCategoryFunction("someInt", 10, 10)
   protected val hundreds = IntegerCategoryFunction("someInt", 100, 10)
-
-  val constraint = new QueryConstraint {
-    def category = "someInt"
-    def wireFormat = null
-  }
-
-  val constraint2 = new QueryConstraint {
-    def category = "someInt2"
-    def wireFormat = null
-  }
-
-  val constraint3 = new QueryConstraint {
-    def category = "someInt3"
-    def wireFormat = null
-  }
 
   @Test
   def tensPartition {
@@ -61,21 +47,21 @@ class IntegerPartitionTest {
     def binaryCategoryFunction(denom: Int) = IntegerCategoryFunction("someInt", denom, 2)
     val myBinaryCategoryFunction = binaryCategoryFunction(128)
     assertEquals("256", myBinaryCategoryFunction.bucket("300"))
-    assertEquals(IntegerRangeConstraint("someInt", 256, 383),
-                 myBinaryCategoryFunction.constrain(constraint, "256"))
+    assertEquals(new IntegerRangeConstraint("someInt", 256, 383),
+                 myBinaryCategoryFunction.constrain("256"))
     assertEquals(Some(binaryCategoryFunction(64)), myBinaryCategoryFunction.descend)
   }
 
   @Test
   def descendFromTensPartition {
     assertEquals(None, tens.descend)
-    assertEquals(IntegerRangeConstraint("someInt", 10, 19), tens.constrain(constraint, "10"))
+    assertEquals(new IntegerRangeConstraint("someInt", 10, 19), tens.constrain("10"))
   }
 
   @Test
   def descendFromHundredsPartition {
     assertEquals(Some(tens), hundreds.descend)
-    assertEquals(IntegerRangeConstraint("someInt2", 100, 199), hundreds.constrain(constraint2, "100"))
+    assertEquals(new IntegerRangeConstraint("someInt", 100, 199), hundreds.constrain("100"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])
@@ -85,7 +71,7 @@ class IntegerPartitionTest {
 
   @Test(expected=classOf[InvalidAttributeValueException])
   def descendShouldThrowInvalidAttributeValueExceptionIfPartitionValueIsInvalid {
-    tens.constrain(constraint3, "123")
+    tens.constrain("123")
   }
 
   @Test(expected=classOf[IllegalArgumentException])

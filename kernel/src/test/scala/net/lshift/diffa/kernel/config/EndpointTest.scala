@@ -19,13 +19,12 @@ package net.lshift.diffa.kernel.config
 import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.participants.EasyConstraints._
 import net.lshift.diffa.kernel.differencing.{DateTimeAttribute, IntegerAttribute}
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory, DataPoints}
 import net.lshift.diffa.kernel.config.EndpointTest.ConstraintExpectation
-import net.lshift.diffa.kernel.participants.{IntegerRangeConstraint, DateTimeRangeConstraint, DateRangeConstraint, QueryConstraint}
 import org.joda.time.{LocalDate, DateTime}
+import net.lshift.diffa.participant.scanning.{IntegerRangeConstraint, TimeRangeConstraint, DateRangeConstraint, ScanConstraint}
 
 /**
  * Test cases for the Endpoint class.
@@ -45,7 +44,10 @@ class EndpointTest {
   @Theory
   def shouldBuildConstraintsForEndpoint(expectation:ConstraintExpectation) = {
     val ep = new Endpoint(categories=Map(expectation.name -> expectation.descriptor))
-    assertEquals(Seq(expectation.constraint), ep.defaultConstraints)
+    if (expectation.constraint != null)
+      assertEquals(Seq(expectation.constraint), ep.defaultConstraints)
+    else
+      assertEquals(Seq(), ep.defaultConstraints)
   }
 
   @Test
@@ -70,27 +72,27 @@ class EndpointTest {
 
 object EndpointTest {
 
-  case class ConstraintExpectation(name:String, descriptor:RangeCategoryDescriptor, constraint:QueryConstraint)
+  case class ConstraintExpectation(name:String, descriptor:RangeCategoryDescriptor, constraint:ScanConstraint)
 
   @DataPoints def unbounded =
     Array(
-      ConstraintExpectation("bizDateTime", new RangeCategoryDescriptor("datetime"), unconstrainedDateTime("bizDateTime")),
-      ConstraintExpectation("someInt", new RangeCategoryDescriptor("int"), unconstrainedInt("someInt"))
+      ConstraintExpectation("bizDateTime", new RangeCategoryDescriptor("datetime"), null),
+      ConstraintExpectation("someInt", new RangeCategoryDescriptor("int"), null)
    )
 
   @DataPoints def bounded =
     Array(
       ConstraintExpectation("bizDateTime",
         new RangeCategoryDescriptor("datetime", "2011-01-01", "2011-01-31"),
-        DateTimeRangeConstraint("bizDateTime", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,23,59,59,999))),
+        new TimeRangeConstraint("bizDateTime", new DateTime(2011,1,1,0,0,0,0), new DateTime(2011,1,31,23,59,59,999))),
       ConstraintExpectation("bizDateTime",
         new RangeCategoryDescriptor("datetime", "1998-11-21T14:29:53.894Z", "1998-11-29T22:08:31.637Z"),
-        DateTimeRangeConstraint("bizDateTime", new DateTime(1998,11,21,14,29,53,894), new DateTime(1998,11,29,22,8,31,637))),
+        new TimeRangeConstraint("bizDateTime", new DateTime(1998,11,21,14,29,53,894), new DateTime(1998,11,29,22,8,31,637))),
       ConstraintExpectation("bizDate",
         new RangeCategoryDescriptor("date", "1992-10-19", "1992-10-22"),
-        DateRangeConstraint("bizDate", new LocalDate(1992,10,19), new LocalDate(1992,10,22))),
+        new DateRangeConstraint("bizDate", new LocalDate(1992,10,19), new LocalDate(1992,10,22))),
       ConstraintExpectation("someInt",
         new RangeCategoryDescriptor("int", "0", "9"),
-        IntegerRangeConstraint("someInt", 0, 9))
+        new IntegerRangeConstraint("someInt", 0, 9))
    )
 }

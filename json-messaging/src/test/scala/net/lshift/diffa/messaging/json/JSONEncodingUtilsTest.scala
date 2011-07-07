@@ -18,7 +18,6 @@ package net.lshift.diffa.messaging.json
 
 import org.junit.Test
 import org.junit.Assert._
-import net.lshift.diffa.kernel.participants.EasyConstraints._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import scala.collection.Map

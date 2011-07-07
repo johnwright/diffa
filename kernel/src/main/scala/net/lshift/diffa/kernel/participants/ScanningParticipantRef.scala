@@ -1,7 +1,7 @@
 package net.lshift.diffa.kernel.participants
 
-import net.lshift.diffa.participant.scanning.ScanResultEntry
 import java.io.Closeable
+import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 
 /**
  * Provides a reference to a scanning participant. An implementation of this will be provided via a
@@ -13,7 +13,7 @@ trait ScanningParticipantRef extends Closeable {
   /**
    * Scans this participant with the given constraints and aggregations.
    */
-  def scan(constraints:Seq[QueryConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry]
+  def scan(constraints:Seq[ScanConstraint], aggregations:Seq[CategoryFunction]): Seq[ScanResultEntry]
 }
 
 /**

@@ -18,9 +18,9 @@ package net.lshift.diffa.kernel.differencing
 
 import java.io.Closeable
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.participants.QueryConstraint
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.participant.scanning.ScanConstraint
 
 /**
  * Store used for caching version correlation information between a pair of participants.
@@ -47,7 +47,7 @@ trait VersionCorrelationStore extends Closeable {
    * @param usConstraints constraints on the upstream participant's entities
    * @param dsConstraints constraints on the downstream participant's entities
    */
-  def unmatchedVersions(usConstraints:Seq[QueryConstraint], dsConstraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint]) : Seq[Correlation]
 
   /**
    * Retrieves the current pairing information for the given pairKey/id.
@@ -57,7 +57,7 @@ trait VersionCorrelationStore extends Closeable {
   /**
    * Queries for all upstream versions for the given pair based on the given constraints.
    */
-  def queryUpstreams(constraints:Seq[QueryConstraint], handler:UpstreamVersionHandler):Unit = {
+  def queryUpstreams(constraints:Seq[ScanConstraint], handler:UpstreamVersionHandler):Unit = {
     queryUpstreams(constraints).foreach(c => {
       val version = VersionID(c.pairing, c.id)
       val attributes = c.upstreamAttributes.toMap
@@ -71,7 +71,7 @@ trait VersionCorrelationStore extends Closeable {
   /**
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
-  def queryDownstreams(constraints:Seq[QueryConstraint], handler:DownstreamVersionHandler) : Unit = {
+  def queryDownstreams(constraints:Seq[ScanConstraint], handler:DownstreamVersionHandler) : Unit = {
     queryDownstreams(constraints).foreach(c => {
       val version = VersionID(c.pairing, c.id)
       val attributes = c.downstreamAttributes.toMap
@@ -85,12 +85,12 @@ trait VersionCorrelationStore extends Closeable {
   /**
    * Queries for all upstream versions for the given pair based on the given constraints.
    */
-  def queryUpstreams(constraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def queryUpstreams(constraints:Seq[ScanConstraint]) : Seq[Correlation]
 
   /**
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
-  def queryDownstreams(constraints:Seq[QueryConstraint]) : Seq[Correlation]
+  def queryDownstreams(constraints:Seq[ScanConstraint]) : Seq[Correlation]
 }
 
 /**

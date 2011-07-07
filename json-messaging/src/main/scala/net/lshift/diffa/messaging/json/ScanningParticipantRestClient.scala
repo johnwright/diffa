@@ -21,6 +21,8 @@ import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
 import net.lshift.diffa.participant.common.JSONHelper
 import org.apache.commons.io.IOUtils
+import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.scanning.{StringPrefixConstraint, SetConstraint, ScanConstraint}
 
 /**
  * JSON/REST scanning participant client.
@@ -30,17 +32,16 @@ class ScanningParticipantRestClient(scanUrl:String)
     extends AbstractRestClient(scanUrl, "")
     with ScanningParticipantRef {
 
-  def scan(constraints: Seq[QueryConstraint], aggregations: Seq[CategoryFunction]) = {
+  def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) = {
     val params = new MultivaluedMapImpl()
     constraints.foreach {
-      case sqc:SetQueryConstraint   =>
-        sqc.values.foreach(v => params.add(sqc.category, v))
+      case sqc:SetConstraint   =>
+        sqc.getValues.foreach(v => params.add(sqc.getAttributeName, v))
       case rqc:RangeQueryConstraint =>
         params.add(rqc.category + "-start", rqc.lower)
         params.add(rqc.category + "-end", rqc.upper)
-      case pc:PrefixQueryConstraint =>
-        params.add(pc.category + "-prefix", pc.prefix)
-      case nvc:NonValueConstraint =>    // Ignore non-value constraints
+      case pc:StringPrefixConstraint =>
+        params.add(pc.getAttributeName + "-prefix", pc.getPrefix)
     }
     aggregations.foreach {
       case spf:StringPrefixCategoryFunction =>

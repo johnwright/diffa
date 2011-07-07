@@ -16,10 +16,10 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.participants.{DateRangeConstraint, DateTimeRangeConstraint, IntegerRangeConstraint, RangeQueryConstraint}
 import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, DateTimeAttribute, IntegerAttribute}
+import net.lshift.diffa.participant.scanning.{IntegerRangeConstraint, TimeRangeConstraint, DateRangeConstraint}
 
 /**
  * This is a simple registry that can hydrate category values based on a descriptor
@@ -46,21 +46,20 @@ object RangeCategoryParser {
 
   // TODO Timezone handling may not be quite correct
   def buildConstraint(name:String, descriptor:RangeCategoryDescriptor) = descriptor.dataType match {
-    case "int"      => IntegerRangeConstraint(name, parseInt(descriptor.lower), parseInt(descriptor.upper))
+    case "int"      => new IntegerRangeConstraint(name, parseInt(descriptor.lower), parseInt(descriptor.upper))
     case "datetime" => {
       try {
         // Attempt to parse a yyyy-MM-dd format and widen
         val lower = dateFormatter.parseDateTime(descriptor.lower)
         val upper = dateFormatter.parseDateTime(descriptor.upper).plusDays(1).minusMillis(1)
-        DateTimeRangeConstraint(name, lower, upper)
+        new TimeRangeConstraint(name, lower, upper)
       }
       catch {
         // The format is not yyyy-MM-dd, so don't widen
         case e:IllegalArgumentException =>
-          DateTimeRangeConstraint(name, parseDateTime(descriptor.lower), parseDateTime(descriptor.upper))
+          new TimeRangeConstraint(name, parseDateTime(descriptor.lower), parseDateTime(descriptor.upper))
       }
     }
-    case "date"     => DateRangeConstraint(name, parseDate(descriptor.lower), parseDate(descriptor.upper))
-    case _          => RangeQueryConstraint(name, descriptor.lower, descriptor.upper)
+    case "date"     => new DateRangeConstraint(name, parseDate(descriptor.lower), parseDate(descriptor.upper))
   }
 }

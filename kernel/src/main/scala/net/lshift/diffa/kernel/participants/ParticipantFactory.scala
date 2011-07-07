@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.participants
 
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.config.Endpoint
+import net.lshift.diffa.participant.scanning.ScanConstraint
 
 /**
  * Factory that will resolve participant addresses to participant instances for querying.
@@ -69,7 +70,7 @@ class ParticipantFactory() {
       case Some(cpart)  => cpart.retrieveContent(identifier)
     }
 
-    def scan(constraints: Seq[QueryConstraint], aggregations: Seq[CategoryFunction]) = scanning match {
+    def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) = scanning match {
       case None        => throw new InvalidParticipantOperationException(partName, "scanning")
       case Some(spart) => spart.scan(constraints, aggregations)
     }

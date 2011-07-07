@@ -16,6 +16,8 @@
 
 package net.lshift.diffa.kernel.participants
 
+import net.lshift.diffa.participant.scanning.ScanConstraint
+
 /**
  * Specifies the next action to take when building a digest tree.
  */
@@ -27,9 +29,9 @@ trait QueryAction
  *                  be bucketed
  * @param constraints the constraints to apply to the aggregation
  */
-case class AggregateQueryAction(bucketing:Seq[CategoryFunction], constraints:Seq[QueryConstraint]) extends QueryAction
+case class AggregateQueryAction(bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) extends QueryAction
 
 /**
  * The next action should query on an individual level
  */
-case class EntityQueryAction(constraints:Seq[QueryConstraint]) extends QueryAction
+case class EntityQueryAction(constraints:Seq[ScanConstraint]) extends QueryAction
