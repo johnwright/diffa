@@ -33,6 +33,7 @@ class ScanningParticipantRestClient(scanUrl:String)
     with ScanningParticipantRef {
 
   def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) = {
+  	log.debug("Querying constraints %s, aggregated by %s".format(constraints, aggregations))
     val params = new MultivaluedMapImpl()
     constraints.foreach {
       case sqc:SetConstraint   =>

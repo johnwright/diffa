@@ -126,7 +126,7 @@ case class PairActor(pairKey:String,
   case class ChildActorCompletionMessage(scanUuid:UUID, upOrDown:UpOrDown, result:Result)
       extends ChildActorScanMessage {
     def logMessage(l:Logger, s:ActorState, code:String)
-      = l.debug("%s: UUID[%s] -> Received %s %s in %s state".format(code, scanUuid, upOrDown, result, s))
+      = l.debug("%s: UUID[%s] -> Received %sstream %s in %s state".format(code, scanUuid, upOrDown, result, s))
   }
 
   /**
