@@ -33,6 +33,7 @@ import java.lang.RuntimeException
 import net.lshift.diffa.kernel.util.AlertCodes
 import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
+import net.lshift.diffa.kernel.diag.{InfoLevel, ErrorLevel, DiagnosticsManager}
 
 class PairActorTest {
 
@@ -49,6 +50,7 @@ class PairActorTest {
 
   val us = createStrictMock("upstreamParticipant", classOf[UpstreamParticipant])
   val ds = createStrictMock("downstreamParticipant", classOf[DownstreamParticipant])
+  val diagnostics = createStrictMock("diagnosticsManager", classOf[DiagnosticsManager])
 
   val participantFactory = org.easymock.classextension.EasyMock.createStrictMock("participantFactory", classOf[ParticipantFactory])
   expect(participantFactory.createUpstreamParticipant(upstream)).andReturn(us)
@@ -79,7 +81,7 @@ class PairActorTest {
 
   val escalationListener = createMock(classOf[DifferencingListener])
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, escalationListener, participantFactory, stores, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, escalationListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
@@ -154,6 +156,7 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
+    diagnostics.logPairEvent(InfoLevel, pairKey, "Scan completed"); expectLastCall
     replay(versionPolicy, syncListener)
 
     supervisor.startActor(pair)
@@ -257,6 +260,7 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.CANCELLED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = cancelMonitor.synchronized{ cancelMonitor.notifyAll() }
     })
+    diagnostics.logPairEvent(InfoLevel, pairKey, "Scan cancelled"); expectLastCall
 
     expectScans.andAnswer(new IAnswer[Unit] {
       def answer = {
@@ -273,7 +277,7 @@ class PairActorTest {
       }
     })
 
-    replay(versionPolicy, syncListener)
+    replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey, diffListener, syncListener)
@@ -304,7 +308,9 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })
-    replay(versionPolicy, syncListener)
+    diagnostics.logPairEvent(ErrorLevel, pairKey, "Downstream scan failed: Deliberate runtime excecption, this should be handled"); expectLastCall
+    diagnostics.logPairEvent(ErrorLevel, pairKey, "Scan failed"); expectLastCall
+    replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey, diffListener, syncListener)

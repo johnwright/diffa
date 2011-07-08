@@ -47,6 +47,7 @@
             <constructor-arg ref="versionCorrelationStoreFactory" />
             <constructor-arg ref="sessionManager" />
             <constructor-arg ref="diffaConfigStore" />
+          <constructor-arg ref="diagnosticsManager" />
           </bean>
       </list>
     </property>
@@ -62,6 +63,7 @@
           <constructor-arg ref="versionCorrelationStoreFactory" />
           <constructor-arg ref="sessionManager" />
           <constructor-arg ref="diffaConfigStore" />
+          <constructor-arg ref="diagnosticsManager" />
         </bean>
       </list>
     </property>
@@ -232,6 +234,7 @@
     <constructor-arg ref="escalationManager"/>
     <constructor-arg ref="participantFactory"/>
     <constructor-arg ref="versionCorrelationStoreFactory"/>
+    <constructor-arg ref="diagnosticsManager" />
     <constructor-arg>
       <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
         <property name="targetObject" ref="diffaConfigStore"/>
@@ -337,6 +340,14 @@
     <constructor-arg value="org.apache.lucene.store.MMapDirectory" />
     <constructor-arg ref="diffaConfigStore" />
   </bean>
+
+  <!--
+    ===========
+      Indexing
+    ===========
+  -->
+
+  <bean id="diagnosticsManager" class="net.lshift.diffa.kernel.diag.LocalDiagnosticsManager" />
 
   <!--
     ========

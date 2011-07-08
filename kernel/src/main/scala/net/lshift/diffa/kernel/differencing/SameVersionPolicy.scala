@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore, Pair}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -32,8 +33,8 @@ import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
  * Compliance with this policy could also be achieved by the downstream simply recording the versions of received
  * upstream events.
  */
-class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore)
-    extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore) {
+class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore, diagnostics:DiagnosticsManager)
+    extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore, diagnostics) {
 
   def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamSameSyncStrategy
 

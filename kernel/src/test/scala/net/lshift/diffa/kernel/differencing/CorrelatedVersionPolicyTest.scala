@@ -36,7 +36,7 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry
  * Test cases for the correlated version policy test.
  */
 class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
-  val policy = new CorrelatedVersionPolicy(stores, listener, configStore)
+  val policy = new CorrelatedVersionPolicy(stores, listener, configStore, diagnostics)
 
   /**
    * Generates the internal downstream version of a given version string. Since the correlated policy expects
