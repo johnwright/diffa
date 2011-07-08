@@ -57,7 +57,7 @@
 
   <body>
     <decorator:body/>
-    <div class="footer quiet">Diffa (build #${diffa.build.number})</div>
+    <div class="footer">Diffa (build #${diffa.build.number}) &copy;2010-2011 LShift Ltd.</div>
   </body>
 
 </html>
