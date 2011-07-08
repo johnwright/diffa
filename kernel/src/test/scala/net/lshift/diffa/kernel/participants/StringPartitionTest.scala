@@ -62,19 +62,19 @@ class StringPartitionTest {
   @Test
   def generatesConstraintForPartition {
     val spc = StringPrefixCategoryFunction("foo", prefixLength = 2, maxLength = 2, step = 1)
-    assertEquals(new StringPrefixConstraint("foo", "xx"), spc.constrain("xx"))
+    assertEquals(new StringPrefixConstraint("foo", "xx"), spc.constrain(None, "xx"))
   }
 
   @Test
   def cannotConstrainWhenPartitionIsTooShort {
     val spc = StringPrefixCategoryFunction("foo", prefixLength = 2, maxLength = 2, step = 1)
-    assertEquals(new SetConstraint("foo", Set("x")), spc.constrain("x"))
+    assertEquals(new SetConstraint("foo", Set("x")), spc.constrain(None, "x"))
   }
 
   @Test(expected = classOf[InvalidAttributeValueException])
   def cannotConstrainWhenPartitionIsTooLong {
     val spc = StringPrefixCategoryFunction("ss", prefixLength = 2, maxLength = 2, step = 1)
-    spc.constrain("xxx")
+    spc.constrain(None, "xxx")
   }
 
   @Test
