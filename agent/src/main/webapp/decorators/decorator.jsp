@@ -57,7 +57,7 @@
 
   <body>
     <decorator:body/>
-    <div class="footer">Diffa <span class="small">(build #${diffa.build.number})</span></div>
+    <div class="footer quiet">Diffa (build #${diffa.build.number})</div>
   </body>
 
 </html>
