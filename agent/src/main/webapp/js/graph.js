@@ -417,12 +417,12 @@ function drawCircle(i, j) {
 }
 
 function drawArrow(ctx, dir, x, y, w, h) {
-    var headWidth = w * 4 / 9;
-    var cornerHeight = h * 7 / 9;
+    var headWidth = w / 3;
+    var cornerHeight = h - (h / 3 / 2);
 
-    var startX = x + (dir == drawArrow.left ? 0 : w);
-    var headX = x + (dir == drawArrow.left ? headWidth : w - headWidth);
-    var endX = x + (dir == drawArrow.left ? w : 0);
+    var startX = x + (dir == drawArrow.left ? 0 : w),
+        headX  = x + (dir == drawArrow.left ? headWidth : w - headWidth),
+        endX   = x + (dir == drawArrow.left ? w : 0);
     
     ctx.strokeStyle = "black";
     ctx.fillStyle = "white";
