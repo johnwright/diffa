@@ -416,10 +416,37 @@ function drawCircle(i, j) {
   }
 }
 
+function drawArrow(ctx, dir, x, y, w, h) {
+    var headWidth = w * 4 / 9;
+    var cornerHeight = h * 7 / 9;
+
+    var startX = x + (dir == drawArrow.left ? 0 : w);
+    var headX = x + (dir == drawArrow.left ? headWidth : w - headWidth);
+    var endX = x + (dir == drawArrow.left ? w : 0);
+    
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.moveTo(startX, y + h / 2);
+    ctx.lineTo(headX, y);
+    ctx.lineTo(headX, y + cornerHeight);
+    ctx.lineTo(endX,  y + cornerHeight);
+    ctx.lineTo(endX, y + h - cornerHeight);
+    ctx.lineTo(headX, y + h - cornerHeight);
+    ctx.lineTo(headX, y + h);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+}
+drawArrow.left = "left";
+drawArrow.right = "right";
+
+
 var toggleX, toggleY;
 var show_grid = false;
 function drawGrid() {
   var region_width = maxColumns * gridSize;
+  // draw grid lines
   if (show_grid) {
     for (var x = 0.5; x < region_width; x += gridSize) {
       context.moveTo(x, 0);
@@ -433,6 +460,7 @@ function drawGrid() {
     context.stroke();
   }
 
+  // draw swim lanes
   var lane = 0;
   var laneHeight = swimlaneHeight();
   for (var s = 0.5 + laneHeight; s < canvas.height; s += laneHeight) {
@@ -444,12 +472,8 @@ function drawGrid() {
     lane++;
   }
 
-  if (polling) {
-    var pollText = " LIVE ";
-  }
-  else {
-    pollText = " CLICK TO POLL ";
-  }
+  // draw "live" / "click to poll" text
+  var pollText = polling ? " LIVE " : " CLICK TO POLL ";
   var textWidth = underlayContext.measureText(pollText).width;
   var textSpacer = 20;
   underlayContext.fillStyle = "#d12f19";
@@ -461,13 +485,14 @@ function drawGrid() {
   toggleX = canvas.width - textWidth - textSpacer;
   toggleY = 20;
 
-
+  // draw circles
   for (var i = 0.5; i < region_width; i += gridSize) {
     for (var j = 0.5; j < canvas.height; j += (2 * gutterSize + gridSize)) {
       drawCircle(i, j);
     }
   }
 
+  // draw scale
   scaleContext.font = "9px sans-serif";
   for (var sc = 0; sc < maxColumns; sc++) {
     if (sc % 3 == 0) {
