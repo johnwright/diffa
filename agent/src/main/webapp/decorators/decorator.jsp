@@ -57,7 +57,7 @@
 
   <body>
     <decorator:body/>
-    <!--div class="footer">&copy;2010-2011 LShift Ltd</div-->
+    <div class="footer">Diffa <span class="small">(build #${diffa.build.number})</span></div>
   </body>
 
 </html>
