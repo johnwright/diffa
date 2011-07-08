@@ -28,7 +28,6 @@ public class ResourceDescriptor {
     private List<MandatoryParameter> mandatoryParameters = new ArrayList<MandatoryParameter>();
     private List<OptionalParameter> optionalParameters = new ArrayList<OptionalParameter>();
     private String entityName = "";
-    private JsonSchema schema;
     private String example;
     private boolean active; // is this the currently looked at element?; convenience for StringTemplate
     private String collectionPath;
@@ -81,14 +80,6 @@ public class ResourceDescriptor {
 
     public void setEntityName(String entityName) {
         this.entityName = entityName;
-    }
-
-    public JsonSchema getSchema() {
-        return schema;
-    }
-
-    public void setSchema(JsonSchema schema) {
-        this.schema = schema;
     }
 
     public String getExample() {

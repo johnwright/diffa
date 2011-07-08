@@ -290,7 +290,7 @@
           </execution>
         </executions>
       </plugin>
-      <!--plugin>
+      <plugin>
         <groupId>net.lshift.diffa</groupId>
         <artifactId>diffa-docgen-maven-plugin</artifactId>
         <configuration>
@@ -301,6 +301,8 @@
             <resource>net.lshift.diffa.agent.rest.DifferencesResource</resource>
             <resource>net.lshift.diffa.agent.rest.ActionsResource</resource>
             <resource>net.lshift.diffa.agent.rest.UsersResource</resource>
+            <resource>net.lshift.diffa.agent.rest.EscalationsResource</resource>
+            <resource>net.lshift.diffa.agent.rest.ScanningResource</resource>
           </resources>
           <targetDir>${docs.targetDir}</targetDir>
           <consoleOutput>false</consoleOutput>
@@ -313,7 +315,7 @@
             </goals>
           </execution>
         </executions>
-      </plugin-->
+      </plugin>
     </plugins>
   </build>
   <reporting>

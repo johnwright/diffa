@@ -91,10 +91,10 @@ public class RestGen {
 
         rd.setEntityName(t.isArray() ? arrayize(classToMap.getSimpleName()) : classToMap.getSimpleName());
 
-        rd.setSchema(mapper.generateJsonSchema(classToMap));
         if (examples.containsKey(classToMap)) {
-            String exampleForOneObj = mapper.writeValueAsString(examples.get(classToMap));
-            rd.setExample(t.isArray() ? arrayize(exampleForOneObj) : exampleForOneObj);
+            Object exampleObj = t.isArray() ? new Object[] { examples.get(classToMap) } : examples.get(classToMap);
+            String example = mapper.defaultPrettyPrintingWriter().writeValueAsString(exampleObj);
+            rd.setExample(example);
         }
     }
 
