@@ -23,7 +23,6 @@ import net.lshift.diffa.kernel.differencing.FeedbackHandle
  * This is used for testing when no cancellation is required.
  */
 class NonCancellingFeedbackHandle extends FeedbackHandle {
-  def logStatus(status: String) = null
   def isCancelled = false
   def cancel() = null
 }

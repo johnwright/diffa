@@ -180,7 +180,6 @@ case class PairActor(pairKey:String,
     private val flag = new SyncVar[Boolean]
     flag.set(false)
 
-    def logStatus(status: String) = logger.debug("Not yet implemented")
     def isCancelled = flag.get
     def cancel() = flag.set(true)
   }

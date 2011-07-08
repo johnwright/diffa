@@ -86,12 +86,6 @@ trait FeedbackHandle {
    */
   def isCancelled : Boolean
 
-  // TODO [#249] This is just a definition ATM - this should be plumbed
-  /**
-   * This is a conduit that allows the invoker to receive the latest status as a string.
-   */
-  def logStatus(status:String)
-
 }
 
 /**
