@@ -64,17 +64,35 @@ class DatePartitionTest {
     assertEquals("1998-11-21", partition)
   }
 
-  /*@Test
+  @Test
   def shouldNotWidenConstrainedRangeForYearlyPartition = {
-    val constraint = new DateRangeConstraint("someDate", new LocalDate(1979,7,3), new LocalDate(1979,8,15))
-    assertEquals(constraint, YearlyCategoryFunction("bizDate", DateDataType).constrain(constraint, "1979"))
+    val previous = new DateRangeConstraint("bizDate", new LocalDate(1979,7,3), new LocalDate(1979,8,15))
+    assertEquals(previous, YearlyCategoryFunction("bizDate", DateDataType).constrain(Some(previous), "1979"))
+  }
+
+  @Test
+  def shouldNotWidenConstrainedRangeForYearlyPartitionWhenInitialConstraintIsLarge = {
+    val previous = new DateRangeConstraint("bizDate", new LocalDate(1979,7,3), new LocalDate(1981,8,15))
+    assertEquals(new DateRangeConstraint("bizDate", new LocalDate(1979,7,3), new LocalDate(1979,12,31)),
+      YearlyCategoryFunction("bizDate", DateDataType).constrain(Some(previous), "1979"))
+    assertEquals(new DateRangeConstraint("bizDate", new LocalDate(1980,1,1), new LocalDate(1980,12,31)),
+      YearlyCategoryFunction("bizDate", DateDataType).constrain(Some(previous), "1980"))
   }
 
   @Test
   def shouldNotWidenConstrainedRangeForMonthlyPartition = {
-    val constraint = new DateRangeConstraint("someDate", new LocalDate(1991,2,2), new LocalDate(1991,2,27))
-    assertEquals(constraint, MonthlyCategoryFunction("bizDate", DateDataType).constrain(constraint, "1991-02"))
-  }*/
+    val previous = new DateRangeConstraint("bizDate", new LocalDate(1991,2,2), new LocalDate(1991,2,27))
+    assertEquals(previous, MonthlyCategoryFunction("bizDate", DateDataType).constrain(Some(previous), "1991-02"))
+  }
+
+  @Test
+  def shouldNotWidenConstrainedRangeForMonthlyPartitionWhenInitialConstraintIsLarge = {
+    val previous = new DateRangeConstraint("bizDate", new LocalDate(1991,2,2), new LocalDate(1991,5,27))
+    assertEquals(new DateRangeConstraint("bizDate", new LocalDate(1991,2,2), new LocalDate(1991,2,28)),
+      MonthlyCategoryFunction("bizDate", DateDataType).constrain(Some(previous), "1991-02"))
+    assertEquals(new DateRangeConstraint("bizDate", new LocalDate(1991,3,1), new LocalDate(1991,3,31)),
+      MonthlyCategoryFunction("bizDate", DateDataType).constrain(Some(previous), "1991-03"))
+  }
 
   @Test(expected=classOf[InvalidAttributeValueException])
   def shouldThrowInvalidCategoryExceptionIfValueIsNotDate {
@@ -87,12 +105,12 @@ class DatePartitionTest {
     val expectedEnd = new DateTime(1987, 01, 01, 0, 0, 0, 0).minusMillis(1)
     assertEquals(Some(MonthlyCategoryFunction("bizDate", TimeDataType)), YearlyCategoryFunction("bizDate", TimeDataType).descend)
     assertEquals(new TimeRangeConstraint("bizDate", expectedStart, expectedEnd),
-      YearlyCategoryFunction("bizDate", TimeDataType).constrain("1986"))
+      YearlyCategoryFunction("bizDate", TimeDataType).constrain(None, "1986"))
 
     val expectedStartAsLocal = expectedStart.toLocalDate
     val expectedEndAsLocal = expectedEnd.toLocalDate
     assertEquals(new DateRangeConstraint("bizDate", expectedStartAsLocal, expectedEndAsLocal),
-      YearlyCategoryFunction("bizDate", DateDataType).constrain("1986"))
+      YearlyCategoryFunction("bizDate", DateDataType).constrain(None, "1986"))
   }
 
 }

@@ -29,5 +29,5 @@ case class ByNameCategoryFunction(attrName:String)
   def name = "by-name"
   def shouldBucket() = true
   def descend = None
-  def constrain(partition: String) = new SetConstraint(attrName, Set(partition))
+  def constrain(parent:Option[ScanConstraint], partition: String) = new SetConstraint(attrName, Set(partition))
 }

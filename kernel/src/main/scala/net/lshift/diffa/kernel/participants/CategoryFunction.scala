@@ -46,9 +46,12 @@ trait CategoryFunction extends ScanAggregation {
 
   /**
    * Given the name of a valid partition, return a query constraint that will further constrain a request to include
-   * only data that exists with the partition.
+   * only data that exists with the partition. The parent argument is a reference to the parent constraint
+   * that is used as the context within which a new constraint can be produced. Hence the returned constraint
+   * is the product of the constraint that caused this function to get executed together with the current level
+   * of partitioning.
    */
-  def constrain(partition:String) : ScanConstraint
+  def constrain(parent:Option[ScanConstraint], partition:String) : ScanConstraint
 
   /**
    * Indicates whether this function supports bucketing.
