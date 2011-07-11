@@ -53,7 +53,7 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
   url: API_BASE + "/diffs/sessions/all_scan_states",
 
   initialize: function() {
-    _.bindAll(this, "sync");
+    _.bindAll(this, "sync", "scanAll");
   },
 
   sync: function() {
@@ -82,6 +82,27 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
         if (!self.get(key)) {
           self.add([{id: key, state: states[key]}]);
         }
+      }
+    });
+  },
+
+  scanAll: function() {
+    var self = this;
+
+    this.each(function(pair) {
+      pair.set({state: 'REQUESTING'});
+    });
+
+    $.ajax({
+      url: API_BASE + "/diffs/sessions/scan_all",
+      type: "POST",
+      success: function() {
+        self.each(function(pair) {
+          pair.set({state: 'SYNCHRONIZING'});
+        });
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        alert("Error in scan request: " + errorThrown);
       }
     });
   }
@@ -217,27 +238,7 @@ function managePair(name) {
 
 $(document).ready(function() {
   $('#scan_all').click(function(e) {
-    e.preventDefault();
-
-    removeAllPairs();
-    for (var pair in gLastStates) {
-      addPair(pair, 'REQUESTING');
-    }
-
-    $.ajax({
-          url: API_BASE + "/diffs/sessions/scan_all",
-          type: "POST",
-          success: function() {
-            removeAllPairs();
-            for (var pair in gLastStates) {
-              addPair(pair, 'SYNCHRONIZING');
-            }
-          },
-          error: function(jqXHR, textStatus, errorThrown) {
-            alert("Error in scan request: " + errorThrown);
-          }
-        });
-    return false;
+    Diffa.PairsCollection.scanAll();
   });
 
   Diffa.SettingsApp = new Diffa.Routers.Pairs();
