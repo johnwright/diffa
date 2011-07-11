@@ -33,7 +33,7 @@ import java.lang.RuntimeException
 import net.lshift.diffa.kernel.util.AlertCodes
 import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
-import net.lshift.diffa.kernel.diag.{InfoLevel, ErrorLevel, DiagnosticsManager}
+import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 
 class PairActorTest {
 
@@ -156,7 +156,7 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
-    diagnostics.logPairEvent(InfoLevel, pairKey, "Scan completed"); expectLastCall
+    diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan completed"); expectLastCall
     replay(versionPolicy, syncListener)
 
     supervisor.startActor(pair)
@@ -260,7 +260,7 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.CANCELLED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = cancelMonitor.synchronized{ cancelMonitor.notifyAll() }
     })
-    diagnostics.logPairEvent(InfoLevel, pairKey, "Scan cancelled"); expectLastCall
+    diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan cancelled"); expectLastCall
 
     expectScans.andAnswer(new IAnswer[Unit] {
       def answer = {
@@ -308,8 +308,8 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })
-    diagnostics.logPairEvent(ErrorLevel, pairKey, "Downstream scan failed: Deliberate runtime excecption, this should be handled"); expectLastCall
-    diagnostics.logPairEvent(ErrorLevel, pairKey, "Scan failed"); expectLastCall
+    diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Downstream scan failed: Deliberate runtime excecption, this should be handled"); expectLastCall
+    diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Scan failed"); expectLastCall
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)

@@ -29,7 +29,7 @@ import com.eaio.uuid.UUID
 import akka.actor._
 import collection.mutable.{SynchronizedQueue, Queue}
 import concurrent.SyncVar
-import net.lshift.diffa.kernel.diag.{ErrorLevel, InfoLevel, DiagnosticsManager}
+import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -298,9 +298,9 @@ case class PairActor(pairKey:String,
     }
 
     state match {
-      case PairScanState.FAILED => diagnostics.logPairEvent(ErrorLevel, pairKey, "Scan failed")
-      case PairScanState.CANCELLED => diagnostics.logPairEvent(InfoLevel, pairKey, "Scan cancelled")
-      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(InfoLevel, pairKey, "Scan completed")
+      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Scan failed")
+      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan cancelled")
+      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan completed")
       case _                        => // Ignore - not a state that we'll see
     }
 
@@ -400,7 +400,7 @@ case class PairActor(pairKey:String,
           }
           case e:Exception => {
             logger.error("Upstream scan failed: " + pairKey, e)
-            diagnostics.logPairEvent(ErrorLevel, pairKey, "Upstream scan failed: " + e.getMessage)
+            diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Upstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Failure)
           }
         }
@@ -418,7 +418,7 @@ case class PairActor(pairKey:String,
           }
           case e:Exception => {
             logger.error("Downstream scan failed: " + pairKey, e)
-            diagnostics.logPairEvent(ErrorLevel, pairKey, "Downstream scan failed: " + e.getMessage)
+            diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Downstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Failure)
           }
         }
@@ -435,7 +435,7 @@ case class PairActor(pairKey:String,
     } catch {
       case x: Exception => {
         logger.error("Failed to initiate scan for pair: " + pairKey, x)
-        diagnostics.logPairEvent(ErrorLevel, pairKey, "Failed to initiate scan for pair: " + x.getMessage)
+        diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Failed to initiate scan for pair: " + x.getMessage)
         processBacklog(PairScanState.FAILED)
         false
       }
