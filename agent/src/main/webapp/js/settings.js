@@ -17,22 +17,151 @@
 
 var gLastStates = [];
 
-function renderState(state) {
-  // TODO: When #216 changes SYNCHRONIZING to SCANNING, this should be updated
-  switch (state) {
-    case "REQUESTING":    return "Requesting Scan";
-    case "UNKNOWN":       return "Scan not run";
-    case "FAILED":        return "Last Scan Failed";
-    case "UP_TO_DATE":    return "Up to Date";
-    case "SYNCHRONIZING": return "Scan In Progress";
+var Diffa = {
+  Routers: {},
+  Views: {},
+  Collections: {},
+  Models: {}
+};
+
+$(function() {
+
+Diffa.Routers.Pairs = Backbone.Router.extend({
+  routes: {
+    "pair/:pair":        "managePair"  // #pair/WEB-1
+  },
+
+  managePair: function(pairKey) {
+    Diffa.PairListView.select(pairKey);
+
+    managePair(pairKey);
   }
+});
 
-  return null;
-}
+Diffa.Models.Pair = Backbone.Model.extend({
+  initialize: function() {
+    _.bindAll(this, "remove");
+  },
 
-function renderPairName(name) {
-  return "<a href=\"javascript:managePair('" + name + "')\">" + name + "</a>";
-}
+  remove: function() {
+    this.trigger('remove');
+  }
+});
+
+Diffa.Collections.Pairs = Backbone.Collection.extend({
+  model: Diffa.Models.Pair,
+  url: API_BASE + "/diffs/sessions/all_scan_states",
+
+  initialize: function() {
+    _.bindAll(this, "sync");
+  },
+
+  sync: function() {
+    var self = this;
+
+    $.getJSON(this.url, function(states) {
+      var toRemove = [];
+
+      // Update any pairs we've already got
+      self.each(function(currentPair) {
+        var newState = states[currentPair.id];
+
+        if (newState) {
+          // We're updating an existing pair
+          currentPair.set({state: newState});
+        } else {
+          toRemove.push(currentPair);
+        }
+      });
+
+      // Remove removable pairs
+      _.each(toRemove, function(r) { self.remove(r); });
+
+      // Add any pairs we haven't seen
+      for (var key in states) {
+        if (!self.get(key)) {
+          self.add([{id: key, state: states[key]}]);
+        }
+      }
+    });
+  }
+});
+
+Diffa.Views.PairList = Backbone.View.extend({
+  el: $('#pair-list'),
+
+  initialize: function() {
+    _.bindAll(this, "addPair", "removePair", "select");
+
+    this.model.bind('add', this.addPair);
+    this.model.bind('remove', this.removePair);
+  },
+
+  select: function(pairKey) {
+    this.selectedPair = pairKey;
+    this.model.each(function(pair) {
+      pair.set({selected: pair.id == pairKey});
+    });
+  },
+
+  addPair: function(pair) {
+    pair.set({selected: pair.id == this.selectedPair});
+
+    var view = new Diffa.Views.PairSelector({model: pair});
+    this.el.append(view.render().el);
+  },
+
+  removePair: function(pair) {
+    pair.remove();
+  }
+});
+
+Diffa.Views.PairSelector = Backbone.View.extend({
+  tagName: "div",
+  className: "pair",
+  template: _.template($('#pair-selector-template').html()),
+
+  events: {
+    "click":  "select"
+  },
+
+  initialize: function() {
+    _.bindAll(this, "render", "select", "close");
+
+    this.model.bind('change', this.render);
+    this.model.bind('remove', this.close);
+  },
+
+  render: function() {
+    $(this.el).html(this.template({name: this.model.id, state: this.renderState(this.model.get('state'))}));
+    $(this.el).attr('pair-key', this.model.id);
+    $(this.el).toggleClass('selected-pair', this.model.get('selected'));
+    return this;
+  },
+
+  close: function() {
+    $(this.el).remove();
+  },
+
+  select: function() {
+    Diffa.SettingsApp.navigate("pair/" + this.model.id, true);
+  },
+
+  renderState: function(state) {
+    // TODO: When #216 changes SYNCHRONIZING to SCANNING, this should be updated
+    switch (state) {
+      case "REQUESTING":    return "Requesting Scan";
+      case "UNKNOWN":       return "Scan not run";
+      case "FAILED":        return "Last Scan Failed";
+      case "UP_TO_DATE":    return "Up to Date";
+      case "SYNCHRONIZING": return "Scan In Progress";
+    }
+
+    return null;
+  }
+});
+
+});
 
 function renderPairScopedActions(pairKey, actionListContainer, repairStatus) {
   var actionListCallback = function(actionList, status, xhr) {
@@ -51,12 +180,8 @@ function removeAllPairs() {
 }
 
 function addPair(name, state) {
-  var pairRow = '<div class="pair-row">' + '' +
-      '<div class="name">' + renderPairName(name) + '</div>' +
-      '<div class="state">' + renderState(state) + '</div>'
-    '</div>';
-
-  $('#pairs').append(pairRow);
+  var view = new Diffa.Views.PairSelector({model: new Diffa.Models.Pair({name: name, state: state})});
+  $("#pairs").append(view.render().el);
 }
 
 function managePair(name) {
@@ -115,21 +240,11 @@ $(document).ready(function() {
     return false;
   });
 
-  $("#pairs").smartupdater({
-        url : API_BASE + "/diffs/sessions/all_scan_states",
-        dataType: "json",
-        minTimeout: 5000
-      }, function (states) {
-    gLastStates = states;
+  Diffa.SettingsApp = new Diffa.Routers.Pairs();
+  Diffa.PairsCollection = new Diffa.Collections.Pairs();
+  Diffa.PairListView = new Diffa.Views.PairList({model: Diffa.PairsCollection});
+  Backbone.history.start();
 
-    removeAllPairs();
-    for (var pair in states) {
-      addPair(pair, states[pair]);
-    }
-  }
-  );
-
-  setInterval('$("#pollState").html($("#pairs")[0].smartupdaterStatus.state)',1000);
-  setInterval('$("#pollFrequency").html($("#pairs")[0].smartupdaterStatus.timeout)',1000);
-
+  Diffa.PairsCollection.sync();
+  setInterval('Diffa.PairsCollection.sync()',5000);
 });

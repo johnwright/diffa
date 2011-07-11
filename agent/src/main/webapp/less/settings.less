@@ -24,7 +24,7 @@
 
 #pair-list {
   .prepend-top;
-  .span-7;
+  .span-24;
 
   .pair-row {
     .last;
@@ -35,6 +35,22 @@
     .state {
       .span-4;
     }
+  }
+
+  .pair {
+    .span-6;
+    .rounded(10px);
+
+    border: @solid-border;
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .selected-pair {
+    border: 2px solid black;
+    background-color: #E8E9EB;
+    margin-bottom: 8px;
   }
 }
 

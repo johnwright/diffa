@@ -54,6 +54,12 @@
   border-top: @dotted-border;
 }
 
+.rounded(@radius: 10px) {
+  -webkit-border-radius: @radius;
+  -moz-border-radius: @radius;
+  border-radius: @radius;
+}
+
 // Mixin certain Blueprint definitions into various object classes
 div.main-logo {
   .prepend-top;
