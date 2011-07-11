@@ -51,16 +51,12 @@ function removeAllPairs() {
 }
 
 function addPair(name, state) {
-  // Column layout is: 2,4,4,4
-  // TODO The column alignment duplicates the definitions in the HTML
-  var actionButtonsForPair = $('<div class="span-4"></div>');
-  var repairStatusForPair = $('<div class="span-4 last"></div>');
+  var pairRow = '<div class="pair-row">' + '' +
+      '<div class="name">' + renderPairName(name) + '</div>' +
+      '<div class="state">' + renderState(state) + '</div>'
+    '</div>';
 
-  $('#pairs').append($('<div class="span-2">' + renderPairName(name) + '</div>'))
-             .append($('<div class="span-4">' + renderState(state) + '</div>'))
-             .append(actionButtonsForPair)
-             .append(repairStatusForPair);
-  renderPairScopedActions(name, actionButtonsForPair, repairStatusForPair);
+  $('#pairs').append(pairRow);
 }
 
 function managePair(name) {
@@ -68,6 +64,7 @@ function managePair(name) {
     $('#pair-log').smartupdaterStop();
   } else {
     $('#pair-log').show();
+    $('#pair-actions').show();
   }
 
   $('#pair-log').smartupdater({
@@ -75,15 +72,22 @@ function managePair(name) {
       dataType: "json",
       minTimeout: 2000
     }, function(logEntries) {
-      $('#pair-log div.entry').remove();
+      $('#pair-log div').remove();
 
-      $.each(logEntries, function(idx, entry) {
-        var time = new Date(entry.timestamp).toString("dd/MM/yyyy HH:mm:ss");
-        var text = '<span class="timestamp">' + time + '</span><span class="msg">' + entry.msg + '</span>';
+      if (logEntries.length == 0) {
+        $('#pair-log').append('<div class="status">No recent activity</div>');
+      } else {
+        $.each(logEntries, function(idx, entry) {
+          var time = new Date(entry.timestamp).toString("dd/MM/yyyy HH:mm:ss");
+          var text = '<span class="timestamp">' + time + '</span><span class="msg">' + entry.msg + '</span>';
 
-        $('#pair-log').append('<div class="entry entry-' + entry.level.toLowerCase() + '">' + text + '</div>')
-      })
+          $('#pair-log').append('<div class="entry entry-' + entry.level.toLowerCase() + '">' + text + '</div>')
+        })
+      }
     });
+
+  $('#pair-actions div,button').remove();
+  renderPairScopedActions(name, $('#pair-actions'), null);
 }
 
 $(document).ready(function() {

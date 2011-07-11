@@ -24,7 +24,18 @@
 
 #pair-list {
   .prepend-top;
-  .span-24;
+  .span-7;
+
+  .pair-row {
+    .last;
+
+    .name {
+      .span-2;
+    }
+    .state {
+      .span-4;
+    }
+  }
 }
 
 #pairlist-header {
@@ -46,9 +57,36 @@ div.pair-action-span {
   .last;
 }
 
+#pair-actions {
+  .prepend-top;
+  .span-24;
+
+  border: @dotted-border;
+  padding: 10px;
+
+  h3 {
+    border-bottom: @solid-border;
+    padding-bottom: 4px;
+    margin: 5px 0px 10px 0px;
+  }
+}
+
 #pair-log {
   .prepend-top;
   .span-24;
+
+  border: @dotted-border;
+  padding: 10px;
+
+  .status {
+    font-style: italic;
+  }
+
+  h3 {
+    border-bottom: @solid-border;
+    padding-bottom: 4px;
+    margin: 5px 0px 10px 0px;
+  }
 
   .entry .timestamp {
     margin-right: 15px;
