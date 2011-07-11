@@ -413,7 +413,7 @@ function drawCircle(i, j) {
   }
 }
 
-function drawArrow(ctx, dir, x, y, w, h) {
+function drawArrow(ctx, dir, x, y, w, h, fillStyle) {
   var headWidth = w / 3;
   var cornerHeight = h - (h / 6);
 
@@ -422,7 +422,7 @@ function drawArrow(ctx, dir, x, y, w, h) {
       endX   = x + (dir == drawArrow.left ? w : 0);
 
   ctx.strokeStyle = "black";
-  ctx.fillStyle = "white";
+  ctx.fillStyle = fillStyle || "white";
   ctx.beginPath();
   ctx.moveTo(startX, y + h / 2);
   ctx.lineTo(headX, y);
@@ -437,6 +437,38 @@ function drawArrow(ctx, dir, x, y, w, h) {
 }
 drawArrow.left = "left";
 drawArrow.right = "right";
+
+/**
+ * Returns the position of the leftmost cell in the viewport.
+ */
+function leftmostCell(x, y) {
+  var cell = coordsToPosition({"x": x, "y": y});
+  var radius = limit(buckets[cell.row][cell.column], Math.floor((gridSize - 1) / 2));
+  if (radius.value > 0) {
+    var cutoff = positionToCoords(cell).x + (gridSize / 2) + radius.value;
+    if (x > cutoff) {
+      // nudge to the right if the cell's blob is no longer visible
+      cell.column++;
+    }
+  }
+  return cell;
+}
+
+/**
+ * Returns the position of the rightmost cell in the viewport.
+ */
+function rightmostCell(x, y) {
+  var cell = coordsToPosition({"x": x, "y": y});
+  var radius = limit(buckets[cell.row][cell.column], Math.floor((gridSize - 1) / 2));
+  if (radius.value > 0) {
+    var cutoff = positionToCoords(cell).x + (gridSize / 2) - radius.value;
+    if (x < cutoff) {
+      // nudge to the left if the cell's blob is no longer visible
+      cell.column--;
+    }
+  }
+  return cell;
+}
 
 function nonEmptyCellExistsBefore(cell) {
   var cols = buckets[cell.row];
@@ -478,6 +510,9 @@ function drawGrid() {
   // draw swim lanes
   var lane = 0;
   var laneHeight = swimlaneHeight();
+  var arrowHeight = 8;
+  var originX = o_x;
+  originX = Math.abs(originX);// workaround for a bug in Chrome, Math.abs sometimes gets optimized away or otherwise borked
   for (var s = 0.5 + laneHeight; s < canvas.height; s += laneHeight) {
     dashedLine(underlayContext, 0, s, canvas.width, s, 2);
     if (swimlaneLabels[lane] != null) {
@@ -485,13 +520,11 @@ function drawGrid() {
       underlayContext.fillStyle = "black";
       underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + 12);
     }
-    var leftmostCell = coordsToPosition({"x": Math.abs(o_x), "y": s - laneHeight});
-    if (nonEmptyCellExistsBefore(leftmostCell)) {
-      drawArrow(underlayContext, drawArrow.left, 10, s - 18, 24, 12);
+    if (nonEmptyCellExistsBefore(leftmostCell(originX, s - laneHeight))) {
+      drawArrow(underlayContext, drawArrow.left, 10, s - arrowHeight * 2, 12, arrowHeight);
     }
-    var rightmostCell = coordsToPosition({"x": Math.abs(o_x) + canvas.width - 1, "y": s - laneHeight});
-    if (nonEmptyCellExistsAfter(rightmostCell)) {
-      drawArrow(underlayContext, drawArrow.right, canvas.width - 10 - 24, s - 18, 24, 12);
+    if (nonEmptyCellExistsAfter(rightmostCell(originX + canvas.width - 1, s - laneHeight))) {
+      drawArrow(underlayContext, drawArrow.right, canvas.width - 10 - 12, s - arrowHeight * 2, 12, arrowHeight);
     }
     lane++;
   }
@@ -573,6 +606,13 @@ function coordsToPosition(coords) {
   return {
     "row": Math.floor(coords.y / (2 * gutterSize + gridSize)),
     "column": Math.floor((coords.x) / gridSize)
+  };
+}
+
+function positionToCoords(cell) {
+  return {
+    "x": cell.column * gridSize,
+    "y": cell.row * (2 * gutterSize + gridSize)
   };
 }
 
