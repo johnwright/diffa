@@ -413,16 +413,21 @@ function drawCircle(i, j) {
   }
 }
 
-function drawArrow(ctx, dir, x, y, w, h, fillStyle) {
-  var headWidth = w / 3;
-  var cornerHeight = h - (h / 6);
+function drawArrow(ctx, dir, x, y, w, h) {
+  var headWidth = w / 2;
+  var cornerHeight = h - (h / 4);
 
   var startX = x + (dir == drawArrow.left ? 0 : w),
       headX  = x + (dir == drawArrow.left ? headWidth : w - headWidth),
       endX   = x + (dir == drawArrow.left ? w : 0);
 
-  ctx.strokeStyle = "black";
-  ctx.fillStyle = fillStyle || "white";
+  var gradient = context.createLinearGradient(startX, y, endX, y);
+  gradient.addColorStop(0, '#555555');
+  gradient.addColorStop(1, 'rgba(0,0,0,0)');// transparent
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(0,0,0,0)";// transparent
+  ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.moveTo(startX, y + h / 2);
   ctx.lineTo(headX, y);
@@ -434,6 +439,7 @@ function drawArrow(ctx, dir, x, y, w, h, fillStyle) {
   ctx.closePath();
   ctx.stroke();
   ctx.fill();
+  ctx.restore();
 }
 drawArrow.left = "left";
 drawArrow.right = "right";
@@ -510,21 +516,22 @@ function drawGrid() {
   // draw swim lanes
   var lane = 0;
   var laneHeight = swimlaneHeight();
-  var arrowHeight = 8;
-  var originX = o_x;
-  originX = Math.abs(originX);// workaround for a bug in Chrome, Math.abs sometimes gets optimized away or otherwise borked
+  var arrowWidth = 18;
+  var arrowHeight = 12;
+  var viewportX = o_x;
+  viewportX = Math.abs(viewportX);// workaround for a bug in Chrome, Math.abs sometimes gets optimized away or otherwise borked
   for (var s = 0.5 + laneHeight; s < canvas.height; s += laneHeight) {
     dashedLine(underlayContext, 0, s, canvas.width, s, 2);
     if (swimlaneLabels[lane] != null) {
       underlayContext.font = "11px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
       underlayContext.fillStyle = "black";
-      underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + 12);
+      underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + arrowHeight);
     }
-    if (nonEmptyCellExistsBefore(leftmostCell(originX, s - laneHeight))) {
-      drawArrow(underlayContext, drawArrow.left, 10, s - arrowHeight * 2, 12, arrowHeight);
+    if (nonEmptyCellExistsBefore(leftmostCell(viewportX, s - laneHeight))) {
+      drawArrow(underlayContext, drawArrow.left, 10, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
-    if (nonEmptyCellExistsAfter(rightmostCell(originX + canvas.width - 1, s - laneHeight))) {
-      drawArrow(underlayContext, drawArrow.right, canvas.width - 10 - 12, s - arrowHeight * 2, 12, arrowHeight);
+    if (nonEmptyCellExistsAfter(rightmostCell(viewportX + canvas.width - 1, s - laneHeight))) {
+      drawArrow(underlayContext, drawArrow.right, canvas.width - 10 - arrowWidth, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
     lane++;
   }
