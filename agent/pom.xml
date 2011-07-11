@@ -157,7 +157,7 @@
   </dependencies>
 
   <build>
-    <finalName>${project.artifactId}-${buildVersion}</finalName>
+    <finalName>${project.artifactId}-b${diffa.build.number}</finalName>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>

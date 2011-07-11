@@ -15,7 +15,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <assembled.filename>diffa-${project.version}</assembled.filename>
+    <assembled.filename>diffa-b${diffa.build.number}</assembled.filename>
   </properties>
 
   <dependencies>
