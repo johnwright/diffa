@@ -4,7 +4,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * You may   obtain a copy of the License at
  *
  *         http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -30,6 +30,10 @@ function renderState(state) {
   return null;
 }
 
+function renderPairName(name) {
+  return "<a href=\"javascript:managePair('" + name + "')\">" + name + "</a>";
+}
+
 function renderPairScopedActions(pairKey, actionListContainer, repairStatus) {
   var actionListCallback = function(actionList, status, xhr) {
     if (!actionList) return;
@@ -52,11 +56,34 @@ function addPair(name, state) {
   var actionButtonsForPair = $('<div class="span-4"></div>');
   var repairStatusForPair = $('<div class="span-4 last"></div>');
 
-  $('#pairs').append($('<div class="span-2">' + name + '</div>'))
+  $('#pairs').append($('<div class="span-2">' + renderPairName(name) + '</div>'))
              .append($('<div class="span-4">' + renderState(state) + '</div>'))
              .append(actionButtonsForPair)
              .append(repairStatusForPair);
   renderPairScopedActions(name, actionButtonsForPair, repairStatusForPair);
+}
+
+function managePair(name) {
+  if ($('#pair-log').is(':visible')) {
+    $('#pair-log').smartupdaterStop();
+  } else {
+    $('#pair-log').show();
+  }
+
+  $('#pair-log').smartupdater({
+      url : API_BASE + "/diagnostics/" + name + "/log",
+      dataType: "json",
+      minTimeout: 2000
+    }, function(logEntries) {
+      $('#pair-log div.entry').remove();
+
+      $.each(logEntries, function(idx, entry) {
+        var time = new Date(entry.timestamp).toString("dd/MM/yyyy HH:mm:ss");
+        var text = '<span class="timestamp">' + time + '</span><span class="msg">' + entry.msg + '</span>';
+
+        $('#pair-log').append('<div class="entry entry-' + entry.level.toLowerCase() + '">' + text + '</div>')
+      })
+    });
 }
 
 $(document).ready(function() {

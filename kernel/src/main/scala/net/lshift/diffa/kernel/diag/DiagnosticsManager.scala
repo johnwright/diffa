@@ -15,9 +15,9 @@ trait DiagnosticsManager {
   def logPairEvent(level:DiagnosticLevel, pair:String, msg:String)
 
   /**
-   * Queries for all known events about the given pair.
+   * Queries for known events about the given pair.
    */
-  def queryEvents(pair:String):Seq[PairEvent]
+  def queryEvents(pair:String, maxEvents:Int):Seq[PairEvent]
 }
 
 /**

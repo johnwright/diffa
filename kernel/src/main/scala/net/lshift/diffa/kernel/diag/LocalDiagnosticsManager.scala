@@ -17,10 +17,10 @@ class LocalDiagnosticsManager extends DiagnosticsManager {
     pairDiag.logPairEvent(PairEvent(new DateTime(), level, msg))
   }
 
-  def queryEvents(pair:String) = {
+  def queryEvents(pair:String, maxEvents: Int) = {
     pairs.synchronized { pairs.get(pair) } match {
       case None           => Seq()
-      case Some(pairDiag) => pairDiag.queryEvents
+      case Some(pairDiag) => pairDiag.queryEvents(maxEvents)
     }
   }
 
@@ -37,8 +37,15 @@ class LocalDiagnosticsManager extends DiagnosticsManager {
       }
     }
 
-    def queryEvents:Seq[PairEvent] = {
-      log.synchronized { log.toSeq }
+    def queryEvents(maxEvents:Int):Seq[PairEvent] = {
+      log.synchronized {
+        val startIdx = log.length - maxEvents
+        if (startIdx < 0) {
+          log.toSeq
+        } else {
+          log.slice(startIdx, log.length).toSeq
+        }
+      }
     }
   }
 }

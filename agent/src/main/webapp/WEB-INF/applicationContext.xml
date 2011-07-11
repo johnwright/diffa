@@ -283,6 +283,7 @@
   <bean id="actionsFrontend" class="net.lshift.diffa.kernel.frontend.wire.ActionsProxy">
     <constructor-arg ref="diffaConfigStore"/>
     <constructor-arg ref="participantFactory" />
+    <constructor-arg ref="diagnosticsManager" />
   </bean>
 
   <!--

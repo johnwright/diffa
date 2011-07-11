@@ -27,6 +27,12 @@
   .span-24;
 }
 
+#pairlist-header {
+  .top-and-bottom-borders;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
 div.pair-name-span {
   .span-2;
 }
@@ -38,4 +44,19 @@ div.pair-state-span {
 div.pair-action-span {
   .span-8;
   .last;
+}
+
+#pair-log {
+  .prepend-top;
+  .span-24;
+
+  .entry .timestamp {
+    margin-right: 15px;
+  }
+  .entry-info .msg {
+    color: green;
+  }
+  .entry-error .msg {
+    color: red;
+  }
 }
