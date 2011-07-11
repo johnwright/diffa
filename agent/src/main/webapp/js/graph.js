@@ -400,46 +400,61 @@ function drawCircle(i, j) {
     var cell_x = i + Math.floor(gridSize / 2);
     var cell_y = j + gutterSize + Math.floor(gridSize / 2);
     var size = limit(buckets[cell.row][cell.column], Math.floor((gridSize - 1) / 2));
-    if (size.limited) {
-      context.lineWidth = 2;
+    if (size.value > 0) {
+      context.lineWidth = size.limited ? 2 : 1;
+      context.strokeStyle = "black";
+      context.fillStyle = "white";
+      context.beginPath();
+      context.arc(cell_x, cell_y, size.value, 0, Math.PI * 2, false);
+      context.closePath();
+      context.stroke();
+      context.fill();
     }
-    else {
-      context.lineWidth = 1;
-    }
-    context.strokeStyle = "black";
-    context.fillStyle = "white";
-    context.beginPath();
-    context.arc(cell_x, cell_y, size.value, 0, Math.PI * 2, false);
-    context.closePath();
-    context.stroke();
-    context.fill();
   }
 }
 
 function drawArrow(ctx, dir, x, y, w, h) {
-    var headWidth = w / 3;
-    var cornerHeight = h - (h / 3 / 2);
+  var headWidth = w / 3;
+  var cornerHeight = h - (h / 6);
 
-    var startX = x + (dir == drawArrow.left ? 0 : w),
-        headX  = x + (dir == drawArrow.left ? headWidth : w - headWidth),
-        endX   = x + (dir == drawArrow.left ? w : 0);
-    
-    ctx.strokeStyle = "black";
-    ctx.fillStyle = "white";
-    ctx.beginPath();
-    ctx.moveTo(startX, y + h / 2);
-    ctx.lineTo(headX, y);
-    ctx.lineTo(headX, y + cornerHeight);
-    ctx.lineTo(endX,  y + cornerHeight);
-    ctx.lineTo(endX, y + h - cornerHeight);
-    ctx.lineTo(headX, y + h - cornerHeight);
-    ctx.lineTo(headX, y + h);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fill();
+  var startX = x + (dir == drawArrow.left ? 0 : w),
+      headX  = x + (dir == drawArrow.left ? headWidth : w - headWidth),
+      endX   = x + (dir == drawArrow.left ? w : 0);
+
+  ctx.strokeStyle = "black";
+  ctx.fillStyle = "white";
+  ctx.beginPath();
+  ctx.moveTo(startX, y + h / 2);
+  ctx.lineTo(headX, y);
+  ctx.lineTo(headX, y + cornerHeight);
+  ctx.lineTo(endX,  y + cornerHeight);
+  ctx.lineTo(endX, y + h - cornerHeight);
+  ctx.lineTo(headX, y + h - cornerHeight);
+  ctx.lineTo(headX, y + h);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
 }
 drawArrow.left = "left";
 drawArrow.right = "right";
+
+function nonEmptyCellExistsBefore(cell) {
+  var cols = buckets[cell.row];
+  for (var i = 0; i < cell.column; i++) {
+    if (cols[i] > 0)
+      return true;
+  }
+  return false;
+}
+
+function nonEmptyCellExistsAfter(cell) {
+  var cols = buckets[cell.row];
+  for (var i = cell.column + 1; i < cols.length; i++) {
+    if (cols[i] > 0)
+      return true;
+  }
+  return false;
+}
 
 
 var toggleX, toggleY;
@@ -467,7 +482,16 @@ function drawGrid() {
     dashedLine(underlayContext, 0, s, canvas.width, s, 2);
     if (swimlaneLabels[lane] != null) {
       underlayContext.font = "11px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
-      underlayContext.fillText(swimlaneLabels[lane], 10, s - (2 * gutterSize + gridSize) + 12);
+      underlayContext.fillStyle = "black";
+      underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + 12);
+    }
+    var leftmostCell = coordsToPosition({"x": Math.abs(o_x), "y": s - laneHeight});
+    if (nonEmptyCellExistsBefore(leftmostCell)) {
+      drawArrow(underlayContext, drawArrow.left, 10, s - 18, 24, 12);
+    }
+    var rightmostCell = coordsToPosition({"x": Math.abs(o_x) + canvas.width - 1, "y": s - laneHeight});
+    if (nonEmptyCellExistsAfter(rightmostCell)) {
+      drawArrow(underlayContext, drawArrow.right, canvas.width - 10 - 24, s - 18, 24, 12);
     }
     lane++;
   }
