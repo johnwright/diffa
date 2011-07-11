@@ -8,6 +8,6 @@ s3cmd rb --recursive $BUCKET
 
 s3cmd mb $BUCKET
 
-s3cmd put dist/target/*.zip $BUCKET
-s3cmd put agent/target/*.war $BUCKET
-s3cmd put packages.js $BUCKET
+s3cmd put --acl-public --guess-mime-type dist/target/*.zip $BUCKET
+s3cmd put --acl-public --guess-mime-type agent/target/*.war $BUCKET
+s3cmd put --acl-public --guess-mime-type packages.js $BUCKET
