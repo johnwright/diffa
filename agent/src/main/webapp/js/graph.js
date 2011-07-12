@@ -414,6 +414,7 @@ function drawCircle(i, j) {
     var cell_y = j + gutterSize + Math.floor(gridSize / 2);
     var size = limit(buckets[cell.row][cell.column], Math.floor((gridSize - 1) / 2));
     if (size.value > 0) {
+      // if the size has been limited, draw the outline slightly thicker
       context.lineWidth = size.limited ? 2 : 1;
       context.strokeStyle = colours.black;
       context.fillStyle = colours.white;
@@ -458,7 +459,7 @@ function drawArrow(ctx, dir, x, y, w, h) {
 /**
  * Finds a cell with a fully- or partially-visible blob at the given coordinates.
  * The "dir" parameter controls whether blob visibility is determined with respect
- * to the left or right of the x position..
+ * to the left or right of the x position.
  */
 function findCellWithVisibleBlob(x, y, dir) {
   var cell = coordsToCell({"x": x, "y": y});
@@ -574,6 +575,11 @@ function drawOverlay() {
   }
 }
 
+/**
+ * Limits a value to a given maximum value, somewhat like Math.min().
+ * Returns an object with two properties: "value", the limited value and "limited",
+ * which flags whether the original value was greater than the maximum value.
+ */
 function limit(value, maximum) {
   if (value <= maximum) {
     return {"value":value, "limited":false};
