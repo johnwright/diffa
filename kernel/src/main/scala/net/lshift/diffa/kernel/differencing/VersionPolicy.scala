@@ -73,7 +73,6 @@ trait VersionPolicy {
 
 /**
  * This provides an invoker with the ability to notify an invokee that a submitted task should be cancelled.
- * In addition to this, the invokee can report the current status back to the invoker.
  */
 trait FeedbackHandle {
   /**
@@ -85,12 +84,6 @@ trait FeedbackHandle {
    * This indicates whether the current running task has been cancelled.
    */
   def isCancelled : Boolean
-
-  // TODO [#249] This is just a definition ATM - this should be plumbed
-  /**
-   * This is a conduit that allows the invoker to receive the latest status as a string.
-   */
-  def logStatus(status:String)
 
 }
 

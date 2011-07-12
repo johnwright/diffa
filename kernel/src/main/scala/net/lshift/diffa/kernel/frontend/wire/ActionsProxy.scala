@@ -23,11 +23,13 @@ import InvocationResult._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
 import io.Source
+import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 
 /**
  * This is a conduit to the actions that are provided by participants
  */
-class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) extends ActionsClient {
+class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
+    extends ActionsClient {
 
   def listActions(pairKey: String): Seq[Actionable] =
     withValidPair(pairKey) { pair =>
@@ -46,14 +48,28 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory) exten
         case RepairAction.ENTITY_SCOPE => repairAction.url.replace("{id}", request.entityId)
         case RepairAction.PAIR_SCOPE => repairAction.url
       }
+      val actionDescription = "\"" + repairAction.name + "\" on " + (repairAction.scope match {
+        case RepairAction.ENTITY_SCOPE => "entity " + request.entityId + " of pair " + request.pairKey
+        case RepairAction.PAIR_SCOPE => "pair " + request.pairKey
+      })
+      diagnostics.logPairEvent(DiagnosticLevel.INFO, request.pairKey, "Initiating action " + actionDescription)
+
       try {
         val httpResponse = client.execute(new HttpPost(url))
         val httpCode = httpResponse.getStatusLine.getStatusCode
         val httpEntity = Source.fromInputStream(httpResponse.getEntity.getContent).mkString
+
+        if (httpCode >= 200 && httpCode < 300) {
+          diagnostics.logPairEvent(DiagnosticLevel.INFO, request.pairKey, "Action " + actionDescription + " succeeded: " + httpEntity)
+        } else {
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, request.pairKey, "Action " + actionDescription + " failed: " + httpEntity)
+        }
         InvocationResult.received(httpCode, httpEntity)
       }
       catch {
-        case e => InvocationResult.failure(e)
+        case e =>
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, request.pairKey, "Action " + actionDescription + " failed: " + e.getMessage)
+          InvocationResult.failure(e)
       }
     }
 

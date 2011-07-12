@@ -35,6 +35,7 @@ import net.lshift.diffa.kernel.participants.IntegerCategoryFunction._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
 import net.lshift.diffa.participant.scanning._
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Base class for the various policy tests.
@@ -50,6 +51,7 @@ abstract class AbstractPolicyTest {
   val usMock = createStrictMock("us", classOf[UpstreamParticipant])
   val dsMock = createStrictMock("ds", classOf[DownstreamParticipant])
   val nullListener = new NullDifferencingListener
+  val diagnostics = createStrictMock("diagnostics", classOf[DiagnosticsManager])
 
   val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])

@@ -49,7 +49,7 @@
     <link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen, projection">
 
     <link rel="stylesheet/less" type="text/css" href="less/styling.less"/>
-    <script src="js/less-1.1.3.min.js"></script>
+    <script src="js/thirdparty/less-1.1.3.min.js"></script>
 
     <decorator:head/>
 

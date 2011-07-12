@@ -21,6 +21,7 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Version policy where two events are considered the same based on the downstream reporting the same upstream
@@ -30,8 +31,9 @@ import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
  */
 class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               listener:DifferencingListener,
-                              configStore:ConfigStore)
-    extends BaseSynchingVersionPolicy(stores, listener, configStore) {
+                              configStore:ConfigStore,
+                              diagnostics:DiagnosticsManager)
+    extends BaseSynchingVersionPolicy(stores, listener, configStore, diagnostics) {
 
   def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingSyncStrategy(us,ds)
   

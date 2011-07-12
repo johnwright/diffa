@@ -18,6 +18,24 @@
       <repair-action name="Resend Source" url="http://localhost:19293/participant-demo/actions/resend/{id}" scope="entity"/>
       <repair-action name="Resend All" url="http://localhost:19293/participant-demo/actions/resend-all" scope="pair"/>
     </pair>
+
+    <pair key="WEB-2" upstream="a" downstream="b" match-timeout="5" version-policy="same">
+      <repair-action name="Resend Source" url="http://localhost:19293/participant-demo/actions/resend/{id}" scope="entity"/>
+      <repair-action name="Resend All" url="http://localhost:19293/participant-demo/actions/resend-all" scope="pair"/>
+    </pair>
+
+    <pair key="WEB-3" upstream="a" downstream="b" match-timeout="5" version-policy="same">
+      <repair-action name="Resend Source" url="http://localhost:19293/participant-demo/actions/resend/{id}" scope="entity"/>
+      <repair-action name="Resend All" url="http://localhost:19293/participant-demo/actions/resend-all" scope="pair"/>
+    </pair>
+
+    <pair key="WEB-4" upstream="a" downstream="b" match-timeout="5" version-policy="same">
+      <repair-action name="Resend Source" url="http://localhost:19293/participant-demo/actions/resend/{id}" scope="entity"/>
+      <repair-action name="Remove Destination" url="http://localhost:19293/participant-demo/actions/resend/{id}" scope="entity"/>
+      <repair-action name="Mail Tech Support" url="http://localhost:19293/invalid" scope="pair"/>
+      <repair-action name="Resend All" url="http://localhost:19293/participant-demo/actions/resend-all" scope="pair"/>
+      <repair-action name="Rebuild" url="http://localhost:19293/participant-demo/actions/resend-all" scope="pair"/>
+    </pair>
   </group>
 
 </diffa-config>

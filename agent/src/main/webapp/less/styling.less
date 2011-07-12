@@ -47,12 +47,19 @@
 @border-thickness: 1px;
 
 @dotted-border: @border-thickness dotted silver;
+@solid-border: @border-thickness solid silver;
 
 /* Common border definition */
 .top-and-bottom-borders {
   min-height: @min-line-height;
   border-bottom: @dotted-border;
   border-top: @dotted-border;
+}
+
+.rounded(@radius: 10px) {
+  -webkit-border-radius: @radius;
+  -moz-border-radius: @radius;
+  border-radius: @radius;
 }
 
 // Mixin certain Blueprint definitions into various object classes
@@ -98,6 +105,10 @@ a {
   padding-top: 30;
   display:none;
   position:absolute;
+}
+
+.loading {
+  padding: 10px 0px 10px 30px;
 }
 
 button.repair {

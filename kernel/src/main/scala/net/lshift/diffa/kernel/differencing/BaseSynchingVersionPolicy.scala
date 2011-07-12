@@ -26,13 +26,15 @@ import org.slf4j.LoggerFactory
 import concurrent.SyncVar
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
+import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 
 /**
  * Standard behaviours supported by synchronising version policies.
  */
 abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFactory,
                                          listener:DifferencingListener,
-                                         configStore:ConfigStore)
+                                         configStore:ConfigStore,
+                                         diagnostics:DiagnosticsManager)
     extends VersionPolicy {
   protected val alerter = Alerter.forClass(getClass)
 
@@ -128,6 +130,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                         handle:FeedbackHandle) {
 
       checkForCancellation(handle, pair)
+      diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair.key, "Scanning aggregates for %s with (constraints=%s, bucketing=%s)".format(endpoint.name, constraints, bucketing))
 
       val remoteDigests = participant.scan(constraints, bucketing)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
@@ -145,6 +148,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
         case EntityQueryAction(narrowed)    => {
 
           checkForCancellation(handle, pair)
+          diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair.key, "Scanning entities for %s with (constraints=%s)".format(endpoint.name, narrowed))
 
           val remoteVersions = participant.scan(narrowed, Seq())
           val cachedVersions = getEntities(pair.key, narrowed)

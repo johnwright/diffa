@@ -17,7 +17,7 @@
 
 function appendActionButtonToContainer($container, action, pairKey, itemID, $repairStatus) {
   // Reset the status box
-  $repairStatus.text("No repairs in progress");
+  if ($repairStatus != null) $repairStatus.text("No repairs in progress");
   $('<button class="repair">' + action.name +  '</button>')
     .click(function(e) {
       e.preventDefault();
@@ -28,12 +28,12 @@ function appendActionButtonToContainer($container, action, pairKey, itemID, $rep
         return false;
       }
       $button.addClass('disabled');
-      $repairStatus.text('Repairing...');
+      if ($repairStatus != null) $repairStatus.text('Repairing...');
       $.ajax({
             type: "POST",
             url: url,
             success: function(data, status, xhr) {
-              $repairStatus.html('Repair status: ' + data.code + '<br/>output: ' + data.output);
+              if ($repairStatus != null) $repairStatus.html('Repair status: ' + data.code + '<br/>output: ' + data.output);
             },
             error: function(xhr, status, ex) {
               if (console && console.log) {
@@ -49,7 +49,7 @@ function appendActionButtonToContainer($container, action, pairKey, itemID, $rep
                 else
                   console.log("error during repair for pair " + pairKey + ": ", error);
               }
-              $repairStatus.text('Error during repair: ' + (status || ex.message));
+              if ($repairStatus != null) $repairStatus.text('Error during repair: ' + (status || ex.message));
             },
             complete: function() {
               $button.removeClass('disabled');

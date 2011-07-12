@@ -34,6 +34,7 @@ import org.joda.time.{LocalDate, DateTime}
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
 import net.lshift.diffa.participant.scanning._
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -52,6 +53,7 @@ abstract class AbstractDataDrivenPolicyTest {
   EasyMock.checkOrder(dsMock, false)   // Not all participant operations are going to be strictly ordered
 
   val nullListener = new NullDifferencingListener
+  val diagnostics = createStrictMock("diagnostics", classOf[DiagnosticsManager])
 
   val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])
