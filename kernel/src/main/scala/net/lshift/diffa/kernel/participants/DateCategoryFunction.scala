@@ -16,9 +16,10 @@
 
 package net.lshift.diffa.kernel.participants
 
-import org.joda.time.LocalDate
 import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import net.lshift.diffa.participant.scanning._
+import java.lang.IllegalArgumentException
+import org.joda.time.{DateTime, LocalDate}
 
 /**
  * Extension of the DateCategoryFunction to support internal functions.
@@ -31,13 +32,32 @@ abstract class DateCategoryFunction(attrName:String, dataType:DateCategoryDataTy
   def descend:Option[CategoryFunction]
   def pointToBounds(d:LocalDate) : (LocalDate,LocalDate)
 
-  def constrain(partition:String) = {
+  def constrain(parent:Option[ScanConstraint], partition:String) = {
     val point = pattern.parseDateTime(partition).toLocalDate
     val (lower,upper) = pointToBounds(point)
 
     dataType match {
-      case DateDataType => new DateRangeConstraint(attrName, lower, upper)
-      case TimeDataType => new TimeRangeConstraint(attrName, sod(lower), eod(upper))
+      case DateDataType =>
+        parent match {
+          case None =>
+            new DateRangeConstraint(attrName, lower, upper)
+          case Some(pdrc:DateRangeConstraint) =>
+            new DateRangeConstraint(attrName, combineLower(pdrc.getStart, lower), combineUpper(pdrc.getEnd, upper))
+          case Some(x) =>
+            throw new IllegalArgumentException("The parent %s is not valid for constraining the %s with %s".format(x, this, partition))
+        }
+      case TimeDataType =>
+        val lowerDate = sod(lower)
+        val upperDate = eod(upper)
+
+        parent match {
+          case None =>
+            new TimeRangeConstraint(attrName, lowerDate, upperDate)
+          case Some(ptrc:TimeRangeConstraint) =>
+            new TimeRangeConstraint(attrName, combineLower(ptrc.getStart, lowerDate), combineUpper(ptrc.getEnd, upperDate))
+          case Some(x) =>
+            throw new IllegalArgumentException("The parent %s is not valid for constraining the %s with %s".format(x, this, partition))
+        }
     }
   }
 
@@ -50,6 +70,42 @@ abstract class DateCategoryFunction(attrName:String, dataType:DateCategoryDataTy
    * Convert to a DateTime using a millisecond before the next day, i.e. the end of the day
    */
   def eod(d:LocalDate) = d.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1)
+
+  /**
+   * Select the later of the two dates, since we don't want to widen a lower bound.
+   */
+  def combineLower(existing:LocalDate, newDate:LocalDate) = if (newDate != null && existing.compareTo(newDate) > 0) {
+      existing
+    } else {
+      newDate
+    }
+
+  /**
+   * Select the earlier of the two dates, since we don't want to widen an upper bound.
+   */
+  def combineUpper(existing:LocalDate, newDate:LocalDate) = if (newDate != null && existing.compareTo(newDate) < 0) {
+      existing
+    } else {
+      newDate
+    }
+
+  /**
+   * Select the later of the two times, since we don't want to widen a lower bound.
+   */
+  def combineLower(existing:DateTime, newDate:DateTime) = if (newDate != null && existing.compareTo(newDate) > 0) {
+      existing
+    } else {
+      newDate
+    }
+
+  /**
+   * Select the earlier of the two dates, since we don't want to widen an upper bound.
+   */
+  def combineUpper(existing:DateTime, newDate:DateTime) = if (newDate != null && existing.compareTo(newDate) < 0) {
+      existing
+    } else {
+      newDate
+    }
 
   def shouldBucket() = true
 }

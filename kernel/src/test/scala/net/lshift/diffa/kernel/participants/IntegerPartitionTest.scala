@@ -48,20 +48,20 @@ class IntegerPartitionTest {
     val myBinaryCategoryFunction = binaryCategoryFunction(128)
     assertEquals("256", myBinaryCategoryFunction.bucket("300"))
     assertEquals(new IntegerRangeConstraint("someInt", 256, 383),
-                 myBinaryCategoryFunction.constrain("256"))
+                 myBinaryCategoryFunction.constrain(None, "256"))
     assertEquals(Some(binaryCategoryFunction(64)), myBinaryCategoryFunction.descend)
   }
 
   @Test
   def descendFromTensPartition {
     assertEquals(None, tens.descend)
-    assertEquals(new IntegerRangeConstraint("someInt", 10, 19), tens.constrain("10"))
+    assertEquals(new IntegerRangeConstraint("someInt", 10, 19), tens.constrain(None, "10"))
   }
 
   @Test
   def descendFromHundredsPartition {
     assertEquals(Some(tens), hundreds.descend)
-    assertEquals(new IntegerRangeConstraint("someInt", 100, 199), hundreds.constrain("100"))
+    assertEquals(new IntegerRangeConstraint("someInt", 100, 199), hundreds.constrain(None, "100"))
   }
 
   @Test(expected=classOf[InvalidAttributeValueException])
@@ -71,7 +71,7 @@ class IntegerPartitionTest {
 
   @Test(expected=classOf[InvalidAttributeValueException])
   def descendShouldThrowInvalidAttributeValueExceptionIfPartitionValueIsInvalid {
-    tens.constrain("123")
+    tens.constrain(None, "123")
   }
 
   @Test(expected=classOf[IllegalArgumentException])

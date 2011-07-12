@@ -41,7 +41,7 @@ case class StringPrefixCategoryFunction(attrName:String,
     else
       Some(StringPrefixCategoryFunction(attrName, prefixLength + step, maxLength, step))
 
-  def constrain(partition: String) =
+  def constrain(parent:Option[ScanConstraint], partition: String) =
     if (partition.length < prefixLength)
       new SetConstraint(attrName, Set(partition))
     else if (partition.length > prefixLength)

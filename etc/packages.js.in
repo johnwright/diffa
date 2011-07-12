@@ -1,0 +1,3 @@
+packages([
+  {latest: 'DIFFA_BUILD_NUMBER'}
+]);

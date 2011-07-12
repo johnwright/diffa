@@ -57,7 +57,7 @@ case class IntegerCategoryFunction(attrName:String, denominator: Int, factor:Int
       case e: NumberFormatException => throw new InvalidAttributeValueException("Value is not an integer: "+value)
     }
 
-  def constrain(partition: String) = {
+  def constrain(parent:Option[ScanConstraint], partition: String) = {
     val parsedPartition = parseInt(partition)
     if (parsedPartition % denominator > 0) {
       throw new InvalidAttributeValueException("Partition "+partition+" does not match denominator "+denominator)

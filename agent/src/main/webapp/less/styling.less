@@ -26,9 +26,11 @@
 @import "settings.less";
 
 /* Define all of the colors used throughout */
+@heatmap-blue: #cfe2f3;
 @yellow-background: #FFF2CC;
 @background-grey: #757575;
 @text-grey: #545454;
+@text-light-grey: @background-grey;
 @link-orange: #fca961;
 @light-grey-background: #edece1;
 @bright-yellow: #FFFD94;
@@ -70,6 +72,13 @@ div.main-logo {
 div.top-navigation-link {
   .span-2;
   .last;
+}
+
+div.footer {
+  .span-8;
+  .prepend-6;
+  font-size: @small-font-size;
+  color: @text-light-grey;
 }
 
 // GENERAL BODY WORK

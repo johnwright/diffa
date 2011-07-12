@@ -157,7 +157,7 @@
   </dependencies>
 
   <build>
-    <finalName>${project.artifactId}-${buildVersion}</finalName>
+    <finalName>${project.artifactId}-b${diffa.build.number}</finalName>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
@@ -293,6 +293,7 @@
       <plugin>
         <groupId>net.lshift.diffa</groupId>
         <artifactId>diffa-docgen-maven-plugin</artifactId>
+        <version>${project.version}</version>
         <configuration>
           <templateDir>${basedir}/src/main/resources/docgen/md</templateDir>
           <examplesFactoryClass>net.lshift.diffa.kernel.util.DocExamplesFactory</examplesFactoryClass>
@@ -315,6 +316,20 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <webResources>
+            <!-- allow the diffa.build.number property to be spliced into decorators.jsp -->
+            <resource>
+              <directory>${basedir}/src/main/webapp/decorators</directory>
+              <targetPath>decorators</targetPath>
+              <filtering>true</filtering>
+            </resource>
+          </webResources>
+        </configuration>
       </plugin>
     </plugins>
   </build>
