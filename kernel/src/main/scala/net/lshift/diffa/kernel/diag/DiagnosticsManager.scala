@@ -25,7 +25,7 @@ trait DiagnosticsManager {
  */
 case class PairEvent(
   @BeanProperty var timestamp:DateTime = null,
-  @BeanProperty var level:DiagnosticLevel = DiagnosticLevel.Info,
+  @BeanProperty var level:DiagnosticLevel = DiagnosticLevel.INFO,
   @BeanProperty var msg:String = null
 ) {
   def this() = this(timestamp = null)

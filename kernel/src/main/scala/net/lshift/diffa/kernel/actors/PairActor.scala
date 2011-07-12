@@ -298,9 +298,9 @@ case class PairActor(pairKey:String,
     }
 
     state match {
-      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Scan failed")
-      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan cancelled")
-      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan completed")
+      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Scan failed")
+      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan cancelled")
+      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan completed")
       case _                        => // Ignore - not a state that we'll see
     }
 
@@ -356,6 +356,7 @@ case class PairActor(pairKey:String,
       policy.replayUnmatchedDifferences(pairKey, message.diffListener)
     } catch {
       case ex => {
+        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Failed to Difference Pair: " + ex.getMessage)
         logger.error("Failed to difference pair " + pairKey, ex)
       }
     }
@@ -400,7 +401,7 @@ case class PairActor(pairKey:String,
           }
           case e:Exception => {
             logger.error("Upstream scan failed: " + pairKey, e)
-            diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Upstream scan failed: " + e.getMessage)
+            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Upstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Failure)
           }
         }
@@ -418,7 +419,7 @@ case class PairActor(pairKey:String,
           }
           case e:Exception => {
             logger.error("Downstream scan failed: " + pairKey, e)
-            diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Downstream scan failed: " + e.getMessage)
+            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Downstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Failure)
           }
         }
@@ -435,7 +436,7 @@ case class PairActor(pairKey:String,
     } catch {
       case x: Exception => {
         logger.error("Failed to initiate scan for pair: " + pairKey, x)
-        diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Failed to initiate scan for pair: " + x.getMessage)
+        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Failed to initiate scan for pair: " + x.getMessage)
         processBacklog(PairScanState.FAILED)
         false
       }

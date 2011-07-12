@@ -156,15 +156,15 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
-    diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan completed"); expectLastCall
-    replay(versionPolicy, syncListener)
+    diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan completed"); expectLastCall
+    replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey, diffListener, syncListener)
     monitor.synchronized {
       monitor.wait(1000)
     }
-    verify(versionPolicy, syncListener)
+    verify(versionPolicy, syncListener, diagnostics)
   }
 
   @Test
@@ -260,7 +260,7 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.CANCELLED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = cancelMonitor.synchronized{ cancelMonitor.notifyAll() }
     })
-    diagnostics.logPairEvent(DiagnosticLevel.Info, pairKey, "Scan cancelled"); expectLastCall
+    diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan cancelled"); expectLastCall
 
     expectScans.andAnswer(new IAnswer[Unit] {
       def answer = {
@@ -290,7 +290,7 @@ class PairActorTest {
       cancelMonitor.wait(timeToWait * 2)
     }
 
-    verify(versionPolicy, syncListener)
+    verify(versionPolicy, syncListener, diagnostics)
   }
 
   @Test
@@ -308,8 +308,8 @@ class PairActorTest {
     syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer { monitor.synchronized { monitor.notifyAll } }
     })
-    diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Downstream scan failed: Deliberate runtime excecption, this should be handled"); expectLastCall
-    diagnostics.logPairEvent(DiagnosticLevel.Error, pairKey, "Scan failed"); expectLastCall
+    diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Downstream scan failed: Deliberate runtime excecption, this should be handled"); expectLastCall
+    diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Scan failed"); expectLastCall
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)

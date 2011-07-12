@@ -20,7 +20,7 @@ class DiagnosticsResource {
   @GET
   @Path("/{pairKey}/log")
   @Produces(Array("application/json"))
-  @Description("Retrieves the recent log entries for the given pair.")
+  @Description("Retrieves the most recent log entries for the given pair.")
   @MandatoryParams(Array(new MandatoryParam(name = "pairKey", datatype = "string", description = "Pair Key")))
   @OptionalParams(Array(new OptionalParam(name = "maxItems", datatype = "integer", description = "Maximum number of returned entries")))
   def getPairStates(@PathParam("pairKey") pairKey: String, @QueryParam("maxItems") maxItems:java.lang.Integer): Response = {

@@ -52,7 +52,7 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory, val d
         case RepairAction.ENTITY_SCOPE => "entity " + request.entityId + " of pair " + request.pairKey
         case RepairAction.PAIR_SCOPE => "pair " + request.pairKey
       })
-      diagnostics.logPairEvent(DiagnosticLevel.Info, request.pairKey, "Initiating action " + actionDescription)
+      diagnostics.logPairEvent(DiagnosticLevel.INFO, request.pairKey, "Initiating action " + actionDescription)
 
       try {
         val httpResponse = client.execute(new HttpPost(url))
@@ -60,15 +60,15 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory, val d
         val httpEntity = Source.fromInputStream(httpResponse.getEntity.getContent).mkString
 
         if (httpCode >= 200 && httpCode < 300) {
-          diagnostics.logPairEvent(DiagnosticLevel.Info, request.pairKey, "Action " + actionDescription + " succeeded: " + httpEntity)
+          diagnostics.logPairEvent(DiagnosticLevel.INFO, request.pairKey, "Action " + actionDescription + " succeeded: " + httpEntity)
         } else {
-          diagnostics.logPairEvent(DiagnosticLevel.Error, request.pairKey, "Action " + actionDescription + " failed: " + httpEntity)
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, request.pairKey, "Action " + actionDescription + " failed: " + httpEntity)
         }
         InvocationResult.received(httpCode, httpEntity)
       }
       catch {
         case e =>
-          diagnostics.logPairEvent(DiagnosticLevel.Error, request.pairKey, "Action " + actionDescription + " failed: " + e.getMessage)
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, request.pairKey, "Action " + actionDescription + " failed: " + e.getMessage)
           InvocationResult.failure(e)
       }
     }

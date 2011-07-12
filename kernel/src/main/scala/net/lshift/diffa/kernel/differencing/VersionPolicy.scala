@@ -73,7 +73,6 @@ trait VersionPolicy {
 
 /**
  * This provides an invoker with the ability to notify an invokee that a submitted task should be cancelled.
- * In addition to this, the invokee can report the current status back to the invoker.
  */
 trait FeedbackHandle {
   /**

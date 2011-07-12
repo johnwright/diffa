@@ -4,7 +4,7 @@
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may   obtain a copy of the License at
+ * You may obtain a copy of the License at
  *
  *         http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -220,16 +220,12 @@ Diffa.Views.PairSelector = Backbone.View.extend({
   }
 });
 
-Diffa.Views.PairActions = Backbone.View.extend({
+// Base class inherited by views that take a pair collection and then find the selected item to display it.
+Diffa.Views.PairSelectionView = Backbone.View.extend({
   el: $('#pair-actions'),
 
   initialize: function() {
-    _.bindAll(this, "render", "maybeRender");
-
-    this.model.bind('change:selected', this.maybeRender);
-    this.model.bind('change:actions',  this.maybeRender);
-
-    this.maybeRender();
+    _.bindAll(this, "maybeRender");
   },
 
   maybeRender: function(pair) {
@@ -248,6 +244,21 @@ Diffa.Views.PairActions = Backbone.View.extend({
       this.currentPairKey = pair.id;
       this.render();
     }
+  }
+});
+
+Diffa.Views.PairActions = Diffa.Views.PairSelectionView.extend({
+  el: $('#pair-actions'),
+
+  initialize: function() {
+    Diffa.Views.PairSelectionView.prototype.initialize.call(this);
+
+    _.bindAll(this, "render");
+
+    this.model.bind('change:selected', this.maybeRender);
+    this.model.bind('change:actions',  this.maybeRender);
+
+    this.maybeRender();
   },
 
   render: function() {
@@ -270,34 +281,18 @@ Diffa.Views.PairActions = Backbone.View.extend({
   }
 });
 
-Diffa.Views.PairLog = Backbone.View.extend({
+Diffa.Views.PairLog = Diffa.Views.PairSelectionView.extend({
   el: $('#pair-log'),
 
   initialize: function() {
-    _.bindAll(this, "render", "maybeRender");
+    Diffa.Views.PairSelectionView.prototype.initialize.call(this);
+
+    _.bindAll(this, "render");
 
     this.model.bind('change:selected',    this.maybeRender);
     this.model.bind('change:logEntries',  this.maybeRender);
 
     this.maybeRender();
-  },
-
-  maybeRender: function(pair) {
-    // We can sometimes be invoked without a pair. In that case, scan the collection to find a
-    if (pair == null) {
-      pair = this.model.detect(function(pair) { return pair.get('selected'); });
-
-      // If nothing is selected, then we have nothing to do.
-      if (pair == null) return;
-    }
-
-    if (!pair.get('selected') && pair.id == this.currentPairKey) {
-      // The pair we've previously been showing is no longer visible. Hide our view.
-      $(this.el).hide();
-    } else if (pair.get('selected')) {
-      this.currentPairKey = pair.id;
-      this.render();
-    }
   },
 
   render: function() {

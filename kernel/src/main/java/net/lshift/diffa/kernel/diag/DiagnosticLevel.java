@@ -8,16 +8,16 @@ public enum DiagnosticLevel {
    * Trace event. Tracks relatively low level activity that is generally useful for understanding internal system
    * processes.
    */
-  Trace,
+  TRACE,
 
   /**
    * Information-level event. Tracks a high level activity that should generally be of user interest.
    */
-  Info,
+  INFO,
 
   /**
    * Error event. Tracks an error that has occurred within a process that might be of interest to a user attempting
    * to understand an operation failure.
    */
-  Error
+  ERROR
 }
