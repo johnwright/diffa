@@ -63,37 +63,59 @@ $(document).ready(function() {
   initGraph();
 });
 
+$(window).resize(function() {
+  stopPolling();
+  clearEverything();
+  recalibrateHeatmap();
+  startPolling();
+});
+
+/**
+ * This is a once off intialization of the heatmap layers.
+ * Note that if this function is called multiple times, which it shouldn't, new layers are added to the DOM,
+ * without removing any previously created layers.
+ */
 function initCanvas() {
   heatmap = document.getElementById("heatmap");
   underlay = document.getElementById("underlay");
+  scale = document.getElementById("scale");
 
   resizeLayer(underlay, underlay.offsetWidth);
   canvas = createLayer(heatmap, 2);
   overlay = createLayer(heatmap, 4);
-
-  scale = document.getElementById("scale");
-  scale.width = scale.offsetWidth;
-  scale.height = scaleHeight;
 
   context = canvas.getContext("2d");
   overlayContext = overlay.getContext("2d");
   underlayContext = underlay.getContext("2d");
   scaleContext = scale.getContext("2d");
 
+  calibrateHeatmap();
+}
+
+/**
+ * Sets global objects to an appropriate scale.
+ */
+function calibrateHeatmap() {
+  scale.width = scale.offsetWidth;
+  scale.height = scaleHeight;
   rightLimit = (maxColumns * gridSize) - canvas.width;
+}
+
+/**
+ * Performs a calibration in addition to rescaling the three main canvas layers
+ */
+function recalibrateHeatmap() {
+  resizeLayer(underlay, underlay.offsetWidth);
+  resizeLayerFromParent(canvas, underlay);
+  resizeLayerFromParent(overlay, underlay);
+  calibrateHeatmap();
 }
 
 function createLayer(parent, z_index) {
   var layer = document.createElement("canvas");
   document.body.appendChild(layer);
-  layer.style.position = "absolute";
-  layer.style.left = parent.offsetLeft;
-  layer.style.top = parent.offsetTop;
-
   layer.style.zIndex = z_index;
-
-  resizeLayer(layer, parent.offsetWidth);
-
+  resizeLayerFromParent(layer,parent);
   return layer;
 }
 
@@ -101,6 +123,13 @@ function createLayer(parent, z_index) {
 function resizeLayer(layer, width) {
   layer.width = width;
   layer.height = minRows * swimlaneHeight() + bottomGutter;
+}
+
+function resizeLayerFromParent(layer, parent) {
+  layer.style.position = "absolute";
+  layer.style.left = parent.offsetLeft;
+  layer.style.top = parent.offsetTop;
+  resizeLayer(layer, parent.offsetWidth);
 }
 
 function swimlaneHeight() {
