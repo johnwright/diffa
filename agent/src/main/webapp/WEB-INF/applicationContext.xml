@@ -47,7 +47,7 @@
             <constructor-arg ref="versionCorrelationStoreFactory" />
             <constructor-arg ref="sessionManager" />
             <constructor-arg ref="diffaConfigStore" />
-          <constructor-arg ref="diagnosticsManager" />
+            <constructor-arg ref="diagnosticsManager" />
           </bean>
       </list>
     </property>

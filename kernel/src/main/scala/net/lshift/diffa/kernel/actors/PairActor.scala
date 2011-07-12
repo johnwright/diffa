@@ -246,7 +246,7 @@ case class PairActor(pairKey:String,
 
       a.result match {
         case Failure => leaveScanState(PairScanState.FAILED)
-        case Success      => maybeLeaveScanningState
+        case Success => maybeLeaveScanningState
       }
     }
     case camsg:ChildActorScanMessage if isOwnedByOutstandingScan(camsg) =>
