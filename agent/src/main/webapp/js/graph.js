@@ -40,6 +40,19 @@ var bottomGutter = 10;
 var rightLimit = 0;
 var selectedBucket;
 
+var colours = {
+  black: 'black',
+  darkGrey: '#555555',
+  red: '#d12f19',
+  transparent: 'rgba(0,0,0,0)',
+  white: 'white'
+}
+
+var directions = {
+  left: 'left',
+  right: 'right'
+}
+
 // These global variables store pending requests so that all entity detail requests can be handled in a LIFO
 // fashion by aborting the previous request
 var pendingUpstreamRequest;
@@ -395,15 +408,15 @@ function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
 }
 
 function drawCircle(i, j) {
-  var cell = coordsToPosition({"x":i, "y":j});
+  var cell = coordsToCell({"x":i, "y":j});
   if (cell.column < maxColumns && cell.row < maxRows) {
     var cell_x = i + Math.floor(gridSize / 2);
     var cell_y = j + gutterSize + Math.floor(gridSize / 2);
     var size = limit(buckets[cell.row][cell.column], Math.floor((gridSize - 1) / 2));
     if (size.value > 0) {
       context.lineWidth = size.limited ? 2 : 1;
-      context.strokeStyle = "black";
-      context.fillStyle = "white";
+      context.strokeStyle = colours.black;
+      context.fillStyle = colours.white;
       context.beginPath();
       context.arc(cell_x, cell_y, size.value, 0, Math.PI * 2, false);
       context.closePath();
@@ -417,16 +430,16 @@ function drawArrow(ctx, dir, x, y, w, h) {
   var headWidth = w / 2;
   var cornerHeight = h - (h / 4);
 
-  var startX = x + (dir == drawArrow.left ? 0 : w),
-      headX  = x + (dir == drawArrow.left ? headWidth : w - headWidth),
-      endX   = x + (dir == drawArrow.left ? w : 0);
+  var startX = x + (dir == directions.left ? 0 : w),
+      headX  = x + (dir == directions.left ? headWidth : w - headWidth),
+      endX   = x + (dir == directions.left ? w : 0);
 
   var gradient = context.createLinearGradient(startX, y, endX, y);
-  gradient.addColorStop(0, '#555555');
-  gradient.addColorStop(1, 'rgba(0,0,0,0)');// transparent
+  gradient.addColorStop(0, colours.darkGrey);
+  gradient.addColorStop(1, colours.transparent);
 
   ctx.save();
-  ctx.strokeStyle = "rgba(0,0,0,0)";// transparent
+  ctx.strokeStyle = colours.transparent;
   ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.moveTo(startX, y + h / 2);
@@ -441,59 +454,36 @@ function drawArrow(ctx, dir, x, y, w, h) {
   ctx.fill();
   ctx.restore();
 }
-drawArrow.left = "left";
-drawArrow.right = "right";
 
 /**
- * Returns the position of the leftmost cell in the viewport.
+ * Finds a cell with a fully- or partially-visible blob at the given coordinates.
+ * The "dir" parameter controls whether blob visibility is determined with respect
+ * to the left or right of the x position..
  */
-function leftmostCell(x, y) {
-  var cell = coordsToPosition({"x": x, "y": y});
+function findCellWithVisibleBlob(x, y, dir) {
+  var cell = coordsToCell({"x": x, "y": y});
   var radius = limit(buckets[cell.row][cell.column], Math.floor((gridSize - 1) / 2));
   if (radius.value > 0) {
-    var cutoff = positionToCoords(cell).x + (gridSize / 2) + radius.value;
-    if (x > cutoff) {
-      // nudge to the right if the cell's blob is no longer visible
+    var cutoff = cellToCoords(cell).x + (gridSize / 2) + (dir == directions.left ? radius.value : -1 * radius.value);
+    if (dir == directions.left && x > cutoff) {
+      // nudge to the right if the leftmost cell's blob is no longer visible
       cell.column++;
-    }
-  }
-  return cell;
-}
-
-/**
- * Returns the position of the rightmost cell in the viewport.
- */
-function rightmostCell(x, y) {
-  var cell = coordsToPosition({"x": x, "y": y});
-  var radius = limit(buckets[cell.row][cell.column], Math.floor((gridSize - 1) / 2));
-  if (radius.value > 0) {
-    var cutoff = positionToCoords(cell).x + (gridSize / 2) - radius.value;
-    if (x < cutoff) {
-      // nudge to the left if the cell's blob is no longer visible
+    } else if (dir == directions.right && x < cutoff) {
+      // nudge to the left if the rightmost cell's blob is no longer visible
       cell.column--;
     }
   }
   return cell;
 }
 
-function nonEmptyCellExistsBefore(cell) {
-  var cols = buckets[cell.row];
-  for (var i = 0; i < cell.column; i++) {
+function nonEmptyCellExists(row, startColumn, endColumn) {
+  var cols = buckets[row];
+  for (var i = startColumn; i < endColumn; i++) {
     if (cols[i] > 0)
       return true;
   }
   return false;
 }
-
-function nonEmptyCellExistsAfter(cell) {
-  var cols = buckets[cell.row];
-  for (var i = cell.column + 1; i < cols.length; i++) {
-    if (cols[i] > 0)
-      return true;
-  }
-  return false;
-}
-
 
 var toggleX, toggleY;
 var show_grid = false;
@@ -509,7 +499,7 @@ function drawGrid() {
       context.moveTo(0, y);
       context.lineTo(region_width, y);
     }
-    context.strokeStyle = "red";
+    context.strokeStyle = colours.red;
     context.stroke();
   }
 
@@ -524,14 +514,16 @@ function drawGrid() {
     dashedLine(underlayContext, 0, s, canvas.width, s, 2);
     if (swimlaneLabels[lane] != null) {
       underlayContext.font = "11px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
-      underlayContext.fillStyle = "black";
+      underlayContext.fillStyle = colours.black;
       underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + arrowHeight);
     }
-    if (nonEmptyCellExistsBefore(leftmostCell(viewportX, s - laneHeight))) {
-      drawArrow(underlayContext, drawArrow.left, 10, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
+    var leftCell = findCellWithVisibleBlob(viewportX, s - laneHeight, directions.left);
+    if (nonEmptyCellExists(leftCell.row, 0, leftCell.column)) {
+      drawArrow(underlayContext, directions.left, 10, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
-    if (nonEmptyCellExistsAfter(rightmostCell(viewportX + canvas.width - 1, s - laneHeight))) {
-      drawArrow(underlayContext, drawArrow.right, canvas.width - 10 - arrowWidth, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
+    var rightCell = findCellWithVisibleBlob(viewportX + canvas.width - 1, s - laneHeight, directions.right);
+    if (nonEmptyCellExists(rightCell.row, rightCell.column + 1, maxColumns - 1)) {
+      drawArrow(underlayContext, directions.right, canvas.width - 10 - arrowWidth, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
     lane++;
   }
@@ -540,9 +532,9 @@ function drawGrid() {
   var pollText = polling ? " LIVE " : " CLICK TO POLL ";
   var textWidth = underlayContext.measureText(pollText).width;
   var textSpacer = 20;
-  underlayContext.fillStyle = "#d12f19";
+  underlayContext.fillStyle = colours.red;
   underlayContext.fillRect(canvas.width - textWidth - textSpacer, 0, textWidth + textSpacer, 20);
-  underlayContext.fillStyle = "#fff";
+  underlayContext.fillStyle = colours.white;
   underlayContext.font = "12px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
   underlayContext.textBaseline = "top";
   underlayContext.fillText(pollText, canvas.width - underlayContext.measureText(pollText).width - (textSpacer / 2), 5);
@@ -609,14 +601,14 @@ function coords(e) {
   return { "x":x, "y":y };
 }
 
-function coordsToPosition(coords) {
+function coordsToCell(coords) {
   return {
     "row": Math.floor(coords.y / (2 * gutterSize + gridSize)),
     "column": Math.floor((coords.x) / gridSize)
   };
 }
 
-function positionToCoords(cell) {
+function cellToCoords(cell) {
   return {
     "x": cell.column * gridSize,
     "y": cell.row * (2 * gutterSize + gridSize)
@@ -657,7 +649,7 @@ function mouseUp(e) {
       var c = coords(e);
       togglePolling(c);
       c.x -= o_x;
-      selectedBucket = coordsToPosition(c);
+      selectedBucket = coordsToCell(c);
       page = 0;
       fetchData();
     }
@@ -696,9 +688,9 @@ function mouseMove(e) {
 function mouseOver(e) {
   var c = coords(e);
   c.x -= o_x;
-  var position = coordsToPosition(c);
-  if (position.row >= 0 && position.row < maxRows && position.column >= 0 && position.column < maxColumns) {
-    highlighted = position;
+  var cell = coordsToCell(c);
+  if (cell.row >= 0 && cell.row < maxRows && cell.column >= 0 && cell.column < maxColumns) {
+    highlighted = cell;
     drawOverlay();
   }
 }
