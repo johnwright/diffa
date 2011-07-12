@@ -19,7 +19,11 @@ var Diffa = {
   Routers: {},
   Views: {},
   Collections: {},
-  Models: {}
+  Models: {},
+  Config: {
+    LogPollInterval:    2000,     // How frequently (in ms) we poll for log updates
+    PairStateInterval:  5000      // How frequently (in ms) we poll for pair state updates
+  }
 };
 
 $(function() {
@@ -49,7 +53,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
       if (pair.get('selected')) {
         self.fetchActions();
 
-        self.logPollIntervalId = window.setInterval(self.syncLog, 2000);
+        self.logPollIntervalId = window.setInterval(self.syncLog, Diffa.Config.LogPollInterval);
         self.syncLog();
       } else {
         if (self.logPollIntervalId) {
@@ -331,6 +335,6 @@ Diffa.PairLogView =  new Diffa.Views.PairLog({model: Diffa.PairsCollection});
 Backbone.history.start();
 
 Diffa.PairsCollection.sync();
-setInterval('Diffa.PairsCollection.sync()',5000);
+setInterval('Diffa.PairsCollection.sync()', Diffa.Config.PairStateInterval);
   
 });
