@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-var gLastStates = [];
-
 var Diffa = {
   Routers: {},
   Views: {},
@@ -28,23 +26,56 @@ $(function() {
 
 Diffa.Routers.Pairs = Backbone.Router.extend({
   routes: {
+    "":                  "index",      // #
     "pair/:pair":        "managePair"  // #pair/WEB-1
   },
 
-  managePair: function(pairKey) {
-    Diffa.PairListView.select(pairKey);
+  index: function() {
+  },
 
-    managePair(pairKey);
+  managePair: function(pairKey) {
+    Diffa.PairsCollection.select(pairKey);
   }
 });
 
 Diffa.Models.Pair = Backbone.Model.extend({
   initialize: function() {
-    _.bindAll(this, "remove");
+    var self = this;
+
+    _.bindAll(this, "remove", "syncLog");
+
+    // If we become selected, then we should fetch our actions
+    this.bind("change:selected", function(pair) {
+      if (pair.get('selected')) {
+        self.fetchActions();
+
+        self.logPollIntervalId = window.setInterval(self.syncLog, 2000);
+        self.syncLog();
+      } else {
+        if (self.logPollIntervalId) {
+          window.clearInterval(self.logPollIntervalId);
+          delete self.logPollIntervalId;
+        }
+      }
+    })
   },
 
   remove: function() {
     this.trigger('remove');
+  },
+
+  fetchActions: function() {
+    var self = this;
+    $.getJSON(API_BASE + '/actions/' + this.id + '?scope=pair', function(actions) {
+      self.set({actions: actions});
+    });
+  },
+
+  syncLog: function() {
+    var self = this;
+    $.getJSON(API_BASE + "/diagnostics/" + this.id + "/log", function(logEntries) {
+      self.set({logEntries: logEntries});
+    });
   }
 });
 
@@ -53,7 +84,11 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
   url: API_BASE + "/diffs/sessions/all_scan_states",
 
   initialize: function() {
-    _.bindAll(this, "sync", "scanAll");
+    _.bindAll(this, "sync", "scanAll", "select");
+
+    this.bind("add", function(pair) {
+      pair.set({selected: pair.id == this.selectedPair});
+    });
   },
 
   sync: function() {
@@ -105,6 +140,13 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
         alert("Error in scan request: " + errorThrown);
       }
     });
+  },
+
+  select: function(pairKey) {
+    this.selectedPair = pairKey;
+    this.each(function(pair) {
+      pair.set({selected: pair.id == pairKey});
+    });
   }
 });
 
@@ -112,22 +154,13 @@ Diffa.Views.PairList = Backbone.View.extend({
   el: $('#pair-list'),
 
   initialize: function() {
-    _.bindAll(this, "addPair", "removePair", "select");
+    _.bindAll(this, "addPair", "removePair");
 
     this.model.bind('add', this.addPair);
     this.model.bind('remove', this.removePair);
   },
 
-  select: function(pairKey) {
-    this.selectedPair = pairKey;
-    this.model.each(function(pair) {
-      pair.set({selected: pair.id == pairKey});
-    });
-  },
-
   addPair: function(pair) {
-    pair.set({selected: pair.id == this.selectedPair});
-
     var view = new Diffa.Views.PairSelector({model: pair});
     this.el.append(view.render().el);
   },
@@ -149,8 +182,9 @@ Diffa.Views.PairSelector = Backbone.View.extend({
   initialize: function() {
     _.bindAll(this, "render", "select", "close");
 
-    this.model.bind('change', this.render);
-    this.model.bind('remove', this.close);
+    this.model.bind('change:state',     this.render);
+    this.model.bind('change:selected',  this.render);
+    this.model.bind('remove',           this.close);
   },
 
   render: function() {
@@ -182,70 +216,121 @@ Diffa.Views.PairSelector = Backbone.View.extend({
   }
 });
 
+Diffa.Views.PairActions = Backbone.View.extend({
+  el: $('#pair-actions'),
+
+  initialize: function() {
+    _.bindAll(this, "render", "maybeRender");
+
+    this.model.bind('change:selected', this.maybeRender);
+    this.model.bind('change:actions',  this.maybeRender);
+
+    this.maybeRender();
+  },
+
+  maybeRender: function(pair) {
+    // We can sometimes be invoked without a pair. In that case, scan the collection to find a
+    if (pair == null) {
+      pair = this.model.detect(function(pair) { return pair.get('selected'); });
+
+      // If nothing is selected, then we have nothing to do.
+      if (pair == null) return;
+    }
+
+    if (!pair.get('selected') && pair.id == this.currentPairKey) {
+      // The pair we've previously been showing is no longer visible. Hide our view.
+      $(this.el).hide();
+    } else if (pair.get('selected')) {
+      this.currentPairKey = pair.id;
+      this.render();
+    }
+  },
+
+  render: function() {
+    var self = this;
+
+    this.$('button').remove();
+
+    var currentPair = self.model.get(self.currentPairKey);
+    var currentActions = currentPair.get('actions');
+
+    // Only show the loading flower if we don't have actions loaded
+    this.$('.loading').toggle(currentActions == null);
+
+    if (currentActions != null) {
+      _.each(currentActions, function(action) {
+        appendActionButtonToContainer(self.el, action, self.model.get(self.currentPairKey), null, null);
+      });
+    }
+    this.el.show();
+  }
 });
 
-function renderPairScopedActions(pairKey, actionListContainer, repairStatus) {
-  var actionListCallback = function(actionList, status, xhr) {
-    if (!actionList) return;
+Diffa.Views.PairLog = Backbone.View.extend({
+  el: $('#pair-log'),
 
-    $.each(actionList, function(i, action) {
-      appendActionButtonToContainer(actionListContainer, action, pairKey, null, repairStatus);
-    });
-  };
+  initialize: function() {
+    _.bindAll(this, "render", "maybeRender");
 
-  $.ajax({ url: API_BASE + '/actions/' + pairKey + '?scope=pair', success: actionListCallback });
-}
+    this.model.bind('change:selected',    this.maybeRender);
+    this.model.bind('change:logEntries',  this.maybeRender);
 
-function removeAllPairs() {
-  $('#pairs').find('div').remove();
-}
+    this.maybeRender();
+  },
 
-function addPair(name, state) {
-  var view = new Diffa.Views.PairSelector({model: new Diffa.Models.Pair({name: name, state: state})});
-  $("#pairs").append(view.render().el);
-}
+  maybeRender: function(pair) {
+    // We can sometimes be invoked without a pair. In that case, scan the collection to find a
+    if (pair == null) {
+      pair = this.model.detect(function(pair) { return pair.get('selected'); });
 
-function managePair(name) {
-  if ($('#pair-log').is(':visible')) {
-    $('#pair-log').smartupdaterStop();
-  } else {
-    $('#pair-log').show();
-    $('#pair-actions').show();
+      // If nothing is selected, then we have nothing to do.
+      if (pair == null) return;
+    }
+
+    if (!pair.get('selected') && pair.id == this.currentPairKey) {
+      // The pair we've previously been showing is no longer visible. Hide our view.
+      $(this.el).hide();
+    } else if (pair.get('selected')) {
+      this.currentPairKey = pair.id;
+      this.render();
+    }
+  },
+
+  render: function() {
+    var self = this;
+
+    this.$('div.entry').remove();
+
+    var currentPair = self.model.get(self.currentPairKey);
+    var currentLogEntries = currentPair.get('logEntries');
+
+    // Only show the loading flower if we don't have log entries loaded
+    this.$('.loading').toggle(currentLogEntries == null);
+
+    if (currentLogEntries != null) {
+      _.each(currentLogEntries, function(entry) {
+        var time = new Date(entry.timestamp).toString("dd/MM/yyyy HH:mm:ss");
+        var text = '<span class="timestamp">' + time + '</span><span class="msg">' + entry.msg + '</span>';
+
+        self.el.append('<div class="entry entry-' + entry.level.toLowerCase() + '">' + text + '</div>')
+      });
+    }
+    this.el.show();
   }
+});
 
-  $('#pair-log').smartupdater({
-      url : API_BASE + "/diagnostics/" + name + "/log",
-      dataType: "json",
-      minTimeout: 2000
-    }, function(logEntries) {
-      $('#pair-log div').remove();
+$('#scan_all').click(function(e) {
+  Diffa.PairsCollection.scanAll();
+});
 
-      if (logEntries.length == 0) {
-        $('#pair-log').append('<div class="status">No recent activity</div>');
-      } else {
-        $.each(logEntries, function(idx, entry) {
-          var time = new Date(entry.timestamp).toString("dd/MM/yyyy HH:mm:ss");
-          var text = '<span class="timestamp">' + time + '</span><span class="msg">' + entry.msg + '</span>';
+Diffa.SettingsApp = new Diffa.Routers.Pairs();
+Diffa.PairsCollection = new Diffa.Collections.Pairs();
+Diffa.PairListView = new Diffa.Views.PairList({model: Diffa.PairsCollection});
+Diffa.PairActionsView =  new Diffa.Views.PairActions({model: Diffa.PairsCollection});
+Diffa.PairLogView =  new Diffa.Views.PairLog({model: Diffa.PairsCollection});
+Backbone.history.start();
 
-          $('#pair-log').append('<div class="entry entry-' + entry.level.toLowerCase() + '">' + text + '</div>')
-        })
-      }
-    });
-
-  $('#pair-actions div,button').remove();
-  renderPairScopedActions(name, $('#pair-actions'), null);
-}
-
-$(document).ready(function() {
-  $('#scan_all').click(function(e) {
-    Diffa.PairsCollection.scanAll();
-  });
-
-  Diffa.SettingsApp = new Diffa.Routers.Pairs();
-  Diffa.PairsCollection = new Diffa.Collections.Pairs();
-  Diffa.PairListView = new Diffa.Views.PairList({model: Diffa.PairsCollection});
-  Backbone.history.start();
-
-  Diffa.PairsCollection.sync();
-  setInterval('Diffa.PairsCollection.sync()',5000);
+Diffa.PairsCollection.sync();
+setInterval('Diffa.PairsCollection.sync()',5000);
+  
 });
