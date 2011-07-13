@@ -402,9 +402,12 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     f(doc)
 
     // Update the lastUpdated field
-    val oldLastUpdate = parseDate(doc.get("lastUpdated"))
-    if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
-      updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
+    // TODO Should it possible to allow the last updated field to be null?
+    if (null != lastUpdated) {
+      val oldLastUpdate = parseDate(doc.get("lastUpdated"))
+      if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
+        updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
+      }
     }
 
     // Update the matched status
