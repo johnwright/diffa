@@ -25,9 +25,9 @@ var underlayContext;
 var scale;
 var scaleContext;
 var buckets = [];
-var maxColumns = 96;
+var maxColumns = 96;// N.B. currently a constant
 var minRows = 5;
-var maxRows = 10;
+var maxRows = 10;// N.B. variable as more pair data arrives
 var gridSize = 30;
 var gutterSize = 24;
 
@@ -122,7 +122,7 @@ function createLayer(parent, z_index) {
 // TODO consider patching this in
 function resizeLayer(layer, width) {
   layer.width = width;
-  layer.height = minRows * swimlaneHeight() + bottomGutter;
+  layer.height = Math.max(minRows, swimlaneLabels.length) * swimlaneHeight() + bottomGutter;
 }
 
 function resizeLayerFromParent(layer, parent) {
@@ -176,15 +176,6 @@ function nearestHour() {
   return Date.today().add({hours: hours});
 }
 function loadBuckets() {
-  buckets = [];
-  for (var i = 0; i < maxRows; i++) {
-    var row = [];
-    for (var j = 0; j < maxColumns; j++) {
-      row[j] = 0;
-    }
-    buckets[i] = row;
-  }
-
   endTime = nearestHour();
 
   var now = endTime.toString(TIME_FORMAT);
@@ -193,16 +184,34 @@ function loadBuckets() {
   var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
   $.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=3600", function(data) {
-    var indexer = 0;
-
+    // update swimlane labels
+    var i = 0;
     for (var pair in data) {
-      swimlaneLabels[indexer] = pair;
-      for (var x = 0; x < data[pair].length; x++) {
-        buckets[indexer][x] = data[pair][x];
-      }
-      indexer++;
+      // add label if it doesn't already exist
+      if (swimlaneLabels.indexOf(pair) < 0)
+        swimlaneLabels.push(pair);
     }
+
+    // copy data into buckets
+    maxRows = Math.max(swimlaneLabels.length, maxRows);
+    for (var i = 0; i < maxRows; i++) {
+      var values = data[swimlaneLabels[i]];
+      if (values) {
+        buckets[i] = buckets[i] || [];
+        for (var j = 0; j < maxColumns; j++)
+          buckets[i][j] = values[j] || 0;
+      } else {
+        // if a pair wasn't in the results, initialize or keep existing data
+        if (! buckets[i]) {
+          buckets[i] = [];
+          for (var j = 0; j < maxColumns; j++)
+            buckets[i][j] = 0;
+        }
+      }
+    }
+    
     clearEverything();
+    recalibrateHeatmap();
     o_x = -1 * rightLimit;
     context.translate(o_x, o_y);
     scaleContext.translate(o_x, o_y);
