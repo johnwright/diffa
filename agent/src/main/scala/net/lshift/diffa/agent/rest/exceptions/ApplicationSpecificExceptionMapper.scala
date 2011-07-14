@@ -29,7 +29,7 @@ class ApplicationSpecificExceptionMapper extends ExceptionMapper[Throwable] {
   val log = LoggerFactory.getLogger(getClass)
 
   def toResponse(t: Throwable) = {
-    log.error("Unhandled application exception", t.fillInStackTrace())
+    log.error("Unhandled application exception", t)
     Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(t.toString).`type`("text/plain").build()
   }
 }

@@ -31,9 +31,9 @@ import collection.mutable.{ListBuffer, HashMap, HashSet}
 import net.lshift.diffa.kernel.differencing._
 import org.apache.lucene.document._
 import net.lshift.diffa.kernel.config.ConfigStore
-import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import net.lshift.diffa.participant.scanning._
+import org.joda.time.{DateTime, LocalDate, DateTimeZone}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
@@ -396,19 +396,23 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     }
   }
 
-  private def doDocUpdate(id:VersionID, lastUpdated:DateTime, f:Document => Unit) = {
+  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, f:Document => Unit) = {
     val doc = getCurrentOrNewDoc(id)
 
     f(doc)
 
-    // Update the lastUpdated field
-    // TODO Should it possible to allow the last updated field to be null?
-    if (null != lastUpdated) {
-      val oldLastUpdate = parseDate(doc.get("lastUpdated"))
-      if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
-        updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
-      }
+    // If the participant does not supply a timestamp, then create one on the fly
+    val lastUpdated = lastUpdatedIn match {
+      case null => new DateTime
+      case d    => d
     }
+
+    // Update the lastUpdated field
+    val oldLastUpdate = parseDate(doc.get("lastUpdated"))
+    if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
+      updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
+    }
+
 
     // Update the matched status
     val isMatched = doc.get("uvsn") == doc.get("duvsn")

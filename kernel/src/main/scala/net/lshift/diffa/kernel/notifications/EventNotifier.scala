@@ -59,7 +59,7 @@ class EventNotifier(val sessionManager:SessionManager,
   def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin) = {
     val now = new DateTime()
     if (now.isAfter(nextRun)) {
-      log.info("About to notify users, the received event was " + id + " at " + lastUpdated)
+      log.trace("About to notify users, the received event was " + id + " at " + lastUpdated)
       nextRun = now.plus(quietTime)
       val e = new NotificationEvent(id, lastUpdated, upstreamVsn, downstreamVsn)      
       config.listUsers.foreach(u => providers.foreach( p => p.notify(e,u)))
