@@ -39,7 +39,8 @@ case class PairActor(pairKey:String,
                      ds:DownstreamParticipant,
                      policy:VersionPolicy,
                      store:VersionCorrelationStore,
-                     escalationListener:DifferencingListener,
+                     differencingListener:DifferencingListener,
+                     pairSyncListener:PairSyncListener,
                      diagnostics:DiagnosticsManager,
                      changeEventBusyTimeoutMillis: Long,
                      changeEventQuietTimeoutMillis: Long) extends Actor {
@@ -51,9 +52,6 @@ case class PairActor(pairKey:String,
   private var lastEventTime: Long = 0
   private var scheduledFlushes: ScheduledFuture[_] = _
 
-  private var currentDiffListener:DifferencingListener = null
-  private var currentScanListener:PairSyncListener = null
-  
   /**
    * Flag that can be used to signal that scanning should be cancelled.
    */
@@ -199,14 +197,14 @@ case class PairActor(pairKey:String,
    * and will be re-delivered into this actor's mailbox when the scan state is exited.
    */
   def receive = {
-    case s:ScanMessage => {
-      if (handleScanMessage(s)) {
+    case ScanMessage => {
+      if (handleScanMessage()) {
         // Go into the scanning state
         become(receiveWhilstScanning)
       }
     }
     case c:ChangeMessage                   => handleChangeMessage(c)
-    case d:DifferenceMessage               => handleDifferenceMessage(d)
+    case DifferenceMessage                 => handleDifferenceMessage()
     case FlushWriterMessage                => writer.flush()
     case camsg:ChildActorScanMessage if isOwnedByOutstandingScan(camsg) =>
       updateOutstandingScans(camsg)     // Allow outstanding cancelled scans to clean themselves up nicely
@@ -238,7 +236,7 @@ case class PairActor(pairKey:String,
       self.reply(true)
     case c: VersionCorrelationWriterCommand if isOwnedByActiveScan(c) =>
       self.reply(c.invokeWriter(writer))
-    case _: ScanMessage                     => // ignore any scan requests whilst scanning
+    case ScanMessage                        => // ignore any scan requests whilst scanning
     case d: Deferrable                      => deferred.enqueue(d)
     case a: ChildActorCompletionMessage     if isOwnedByActiveScan(a) => {
       a.logMessage(logger, Scanning, AlertCodes.SCAN_OPERATION)
@@ -278,15 +276,14 @@ case class PairActor(pairKey:String,
 
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
-      policy.replayUnmatchedDifferences(pairKey, currentDiffListener)
-      policy.replayUnmatchedDifferences(pairKey, escalationListener)
+      policy.replayUnmatchedDifferences(pairKey, differencingListener)
 
       // Re-queue all buffered commands
       leaveScanState(PairScanState.UP_TO_DATE)
     }
   }
 
-  def flushBufferedEvents = bufferedMatchEvents.dequeueAll(e => {e.command(currentDiffListener); true})
+  def flushBufferedEvents = bufferedMatchEvents.dequeueAll(e => {e.command(differencingListener); true})
 
   /**
    * Ensures that the scan state is left cleanly
@@ -327,11 +324,9 @@ case class PairActor(pairKey:String,
    * Resets the state of the actor and processes any pending messages that may have arrived during a scan phase.
    */
   def processBacklog(state:PairScanState) = {
-    if (currentScanListener != null) {
-      currentScanListener.pairSyncStateChanged(pairKey, state)
+    if (pairSyncListener != null) {
+      pairSyncListener.pairSyncStateChanged(pairKey, state)
     }
-    currentDiffListener = null
-    currentScanListener = null
     deferred.dequeueAll(d => {self ! d; true})
   }
 
@@ -350,10 +345,10 @@ case class PairActor(pairKey:String,
   /**
    * Runs a simple replayUnmatchedDifferences for the pair.
    */
-  def handleDifferenceMessage(message:DifferenceMessage) = {
+  def handleDifferenceMessage() = {
     try {
       writer.flush()
-      policy.replayUnmatchedDifferences(pairKey, message.diffListener)
+      policy.replayUnmatchedDifferences(pairKey, differencingListener)
     } catch {
       case ex => {
         diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Failed to Difference Pair: " + ex.getMessage)
@@ -366,12 +361,8 @@ case class PairActor(pairKey:String,
    * Implements the top half of the request to scan the participants for digests.
    * This actor will still be in the scan state after this callback has returned.
    */
-  def handleScanMessage(message:ScanMessage) : Boolean = {
+  def handleScanMessage() : Boolean = {
     val createdScan = OutstandingScan(new UUID)
-
-    // squirrel some callbacks away for invocation in subsequent receives in the scanning state
-    currentDiffListener = message.diffListener
-    currentScanListener = message.pairSyncListener
 
     // allocate a writer proxy
     val writerProxy = createWriterProxy(createdScan.uuid)
@@ -382,7 +373,7 @@ case class PairActor(pairKey:String,
       bufferedMatchEvents.clear()
     }
 
-    message.pairSyncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING)
+    pairSyncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING)
 
     try {
       writer.flush()
@@ -495,8 +486,8 @@ case object Cancellation extends Result
  */
 abstract class Deferrable
 case class ChangeMessage(event: PairChangeEvent) extends Deferrable
-case class DifferenceMessage(diffListener: DifferencingListener) extends Deferrable
-case class ScanMessage(diffListener: DifferencingListener, pairSyncListener: PairSyncListener)
+case object DifferenceMessage extends Deferrable
+case object ScanMessage
 
 /**
  * This message indicates that this actor should cancel all current and pending scan operations.
