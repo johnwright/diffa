@@ -129,6 +129,22 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                         listener:DifferencingListener,
                         handle:FeedbackHandle) {
 
+      if (bucketing.size == 0) {
+        scanEntities(pair, writer, endpoint, constraints, participant, listener, handle)
+      } else {
+        scanAggregates(pair, writer, endpoint, bucketing, constraints, participant, listener, handle)
+      }
+    }
+
+    def scanAggregates(pair:Pair,
+                       writer:LimitedVersionCorrelationWriter,
+                       endpoint:Endpoint,
+                       bucketing:Seq[CategoryFunction],
+                       constraints:Seq[ScanConstraint],
+                       participant:Participant,
+                       listener:DifferencingListener,
+                       handle:FeedbackHandle) {
+      
       checkForCancellation(handle, pair)
       diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair.key, "Scanning aggregates for %s with (constraints=%s, bucketing=%s)".format(endpoint.name, constraints, bucketing))
 
@@ -144,24 +160,32 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
 
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
         case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
-          scanParticipant(pair, writer, endpoint, narrowBuckets, narrowConstraints, participant, listener, handle)
-        case EntityQueryAction(narrowed)    => {
-
-          checkForCancellation(handle, pair)
-          diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair.key, "Scanning entities for %s with (constraints=%s)".format(endpoint.name, narrowed))
-
-          val remoteVersions = participant.scan(narrowed, Seq())
-          val cachedVersions = getEntities(pair.key, narrowed)
-
-          if (log.isTraceEnabled) {
-            log.trace("Remote versions: %s".format(remoteVersions))
-            log.trace("Local versions: %s".format(cachedVersions))
-          }
-          
-          DigestDifferencingUtils.differenceEntities(endpoint.categories.toMap, remoteVersions, cachedVersions, narrowed)
-            .foreach(handleMismatch(pair.key, writer, _, listener))
-        }
+          scanAggregates(pair, writer, endpoint, narrowBuckets, narrowConstraints, participant, listener, handle)
+        case EntityQueryAction(narrowed)    =>
+          scanEntities(pair, writer, endpoint, narrowed, participant, listener, handle)
       })
+    }
+
+    def scanEntities(pair:Pair,
+                     writer:LimitedVersionCorrelationWriter,
+                     endpoint:Endpoint,
+                     constraints:Seq[ScanConstraint],
+                     participant:Participant,
+                     listener:DifferencingListener,
+                     handle:FeedbackHandle) {
+      checkForCancellation(handle, pair)
+      diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair.key, "Scanning entities for %s with (constraints=%s)".format(endpoint.name, constraints))
+
+      val remoteVersions = participant.scan(constraints, Seq())
+      val cachedVersions = getEntities(pair.key, constraints)
+
+      if (log.isTraceEnabled) {
+        log.trace("Remote versions: %s".format(remoteVersions))
+        log.trace("Local versions: %s".format(cachedVersions))
+      }
+
+      DigestDifferencingUtils.differenceEntities(endpoint.categories.toMap, remoteVersions, cachedVersions, constraints)
+        .foreach(handleMismatch(pair.key, writer, _, listener))
     }
 
     def checkForCancellation(handle:FeedbackHandle, pair:Pair) = {

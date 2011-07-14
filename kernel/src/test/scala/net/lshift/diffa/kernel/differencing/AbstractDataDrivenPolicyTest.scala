@@ -35,6 +35,8 @@ import concurrent.SyncVar
 import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
 import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import org.junit.Assume._
+import java.util.HashMap
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -79,8 +81,9 @@ abstract class AbstractDataDrivenPolicyTest {
   @Theory
   def shouldStopAtTopLevelWhenTopLevelBucketsMatch(scenario:Scenario) {
     setupStubs(scenario)
+    assumeTrue(scenario.tx.forall(_.isInstanceOf[AggregateTx]))     // Only relevant in scenarios where aggregation occurs
 
-    scenario.tx.foreach { tx =>
+    scenario.tx.foreach { case tx:AggregateTx =>
       expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
       expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
     }
@@ -103,8 +106,9 @@ abstract class AbstractDataDrivenPolicyTest {
   @Theory
   def shouldJumpToLowestLevelsStraightAfterTopWhenStoreIsEmpty(scenario:Scenario) {
     setupStubs(scenario)
+    assumeTrue(scenario.tx.forall(_.isInstanceOf[AggregateTx]))     // Only relevant in scenarios where aggregation occurs
 
-    scenario.tx.foreach { tx =>
+    scenario.tx.foreach { case tx:AggregateTx =>
       expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, Seq())
       tx.respBuckets.foreach(b => {
         expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
@@ -151,8 +155,14 @@ abstract class AbstractDataDrivenPolicyTest {
       // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
       listener.onMatch(VersionID(scenario.pair.key, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
 
-      // Expect only a top-level sync on the downstream
-      expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
+      tx match {
+        case atx:AggregateTx =>
+          // Expect only a top-level sync on the downstream
+          expectDownstreamAggregateSync(scenario.pair, atx.bucketing, atx.constraints, atx.respBuckets, atx.respBuckets)
+        case etx:EntityTx =>
+          // Expect entity-query, since we can't aggregate anyway
+          expectDownstreamEntitySync(scenario.pair, etx.constraints, etx.entities, etx.entities)
+      }
     }
 
     expectUnmatchedVersionCheck(scenario)
@@ -176,8 +186,15 @@ abstract class AbstractDataDrivenPolicyTest {
     setupStubs(scenario)
 
     scenario.tx.foreach { tx =>
-      // Expect only a top-level sync on the upstream
-      expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
+      tx match {
+        case atx:AggregateTx =>
+          // Expect only a top-level sync on the upstream
+          expectUpstreamAggregateSync(scenario.pair, atx.bucketing, atx.constraints, atx.respBuckets, atx.respBuckets)
+        case etx:EntityTx =>
+          // Expect entity-query, since we can't aggregate anyway
+          expectUpstreamEntitySync(scenario.pair, etx.constraints, etx.entities, etx.entities)
+      }
+
 
       // Alter the version of the first entity in the downstream tree, then expect traversal to it
       val updated = tx.alterFirstVsn("newVsn1")
@@ -325,6 +342,16 @@ object AbstractDataDrivenPolicyTest {
    */
   val localDatePrimedDescriptor = new RangeCategoryDescriptor("datetime", START_2023.toString, END_2023.toString)
 
+  @DataPoint def noCategoriesScenario = Scenario(
+    Pair(key = "ab",
+      upstream = new Endpoint(categories = new HashMap[String, CategoryDescriptor]),
+      downstream = new Endpoint(categories = new HashMap[String, CategoryDescriptor])),
+      EntityTx(Seq(),
+        Vsn("id1", Map(), "vsn1"),
+        Vsn("id2", Map(), "vsn2")
+      )
+    )
+
   /**
    * As part of #203, elements of a set are sent out individually by default.
    * For the sake of simplicity, the old behaviour (to send them out as a batch) can not be configured.
@@ -334,29 +361,17 @@ object AbstractDataDrivenPolicyTest {
     Pair(key = "ab",
       upstream = new Endpoint(categories = Map("someString" -> new SetCategoryDescriptor(Set("A","B","C")))),
       downstream = new Endpoint(categories = Map("someString" -> new SetCategoryDescriptor(Set("A","B","C"))))),
-      AggregateTx(Seq(byName("someString")), Seq(new SetConstraint("someString",Set("A"))),
-        Bucket("A", Map("someString" -> "A"),
-          EntityTx(Seq(new SetConstraint("someString", Set("A"))),
-            Vsn("id1", Map("someString" -> "A"), "vsn1"),
-            Vsn("id2", Map("someString" -> "A"), "vsn2")
-          )
-        )
+      EntityTx(Seq(new SetConstraint("someString", Set("A"))),
+        Vsn("id1", Map("someString" -> "A"), "vsn1"),
+        Vsn("id2", Map("someString" -> "A"), "vsn2")
       ),
-      AggregateTx(Seq(byName("someString")), Seq(new SetConstraint("someString",Set("B"))),
-        Bucket("B", Map("someString" -> "B"),
-          EntityTx(Seq(new SetConstraint("someString", Set("B"))),
-            Vsn("id3", Map("someString" -> "B"), "vsn3"),
-            Vsn("id4", Map("someString" -> "B"), "vsn4")
-          )
-        )
+      EntityTx(Seq(new SetConstraint("someString", Set("B"))),
+        Vsn("id3", Map("someString" -> "B"), "vsn3"),
+        Vsn("id4", Map("someString" -> "B"), "vsn4")
       ),
-      AggregateTx(Seq(byName("someString")), Seq(new SetConstraint("someString",Set("C"))),
-        Bucket("C", Map("someString" -> "C"),
-          EntityTx(Seq(new SetConstraint("someString", Set("C"))),
-            Vsn("id5", Map("someString" -> "C"), "vsn5"),
-            Vsn("id6", Map("someString" -> "C"), "vsn6")
-          )
-        )
+      EntityTx(Seq(new SetConstraint("someString", Set("C"))),
+        Vsn("id5", Map("someString" -> "C"), "vsn5"),
+        Vsn("id6", Map("someString" -> "C"), "vsn6")
       )
     )
 
@@ -586,7 +601,7 @@ object AbstractDataDrivenPolicyTest {
     Pair(key = "gh",
       upstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B")))),
       downstream = new Endpoint(categories = Map("bizDateTime" -> dateTimeCategoryDescriptor, "someString" -> new SetCategoryDescriptor(Set("A","B"))))),
-    AggregateTx(Seq(yearly("bizDateTime", TimeDataType), byName("someString")), Seq(new SetConstraint("someString",Set("A"))),
+    AggregateTx(Seq(yearly("bizDateTime", TimeDataType)), Seq(new SetConstraint("someString",Set("A"))),
       Bucket("2010_A", Map("bizDateTime" -> "2010", "someString" -> "A"),
         AggregateTx(Seq(monthly("bizDateTime", TimeDataType)), Seq(dateTimeRange("bizDateTime", START_2010, END_2010), new SetConstraint("someString",Set("A"))),
           Bucket("2010-07_A", Map("bizDateTime" -> "2010-07", "someString" -> "A"),
@@ -602,7 +617,7 @@ object AbstractDataDrivenPolicyTest {
         )
       )
     ),
-    AggregateTx(Seq(yearly("bizDateTime", TimeDataType), byName("someString")), Seq(new SetConstraint("someString",Set("B"))),
+    AggregateTx(Seq(yearly("bizDateTime", TimeDataType)), Seq(new SetConstraint("someString",Set("B"))),
       Bucket("2011_B", Map("bizDateTime" -> "2011", "someString" -> "B"),
         AggregateTx(Seq(monthly("bizDateTime", TimeDataType)), Seq(dateTimeRange("bizDateTime", START_2011, END_2011), new SetConstraint("someString",Set("B"))),
           Bucket("2011-01_B", Map("bizDateTime" -> "2011-01", "someString" -> "B"),
@@ -627,8 +642,6 @@ object AbstractDataDrivenPolicyTest {
   def monthly(attrName:String, dataType:DateCategoryDataType) = MonthlyCategoryFunction(attrName, dataType)
   def daily(attrName:String, dataType:DateCategoryDataType) = DailyCategoryFunction(attrName, dataType)
   
-  def byName(attrName:String) = ByNameCategoryFunction(attrName)
-
   def thousands(attrName:String) = IntegerCategoryFunction(attrName, 1000, 10)
   def hundreds(attrName:String) = IntegerCategoryFunction(attrName, 100, 10)
   def tens(attrName:String) = IntegerCategoryFunction(attrName, 10, 10)
@@ -646,7 +659,7 @@ object AbstractDataDrivenPolicyTest {
   // Type Definitions
   //
 
-  case class Scenario(pair:Pair, tx:AggregateTx*)
+  case class Scenario(pair:Pair, tx:Tx*)
 
   abstract class Tx {
     def constraints:Seq[ScanConstraint]
