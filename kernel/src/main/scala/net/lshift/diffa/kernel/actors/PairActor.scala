@@ -209,6 +209,10 @@ case class PairActor(pairKey:String,
     case c:ChangeMessage                   => handleChangeMessage(c)
     case d:DifferenceMessage               => handleDifferenceMessage(d)
     case FlushWriterMessage                => writer.flush()
+    case c:VersionCorrelationWriterCommand => {
+      logger.trace("Received writer command (%s) in non-scanning state - sending cancellation".format(c), c.exception)
+      self.reply(CancelMessage)
+    }
     case camsg:ChildActorScanMessage if isOwnedByOutstandingScan(camsg) =>
       updateOutstandingScans(camsg)     // Allow outstanding cancelled scans to clean themselves up nicely
     case CancelMessage                     => {
@@ -216,10 +220,6 @@ case class PairActor(pairKey:String,
           logger.debug("%s : Received cancellation request in non-scanning state, ignoring".format(AlertCodes.CANCELLATION_REQUEST))
       }
       self.reply(true)
-    }
-    case c:VersionCorrelationWriterCommand => {
-      logger.trace("Received writer command (%s) in non-scanning state - sending cancellation".format(c), c.exception)
-      self.reply(CancelMessage)
     }
     case a:ChildActorCompletionMessage     =>
       a.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
