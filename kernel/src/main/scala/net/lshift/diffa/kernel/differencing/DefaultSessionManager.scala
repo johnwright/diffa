@@ -205,7 +205,7 @@ class DefaultSessionManager(
     sessionsByKey(sessionId).retrievePagedEvents(interval, offset,length)
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
-    log.debug("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
+    log.trace("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
     t match {
       case ParticipantType.UPSTREAM => {
         withValidEvent(sessionID, evtSeqId,
