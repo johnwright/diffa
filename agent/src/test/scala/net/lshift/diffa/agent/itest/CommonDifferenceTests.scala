@@ -196,7 +196,7 @@ trait CommonDifferenceTests {
   @Test
   def scanShouldTriggerResend {
     env.withActionsServer {
-      env.addAndNotifyUpstream("abc", "abcdef", someDate = today, someString = "ss")
+      env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
       subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
       assertEquals(1, env.entityResendTally("abc"))
     }
