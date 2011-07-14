@@ -388,11 +388,15 @@ class PairActorTest {
     val proxyDidGenerateException = new SyncVar[Boolean]
     val secondScanIsRunning = new SyncVar[Boolean]
     val completionMonitor = new Object
+    val waitForSecondScanToStartDelay = 2000    // Wait up to 2 seconds for the first scan to fail and the second to start
+    val waitForStragglerToFinishDelay = 2000    // Wait up to 2 seconds for the "straggler" to finish once we've unblocked it
+    val overallProcessWait = waitForSecondScanToStartDelay + waitForStragglerToFinishDelay + 1000
+      // The overall process could take up to both delays, plus a bit of breathing room
 
     expectFailingScan(
       downstreamHandler = new IAnswer[Unit] {
           def answer() {
-            if (secondScanIsRunning.get(10000).isDefined) {
+            if (secondScanIsRunning.get(waitForSecondScanToStartDelay).isDefined) {
               val writer = EasyMock.getCurrentArguments()(1).asInstanceOf[LimitedVersionCorrelationWriter]
               try {
                 writer.clearDownstreamVersion(VersionID("p1", "abc"))
@@ -419,7 +423,7 @@ class PairActorTest {
         secondScanIsRunning.set(true)
 
         // Block the second scan until the first has reached a conclusion
-        proxyDidGenerateException.get(4000)
+        proxyDidGenerateException.get(waitForStragglerToFinishDelay)
       }
     }).once()
     expectDifferencesReplay()
@@ -435,7 +439,7 @@ class PairActorTest {
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey, diffListener, syncListener)
 
-    assertTrue(proxyDidGenerateException.get(100000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
+    assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too
 
     verify(versionPolicy, syncListener)
