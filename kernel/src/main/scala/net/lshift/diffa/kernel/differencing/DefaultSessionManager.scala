@@ -257,7 +257,7 @@ class DefaultSessionManager(
    * If no -> this is a reportable event. Record it in the active list, and emit an event to our clients.
    */
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin) = {
-    log.debug("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
+    log.trace("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
     matching.getMatcher(id.pairKey) match {
       case Some(matcher) => {
