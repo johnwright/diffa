@@ -149,8 +149,9 @@ case class PairActor(pairKey:String,
     def call(command:(LimitedVersionCorrelationWriter => Correlation)) = {
       val message = VersionCorrelationWriterCommand(scanUuid, command)
       (self !!(message, 1000L * timeout)) match {
-        case Some(result) => result.asInstanceOf[Correlation]
-        case None         =>
+        case Some(CancelMessage)  => throw new ScanCancelledException(pairKey)
+        case Some(result)         => result.asInstanceOf[Correlation]
+        case None                 =>
           logger.error("%s: Writer proxy timed out after %s seconds processing command: %s "
                        .format(AlertCodes.MESSAGE_RECEIVE_TIMEOUT, timeout, message), new Exception().fillInStackTrace())
           throw new RuntimeException("Writer proxy timeout")
@@ -217,8 +218,8 @@ case class PairActor(pairKey:String,
       self.reply(true)
     }
     case c:VersionCorrelationWriterCommand => {
-      logger.error("%s: Received command (%s) in non-scanning state - potential bug"
-                  .format(AlertCodes.OUT_OF_ORDER_MESSAGE, c), c.exception)
+      logger.trace("Received writer command (%s) in non-scanning state - sending cancellation".format(c), c.exception)
+      self.reply(CancelMessage)
     }
     case a:ChildActorCompletionMessage     =>
       a.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
@@ -236,8 +237,13 @@ case class PairActor(pairKey:String,
     case CancelMessage                      =>
       handleCancellation()
       self.reply(true)
-    case c: VersionCorrelationWriterCommand if isOwnedByActiveScan(c) =>
-      self.reply(c.invokeWriter(writer))
+    case c: VersionCorrelationWriterCommand =>
+      if (isOwnedByActiveScan(c)) {
+        self.reply(c.invokeWriter(writer))
+      } else {
+        logger.trace("Received writer command (%s) for different scan worker - sending cancellation".format(c), c.exception)
+        self.reply(CancelMessage)
+      }
     case _: ScanMessage                     => // ignore any scan requests whilst scanning
     case d: Deferrable                      => deferred.enqueue(d)
     case a: ChildActorCompletionMessage     if isOwnedByActiveScan(a) => {
@@ -294,6 +300,7 @@ case class PairActor(pairKey:String,
   def leaveScanState(state:PairScanState) = {
 
     if (state == PairScanState.FAILED || state == PairScanState.CANCELLED) {
+      feedbackHandle.cancel()     // In the scenario where we failed, we want to make sure any dangling processes cancel
       writer.rollback()
     }
 
