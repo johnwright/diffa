@@ -18,19 +18,20 @@ package net.lshift.diffa.agent.context
 
 import org.springframework.context.event.ContextRefreshedEvent
 import org.slf4j.{Logger, LoggerFactory}
-import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 import org.springframework.context.{ApplicationContext, ApplicationListener}
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
 
 /**
  * Helper that can trigger specific Agent lifecycle events once the main Spring context has finished it's loading
  * procedure.
  */
-class AgentLifecycleHelper extends ApplicationListener[ContextRefreshedEvent] {
+class AgentLifecycleHelper(nc:NotificationCentre) extends ApplicationListener[ContextRefreshedEvent] {
 
   val log:Logger = LoggerFactory.getLogger(getClass)
 
   def onApplicationEvent(event:ContextRefreshedEvent) {
+    fireLifecycle(event.getApplicationContext, _.onAgentInstantiationCompleted(nc))
     fireLifecycle(event.getApplicationContext, _.onAgentAssemblyCompleted)
     fireLifecycle(event.getApplicationContext, _.onAgentConfigurationActivated)
 

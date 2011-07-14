@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.config.EscalationEvent._
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.differencing._
+import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -42,13 +43,18 @@ import net.lshift.diffa.kernel.differencing._
  */
 class EscalationManager(val config:ConfigStore,
                         val actionsClient:ActionsClient)
-    extends DifferencingListener {
+    extends DifferencingListener
+    with AgentLifecycleAware {
 
   val log = LoggerFactory.getLogger(getClass)
 
   /**
    * Since escalations are currently only driven off mismatches, matches can be safely ignored.
    */
+  override def onAgentInstantiationCompleted(nc: NotificationCentre) {
+    nc.registerForDifferenceEvents(this)
+  }
+
   def onMatch(id: VersionID, vsn: String, origin: MatchOrigin) = ()
 
   /**

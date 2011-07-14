@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.util.MissingObjectException
+import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
 
 /**
  * Standard implementation of the SessionManager.
@@ -49,7 +50,7 @@ class DefaultSessionManager(
         val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory)
     extends SessionManager
-    with DifferencingListener with MatchingStatusListener with PairSyncListener {
+    with DifferencingListener with MatchingStatusListener with PairSyncListener with AgentLifecycleAware {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -92,7 +93,7 @@ class DefaultSessionManager(
       sessionToInit match {
         case Some(session) => {
           session.markAsInitialized
-          runDifferenceForScope(scope, start, end, this)
+          runDifferenceForScope(scope, start, end)
         }
         case None => // Do nothing
       }
@@ -119,7 +120,7 @@ class DefaultSessionManager(
       }
       keyListeners += listener
     }
-    runDifferenceForScope(scope, sessionStart, sessionEnd, listener)
+    runDifferenceForScope(scope, sessionStart, sessionEnd)
     sessionId
   }
 
@@ -163,18 +164,18 @@ class DefaultSessionManager(
   }
 
   def runScanForAllPairings() {
-    runSyncForScope(SessionScope.all, null, null, this)
+    runSyncForScope(SessionScope.all, null, null)
   }
 
   def runScanForPair(pairKey: String) {
-    withPair[Unit](pairKey)(() => runSyncForPair(pairKey, this))
+    withPair[Unit](pairKey)(() => runSyncForPair(pairKey))
   }
 
   def runSync(sessionID:String) = {
     sessionsByKey.get(sessionID) match {
       case None => // No session. Nothing to do. TODO: Throw an exception?
       case Some(cache) => {
-        runSyncForScope(cache.scope, null, null, this)
+        runSyncForScope(cache.scope, null, null)
       }
     }
   }
@@ -205,7 +206,7 @@ class DefaultSessionManager(
     sessionsByKey(sessionId).retrievePagedEvents(interval, offset,length)
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
-    log.debug("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
+    log.trace("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
     t match {
       case ParticipantType.UPSTREAM => {
         withValidEvent(sessionID, evtSeqId,
@@ -243,6 +244,15 @@ class DefaultSessionManager(
       case false => "Expanded detail not available"
     }
 
+  }
+
+  //
+  // Lifecycle Management
+  //
+
+  override def onAgentInstantiationCompleted(nc: NotificationCentre) {
+    nc.registerForDifferenceEvents(this)
+    nc.registerForPairSyncEvents(this)
   }
 
   //
@@ -327,7 +337,7 @@ class DefaultSessionManager(
     if (isRelevantToASession) {
       val (from, until) = defaultDateBounds()
 
-      runDifferenceForScope(SessionScope.forPairs(pairKey), from, until, this)
+      runDifferenceForScope(SessionScope.forPairs(pairKey), from, until)
     }
   }
 
@@ -340,22 +350,22 @@ class DefaultSessionManager(
 
   def withPair[T](pair:String)(f:Function0[T]) = withValidPair(pair, f)
 
-  def runSyncForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) {
-    pairKeysForScope(scope).foreach(runSyncForPair(_, listener))
+  def runSyncForScope(scope:SessionScope, start:DateTime, end:DateTime) {
+    pairKeysForScope(scope).foreach(runSyncForPair(_))
   }
 
-  def runSyncForPair(pairKey:String, listener:DifferencingListener) {
+  def runSyncForPair(pairKey:String) {
     // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
     // asynchronously, we might have returned before then, and this may potentially result in clients seeing
     // a "Up To Date" view, even though we're just about to transition out of that state.
     updatePairSyncState(pairKey, PairScanState.SYNCHRONIZING)
 
-    pairPolicyClient.scanPair(pairKey, listener, this)
+    pairPolicyClient.scanPair(pairKey)
   }
 
-  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime, listener: DifferencingListener) {
+  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime) {
     pairKeysForScope(scope).foreach(pairKey => {
-      pairPolicyClient.difference(pairKey, listener)
+      pairPolicyClient.difference(pairKey)
     })
   }
 

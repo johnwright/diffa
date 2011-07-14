@@ -79,16 +79,15 @@ class PairActorTest {
   expect(stores.apply(pairKey)).andReturn(store)
   replay(stores)
 
-  val escalationListener = createMock(classOf[DifferencingListener])
+  val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
+  val syncListener = createStrictMock("syncListener", classOf[PairSyncListener])
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, escalationListener, participantFactory, stores, diagnostics, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, diffListener, syncListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
   verify(configStore)
 
-  val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
-  val syncListener = createStrictMock("syncListener", classOf[PairSyncListener])
 
   @After
   def stop = supervisor.stopActor(pairKey)
@@ -131,7 +130,7 @@ class PairActorTest {
     replay(versionPolicy)
 
     supervisor.startActor(pair)
-    supervisor.difference(pairKey, diffListener)
+    supervisor.difference(pairKey)
 
     monitor.synchronized {
       monitor.wait(1000)
@@ -151,7 +150,6 @@ class PairActorTest {
     expectScans
 
     expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
-    expect(versionPolicy.replayUnmatchedDifferences(pairKey, escalationListener))
 
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
@@ -160,7 +158,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -208,12 +206,11 @@ class PairActorTest {
            EasyMock.isA(classOf[FeedbackHandle])))
 
     expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
-    expect(versionPolicy.replayUnmatchedDifferences(pairKey, escalationListener))
 
     replay(versionPolicy)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
 
     flushMonitor.synchronized {
       flushMonitor.wait(2000)
@@ -280,7 +277,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
 
     responseMonitor.synchronized {
       responseMonitor.wait(timeToWait * 2)
@@ -313,7 +310,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
     monitor.synchronized {
       monitor.wait(1000)
     }

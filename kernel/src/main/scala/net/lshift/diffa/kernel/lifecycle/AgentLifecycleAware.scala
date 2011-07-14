@@ -20,7 +20,12 @@ package net.lshift.diffa.kernel.lifecycle
  * Trait implemented by any component that wishes to be informed about Agent-specific lifecycle events.
  */
 trait AgentLifecycleAware {
-  
+
+  /**
+   * Indicates that instantiation of agent components has been completed.
+   */
+  def onAgentInstantiationCompleted(nc: NotificationCentre) {}
+
   /**
    * Indicates that assembly of the agent has completed. This means that:
    * <ul>
