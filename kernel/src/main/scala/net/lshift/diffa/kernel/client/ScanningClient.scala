@@ -19,6 +19,11 @@ package net.lshift.diffa.kernel.client
 trait ScanningClient {
 
   /**
+   * Starts a scan on the given pair.
+   */
+  def startScan(pairKey: String): Boolean
+
+  /**
    * Cancels any running and/or pending scans for the given pair.
    */
   def cancelScanning(pairKey:String) : Boolean

@@ -18,11 +18,24 @@ package net.lshift.diffa.agent.client
 
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.client.ScanningClient
+import javax.ws.rs.core.MediaType
+import com.sun.jersey.api.client.ClientResponse
 
 /**
  * A RESTful client to manage participant scanning.
  */
 class ScanningRestClient(u:String) extends AbstractRestClient(u, "rest/scanning/") with ScanningClient {
+
+  def startScan(pairKey: String) = {
+    val p = resource.path("pairs").path(pairKey).path("scan")
+    val response = p.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 202     => // Successfully submitted (202 is "Accepted")
+      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+    }
+    true
+  }
 
   def cancelScanning(pairKey: String) = {
     delete("/pairs/" + pairKey + "/scan")

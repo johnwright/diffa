@@ -16,12 +16,13 @@
 
 package net.lshift.diffa.agent.rest
 
-import javax.ws.rs.{PathParam, Path, DELETE}
 import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.springframework.stereotype.Component
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
+import javax.ws.rs.{POST, PathParam, Path, DELETE}
+import javax.ws.rs.core.Response
 
 @Path("/scanning")
 @Component
@@ -29,10 +30,24 @@ class ScanningResource {
 
   @Autowired var pairPolicyClient:PairPolicyClient = null
 
+  @POST
+  @Path("/pairs/{pairKey}/scan")
+  @Description("Starts a scan for the given pair.")
+  @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
+  def startScan(@PathParam("pairKey") pairKey:String) = {
+    pairPolicyClient.scanPair(pairKey)
+
+    Response.status(Response.Status.ACCEPTED).build
+  }
+
+
   @DELETE
   @Path("/pairs/{pairKey}/scan")
   @Description("Cancels any current and/or pending scans for the given pair.")
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
-  def cancelScanning(@PathParam("pairKey") pairKey:String) = pairPolicyClient.cancelScans(pairKey)
+  def cancelScanning(@PathParam("pairKey") pairKey:String) = {
+    pairPolicyClient.cancelScans(pairKey)
+    Response.status(Response.Status.OK).build
+  }
 
 }
