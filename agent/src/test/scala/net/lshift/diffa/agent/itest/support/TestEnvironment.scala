@@ -31,6 +31,8 @@ import net.lshift.diffa.kernel.config._
 import org.restlet.{Application, Component}
 import collection.mutable.HashMap
 import net.lshift.diffa.agent.client._
+import java.util.List
+import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -84,11 +86,21 @@ class TestEnvironment(val pairKey: String,
   val escalationsClient:EscalationsClient = new EscalationsRestClient(serverRoot)
   val changesClient:ChangesClient = changesClientBuilder(this)
   val usersClient:UsersClient = new UsersRestClient(serverRoot)
+  val scanningClient:ScanningClient = new ScanningRestClient(serverRoot)
 
   // Participants
   val upstreamEpName = pairKey + "-us"
   val downstreamEpName = pairKey + "-ds"
-  val upstream = new UpstreamMemoryParticipant(versionScheme.upstreamVersionGen)
+  val upstream = new UpstreamMemoryParticipant(versionScheme.upstreamVersionGen) {
+    var queryResponseDelay = 0
+
+    override protected def doQuery(constraints: List[ScanConstraint], aggregations: List[ScanAggregation]) = {
+      if (queryResponseDelay > 0)
+        Thread.sleep(queryResponseDelay)
+
+      super.doQuery(constraints, aggregations)
+    }
+  }
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
   // Actions
