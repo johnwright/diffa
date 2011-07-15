@@ -98,7 +98,7 @@ trait SessionCache {
    * Retrieves all events that have occurred within a session since the provided sequence id.
    * @param evtSeqId the last known sequence id. All events occurring after (not including) this event will be returned.
    * @throws InvalidSessionIDException if the requested session does not exist or has expired.
-   * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary sync information cannot be
+   * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary scan information cannot be
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
   def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent]
