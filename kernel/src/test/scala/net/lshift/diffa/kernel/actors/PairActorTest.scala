@@ -80,9 +80,9 @@ class PairActorTest {
   replay(stores)
 
   val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
-  val syncListener = createStrictMock("syncListener", classOf[PairSyncListener])
+  val scanListener = createStrictMock("scanListener", classOf[PairScanListener])
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, diffListener, syncListener, participantFactory, stores, diagnostics, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, diffListener, scanListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
@@ -162,24 +162,24 @@ class PairActorTest {
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall
 
     expectScans
 
     expectDifferencesReplay()
 
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    scanListener.pairScanStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan completed"); expectLastCall
-    replay(versionPolicy, syncListener, diagnostics)
+    replay(versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey)
     monitor.synchronized {
       monitor.wait(1000)
     }
-    verify(versionPolicy, syncListener, diagnostics)
+    verify(versionPolicy, scanListener, diagnostics)
   }
 
   @Test
@@ -189,11 +189,11 @@ class PairActorTest {
 
     val event = buildUpstreamEvent()
 
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall
+    scanListener.pairScanStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
     })
-    replay(syncListener)
+    replay(scanListener)
 
     expect(versionPolicy.onChange(writer, event))
     .andAnswer(new IAnswer[Unit] {
@@ -237,7 +237,7 @@ class PairActorTest {
     }
 
     verify(versionPolicy)
-    verify(syncListener)
+    verify(scanListener)
   }
 
   @Test
@@ -257,7 +257,7 @@ class PairActorTest {
 
     val timeToWait = 2000L
 
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = {
         Actor.spawn {
           // Request a cancellation in a background thread so that the pair actor can be scheduled
@@ -271,7 +271,7 @@ class PairActorTest {
       }
     })
 
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.CANCELLED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    scanListener.pairScanStateChanged(pairKey, PairScanState.CANCELLED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = cancelMonitor.synchronized{ cancelMonitor.notifyAll() }
     })
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan cancelled"); expectLastCall
@@ -291,7 +291,7 @@ class PairActorTest {
       }
     })
 
-    replay(versionPolicy, syncListener, diagnostics)
+    replay(versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey)
@@ -304,7 +304,7 @@ class PairActorTest {
       cancelMonitor.wait(timeToWait * 2)
     }
 
-    verify(versionPolicy, syncListener, diagnostics)
+    verify(versionPolicy, scanListener, diagnostics)
   }
 
   @Test
@@ -316,14 +316,14 @@ class PairActorTest {
       failStateHandler = new IAnswer[Unit] {
           def answer { monitor.synchronized { monitor.notifyAll } }
         })
-    replay(versionPolicy, syncListener, diagnostics)
+    replay(versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey)
     monitor.synchronized {
       monitor.wait(1000)
     }
-    verify(versionPolicy, syncListener, diagnostics)
+    verify(versionPolicy, scanListener, diagnostics)
   }
 
   @Test
@@ -337,12 +337,12 @@ class PairActorTest {
         wasMarkedAsCancelled.set(feedbackHandle.isCancelled)
       }
     })
-    replay(versionPolicy, syncListener, diagnostics)
+    replay(versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey)
     assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
-    verify(versionPolicy, syncListener, diagnostics)
+    verify(versionPolicy, scanListener, diagnostics)
   }
 
   @Test
@@ -363,13 +363,13 @@ class PairActorTest {
         }
       }
     })
-    replay(versionPolicy, syncListener, diagnostics)
+    replay(versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey)
     
     assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
-    verify(versionPolicy, syncListener, diagnostics)
+    verify(versionPolicy, scanListener, diagnostics)
   }
 
   @Test
@@ -413,7 +413,7 @@ class PairActorTest {
           }
         })
     
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall()
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall()
     expectUpstreamScan().once()  // Succeed on second
     expectDownstreamScan().andAnswer(new IAnswer[Unit] {
       def answer() {
@@ -426,13 +426,13 @@ class PairActorTest {
     }).once()
     expectDifferencesReplay()
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan completed"); expectLastCall
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+    scanListener.pairScanStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer {
         completionMonitor.synchronized { completionMonitor.notifyAll() }
       }
     }).once()
 
-    replay(versionPolicy, syncListener, diagnostics)
+    replay(versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey)
@@ -440,7 +440,7 @@ class PairActorTest {
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too
 
-    verify(versionPolicy, syncListener, diagnostics)
+    verify(versionPolicy, scanListener, diagnostics)
   }
 
   @Test
@@ -493,12 +493,12 @@ class PairActorTest {
   def expectFailingScan(downstreamHandler:IAnswer[Unit], failStateHandler:IAnswer[Unit] = EasyMockScalaUtils.emptyAnswer) {
     expectWriterRollback()
 
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall.once
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall.once
 
     expectUpstreamScan().andThrow(new RuntimeException("Deliberate runtime exception, this should be handled")).once()
     expectDownstreamScan().andAnswer(downstreamHandler).once()
 
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(failStateHandler).once
+    scanListener.pairScanStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(failStateHandler).once
     diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Upstream scan failed: Deliberate runtime exception, this should be handled"); expectLastCall.once
     diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Scan failed"); expectLastCall.once
   }

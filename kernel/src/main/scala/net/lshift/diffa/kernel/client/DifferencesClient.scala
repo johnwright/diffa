@@ -46,12 +46,12 @@ trait DifferencesClient {
   def subscribe(scope:SessionScope, start:DateTime, end:DateTime):String
 
   /**
-   * Requests that the agent run a synchronisation of the given session.
+   * Requests that the agent run a scan of the given session.
    */
   def runScan(sessionId:String): Unit
 
   /**
-   * Retrieves the sync status of all the pairs associated with the session.
+   * Retrieves the scan status of all the pairs associated with the session.
    */
   def getScanStatus(sessionId: String):Map[String, PairScanState]
 

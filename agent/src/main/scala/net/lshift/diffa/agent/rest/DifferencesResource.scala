@@ -68,14 +68,14 @@ class DifferencesResource {
   }
 
   @POST
-  @Path("/sessions/{sessionId}/sync")
-  @Description("Forces Diffa to execute a synchronisation operation on the pairs underlying the session")
+  @Path("/sessions/{sessionId}/scan")
+  @Description("Forces Diffa to execute a scan on the pairs underlying the session")
   @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
-  def synchroniseSession(@PathParam("sessionId") sessionId:String, @Context request:Request) : Response = {
+  def scanAllInSession(@PathParam("sessionId") sessionId:String, @Context request:Request) : Response = {
     if (log.isTraceEnabled) {
-      log.trace("Sync requested for sessionId = " + sessionId)
+      log.trace("Scan requested for sessionId = " + sessionId)
     }
-    sessionManager.runSync(sessionId)
+    sessionManager.runScan(sessionId)
     Response.status(Response.Status.ACCEPTED).build
   }
 
@@ -96,12 +96,12 @@ class DifferencesResource {
   }
 
   @GET
-  @Path("/sessions/{sessionId}/sync")
+  @Path("/sessions/{sessionId}/scan")
   @Produces(Array("application/json"))
-  @Description("Retrieves the synchronisation states of pairs in the current session.")
+  @Description("Retrieves the scan states of pairs in the current session.")
   @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
   def getPairStates(@PathParam("sessionId") sessionId: String): Response = {
-    val states = sessionManager.retrievePairSyncStates(sessionId)
+    val states = sessionManager.retrievePairScanStates(sessionId)
     Response.ok(scala.collection.JavaConversions.mapAsJavaMap(states)).build
   }
 

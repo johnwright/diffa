@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.lifecycle
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{PairScanState, MatchOrigin, PairSyncListener, DifferencingListener}
+import net.lshift.diffa.kernel.differencing.{PairScanState, MatchOrigin, PairScanListener, DifferencingListener}
 
 /**
  * Central system component for subscribing to notifications. To prevent dependency loops, consumer components should not
@@ -28,9 +28,9 @@ import net.lshift.diffa.kernel.differencing.{PairScanState, MatchOrigin, PairSyn
  */
 class NotificationCentre
     extends DifferencingListener
-    with PairSyncListener {
+    with PairScanListener {
   private val differenceListeners = new ListBuffer[DifferencingListener]
-  private val pairSyncListeners = new ListBuffer[PairSyncListener]
+  private val pairScanListeners = new ListBuffer[PairScanListener]
 
   /**
    * Registers a listener to receive different events.
@@ -40,10 +40,10 @@ class NotificationCentre
   }
 
    /**
-   * Registers a listener to receive pair sync events.
+   * Registers a listener to receive pair scan events.
    */
-  def registerForPairSyncEvents(l:PairSyncListener) {
-    pairSyncListeners += l
+  def registerForPairScanEvents(l:PairScanListener) {
+    pairScanListeners += l
   }
 
   //
@@ -58,10 +58,10 @@ class NotificationCentre
   }
 
   //
-  // Pair Sync Listener Multicast
+  // Pair Scan Listener Multicast
   //
 
-  def pairSyncStateChanged(pairKey: String, syncState: PairScanState) {
-    pairSyncListeners.foreach(_.pairSyncStateChanged(pairKey, syncState))
+  def pairScanStateChanged(pairKey: String, scanState: PairScanState) {
+    pairScanListeners.foreach(_.pairScanStateChanged(pairKey, scanState))
   }
 }

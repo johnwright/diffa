@@ -29,9 +29,9 @@ import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, Sca
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 
 /**
- * Standard behaviours supported by synchronising version policies.
+ * Standard behaviours supported by scanning version policies.
  */
-abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFactory,
+abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFactory,
                                          listener:DifferencingListener,
                                          configStore:ConfigStore,
                                          diagnostics:DiagnosticsManager)
@@ -84,7 +84,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
                    listener:DifferencingListener, handle:FeedbackHandle) = {
     val pair = configStore.getPair(pairKey)
     val upstreamConstraints = pair.upstream.groupedConstraints
-    constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamSyncStrategy)
+    constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy)
       .scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
   }
 
@@ -109,14 +109,14 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
   }
 
   /**
-   * Allows an implementing policy to define what kind of downstream syncing policy it requires
+   * Allows an implementing policy to define what kind of downstream scanning policy it requires
    */
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) : SyncStrategy
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) : ScanStrategy
 
   /**
-   * The basic functionality for a synchronisation strategy.
+   * The basic functionality for a scanning strategy.
    */
-  protected abstract class SyncStrategy {
+  protected abstract class ScanStrategy {
 
     val log = LoggerFactory.getLogger(getClass)
 
@@ -195,11 +195,11 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
 
     /**
-     * Should be invoked by the child sync strategies each time they modify a correlation (eg, store an upstream or
+     * Should be invoked by the child scan strategies each time they modify a correlation (eg, store an upstream or
      * downstream version). This allows for any necessary eventing to be performed.
      */
     protected def handleUpdatedCorrelation(corr:Correlation) {
-      // Unmatched versions will be evented at the end of the sync. Matched versions should be evented immediately, as
+      // Unmatched versions will be evented at the end of the scan. Matched versions should be evented immediately, as
       // we won't know what went from unmatched -> matched later.
       if (corr.isMatched.booleanValue) {
         listener.onMatch(VersionID(corr.pairing, corr.id), corr.upstreamVsn, TriggeredByScan)
@@ -211,7 +211,7 @@ abstract class BaseSynchingVersionPolicy(val stores:VersionCorrelationStoreFacto
     def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
 
-  protected class UpstreamSyncStrategy extends SyncStrategy {
+  protected class UpstreamScanStrategy extends ScanStrategy {
 
     def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)

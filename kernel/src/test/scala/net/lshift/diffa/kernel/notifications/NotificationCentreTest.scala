@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.lifecycle.NotificationCentre
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{PairScanState, PairSyncListener, TriggeredByScan, DifferencingListener}
+import net.lshift.diffa.kernel.differencing.{PairScanState, PairScanListener, TriggeredByScan, DifferencingListener}
 
 /**
  * Test cases for the Notification Centre.
@@ -49,18 +49,18 @@ class NotificationCentreTest {
   }
 
   @Test
-  def shouldDispatchToPairSyncListeners() {
-    val l1 = createStrictMock("l1", classOf[PairSyncListener])
-    val l2 = createStrictMock("l2", classOf[PairSyncListener])
+  def shouldDispatchToPairScanListeners() {
+    val l1 = createStrictMock("l1", classOf[PairScanListener])
+    val l2 = createStrictMock("l2", classOf[PairScanListener])
     
-    nc.registerForPairSyncEvents(l1)
-    nc.registerForPairSyncEvents(l2)
+    nc.registerForPairScanEvents(l1)
+    nc.registerForPairScanEvents(l2)
 
-    l1.pairSyncStateChanged("p", PairScanState.SYNCHRONIZING)
-    l2.pairSyncStateChanged("p", PairScanState.SYNCHRONIZING)
+    l1.pairScanStateChanged("p", PairScanState.SCANNING)
+    l2.pairScanStateChanged("p", PairScanState.SCANNING)
     replay(l1, l2)
 
-    nc.pairSyncStateChanged("p", PairScanState.SYNCHRONIZING)
+    nc.pairScanStateChanged("p", PairScanState.SCANNING)
     verify(l1, l2)
   }
 }

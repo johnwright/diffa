@@ -94,6 +94,7 @@ class DefaultSessionManagerTest {
     val pair2 = DiffaPair(key = "pair2", versionPolicyName = "policy", upstream = u, downstream = d)
         
     expect(configStore.getPair("pair")).andStubReturn(pair1)
+    expect(configStore.getPair("pair1")).andStubReturn(pair1)
     expect(configStore.getPair("pair2")).andStubReturn(pair2)
     expect(configStore.listGroups).andStubReturn(Seq(GroupContainer(null, Array(pair1, pair2))))
     expect(matchingManager.getMatcher("pair")).andStubReturn(Some(matcher))
@@ -110,7 +111,7 @@ class DefaultSessionManagerTest {
 
     replay(pairPolicyClient)
   }
-  def expectSyncAndDifferenceForPair(pairs:String*)  = {
+  def expectScanAndDifferenceForPair(pairs:String*)  = {
     pairs.foreach(pairKey => {
       expect(pairPolicyClient.difference(pairKey)).atLeastOnce
     })
@@ -123,7 +124,7 @@ class DefaultSessionManagerTest {
 
   @Test
   def shouldTriggerScanOnRequest = {
-    expectSyncAndDifferenceForPair("pair1","pair2")
+    expectScanAndDifferenceForPair("pair1","pair2")
     replayAll
 
     manager.runScanForAllPairings
@@ -218,81 +219,81 @@ class DefaultSessionManagerTest {
   def shouldTrackStateOfPairsForExplicitScopeSession {
     // Create a session that contains our given pair
     replayAll
-    expectSyncAndDifferenceForPair("pair")
+    expectScanAndDifferenceForPair("pair")
     val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
 
     // Initial state of all pairs should be "unknown"
-    assertEquals(Map("pair" -> PairScanState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
+    assertEquals(Map("pair" -> PairScanState.UNKNOWN), manager.retrievePairScanStates(sessionId))
 
-    // Start the initial sync
-    manager.runSync(sessionId)
+    // Start the initial scan
+    manager.runScan(sessionId)
 
-    // Query for the states associated. We should get back an entry for pair in "synchronising", since the stubs
+    // Query for the states associated. We should get back an entry for pair in "scanning", since the stubs
     // don't notify of completion
-    assertEquals(Map("pair" -> PairScanState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
+    assertEquals(Map("pair" -> PairScanState.SCANNING), manager.retrievePairScanStates(sessionId))
 
-    // Notify that the pair is now in Synchronised state
-    manager.pairSyncStateChanged("pair", PairScanState.UP_TO_DATE)
-    assertEquals(Map("pair" -> PairScanState.UP_TO_DATE), manager.retrievePairSyncStates(sessionId))
+    // Notify that the pair is now in Up To Date state
+    manager.pairScanStateChanged("pair", PairScanState.UP_TO_DATE)
+    assertEquals(Map("pair" -> PairScanState.UP_TO_DATE), manager.retrievePairScanStates(sessionId))
 
-    // Start a sync. We should enter the synchronising state again
-    manager.runSync(sessionId)
-    assertEquals(Map("pair" -> PairScanState.SYNCHRONIZING), manager.retrievePairSyncStates(sessionId))
+    // Start a scan. We should enter the scanning state again
+    manager.runScan(sessionId)
+    assertEquals(Map("pair" -> PairScanState.SCANNING), manager.retrievePairScanStates(sessionId))
 
     // Notify that the pair is now in Failed state
-    manager.pairSyncStateChanged("pair", PairScanState.FAILED)
-    assertEquals(Map("pair" -> PairScanState.FAILED), manager.retrievePairSyncStates(sessionId))
+    manager.pairScanStateChanged("pair", PairScanState.FAILED)
+    assertEquals(Map("pair" -> PairScanState.FAILED), manager.retrievePairScanStates(sessionId))
   }
 
   @Test
   def shouldTrackStateOfPairsForImplicitScopeSession {
     // Create a session that contains all pairs
     replayAll
-    expectSyncAndDifferenceForPair("pair1", "pair2")
+    expectScanAndDifferenceForPair("pair1", "pair2")
     val sessionId = manager.start(SessionScope.all, listener1)
 
     // Query for the states associated. We should get back an entry for pair in "unknown"
     assertEquals(Map("pair1" -> PairScanState.UNKNOWN, "pair2" -> PairScanState.UNKNOWN),
-      manager.retrievePairSyncStates(sessionId))
+      manager.retrievePairScanStates(sessionId))
 
     assertEquals(Map("pair1" -> PairScanState.UNKNOWN, "pair2" -> PairScanState.UNKNOWN),
       manager.retrieveAllPairScanStates)
 
-    // Notify that the pair1 is now in Synchronised state
-    manager.pairSyncStateChanged("pair1", PairScanState.UP_TO_DATE)
+    // Notify that the pair1 is now in Up To Date state
+    manager.pairScanStateChanged("pair1", PairScanState.UP_TO_DATE)
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.UNKNOWN),
-      manager.retrievePairSyncStates(sessionId))
+      manager.retrievePairScanStates(sessionId))
 
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.UNKNOWN),
       manager.retrieveAllPairScanStates)
 
     // Notify that the pair2 is now in Failed state
-    manager.pairSyncStateChanged("pair2", PairScanState.FAILED)
+    manager.pairScanStateChanged("pair2", PairScanState.FAILED)
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.FAILED),
-      manager.retrievePairSyncStates(sessionId))
+      manager.retrievePairScanStates(sessionId))
 
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.FAILED),
       manager.retrieveAllPairScanStates)
 
-    // Start a sync. We should enter the synchronising state again
-    manager.runSync(sessionId)
-    assertEquals(Map("pair1" -> PairScanState.SYNCHRONIZING, "pair2" -> PairScanState.SYNCHRONIZING),
-      manager.retrievePairSyncStates(sessionId))
+    // Start a scan. We should enter the scanning state again
+    manager.runScan(sessionId)
+    assertEquals(Map("pair1" -> PairScanState.SCANNING, "pair2" -> PairScanState.SCANNING),
+      manager.retrievePairScanStates(sessionId))
 
-    assertEquals(Map("pair1" -> PairScanState.SYNCHRONIZING, "pair2" -> PairScanState.SYNCHRONIZING),
+    assertEquals(Map("pair1" -> PairScanState.SCANNING, "pair2" -> PairScanState.SCANNING),
       manager.retrieveAllPairScanStates)
   }
 
   @Test
-  def shouldReportUnknownSyncStateForRemovedPairs {
+  def shouldReportUnknownScanStateForRemovedPairs {
     // Create a session that contains our given pair
     replayAll
     expectDifferenceForPair("pair")
     val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
 
-    // If we delete the pair, then the sync state should return the pair with an Unknown status
+    // If we delete the pair, then the scan state should return the pair with an Unknown status
     manager.onDeletePair("pair")
-    assertEquals(Map("pair" -> PairScanState.UNKNOWN), manager.retrievePairSyncStates(sessionId))
+    assertEquals(Map("pair" -> PairScanState.UNKNOWN), manager.retrievePairScanStates(sessionId))
   }
 
   private def replayAll = replay(listener1, listener2)

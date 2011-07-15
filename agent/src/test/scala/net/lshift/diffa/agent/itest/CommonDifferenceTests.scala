@@ -213,7 +213,7 @@ trait CommonDifferenceTests {
 
       // Get into a scanning state
       env.scanningClient.startScan(env.pairKey)
-      waitForScanStatus(sessionId, PairScanState.SYNCHRONIZING)
+      waitForScanStatus(sessionId, PairScanState.SCANNING)
 
       // Cancel the scan
       env.scanningClient.cancelScanning(env.pairKey)

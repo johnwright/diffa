@@ -63,7 +63,7 @@ class DifferencesRestClient(serverRootUrl:String)
   }
 
   def runScan(sessionId: String) = {
-    val p = resource.path("sessions").path(sessionId).path("sync")
+    val p = resource.path("sessions").path(sessionId).path("scan")
     val response = p.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
@@ -73,7 +73,7 @@ class DifferencesRestClient(serverRootUrl:String)
   }
 
   def getScanStatus(sessionId: String) = {
-    val path = resource.path("sessions").path(sessionId).path("sync")
+    val path = resource.path("sessions").path(sessionId).path("scan")
     val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
     val response = media.get(classOf[ClientResponse])
 

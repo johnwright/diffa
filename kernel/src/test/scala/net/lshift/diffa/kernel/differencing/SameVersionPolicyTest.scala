@@ -51,8 +51,8 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
     pair.upstream.categories = testData.upstreamCategories
     pair.downstream.categories = testData.downstreamCategories
     val timestamp = new DateTime
-    // Expect only a top-level sync for the upstream, but a full sync for the downstream
-    expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
+    // Expect only a top-level scan for the upstream, but a full scan for the downstream
+    expectUpstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1"), testData.attributes(0)),
         ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), testData.attributes(1))),
@@ -60,7 +60,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
         Up("id1", testData.values(0), "vsn1"),
         Up("id2", testData.values(1), "vsn2")))
 
-    expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
+    expectDownstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn1")), testData.attributes(0)),
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")), testData.attributes(1))),
@@ -68,19 +68,19 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
         Down("id1", testData.values(0), "vsn1", downstreamVersionFor("vsn1")),
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4"))))
-    expectDownstreamAggregateSync(testData.bucketing(1), testData.constraints(1),
+    expectDownstreamAggregateScan(testData.bucketing(1), testData.constraints(1),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")), testData.attributes(2))),
       VersionsFromStore(
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4"))))
-    expectDownstreamAggregateSync(testData.bucketing(2), testData.constraints(2),
+    expectDownstreamAggregateScan(testData.bucketing(2), testData.constraints(2),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")), testData.attributes(3))),
       VersionsFromStore(
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4"))))
-    expectDownstreamEntitySync2(abPair, testData.constraints(3),
+    expectDownstreamEntityScan2(abPair, testData.constraints(3),
       DigestsFromParticipant(
         ScanResultEntry.forEntity("id2", downstreamVersionFor("vsn2"), JUL_8_2010_1, testData.values(1)),
         ScanResultEntry.forEntity("id3", downstreamVersionFor("vsn3"), JUL_8_2010_1, testData.values(1))),
