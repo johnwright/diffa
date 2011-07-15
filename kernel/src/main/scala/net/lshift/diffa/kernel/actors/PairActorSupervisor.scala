@@ -22,14 +22,14 @@ import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
-import net.lshift.diffa.kernel.differencing.{PairSyncListener, DifferencingListener, VersionPolicyManager, VersionCorrelationStoreFactory}
+import net.lshift.diffa.kernel.differencing.{PairScanListener, DifferencingListener, VersionPolicyManager, VersionCorrelationStoreFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                config:ConfigStore,
                                differencingMulticaster:DifferencingListener,
-                               pairSyncListener:PairSyncListener,
+                               pairScanListener:PairScanListener,
                                participantFactory:ParticipantFactory,
                                stores:VersionCorrelationStoreFactory,
                                diagnostics:DiagnosticsManager,
@@ -57,7 +57,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
             val pairActor = Actor.actorOf(
               new PairActor(pair.key, us, ds, p, stores(pair.key),
-                            differencingMulticaster, pairSyncListener,
+                            differencingMulticaster, pairScanListener,
                             diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
             )
             pairActor.start

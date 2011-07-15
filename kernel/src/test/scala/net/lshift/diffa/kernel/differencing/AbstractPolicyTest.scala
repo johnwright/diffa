@@ -222,15 +222,15 @@ abstract class AbstractPolicyTest {
     pair.upstream.categories = testData.upstreamCategories
     pair.downstream.categories = testData.downstreamCategories
     val timestamp = new DateTime
-    // Expect only a top-level sync between the pairs
-    expectUpstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
+    // Expect only a top-level scan between the pairs
+    expectUpstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1"), testData.attributes(0)),
         ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), testData.attributes(1))),
       VersionsFromStore(
         Up("id1", testData.values(0), "vsn1"),
         Up("id2", testData.values(1), "vsn2")))
-    expectDownstreamAggregateSync(testData.bucketing(0), testData.constraints(0),
+    expectDownstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn1a")), testData.attributes(0)),
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2a")), testData.attributes(1))),
@@ -355,34 +355,34 @@ abstract class AbstractPolicyTest {
     }
   }
 
-  protected def expectUpstreamAggregateSync(bucketing:Seq[CategoryFunction], constraints: Seq[ScanConstraint], partResp: Seq[ScanResultEntry],
+  protected def expectUpstreamAggregateScan(bucketing:Seq[CategoryFunction], constraints: Seq[ScanConstraint], partResp: Seq[ScanResultEntry],
                                             storeResp: Seq[UpstreamVersion]) {
-    expectUpstreamAggregateSync(abPair, bucketing, constraints, partResp, storeResp: Seq[UpstreamVersion])
+    expectUpstreamAggregateScan(abPair, bucketing, constraints, partResp, storeResp: Seq[UpstreamVersion])
   }
 
-  protected def expectUpstreamAggregateSync(pair:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
+  protected def expectUpstreamAggregateScan(pair:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
     expect(usMock.scan(constraints, bucketing)).andReturn(partResp)
     store.queryUpstreams(EasyMock.eq(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(storeResp))
   }
 
-  protected def expectDownstreamAggregateSync(bucketing:Seq[CategoryFunction], constraints: Seq[ScanConstraint], partResp: Seq[ScanResultEntry],
+  protected def expectDownstreamAggregateScan(bucketing:Seq[CategoryFunction], constraints: Seq[ScanConstraint], partResp: Seq[ScanResultEntry],
                                               storeResp: Seq[DownstreamVersion]) {
-    expectDownstreamAggregateSync(abPair, bucketing, constraints, partResp, storeResp)
+    expectDownstreamAggregateScan(abPair, bucketing, constraints, partResp, storeResp)
   }
 
-  protected def expectDownstreamAggregateSync(pair:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
+  protected def expectDownstreamAggregateScan(pair:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
     expect(dsMock.scan(constraints, bucketing)).andReturn(partResp)
     store.queryDownstreams(EasyMock.eq(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(storeResp))
   }
 
-  protected def expectUpstreamEntitySync(constraints: Seq[ScanConstraint], partResp: Seq[ScanResultEntry],
+  protected def expectUpstreamEntityScan(constraints: Seq[ScanConstraint], partResp: Seq[ScanResultEntry],
                                          storeResp: Seq[UpstreamVersion]) {
-    expectUpstreamEntitySync(abPair, constraints, partResp, storeResp)
+    expectUpstreamEntityScan(abPair, constraints, partResp, storeResp)
   }
 
-  protected def expectUpstreamEntitySync(pair:String, constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
+  protected def expectUpstreamEntityScan(pair:String, constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[UpstreamVersion]) {
     val pairDef = configStore.getPair(pair)
     expect(usMock.scan(constraints, Seq())).andReturn(partResp)
     val correlations = storeResp.map(r => {
@@ -396,7 +396,7 @@ abstract class AbstractPolicyTest {
 
     expect(store.queryUpstreams(EasyMock.eq(constraints))).andReturn(correlations)
   }
-  protected def expectDownstreamEntitySync2(pair:String, constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
+  protected def expectDownstreamEntityScan2(pair:String, constraints:Seq[ScanConstraint], partResp:Seq[ScanResultEntry], storeResp:Seq[DownstreamVersion]) {
     val pairDef = configStore.getPair(pair)
     expect(dsMock.scan(constraints, Seq())).andReturn(partResp)
     val correlations = storeResp.map(r => {

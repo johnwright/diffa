@@ -33,12 +33,12 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               listener:DifferencingListener,
                               configStore:ConfigStore,
                               diagnostics:DiagnosticsManager)
-    extends BaseSynchingVersionPolicy(stores, listener, configStore, diagnostics) {
+    extends BaseScanningVersionPolicy(stores, listener, configStore, diagnostics) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingSyncStrategy(us,ds)
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingScanStrategy(us,ds)
   
-  protected class DownstreamCorrelatingSyncStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
-      extends SyncStrategy {
+  protected class DownstreamCorrelatingScanStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
+      extends ScanStrategy {
     
     def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)

@@ -84,8 +84,8 @@ abstract class AbstractDataDrivenPolicyTest {
     assumeTrue(scenario.tx.forall(_.isInstanceOf[AggregateTx]))     // Only relevant in scenarios where aggregation occurs
 
     scenario.tx.foreach { case tx:AggregateTx =>
-      expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
-      expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
+      expectUpstreamAggregateScan(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
+      expectDownstreamAggregateScan(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
     }
 
     expectUnmatchedVersionCheck(scenario)
@@ -109,15 +109,15 @@ abstract class AbstractDataDrivenPolicyTest {
     assumeTrue(scenario.tx.forall(_.isInstanceOf[AggregateTx]))     // Only relevant in scenarios where aggregation occurs
 
     scenario.tx.foreach { case tx:AggregateTx =>
-      expectUpstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, Seq())
+      expectUpstreamAggregateScan(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, Seq())
       tx.respBuckets.foreach(b => {
-        expectUpstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
+        expectUpstreamEntityScan(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
         expectUpstreamEntityStore(scenario.pair, b.allVsns, false)
       })
 
-      expectDownstreamAggregateSync(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, Seq())
+      expectDownstreamAggregateScan(scenario.pair, tx.bucketing, tx.constraints, tx.respBuckets, Seq())
       tx.respBuckets.foreach(b => {
-        expectDownstreamEntitySync(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
+        expectDownstreamEntityScan(scenario.pair, b.nextTx.constraints, b.allVsns, Seq())
         expectDownstreamEntityStore(scenario.pair, b.allVsns, false)
       })
     }
@@ -146,9 +146,9 @@ abstract class AbstractDataDrivenPolicyTest {
 
       traverseFirstBranch(updated, tx) {
         case (tx1:AggregateTx, tx2:AggregateTx) =>
-          expectUpstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
+          expectUpstreamAggregateScan(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
         case (tx1:EntityTx, tx2:EntityTx) =>
-          expectUpstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+          expectUpstreamEntityScan(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
       }
       expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
 
@@ -157,11 +157,11 @@ abstract class AbstractDataDrivenPolicyTest {
 
       tx match {
         case atx:AggregateTx =>
-          // Expect only a top-level sync on the downstream
-          expectDownstreamAggregateSync(scenario.pair, atx.bucketing, atx.constraints, atx.respBuckets, atx.respBuckets)
+          // Expect only a top-level scan on the downstream
+          expectDownstreamAggregateScan(scenario.pair, atx.bucketing, atx.constraints, atx.respBuckets, atx.respBuckets)
         case etx:EntityTx =>
           // Expect entity-query, since we can't aggregate anyway
-          expectDownstreamEntitySync(scenario.pair, etx.constraints, etx.entities, etx.entities)
+          expectDownstreamEntityScan(scenario.pair, etx.constraints, etx.entities, etx.entities)
       }
     }
 
@@ -188,11 +188,11 @@ abstract class AbstractDataDrivenPolicyTest {
     scenario.tx.foreach { tx =>
       tx match {
         case atx:AggregateTx =>
-          // Expect only a top-level sync on the upstream
-          expectUpstreamAggregateSync(scenario.pair, atx.bucketing, atx.constraints, atx.respBuckets, atx.respBuckets)
+          // Expect only a top-level scan on the upstream
+          expectUpstreamAggregateScan(scenario.pair, atx.bucketing, atx.constraints, atx.respBuckets, atx.respBuckets)
         case etx:EntityTx =>
           // Expect entity-query, since we can't aggregate anyway
-          expectUpstreamEntitySync(scenario.pair, etx.constraints, etx.entities, etx.entities)
+          expectUpstreamEntityScan(scenario.pair, etx.constraints, etx.entities, etx.entities)
       }
 
 
@@ -200,9 +200,9 @@ abstract class AbstractDataDrivenPolicyTest {
       val updated = tx.alterFirstVsn("newVsn1")
       traverseFirstBranch(updated, tx) {
         case (tx1:AggregateTx, tx2:AggregateTx) =>
-          expectDownstreamAggregateSync(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
+          expectDownstreamAggregateScan(scenario.pair, tx1.bucketing, tx1.constraints, tx1.respBuckets, tx2.respBuckets)
         case (tx1:EntityTx, tx2:EntityTx) =>
-          expectDownstreamEntitySync(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
+          expectDownstreamEntityScan(scenario.pair, tx1.constraints, tx1.entities, tx2.entities)
       }
       expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
 
@@ -236,20 +236,20 @@ abstract class AbstractDataDrivenPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
   }
 
-  protected def expectUpstreamAggregateSync(pair:Pair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint],
+  protected def expectUpstreamAggregateScan(pair:Pair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint],
                                             partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
     expect(usMock.scan(asUnorderedList(constraints), asUnorderedList(bucketing))).andReturn(participantDigestResponse(partResp))
     store.queryUpstreams(asUnorderedList(constraints), anyUnitF4)
       expectLastCall[Unit].andAnswer(UpstreamVersionAnswer(pair, storeResp))
   }
-  protected def expectDownstreamAggregateSync(pair:Pair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint],
+  protected def expectDownstreamAggregateScan(pair:Pair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint],
                                               partResp:Seq[Bucket], storeResp:Seq[Bucket]) {
     expect(dsMock.scan(asUnorderedList(constraints), asUnorderedList(bucketing))).andReturn(participantDigestResponse(partResp))
     store.queryDownstreams(asUnorderedList(constraints), anyUnitF5)
       expectLastCall[Unit].andAnswer(DownstreamVersionAnswer(pair, storeResp))
   }
 
-  protected def expectUpstreamEntitySync(pair:Pair, constraints:Seq[ScanConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
+  protected def expectUpstreamEntityScan(pair:Pair, constraints:Seq[ScanConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
     expect(usMock.scan(asUnorderedList(constraints), EasyMock.eq(Seq()))).andReturn(participantEntityResponse(partResp))
     val correlations = storeResp.map(v=> {
       Correlation(id = v.id, upstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, upstreamVsn = v.vsn)
@@ -257,7 +257,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     expect(store.queryUpstreams(asUnorderedList(constraints))).andReturn(correlations)
   }
-  protected def expectDownstreamEntitySync(pair:Pair, constraints:Seq[ScanConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
+  protected def expectDownstreamEntityScan(pair:Pair, constraints:Seq[ScanConstraint], partResp:Seq[Vsn], storeResp:Seq[Vsn]) {
     expect(dsMock.scan(asUnorderedList(constraints), EasyMock.eq(Seq()))).andReturn(participantEntityResponse(partResp))
     val correlations = storeResp.map(v=> {
       Correlation(id = v.id, downstreamAttributes = v.strAttrs, lastUpdate = v.lastUpdated, downstreamDVsn = v.vsn)

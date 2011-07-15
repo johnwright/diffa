@@ -40,7 +40,7 @@ case class PairActor(pairKey:String,
                      policy:VersionPolicy,
                      store:VersionCorrelationStore,
                      differencingListener:DifferencingListener,
-                     pairSyncListener:PairSyncListener,
+                     pairScanListener:PairScanListener,
                      diagnostics:DiagnosticsManager,
                      changeEventBusyTimeoutMillis: Long,
                      changeEventQuietTimeoutMillis: Long) extends Actor {
@@ -331,8 +331,8 @@ case class PairActor(pairKey:String,
    * Resets the state of the actor and processes any pending messages that may have arrived during a scan phase.
    */
   def processBacklog(state:PairScanState) = {
-    if (pairSyncListener != null) {
-      pairSyncListener.pairSyncStateChanged(pairKey, state)
+    if (pairScanListener != null) {
+      pairScanListener.pairScanStateChanged(pairKey, state)
     }
     deferred.dequeueAll(d => {self ! d; true})
   }
@@ -380,7 +380,7 @@ case class PairActor(pairKey:String,
       bufferedMatchEvents.clear()
     }
 
-    pairSyncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING)
+    pairScanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING)
 
     try {
       writer.flush()

@@ -17,11 +17,11 @@
 package net.lshift.diffa.kernel.differencing
 
 /**
- * Listener that receives notifications when the synchronization state of the given pair changes.
+ * Listener that receives notifications when the scan state of the given pair changes.
  */
-trait PairSyncListener {
+trait PairScanListener {
   /**
-   * Indicates that the sync state of the given pair has changed.
+   * Indicates that the scan state of the given pair has changed.
    */
-  def pairSyncStateChanged(pairKey:String, syncState:PairScanState)
+  def pairScanStateChanged(pairKey:String, scanState:PairScanState)
 }

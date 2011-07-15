@@ -50,7 +50,7 @@ class DefaultSessionManager(
         val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory)
     extends SessionManager
-    with DifferencingListener with MatchingStatusListener with PairSyncListener with AgentLifecycleAware {
+    with DifferencingListener with MatchingStatusListener with PairScanListener with AgentLifecycleAware {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -146,7 +146,7 @@ class DefaultSessionManager(
     })
   }
 
-  def retrievePairSyncStates(sessionID: String) = {
+  def retrievePairScanStates(sessionID: String) = {
     // Gather the states for all pairs in the given session. Since some session
     sessionsByKey.get(sessionID) match {
       case Some(cache) => pairScanStates(cache.scope)
@@ -164,18 +164,14 @@ class DefaultSessionManager(
   }
 
   def runScanForAllPairings() {
-    runSyncForScope(SessionScope.all, null, null)
+    runScanForScope(SessionScope.all, null, null)
   }
 
-  def runScanForPair(pairKey: String) {
-    withPair[Unit](pairKey)(() => runSyncForPair(pairKey))
-  }
-
-  def runSync(sessionID:String) = {
+  def runScan(sessionID:String) = {
     sessionsByKey.get(sessionID) match {
       case None => // No session. Nothing to do. TODO: Throw an exception?
       case Some(cache) => {
-        runSyncForScope(cache.scope, null, null)
+        runScanForScope(cache.scope, null, null)
       }
     }
   }
@@ -252,7 +248,7 @@ class DefaultSessionManager(
 
   override def onAgentInstantiationCompleted(nc: NotificationCentre) {
     nc.registerForDifferenceEvents(this)
-    nc.registerForPairSyncEvents(this)
+    nc.registerForPairScanEvents(this)
   }
 
   //
@@ -314,10 +310,10 @@ class DefaultSessionManager(
 
 
   //
-  // Pair Sync Notifications
+  // Pair Scan Notifications
   //
 
-  def pairSyncStateChanged(pairKey: String, syncState: PairScanState) = updatePairSyncState(pairKey, syncState)
+  def pairScanStateChanged(pairKey: String, scanState: PairScanState) = updatePairScanState(pairKey, scanState)
 
 
   //
@@ -329,7 +325,7 @@ class DefaultSessionManager(
   // Internal plumbing
 
   /**
-   * When pairs are updated, perform a differencing run to sync with their status.
+   * When pairs are updated, perform a differencing run to scan with their status.
    */
   def onUpdatePair(pairKey: String) = {
     val isRelevantToASession =
@@ -342,7 +338,7 @@ class DefaultSessionManager(
   }
 
   /**
-   * When pairs are deleted, we stop tracking their status in the pair sync map.
+   * When pairs are deleted, we stop tracking their status in the pair scan map.
    */
   def onDeletePair(pairKey:String) = {
     pairStates.synchronized { pairStates.remove(pairKey) }
@@ -350,17 +346,19 @@ class DefaultSessionManager(
 
   def withPair[T](pair:String)(f:Function0[T]) = withValidPair(pair, f)
 
-  def runSyncForScope(scope:SessionScope, start:DateTime, end:DateTime) {
-    pairKeysForScope(scope).foreach(runSyncForPair(_))
+  def runScanForScope(scope:SessionScope, start:DateTime, end:DateTime) {
+    pairKeysForScope(scope).foreach(runScanForPair(_))
   }
 
-  def runSyncForPair(pairKey:String) {
-    // Update the sync state ourselves. The policy itself will send an update shortly, but since that happens
-    // asynchronously, we might have returned before then, and this may potentially result in clients seeing
-    // a "Up To Date" view, even though we're just about to transition out of that state.
-    updatePairSyncState(pairKey, PairScanState.SYNCHRONIZING)
+  def runScanForPair(pairKey:String) {
+    withPair[Unit](pairKey)(() => {
+      // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
+      // asynchronously, we might have returned before then, and this may potentially result in clients seeing
+      // a "Up To Date" view, even though we're just about to transition out of that state.
+      updatePairScanState(pairKey, PairScanState.SCANNING)
 
-    pairPolicyClient.scanPair(pairKey)
+      pairPolicyClient.scanPair(pairKey)
+    })
   }
 
   def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime) {
@@ -443,10 +441,10 @@ class DefaultSessionManager(
     f()
   }
 
-  def updatePairSyncState(pairKey:String, state:PairScanState) = {
+  def updatePairScanState(pairKey:String, state:PairScanState) = {
     pairStates.synchronized {
       pairStates(pairKey) = state
     }
-    log.info("Pair " + pairKey + " entered synchronization state: " + state)
+    log.info("Pair " + pairKey + " entered scan state: " + state)
   }
 }

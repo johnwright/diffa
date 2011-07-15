@@ -90,7 +90,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
       url: API_BASE + "/scanning/pairs/" + this.id + "/scan",
       type: "POST",
       success: function() {
-        self.set({state: 'SYNCHRONIZING'});
+        self.set({state: 'SCANNING'});
       },
       error: function(jqXHR, textStatus, errorThrown) {
         alert("Error in scan request: " + errorThrown);
@@ -168,7 +168,7 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
       type: "POST",
       success: function() {
         self.each(function(pair) {
-          pair.set({state: 'SYNCHRONIZING'});
+          pair.set({state: 'SCANNING'});
         });
       },
       error: function(jqXHR, textStatus, errorThrown) {
@@ -238,13 +238,12 @@ Diffa.Views.PairSelector = Backbone.View.extend({
   },
 
   renderState: function(state) {
-    // TODO: When #216 changes SYNCHRONIZING to SCANNING, this should be updated
     switch (state) {
       case "REQUESTING":    return "Requesting Scan";
       case "UNKNOWN":       return "Scan not run";
       case "FAILED":        return "Last Scan Failed";
       case "UP_TO_DATE":    return "Up to Date";
-      case "SYNCHRONIZING": return "Scan In Progress";
+      case "SCANNING":      return "Scan In Progress";
       case "CANCELLED":     return "Last Scan Cancelled";
     }
 
@@ -302,8 +301,7 @@ Diffa.Views.PairControls = Diffa.Views.PairSelectionView.extend({
     var self = this;
     var currentPair = self.model.get(self.currentPairKey);
     var currentState = currentPair.get('state');
-      // TODO: When #216 changes SYNCHRONIZING to SCANNING, this should be updated
-    var scanIsRunning = (currentState == "REQUESTING" || currentState == "SYNCHRONIZING");
+    var scanIsRunning = (currentState == "REQUESTING" || currentState == "SCANNING");
 
     var scanButton = this.$('#pair-controls .scan-button');
     var cancelButton = this.$('#pair-controls .cancel-button');

@@ -34,11 +34,11 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
  * upstream events.
  */
 class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, configStore:ConfigStore, diagnostics:DiagnosticsManager)
-    extends BaseSynchingVersionPolicy(stores, listener, configStore:ConfigStore, diagnostics) {
+    extends BaseScanningVersionPolicy(stores, listener, configStore:ConfigStore, diagnostics) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamSameSyncStrategy
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamSameScanStrategy
 
-  protected class DownstreamSameSyncStrategy extends SyncStrategy {
+  protected class DownstreamSameScanStrategy extends ScanStrategy {
     def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
       stores(pairKey).queryDownstreams(constraints, aggregator.collectDownstream)

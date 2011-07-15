@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.actors
 
 import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.events.PairChangeEvent
-import net.lshift.diffa.kernel.differencing.{PairSyncListener, DifferencingListener}
+import net.lshift.diffa.kernel.differencing.{PairScanListener, DifferencingListener}
 
 /**
  * This is a thread safe entry point to an underlying version policy.
@@ -32,13 +32,13 @@ trait PairPolicyClient {
   def propagateChangeEvent(event:PairChangeEvent) : Unit
 
   /**
-   * Runs a replayUnmatchedDifferences report based on stored data for the given pair. Does not synchronise with the participants
-   * beforehand - use <code>scanPair</code> to do the sync first.
+   * Runs a replayUnmatchedDifferences report based on stored data for the given pair. Does not scan with the participants
+   * beforehand - use <code>scanPair</code> to do the scan first.
    */
   def difference(pairKey:String)
 
   /**
-   * Synchronises the participants belonging to the given pair, then generates a different report.
+   * Scans the participants belonging to the given pair, then generates a different report.
    * Activities are performed on the underlying policy in a thread safe manner, allowing multiple
    * concurrent operations to be submitted safely against the same pair concurrently.
    */
