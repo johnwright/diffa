@@ -202,25 +202,47 @@ trait CommonDifferenceTests {
     }
   }
 
-  def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
-    def isUpToDate(states:Map[String, PairScanState]) = states.values.forall(s => s == PairScanState.UP_TO_DATE)
+  @Test
+  def scanShouldBeCancellable {
+    env.withActionsServer {
+      var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+      env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
 
+      // Make the upstream wait 5s before responding so the scan doesn't complete too quickly
+      env.upstream.queryResponseDelay = 5000
+
+      // Get into a scanning state
+      env.scanningClient.startScan(env.pairKey)
+      waitForScanStatus(sessionId, PairScanState.SYNCHRONIZING)
+
+      // Cancel the scan
+      env.scanningClient.cancelScanning(env.pairKey)
+      waitForScanStatus(sessionId, PairScanState.CANCELLED)
+    }
+  }
+
+  def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), from, until)
     env.diffClient.runScan(sessionId)
 
+    waitForScanStatus(sessionId, PairScanState.UP_TO_DATE, n, wait)
+
+    sessionId
+  }
+
+  def waitForScanStatus(sessionId:String, state:PairScanState, n:Int = 30, wait:Int = 100) {
+    def hasReached(states:Map[String, PairScanState]) = states.values.forall(s => s == state)
+
     var i = n
     var scanStatus = env.diffClient.getScanStatus(sessionId)
-    while(!isUpToDate(scanStatus) && i > 0) {
+    while(!hasReached(scanStatus) && i > 0) {
       Thread.sleep(wait)
 
       scanStatus = env.diffClient.getScanStatus(sessionId)
       i-=1
     }
-    assertTrue("Unexpected scan state (session = %s): %s".format(sessionId, scanStatus), isUpToDate(scanStatus))
-
-    sessionId
+    assertTrue("Unexpected scan state (session = %s): %s (wanted %s)".format(sessionId, scanStatus, state), hasReached(scanStatus))
   }
-
 
 
   def getVerifiedDiffsWithSessionId() = {
