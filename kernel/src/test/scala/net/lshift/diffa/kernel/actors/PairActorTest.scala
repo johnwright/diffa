@@ -30,10 +30,10 @@ import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.core.AppenderBase
 import ch.qos.logback.classic.spi.ILoggingEvent
 import java.lang.RuntimeException
-import net.lshift.diffa.kernel.util.AlertCodes
 import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
+import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
 
 class PairActorTest {
 
@@ -111,13 +111,30 @@ class PairActorTest {
     }
   }
 
-  def expectScans() = {
+  def expectUpstreamScan() = {
     expect(versionPolicy.scanUpstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
                                       EasyMock.eq(us), EasyMock.isA(classOf[DifferencingListener]),
                                       EasyMock.isA(classOf[FeedbackHandle])))
+  }
+  def expectDownstreamScan() = {
     expect(versionPolicy.scanDownstream(EasyMock.eq(pairKey), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
                                         EasyMock.eq(us), EasyMock.eq(ds), EasyMock.isA(classOf[DifferencingListener]),
                                         EasyMock.isA(classOf[FeedbackHandle])))
+  }
+
+  def expectScans() = {
+    expectUpstreamScan()
+    expectDownstreamScan()
+  }
+
+  def expectDifferencesReplay() = {
+    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
+  }
+
+  def expectWriterRollback() {
+    expect(writer.flush()).atLeastOnce
+    expect(writer.rollback())
+    replay(writer)
   }
 
   @Test
@@ -149,7 +166,7 @@ class PairActorTest {
 
     expectScans
 
-    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
+    expectDifferencesReplay()
 
     syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
@@ -205,7 +222,7 @@ class PairActorTest {
            EasyMock.isA(classOf[DifferencingListener]),
            EasyMock.isA(classOf[FeedbackHandle])))
 
-    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
+    expectDifferencesReplay()
 
     replay(versionPolicy)
 
@@ -294,19 +311,11 @@ class PairActorTest {
   def shouldReportScanFailure = {
     val monitor = new Object
 
-    expect(writer.flush()).atLeastOnce
-    expect(writer.rollback())
-    replay(writer)
-
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall
-
-    expectScans.andThrow(new RuntimeException("Deliberate runtime excecption, this should be handled"))
-
-    syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
-      def answer { monitor.synchronized { monitor.notifyAll } }
-    })
-    diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Downstream scan failed: Deliberate runtime excecption, this should be handled"); expectLastCall
-    diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Scan failed"); expectLastCall
+    expectFailingScan(
+      downstreamHandler = EasyMockScalaUtils.emptyAnswer,
+      failStateHandler = new IAnswer[Unit] {
+          def answer { monitor.synchronized { monitor.notifyAll } }
+        })
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
@@ -314,8 +323,124 @@ class PairActorTest {
     monitor.synchronized {
       monitor.wait(1000)
     }
-    verify(versionPolicy, syncListener)
-    verify(syncListener)
+    verify(versionPolicy, syncListener, diagnostics)
+  }
+
+  @Test
+  def shouldCancelFeedbackHandleWhenAParticipantFails = {
+    val wasMarkedAsCancelled = new SyncVar[Boolean]
+
+    expectFailingScan(downstreamHandler = new IAnswer[Unit] {
+      def answer() {
+        val feedbackHandle = EasyMock.getCurrentArguments()(5).asInstanceOf[FeedbackHandle]
+        awaitFeedbackHandleCancellation(feedbackHandle)
+        wasMarkedAsCancelled.set(feedbackHandle.isCancelled)
+      }
+    })
+    replay(versionPolicy, syncListener, diagnostics)
+
+    supervisor.startActor(pair)
+    supervisor.scanPair(pairKey)
+    assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
+    verify(versionPolicy, syncListener, diagnostics)
+  }
+
+  @Test
+  def shouldGenerateExceptionInVersionCorrelationWriterProxyWhenAParticipantFails = {
+    val proxyDidGenerateException = new SyncVar[Boolean]
+
+    expectFailingScan(downstreamHandler = new IAnswer[Unit] {
+      def answer() {
+        val feedbackHandle = EasyMock.getCurrentArguments()(5).asInstanceOf[FeedbackHandle]
+        awaitFeedbackHandleCancellation(feedbackHandle)
+
+        val writer = EasyMock.getCurrentArguments()(1).asInstanceOf[LimitedVersionCorrelationWriter]
+        try {
+          writer.clearDownstreamVersion(VersionID("p1", "abc"))
+          proxyDidGenerateException.set(false)
+        } catch {
+          case c:ScanCancelledException => proxyDidGenerateException.set(true)
+        }
+      }
+    })
+    replay(versionPolicy, syncListener, diagnostics)
+
+    supervisor.startActor(pair)
+    supervisor.scanPair(pairKey)
+    
+    assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
+    verify(versionPolicy, syncListener, diagnostics)
+  }
+
+  @Test
+  def shouldGenerateExceptionInVersionCorrelationWriterProxyWhenAParticipantFailsAndANewScanHasStarted = {
+    // NOTE: We have a couple of different actions blocking on different threads. EasyMock by default will make
+    //       mocks threadsafe, which results in a deadlock. It isn't clear whether we'll have problems with disabling
+    //       the threadsafety given we are calling the mock from multiple threads, but without completely skipping the
+    //       use of EasyMock for this test, there aren't many other options.
+    makeThreadSafe(versionPolicy, false)
+
+    val proxyDidGenerateException = new SyncVar[Boolean]
+    val secondScanIsRunning = new SyncVar[Boolean]
+    val completionMonitor = new Object
+    val waitForSecondScanToStartDelay = 2000    // Wait up to 2 seconds for the first scan to fail and the second to start
+    val waitForStragglerToFinishDelay = 2000    // Wait up to 2 seconds for the "straggler" to finish once we've unblocked it
+    val overallProcessWait = waitForSecondScanToStartDelay + waitForStragglerToFinishDelay + 1000
+      // The overall process could take up to both delays, plus a bit of breathing room
+
+    expectFailingScan(
+      downstreamHandler = new IAnswer[Unit] {
+          def answer() {
+            if (secondScanIsRunning.get(waitForSecondScanToStartDelay).isDefined) {
+              val writer = EasyMock.getCurrentArguments()(1).asInstanceOf[LimitedVersionCorrelationWriter]
+              try {
+                writer.clearDownstreamVersion(VersionID("p1", "abc"))
+                proxyDidGenerateException.set(false)
+              } catch {
+                case c:ScanCancelledException => proxyDidGenerateException.set(true)
+              }
+            } else {
+              // Given this is on a background thread, we can't fail the test from here. The "proxyDidGenerateException"
+              // call will fail later (and cause the test to fail), but this exception should help diagnose where in
+              // the overall process things started falling apart.
+              throw new RuntimeException("Test has failed: Expired whilst waiting for second scan to start")
+            }
+          }
+        },
+      failStateHandler = new IAnswer[Unit] {
+          def answer {
+            supervisor.scanPair(pairKey)      // Run a second scan when the first one fails
+          }
+        })
+    
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall()
+    expectUpstreamScan().once()  // Succeed on second
+    expectDownstreamScan().andAnswer(new IAnswer[Unit] {
+      def answer() {
+        // Notify that the second scan has started
+        secondScanIsRunning.set(true)
+
+        // Block the second scan until the first has reached a conclusion
+        proxyDidGenerateException.get(waitForStragglerToFinishDelay)
+      }
+    }).once()
+    expectDifferencesReplay()
+    diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan completed"); expectLastCall
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer {
+        completionMonitor.synchronized { completionMonitor.notifyAll() }
+      }
+    }).once()
+
+    replay(versionPolicy, syncListener, diagnostics)
+
+    supervisor.startActor(pair)
+    supervisor.scanPair(pairKey)
+
+    assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
+    completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too
+
+    verify(versionPolicy, syncListener, diagnostics)
   }
 
   @Test
@@ -365,6 +490,19 @@ class PairActorTest {
     mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
   }
 
+  def expectFailingScan(downstreamHandler:IAnswer[Unit], failStateHandler:IAnswer[Unit] = EasyMockScalaUtils.emptyAnswer) {
+    expectWriterRollback()
+
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.SYNCHRONIZING); expectLastCall.once
+
+    expectUpstreamScan().andThrow(new RuntimeException("Deliberate runtime exception, this should be handled")).once()
+    expectDownstreamScan().andAnswer(downstreamHandler).once()
+
+    syncListener.pairSyncStateChanged(pairKey, PairScanState.FAILED); expectLastCall[Unit].andAnswer(failStateHandler).once
+    diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Upstream scan failed: Deliberate runtime exception, this should be handled"); expectLastCall.once
+    diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Scan failed"); expectLastCall.once
+  }
+
   def buildUpstreamEvent() = {
     val id = VersionID(pairKey, "foo")
     val lastUpdate = new DateTime
@@ -372,6 +510,12 @@ class PairActorTest {
     UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
   }
 
+  def awaitFeedbackHandleCancellation(feedbackHandle:FeedbackHandle) {
+    val endTime = System.currentTimeMillis() + 2000
+    while (!feedbackHandle.isCancelled && endTime > System.currentTimeMillis()) {
+      Thread.sleep(100)
+    }
+  }
 }
 
 /**

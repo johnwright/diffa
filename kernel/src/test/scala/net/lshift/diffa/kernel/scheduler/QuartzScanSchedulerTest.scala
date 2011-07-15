@@ -101,7 +101,7 @@ class QuartzScanSchedulerTest {
       scheduler.onUpdatePair("PairD")   // We'll get a different pair result on each call
       scheduler.onUpdatePair("PairD")
 
-      mb.poll(3, TimeUnit.SECONDS) match {
+      mb.poll(5, TimeUnit.SECONDS) match {
         case null => fail("Scan was not triggered")
         case key:String => assertEquals("PairD", key)
       }

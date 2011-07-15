@@ -17,15 +17,11 @@
 package net.lshift.diffa.kernel.util
 
 import org.joda.time.DateTime
-import org.easymock.{IArgumentMatcher, EasyMock}
 import org.easymock.internal.ArgumentToString
+import org.easymock.{IAnswer, IArgumentMatcher, EasyMock}
 
 /**
- * Created by IntelliJ IDEA.
- * User: paulj
- * Date: 09-Jul-2010
- * Time: 10:28:10
- * To change this template use File | Settings | File Templates.
+ * Utilities for making EasyMock work nicely with Scala.
  */
 
 object EasyMockScalaUtils {
@@ -90,5 +86,9 @@ object EasyMockScalaUtils {
       }
     })
     null
+  }
+
+  val emptyAnswer = new IAnswer[Unit] {
+    def answer() {}
   }
 }
