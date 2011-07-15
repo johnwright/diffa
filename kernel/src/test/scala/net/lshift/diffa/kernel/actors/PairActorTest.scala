@@ -325,8 +325,7 @@ class PairActorTest {
     monitor.synchronized {
       monitor.wait(1000)
     }
-    verify(versionPolicy, syncListener)
-    verify(syncListener)
+    verify(versionPolicy, syncListener, diagnostics)
   }
 
   @Test
@@ -345,8 +344,7 @@ class PairActorTest {
     supervisor.startActor(pair)
     supervisor.scanPair(pairKey, diffListener, syncListener)
     assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
-    verify(versionPolicy, syncListener)
-    verify(syncListener)
+    verify(versionPolicy, syncListener, diagnostics)
   }
 
   @Test
@@ -373,8 +371,7 @@ class PairActorTest {
     supervisor.scanPair(pairKey, diffListener, syncListener)
     
     assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
-    verify(versionPolicy, syncListener)
-    verify(syncListener)
+    verify(versionPolicy, syncListener, diagnostics)
   }
 
   @Test
@@ -405,7 +402,10 @@ class PairActorTest {
                 case c:ScanCancelledException => proxyDidGenerateException.set(true)
               }
             } else {
-              println("Expired whilst waiting for second scan to start")
+              // Given this is on a background thread, we can't fail the test from here. The "proxyDidGenerateException"
+              // call will fail later (and cause the test to fail), but this exception should help diagnose where in
+              // the overall process things started falling apart.
+              throw new RuntimeException("Test has failed: Expired whilst waiting for second scan to start")
             }
           }
         },
@@ -442,8 +442,7 @@ class PairActorTest {
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too
 
-    verify(versionPolicy, syncListener)
-    verify(syncListener)
+    verify(versionPolicy, syncListener, diagnostics)
   }
 
   @Test
