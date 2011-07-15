@@ -105,26 +105,17 @@ class DefaultSessionManagerTest {
 
   def expectDifferenceForPair(pairs:String*)  = {
     pairs.foreach(pairKey => {
-      val pairKeyEq = EasyMock.eq(pairKey)
-      val diffListenerEq = isA(classOf[DifferencingListener])
-      expect(pairPolicyClient.difference(pairKeyEq, diffListenerEq)).atLeastOnce
+      expect(pairPolicyClient.difference(pairKey)).atLeastOnce
     })
 
     replay(pairPolicyClient)
   }
   def expectSyncAndDifferenceForPair(pairs:String*)  = {
     pairs.foreach(pairKey => {
-      val pairKeyEq = EasyMock.eq(pairKey)
-      val diffListenerEq = isA(classOf[DifferencingListener])
-
-      expect(pairPolicyClient.difference(pairKeyEq, diffListenerEq)).atLeastOnce
+      expect(pairPolicyClient.difference(pairKey)).atLeastOnce
     })
     pairs.foreach(pairKey => {
-      val pairKeyEq = EasyMock.eq(pairKey)
-      val diffListenerEq = isA(classOf[DifferencingListener])
-      val pairSyncListenerEq = isA(classOf[PairSyncListener])
-
-      expect(pairPolicyClient.scanPair(pairKeyEq, diffListenerEq, pairSyncListenerEq)).atLeastOnce
+      expect(pairPolicyClient.scanPair(pairKey)).atLeastOnce
     })
 
     replay(pairPolicyClient)

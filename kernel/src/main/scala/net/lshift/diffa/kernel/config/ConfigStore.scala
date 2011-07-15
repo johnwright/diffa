@@ -107,12 +107,14 @@ case class Endpoint(
   def schematize(runtimeValues:Seq[String]) = AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
 
   def defaultBucketing() : Seq[CategoryFunction] = {
-    categories.map {
+    categories.flatMap {
       case (name, categoryType) => {
         categoryType match {
-          case s:SetCategoryDescriptor    => ByNameCategoryFunction(name)
-          case r:RangeCategoryDescriptor  => RangeTypeRegistry.defaultCategoryFunction(name, r.dataType)
-          case p:PrefixCategoryDescriptor => StringPrefixCategoryFunction(name, p.prefixLength, p.maxLength, p.step)
+          // #203: By default, set elements should be sent out individually. The default behaviour for an
+          // un-aggregated attribute is to handle it by name, so we don't need to return any bucketing for it.
+          case s:SetCategoryDescriptor    => None
+          case r:RangeCategoryDescriptor  => Some(RangeTypeRegistry.defaultCategoryFunction(name, r.dataType))
+          case p:PrefixCategoryDescriptor => Some(StringPrefixCategoryFunction(name, p.prefixLength, p.maxLength, p.step))
         }
       }
     }.toSeq

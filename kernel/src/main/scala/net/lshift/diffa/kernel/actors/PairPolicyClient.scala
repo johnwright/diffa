@@ -35,14 +35,14 @@ trait PairPolicyClient {
    * Runs a replayUnmatchedDifferences report based on stored data for the given pair. Does not synchronise with the participants
    * beforehand - use <code>scanPair</code> to do the sync first.
    */
-  def difference(pairKey:String, diffListener:DifferencingListener)
+  def difference(pairKey:String)
 
   /**
    * Synchronises the participants belonging to the given pair, then generates a different report.
    * Activities are performed on the underlying policy in a thread safe manner, allowing multiple
    * concurrent operations to be submitted safely against the same pair concurrently.
    */
-  def scanPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) : Unit
+  def scanPair(pairKey:String) : Unit
 
   /**
    * Cancels any scan operation that may be in process.

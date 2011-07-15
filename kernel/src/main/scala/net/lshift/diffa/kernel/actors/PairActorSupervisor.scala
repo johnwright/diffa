@@ -28,7 +28,8 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                config:ConfigStore,
-                               escalationListener:DifferencingListener,
+                               differencingMulticaster:DifferencingListener,
+                               pairSyncListener:PairSyncListener,
                                participantFactory:ParticipantFactory,
                                stores:VersionCorrelationStoreFactory,
                                diagnostics:DiagnosticsManager,
@@ -56,7 +57,8 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
             val pairActor = Actor.actorOf(
               new PairActor(pair.key, us, ds, p, stores(pair.key),
-                            escalationListener, diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
+                            differencingMulticaster, pairSyncListener,
+                            diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
             )
             pairActor.start
             log.info("Started actor for key: " + pair.key)
@@ -85,11 +87,11 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id.pairKey) ! ChangeMessage(event)
 
-  def difference(pairKey:String, diffListener:DifferencingListener) =
-    findActor(pairKey) ! DifferenceMessage(diffListener)
+  def difference(pairKey:String) =
+    findActor(pairKey) ! DifferenceMessage
 
-  def scanPair(pairKey:String, diffListener:DifferencingListener, pairSyncListener:PairSyncListener) =
-    findActor(pairKey) ! ScanMessage(diffListener, pairSyncListener)
+  def scanPair(pairKey:String) =
+    findActor(pairKey) ! ScanMessage
 
   def cancelScans(pairKey:String) = {
     (findActor(pairKey) !! CancelMessage) match {

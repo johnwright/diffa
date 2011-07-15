@@ -79,16 +79,15 @@ class PairActorTest {
   expect(stores.apply(pairKey)).andReturn(store)
   replay(stores)
 
-  val escalationListener = createMock(classOf[DifferencingListener])
+  val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
+  val syncListener = createStrictMock("syncListener", classOf[PairSyncListener])
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, escalationListener, participantFactory, stores, diagnostics, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, diffListener, syncListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
   verify(configStore)
 
-  val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
-  val syncListener = createStrictMock("syncListener", classOf[PairSyncListener])
 
   @After
   def stop = supervisor.stopActor(pairKey)
@@ -130,7 +129,6 @@ class PairActorTest {
 
   def expectDifferencesReplay() = {
     expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener))
-    expect(versionPolicy.replayUnmatchedDifferences(pairKey, escalationListener))
   }
 
   def expectWriterRollback() {
@@ -149,7 +147,7 @@ class PairActorTest {
     replay(versionPolicy)
 
     supervisor.startActor(pair)
-    supervisor.difference(pairKey, diffListener)
+    supervisor.difference(pairKey)
 
     monitor.synchronized {
       monitor.wait(1000)
@@ -177,7 +175,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -229,7 +227,7 @@ class PairActorTest {
     replay(versionPolicy)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
 
     flushMonitor.synchronized {
       flushMonitor.wait(2000)
@@ -296,7 +294,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
 
     responseMonitor.synchronized {
       responseMonitor.wait(timeToWait * 2)
@@ -321,7 +319,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -342,7 +340,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
     assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
     verify(versionPolicy, syncListener, diagnostics)
   }
@@ -368,7 +366,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
     
     assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     verify(versionPolicy, syncListener, diagnostics)
@@ -411,7 +409,7 @@ class PairActorTest {
         },
       failStateHandler = new IAnswer[Unit] {
           def answer {
-            supervisor.scanPair(pairKey, diffListener, syncListener)      // Run a second scan when the first one fails
+            supervisor.scanPair(pairKey)      // Run a second scan when the first one fails
           }
         })
     
@@ -437,7 +435,7 @@ class PairActorTest {
     replay(versionPolicy, syncListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairKey, diffListener, syncListener)
+    supervisor.scanPair(pairKey)
 
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too
