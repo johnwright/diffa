@@ -67,8 +67,10 @@ trait DifferencesClient {
   def poll(sessionId:String, sinceSeqId:String): Array[SessionEvent]
 
 
-  // TODO document
-  def page(sessionId:String, from:DateTime, until:DateTime, offset:Int, length:Int) : Array[SessionEvent]
+  /**
+   * This retrieves events from the given session based on the criteria pass in.
+   */
+  def getEvents(sessionId:String, pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) : Array[SessionEvent]
 
   /**
    * Retrieves further details of the given event with the specified session.

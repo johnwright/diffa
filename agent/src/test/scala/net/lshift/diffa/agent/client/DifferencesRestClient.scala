@@ -105,8 +105,9 @@ class DifferencesRestClient(serverRootUrl:String)
   def poll(sessionId:String, sinceSeqId:String) : Array[SessionEvent] =
     pollInternal(resource.path("sessions/" + sessionId).queryParam("since", sinceSeqId))
 
-  def page(sessionId:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
+  def getEvents(sessionId:String, pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
     val path = resource.path("sessions/" + sessionId + "/page")
+                       .queryParam("pairKey", pairKey)
                        .queryParam("range-start", formatter.print(from))
                        .queryParam("range-end", formatter.print(until))
                        .queryParam("offset", offset.toString)

@@ -39,12 +39,6 @@ trait SessionCache {
    */
   def currentVersion:String
 
-  // TODO Implement this
-  def isInitialized() = false
-
-  // TODO Implement this
-  def markAsInitialized() = {}
-
   /**
    * Queries whether the session cache's scope includes the given version identifier.
    */
@@ -75,11 +69,6 @@ trait SessionCache {
    * that matched events do not result in the cache becoming full.
    */
   def addMatchedEvent(id:VersionID, vsn:String):SessionEvent
-
-  /**
-   * Retrieves all unmatched events that have been added to the cache.
-   */
-  def retrieveAllUnmatchedEvents:Seq[SessionEvent]
 
   /**
    * Retrieves all unmatched events that have been added to the cache where their detection timestamp

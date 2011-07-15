@@ -105,12 +105,6 @@ trait SessionManager {
   def retrieveSessionVersion(sessionID:String):String
 
   /**
-   * Retrieves all events known to this session. Will only include unmatched events.
-   * @throws InvalidSessionIDException if the requested session does not exist or has expired.
-   */
-  def retrieveAllEvents(sessionID:String):Seq[SessionEvent]
-
-  /**
    *  Retrieves all events known to this session in the given interval. Will only include unmatched events.
    *  @throws InvalidSessionIDException if the requested session does not exist or has expired.
    */

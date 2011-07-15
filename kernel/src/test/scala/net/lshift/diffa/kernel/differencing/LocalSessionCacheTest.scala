@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Ignore, Test}
-import org.joda.time.{Interval, DateTime}
+import org.joda.time.{DateTime, Interval}
 
 /**
  * Test cases for the local session cache.
@@ -41,8 +41,10 @@ class LocalSessionCacheTest {
 
   @Test
   def shouldNotPublishPendingUnmatchedEventInAllUnmatchedList {
-    cache.addPendingUnmatchedEvent(VersionID("pair1", "id1"), new DateTime(), "uV", "dV")
-    assertEquals(0, cache.retrieveAllUnmatchedEvents.length)
+    val now = new DateTime()
+    cache.addPendingUnmatchedEvent(VersionID("pair1", "id1"), now, "uV", "dV")
+    val interval = new Interval(now.minusDays(1), now.plusDays(1))
+    assertEquals(0, cache.retrieveUnmatchedEvents(interval).length)
   }
 
   @Test
@@ -51,7 +53,8 @@ class LocalSessionCacheTest {
     cache.addPendingUnmatchedEvent(VersionID("pair1", "id1"), timestamp, "uV", "dV")
     cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
 
-    val unmatched = cache.retrieveAllUnmatchedEvents
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
     assertEquals(1, unmatched.length)
     assertEquals(VersionID("pair1", "id1"), unmatched.first.objId)
     assertEquals(timestamp, unmatched.first.detectedAt)
@@ -62,7 +65,8 @@ class LocalSessionCacheTest {
   @Test
   def shouldIgnoreUpgradeRequestsForUnknownIDs {
     cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
-    assertEquals(0, cache.retrieveAllUnmatchedEvents.length)
+    val interval = new Interval(new DateTime(), new DateTime())
+    assertEquals(0, cache.retrieveUnmatchedEvents(interval).length)
   }
 
   @Test
@@ -72,7 +76,8 @@ class LocalSessionCacheTest {
     cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
     cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
 
-    assertEquals(1, cache.retrieveAllUnmatchedEvents.length)
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    assertEquals(1, cache.retrieveUnmatchedEvents(interval).length)
   }
 
   @Test
@@ -80,7 +85,8 @@ class LocalSessionCacheTest {
     val timestamp = new DateTime()
     cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uV", "dV")
 
-    val unmatched = cache.retrieveAllUnmatchedEvents
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
     assertEquals(1, unmatched.length)
     assertEquals(MatchState.UNMATCHED, unmatched.first.state)
     assertEquals(VersionID("pair2", "id2"), unmatched.first.objId)
@@ -120,7 +126,10 @@ class LocalSessionCacheTest {
     // Set a bound so that 30 events fall into the window
     val interval = addUnmatchedEvents(start, size, frontFence, rearFence)
 
-    val unmatched = cache.retrieveAllUnmatchedEvents
+    // Create an interval that is wide enough to get every event ever
+    val veryWideInterval = new Interval(start.minusDays(1), start.plusDays(1))
+
+    val unmatched = cache.retrieveUnmatchedEvents(veryWideInterval)
     assertEquals(size, unmatched.length)
 
     // Requesting 19 elements with an offset of 10 from 30 elements should yield elements 10 through to 28
@@ -138,7 +147,8 @@ class LocalSessionCacheTest {
     val timestamp = new DateTime()
     cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uuV", "ddV")
 
-    val unmatched = cache.retrieveAllUnmatchedEvents
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
     val lastSeq = unmatched.last.seqId
 
     cache.addMatchedEvent(VersionID("pair2", "id2"), "uuV")
@@ -158,7 +168,8 @@ class LocalSessionCacheTest {
     val timestamp = new DateTime()
     cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uuV", "ddV")
     cache.addMatchedEvent(VersionID("pair2", "id2"), "uuV")
-    val updates = cache.retrieveAllUnmatchedEvents
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val updates = cache.retrieveUnmatchedEvents(interval)
 
     assertEquals(0, updates.length)
   }
@@ -168,7 +179,8 @@ class LocalSessionCacheTest {
     val timestamp = new DateTime()
     // Get an initial event and a sequence number
     cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uV", "dV")
-    val unmatched = cache.retrieveAllUnmatchedEvents
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
     val lastSeq = unmatched.last.seqId
 
     // Add a matched event for something that we don't have marked as unmatched
@@ -184,7 +196,8 @@ class LocalSessionCacheTest {
     cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uV", "dV")
     cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uV2", "dV2")
 
-    val unmatched = cache.retrieveAllUnmatchedEvents
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
     assertEquals(1, unmatched.length)
     assertEquals(VersionID("pair2", "id2"), unmatched(0).objId)
     assertEquals("uV2", unmatched(0).upstreamVsn)

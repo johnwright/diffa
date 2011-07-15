@@ -92,7 +92,6 @@ class DefaultSessionManager(
       // If a session to initialize was return, we should do that.
       sessionToInit match {
         case Some(session) => {
-          session.markAsInitialized
           runDifferenceForScope(scope, start, end)
         }
         case None => // Do nothing
@@ -193,7 +192,6 @@ class DefaultSessionManager(
 
   def retrieveSessionVersion(id:String) = safeGetSession(id).currentVersion
   def retrieveEventsSince(id:String, evtSeqId:String) = safeGetSession(id).retrieveEventsSince(evtSeqId)
-  def retrieveAllEvents(id:String) = safeGetSession(id).retrieveAllUnmatchedEvents
 
   def retrieveAllEventsInInterval(sessionId:String, interval:Interval) =
     sessionsByKey(sessionId).retrieveUnmatchedEvents(interval)
