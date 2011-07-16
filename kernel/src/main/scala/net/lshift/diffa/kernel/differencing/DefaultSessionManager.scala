@@ -191,7 +191,6 @@ class DefaultSessionManager(
   }
 
   def retrieveSessionVersion(id:String) = safeGetSession(id).currentVersion
-  def retrieveEventsSince(id:String, evtSeqId:String) = safeGetSession(id).retrieveEventsSince(evtSeqId)
 
   def retrieveAllEventsInInterval(sessionId:String, interval:Interval) =
     sessionsByKey(sessionId).retrieveUnmatchedEvents(interval)

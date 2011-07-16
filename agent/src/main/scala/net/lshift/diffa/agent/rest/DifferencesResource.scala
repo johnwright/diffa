@@ -27,10 +27,8 @@ import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
-import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
-import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam._
 
 @Path("/diffs")
 @Component
@@ -118,13 +116,13 @@ class DifferencesResource {
     new OptionalParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
     new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
     new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
-  def pageDifferences(@PathParam("sessionId") sessionId: String,
-                      @QueryParam("pairKey") pairKey:String,
-                      @QueryParam("range-start") from_param:String,
-                      @QueryParam("range-end") until_param:String,
-                      @QueryParam("offset") offset_param:String,
-                      @QueryParam("length") length_param:String,
-                      @Context request: Request) = {
+  def getSessionEvents(@PathParam("sessionId") sessionId: String,
+                       @QueryParam("pairKey") pairKey:String,
+                       @QueryParam("range-start") from_param:String,
+                       @QueryParam("range-end") until_param:String,
+                       @QueryParam("offset") offset_param:String,
+                       @QueryParam("length") length_param:String,
+                       @Context request: Request) = {
 
     val now = new DateTime()
     val from = defaultDateTime(from_param, now.minusDays(1))
@@ -149,16 +147,6 @@ class DifferencesResource {
         log.error("Unsucessful query on sessionId = " + sessionId, e)
         throw new WebApplicationException(404)
     }
-  }
-
-  def defaultDateTime(input:String, default:DateTime) = input match {
-    case "" | null => default
-    case x         => isoDateTime.parseDateTime(x)
-  }
-
-  def defaultInt(input:String, default:Int) = input match {
-    case "" | null => default
-    case x         => x.toInt
   }
   
   @GET
@@ -249,4 +237,14 @@ class DifferencesResource {
                 @PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String =
     sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.withName(participant))
+
+  def defaultDateTime(input:String, default:DateTime) = input match {
+    case "" | null => default
+    case x         => isoDateTime.parseDateTime(x)
+  }
+
+  def defaultInt(input:String, default:Int) = input match {
+    case "" | null => default
+    case x         => x.toInt
+  }
 }
