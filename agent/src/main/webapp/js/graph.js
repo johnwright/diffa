@@ -384,8 +384,6 @@ function fetchData() {
           + selectedStart.toString(TIME_FORMAT) + "&range-end=" + selectedEnd.toString(TIME_FORMAT)
           + "&offset=" + (page * listSize) + "&length=" + listSize;
 
-      console.log("URL = " + url);
-
       $.get(url, function(data) {
         renderEvent(data[0]);
         var list = $('#difflist-row').empty();
