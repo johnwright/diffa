@@ -127,26 +127,10 @@ class DifferencesResource {
                       @Context request: Request) = {
 
     val now = new DateTime()
-
-    val from = from_param match {
-      case "" | null => now.minusDays(1)
-      case x         => isoDateTime.parseDateTime(x)
-    }
-
-    val until = until_param match {
-      case "" | null => now
-      case x         => isoDateTime.parseDateTime(x)
-    }
-
-    val offset = offset_param match {
-      case "" | null => 0
-      case x         => x.toInt
-    }
-
-    val length = length_param match {
-      case "" | null => 100
-      case x         => x.toInt
-    }
+    val from = defaultDateTime(from_param, now.minusDays(1))
+    val until = defaultDateTime(until_param, now)
+    val offset = defaultInt(offset_param, 0)
+    val length = defaultInt(length_param, 100)
 
     try {
       val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
@@ -165,6 +149,16 @@ class DifferencesResource {
         log.error("Unsucessful query on sessionId = " + sessionId, e)
         throw new WebApplicationException(404)
     }
+  }
+
+  def defaultDateTime(input:String, default:DateTime) = input match {
+    case "" | null => default
+    case x         => isoDateTime.parseDateTime(x)
+  }
+
+  def defaultInt(input:String, default:Int) = input match {
+    case "" | null => default
+    case x         => x.toInt
   }
   
   @GET
