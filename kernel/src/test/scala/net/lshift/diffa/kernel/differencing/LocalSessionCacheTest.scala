@@ -133,11 +133,11 @@ class LocalSessionCacheTest {
     assertEquals(size, unmatched.length)
 
     // Requesting 19 elements with an offset of 10 from 30 elements should yield elements 10 through to 28
-    val containedPage = cache.retrievePagedEvents(interval, 10, 19)
+    val containedPage = cache.retrievePagedEvents("pair2", interval, 10, 19)
     assertEquals(19, containedPage.length)
 
     // Requesting 19 elements with an offset of 20 from 30 elements should yield elements 20 through to 29
-    val splitPage = cache.retrievePagedEvents(interval, 20, 19)
+    val splitPage = cache.retrievePagedEvents("pair2", interval, 20, 19)
     assertEquals(10, splitPage.length)
 
   }

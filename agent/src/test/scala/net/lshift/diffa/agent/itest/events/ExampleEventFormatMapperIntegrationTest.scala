@@ -30,10 +30,10 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
-import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import org.springframework.core.io.ClassPathResource
 import net.lshift.diffa.agent.client.DifferencesRestClient
+import collection.mutable.HashMap
+import org.joda.time.DateTime
 
 /**
  * Integration test for change events over AMQP in an example JSON format.
@@ -71,7 +71,8 @@ class ExampleEventFormatMapperIntegrationTest {
     val changeEvent = IOUtils.toString(getClass.getResourceAsStream("/event.json"))
     changeEventProducer.send(changeEvent)
 
-    val sessionEvents = poll(diffClient, sessionId)
+    val now = new DateTime()
+    val sessionEvents = poll(diffClient,sessionId, "pair", now.minusDays(1), now.plusDays(1), 0, 100)
     assertEquals(1, sessionEvents.length)
     val sessionEvent = sessionEvents(0)
     assertEquals(VersionID("pair", "5509a836-ca75-42a4-855a-71893448cc9d"), sessionEvent.objId)
@@ -82,19 +83,20 @@ class ExampleEventFormatMapperIntegrationTest {
   }
 
   def poll(diffClient: DifferencesRestClient,
-           sessionId: String,
+           sessionId: String, pairKey:String,
+           from:DateTime, until:DateTime, offset:Int, length:Int,
            maxAttempts: Int = 10,
            sleepTimeMillis: Int = 1000): Array[SessionEvent] = {
     
     var attempts = 0
     while (attempts < maxAttempts) {
       Thread.sleep(1000)
-      val sessionEvents = diffClient.poll(sessionId)
+      val sessionEvents = diffClient.getEvents(sessionId, pairKey, from, until, offset, length)
       assertNotNull(sessionEvents)
       if (sessionEvents.length > 0) return sessionEvents
       attempts += 1
     }
     fail("Couldn't retrieve session events after %d attempts".format(maxAttempts))
-    Array[SessionEvent]()
+    null
   }
 }

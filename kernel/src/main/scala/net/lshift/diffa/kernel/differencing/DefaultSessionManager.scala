@@ -196,8 +196,8 @@ class DefaultSessionManager(
   def retrieveAllEventsInInterval(sessionId:String, interval:Interval) =
     sessionsByKey(sessionId).retrieveUnmatchedEvents(interval)
 
-  def retrievePagedEvents(sessionId:String, interval:Interval, offset:Int, length:Int) =
-    sessionsByKey(sessionId).retrievePagedEvents(interval, offset,length)
+  def retrievePagedEvents(sessionId:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
+    sessionsByKey(sessionId).retrievePagedEvents(pairKey, interval, offset, length)
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.trace("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")

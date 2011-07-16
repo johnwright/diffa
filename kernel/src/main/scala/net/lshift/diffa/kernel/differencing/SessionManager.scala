@@ -117,7 +117,7 @@ trait SessionManager {
    * and returns a subset of the underlying data set that corresponds to the offset and length specified.
    * @throws InvalidSessionIDException if the requested session does not exist or has expired.
    */
-  def retrievePagedEvents(sessionId:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
+  def retrievePagedEvents(sessionId:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
    * Retrieves all events that have occurred within a session since the provided sequence id.

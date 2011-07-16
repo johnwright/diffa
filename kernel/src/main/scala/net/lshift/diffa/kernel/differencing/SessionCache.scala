@@ -81,7 +81,7 @@ trait SessionCache {
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.
    */
-  def retrievePagedEvents(interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
+  def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
    * Retrieves all events that have occurred within a session since the provided sequence id.

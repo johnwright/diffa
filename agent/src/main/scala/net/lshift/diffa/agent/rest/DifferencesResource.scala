@@ -23,13 +23,14 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
-import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.joda.time.{DateTime, Interval}
+import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
+import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam._
 
 @Path("/diffs")
 @Component
@@ -118,6 +119,7 @@ class DifferencesResource {
     new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
     new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
   def pageDifferences(@PathParam("sessionId") sessionId: String,
+                      @QueryParam("pairKey") pairKey:String,
                       @QueryParam("range-start") from_param:String,
                       @QueryParam("range-end") until_param:String,
                       @QueryParam("offset") offset_param:String,
@@ -155,7 +157,7 @@ class DifferencesResource {
       }
 
       val interval = new Interval(from,until)
-      val diffs = sessionManager.retrievePagedEvents(sessionId, interval, offset, length)
+      val diffs = sessionManager.retrievePagedEvents(sessionId, pairKey, interval, offset, length)
       Response.ok(diffs.toArray).tag(sessionVsn).build
     }
     catch {

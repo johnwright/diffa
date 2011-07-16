@@ -378,12 +378,13 @@ function fetchData() {
       var selectedStart = new Date(startTime.getTime() + (selectedBucket.column * bucketSize * 1000));
       var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
-      // TODO wind in pair properly - this doesn't work yet
-      var pairKey = swimlaneLabels[selectedBucket.column];
+      var pairKey = swimlaneLabels[selectedBucket.row];
 
       var url = "rest/diffs/sessions/" + sessionId + "?pairKey=" + pairKey + "&range-start="
           + selectedStart.toString(TIME_FORMAT) + "&range-end=" + selectedEnd.toString(TIME_FORMAT)
           + "&offset=" + (page * listSize) + "&length=" + listSize;
+
+      console.log("URL = " + url);
 
       $.get(url, function(data) {
         renderEvent(data[0]);

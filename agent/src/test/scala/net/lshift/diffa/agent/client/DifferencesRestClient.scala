@@ -88,25 +88,26 @@ class DifferencesRestClient(serverRootUrl:String)
     }
   }
 
+  def getZoomedView(sessionId:String, from:DateTime, until:DateTime, bucketing:Int)  = {
+    val path = resource.path("sessions").path(sessionId).path("zoom")
+                        .queryParam("range-start", formatter.print(from))
+                        .queryParam("range-end", formatter.print(until))
+                        .queryParam("bucketing", bucketing.toString)
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.get(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 200    => response.getEntity(classOf[Map[String, Array[Int]]])
+      case x:Int  => handleHTTPError(x, path, status)
+    }
+
+  }
 
   def handleHTTPError(x:Int, path:WebResource, status:ClientResponse.Status) =
     throw new RuntimeException("HTTP %s for resource %s ; Reason: %s".format(x, path ,status.getReasonPhrase))
 
-  /**
-   * This will poll the session identified by the id parameter for match events.
-   */
-  def poll(sessionId:String) : Array[SessionEvent] =
-    pollInternal(resource.path("sessions/" + sessionId))
-
-  /**
-   * This will poll the session identified by the id parameter for match events, retrieving any events occurring
-   * since the given sequence id.
-   */
-  def poll(sessionId:String, sinceSeqId:String) : Array[SessionEvent] =
-    pollInternal(resource.path("sessions/" + sessionId).queryParam("since", sinceSeqId))
-
   def getEvents(sessionId:String, pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
-    val path = resource.path("sessions/" + sessionId + "/page")
+    val path = resource.path("sessions/" + sessionId)
                        .queryParam("pairKey", pairKey)
                        .queryParam("range-start", formatter.print(from))
                        .queryParam("range-end", formatter.print(until))
