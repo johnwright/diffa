@@ -41,7 +41,9 @@ class QuartzScanSchedulerTest {
   def shouldAllowScheduleCreation() {
     val mb = createExecuteListenerQueue
 
+    expect(config.listPairs).andReturn(Seq())
     expect(config.getPair("PairA")).andReturn(Pair(key = "PairA", scanCronSpec = generateNowishCronSpec))
+
     replayAll()
 
     withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowScheduleCreation")) { scheduler =>
@@ -57,7 +59,8 @@ class QuartzScanSchedulerTest {
   @Test
   def shouldRestoreSchedulesOnStartup() {
     val mb = createExecuteListenerQueue
-    
+
+    expect(config.listPairs).andReturn(Seq(Pair(key = "PairB", scanCronSpec = generateNowishCronSpec)))
 
     replayAll()
 
@@ -72,6 +75,8 @@ class QuartzScanSchedulerTest {
   @Test
   def shouldAllowSchedulesToBeDeleted() {
     val mb = createExecuteListenerQueue
+
+    expect(config.listPairs).andReturn(Seq(Pair(key = "PairC", scanCronSpec = generateNowishCronSpec)))
 
     replayAll()
 
@@ -89,8 +94,10 @@ class QuartzScanSchedulerTest {
   def shouldAllowSchedulesToBeUpdated() {
     val mb = createExecuteListenerQueue
 
+    expect(config.listPairs).andReturn(Seq())
     expect(config.getPair("PairD")).andReturn(Pair(key = "PairD", scanCronSpec = generateOldCronSpec)).once()
     expect(config.getPair("PairD")).andReturn(Pair(key = "PairD", scanCronSpec = generateNowishCronSpec)).once()
+
     replayAll()
 
     // Initially schedule with something too old to run, then update it with something new enough that will
