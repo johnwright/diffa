@@ -31,6 +31,7 @@ class LocalEventMatchingManagerTest {
   val configStore = createStrictMock(classOf[ConfigStore])
   expect(configStore.getPair("pair1")).andStubReturn(pair1)
   expect(configStore.getPair("pair2")).andStubReturn(pair2)
+  expect(configStore.listPairs).andStubReturn(Seq(pair1,pair2))
   replay(configStore)
 
   val matchingManager = new LocalEventMatchingManager(configStore)
