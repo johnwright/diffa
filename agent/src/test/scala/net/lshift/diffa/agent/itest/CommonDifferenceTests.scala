@@ -99,7 +99,7 @@ trait CommonDifferenceTests {
     var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", "abcdef", someDate = yesterday, someString = "ss")
 
-    val diffs = pollForAllDifferences(sessionId, yearAgo, today.plusMinutes(1))
+    val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
 
     assertFalse(diffs.isEmpty)
   }
@@ -146,9 +146,7 @@ trait CommonDifferenceTests {
     var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", up, someDate = yesterday, someString = "ss")
 
-    val someTimeAfter = today.plusMinutes(1)
-
-    val diffs = pollForAllDifferences(sessionId, yearAgo, someTimeAfter)
+    val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
     val seqId1 = diffs(0).seqId
 
     val up1 = env.diffClient.eventDetail(sessionId, seqId1, ParticipantType.UPSTREAM)
@@ -159,7 +157,7 @@ trait CommonDifferenceTests {
 
     env.addAndNotifyDownstream("abc", down, someDate = yesterday, someString = "ss")
     Thread.sleep(2000)
-    val diffs2 = pollForAllDifferences(sessionId, yearAgo, someTimeAfter)
+    val diffs2 = pollForAllDifferences(sessionId, yearAgo, nextYear)
     assertEquals(1, diffs2.length)
     val seqId2 = diffs2(0).seqId
 
