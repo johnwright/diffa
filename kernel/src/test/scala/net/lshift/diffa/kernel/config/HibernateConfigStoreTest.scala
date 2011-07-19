@@ -66,7 +66,6 @@ class HibernateConfigStoreTest {
                                       pairKey=pairKey)
 
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
-  val groupRenamed = "TEST_GROUP_RENAMED"
   val pairRenamed = "TEST_PAIR_RENAMED"
 
   val TEST_USER = User("foo","foo@bar.com")

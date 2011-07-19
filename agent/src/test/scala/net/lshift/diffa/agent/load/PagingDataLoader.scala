@@ -51,14 +51,13 @@ object PagingDataLoader {
     val up = "up"
     val down = "down"
 
-    val group = "group"
     val content = "application/json"
 
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
     configClient.declareEndpoint(Endpoint(name = up, scanUrl = host, contentType = content, categories = categories))
     configClient.declareEndpoint(Endpoint(name = down, scanUrl = host, contentType = content, categories = categories))
-    configClient.declarePair(PairDef(pair, "same", 0, up, down, group))
+    configClient.declarePair(PairDef(pair, "same", 0, up, down, "0 15 10 ? * *"))
 
     val start = new DateTime().minusHours(hours)
 

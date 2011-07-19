@@ -49,7 +49,7 @@ class Configuration(val configStore: ConfigStore,
     removedUsers.foreach(u => deleteUser(u.name))
     diffaConfig.users.foreach(u => createOrUpdateUser(u))
 
-    // Apply endpoint, group and pair updates
+    // Apply endpoint and pair updates
     diffaConfig.endpoints.foreach(e => createOrUpdateEndpoint(e))
     diffaConfig.pairs.foreach(p => createOrUpdatePair(p))
 
