@@ -82,20 +82,17 @@ class DiffaCastorSerializableConfig {
   @BeanProperty var users:java.util.List[User] = new java.util.ArrayList[User]
   @BeanProperty var properties:java.util.List[DiffaProperty] = new java.util.ArrayList[DiffaProperty]
   @BeanProperty var endpoints:java.util.List[CastorSerializableEndpoint] = new java.util.ArrayList[CastorSerializableEndpoint]
-  @BeanProperty var groups:java.util.List[CastorSerializableGroup] = new java.util.ArrayList[CastorSerializableGroup]
+  @BeanProperty var pairs:java.util.List[CastorSerializablePair] = new java.util.ArrayList[CastorSerializablePair]
 
   def fromDiffaConfig(c:DiffaConfig) = {
     this.users = c.users.toList
     this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
     this.endpoints = c.endpoints.map { e => (new CastorSerializableEndpoint).fromDiffaEndpoint(e) }.toList
-    this.groups = c.groups.map(g => {
+    this.pairs = c.pairs.map(p => {
       def repairActionsForPair(pairKey: String) = c.repairActions.filter(_.pairKey == pairKey).toList
       def escalationsForPair(pairKey: String) = c.escalations.filter(_.pairKey == pairKey).toList
-      val pairs = c.pairs.filter(_.groupKey == g.key).map(p =>
-        CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.pairKey), escalationsForPair(p.pairKey))).toList
-      new CastorSerializableGroup(g.key, pairs)
+      CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.pairKey), escalationsForPair(p.pairKey))
     }).toList
-
     this
   }
 
@@ -104,10 +101,9 @@ class DiffaCastorSerializableConfig {
       users = users.toSet,
       properties = properties.map(p => p.key -> p.value).toMap,
       endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
-      groups = groups.map(g => PairGroup(g.name)).toSet,
-      pairs = (for (g <- groups; p <- g.pairs) yield p.toPairDef(g.name)).toSet,
-      repairActions = (for (g <- groups; p <- g.pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet,
-      escalations = (for (g <- groups; p <- g.pairs; e <- p.escalations) yield { e.pairKey = p.key ; e }).toSet
+      pairs = (for (p <- pairs) yield p.toPairDef).toSet,
+      repairActions = (for (p <- pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet,
+      escalations = (for (p <- pairs; e <- p.escalations) yield { e.pairKey = p.key ; e }).toSet
     )
 
 }
@@ -184,13 +180,6 @@ class SetValue(@BeanProperty var value:String) {
   def this() = this(null)
 }
 
-class CastorSerializableGroup(
-    @BeanProperty var name:String,
-    @BeanProperty var pairs:java.util.List[CastorSerializablePair] = new java.util.ArrayList[CastorSerializablePair]
-) {
-  def this() = this(name = null)
-}
-
 class CastorSerializablePair(
   @BeanProperty var key: String = null,
   @BeanProperty var upstream: String = null,
@@ -203,8 +192,7 @@ class CastorSerializablePair(
 ) {
   def this() = this(key = null)
 
-  def toPairDef(groupKey: String): PairDef =
-    new PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, groupKey, scanCronSpec)
+  def toPairDef = new PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, scanCronSpec)
 }
 
 object CastorSerializablePair {

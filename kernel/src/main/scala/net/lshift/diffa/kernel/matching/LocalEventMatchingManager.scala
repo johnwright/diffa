@@ -28,9 +28,7 @@ class LocalEventMatchingManager(configStore: ConfigStore) extends MatchingManage
   private val listeners = new ListBuffer[MatchingStatusListener]
 
   // Create a matcher for each pre-existing pair
-  configStore.listGroups.foreach(g => g.pairs.foreach(p => {
-    updateMatcher(p.key, p.matchingTimeout)
-  }))
+  configStore.listPairs.foreach(p => updateMatcher(p.key, p.matchingTimeout))
 
   def getMatcher(pairKey:String) = matchers.get(pairKey)
 

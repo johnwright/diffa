@@ -120,7 +120,6 @@ class TestEnvironment(val pairKey: String,
   participants.startDownstreamServer(downstream, downstream, downstream)
 
   // Ensure that the configuration exists
-  configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(Endpoint(name = upstreamEpName,
     scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,

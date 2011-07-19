@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withS
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
+//import net.lshift.diffa.kernel.config.{Pair => Pair}
 
 class HibernateConfigStore(val sessionFactory: SessionFactory)
     extends ConfigStore
@@ -57,8 +58,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
     val up = getEndpoint(s, p.upstreamName)
     val down = getEndpoint(s, p.downstreamName)
-    val group = getGroup(s, p.groupKey)
-    val toUpdate = new Pair(p.pairKey, up, down, group, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
+    val toUpdate = new Pair(p.pairKey, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
     s.saveOrUpdate(toUpdate)
   })
 
@@ -68,27 +68,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
     s.delete(pair)
   })
 
-  def createOrUpdateGroup(g: PairGroup): Unit = sessionFactory.withSession( s => s.saveOrUpdate(g) )
-
-  def deleteGroup(key: String): Unit = sessionFactory.withSession(s => {
-    val group = getGroup(s, key)
-
-    // Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
-    // which would create an infinite loop in computing the hashCode of pairs and groups
-    getPairsInGroup(s, group).foreach(p => deletePair(p.key))
-    s.delete(group)
-  })
-
-  def getPairsInGroup(group: PairGroup): Seq[Pair] =
-    sessionFactory.withSession(s => getPairsInGroup(s, group))
-
-  private def getPairsInGroup(s: Session, group: PairGroup): Seq[Pair] = {
-    s.createQuery("FROM Pair WHERE group = :group")
-     .setEntity("group", group)
-     .list
-     .asInstanceOf[java.util.List[Pair]]
-     .toSeq
-  }
+  def listPairs = sessionFactory.withSession(s => listQuery[Pair](s, "allPairs", Map()))
 
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction] =
     sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
@@ -117,19 +97,6 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def listRepairActions: Seq[RepairAction] = sessionFactory.withSession(s =>
     listQuery[RepairAction](s, "allRepairActions", Map()))
 
-  def listGroups: Seq[GroupContainer] = sessionFactory.withSession(s => {
-    val groups = listQuery[PairGroup](s, "allGroups", Map())
-
-    groups map (group => {
-      val pairs = listQuery[Pair](s, "pairsByGroup", Map("group" -> group))
-
-      new GroupContainer(group, pairs.toArray)
-    })
-  })
-
-
-  // TODO Implement CRUD for users
-
   def createOrUpdateUser(u: User) = sessionFactory.withSession(s => s.saveOrUpdate(u))
 
   def deleteUser(name: String) = sessionFactory.withSession(s => {
@@ -150,7 +117,6 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
   def getEndpoint(name: String) = sessionFactory.withSession(s => getEndpoint(s, name))
   def getPair(key: String) = sessionFactory.withSession(s => getPair(s, key))
-  def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
   def getRepairAction(name: String, pairKey: String) = sessionFactory.withSession(s => getRepairAction(s, name, pairKey))
 
@@ -192,8 +158,6 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getEndpointOpt(s: Session, name: String) = singleQueryOpt[Endpoint](s, "endpointByName", Map("name" -> name))
   private def getPair(s: Session, key: String) = singleQuery[Pair](s, "pairByKey", Map("key" -> key), "pair %s".format(key))
   private def getPairOpt(s: Session, key: String) = singleQueryOpt[Pair](s, "pairByKey", Map("key" -> key))
-  private def getGroup(s: Session, key: String) = singleQuery[PairGroup](s, "groupByKey", Map("key" -> key), "group %s".format(key))
-  private def getGroupOpt(s: Session, key: String) = singleQueryOpt[PairGroup](s, "groupByKey", Map("key" -> key))
   private def getRepairAction(s: Session, name: String, pairKey: String) =
     singleQuery[RepairAction](s, "repairActionByNameAndPairKey", Map("name" -> name, "pairKey" -> pairKey), "repair action %s for pair %s".format(name,pairKey))
   private def getEscalation(s: Session, name: String, pairKey: String) =

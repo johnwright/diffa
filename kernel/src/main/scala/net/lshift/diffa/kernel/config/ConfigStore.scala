@@ -31,14 +31,11 @@ trait ConfigStore {
 
   def createOrUpdatePair(pairDef: PairDef): Unit
   def deletePair(key: String): Unit
+  def listPairs : Seq[Pair]
 
   def createOrUpdateRepairAction(action: RepairAction): Unit
   def deleteRepairAction(name: String, pairKey: String): Unit
 
-  def createOrUpdateGroup(group: PairGroup): Unit
-  def deleteGroup(key: String): Unit
-  def getPairsInGroup(group: PairGroup): Seq[Pair]
-  def listGroups: Seq[GroupContainer]
   def listRepairActions: Seq[RepairAction]
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
@@ -49,7 +46,6 @@ trait ConfigStore {
 
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair
-  def getGroup(key: String): PairGroup
   def getUser(name: String) : User
   def getRepairAction(name: String, pairKey: String): RepairAction
 
@@ -174,7 +170,6 @@ case class Pair(
   @BeanProperty var key: String = null,
   @BeanProperty var upstream: Endpoint = null,
   @BeanProperty var downstream: Endpoint = null,
-  @BeanProperty var group: PairGroup = null,
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
   @BeanProperty var scanCronSpec: String = null) {
@@ -186,23 +181,12 @@ object Pair {
   val NO_MATCHING = null.asInstanceOf[Int]
 }
 
-case class PairGroup(@BeanProperty var key: String) {
-  def this() = this(null)
-
-  def validate(path:String = null) {
-    // Nothing to validate
-  }
-}
-
-case class GroupContainer(@BeanProperty group: PairGroup, @BeanProperty pairs: Array[Pair])
-
 case class PairDef(
   @BeanProperty var pairKey: String = null,
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = 0,
   @BeanProperty var upstreamName: String = null,
   @BeanProperty var downstreamName: String = null,
-  @BeanProperty var groupKey: String = null,
   @BeanProperty var scanCronSpec: String = null) {
 
   def this() = this(pairKey = null)

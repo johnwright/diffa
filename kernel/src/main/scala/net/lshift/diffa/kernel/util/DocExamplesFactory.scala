@@ -34,8 +34,7 @@ class DocExamplesFactory {
   val up = new Endpoint(name = "upstream-system", scanUrl = "http://acme.com/upstream/scan", contentType = "application/json", categories = Map("bizDate" -> categoryDescriptor))
   val down = new Endpoint(name = "downstream-system", scanUrl = "http://acme.com/downstream/scan", contentType = "application/json", categories = Map("bizDate" -> categoryDescriptor))
 
-  val group = PairGroup("important-group")
-  val pair = Pair("pair-id", up, down, group, "correlated", 120)
+  val pair = Pair("pair-id", up, down, "correlated", 120)
 
   val repair = RepairAction(name = "resend", url = "http://acme.com/repairs/resend/{id}", scope = "entity", pairKey = "pairKey")
 
@@ -52,8 +51,6 @@ class DocExamplesFactory {
 
     map.put(classOf[Endpoint], up)
     map.put(classOf[Pair], pair)
-    map.put(classOf[PairGroup], group)
-    map.put(classOf[GroupContainer], GroupContainer(group, Array(pair)))
     map.put(classOf[PairDef], new PairDef("pairKey","versionPolicyName",120,"upstreamName","downstreamName","groupKey"))
     map.put(classOf[SessionEvent], SessionEvent("6f72b9",VersionID("pairKey", "4f8a99"), new DateTime(), MatchState.UNMATCHED, "upstreamV", "downstreamV"))
     map.put(classOf[RepairAction], repair)

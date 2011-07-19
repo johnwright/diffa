@@ -46,10 +46,9 @@ class DiffaConfigReaderWriterTest {
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
           ))),
-      groups = Set(PairGroup("gaa"), PairGroup("gbb")),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa", "0 0 0 * 0 0"),
-        PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0"),
+        PairDef("ac", "same", 5, "upstream1", "downstream1")),
       repairActions = Set(
         RepairAction(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pairKey="ab"),
         RepairAction(name="Delete Result", scope="entity", url="http://example.com/delete/{id}", pairKey="ab")
@@ -85,18 +84,14 @@ class DiffaConfigReaderWriterTest {
           <prefix-category name="c" prefix-length="1" max-length="5" step="1"/>
           <prefix-category name="d" prefix-length="1" max-length="6" step="1"/>
         </endpoint>
-        <group name="gaa">
-          <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5" scan-schedule="0 0 0 * 0 0">
-            <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
-            <repair-action url="http://example.com/delete/{id}" name="Delete Result" scope="entity" />
-            <escalation name="Delete From Upstream" action="Delete Result" type="repair" event="upstream-missing" origin="scan" />
-            <escalation name="Resend Missing Downstream" action="Resend Sauce" type="repair" event="downstream-missing" origin="scan" />
-            <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
-          </pair>
-        </group>
-        <group name="gbb">
-          <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>
-        </group>
+        <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5" scan-schedule="0 0 0 * 0 0">
+          <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
+          <repair-action url="http://example.com/delete/{id}" name="Delete Result" scope="entity" />
+          <escalation name="Delete From Upstream" action="Delete Result" type="repair" event="upstream-missing" origin="scan" />
+          <escalation name="Resend Missing Downstream" action="Resend Sauce" type="repair" event="downstream-missing" origin="scan" />
+          <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
+        </pair>
+        <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>
       </diffa-config>.toString
 
     ConfigComparisonUtil.assertConfigMatches(expectedXml, new String(baos.toByteArray, "UTF-8"))

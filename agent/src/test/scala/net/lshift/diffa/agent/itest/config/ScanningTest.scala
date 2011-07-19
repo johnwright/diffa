@@ -50,7 +50,6 @@ class ScanningTest {
 
     configClient.declareEndpoint(Endpoint(name = up, scanUrl = "http://upstream.com", contentType = "application/json", categories = categories))
     configClient.declareEndpoint(Endpoint(name = down, scanUrl = "http://downstream.com", contentType = "application/json", categories = categories))
-    configClient.declareGroup(group)
     configClient.declarePair(PairDef(pair, "same", 1, up, down, group))
 
     // Simple smoke test - you could kick off a scan and verify that it gets interrupted,

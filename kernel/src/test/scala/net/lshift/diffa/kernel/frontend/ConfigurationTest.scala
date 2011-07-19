@@ -67,9 +67,8 @@ class ConfigurationTest {
     val ep2 = Endpoint(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json")
     val config = new DiffaConfig(
       endpoints = Set(ep1, ep2),
-      groups = Set(PairGroup("gaa")),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa", "bad-cron-spec"))
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "bad-cron-spec"))
     )
 
     try {
@@ -97,7 +96,6 @@ class ConfigurationTest {
       properties = Map("diffa.host" -> "localhost:1234", "a" -> "b"),
       users = Set(User("abc", "a@example.com"), User("def", "b@example.com")),
       endpoints = Set(ep1, ep2),
-      groups = Set(PairGroup("gaa"), PairGroup("gbb")),
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
@@ -146,12 +144,11 @@ class ConfigurationTest {
       users = Set(User("abc", "a2@example.com"), User("ghi", "c@example.com")),
       endpoints = Set(ep1, ep2),
         // gaa is gone, gcc is created, gbb is the same
-      groups = Set(PairGroup("gcc"), PairGroup("gbb")),
       pairs = Set(
           // ab has moved from gaa to gcc
-        PairDef("ab", "same", 5, "upstream1", "downstream2", "gcc", "0 * * * * ?"),
+        PairDef("ab", "same", 5, "upstream1", "downstream2", "0 * * * * ?"),
           // ac is gone
-        PairDef("ad", "same", 5, "upstream1", "downstream2", "gbb")),
+        PairDef("ad", "same", 5, "upstream1", "downstream2")),
       // name of repair action is changed
       repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab"))
     )
