@@ -17,11 +17,14 @@
 package net.lshift.diffa.kernel.util
 
 import org.hibernate.{Session, SessionFactory}
+import org.slf4j.LoggerFactory
 
 /**
  * Hibernate session convenience class/object
  */
 class SessionHelper(val sessionFactory:SessionFactory) {
+
+  val log = LoggerFactory.getLogger(getClass)
 
   def withSession[T](f:Function1[Session, T]):T = {
     val session = sessionFactory.openSession
@@ -30,6 +33,12 @@ class SessionHelper(val sessionFactory:SessionFactory) {
       session.flush
 
       result
+    }
+    catch {
+      case e:Exception =>
+        log.error("Hibernate error", e)
+        throw e
+
     } finally {
       session.close
     }

@@ -35,8 +35,6 @@ class ConfigurationUploadTest {
     var config =
       <diffa-config>
         <property key="a">b</property>
-        <user name="foo" email="foo@bar.com"/>
-         <pair key="key" upstream="u" downstream="d" matching-timeout="3" version-policy="same" scan-schedule="0 0 0 0 0 0" />
       </diffa-config>.toString
 
     uploadConfig(config)
