@@ -71,8 +71,10 @@ class ExampleEventFormatMapperIntegrationTest {
     val changeEvent = IOUtils.toString(getClass.getResourceAsStream("/event.json"))
     changeEventProducer.send(changeEvent)
 
-    val now = new DateTime()
-    val sessionEvents = poll(diffClient,sessionId, "pair", now.minusDays(1), now.plusDays(1), 0, 100)
+    // This is the observation date in the underlying message
+    val recordDate = new DateTime(2011,01,24,0,0,0,0)
+
+    val sessionEvents = poll(diffClient,sessionId, "pair", recordDate.minusDays(1), recordDate.plusDays(1), 0, 100)
     assertEquals(1, sessionEvents.length)
     val sessionEvent = sessionEvents(0)
     assertEquals(VersionID("pair", "5509a836-ca75-42a4-855a-71893448cc9d"), sessionEvent.objId)
