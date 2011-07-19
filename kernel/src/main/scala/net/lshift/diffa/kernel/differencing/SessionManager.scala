@@ -105,12 +105,6 @@ trait SessionManager {
   def retrieveSessionVersion(sessionID:String):String
 
   /**
-   * Retrieves all events known to this session. Will only include unmatched events.
-   * @throws InvalidSessionIDException if the requested session does not exist or has expired.
-   */
-  def retrieveAllEvents(sessionID:String):Seq[SessionEvent]
-
-  /**
    *  Retrieves all events known to this session in the given interval. Will only include unmatched events.
    *  @throws InvalidSessionIDException if the requested session does not exist or has expired.
    */
@@ -123,18 +117,7 @@ trait SessionManager {
    * and returns a subset of the underlying data set that corresponds to the offset and length specified.
    * @throws InvalidSessionIDException if the requested session does not exist or has expired.
    */
-  def retrievePagedEvents(sessionId:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
-
-  /**
-   * Retrieves all events that have occurred within a session since the provided sequence id.
-   * @param sessionID the session
-   * @param evtSeqId the last known sequence id. All events occurring after (not including) this event will be returned.
-   * @throws InvalidSessionIDException if the requested session does not exist or has expired.
-   * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary scan information cannot be
-   *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
-   * @throws InvalidSequenceNumberException if the provided sequence id is unknown to the session.
-   */
-  def retrieveEventsSince(sessionID:String, evtSeqId:String):Seq[SessionEvent]
+  def retrievePagedEvents(sessionId:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
    * Retrieves any additional information that the session manager knows about an event (eg, mismatched hashes,

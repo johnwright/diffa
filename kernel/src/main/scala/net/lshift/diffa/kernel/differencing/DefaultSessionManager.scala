@@ -92,7 +92,6 @@ class DefaultSessionManager(
       // If a session to initialize was return, we should do that.
       sessionToInit match {
         case Some(session) => {
-          session.markAsInitialized
           runDifferenceForScope(scope, start, end)
         }
         case None => // Do nothing
@@ -192,14 +191,12 @@ class DefaultSessionManager(
   }
 
   def retrieveSessionVersion(id:String) = safeGetSession(id).currentVersion
-  def retrieveEventsSince(id:String, evtSeqId:String) = safeGetSession(id).retrieveEventsSince(evtSeqId)
-  def retrieveAllEvents(id:String) = safeGetSession(id).retrieveAllUnmatchedEvents
 
   def retrieveAllEventsInInterval(sessionId:String, interval:Interval) =
     sessionsByKey(sessionId).retrieveUnmatchedEvents(interval)
 
-  def retrievePagedEvents(sessionId:String, interval:Interval, offset:Int, length:Int) =
-    sessionsByKey(sessionId).retrievePagedEvents(interval, offset,length)
+  def retrievePagedEvents(sessionId:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
+    sessionsByKey(sessionId).retrievePagedEvents(pairKey, interval, offset, length)
 
   def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.trace("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")

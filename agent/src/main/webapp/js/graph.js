@@ -378,7 +378,9 @@ function fetchData() {
       var selectedStart = new Date(startTime.getTime() + (selectedBucket.column * bucketSize * 1000));
       var selectedEnd = new Date(selectedStart.getTime() + (bucketSize * 1000));
 
-      var url = "rest/diffs/sessions/" + sessionId + "/page?range-start="
+      var pairKey = swimlaneLabels[selectedBucket.row];
+
+      var url = "rest/diffs/sessions/" + sessionId + "?pairKey=" + pairKey + "&range-start="
           + selectedStart.toString(TIME_FORMAT) + "&range-end=" + selectedEnd.toString(TIME_FORMAT)
           + "&offset=" + (page * listSize) + "&length=" + listSize;
 

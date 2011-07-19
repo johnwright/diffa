@@ -77,8 +77,8 @@ object PagingDataLoader {
 
     val sessionId = diffsClient.subscribe(SessionScope.forPairs(pair), from, until)
 
-    def firstPage(client:DifferencesClient) = client.page(sessionId, start, start.plusHours(1), 0, 10).toSeq
-    def secondPage(client:DifferencesClient) = client.page(sessionId, start, start.plusHours(1), 10, 10).toSeq
+    def firstPage(client:DifferencesClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 0, 10).toSeq
+    def secondPage(client:DifferencesClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 10, 10).toSeq
 
     println("First page:")
     tryAgain(diffsClient, firstPage).foreach(println(_))
