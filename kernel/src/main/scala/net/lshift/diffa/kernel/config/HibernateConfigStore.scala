@@ -92,6 +92,11 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
 
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => s.saveOrUpdate(d) )
 
+  def deleteDomain(name:String) = sessionFactory.withSession( s => {
+    val domain = getDomain(name)
+    s.delete(domain)
+  })
+
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction] =
     sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
 

@@ -536,6 +536,7 @@ object HibernateConfigStoreTest {
     s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
     s.createCriteria(classOf[RepairAction]).list.foreach(s.delete)
+    s.createCriteria(classOf[Domain]).list.foreach(s.delete)
     s.flush
     s.close
   }
