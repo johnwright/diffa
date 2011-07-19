@@ -39,6 +39,9 @@ trait ConfigStore {
   def deleteGroup(key: String): Unit
   def getPairsInGroup(group: PairGroup): Seq[Pair]
   def listGroups: Seq[GroupContainer]
+
+  def createOrUpdateDomain(domain: Domain): Unit
+
   def listRepairActions: Seq[RepairAction]
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
 
@@ -50,6 +53,8 @@ trait ConfigStore {
   def getEndpoint(name: String): Endpoint
   def getPair(key: String): Pair
   def getGroup(key: String): PairGroup
+  // TODO Does this get called?
+  def getDomain(key: String): Domain
   def getUser(name: String) : User
   def getRepairAction(name: String, pairKey: String): RepairAction
 
@@ -223,6 +228,17 @@ case class PairDef(
     }
   }
 }
+
+case class Domain (
+  @BeanProperty var name: String
+) {
+  def this() = this(null)
+
+  def validate(path:String = null) {
+    // Nothing to validate
+  }
+}
+
 
 case class RepairAction(
   @BeanProperty var name: String,

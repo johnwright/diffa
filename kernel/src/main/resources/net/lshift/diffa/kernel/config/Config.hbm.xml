@@ -83,6 +83,10 @@
     <id name="key" type="string" column="group_key"/>
   </class>
 
+  <class name="Domain" table="domains" abstract="false">
+    <id name="name" type="string" column="name"/>
+  </class>
+
   <class name="User" table="users" abstract="false">
     <id name="name" type="string"/>
     <property name="email" type="string" />
@@ -128,6 +132,10 @@
 
   <query name="groupByKey">
     select g from PairGroup g where g.key = :key
+  </query>
+
+  <query name="domainByName">
+    select d from Domain d where d.name = :name
   </query>
 
   <query name="repairActionByNameAndPairKey">

@@ -56,6 +56,7 @@ class HibernateConfigStoreTest {
 
   val groupKey1 = "TEST_GROUP"
   val group = new PairGroup(groupKey1)
+  val domain = new Domain("domain")
   val versionPolicyName1 = "TEST_VPNAME"
   val matchingTimeout = 120
   val versionPolicyName2 = "TEST_VPNAME_ALT"
@@ -79,6 +80,7 @@ class HibernateConfigStoreTest {
     configStore.createOrUpdateEndpoint(upstream2)
     configStore.createOrUpdateEndpoint(downstream1)
     configStore.createOrUpdateEndpoint(downstream2)
+    configStore.createOrUpdateDomain(domain)
     configStore.createOrUpdateGroup(group)
     configStore.createOrUpdatePair(pairDef)
     configStore.createOrUpdateRepairAction(repairAction)

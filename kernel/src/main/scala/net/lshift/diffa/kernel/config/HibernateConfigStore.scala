@@ -90,6 +90,8 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
      .toSeq
   }
 
+  def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => s.saveOrUpdate(d) )
+
   def listRepairActionsForPair(pair: Pair): Seq[RepairAction] =
     sessionFactory.withSession(s => getRepairActionsInPair(s, pair))
 
@@ -151,6 +153,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   def getEndpoint(name: String) = sessionFactory.withSession(s => getEndpoint(s, name))
   def getPair(key: String) = sessionFactory.withSession(s => getPair(s, key))
   def getGroup(key: String) = sessionFactory.withSession(s => getGroup(s, key))
+  def getDomain(name: String) = sessionFactory.withSession(s => getDomain(s, name))
   def getUser(name: String) : User = sessionFactory.withSession(s => getUser(s, name))
   def getRepairAction(name: String, pairKey: String) = sessionFactory.withSession(s => getRepairAction(s, name, pairKey))
 
@@ -193,6 +196,7 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
   private def getPair(s: Session, key: String) = singleQuery[Pair](s, "pairByKey", Map("key" -> key), "pair %s".format(key))
   private def getPairOpt(s: Session, key: String) = singleQueryOpt[Pair](s, "pairByKey", Map("key" -> key))
   private def getGroup(s: Session, key: String) = singleQuery[PairGroup](s, "groupByKey", Map("key" -> key), "group %s".format(key))
+  private def getDomain(s: Session, name: String) = singleQuery[Domain](s, "domainByName", Map("name" -> name), "domain %s".format(name))
   private def getGroupOpt(s: Session, key: String) = singleQueryOpt[PairGroup](s, "groupByKey", Map("key" -> key))
   private def getRepairAction(s: Session, name: String, pairKey: String) =
     singleQuery[RepairAction](s, "repairActionByNameAndPairKey", Map("name" -> name, "pairKey" -> pairKey), "repair action %s for pair %s".format(name,pairKey))
