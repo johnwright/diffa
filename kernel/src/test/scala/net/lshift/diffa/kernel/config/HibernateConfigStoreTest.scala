@@ -266,9 +266,6 @@ class HibernateConfigStoreTest {
     expectMissingObject("endpoint") {
       configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null))
     }
-    expectMissingObject("group") {
-      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, downstream1.name, null))
-    }
   }
 
   @Test

@@ -97,8 +97,8 @@ class ConfigurationTest {
       users = Set(User("abc", "a@example.com"), User("def", "b@example.com")),
       endpoints = Set(ep1, ep2),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "gaa"),
-        PairDef("ac", "same", 5, "upstream1", "downstream1", "gbb")),
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
+        PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
       repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab"))
     )
 
