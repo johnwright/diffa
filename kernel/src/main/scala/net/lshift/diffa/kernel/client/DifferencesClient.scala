@@ -56,41 +56,18 @@ trait DifferencesClient {
   def getScanStatus(sessionId: String):Map[String, PairScanState]
 
   /**
-   * Polls the identified session for all events since the start of the session.
+   * This retrieves a zoomed view of the aggregated event amounts, grouped by pair keys
    */
-  def poll(sessionId:String): Array[SessionEvent]
+  def getZoomedView(sessionId:String, from:DateTime, until:DateTime, bucketing:Int) : Map[String,Array[Int]]
 
   /**
-   * This will poll the session identified by the id parameter for events, retrieving any events occurring
-   * since the given sequence id.
+   * This retrieves events from the given session based on the criteria pass in.
    */
-  def poll(sessionId:String, sinceSeqId:String): Array[SessionEvent]
-
-
-  // TODO document
-  def page(sessionId:String, from:DateTime, until:DateTime, offset:Int, length:Int) : Array[SessionEvent]
+  def getEvents(sessionId:String, pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) : Array[SessionEvent]
 
   /**
    * Retrieves further details of the given event with the specified session.
    */
   def eventDetail(sessionId:String, evtSeqId:String, t:ParticipantType.ParticipantType): String
 
-  /**
-   * Runs a polling loop for the given session, invoking the provided function each time a new event is received.
-   */
-  def pollLoop(sessionId:String, pollDelay:Int = 100)(f:(SessionEvent) => Unit) {
-    var currentSeqId:Option[String] = None
-
-    while (true) {
-      val events = currentSeqId match {
-        case None       => poll(sessionId)
-        case Some(seq)  => poll(sessionId, seq)
-      }
-      events.lastOption match {
-        case None    => Thread.sleep(pollDelay)
-        case Some(e) => currentSeqId = Some(e.seqId)
-      }
-      events.foreach(f)
-    }
-  }
 }

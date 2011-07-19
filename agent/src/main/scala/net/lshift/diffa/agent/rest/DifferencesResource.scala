@@ -23,13 +23,12 @@ import org.slf4j.{Logger, LoggerFactory}
 import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
-import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
-import org.joda.time.{Interval, DateTime}
-import net.lshift.diffa.kernel.actors.PairPolicyClient
+import org.joda.time.{DateTime, Interval}
+import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 
 @Path("/diffs")
 @Component
@@ -108,45 +107,29 @@ class DifferencesResource {
   @GET
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))
-  @Description("Returns a list of outstanding differences in the current session. ")
-  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
-  @OptionalParams(Array(new OptionalParam(name="since", datatype="integer",
-      description="This will return differences subsequent to the given sequence number.")))
-  def getDifferences(@PathParam("sessionId") sessionId:String,
-                     @QueryParam("since") since:String,
-                     @Context request:Request) : Response = {
-
-    // Evaluate whether the version of the session has changed
-    val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
-    request.evaluatePreconditions(sessionVsn) match {
-      case null => // We'll continue with the request
-      case r    => throw new WebApplicationException(r.build)
-    }
-
-    val diffs = since match {
-      case null => sessionManager.retrieveAllEvents(sessionId)
-      case _    => sessionManager.retrieveEventsSince(sessionId, since)
-    }
-
-    Response.ok(diffs.toArray).tag(sessionVsn).build
-  }
-
-  @GET
-  @Path("/sessions/{sessionId}/page")
-  @Produces(Array("application/json"))
   @Description("Returns a list of outstanding differences in the current session in a paged format.")
   @MandatoryParams(Array(
     new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID"),
-    new MandatoryParam(name = "range-start", datatype = "date", description = "The lower bound of the items to be paged."),
-    new MandatoryParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
-    new MandatoryParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
-    new MandatoryParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
-  def pageDifferences(@PathParam("sessionId") sessionId: String,
-                      @QueryParam("range-start") from:String,
-                      @QueryParam("range-end") until:String,
-                      @QueryParam("offset") offset:String,
-                      @QueryParam("length") length:String,
-                      @Context request: Request) = {
+    new MandatoryParam(name = "pairKey", datatype = "string", description = "Pair Key")))
+  @OptionalParams(Array(
+    new OptionalParam(name = "range-start", datatype = "date", description = "The lower bound of the items to be paged."),
+    new OptionalParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
+    new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
+    new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
+  def getSessionEvents(@PathParam("sessionId") sessionId: String,
+                       @QueryParam("pairKey") pairKey:String,
+                       @QueryParam("range-start") from_param:String,
+                       @QueryParam("range-end") until_param:String,
+                       @QueryParam("offset") offset_param:String,
+                       @QueryParam("length") length_param:String,
+                       @Context request: Request) = {
+
+    val now = new DateTime()
+    val from = defaultDateTime(from_param, now.minusDays(1))
+    val until = defaultDateTime(until_param, now)
+    val offset = defaultInt(offset_param, 0)
+    val length = defaultInt(length_param, 100)
+
     try {
       val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
 
@@ -155,8 +138,8 @@ class DifferencesResource {
         case r => throw new WebApplicationException(r.build)
       }
 
-      val interval = new Interval(isoDateTime.parseDateTime(from), isoDateTime.parseDateTime(until))
-      val diffs = sessionManager.retrievePagedEvents(sessionId, interval, offset.toInt, length.toInt)
+      val interval = new Interval(from,until)
+      val diffs = sessionManager.retrievePagedEvents(sessionId, pairKey, interval, offset, length)
       Response.ok(diffs.toArray).tag(sessionVsn).build
     }
     catch {
@@ -254,4 +237,14 @@ class DifferencesResource {
                 @PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String =
     sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.withName(participant))
+
+  def defaultDateTime(input:String, default:DateTime) = input match {
+    case "" | null => default
+    case x         => isoDateTime.parseDateTime(x)
+  }
+
+  def defaultInt(input:String, default:Int) = input match {
+    case "" | null => default
+    case x         => x.toInt
+  }
 }
