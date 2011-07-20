@@ -21,9 +21,9 @@ import org.hibernate.jdbc.Work
 import java.sql.Connection
 import org.hibernate.tool.hbm2ddl.{SchemaExport, DatabaseMetadata}
 import org.hibernate.dialect.Dialect
-import org.hibernate.cfg.{Environment, Configuration}
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withSession'
+import org.hibernate.cfg.{Environment, Configuration}
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -37,7 +37,8 @@ class HibernateConfigStorePreparationStep
   // The migration steps necessary to bring a hibernate configuration up-to-date. Note that these steps should be
   // in strictly ascending order.
   val migrationSteps:Seq[HibernateMigrationStep] = Seq(
-    RemoveGroupsMigrationStep
+    RemoveGroupsMigrationStep,
+    AddDomainsMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -98,6 +99,22 @@ class HibernateConfigStorePreparationStep
 }
 
 abstract class HibernateMigrationStep {
+
+  /**
+   * Generates a create statement for the requested table
+   */
+  def generateCreateSQL(tableName:String, config: Configuration) = {
+    val dialect = Dialect.getDialect(config.getProperties)
+    val catalog = config.getProperty( Environment.DEFAULT_CATALOG )
+    val schema = config.getProperty( Environment.DEFAULT_SCHEMA )
+
+    val mapping = config.buildMapping()
+    val mappings = config.createMappings()
+
+    val table = mappings.getTable(schema, catalog, tableName)
+    table.sqlCreateString(dialect, mapping ,catalog, schema)
+  }
+
   /**
    * The version that this step gets the database to.
    */
@@ -117,5 +134,13 @@ object RemoveGroupsMigrationStep extends HibernateMigrationStep {
     val stmt = connection.createStatement()
     stmt.execute("alter table pair drop column " + dialect.openQuote() + "NAME" + dialect.closeQuote())
     stmt.execute("drop table pair_group")
+  }
+}
+
+object AddDomainsMigrationStep extends HibernateMigrationStep {
+  def versionId = 2
+  def migrate(config: Configuration, connection: Connection) {
+    val stmt = connection.createStatement()
+    stmt.execute(generateCreateSQL("domains", config))
   }
 }
