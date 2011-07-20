@@ -34,7 +34,13 @@ class HibernateConfigStorePreparationStep
 
   val schemaVersionKey = "configStore.schemaVersion"
 
-  def prepare(sf: SessionFactory, config: Configuration) = {
+  // The migration steps necessary to bring a hibernate configuration up-to-date. Note that these steps should be
+  // in strictly ascending order.
+  val migrationSteps:Seq[HibernateMigrationStep] = Seq(
+    RemoveGroupsMigrationStep
+  )
+
+  def prepare(sf: SessionFactory, config: Configuration) {
     var exportSchema = false
 
     // Check if we have a schema in place
@@ -68,10 +74,48 @@ class HibernateConfigStorePreparationStep
     } else {
       // Maybe upgrade the schema?
       sf.withSession(s => {
-        val currentVersion = s.load(classOf[ConfigOption], schemaVersionKey)
+        val currentVersion = s.load(classOf[ConfigOption], schemaVersionKey).asInstanceOf[ConfigOption]
+        val currentVersionId = Integer.parseInt(currentVersion.value)
 
-        // TODO: Apply necessary schema upgrades
+        val firstStepIdx = migrationSteps.indexWhere(step => step.versionId > currentVersionId)
+        if (firstStepIdx != -1) {
+          s.doWork(new Work {
+            def execute(connection: Connection) {
+              migrationSteps.slice(firstStepIdx, migrationSteps.length).foreach(step => {
+                step.migrate(config, connection)
+                log.info("Upgraded database to version " + step.versionId)
+
+                currentVersion.value = step.versionId.toString
+                s.update(currentVersion)
+                s.flush
+              })
+            }
+          })
+        }
       })
     }
+  }
+}
+
+abstract class HibernateMigrationStep {
+  /**
+   * The version that this step gets the database to.
+   */
+  def versionId:Int
+
+  /**
+   * Requests that the step perform it's necessary migration.
+   */
+  def migrate(config:Configuration, connection:Connection)
+}
+
+object RemoveGroupsMigrationStep extends HibernateMigrationStep {
+  def versionId = 1
+  def migrate(config: Configuration, connection: Connection) {
+    val dialect = Dialect.getDialect(config.getProperties)
+
+    val stmt = connection.createStatement()
+    stmt.execute("alter table pair drop column " + dialect.openQuote() + "NAME" + dialect.closeQuote())
+    stmt.execute("drop table pair_group")
   }
 }
