@@ -14,8 +14,8 @@
     <range-category name="bizDate" data-type="datetime"/>
   </endpoint>
 
-  <group name="g1">
-    <pair key="pair" upstream="upstream" downstream="downstream" match-timeout="1" version-policy="same"/>
-  </group>
+
+  <pair key="pair" upstream="upstream" downstream="downstream" match-timeout="1" version-policy="same"/>
+
 
 </diffa-config>

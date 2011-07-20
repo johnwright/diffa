@@ -44,14 +44,12 @@ class ScanningTest {
     val up = new UUID().toString
     val down = new UUID().toString
     val pair = new UUID().toString
-    val group = new UUID().toString
 
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
     configClient.declareEndpoint(Endpoint(name = up, scanUrl = "http://upstream.com", contentType = "application/json", categories = categories))
     configClient.declareEndpoint(Endpoint(name = down, scanUrl = "http://downstream.com", contentType = "application/json", categories = categories))
-    configClient.declareGroup(group)
-    configClient.declarePair(PairDef(pair, "same", 1, up, down, group))
+    configClient.declarePair(PairDef(pair, "same", 1, up, down, "0 0 0 0 0 0"))
 
     // Simple smoke test - you could kick off a scan and verify that it gets interrupted,
     // but this code path is tested in the unit test

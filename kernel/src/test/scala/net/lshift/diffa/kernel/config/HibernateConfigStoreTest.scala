@@ -54,22 +54,18 @@ class HibernateConfigStoreTest {
   val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", scanUrl = "testScanUrl4",
     versionGenerationUrl = "generateVersionUrl1", contentType = "application/json", categories = stringPrefixCategoriesMap)
 
-  val groupKey1 = "TEST_GROUP"
-  val group = new PairGroup(groupKey1)
   val versionPolicyName1 = "TEST_VPNAME"
   val matchingTimeout = 120
   val versionPolicyName2 = "TEST_VPNAME_ALT"
   val pairKey = "TEST_PAIR"
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
-    downstream1.name, groupKey1)
+    downstream1.name)
   val repairAction = new RepairAction(name="REPAIR_ACTION_NAME",
                                       scope=RepairAction.ENTITY_SCOPE,
                                       url="resend",
                                       pairKey=pairKey)
 
-  val groupKey2 = "TEST_GROUP2"
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
-  val groupRenamed = "TEST_GROUP_RENAMED"
   val pairRenamed = "TEST_PAIR_RENAMED"
 
   val TEST_USER = User("foo","foo@bar.com")
@@ -79,7 +75,6 @@ class HibernateConfigStoreTest {
     configStore.createOrUpdateEndpoint(upstream2)
     configStore.createOrUpdateEndpoint(downstream1)
     configStore.createOrUpdateEndpoint(downstream2)
-    configStore.createOrUpdateGroup(group)
     configStore.createOrUpdatePair(pairDef)
     configStore.createOrUpdateRepairAction(repairAction)
   }
@@ -111,23 +106,13 @@ class HibernateConfigStoreTest {
     configStore.createOrUpdateEndpoint(downstream1)
     exists(downstream1, 2)
 
-    // Declare a group
-    configStore.createOrUpdateGroup(group)
-    val retrGroups = configStore.listGroups
-    assertEquals(1, retrGroups.length)
-    assertEquals(groupKey1, retrGroups.first.group.key)
-    assertEquals(0, retrGroups.first.pairs.length)
-
     // Declare a pair
     configStore.createOrUpdatePair(pairDef)
-    val retrGroups2 = configStore.listGroups
-    assertEquals(1, retrGroups2.length)
-    assertEquals(1, retrGroups2.first.pairs.length)
-    val retrPair = retrGroups2.first.pairs.first
+
+    val retrPair = configStore.getPair(pairDef.pairKey)
     assertEquals(pairKey, retrPair.key)
     assertEquals(upstream1.name, retrPair.upstream.name)
     assertEquals(downstream1.name, retrPair.downstream.name)
-    assertEquals(groupKey1, retrPair.group.key)
     assertEquals(versionPolicyName1, retrPair.versionPolicyName)
     assertEquals(matchingTimeout, retrPair.matchingTimeout)
 
@@ -146,13 +131,6 @@ class HibernateConfigStoreTest {
 
     configStore.createOrUpdateEndpoint(downstream1)
     exists(downstream1, 2)
-
-    // Declare a group
-    configStore.createOrUpdateGroup(group)
-    val retrGroups = configStore.listGroups
-    assertEquals(1, retrGroups.length)
-    assertEquals(groupKey1, retrGroups.first.group.key)
-    assertEquals(0, retrGroups.first.pairs.length)
 
     pairDef.scanCronSpec = "invalid"
 
@@ -198,7 +176,6 @@ class HibernateConfigStoreTest {
   @Test
   def testUpdatePair: Unit = {
     declareAll
-    configStore.createOrUpdateGroup(new PairGroup(groupKey2))
 
     // Rename, change a few fields and swap endpoints by deleting and creating new
     configStore.deletePair(pairKey)
@@ -207,7 +184,7 @@ class HibernateConfigStoreTest {
     }
 
     configStore.createOrUpdatePair(new PairDef(pairRenamed, versionPolicyName2, Pair.NO_MATCHING,
-      downstream1.name, upstream1.name, groupKey2, "0 0 * * * ?"))
+      downstream1.name, upstream1.name, "0 0 * * * ?"))
     
     val retrieved = configStore.getPair(pairRenamed)
     assertEquals(pairRenamed, retrieved.key)
@@ -216,40 +193,6 @@ class HibernateConfigStoreTest {
     assertEquals(versionPolicyName2, retrieved.versionPolicyName)
     assertEquals("0 0 * * * ?", retrieved.scanCronSpec)
     assertEquals(Pair.NO_MATCHING, retrieved.matchingTimeout)
-  }
-
-  @Test
-  def testUpdateGroup: Unit = {
-    // Create a group
-    configStore.createOrUpdateGroup(group)
-
-    // Rename it by deleting and re-creating
-    configStore.deleteGroup(group.key)
-    expectMissingObject("group") {
-      configStore.getGroup(group.key)
-    }
-    configStore.createOrUpdateGroup(new PairGroup(groupRenamed))
-
-    val retrieved = configStore.getGroup(groupRenamed)
-    assertEquals(groupRenamed, retrieved.key)
-  }
-
-  @Test
-  def testGetPairsInGroup {
-    declareAll
-    val pairKey2 = "TEST_PAIR_ALT"
-    val pairDef2 = new PairDef(pairKey2, versionPolicyName2, matchingTimeout, upstream2.name,
-                               downstream2.name, groupKey1)
-    configStore.createOrUpdatePair(pairDef2)
-
-    val pairs = configStore.getPairsInGroup(group)
-    assertEquals(2, pairs.size)
-    val pair1 = pairs.find(_.key == pairKey)
-    val pair2 = pairs.find(_.key == pairKey2)
-    assertTrue(pair1.isDefined)
-    assertTrue(pair2.isDefined)
-    assertEquals(group, pair1.get.group)
-    assertEquals(group, pair2.get.group)
   }
 
   @Test
@@ -299,20 +242,6 @@ class HibernateConfigStoreTest {
   }
 
   @Test
-  def testDeleteGroupCascade: Unit = {
-    declareAll
-
-    assertEquals(groupKey1, configStore.getGroup(groupKey1).key)
-    configStore.deleteGroup(groupKey1)
-    expectMissingObject("group") {
-      configStore.getGroup(groupKey1)
-    }
-    expectMissingObject("pair") {
-      configStore.getPair(pairKey) // delete should cascade
-    }
-  }
-
-  @Test
   def testDeleteMissing: Unit = {
     expectMissingObject("endpoint") {
       configStore.deleteEndpoint("MISSING_ENDPOINT")
@@ -321,28 +250,20 @@ class HibernateConfigStoreTest {
     expectMissingObject("pair") {
       configStore.deletePair("MISSING_PAIR")
     }
-
-    expectMissingObject("group") {
-      configStore.deleteGroup("MISSING_GROUP")
-    }
   }
 
   @Test
   def testDeclarePairNullConstraints: Unit = {
     configStore.createOrUpdateEndpoint(upstream1)
     configStore.createOrUpdateEndpoint(downstream1)
-    configStore.createOrUpdateGroup(group)
 
       // TODO: We should probably get an exception indicating that the constraint was null, not that the object
       //       we're linking to is missing.
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, null, downstream1.name, groupKey1))
+      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, null, downstream1.name))
     }
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null, groupKey1))
-    }
-    expectMissingObject("group") {
-      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, downstream1.name, null))
+      configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null))
     }
   }
 
@@ -364,9 +285,8 @@ class HibernateConfigStoreTest {
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsUpstream {
     configStore.createOrUpdateEndpoint(upstream1)
     configStore.createOrUpdateEndpoint(downstream1)
-    configStore.createOrUpdateGroup(new PairGroup(groupKey1))
     configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName2, Pair.NO_MATCHING,
-                                               upstream1.name, downstream1.name, groupKey1))
+                                               upstream1.name, downstream1.name))
 
     val res = configStore.getPairsForEndpoint(upstream1.name)
     assertEquals(1, res.length)
@@ -377,9 +297,8 @@ class HibernateConfigStoreTest {
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsDownstream {
     configStore.createOrUpdateEndpoint(upstream1)
     configStore.createOrUpdateEndpoint(downstream1)
-    configStore.createOrUpdateGroup(new PairGroup(groupKey1))
     configStore.createOrUpdatePair(new PairDef(pairKey, versionPolicyName2, Pair.NO_MATCHING,
-                                               upstream1.name, downstream1.name, groupKey1))
+                                               upstream1.name, downstream1.name))
 
     val res = configStore.getPairsForEndpoint(downstream1.name)
     assertEquals(1, res.length)
@@ -530,7 +449,6 @@ object HibernateConfigStoreTest {
     val s = sessionFactory.openSession
     s.createCriteria(classOf[User]).list.foreach(u => s.delete(u))
     s.createCriteria(classOf[Pair]).list.foreach(p => s.delete(p))
-    s.createCriteria(classOf[PairGroup]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
     s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
     s.createCriteria(classOf[RepairAction]).list.foreach(s.delete)

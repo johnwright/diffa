@@ -366,7 +366,7 @@ class DefaultSessionManager(
 
   def pairKeysForScope(scope:SessionScope):Seq[String] = {
     scope.includedPairs.size match {
-      case 0  => config.listGroups.flatMap(g => g.pairs.map(p => p.key))
+      case 0  => config.listPairs.map(p => p.key)
       case _  => scope.includedPairs
     }
   }

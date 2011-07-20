@@ -120,7 +120,6 @@ class TestEnvironment(val pairKey: String,
   participants.startDownstreamServer(downstream, downstream, downstream)
 
   // Ensure that the configuration exists
-  configurationClient.declareGroup("g1")
   configurationClient.declareEndpoint(Endpoint(name = upstreamEpName,
     scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
@@ -134,7 +133,7 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
   createPair
 
-  def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "g1"))
+  def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
   def deletePair() {
    configurationClient.deletePair(pairKey)
   }

@@ -22,7 +22,6 @@ import net.lshift.diffa.kernel.config._
  * Interface supported by clients capable of configuring the diffa agent.
  */
 trait ConfigurationClient {
-  def declareGroup(name: String):PairGroup
   def declareEndpoint(e:Endpoint) : Endpoint
   def declarePair(p:PairDef):PairDef
   def declareRepairAction(name: String, url: String, scope: String, pairKey: String): RepairAction

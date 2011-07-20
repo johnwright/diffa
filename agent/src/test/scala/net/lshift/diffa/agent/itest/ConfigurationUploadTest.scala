@@ -35,11 +35,6 @@ class ConfigurationUploadTest {
     var config =
       <diffa-config>
         <property key="a">b</property>
-        <user name="foo" email="foo@bar.com"/>
-        <group name="gaa">
-        </group>
-        <group name="gbb">
-        </group>
       </diffa-config>.toString
 
     uploadConfig(config)
@@ -65,9 +60,8 @@ class ConfigurationUploadTest {
         <endpoint name="invalid1" url="http://localhost:1234/invalid" content-type="application/json" />
         <endpoint name="invalid2" url="http://localhost:1235/invalid" content-type="application/json" />
 
-        <group name="invalidGroup">
-          <pair key="invalidPair" upstream="invalid1" downstream="invalid2" matching-timeout="3" version-policy="same" scan-schedule="invalid" />
-        </group>
+        <pair key="invalidPair" upstream="invalid1" downstream="invalid2" matching-timeout="3" version-policy="same" scan-schedule="invalid" />
+
       </diffa-config>.toString
 
     val (status, responseContent) = uploadConfigRaw(invalid)

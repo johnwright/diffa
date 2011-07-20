@@ -24,7 +24,6 @@ case class DiffaConfig(
   users:Set[User] = Set(),
   properties:Map[String, String] = Map(),
   endpoints:Set[Endpoint] = Set(),
-  groups:Set[PairGroup] = Set(),
   pairs:Set[PairDef] = Set(),
   repairActions:Set[RepairAction] = Set(),
   escalations:Set[Escalation] = Set()
@@ -35,7 +34,6 @@ case class DiffaConfig(
 
     users.foreach(_.validate(path))
     endpoints.foreach(_.validate(path))
-    groups.foreach(_.validate(path))
     pairs.foreach(_.validate(path))
     repairActions.foreach(_.validate(path))
     escalations.foreach(_.validate(path))

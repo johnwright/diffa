@@ -55,12 +55,6 @@ class ConfigurationResource {
   def listEndpoints() = config.listEndpoints.toArray
 
   @GET
-  @Path("/groups")
-  @Produces(Array("application/json"))
-  @Description("Returns a list of all the endpoint groups registered with the agent.")
-  def listGroups: Array[GroupContainer] = config.listGroups.toArray
-
-  @GET
   @Path("/repair-actions")
   @Produces(Array("application/json"))
   @Description("Returns a list of all the repair actions registered with the agent.")
@@ -170,44 +164,11 @@ class ConfigurationResource {
     config.deleteEscalation(name, pairKey)
   }
 
-  @POST
-  @Path("/groups")
-  @Consumes(Array("application/json"))
-  @Description("Creates a new group that can be used to aggregate pairings of endpoints.")
-  def createGroup(g:PairGroup) = {
-    config.createOrUpdateGroup(g)
-    resourceCreated(g.key, uriInfo)
-  }
-
-  @PUT
-  @Consumes(Array("application/json"))
-  @Produces(Array("application/json"))
-  @Path("/groups/{id}")
-  @Description("Updates the attributes of a group of endpoint pairings.")
-  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
-  def updateGroup(@PathParam("id") id:String, g:PairGroup) = {
-    config.createOrUpdateGroup(g)
-    g
-  }
-
-  @DELETE
-  @Path("/groups/{id}")
-  @Description("Removes a group of endpoint pairings.")
-  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
-  def deleteGroup(@PathParam("id") id:String) = config.deleteGroup(id)
-
   @GET
   @Produces(Array("application/json"))
   @Path("/pairs/{id}")
   @Description("Returns an endpoint pairing by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   def getPair(@PathParam("id") id:String) = config.getPair(id)
-
-  @GET
-  @Produces(Array("application/json"))
-  @Path("/groups/{id}")
-  @Description("Returns a group of endpoint pairings by its identifier.")
-  @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Group ID")))
-  def getGroup(@PathParam("id") id:String) = config.getGroup(id)
 
 }
