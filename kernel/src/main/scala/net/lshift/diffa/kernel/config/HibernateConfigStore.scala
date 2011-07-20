@@ -20,7 +20,6 @@ import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withS
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
-//import net.lshift.diffa.kernel.config.{Pair => Pair}
 
 class HibernateConfigStore(val sessionFactory: SessionFactory)
     extends ConfigStore

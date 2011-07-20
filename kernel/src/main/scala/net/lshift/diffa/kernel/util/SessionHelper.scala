@@ -33,11 +33,6 @@ class SessionHelper(val sessionFactory:SessionFactory) {
       session.flush
 
       result
-    }
-    catch {
-      case e:Exception =>
-        log.error("Hibernate error", e)
-        throw e
 
     } finally {
       session.close
