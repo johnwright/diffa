@@ -44,7 +44,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   override def onAgentAssemblyCompleted = {
     // Initialize actors for any persistent pairs
-    config.listGroups.foreach(g => g.pairs.foreach(p => startActor(p)) )
+    config.listPairs.foreach(p => startActor(p))
   }
 
   def startActor(pair:net.lshift.diffa.kernel.config.Pair) = {

@@ -62,7 +62,7 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
   })
 
   // Ensure that a trigger is registered for each pair on startup
-  config.listGroups.foreach(_.pairs.foreach(onUpdatePair(_)))
+  config.listPairs.foreach(onUpdatePair(_))
 
   def onUpdatePair(pairKey: String) {
     onUpdatePair(config.getPair(pairKey))

@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
-import net.lshift.diffa.kernel.config.{GroupContainer, Endpoint, ConfigStore}
+import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.participant.scanning.ScanConstraint
 
@@ -96,7 +96,7 @@ class DefaultSessionManagerTest {
     expect(configStore.getPair("pair")).andStubReturn(pair1)
     expect(configStore.getPair("pair1")).andStubReturn(pair1)
     expect(configStore.getPair("pair2")).andStubReturn(pair2)
-    expect(configStore.listGroups).andStubReturn(Seq(GroupContainer(null, Array(pair1, pair2))))
+    expect(configStore.listPairs).andStubReturn(Seq(pair1,pair2))
     expect(matchingManager.getMatcher("pair")).andStubReturn(Some(matcher))
     expect(matcher.isVersionIDActive(VersionID("pair", "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(VersionID("pair", "id2"))).andStubReturn(false)

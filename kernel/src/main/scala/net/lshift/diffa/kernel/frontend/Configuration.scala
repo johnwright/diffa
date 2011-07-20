@@ -49,9 +49,8 @@ class Configuration(val configStore: ConfigStore,
     removedUsers.foreach(u => deleteUser(u.name))
     diffaConfig.users.foreach(u => createOrUpdateUser(u))
 
-    // Apply endpoint, group and pair updates
+    // Apply endpoint and pair updates
     diffaConfig.endpoints.foreach(e => createOrUpdateEndpoint(e))
-    diffaConfig.groups.foreach(g => createOrUpdateGroup(g))
     diffaConfig.pairs.foreach(p => createOrUpdatePair(p))
 
     // Remove missing repair actions, and create/update the rest
@@ -62,23 +61,18 @@ class Configuration(val configStore: ConfigStore,
     diffaConfig.repairActions.foreach(createOrUpdateRepairAction)
 
     // Remove old pairs and endpoints
-    val removedPairs = configStore.listGroups.flatMap(_.pairs.filter(currP => diffaConfig.pairs.find(newP => newP.pairKey == currP.key).isEmpty))
+    val removedPairs = configStore.listPairs.filter(currP => diffaConfig.pairs.find(newP => newP.pairKey == currP.key).isEmpty)
     removedPairs.foreach(p => deletePair(p.key))
     var removedEndpoints = configStore.listEndpoints.filter(currE => diffaConfig.endpoints.find(newE => newE.name == currE.name).isEmpty)
     removedEndpoints.foreach(e => deleteEndpoint(e.name))
-
-    // Remove old groups. We leave these till last in case a pair that wasn't removed moved groups
-    val removedGroups = configStore.listGroups.filter(currG => diffaConfig.groups.find(newG => newG.key == currG.group.key).isEmpty)
-    removedGroups.foreach(g => deleteGroup(g.group.key))
   }
   def retrieveConfiguration:DiffaConfig = {
     DiffaConfig(
       properties = configStore.allConfigOptions,
       users = configStore.listUsers.toSet,
       endpoints = configStore.listEndpoints.toSet,
-      groups = configStore.listGroups.map(g => g.group).toSet,
-      pairs = configStore.listGroups.flatMap(g => g.pairs.map(
-        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.group.key, p.scanCronSpec))).toSet,
+      pairs = configStore.listPairs.map(
+        p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.scanCronSpec)).toSet,
       repairActions = configStore.listRepairActions.toSet
     )
   }
@@ -117,7 +111,6 @@ class Configuration(val configStore: ConfigStore,
   // This might have to get refactored in light of the fact that we are now pretty much
   // just using REST to configure the agent
   def getEndpoint(x:String) = configStore.getEndpoint(x)
-  def getGroup(x:String) = configStore.getGroup(x)
   def getPair(x:String) = configStore.getPair(x)
   def getUser(x:String) = configStore.getUser(x)
 
@@ -166,31 +159,6 @@ class Configuration(val configStore: ConfigStore,
     catch {
       case e:MissingObjectException => // Do nothing, the pair doesn't currently exist
     }
-  }
-
-  /*
-  * Pair group CRUD
-  * */
-  def createOrUpdateGroup(group: PairGroup): Unit = {
-    log.debug("Processing group declare/update request: " + group.key)
-    group.validate()
-    configStore.createOrUpdateGroup(group)
-  }
-
-  def deleteGroup(key: String): Unit = {
-    log.debug("Processing group delete request: " + key)
-    val group = configStore.getGroup(key)
-    val pairs = configStore.getPairsInGroup(group)
-
-    // delete pairs first
-    pairs.foreach(p => deletePair(p.key))
-    
-    configStore.deleteGroup(key)
-  }
-
-  def listGroups: Seq[GroupContainer] = {
-    log.debug("Processing group list request")
-    configStore.listGroups
   }
 
   def declareRepairAction(action: RepairAction) {

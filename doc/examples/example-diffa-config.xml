@@ -29,13 +29,12 @@
     </set-category>
   </endpoint>
 
-  <group name="main">
-    <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5" scan-schedule="0 0 0 * 0 0">
-      <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
-      <repair-action url="http://example.com/delete/{id}" name="Delete Result" scope="entity" />
-      <escalation name="Delete From Upstream" action="Delete Result" type="repair" event="upstream-missing" origin="scan" />
-      <escalation name="Resend Missing Downstream" action="Resend Sauce" type="repair" event="downstream-missing" origin="scan" />
-      <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
-    </pair>
-  </group>
+  <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5" scan-schedule="0 0 0 * 0 0">
+    <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
+    <repair-action url="http://example.com/delete/{id}" name="Delete Result" scope="entity" />
+    <escalation name="Delete From Upstream" action="Delete Result" type="repair" event="upstream-missing" origin="scan" />
+    <escalation name="Resend Missing Downstream" action="Resend Sauce" type="repair" event="downstream-missing" origin="scan" />
+    <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
+  </pair>
+
 </diffa-config>

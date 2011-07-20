@@ -22,7 +22,8 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.differencing._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
-import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Endpoint}
+import net.lshift.diffa.kernel.config.{ConfigStore, Endpoint}
+import net.lshift.diffa.kernel.config.{Pair => Pair}
 import net.lshift.diffa.kernel.participants._
 import org.easymock.{EasyMock, IAnswer}
 import org.slf4j.LoggerFactory
@@ -66,7 +67,7 @@ class PairActorTest {
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
   val configStore = createStrictMock("configStore", classOf[ConfigStore])
-  expect(configStore.listGroups).andReturn(Array[GroupContainer]())
+  expect(configStore.listPairs).andReturn(Array[Pair]())
   replay(configStore)
 
   val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])

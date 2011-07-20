@@ -75,12 +75,7 @@
     <many-to-one name="downstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
     <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false"/>
     <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false"/>
-    <many-to-one name="group" column="name" class="PairGroup" not-null="true" lazy="false" fetch="join"/>
     <property name="scanCronSpec" type="string" column="scan_cron_spec" not-null="false"/>
-  </class>
-
-  <class name="PairGroup" table="pair_group" abstract="false">
-    <id name="key" type="string" column="group_key"/>
   </class>
 
   <class name="Domain" table="domains" abstract="false">
@@ -130,10 +125,6 @@
     select c from Pair c where c.key = :key
   </query>
 
-  <query name="groupByKey">
-    select g from PairGroup g where g.key = :key
-  </query>
-
   <query name="domainByName">
     select d from Domain d where d.name = :name
   </query>
@@ -158,8 +149,8 @@
     select u from User u
   </query>
 
-  <query name="allGroups">
-    select g from PairGroup g
+  <query name="allPairs">
+    select p from Pair p
   </query>
 
   <query name="allRepairActions">
@@ -168,10 +159,6 @@
 
   <query name="allEscalations">
     select e from Escalation e
-  </query>
-
-  <query name="pairsByGroup">
-    select p from Pair p where p.group = :group
   </query>
 
   <query name="repairActionsByPair">

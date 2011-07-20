@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.matching
 import org.junit.Test
 import org.junit.Assert._
 import org.easymock.EasyMock.{createStrictMock, expect, replay, reset}
-import net.lshift.diffa.kernel.config.{GroupContainer, ConfigStore, Pair}
+import net.lshift.diffa.kernel.config.{ConfigStore, Pair}
 
 /**
  * Test cases for the LocalEventMatchingManager.
@@ -31,7 +31,7 @@ class LocalEventMatchingManagerTest {
   val configStore = createStrictMock(classOf[ConfigStore])
   expect(configStore.getPair("pair1")).andStubReturn(pair1)
   expect(configStore.getPair("pair2")).andStubReturn(pair2)
-  expect(configStore.listGroups).andStubReturn(Seq(new GroupContainer(null, Array(pair1, pair2))))
+  expect(configStore.listPairs).andStubReturn(Seq(pair1,pair2))
   replay(configStore)
 
   val matchingManager = new LocalEventMatchingManager(configStore)

@@ -26,12 +26,6 @@ class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")
         with ConfigurationClient {
 
-  def declareGroup(name: String) = {
-    val g = new PairGroup(name)
-    create("groups", g)
-    g
-  }
-
   def declareEndpoint(e:Endpoint) = {
     create("endpoints", e)
     e
