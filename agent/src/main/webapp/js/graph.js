@@ -191,6 +191,10 @@ function loadBuckets() {
       if (swimlaneLabels.indexOf(pair) < 0)
         swimlaneLabels.push(pair);
     }
+      // Only keep labels that are in the data. Truncate our number of bucket rows to match the number of lanes.
+    swimlaneLabels = $.grep(swimlaneLabels, function(pair) { return data[pair]; });
+    if (buckets.length > swimlaneLabels.length)
+      buckets.splice(swimlaneLabels.length, buckets.length - swimlaneLabels.length);
 
     // copy data into buckets
     maxRows = Math.max(swimlaneLabels.length, maxRows);
