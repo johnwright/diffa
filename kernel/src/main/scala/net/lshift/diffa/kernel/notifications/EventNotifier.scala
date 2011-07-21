@@ -62,7 +62,7 @@ class EventNotifier(val sessionManager:SessionManager,
       log.trace("About to notify users, the received event was " + id + " at " + lastUpdated)
       nextRun = now.plus(quietTime)
       val e = new NotificationEvent(id, lastUpdated, upstreamVsn, downstreamVsn)      
-      config.listUsers.foreach(u => providers.foreach( p => p.notify(e,u)))
+      config.listUsers(id.domain).foreach(u => providers.foreach( p => p.notify(e,u)))
     }
     
   }

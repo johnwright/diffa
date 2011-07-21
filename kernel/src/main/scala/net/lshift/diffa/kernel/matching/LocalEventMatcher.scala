@@ -20,11 +20,12 @@ import net.lshift.diffa.kernel.events._
 import collection.mutable.{HashMap, LinkedHashMap, ListBuffer}
 import org.joda.time.DateTime
 import org.slf4j.{Logger, LoggerFactory}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Local, in memory, event matcher.
  */
-class LocalEventMatcher(val pairKey:String, timeout:Int, reaper:LocalEventMatcherReaper) extends EventMatcher {
+class LocalEventMatcher(val pair:DiffaPair, reaper:LocalEventMatcherReaper) extends EventMatcher {
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   val listeners = new ListBuffer[MatchingStatusListener]
@@ -40,7 +41,7 @@ class LocalEventMatcher(val pairKey:String, timeout:Int, reaper:LocalEventMatche
   def onChange(evt: PairChangeEvent, eventAckCallback: () => Unit) = {
     log.debug("Received event " + evt)
 
-    val expiry = (new DateTime).plusSeconds(timeout)
+    val expiry = (new DateTime).plusSeconds(pair.matchingTimeout)
     val txnDetail = evt match {
       case UpstreamPairChangeEvent(id, _, _, vsn) => TxnDetail(TxnIdVsn(id, vsn, UpstreamSource), eventAckCallback, expiry)
       case DownstreamPairChangeEvent(id, _, _, vsn) => TxnDetail(TxnIdVsn(id, vsn, DownstreamSource), eventAckCallback, expiry)
@@ -68,7 +69,7 @@ class LocalEventMatcher(val pairKey:String, timeout:Int, reaper:LocalEventMatche
   }
 
   def dispose = {
-    log.debug("Disposing analyzer for pair: " + pairKey)
+    log.debug("Disposing analyzer for pair: " + pair)
     reaper.detachMatcher(this)
   }
 

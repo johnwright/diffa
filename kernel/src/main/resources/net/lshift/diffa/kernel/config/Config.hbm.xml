@@ -153,6 +153,10 @@
     select p from Pair p
   </query>
 
+  <query name="allDomains">
+    select d from Domain d
+  </query>
+
   <query name="allRepairActions">
     select a from RepairAction a
   </query>

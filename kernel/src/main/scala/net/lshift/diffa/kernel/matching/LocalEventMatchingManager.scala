@@ -16,33 +16,33 @@
 
 package net.lshift.diffa.kernel.matching
 
-import net.lshift.diffa.kernel.config.{ConfigStore, Pair}
 import collection.mutable.{ListBuffer, HashMap}
+import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Keeps track of and updates Local event matchers for pair entries from ConfigStore.
  */
-class LocalEventMatchingManager(configStore: ConfigStore) extends MatchingManager {
+class LocalEventMatchingManager(configStore: InternalConfigStore) extends MatchingManager {
   private val reaper = new LocalEventMatcherReaper
-  private val matchers = new HashMap[String, LocalEventMatcher]
+  private val matchers = new HashMap[DiffaPair, LocalEventMatcher]
   private val listeners = new ListBuffer[MatchingStatusListener]
 
   // Create a matcher for each pre-existing pair
-  configStore.listPairs.foreach(p => updateMatcher(p.key, p.matchingTimeout))
+  configStore.listPairs.foreach(updateMatcher(_))
 
-  def getMatcher(pairKey:String) = matchers.get(pairKey)
+  def getMatcher(pair:DiffaPair) = matchers.get(pair)
 
-  def onUpdatePair(pairKey:String):Unit = {
-    val pair = configStore.getPair(pairKey)
+  def onUpdatePair(pair:DiffaPair):Unit = {
 
     pair.matchingTimeout match {
-      case Pair.NO_MATCHING => removeMatcher(pairKey)
-      case timeout => updateMatcher(pairKey, pair.matchingTimeout)
+      case DiffaPair.NO_MATCHING => removeMatcher(pair)
+      case timeout => updateMatcher(pair)
     }
   }
 
-  def onDeletePair(pairKey:String) = {
-    removeMatcher(pairKey)
+  def onDeletePair(pair:DiffaPair) = {
+    removeMatcher(pair)
   }
 
   def close: Unit = {
@@ -57,10 +57,10 @@ class LocalEventMatchingManager(configStore: ConfigStore) extends MatchingManage
     }
   }
 
-  private def updateMatcher(pairKey:String, timeout:Int):Unit = {
-    val newMatcher = new LocalEventMatcher(pairKey, timeout, reaper)
+  private def updateMatcher(pair:DiffaPair):Unit = {
+    val newMatcher = new LocalEventMatcher(pair, reaper)
 
-    matchers.remove(pairKey) match {
+    matchers.remove(pair) match {
       case Some(matcher) => {
         // Recreate matcher with new window length but original listeners
         val listeners = matcher.listeners
@@ -74,14 +74,14 @@ class LocalEventMatchingManager(configStore: ConfigStore) extends MatchingManage
         }
       }
     }
-    matchers(pairKey) = newMatcher
+    matchers(pair) = newMatcher
   }
 
-  private def removeMatcher(pairKey:String):Unit = {
-    val matcher = matchers.get(pairKey) match {
+  private def removeMatcher(pair:DiffaPair):Unit = {
+    val matcher = matchers.get(pair) match {
       case Some(matcher) => {
         matcher.dispose
-        matchers -= pairKey
+        matchers -= pair
       }
       case None => // nothing to do
     }

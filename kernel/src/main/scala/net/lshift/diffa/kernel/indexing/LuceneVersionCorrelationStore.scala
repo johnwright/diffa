@@ -34,13 +34,14 @@ import net.lshift.diffa.kernel.config.ConfigStore
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import net.lshift.diffa.participant.scanning._
 import org.joda.time.{DateTime, LocalDate, DateTimeZone}
+import net.lshift.diffa.kernel.config.internal.InternalConfigStore
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
  * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
  * of pair attributes.
  */
-class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, configStore:ConfigStore)
+class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, configStore:InternalConfigStore)
     extends VersionCorrelationStore
     with Closeable {
 
@@ -50,7 +51,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
 
   val schemaVersionKey = "correlationStore.schemaVersion"
   configStore.maybeConfigOption(schemaVersionKey) match {
-    case None      => configStore.setConfigOption(schemaVersionKey, "0", isInternal = true)
+    case None      => configStore.setInternalConfigOption(schemaVersionKey, "0")
     case Some("0") => // We're up to date
       // When new schema versions appear, we can handle their upgrade here
   }

@@ -25,72 +25,68 @@ import org.quartz.CronExpression
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
 
 trait ConfigStore {
-  def createOrUpdateEndpoint(endpoint: Endpoint): Unit
-  def deleteEndpoint(name: String): Unit
-  def listEndpoints: Seq[Endpoint]
+  def createOrUpdateEndpoint(domain:String, endpoint: Endpoint): Unit
+  def deleteEndpoint(domain:String, name: String): Unit
+  def listEndpoints(domain:String) : Seq[Endpoint]
 
-  def createOrUpdatePair(pairDef: PairDef): Unit
-  def deletePair(key: String): Unit
-  def listPairs : Seq[Pair]
+  def createOrUpdatePair(domain:String, pairDef: PairDef): Unit
+  def deletePair(domain:String, key: String): Unit
+  def listPairs(domain:String) : Seq[Pair]
 
-  def createOrUpdateRepairAction(action: RepairAction): Unit
-  def deleteRepairAction(name: String, pairKey: String): Unit
+  def createOrUpdateRepairAction(domain:String, action: RepairAction): Unit
+  def deleteRepairAction(domain:String, name: String, pairKey: String): Unit
 
-  def createOrUpdateDomain(domain: Domain) : Unit
-  def deleteDomain(name: String): Unit
+  def listRepairActions(domain:String) : Seq[RepairAction]
+  def listRepairActionsForPair(domain:String, pair: Pair): Seq[RepairAction]
 
-  def listRepairActions: Seq[RepairAction]
-  def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
+  def listEscalations(domain:String): Seq[Escalation]
+  def deleteEscalation(domain:String, s: String, s1: String)
+  def createOrUpdateEscalation(domain:String, escalation: Escalation)
+  def listEscalationsForPair(domain:String, pair: Pair): Seq[Escalation]
 
-  def listEscalations: Seq[Escalation]
-  def deleteEscalation(s: String, s1: String)
-  def createOrUpdateEscalation(escalation: Escalation)
-  def listEscalationsForPair(pair: Pair): Seq[Escalation]
+  def getEndpoint(domain:String, name: String): Endpoint
+  def getPair(domain:String, key: String): Pair
 
-  def getEndpoint(name: String): Endpoint
-  def getPair(key: String): Pair
+  def getUser(domain:String, name: String) : User
+  def getRepairAction(domain:String, name: String, pairKey: String): RepairAction
 
-  def getDomain(key: String): Domain
+  def createOrUpdateUser(domain:String, user: User): Unit
+  def deleteUser(domain:String, name: String): Unit
+  def listUsers(domain:String) : Seq[User]
 
-  def getUser(name: String) : User
-  def getRepairAction(name: String, pairKey: String): RepairAction
 
-  def createOrUpdateUser(user: User): Unit
-  def deleteUser(name: String): Unit
-  def listUsers: Seq[User]
-
-  def getPairsForEndpoint(epName:String):Seq[Pair]
 
   /**
-   * Retrieves all (non-internal) agent configuration options.
+   * Retrieves all (domain-specific, non-internal) agent configuration options.
    */
-  def allConfigOptions:Map[String, String]
+  def allConfigOptions(domain:String) : Map[String, String]
 
   /**
    * Retrieves an agent configuration option, returning the None if it is unset.
    */
-  def maybeConfigOption(key:String):Option[String]
+  def maybeConfigOption(domain:String, key:String):Option[String]
 
   /**
    * Retrieves an agent configuration option, returning the provided default value if it is unset.
    */
-  def configOptionOrDefault(key:String, defaultVal:String):String
+  def configOptionOrDefault(domain:String, key:String, defaultVal:String):String
 
   /**
    * Sets the given configuration option to the given value.
    * @param isInternal options marked as internal will not be returned by the allConfigOptions method. This allows
    *   properties to be prevented from being shown in the user-visible system configuration views.
    */
-  def setConfigOption(key:String, value:String, isInternal:Boolean = false)
+  def setConfigOption(domain:String, key:String, value:String)
 
   /**
    * Removes the setting for the given configuration option.
    */
-  def clearConfigOption(key:String)
+  def clearConfigOption(domain:String, key:String)
 }
 
 case class Endpoint(
   @BeanProperty var name: String = null,
+  @BeanProperty var domain: String = null,
   @BeanProperty var scanUrl: String = null,
   @BeanProperty var contentRetrievalUrl: String = null,
   @BeanProperty var versionGenerationUrl: String = null,
@@ -174,6 +170,7 @@ case class Endpoint(
 
 case class Pair(
   @BeanProperty var key: String = null,
+  @BeanProperty var domain: String = null,
   @BeanProperty var upstream: Endpoint = null,
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var versionPolicyName: String = null,
@@ -181,14 +178,21 @@ case class Pair(
   @BeanProperty var scanCronSpec: String = null) {
 
   def this() = this(key = null)
+
+  def identifier = "%s/%s".format(domain,key)
 }
 
 object Pair {
   val NO_MATCHING = null.asInstanceOf[Int]
+  def fromIdentifier(id:String) = {
+    val Array(domain,key) = id.split("/")
+    (domain,key)
+  }
 }
 
 case class PairDef(
   @BeanProperty var pairKey: String = null,
+  @BeanProperty var domain: String = null,
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = 0,
   @BeanProperty var upstreamName: String = null,

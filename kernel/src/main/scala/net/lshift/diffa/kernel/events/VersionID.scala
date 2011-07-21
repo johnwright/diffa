@@ -17,13 +17,16 @@
 package net.lshift.diffa.kernel.events
 
 import reflect.BeanProperty
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Identifier for a version within a given pair.
  */
 case class VersionID(
-  @BeanProperty var pairKey:String,
-  @BeanProperty var id:String) {
+  @BeanProperty var pairKey:String = null,
+  @BeanProperty var domain:String = null,
+  @BeanProperty var id:String = null) {
 
-    def this() = this(null,null)
+  def this() = this(pairKey = null)
+  def this(pair:DiffaPair, id:String) = this(pair.key, pair.domain, id)
 }

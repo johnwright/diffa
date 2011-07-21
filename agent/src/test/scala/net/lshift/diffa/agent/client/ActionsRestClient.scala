@@ -25,17 +25,17 @@ class ActionsRestClient(serverRootUrl:String)
         extends AbstractRestClient(serverRootUrl, "rest/actions/")
         with ActionsClient {
 
-  def listActions(pairKey: String): Seq[Actionable] = {
+  def listActions(domain:String, pairKey: String): Seq[Actionable] = {
     val t = classOf[Array[Actionable]]
     rpc(pairKey, t)
   }
   
-  def listEntityScopedActions(pairKey: String): Seq[Actionable] = {
+  def listEntityScopedActions(domain:String, pairKey: String): Seq[Actionable] = {
     val t = classOf[Array[Actionable]]
     rpc(pairKey, t, "scope" -> RepairAction.ENTITY_SCOPE)
   }
 
-  def listPairScopedActions(pairKey: String): Seq[Actionable] = {
+  def listPairScopedActions(domain:String, pairKey: String): Seq[Actionable] = {
     val t = classOf[Array[Actionable]]
     rpc(pairKey, t, "scope" -> RepairAction.PAIR_SCOPE)
   }

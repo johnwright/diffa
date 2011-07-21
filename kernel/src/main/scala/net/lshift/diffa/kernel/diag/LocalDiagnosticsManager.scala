@@ -2,6 +2,7 @@ package net.lshift.diffa.kernel.diag
 
 import org.joda.time.DateTime
 import collection.mutable.{ListBuffer, HashMap}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Local in-memory implementation of the DiagnosticsManager.
@@ -9,15 +10,15 @@ import collection.mutable.{ListBuffer, HashMap}
  *   TODO: Release resources when pair is removed
  */
 class LocalDiagnosticsManager extends DiagnosticsManager {
-  private val pairs = HashMap[String, PairDiagnostics]()
+  private val pairs = HashMap[DiffaPair, PairDiagnostics]()
   private val maxEventsPerPair = 100
 
-  def logPairEvent(level: DiagnosticLevel, pair: String, msg: String) {
+  def logPairEvent(level: DiagnosticLevel, pair: DiffaPair, msg: String) {
     val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair, new PairDiagnostics) }
     pairDiag.logPairEvent(PairEvent(new DateTime(), level, msg))
   }
 
-  def queryEvents(pair:String, maxEvents: Int) = {
+  def queryEvents(pair:DiffaPair, maxEvents: Int) = {
     pairs.synchronized { pairs.get(pair) } match {
       case None           => Seq()
       case Some(pairDiag) => pairDiag.queryEvents(maxEvents)

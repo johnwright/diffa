@@ -76,7 +76,7 @@ class ConfigurationUploadTest {
   config.getClasses().add(classOf[JacksonJsonProvider]);
   val client = Client.create(config)
   val serverRootResource = client.resource("http://localhost:19093/diffa-agent")
-  val resource = serverRootResource.path("rest/config/xml").`type`(MediaType.APPLICATION_XML_TYPE)
+  val resource = serverRootResource.path("rest/tenant/config/xml").`type`(MediaType.APPLICATION_XML_TYPE)
 
   def uploadConfigRaw(body:String):Tuple2[Int, String] = {
     val response = resource.post(classOf[ClientResponse], body)

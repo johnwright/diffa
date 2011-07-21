@@ -13,21 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.actors
 
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+package net.lshift.diffa.agent.rest
 
-/**
- * Trait supported by components that manage active pairs.
- */
-trait ActivePairManager {
-  /**
-   * Activates resources necessary to manage the given pair.
-   */
-  def startActor(pair:DiffaPair)
+import org.springframework.stereotype.Component
+import org.springframework.beans.factory.annotation.Autowired
+import net.lshift.diffa.kernel.frontend.Configuration
+import javax.ws.rs.core.{UriInfo, Context}
+import javax.ws.rs.{PathParam, Path}
 
-  /**
-   * De-activates any resources associated with the pair.
-   */
-  def stopActor(pair:DiffaPair)
+@Path("/{domain}")
+@Component
+class DomainResource {
+
+  @Context var uriInfo:UriInfo = null
+  @Autowired var config:Configuration = null
+
+  @Path("/config")
+  def getConfigResource(@Context uri:UriInfo,
+                        @PathParam("domain") domain:String)
+    = new ConfigurationResource(config, domain, uri)
+
+
 }

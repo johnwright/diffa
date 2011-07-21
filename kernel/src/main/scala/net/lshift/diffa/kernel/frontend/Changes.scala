@@ -16,16 +16,16 @@
 
 package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.matching.MatchingManager
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.actors.PairPolicyClient
+import net.lshift.diffa.kernel.config.internal.InternalConfigStore
 
 /**
  * Front-end for reporting changes.
  */
-class Changes(val config:ConfigStore,
+class Changes(val config:InternalConfigStore,
               val changeEventClient:PairPolicyClient,
               val mm:MatchingManager) {
   private val log:Logger = LoggerFactory.getLogger(getClass)
@@ -39,17 +39,17 @@ class Changes(val config:ConfigStore,
 
     config.getPairsForEndpoint(evt.endpoint).foreach(pair => {
       val pairEvt = evt match {
-        case UpstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(VersionID(pair.key, id), attributes, lastUpdate, vsn)
-        case DownstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(VersionID(pair.key, id), attributes, lastUpdate, vsn)
+        case UpstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, vsn)
+        case DownstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, vsn)
         case DownstreamCorrelatedChangeEvent(_, id, attributes, lastUpdate, uvsn, dvsn) =>
-          DownstreamCorrelatedPairChangeEvent(VersionID(pair.key, id), attributes, lastUpdate, uvsn, dvsn)
+          DownstreamCorrelatedPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, uvsn, dvsn)
       }
 
       // TODO: Write a test to enforce that the matching manager processes first. This is necessary to ensure
       //    that the SessionManager doesn't emit spurious events.
 
       // If there is a matcher available, notify it first
-      mm.getMatcher(pairEvt.id.pairKey) match {
+      mm.getMatcher(pair) match {
         case None =>
         case Some(matcher) => matcher.onChange(pairEvt, () => {})
       }

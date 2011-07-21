@@ -16,10 +16,8 @@
 
 package net.lshift.diffa.agent.rest
 
-import org.springframework.stereotype.Component
-import org.springframework.beans.factory.annotation.Autowired
 import javax.ws.rs._
-import core.{UriInfo, Context}
+import core.UriInfo
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
@@ -28,15 +26,12 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.agent.rest.ResponseUtils._
 
 /**
- * This is a REST interface the Configuration abstraction.
+ * This is a REST interface to the Configuration abstraction.
  * @see Configuration
  */
-@Path("/config")
-@Component
-class ConfigurationResource {
-
-  @Autowired var config:Configuration = null
-  @Context var uriInfo:UriInfo = null
+class ConfigurationResource(val config:Configuration,
+                            val domain:String,
+                            val uri:UriInfo) {
 
   @GET
   @Path("/xml")
@@ -73,7 +68,7 @@ class ConfigurationResource {
   @Description("Registers a new endpoint with the agent.")
   def createEndpoint(e:Endpoint) = {
     config.createOrUpdateEndpoint(e)
-    resourceCreated(e.name, uriInfo)
+    resourceCreated(e.name, uri)
   }
 
   @PUT
@@ -99,7 +94,7 @@ class ConfigurationResource {
   @Description("Creates a new pairing between two endpoints that are already registered with the agent.")
   def createPair(p:PairDef) = {
     config.createOrUpdatePair(p)
-    resourceCreated(p.pairKey, uriInfo)
+    resourceCreated(p.pairKey, uri)
   }
 
   @PUT
@@ -133,7 +128,7 @@ class ConfigurationResource {
   @Description("Creates a new repair action associated with a pair that is registered with the agent.")
   def createRepairAction(a: RepairAction) = {
     config.createOrUpdateRepairAction(a)
-    resourceCreated(a.name, uriInfo)
+    resourceCreated(a.name, uri)
   }
 
   @DELETE
@@ -152,7 +147,7 @@ class ConfigurationResource {
   @Description("Creates a new escalation associated with a pair that is registered with the agent.")
   def createEscalation(e: Escalation) = {
     config.createOrUpdateEscalation(e)
-    resourceCreated(e.name, uriInfo)
+    resourceCreated(e.name, uri)
   }
 
   @DELETE

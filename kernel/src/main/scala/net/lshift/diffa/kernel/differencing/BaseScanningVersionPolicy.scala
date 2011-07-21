@@ -27,6 +27,7 @@ import concurrent.SyncVar
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -44,7 +45,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
    */
   def onChange(writer: LimitedVersionCorrelationWriter, evt: PairChangeEvent) = {
 
-    val pair = configStore.getPair(evt.id.pairKey)
+    val pair = configStore.getPair(evt.id.domain, evt.id.pairKey)
 
     val corr = evt match {
       case UpstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
@@ -75,22 +76,19 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
-  def replayUnmatchedDifferences(pairKey:String, l:DifferencingListener, origin:MatchOrigin) {
-    val pair = configStore.getPair(pairKey)
+  def replayUnmatchedDifferences(pair:DiffaPair, l:DifferencingListener, origin:MatchOrigin) {
     generateDifferenceEvents(pair, l, origin)
   }
 
-  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
+  def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
                    listener:DifferencingListener, handle:FeedbackHandle) = {
-    val pair = configStore.getPair(pairKey)
     val upstreamConstraints = pair.upstream.groupedConstraints
     constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy)
       .scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
   }
 
-  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
+  def scanDownstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
                      ds:DownstreamParticipant, listener:DifferencingListener, handle:FeedbackHandle) = {
-    val pair = configStore.getPair(pairKey)
     val downstreamConstraints = pair.downstream.groupedConstraints
     constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds)
       .scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
@@ -146,7 +144,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
                        handle:FeedbackHandle) {
       
       checkForCancellation(handle, pair)
-      diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair.key, "Scanning aggregates for %s with (constraints=%s, bucketing=%s)".format(endpoint.name, constraints, bucketing))
+      diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair, "Scanning aggregates for %s with (constraints=%s, bucketing=%s)".format(endpoint.name, constraints, bucketing))
 
       val remoteDigests = participant.scan(constraints, bucketing)
       val localDigests = getAggregates(pair.key, bucketing, constraints)
@@ -174,7 +172,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
                      listener:DifferencingListener,
                      handle:FeedbackHandle) {
       checkForCancellation(handle, pair)
-      diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair.key, "Scanning entities for %s with (constraints=%s)".format(endpoint.name, constraints))
+      diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair, "Scanning entities for %s with (constraints=%s)".format(endpoint.name, constraints))
 
       val remoteVersions = participant.scan(constraints, Seq())
       val cachedVersions = getEntities(pair.key, constraints)
@@ -190,7 +188,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
     def checkForCancellation(handle:FeedbackHandle, pair:Pair) = {
       if (handle.isCancelled) {
-        throw new ScanCancelledException(pair.key)
+        throw new ScanCancelledException(pair)
       }
     }
 

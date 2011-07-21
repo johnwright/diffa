@@ -24,10 +24,10 @@ trait ScanScheduler {
    * Handler for new pair creation or update of an existing one. This method will ensure that the scheduler
    * takes account of the given pair's configuration.
    */
-  def onUpdatePair(pairKey:String)
+  def onUpdatePair(domain:String, pairKey:String)
 
   /**
    * Handler for pair deletion.
    */
-  def onDeletePair(pairKey:String)
+  def onDeletePair(domain:String, pairKey:String)
 }

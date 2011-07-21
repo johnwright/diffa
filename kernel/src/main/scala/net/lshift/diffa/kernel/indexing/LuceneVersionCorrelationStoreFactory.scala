@@ -21,6 +21,7 @@ import org.apache.lucene.store.FSDirectory
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.differencing.{VersionCorrelationStore, VersionCorrelationStoreFactory}
 import scala.collection.mutable.HashMap
+import net.lshift.diffa.kernel.config.internal.InternalConfigStore
 
 /**
  * Factory that creates LuceneVersionCorrelationStore instances.
@@ -28,7 +29,7 @@ import scala.collection.mutable.HashMap
 class LuceneVersionCorrelationStoreFactory[T <: FSDirectory](
   baseDir: String,
   directoryClass: Class[T],
-  configStore: ConfigStore
+  configStore: InternalConfigStore
 ) extends VersionCorrelationStoreFactory {
 
   private val stores = HashMap[String, LuceneVersionCorrelationStore]()
