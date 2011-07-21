@@ -141,7 +141,7 @@ class PairActorTest {
   @Test
   def runDifference = {
     val monitor = new Object
-    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener)).andAnswer(new IAnswer[Unit] {
+    expect(versionPolicy.replayUnmatchedDifferences(pairKey, diffListener, TriggeredByBoot)).andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
 
