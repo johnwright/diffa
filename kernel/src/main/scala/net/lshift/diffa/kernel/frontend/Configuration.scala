@@ -59,6 +59,13 @@ class Configuration(val configStore: ConfigStore,
         .find(newA => newA.name == a.name && newA.pairKey == a.pairKey).isEmpty)
     removedActions.foreach(a => deleteRepairAction(a.name, a.pairKey))
     diffaConfig.repairActions.foreach(createOrUpdateRepairAction)
+    
+    // Remove missing escalations, and create/update the rest
+    var removedEscalations =
+      configStore.listEscalations.filter(e => diffaConfig.escalations
+        .find(newE => newE.name == e.name && newE.pairKey == e.pairKey).isEmpty)
+    removedEscalations.foreach(a => deleteEscalation(a.name, a.pairKey))
+    diffaConfig.escalations.foreach(createOrUpdateEscalation)
 
     // Remove old pairs and endpoints
     val removedPairs = configStore.listPairs.filter(currP => diffaConfig.pairs.find(newP => newP.pairKey == currP.key).isEmpty)
@@ -73,7 +80,8 @@ class Configuration(val configStore: ConfigStore,
       endpoints = configStore.listEndpoints.toSet,
       pairs = configStore.listPairs.map(
         p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.scanCronSpec)).toSet,
-      repairActions = configStore.listRepairActions.toSet
+      repairActions = configStore.listRepairActions.toSet,
+      escalations = configStore.listEscalations.toSet
     )
   }
 

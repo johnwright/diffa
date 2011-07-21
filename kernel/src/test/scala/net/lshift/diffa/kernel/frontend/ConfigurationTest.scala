@@ -99,7 +99,8 @@ class ConfigurationTest {
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
-      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab"))
+      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab")),
+      escalations = Set(Escalation("Resend Missing", "pair", "Resend Sauce", "repair", "downstream-missing", "scan"))
     )
 
     expect(endpointListener.onEndpointAvailable(ep1)).once
@@ -150,7 +151,8 @@ class ConfigurationTest {
           // ac is gone
         PairDef("ad", "same", 5, "upstream1", "downstream2")),
       // name of repair action is changed
-      repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab"))
+      repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab")),
+      escalations = Set(Escalation("Resend Another Missing", "pair", "Resend Source", "repair", "downstream-missing", "scan"))
     )
 
     expect(pairManager.stopActor("ab")).once
