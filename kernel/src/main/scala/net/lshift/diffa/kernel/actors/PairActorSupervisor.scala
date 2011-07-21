@@ -22,9 +22,9 @@ import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.ConfigStore
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
-import net.lshift.diffa.kernel.differencing.{PairScanListener, DifferencingListener, VersionPolicyManager, VersionCorrelationStoreFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.differencing._
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                config:ConfigStore,
@@ -90,8 +90,14 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   def difference(pairKey:String) =
     findActor(pairKey) ! DifferenceMessage
 
-  def scanPair(pairKey:String) =
+  def scanPair(pairKey:String) = {
+    // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
+    // asynchronously, we might have returned before then, and this may potentially result in clients seeing
+    // a "Up To Date" view, even though we're just about to transition out of that state.
+    pairScanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING)
+    
     findActor(pairKey) ! ScanMessage
+  }
 
   def cancelScans(pairKey:String) = {
     (findActor(pairKey) !! CancelMessage) match {

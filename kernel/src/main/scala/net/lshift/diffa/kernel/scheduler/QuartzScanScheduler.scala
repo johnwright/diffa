@@ -31,11 +31,12 @@ import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.TriggerKey.triggerKey
 import org.quartz.CronScheduleBuilder.cronSchedule
 import org.quartz.JobBuilder.newJob
+import net.lshift.diffa.kernel.actors.PairPolicyClient
 
 /**
  * Quartz backed implementation of the ScanScheduler.
  */
-class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:String)
+class QuartzScanScheduler(config:ConfigStore, pairPolicyClient:PairPolicyClient, name:String)
     extends ScanScheduler
     with Closeable {
 
@@ -51,7 +52,7 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
 
       log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
       try {
-        sessions.runScanForPair(pairKey)
+        pairPolicyClient.scanPair(pairKey)
       } catch {
           // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
         case ex =>

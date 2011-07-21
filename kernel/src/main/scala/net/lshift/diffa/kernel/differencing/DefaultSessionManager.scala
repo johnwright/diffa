@@ -162,10 +162,6 @@ class DefaultSessionManager(
     }
   }
 
-  def runScanForAllPairings() {
-    runScanForScope(SessionScope.all, null, null)
-  }
-
   def runScan(sessionID:String) = {
     sessionsByKey.get(sessionID) match {
       case None => // No session. Nothing to do. TODO: Throw an exception?
@@ -344,18 +340,7 @@ class DefaultSessionManager(
   def withPair[T](pair:String)(f:Function0[T]) = withValidPair(pair, f)
 
   def runScanForScope(scope:SessionScope, start:DateTime, end:DateTime) {
-    pairKeysForScope(scope).foreach(runScanForPair(_))
-  }
-
-  def runScanForPair(pairKey:String) {
-    withPair[Unit](pairKey)(() => {
-      // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
-      // asynchronously, we might have returned before then, and this may potentially result in clients seeing
-      // a "Up To Date" view, even though we're just about to transition out of that state.
-      updatePairScanState(pairKey, PairScanState.SCANNING)
-
-      pairPolicyClient.scanPair(pairKey)
-    })
+    pairKeysForScope(scope).foreach(pairPolicyClient.scanPair(_))
   }
 
   def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime) {

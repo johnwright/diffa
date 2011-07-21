@@ -123,16 +123,6 @@ class DefaultSessionManagerTest {
   }
 
   @Test
-  def shouldTriggerScanOnRequest = {
-    expectScanAndDifferenceForPair("pair1","pair2")
-    replayAll
-
-    manager.runScanForAllPairings
-
-    verifyAll
-  }
-
-  @Test
   def shouldAlwaysInformMatchEvents {
 
     expect(listener1.onMatch(VersionID("pair", "id"), "vsn", LiveWindow))
@@ -230,6 +220,7 @@ class DefaultSessionManagerTest {
 
     // Query for the states associated. We should get back an entry for pair in "scanning", since the stubs
     // don't notify of completion
+    manager.pairScanStateChanged("pair", PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
     assertEquals(Map("pair" -> PairScanState.SCANNING), manager.retrievePairScanStates(sessionId))
 
     // Notify that the pair is now in Up To Date state
@@ -238,6 +229,7 @@ class DefaultSessionManagerTest {
 
     // Start a scan. We should enter the scanning state again
     manager.runScan(sessionId)
+    manager.pairScanStateChanged("pair", PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
     assertEquals(Map("pair" -> PairScanState.SCANNING), manager.retrievePairScanStates(sessionId))
 
     // Notify that the pair is now in Failed state
@@ -277,6 +269,8 @@ class DefaultSessionManagerTest {
 
     // Start a scan. We should enter the scanning state again
     manager.runScan(sessionId)
+    manager.pairScanStateChanged("pair1", PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
+    manager.pairScanStateChanged("pair2", PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
     assertEquals(Map("pair1" -> PairScanState.SCANNING, "pair2" -> PairScanState.SCANNING),
       manager.retrievePairScanStates(sessionId))
 

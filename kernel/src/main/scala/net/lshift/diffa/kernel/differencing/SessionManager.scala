@@ -90,16 +90,6 @@ trait SessionManager {
   def runScan(sessionID:String)
 
   /**
-   * Requests that all configured pairs in the system be scanned for differences.
-   */
-  def runScanForAllPairings()
-
-  /**
-   * Requests that a scan be run for the given pair.
-   */
-  def runScanForPair(pair:String)
-
-  /**
    * Retrieves a version for the given session.
    */
   def retrieveSessionVersion(sessionID:String):String

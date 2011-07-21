@@ -23,12 +23,16 @@ import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import javax.ws.rs.{POST, PathParam, Path, DELETE}
 import javax.ws.rs.core.Response
+import net.lshift.diffa.kernel.config.ConfigStore
+import org.slf4j.{LoggerFactory, Logger}
 
 @Path("/scanning")
 @Component
 class ScanningResource {
+  private val log: Logger = LoggerFactory.getLogger(getClass)
 
   @Autowired var pairPolicyClient:PairPolicyClient = null
+  @Autowired var configStore:ConfigStore = null
 
   @POST
   @Path("/pairs/{pairKey}/scan")
@@ -40,6 +44,15 @@ class ScanningResource {
     Response.status(Response.Status.ACCEPTED).build
   }
 
+  @POST
+  @Path("/scan_all")
+  @Description("Forces Diffa to execute a scan operation for every configured pair.")
+  def scanAllPairings = {
+    log.info("Initiating scan of all known pairs")
+    configStore.listPairs.foreach(p => pairPolicyClient.scanPair(p.key))
+
+    Response.status(Response.Status.ACCEPTED).build
+  }
 
   @DELETE
   @Path("/pairs/{pairKey}/scan")

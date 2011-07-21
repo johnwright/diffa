@@ -78,14 +78,6 @@ class DifferencesResource {
     Response.status(Response.Status.ACCEPTED).build
   }
 
-  @POST
-  @Path("/sessions/scan_all")
-  @Description("Forces Diffa to execute a scan operation for every configured pair.")
-  def scanAllPairings = {
-    log.info("Initiating scan of all known pairs")
-    sessionManager.runScanForAllPairings
-  }
-
   @GET
   @Path("/sessions/all_scan_states")
   @Description("Lists the scanning state for every configured pair.")

@@ -163,7 +163,7 @@ class PairActorTest {
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
-    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall.atLeastOnce()
 
     expectScans
 
@@ -190,7 +190,7 @@ class PairActorTest {
 
     val event = buildUpstreamEvent()
 
-    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall.atLeastOnce()
     scanListener.pairScanStateChanged(pairKey, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
     })
@@ -258,6 +258,7 @@ class PairActorTest {
 
     val timeToWait = 2000L
 
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall     // Expect once when the pair actor starts the call
     scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = {
         Actor.spawn {
@@ -414,7 +415,7 @@ class PairActorTest {
           }
         })
     
-    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall()
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall().atLeastOnce()
     expectUpstreamScan().once()  // Succeed on second
     expectDownstreamScan().andAnswer(new IAnswer[Unit] {
       def answer() {
@@ -494,7 +495,7 @@ class PairActorTest {
   def expectFailingScan(downstreamHandler:IAnswer[Unit], failStateHandler:IAnswer[Unit] = EasyMockScalaUtils.emptyAnswer) {
     expectWriterRollback()
 
-    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall.once
+    scanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING); expectLastCall.atLeastOnce()
 
     expectUpstreamScan().andThrow(new RuntimeException("Deliberate runtime exception, this should be handled")).once()
     expectDownstreamScan().andAnswer(downstreamHandler).once()
