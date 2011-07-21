@@ -97,6 +97,9 @@ class HibernatePreparationTest {
     })
     config.validateSchema(dialect, dbMetadata)
     validateNotTooManyObjects(config, dbMetadata)
+
+    // Ensure we can run the upgrade again cleanly
+    (new HibernateConfigStorePreparationStep).prepare(sf, config)
   }
 
   /**

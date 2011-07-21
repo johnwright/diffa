@@ -65,7 +65,7 @@ class HibernateConfigStorePreparationStep
       (new SchemaExport(config)).create(false, true)
 
       // Apply the current version to the schema
-      val configOpt = new ConfigOption(key = schemaVersionKey, value = "0", isInternal = true)
+      val configOpt = new ConfigOption(key = schemaVersionKey, value = migrationSteps.last.versionId.toString, isInternal = true)
       sf.withSession(s => {
         s.save(configOpt)
       })
