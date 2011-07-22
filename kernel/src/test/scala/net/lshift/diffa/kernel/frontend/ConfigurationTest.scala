@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
 import net.lshift.diffa.kernel.config._
 import scala.collection.JavaConversions._
 import org.easymock.IArgumentMatcher
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.DiffaConfig._
 
 /**
@@ -56,8 +57,8 @@ class ConfigurationTest {
   def shouldApplyEmptyConfigToEmptySystem {
     replayAll
 
-    configuration.applyConfiguration(DiffaConfig())
-    assertEquals(DiffaConfig(), configuration.retrieveConfiguration)
+    configuration.applyConfiguration("domain", DiffaConfig())
+    assertEquals(DiffaConfig(), configuration.retrieveConfiguration("domain"))
   }
 
   @Test
@@ -68,11 +69,11 @@ class ConfigurationTest {
     val config = new DiffaConfig(
       endpoints = Set(ep1, ep2),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "bad-cron-spec"))
+        PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "bad-cron-spec"))
     )
 
     try {
-      configuration.applyConfiguration(config)
+      configuration.applyConfiguration("domain", config)
       fail("Should have thrown ConfigValidationException")
     } catch {
       case ex:ConfigValidationException =>
@@ -97,25 +98,25 @@ class ConfigurationTest {
       users = Set(User("abc", "a@example.com"), User("def", "b@example.com")),
       endpoints = Set(ep1, ep2),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
-        PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
+        PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
+        PairDef("ac", "domain", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
       repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", "ab"))
     )
 
     expect(endpointListener.onEndpointAvailable(ep1)).once
     expect(endpointListener.onEndpointAvailable(ep2)).once
     expect(pairManager.startActor(pairInstance("ab"))).once
-    expect(matchingManager.onUpdatePair("ab")).once
-    expect(scanScheduler.onUpdatePair("ab")).once
-    expect(sessionManager.onUpdatePair("ab")).once
+    expect(matchingManager.onUpdatePair(DiffaPair(key = "ab", domain = "domain"))).once
+    expect(scanScheduler.onUpdatePair("domain","ab")).once
+    expect(sessionManager.onUpdatePair(DiffaPair(key = "ab", domain = "domain"))).once
     expect(pairManager.startActor(pairInstance("ac"))).once
-    expect(matchingManager.onUpdatePair("ac")).once
-    expect(scanScheduler.onUpdatePair("ac")).once
-    expect(sessionManager.onUpdatePair("ac")).once
+    expect(matchingManager.onUpdatePair(DiffaPair(key = "ac", domain = "domain"))).once
+    expect(scanScheduler.onUpdatePair("domain","ac")).once
+    expect(sessionManager.onUpdatePair(DiffaPair(key = "ac", domain = "domain"))).once
     replayAll
 
-    configuration.applyConfiguration(config)
-    assertEquals(config, configuration.retrieveConfiguration)
+    configuration.applyConfiguration("domain", config)
+    assertEquals(config, configuration.retrieveConfiguration("domain"))
     verifyAll
   }
 
@@ -146,35 +147,35 @@ class ConfigurationTest {
         // gaa is gone, gcc is created, gbb is the same
       pairs = Set(
           // ab has moved from gaa to gcc
-        PairDef("ab", "same", 5, "upstream1", "downstream2", "0 * * * * ?"),
+        PairDef("ab", "domain", "same", 5, "upstream1", "downstream2", "0 * * * * ?"),
           // ac is gone
-        PairDef("ad", "same", 5, "upstream1", "downstream2")),
+        PairDef("ad", "domain", "same", 5, "upstream1", "downstream2")),
       // name of repair action is changed
       repairActions = Set(RepairAction("Resend Source", "resend", "pair", "ab"))
     )
 
-    expect(pairManager.stopActor("ab")).once
+    expect(pairManager.stopActor(DiffaPair(key = "ab", domain = "domain"))).once
     expect(pairManager.startActor(pairInstance("ab"))).once
-    expect(matchingManager.onUpdatePair("ab")).once
-    expect(scanScheduler.onUpdatePair("ab")).once
-    expect(sessionManager.onUpdatePair("ab")).once
-    expect(pairManager.stopActor("ac")).once
-    expect(matchingManager.onDeletePair("ac")).once
-    expect(scanScheduler.onDeletePair("ac")).once
+    expect(matchingManager.onUpdatePair(DiffaPair(key = "ab", domain = "domain"))).once
+    expect(scanScheduler.onUpdatePair("domain","ab")).once
+    expect(sessionManager.onUpdatePair(DiffaPair(key = "ab", domain = "domain"))).once
+    expect(pairManager.stopActor(DiffaPair(key = "ac", domain = "domain"))).once
+    expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
+    expect(scanScheduler.onDeletePair("domain","ac")).once
     expect(versionCorrelationStoreFactory.remove("ac")).once
-    expect(sessionManager.onDeletePair("ac")).once
+    expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
     expect(pairManager.startActor(pairInstance("ad"))).once
-    expect(matchingManager.onUpdatePair("ad")).once
-    expect(scanScheduler.onUpdatePair("ad")).once
-    expect(sessionManager.onUpdatePair("ad")).once
+    expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = "domain"))).once
+    expect(scanScheduler.onUpdatePair("domain","ad")).once
+    expect(sessionManager.onUpdatePair(DiffaPair(key = "ad", domain = "domain"))).once
 
     expect(endpointListener.onEndpointRemoved("downstream1")).once
     expect(endpointListener.onEndpointAvailable(ep1)).once
     expect(endpointListener.onEndpointAvailable(ep2)).once
     replayAll
 
-    configuration.applyConfiguration(config)
-    val newConfig = configuration.retrieveConfiguration
+    configuration.applyConfiguration("domain",config)
+    val newConfig = configuration.retrieveConfiguration("domain")
     assertEquals(config, newConfig)
 
     // check that the action was updated
@@ -188,22 +189,22 @@ class ConfigurationTest {
     shouldApplyConfigurationToEmptySystem
     resetAll
 
-    expect(pairManager.stopActor("ab")).once
-    expect(pairManager.stopActor("ac")).once
-    expect(matchingManager.onDeletePair("ab")).once
-    expect(matchingManager.onDeletePair("ac")).once
-    expect(scanScheduler.onDeletePair("ab")).once
-    expect(scanScheduler.onDeletePair("ac")).once
+    expect(pairManager.stopActor(DiffaPair(key = "ab", domain = "domain"))).once
+    expect(pairManager.stopActor(DiffaPair(key = "ac", domain = "domain"))).once
+    expect(matchingManager.onDeletePair(DiffaPair(key = "ab", domain = "domain"))).once
+    expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
+    expect(scanScheduler.onDeletePair("domain","ab")).once
+    expect(scanScheduler.onDeletePair("domain","ac")).once
     expect(versionCorrelationStoreFactory.remove("ab")).once
     expect(versionCorrelationStoreFactory.remove("ac")).once
-    expect(sessionManager.onDeletePair("ab")).once
-    expect(sessionManager.onDeletePair("ac")).once
+    expect(sessionManager.onDeletePair(DiffaPair(key = "ab", domain = "domain"))).once
+    expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
     expect(endpointListener.onEndpointRemoved("upstream1")).once
     expect(endpointListener.onEndpointRemoved("downstream1")).once
     replayAll
 
-    configuration.applyConfiguration(DiffaConfig())
-    assertEquals(DiffaConfig(), configuration.retrieveConfiguration)
+    configuration.applyConfiguration("domain",DiffaConfig())
+    assertEquals(DiffaConfig(), configuration.retrieveConfiguration("domain"))
     verifyAll
   }
 

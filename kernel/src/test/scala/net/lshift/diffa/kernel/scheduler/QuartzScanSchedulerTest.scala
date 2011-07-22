@@ -22,11 +22,12 @@ import org.junit.Assert._
 import org.joda.time.DateTime
 import org.easymock.IAnswer
 import net.lshift.diffa.kernel.differencing.SessionManager
-import net.lshift.diffa.kernel.config.{ConfigStore, Pair}
+import net.lshift.diffa.kernel.config.internal.InternalConfigStore
 import org.junit.runner.RunWith
 import net.lshift.diffa.kernel.util.{Concurrent, ConcurrentJunitRunner}
-import net.lshift.diffa.kernel.util.Concurrent._
 import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+
 
 /**
  * Test cases for the QuartzScanScheduler.
@@ -34,20 +35,20 @@ import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 @RunWith(classOf[ConcurrentJunitRunner])
 @Concurrent(threads = 20)
 class QuartzScanSchedulerTest {
-  val config = createStrictMock(classOf[ConfigStore])
+  val config = createStrictMock(classOf[InternalConfigStore])
   val sessions = createStrictMock(classOf[SessionManager])
 
   @Test
   def shouldAllowScheduleCreation() {
     val mb = createExecuteListenerQueue
 
-    expect(config.listPairs).andReturn(Seq())
-    expect(config.getPair("PairA")).andReturn(Pair(key = "PairA", scanCronSpec = generateNowishCronSpec))
+    expect(config.listPairs("domain")).andReturn(Seq())
+    expect(config.getPair("domain", "PairA")).andReturn(DiffaPair(key = "PairA", scanCronSpec = generateNowishCronSpec))
 
     replayAll()
 
     withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowScheduleCreation")) { scheduler =>
-      scheduler.onUpdatePair("PairA")
+      scheduler.onUpdatePair(DiffaPair(key = "PairA"))
       
       mb.poll(3, TimeUnit.SECONDS) match {
         case null => fail("Scan was not triggered")
@@ -60,7 +61,7 @@ class QuartzScanSchedulerTest {
   def shouldRestoreSchedulesOnStartup() {
     val mb = createExecuteListenerQueue
 
-    expect(config.listPairs).andReturn(Seq(Pair(key = "PairB", scanCronSpec = generateNowishCronSpec)))
+    expect(config.listPairs("domain")).andReturn(Seq(DiffaPair(key = "PairB", scanCronSpec = generateNowishCronSpec)))
 
     replayAll()
 
@@ -76,12 +77,12 @@ class QuartzScanSchedulerTest {
   def shouldAllowSchedulesToBeDeleted() {
     val mb = createExecuteListenerQueue
 
-    expect(config.listPairs).andReturn(Seq(Pair(key = "PairC", scanCronSpec = generateNowishCronSpec)))
+    expect(config.listPairs("domain")).andReturn(Seq(DiffaPair(key = "PairC", scanCronSpec = generateNowishCronSpec)))
 
     replayAll()
 
     withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowSchedulesToBeDeleted")) { scheduler =>
-      scheduler.onDeletePair("PairC")
+      scheduler.onDeletePair("domain","PairC")
 
       mb.poll(3, TimeUnit.SECONDS) match {
         case null =>
@@ -94,16 +95,16 @@ class QuartzScanSchedulerTest {
   def shouldAllowSchedulesToBeUpdated() {
     val mb = createExecuteListenerQueue
 
-    expect(config.listPairs).andReturn(Seq())
-    expect(config.getPair("PairD")).andReturn(Pair(key = "PairD", scanCronSpec = generateOldCronSpec)).once()
-    expect(config.getPair("PairD")).andReturn(Pair(key = "PairD", scanCronSpec = generateNowishCronSpec)).once()
+    expect(config.listPairs("domain")).andReturn(Seq())
+    expect(config.getPair("domain","PairD")).andReturn(DiffaPair(key = "PairD", scanCronSpec = generateOldCronSpec)).once()
+    expect(config.getPair("domain","PairD")).andReturn(DiffaPair(key = "PairD", scanCronSpec = generateNowishCronSpec)).once()
 
     replayAll()
 
     // Initially schedule with something too old to run, then update it with something new enough that will
     withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowSchedulesToBeUpdated")) { scheduler =>
-      scheduler.onUpdatePair("PairD")   // We'll get a different pair result on each call
-      scheduler.onUpdatePair("PairD")
+      scheduler.onUpdatePair("domain","PairD")   // We'll get a different pair result on each call
+      scheduler.onUpdatePair("domain","PairD")
 
       mb.poll(5, TimeUnit.SECONDS) match {
         case null => fail("Scan was not triggered")
@@ -136,7 +137,7 @@ class QuartzScanSchedulerTest {
 
   private def createExecuteListenerQueue = {
     val q = new LinkedBlockingQueue[String]
-    expect(sessions.runScanForPair(anyObject.asInstanceOf[String])).andAnswer(new IAnswer[Unit] {
+    expect(sessions.runScanForPair(anyObject.asInstanceOf[DiffaPair])).andAnswer(new IAnswer[Unit] {
       def answer = {
         val pairKey = getCurrentArguments()(0).asInstanceOf[String]
         q.add(pairKey)
