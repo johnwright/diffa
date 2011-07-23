@@ -31,16 +31,17 @@ import org.junit.experimental.theories.{DataPoints, DataPoint, Theories, Theory}
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
 
-  var pairKey = "some pair key"
+  val domain = "domain"
+  val pairKey = "some pair key"
 
   val configStore = createMock(classOf[ConfigStore])
   val actionsClient = createStrictMock(classOf[ActionsClient])
   val escalationManager = new EscalationManager(configStore, actionsClient)
 
   def expectConfigStore(event:String) = {
-    expect(configStore.getPair(pairKey)).andReturn(Pair()).anyTimes()
+    expect(configStore.getPair(domain, pairKey)).andReturn(Pair()).anyTimes()
 
-    expect(configStore.listEscalationsForPair(EasyMock.isA(classOf[Pair]))).andReturn(
+    expect(configStore.listEscalationsForPair(domain, EasyMock.isA(classOf[Pair]))).andReturn(
       List(Escalation("foo", pairKey, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
     ).anyTimes()
 

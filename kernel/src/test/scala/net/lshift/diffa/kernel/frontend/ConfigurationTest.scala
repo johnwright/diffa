@@ -162,7 +162,7 @@ class ConfigurationTest {
     expect(pairManager.stopActor(DiffaPair(key = "ac", domain = "domain"))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
     expect(scanScheduler.onDeletePair("domain","ac")).once
-    expect(versionCorrelationStoreFactory.remove("ac")).once
+    expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = "domain"))).once
     expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = "domain"))).once
@@ -195,8 +195,8 @@ class ConfigurationTest {
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
     expect(scanScheduler.onDeletePair("domain","ab")).once
     expect(scanScheduler.onDeletePair("domain","ac")).once
-    expect(versionCorrelationStoreFactory.remove("ab")).once
-    expect(versionCorrelationStoreFactory.remove("ac")).once
+    expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ab", domain = "domain"))).once
+    expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = "domain"))).once
     expect(sessionManager.onDeletePair(DiffaPair(key = "ab", domain = "domain"))).once
     expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = "domain"))).once
     expect(endpointListener.onEndpointRemoved("upstream1")).once

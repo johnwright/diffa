@@ -145,9 +145,9 @@ class Configuration(val configStore: ConfigStore,
       supervisor.stopActor(p)
       matchingManager.onDeletePair(p)
       sessionManager.onDeletePair(p)
+      versionCorrelationStoreFactory.remove(p)
     })
     configStore.deletePair(domain, key)
-    versionCorrelationStoreFactory.remove(key)
     scanScheduler.onDeletePair(domain, key)
 
   }

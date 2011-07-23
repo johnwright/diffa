@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.differencing.{LiveWindow, SessionManager}
 
 class EventNotifierTest {
 
+  val domain = "domain"
   val configStore = createStrictMock("configStore", classOf[ConfigStore])
   val sessionManager = createStrictMock("sessionManager", classOf[SessionManager])
 
@@ -35,13 +36,13 @@ class EventNotifierTest {
   @Before
   def setup = {
     val user = User("Foo Bar", "dev_null@lshift.net")
-    expect(configStore.listUsers).andStubReturn(List(user))
+    expect(configStore.listUsers(domain)).andStubReturn(List(user))
     replay(configStore, sessionManager)
   }
 
   @Test
   def quiteTime = {
-    val id = VersionID("pair","abc")
+    val id = VersionID(pairKey = "pair", domain = domain, id = "abc")
     val timestamp = new DateTime()
     val up = "foo"
     val down = "bar"

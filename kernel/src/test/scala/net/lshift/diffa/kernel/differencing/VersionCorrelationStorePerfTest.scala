@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 import ch.qos.logback.classic.Level
 import net.lshift.diffa.participant.scanning.TimeRangeConstraint
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Performance test for the version correlation store.
@@ -46,40 +47,40 @@ class VersionCorrelationStorePerfTest {
 
   @Before
   def cleanupStore {
-    LuceneVersionCorrelationStoreTest.stores(pairKey).reset
+    LuceneVersionCorrelationStoreTest.stores(pair).reset
   }
 
   private val stores = LuceneVersionCorrelationStoreTest.stores
-  private val pairKey = "ab"
+  private val pair = DiffaPair(key="ab",domain="domain")
 
   @Test
   def canQueryWithLargeNumbersOfMatchingCorrelations() {
     val vsnCount = Integer.valueOf(System.getProperty("diffa.perf.versionCount", "1000")).intValue
 
     withTiming("load upstream versions") {
-      val writer = stores(pairKey).openWriter()
+      val writer = stores(pair).openWriter()
       for (i <- 0 until vsnCount) {
-        writer.storeUpstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
+        writer.storeUpstreamVersion(new VersionID(pair, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
       }
       writer.flush()
     }
 
     withTiming("run unmatched version query") {
-      val res = stores(pairKey).unmatchedVersions(Seq(new TimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pair).unmatchedVersions(Seq(new TimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(vsnCount, res.length)
     }
 
     withTiming("load downstream versions") {
-      val writer = stores(pairKey).openWriter()
+      val writer = stores(pair).openWriter()
       for (i <- 0 until vsnCount) {
-        writer.storeDownstreamVersion(VersionID(pairKey, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
+        writer.storeDownstreamVersion(new VersionID(pair, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
       }
       writer.flush()
     }
 
     withTiming("run unmatched version query (2)") {
-      val res = stores(pairKey).unmatchedVersions(Seq(new TimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
+      val res = stores(pair).unmatchedVersions(Seq(new TimeRangeConstraint("bizDate", JUL_2010, END_JUL_2010)), Seq())
       println("Retrieved " + res.length + " unmatched versions")
       assertEquals(0, res.length)
     }

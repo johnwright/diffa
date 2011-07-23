@@ -24,6 +24,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore, Pair}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -39,25 +40,25 @@ class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:Differen
   def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamSameScanStrategy
 
   protected class DownstreamSameScanStrategy extends ScanStrategy {
-    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
+    def getAggregates(pair:DiffaPair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
-      stores(pairKey).queryDownstreams(constraints, aggregator.collectDownstream)
+      stores(pair).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
-    def getEntities(pairKey:String, constraints:Seq[ScanConstraint]) = {
-      stores(pairKey).queryDownstreams(constraints).map(x => {
+    def getEntities(pair:DiffaPair, constraints:Seq[ScanConstraint]) = {
+      stores(pair).queryDownstreams(constraints).map(x => {
         ScanResultEntry.forEntity(x.id, x.downstreamDVsn, x.lastUpdate, mapAsJavaMap(x.downstreamAttributes))
       })
     }
 
-    def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           if (partVsn != null) {
-            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, partVsn, partVsn))
+            handleUpdatedCorrelation(writer.storeDownstreamVersion(new VersionID(pair, id), categories, lastUpdated, partVsn, partVsn))
           } else {
-            handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pairKey, id)))
+            handleUpdatedCorrelation(writer.clearDownstreamVersion(new VersionID(pair, id)))
           }
       }
     }

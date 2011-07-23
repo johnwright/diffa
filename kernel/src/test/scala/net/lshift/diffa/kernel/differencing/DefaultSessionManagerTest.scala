@@ -27,6 +27,7 @@ import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
 import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.internal.InternalConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
 
 /**
@@ -51,7 +52,7 @@ class DefaultSessionManagerTest {
 
   val matcher = createStrictMock("matcher", classOf[EventMatcher])
 
-  val configStore = createStrictMock("configStore", classOf[ConfigStore])
+  val configStore = createStrictMock("configStore", classOf[InternalConfigStore])
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
   matchingManager.addListener(anyObject.asInstanceOf[MatchingStatusListener]); expectLastCall.once
   replay(matchingManager)
@@ -77,6 +78,14 @@ class DefaultSessionManagerTest {
   val manager = new DefaultSessionManager(configStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
   verify(matchingManager); reset(matchingManager)    // The matching manager will have been called on session manager startup
 
+  val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+  val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+  
+  val domain = "domain"
+  val pair = DiffaPair(key = "pair", domain = domain)
+  val pair1 = DiffaPair(key = "pair1", domain = domain, versionPolicyName = "policy", upstream = u, downstream = d)
+  val pair2 = DiffaPair(key = "pair2", domain = domain, versionPolicyName = "policy", upstream = u, downstream = d)
+  
   @Before
   def setupStubs = {
     // TODO consider using a stub factory to build stateful objects
@@ -84,39 +93,34 @@ class DefaultSessionManagerTest {
     // i.e. only stub out the behavior that actually care about and want to test
     // so in this example, everything above this comment should be expect() calls
     // and everything below should be stub() calls on a factory
-    val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
-    val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
-
+   
     participantFactory.createUpstreamParticipant(u)
-    participantFactory.createDownstreamParticipant(d)
-
-    val pair1 = DiffaPair(key = "pair1", versionPolicyName = "policy", upstream = u, downstream = d)
-    val pair2 = DiffaPair(key = "pair2", versionPolicyName = "policy", upstream = u, downstream = d)
+    participantFactory.createDownstreamParticipant(d) 
         
-    expect(configStore.getPair("pair")).andStubReturn(pair1)
-    expect(configStore.getPair("pair1")).andStubReturn(pair1)
-    expect(configStore.getPair("pair2")).andStubReturn(pair2)
+    //expect(configStore.getPair("pair")).andStubReturn(pair1)
+    expect(configStore.getPair(domain, "pair1")).andStubReturn(pair1)
+    expect(configStore.getPair(domain, "pair2")).andStubReturn(pair2)
     expect(configStore.listPairs).andStubReturn(Seq(pair1,pair2))
-    expect(matchingManager.getMatcher("pair")).andStubReturn(Some(matcher))
-    expect(matcher.isVersionIDActive(VersionID("pair", "id"))).andStubReturn(true)
-    expect(matcher.isVersionIDActive(VersionID("pair", "id2"))).andStubReturn(false)
+    expect(matchingManager.getMatcher(pair1)).andStubReturn(Some(matcher))
+    expect(matcher.isVersionIDActive(new VersionID(pair, "id"))).andStubReturn(true)
+    expect(matcher.isVersionIDActive(new VersionID(pair, "id2"))).andStubReturn(false)
 
     replay(configStore, matchingManager, matcher)
   }
 
-  def expectDifferenceForPair(pairs:String*)  = {
-    pairs.foreach(pairKey => {
-      expect(pairPolicyClient.difference(pairKey)).atLeastOnce
+  def expectDifferenceForPair(pairs:DiffaPair*)  = {
+    pairs.foreach(p => {
+      expect(pairPolicyClient.difference(p)).atLeastOnce
     })
 
     replay(pairPolicyClient)
   }
-  def expectScanAndDifferenceForPair(pairs:String*)  = {
-    pairs.foreach(pairKey => {
-      expect(pairPolicyClient.difference(pairKey)).atLeastOnce
+  def expectScanAndDifferenceForPair(pairs:DiffaPair*)  = {
+    pairs.foreach(p => {
+      expect(pairPolicyClient.difference(p)).atLeastOnce
     })
-    pairs.foreach(pairKey => {
-      expect(pairPolicyClient.scanPair(pairKey)).atLeastOnce
+    pairs.foreach(p => {
+      expect(pairPolicyClient.scanPair(p)).atLeastOnce
     })
 
     replay(pairPolicyClient)
@@ -124,7 +128,7 @@ class DefaultSessionManagerTest {
 
   @Test
   def shouldTriggerScanOnRequest = {
-    expectScanAndDifferenceForPair("pair1","pair2")
+    expectScanAndDifferenceForPair(pair1,pair2)
     replayAll
 
     manager.runScanForAllPairings
@@ -138,7 +142,7 @@ class DefaultSessionManagerTest {
     expect(listener1.onMatch(VersionID("pair", "id"), "vsn", LiveWindow))
     replayAll
 
-    expectDifferenceForPair("pair")
+    expectDifferenceForPair(pair)
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn", LiveWindow)
@@ -152,7 +156,7 @@ class DefaultSessionManagerTest {
     // Replay to get blank stubs
     replayAll
 
-    expectDifferenceForPair("pair")
+    expectDifferenceForPair(pair)
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     
@@ -166,7 +170,7 @@ class DefaultSessionManagerTest {
     expect(listener1.onMismatch(VersionID("pair", "id2"), timestamp, "uvsn", "dvsn", LiveWindow))
     replayAll
 
-    expectDifferenceForPair("pair")
+    expectDifferenceForPair(pair)
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
 
@@ -180,10 +184,10 @@ class DefaultSessionManagerTest {
     val timestamp = new DateTime()
     replayAll
 
-    expectDifferenceForPair("pair")
+    expectDifferenceForPair(pair)
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
-    manager.end("pair", listener1)
+    manager.end(pair, listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn", LiveWindow)
     manager.onMismatch(VersionID("pair", "id"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
@@ -194,7 +198,7 @@ class DefaultSessionManagerTest {
     val timestamp = new DateTime()
     replayAll
 
-    expectDifferenceForPair("pair2")
+    expectDifferenceForPair(pair2)
 
     val session = manager.start(SessionScope.forPairs("pair2"), listener1)
     manager.onMatch(VersionID("pair", "id"), "vsn", LiveWindow)
@@ -209,7 +213,7 @@ class DefaultSessionManagerTest {
 
     replayAll
 
-    expectDifferenceForPair("pair")
+    expectDifferenceForPair(pair)
 
     val session = manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onDownstreamExpired(VersionID("pair", "unknownid"), "dvsn")
@@ -219,7 +223,7 @@ class DefaultSessionManagerTest {
   def shouldTrackStateOfPairsForExplicitScopeSession {
     // Create a session that contains our given pair
     replayAll
-    expectScanAndDifferenceForPair("pair")
+    expectScanAndDifferenceForPair(pair)
     val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
 
     // Initial state of all pairs should be "unknown"
@@ -233,7 +237,7 @@ class DefaultSessionManagerTest {
     assertEquals(Map("pair" -> PairScanState.SCANNING), manager.retrievePairScanStates(sessionId))
 
     // Notify that the pair is now in Up To Date state
-    manager.pairScanStateChanged("pair", PairScanState.UP_TO_DATE)
+    manager.pairScanStateChanged(pair, PairScanState.UP_TO_DATE)
     assertEquals(Map("pair" -> PairScanState.UP_TO_DATE), manager.retrievePairScanStates(sessionId))
 
     // Start a scan. We should enter the scanning state again
@@ -241,7 +245,7 @@ class DefaultSessionManagerTest {
     assertEquals(Map("pair" -> PairScanState.SCANNING), manager.retrievePairScanStates(sessionId))
 
     // Notify that the pair is now in Failed state
-    manager.pairScanStateChanged("pair", PairScanState.FAILED)
+    manager.pairScanStateChanged(pair, PairScanState.FAILED)
     assertEquals(Map("pair" -> PairScanState.FAILED), manager.retrievePairScanStates(sessionId))
   }
 
@@ -249,7 +253,7 @@ class DefaultSessionManagerTest {
   def shouldTrackStateOfPairsForImplicitScopeSession {
     // Create a session that contains all pairs
     replayAll
-    expectScanAndDifferenceForPair("pair1", "pair2")
+    expectScanAndDifferenceForPair(pair1, pair2)
     val sessionId = manager.start(SessionScope.all, listener1)
 
     // Query for the states associated. We should get back an entry for pair in "unknown"
@@ -260,7 +264,7 @@ class DefaultSessionManagerTest {
       manager.retrieveAllPairScanStates)
 
     // Notify that the pair1 is now in Up To Date state
-    manager.pairScanStateChanged("pair1", PairScanState.UP_TO_DATE)
+    manager.pairScanStateChanged(pair1, PairScanState.UP_TO_DATE)
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.UNKNOWN),
       manager.retrievePairScanStates(sessionId))
 
@@ -268,7 +272,7 @@ class DefaultSessionManagerTest {
       manager.retrieveAllPairScanStates)
 
     // Notify that the pair2 is now in Failed state
-    manager.pairScanStateChanged("pair2", PairScanState.FAILED)
+    manager.pairScanStateChanged(pair2, PairScanState.FAILED)
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.FAILED),
       manager.retrievePairScanStates(sessionId))
 
@@ -288,11 +292,11 @@ class DefaultSessionManagerTest {
   def shouldReportUnknownScanStateForRemovedPairs {
     // Create a session that contains our given pair
     replayAll
-    expectDifferenceForPair("pair")
+    expectDifferenceForPair(pair)
     val sessionId = manager.start(SessionScope.forPairs("pair"), listener1)
 
     // If we delete the pair, then the scan state should return the pair with an Unknown status
-    manager.onDeletePair("pair")
+    manager.onDeletePair(pair)
     assertEquals(Map("pair" -> PairScanState.UNKNOWN), manager.retrievePairScanStates(sessionId))
   }
 

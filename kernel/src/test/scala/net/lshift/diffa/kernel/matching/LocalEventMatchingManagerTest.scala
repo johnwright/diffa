@@ -19,53 +19,60 @@ package net.lshift.diffa.kernel.matching
 import org.junit.Test
 import org.junit.Assert._
 import org.easymock.EasyMock.{createStrictMock, expect, replay, reset}
-import net.lshift.diffa.kernel.config.{ConfigStore, Pair}
+import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Test cases for the LocalEventMatchingManager.
  */
 class LocalEventMatchingManagerTest {
-  val pair1 = new Pair(key = "pair1", matchingTimeout = 10)
-  val pair2 = new Pair(key = "pair2", matchingTimeout = 5)
 
-  val configStore = createStrictMock(classOf[ConfigStore])
-  expect(configStore.getPair("pair1")).andStubReturn(pair1)
-  expect(configStore.getPair("pair2")).andStubReturn(pair2)
-  expect(configStore.listPairs).andStubReturn(Seq(pair1,pair2))
+  val domain = "domain"
+
+  val pair1 = new DiffaPair(key = "pair1", domain = domain, matchingTimeout = 10)
+  val pair2 = new DiffaPair(key = "pair2", domain = domain, matchingTimeout = 5)
+  val pair3 = new DiffaPair(key = "pair3", domain = domain, matchingTimeout = 2)
+
+  val invalid = new DiffaPair(key = "invalid", domain = domain, matchingTimeout = 5)
+
+  val configStore = createStrictMock(classOf[InternalConfigStore])
+  expect(configStore.getPair(domain, "pair1")).andStubReturn(pair1)
+  expect(configStore.getPair(domain, "pair2")).andStubReturn(pair2)
+  expect(configStore.listPairs(domain)).andStubReturn(Seq(pair1,pair2))
   replay(configStore)
 
   val matchingManager = new LocalEventMatchingManager(configStore)
 
   @Test
   def shouldNotReturnAMatcherForAnInvalidKey {
-    assertEquals(None, matchingManager.getMatcher("invalid"))
+    assertEquals(None, matchingManager.getMatcher(invalid))
   }
 
   @Test
   def shouldReturnAMatcherForAPairKeyThatWasKnownAtStartup {
-    assertFalse(None.equals(matchingManager.getMatcher("pair1")))
+    assertFalse(None.equals(matchingManager.getMatcher(pair1)))
   }
 
   @Test
   def shouldReturnAMatcherForAPairKeyLaterIntroduced {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair(key = "pair3", matchingTimeout = 2))
+    expect(configStore.getPair(domain, "pair3")).andStubReturn(pair3)
     replay(configStore)
 
-    matchingManager.onUpdatePair("pair3")
-    assertFalse(None.equals(matchingManager.getMatcher("pair3")))
+    matchingManager.onUpdatePair(pair3)
+    assertFalse(None.equals(matchingManager.getMatcher(pair3)))
   }
 
   @Test
   def shouldNotReturnAMatcherForARemovedPair {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair(key = "pair3", matchingTimeout = 2))
+    expect(configStore.getPair(domain, "pair3")).andStubReturn(pair3)
     replay(configStore)
 
-    matchingManager.onUpdatePair("pair3")
-    matchingManager.onDeletePair("pair3")
+    matchingManager.onUpdatePair(pair3)
+    matchingManager.onDeletePair(pair3)
 
-    assertEquals(None, matchingManager.getMatcher("pair3"))
+    assertEquals(None, matchingManager.getMatcher(pair3))
   }
 
   @Test
@@ -73,20 +80,20 @@ class LocalEventMatchingManagerTest {
     val l1 = createStrictMock(classOf[MatchingStatusListener])
     matchingManager.addListener(l1)
 
-    assertTrue(matchingManager.getMatcher("pair1").get.listeners.contains(l1))
-    assertTrue(matchingManager.getMatcher("pair2").get.listeners.contains(l1))
+    assertTrue(matchingManager.getMatcher(pair1).get.listeners.contains(l1))
+    assertTrue(matchingManager.getMatcher(pair2).get.listeners.contains(l1))
   }
 
   @Test
   def shouldApplyListenersToNewMatchers {
     reset(configStore)
-    expect(configStore.getPair("pair3")).andStubReturn(new Pair(key = "pair3", matchingTimeout = 2))
+    expect(configStore.getPair(domain, "pair3")).andStubReturn(pair3)
     replay(configStore)
 
     val l1 = createStrictMock(classOf[MatchingStatusListener])
     matchingManager.addListener(l1)
 
-    matchingManager.onUpdatePair("pair3")
-    assertTrue(matchingManager.getMatcher("pair3").get.listeners.contains(l1))
+    matchingManager.onUpdatePair(pair3)
+    assertTrue(matchingManager.getMatcher(pair3).get.listeners.contains(l1))
   }
 }

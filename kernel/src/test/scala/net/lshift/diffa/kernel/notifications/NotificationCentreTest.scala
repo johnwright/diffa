@@ -21,6 +21,7 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.{PairScanState, PairScanListener, TriggeredByScan, DifferencingListener}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Test cases for the Notification Centre.
@@ -56,11 +57,13 @@ class NotificationCentreTest {
     nc.registerForPairScanEvents(l1)
     nc.registerForPairScanEvents(l2)
 
-    l1.pairScanStateChanged("p", PairScanState.SCANNING)
-    l2.pairScanStateChanged("p", PairScanState.SCANNING)
+    val pair = DiffaPair(key = "p", domain = "d")
+
+    l1.pairScanStateChanged(pair, PairScanState.SCANNING)
+    l2.pairScanStateChanged(pair, PairScanState.SCANNING)
     replay(l1, l2)
 
-    nc.pairScanStateChanged("p", PairScanState.SCANNING)
+    nc.pairScanStateChanged(pair, PairScanState.SCANNING)
     verify(l1, l2)
   }
 }

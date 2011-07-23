@@ -37,6 +37,7 @@ import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import org.junit.Assume._
 import java.util.HashMap
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -60,8 +61,8 @@ abstract class AbstractDataDrivenPolicyTest {
   val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])
   val stores = new VersionCorrelationStoreFactory {
-    def apply(pairKey: String) = store
-    def remove(pairKey: String) {}
+    def apply(pair: DiffaPair) = store
+    def remove(pair: DiffaPair) {}
     def close {}
   }
 
@@ -92,9 +93,9 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
+    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.replayUnmatchedDifferences(scenario.pair, listener)
 
     verifyAll
   }
@@ -126,9 +127,9 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
+    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.replayUnmatchedDifferences(scenario.pair, listener)
 
     verifyAll
   }
@@ -169,9 +170,9 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
+    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.replayUnmatchedDifferences(scenario.pair, listener)
 
 
 
@@ -214,9 +215,9 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair.key, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair.key, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair.key, listener)
+    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.replayUnmatchedDifferences(scenario.pair, listener)
 
     verifyAll
   }
@@ -227,7 +228,7 @@ abstract class AbstractDataDrivenPolicyTest {
   //
 
   protected def setupStubs(scenario:Scenario) {
-    expect(configStore.getPair(scenario.pair.key)).andReturn(scenario.pair).anyTimes
+    expect(configStore.getPair(scenario.pair.domain, scenario.pair.key)).andReturn(scenario.pair).anyTimes
   }
 
   protected def expectUnmatchedVersionCheck(scenario:Scenario) = {
@@ -271,7 +272,7 @@ abstract class AbstractDataDrivenPolicyTest {
       val downstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
 
       expect(writer.storeUpstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
-        andReturn(Correlation(null, pair.key, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, downstreamVsnToUse, downstreamVsnToUse, matched))
+        andReturn(new Correlation(null, pair, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, downstreamVsnToUse, downstreamVsnToUse, matched))
     })
   }
   protected def expectDownstreamEntityStore(pair:Pair, entities:Seq[Vsn], matched:Boolean) {
@@ -279,7 +280,7 @@ abstract class AbstractDataDrivenPolicyTest {
       val upstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
 
       expect(writer.storeDownstreamVersion(VersionID(pair.key, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
-        andReturn(Correlation(null, pair.key, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, upstreamVsnToUse, v.vsn, v.vsn, matched))
+        andReturn(new Correlation(null, pair, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, upstreamVsnToUse, v.vsn, v.vsn, matched))
     })
   }
 
@@ -659,7 +660,7 @@ object AbstractDataDrivenPolicyTest {
   // Type Definitions
   //
 
-  case class Scenario(pair:Pair, tx:Tx*)
+  case class Scenario(pair:DiffaPair, tx:Tx*)
 
   abstract class Tx {
     def constraints:Seq[ScanConstraint]

@@ -30,18 +30,18 @@ import net.lshift.diffa.kernel.participants._
 import collection.mutable.{ListBuffer, HashMap, HashSet}
 import net.lshift.diffa.kernel.differencing._
 import org.apache.lucene.document._
-import net.lshift.diffa.kernel.config.ConfigStore
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import net.lshift.diffa.participant.scanning._
 import org.joda.time.{DateTime, LocalDate, DateTimeZone}
 import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.{Domain, ConfigStore, Pair => DiffaPair}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
  * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
  * of pair attributes.
  */
-class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, configStore:InternalConfigStore)
+class LuceneVersionCorrelationStore(val pair: DiffaPair, index:Directory, configStore:InternalConfigStore)
     extends VersionCorrelationStore
     with Closeable {
 
@@ -76,7 +76,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   def retrieveCurrentCorrelation(id:VersionID) = {
     retrieveCurrentDoc(index, id) match {
       case None => None
-      case Some(doc) => Some(docToCorrelation(doc, id.pairKey))
+      case Some(doc) => Some(docToCorrelation(doc, id))
     }
   }
 
@@ -165,7 +165,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     def allCorrelations(searcher:IndexSearcher) = {
       docIds.map(id => {
         val doc = searcher.doc(id)
-        docToCorrelation(doc, pairKey)
+        docToCorrelation(doc, pair)
       })
     }
 
@@ -205,9 +205,13 @@ object LuceneVersionCorrelationStore {
     }
   }
 
-  def docToCorrelation(doc:Document, pairKey: String) = {
+  def docToCorrelation(doc:Document, pair:DiffaPair) : Correlation = docToCorrelation(doc,pair.key,pair.domain)
+  def docToCorrelation(doc:Document, id:VersionID) : Correlation = docToCorrelation(doc,id.pairKey,id.domain)
+
+  def docToCorrelation(doc:Document, pairKey:String, domain:String) = {
     Correlation(
-      pairing = pairKey, id = doc.get("id"),
+      pairing = pairKey, domain = domain,
+      id = doc.get("id"),
       upstreamAttributes = findAttributes(doc, "up."),
       downstreamAttributes = findAttributes(doc, "down."),
       lastUpdate = parseDate(doc.get("lastUpdated")),
@@ -424,7 +428,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
     prepareUpdate(id, doc)
 
-    docToCorrelation(doc, id.pairKey)
+    docToCorrelation(doc, id)
   }
 
   private def doClearAttributes(id:VersionID, f:Document => Boolean) = {
@@ -437,7 +441,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
         retrieveCurrentDoc(index, id)
 
     currentDoc match {
-      case None => Correlation.asDeleted(id.pairKey, id.id, new DateTime)
+      case None => Correlation.asDeleted(id, new DateTime)
       case Some(doc) => {
         if (f(doc)) {
           // We want to keep the document. Update match status and write it out
@@ -445,12 +449,12 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
           prepareUpdate(id, doc)
 
-          docToCorrelation(doc, id.pairKey)
+          docToCorrelation(doc, id)
         } else {
           // We'll just delete the doc if it doesn't have an upstream
           prepareDelete(id)
 
-          Correlation.asDeleted(id.pairKey, id.id, new DateTime)
+          Correlation.asDeleted(id, new DateTime)
         }
       }
     }

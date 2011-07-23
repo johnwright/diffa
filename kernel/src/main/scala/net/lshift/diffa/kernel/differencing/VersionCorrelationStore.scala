@@ -21,6 +21,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.participant.scanning.ScanConstraint
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Store used for caching version correlation information between a pair of participants.
@@ -35,7 +36,7 @@ trait VersionCorrelationStore extends Closeable {
   /**
    * The unique key for the upstream and downstream participant pair
    */
-  val pairKey: String
+  val pair: DiffaPair
 
   /**
    * Opens a new writer, giving access to write operations on the store.
@@ -146,9 +147,9 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
  */
 trait VersionCorrelationStoreFactory extends Closeable {
 
-  def apply(pairKey: String): VersionCorrelationStore
+  def apply(pair: DiffaPair): VersionCorrelationStore
 
-  def remove(pairKey: String): Unit
+  def remove(pair: DiffaPair): Unit
 }
 
 abstract class TypedAttribute { def value:String }

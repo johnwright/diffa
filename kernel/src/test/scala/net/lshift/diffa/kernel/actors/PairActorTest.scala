@@ -81,7 +81,7 @@ class PairActorTest {
   replay(store)
 
   val stores = createStrictMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
-  expect(stores.apply(pairKey)).andReturn(store)
+  expect(stores.apply(pair)).andReturn(store)
   replay(stores)
 
   val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])

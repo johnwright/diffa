@@ -102,7 +102,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
   private def generateDifferenceEvents(pair:Pair, l:DifferencingListener, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
-    stores(pair.key).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
+    stores(pair).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
       corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
   }
 
@@ -147,7 +147,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair, "Scanning aggregates for %s with (constraints=%s, bucketing=%s)".format(endpoint.name, constraints, bucketing))
 
       val remoteDigests = participant.scan(constraints, bucketing)
-      val localDigests = getAggregates(pair.key, bucketing, constraints)
+      val localDigests = getAggregates(pair, bucketing, constraints)
 
       if (log.isTraceEnabled) {
         log.trace("Bucketing: %s".format(bucketing))
@@ -175,7 +175,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       diagnostics.logPairEvent(DiagnosticLevel.TRACE, pair, "Scanning entities for %s with (constraints=%s)".format(endpoint.name, constraints))
 
       val remoteVersions = participant.scan(constraints, Seq())
-      val cachedVersions = getEntities(pair.key, constraints)
+      val cachedVersions = getEntities(pair, constraints)
 
       if (log.isTraceEnabled) {
         log.trace("Remote versions: %s".format(remoteVersions))
@@ -183,7 +183,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
 
       DigestDifferencingUtils.differenceEntities(endpoint.categories.toMap, remoteVersions, cachedVersions, constraints)
-        .foreach(handleMismatch(pair.key, writer, _, listener))
+        .foreach(handleMismatch(pair, writer, _, listener))
     }
 
     def checkForCancellation(handle:FeedbackHandle, pair:Pair) = {
@@ -204,32 +204,32 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
     }
 
-    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
-    def getEntities(pairKey:String, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
-    def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
+    def getAggregates(pair:DiffaPair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
+    def getEntities(pair:DiffaPair, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
+    def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
 
   protected class UpstreamScanStrategy extends ScanStrategy {
 
-    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
+    def getAggregates(pair:DiffaPair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
-      stores(pairKey).queryUpstreams(constraints, aggregator.collectUpstream)
+      stores(pair).queryUpstreams(constraints, aggregator.collectUpstream)
       aggregator.digests
     }
 
-    def getEntities(pairKey:String, constraints:Seq[ScanConstraint]) = {
-      stores(pairKey).queryUpstreams(constraints).map(x => {
+    def getEntities(pair:DiffaPair, constraints:Seq[ScanConstraint]) = {
+      stores(pair).queryUpstreams(constraints).map(x => {
         ScanResultEntry.forEntity(x.id, x.upstreamVsn, x.lastUpdate, mapAsJavaMap(x.upstreamAttributes))
       })
     }
 
-    def handleMismatch(pairKey: String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pairKey, id), attributes, lastUpdate, usVsn))
+            handleUpdatedCorrelation(writer.storeUpstreamVersion(new VersionID(pair, id), attributes, lastUpdate, usVsn))
           } else {
-            handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pairKey, id)))
+            handleUpdatedCorrelation(writer.clearUpstreamVersion(new VersionID(pair, id)))
           }
       }
     }
