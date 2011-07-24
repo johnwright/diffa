@@ -56,6 +56,7 @@
 
   <class name="Endpoint" table="endpoint" abstract="false">
     <id name="name" type="string"/>
+    <many-to-one name="domain" class="Domain" not-null="true" lazy="false" fetch="join"/>
     <property name="scanUrl" column="scan_url" type="string" not-null="false" unique="false"/>
     <property name="contentRetrievalUrl" column="content_retrieval_url" type="string" not-null="false" unique="false"/>
     <property name="versionGenerationUrl" column="version_generation_url" type="string" not-null="false" unique="false"/>
@@ -73,6 +74,7 @@
     <id name="key" type="string" column="pair_key"/>
     <many-to-one name="upstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
     <many-to-one name="downstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
+    <many-to-one name="domain" class="Domain" not-null="true" lazy="false" fetch="join"/>
     <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false"/>
     <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false"/>
     <property name="scanCronSpec" type="string" column="scan_cron_spec" not-null="false"/>
@@ -83,12 +85,18 @@
   </class>
 
   <class name="User" table="users" abstract="false">
-    <id name="name" type="string"/>
+    <composite-id mapped="true">
+      <key-property name="name" type="string" column="name" />
+      <key-many-to-one name="domain" class="Domain" column="pair_key" />
+    </composite-id>
     <property name="email" type="string" />
   </class>
 
   <class name="ConfigOption" table="config_options" abstract="false">
-    <id name="key" type="string" column="opt_key" />
+    <composite-id mapped="true">
+      <key-property name="key" type="string" column="opt_key" />
+      <key-many-to-one name="domain" class="Domain" column="pair_key" />
+    </composite-id>
     <property name="value" type="string" column="opt_val" />
     <property name="isInternal" type="boolean" column="is_internal" />
   </class>
@@ -96,7 +104,8 @@
   <class name="RepairAction" table="repair_actions" abstract="false">
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
-      <key-property name="pairKey" type="string" column="pair_key" />
+      <key-many-to-one name="pairKey" class="Pair" column="pair_key" />
+      <key-many-to-one name="domain" class="Domain" column="domain" />
     </composite-id>
     <property name="url" type="string" column="url" />
     <property name="scope" type="string" column="scope" />
@@ -105,7 +114,8 @@
   <class name="Escalation" table="escalations" abstract="false">
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
-      <key-property name="pairKey" type="string" column="pair_key" />
+      <key-many-to-one name="pairKey" class="Pair" column="pair_key" />
+      <key-many-to-one name="domain" class="Domain" column="pair_key" />
     </composite-id>
     <property name="action" type="string" column="action" not-null="true" />
     <property name="actionType" type="string" column="action_type" not-null="true"/>

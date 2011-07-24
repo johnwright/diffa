@@ -230,14 +230,15 @@ case class Domain (
 
 
 case class RepairAction(
-  @BeanProperty var name: String,
-  @BeanProperty var url: String,
-  @BeanProperty var scope: String,
-  @BeanProperty var pairKey: String
+  @BeanProperty var name: String = null,
+  @BeanProperty var url: String = null,
+  @BeanProperty var scope: String = null,
+  @BeanProperty var pairKey: String = null,
+  @BeanProperty var domain: String = null
 ) {
   import RepairAction._
 
-  def this() = this(null, null, null, null)
+  def this() = this(name = null)
 
   def validate(path:String = null) {
     val actionPath = ValidationUtil.buildPath(
@@ -260,18 +261,19 @@ object RepairAction {
  * Defines a step for escalating a detected difference.
  */
 case class Escalation (
-  @BeanProperty var name: String,
-  @BeanProperty var pairKey: String,
-  @BeanProperty var action: String,
-  @BeanProperty var actionType: String,
-  @BeanProperty var event: String,
-  @BeanProperty var origin: String
+  @BeanProperty var name: String = null,
+  @BeanProperty var pairKey: String = null,
+  @BeanProperty var domain: String = null,
+  @BeanProperty var action: String = null,
+  @BeanProperty var actionType: String = null,
+  @BeanProperty var event: String = null,
+  @BeanProperty var origin: String = null
 ) {
   import EscalationEvent._
   import EscalationOrigin._
   import EscalationActionType._
 
-  def this() = this(null, null, null, null, null, null)
+  def this() = this(name = null)
 
   def validate(path:String = null) {
     val escalationPath = ValidationUtil.buildPath(
@@ -319,17 +321,19 @@ object EscalationActionType {
   val REPAIR = "repair"
 }
 
-case class User(@BeanProperty var name: String,
-                @BeanProperty var email: String) {
-  def this() = this(null, null)
+case class User(@BeanProperty var name: String = null,
+                @BeanProperty var domain: String = null,
+                @BeanProperty var email: String = null) {
+  def this() = this(name = null)
 
   def validate(path:String = null) {
     // Nothing to validate
   }
 }
 
-case class ConfigOption(@BeanProperty var key:String,
-                        @BeanProperty var value:String,
-                        @BeanProperty var isInternal:Boolean) {
-  def this() = this(null, null, false)
+case class ConfigOption(@BeanProperty var key:String = null,
+                        @BeanProperty var value:String = null,
+                        @BeanProperty var domain:String = null,
+                        @BeanProperty var isInternal:Boolean = false) {
+  def this() = this(key = null)
 }

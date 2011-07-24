@@ -44,7 +44,7 @@ class DocExamplesFactory {
 
   val result = InvocationResult(code = "200", output = "OK")
 
-  val user = User(name = "joe.public", "joe.public@acme.com")
+  val user = User(name = "joe.public", email = "joe.public@acme.com")
 
   def getExamples: java.util.Map[Class[_], Object] = {
     val map = new java.util.HashMap[Class[_], Object]
