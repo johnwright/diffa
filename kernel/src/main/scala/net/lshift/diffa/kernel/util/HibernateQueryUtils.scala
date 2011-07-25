@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.util
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.{NonUniqueResultException, Query, Session, SessionFactory}
 import org.slf4j.{LoggerFactory, Logger}
-// for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.config.ConfigOption
 import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
 import scala.collection.Map
 
@@ -78,4 +78,31 @@ trait HibernateQueryUtils {
       }
     }
   }
+
+  /**
+   * This is un-protected call to set a configuration option.
+   * It is up to the calling context to establish this is authorized.
+   */
+  def writeConfigOption(domain:String, key:String, value:String) = sessionFactory.withSession(s => {
+    val co = s.get(classOf[ConfigOption], key) match {
+      case null =>
+        new ConfigOption(key = key, value = value)
+      case current:ConfigOption =>  {
+        current.value = value
+        current
+      }
+    }
+    s.saveOrUpdate(co)
+  })
+
+  /**
+   * This is un-protected call to clear a configuration option.
+   * It is up to the calling context to establish this is authorized.
+   */
+  def deleteConfigOption(domain:String, key:String) = sessionFactory.withSession(s => {
+    s.get(classOf[ConfigOption], key) match {
+      case null =>
+      case current:ConfigOption =>  s.delete(current)
+    }
+  })
 }

@@ -19,8 +19,8 @@ package net.lshift.diffa.kernel.matching
 import org.junit.Test
 import org.junit.Assert._
 import org.easymock.EasyMock.{createStrictMock, expect, replay, reset}
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * Test cases for the LocalEventMatchingManager.
@@ -35,13 +35,14 @@ class LocalEventMatchingManagerTest {
 
   val invalid = new DiffaPair(key = "invalid", domain = domain, matchingTimeout = 5)
 
-  val configStore = createStrictMock(classOf[InternalConfigStore])
+  val configStore = createStrictMock(classOf[DomainConfigStore])
+  val systemConfigStore = createStrictMock(classOf[SystemConfigStore])
   expect(configStore.getPair(domain, "pair1")).andStubReturn(pair1)
   expect(configStore.getPair(domain, "pair2")).andStubReturn(pair2)
   expect(configStore.listPairs(domain)).andStubReturn(Seq(pair1,pair2))
   replay(configStore)
 
-  val matchingManager = new LocalEventMatchingManager(configStore)
+  val matchingManager = new LocalEventMatchingManager(systemConfigStore)
 
   @Test
   def shouldNotReturnAMatcherForAnInvalidKey {

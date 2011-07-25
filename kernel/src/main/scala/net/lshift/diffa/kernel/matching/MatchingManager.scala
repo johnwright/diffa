@@ -20,7 +20,7 @@ import java.io.Closeable
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
- * Keeps track of event matchers and updates them upon receiving a notification of changes in ConfigStore.
+ * Keeps track of event matchers and updates them upon receiving a notification of changes in DomainConfigStore.
  */
 trait MatchingManager extends Closeable {
   /**

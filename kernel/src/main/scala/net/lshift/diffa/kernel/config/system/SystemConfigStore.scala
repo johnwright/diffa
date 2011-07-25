@@ -1,3 +1,5 @@
+package net.lshift.diffa.kernel.config.system
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -14,18 +16,16 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.config.internal
-
-import net.lshift.diffa.kernel.config.{Endpoint, Domain, ConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Endpoint, Domain, Pair => DiffaPair}
 
 /**
- * This trait is only accessible from internally trusted components
+ * This provides configuration options for the entire system and hence should only be
+ * accessible to internally trusted components or external users with elevated privileges
  */
-trait InternalConfigStore extends ConfigStore {
+trait SystemConfigStore {
 
   def createOrUpdateDomain(domain: Domain) : Unit
   def deleteDomain(name: String): Unit
-  def getDomain(name: String): Domain
   def listDomains : Seq[Domain]
   def getPairsForEndpoint(epName:String) : Seq[DiffaPair]
 
@@ -34,17 +34,18 @@ trait InternalConfigStore extends ConfigStore {
    * This option is marked as internal will not be returned by the allConfigOptions method. This allows
    * properties to be prevented from being shown in the user-visible system configuration views.
    */
-  def setInternalConfigOption(key:String, value:String)
-  def maybeConfigOption(key:String) : Option[String]
+  def setSystemConfigOption(key:String, value:String)
+  def clearSystemConfigOption(key:String)
+  def maybeSystemConfigOption(key:String) : Option[String]
 
   /**
    * Enumerate all pairs of all domains
    */
-  def listPairs : Seq[DiffaPair] = listDomains.flatMap(d => listPairs(d.name))
+  def listPairs : Seq[DiffaPair]//= listDomains.flatMap(d => listPairs(d.name))
 
   /**
    * Enumerate all pairs of all domains
    */
-  def listEndpoints : Seq[Endpoint] = listDomains.flatMap(d => listEndpoints(d.name))
+  def listEndpoints : Seq[Endpoint]// = listDomains.flatMap(d => listEndpoints(d.name))
 
 }

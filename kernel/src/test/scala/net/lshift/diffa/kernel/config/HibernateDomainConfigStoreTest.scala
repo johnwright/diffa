@@ -25,9 +25,11 @@ import org.junit.{Test, Before}
 import scala.collection.Map
 import scala.collection.JavaConversions._
 import org.joda.time.DateTime
+import collection.mutable.HashSet
+import scala.collection.JavaConversions._
 
-class HibernateConfigStoreTest {
-  private val configStore: ConfigStore = HibernateConfigStoreTest.configStore
+class HibernateDomainConfigStoreTest {
+  private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   val dateCategoryName = "bizDate"
@@ -71,25 +73,25 @@ class HibernateConfigStoreTest {
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
   val pairRenamed = "TEST_PAIR_RENAMED"
 
-  val TEST_USER = User("foo","foo@bar.com")
+  val TEST_USER = User("foo", HashSet(Domain(name = "domain")), "foo@bar.com")
 
   def declareAll() {
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
-    configStore.createOrUpdateEndpoint(domainName, upstream2)
-    configStore.createOrUpdateEndpoint(domainName, downstream1)
-    configStore.createOrUpdateEndpoint(domainName, downstream2)
-    //configStore.createOrUpdateDomain(domain)
-    configStore.createOrUpdatePair(domainName, pairDef)
-    configStore.createOrUpdateRepairAction(domainName, repairAction)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream2)
+    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, downstream2)
+    //domainConfigStore.createOrUpdateDomain(domain)
+    domainConfigStore.createOrUpdatePair(domainName, pairDef)
+    domainConfigStore.createOrUpdateRepairAction(domainName, repairAction)
   }
 
   @Before
   def setUp: Unit = {
-    HibernateConfigStoreTest.clearAllConfig
+    HibernateDomainConfigStoreTest.clearAllConfig
   }
 
   def exists (e:Endpoint, count:Int, offset:Int) : Unit = {
-    val endpoints = configStore.listEndpoints(domainName)
+    val endpoints = domainConfigStore.listEndpoints(domainName)
     assertEquals(count, endpoints.length)
     assertEquals(e.name, endpoints(offset).name)
     assertEquals(e.inboundUrl, endpoints(offset).inboundUrl)
@@ -103,17 +105,20 @@ class HibernateConfigStoreTest {
 
   @Test
   def testDeclare: Unit = {
+    // declare the domain
+    // TODO
+
     // Declare endpoints
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     exists(upstream1, 1)
 
-    configStore.createOrUpdateEndpoint(domainName, downstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
     exists(downstream1, 2)
 
     // Declare a pair
-    configStore.createOrUpdatePair(domainName, pairDef)
+    domainConfigStore.createOrUpdatePair(domainName, pairDef)
 
-    val retrPair = configStore.getPair(domainName, pairDef.pairKey)
+    val retrPair = domainConfigStore.getPair(domainName, pairDef.pairKey)
     assertEquals(pairKey, retrPair.key)
     assertEquals(upstream1.name, retrPair.upstream.name)
     assertEquals(downstream1.name, retrPair.downstream.name)
@@ -121,8 +126,8 @@ class HibernateConfigStoreTest {
     assertEquals(matchingTimeout, retrPair.matchingTimeout)
 
     // Declare a repair action
-    configStore.createOrUpdateRepairAction(domainName, repairAction)
-    val retrActions = configStore.listRepairActionsForPair(domainName, retrPair)
+    domainConfigStore.createOrUpdateRepairAction(domainName, repairAction)
+    val retrActions = domainConfigStore.listRepairActionsForPair(domainName, retrPair)
     assertEquals(1, retrActions.length)
     assertEquals(Some(pairKey), retrActions.headOption.map(_.pairKey))
   }
@@ -130,16 +135,16 @@ class HibernateConfigStoreTest {
   @Test
   def testPairsAreValidatedBeforeUpdate() {
     // Declare endpoints
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     exists(upstream1, 1)
 
-    configStore.createOrUpdateEndpoint(domainName, downstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
     exists(downstream1, 2)
 
     pairDef.scanCronSpec = "invalid"
 
     try {
-      configStore.createOrUpdatePair(domainName, pairDef)
+      domainConfigStore.createOrUpdatePair(domainName, pairDef)
       fail("Should have thrown ConfigValidationException")
     } catch {
       case ex:ConfigValidationException =>
@@ -149,10 +154,10 @@ class HibernateConfigStoreTest {
 
   @Test
   def testEndpointsWithSameScanURL {
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
 
     upstream2.scanUrl = upstream1.scanUrl
-    configStore.createOrUpdateEndpoint(domainName, upstream2)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream2)
 
     exists(upstream1, 2, 0)
     exists(upstream2, 2, 1)
@@ -162,18 +167,18 @@ class HibernateConfigStoreTest {
   @Test
   def testUpdateEndpoint: Unit = {
     // Create endpoint
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     exists(upstream1, 1)
 
-    configStore.deleteEndpoint(domainName, upstream1.name)
+    domainConfigStore.deleteEndpoint(domainName, upstream1.name)
     expectMissingObject("endpoint") {
-      configStore.getEndpoint(domainName, upstream1.name)
+      domainConfigStore.getEndpoint(domainName, upstream1.name)
     }
         
     // Change its name
-    configStore.createOrUpdateEndpoint(domainName, Endpoint(name = upstreamRenamed, scanUrl = upstream1.scanUrl, contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
+    domainConfigStore.createOrUpdateEndpoint(domainName, Endpoint(name = upstreamRenamed, scanUrl = upstream1.scanUrl, contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
 
-    val retrieved = configStore.getEndpoint(domainName, upstreamRenamed)
+    val retrieved = domainConfigStore.getEndpoint(domainName, upstreamRenamed)
     assertEquals(upstreamRenamed, retrieved.name)
   }
 
@@ -182,15 +187,15 @@ class HibernateConfigStoreTest {
     declareAll
 
     // Rename, change a few fields and swap endpoints by deleting and creating new
-    configStore.deletePair(domainName, pairKey)
+    domainConfigStore.deletePair(domainName, pairKey)
     expectMissingObject("pair") {
-      configStore.getPair(domainName, pairKey)
+      domainConfigStore.getPair(domainName, pairKey)
     }
 
-    configStore.createOrUpdatePair(domainName, new PairDef(pairRenamed, domainName,  versionPolicyName2, Pair.NO_MATCHING,
+    domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairRenamed, domainName,  versionPolicyName2, Pair.NO_MATCHING,
       downstream1.name, upstream1.name, "0 0 * * * ?"))
     
-    val retrieved = configStore.getPair(domainName, pairRenamed)
+    val retrieved = domainConfigStore.getPair(domainName, pairRenamed)
     assertEquals(pairRenamed, retrieved.key)
     assertEquals(downstream1.name, retrieved.upstream.name) // check endpoints are swapped
     assertEquals(upstream1.name, retrieved.downstream.name)
@@ -203,13 +208,13 @@ class HibernateConfigStoreTest {
   def testDeleteEndpointCascade: Unit = {
     declareAll
 
-    assertEquals(upstream1.name, configStore.getEndpoint(domainName, upstream1.name).name)
-    configStore.deleteEndpoint(domainName, upstream1.name)
+    assertEquals(upstream1.name, domainConfigStore.getEndpoint(domainName, upstream1.name).name)
+    domainConfigStore.deleteEndpoint(domainName, upstream1.name)
     expectMissingObject("endpoint") {
-      configStore.getEndpoint(domainName, upstream1.name)
+      domainConfigStore.getEndpoint(domainName, upstream1.name)
     }
     expectMissingObject("pair") {
-      configStore.getPair(domainName, pairKey) // delete should cascade
+      domainConfigStore.getPair(domainName, pairKey) // delete should cascade
     }
   }
 
@@ -217,72 +222,72 @@ class HibernateConfigStoreTest {
   def testDeletePair: Unit = {
     declareAll
 
-    assertEquals(pairKey, configStore.getPair(domainName, pairKey).key)
-    configStore.deletePair(domainName, pairKey)
+    assertEquals(pairKey, domainConfigStore.getPair(domainName, pairKey).key)
+    domainConfigStore.deletePair(domainName, pairKey)
     expectMissingObject("pair") {
-      configStore.getPair(domainName, pairKey)
+      domainConfigStore.getPair(domainName, pairKey)
     }
   }
 
   @Test
   def testDeletePairCascade {
     declareAll()
-    assertEquals(Some(repairAction.name), configStore.listRepairActions(domainName).headOption.map(_.name))
-    configStore.deletePair(domainName, pairKey)
+    assertEquals(Some(repairAction.name), domainConfigStore.listRepairActions(domainName).headOption.map(_.name))
+    domainConfigStore.deletePair(domainName, pairKey)
     expectMissingObject("repair action") {
-      configStore.getRepairAction(domainName, repairAction.name, pairKey)
+      domainConfigStore.getRepairAction(domainName, repairAction.name, pairKey)
     }
   }
 
   @Test
   def testDeleteRepairAction {
     declareAll
-    assertEquals(Some(repairAction.name), configStore.listRepairActions(domainName).headOption.map(_.name))
+    assertEquals(Some(repairAction.name), domainConfigStore.listRepairActions(domainName).headOption.map(_.name))
 
-    configStore.deleteRepairAction(domainName, repairAction.name, pairKey)
+    domainConfigStore.deleteRepairAction(domainName, repairAction.name, pairKey)
     expectMissingObject("repair action") {
-      configStore.getRepairAction(domainName, repairAction.name, pairKey)
+      domainConfigStore.getRepairAction(domainName, repairAction.name, pairKey)
     }
   }
 
   @Test
   def testDeleteMissing: Unit = {
     expectMissingObject("endpoint") {
-      configStore.deleteEndpoint(domainName, "MISSING_ENDPOINT")
+      domainConfigStore.deleteEndpoint(domainName, "MISSING_ENDPOINT")
     }
 
     expectMissingObject("pair") {
-      configStore.deletePair(domainName, "MISSING_PAIR")
+      domainConfigStore.deletePair(domainName, "MISSING_PAIR")
     }
   }
 
   @Test
   def testDeclarePairNullConstraints: Unit = {
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
-    configStore.createOrUpdateEndpoint(domainName, downstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
 
       // TODO: We should probably get an exception indicating that the constraint was null, not that the object
       //       we're linking to is missing.
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName1, Pair.NO_MATCHING, null, downstream1.name))
+      domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName1, Pair.NO_MATCHING, null, downstream1.name))
     }
     expectMissingObject("endpoint") {
-      configStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null))
+      domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null))
     }
   }
 
   @Test
   def testRedeclareEndpointSucceeds = {
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
-    configStore.createOrUpdateEndpoint(domainName, Endpoint(name = upstream1.name, scanUrl = "DIFFERENT_URL", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
-    assertEquals(1, configStore.listEndpoints(domainName).length)
-    assertEquals("DIFFERENT_URL", configStore.getEndpoint(domainName, upstream1.name).scanUrl)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, Endpoint(name = upstream1.name, scanUrl = "DIFFERENT_URL", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json"))
+    assertEquals(1, domainConfigStore.listEndpoints(domainName).length)
+    assertEquals("DIFFERENT_URL", domainConfigStore.getEndpoint(domainName, upstream1.name).scanUrl)
   }
 
   @Test
   def rangeCategory = {
     declareAll
-    val pair = configStore.getPair(domainName, pairKey)
+    val pair = domainConfigStore.getPair(domainName, pairKey)
     assertNotNull(pair.upstream.categories)
     assertNotNull(pair.downstream.categories)
     val us_descriptor = pair.upstream.categories(dateCategoryName).asInstanceOf[RangeCategoryDescriptor]
@@ -296,7 +301,7 @@ class HibernateConfigStoreTest {
   @Test
   def setCategory = {
     declareAll
-    val endpoint = configStore.getEndpoint(domainName, upstream2.name)
+    val endpoint = domainConfigStore.getEndpoint(domainName, upstream2.name)
     assertNotNull(endpoint.categories)
     val descriptor = endpoint.categories(dateCategoryName).asInstanceOf[SetCategoryDescriptor]
     assertEquals(setCategoryValues, descriptor.values.toSet)
@@ -305,7 +310,7 @@ class HibernateConfigStoreTest {
   @Test
   def prefixCategory = {
     declareAll
-    val endpoint = configStore.getEndpoint(domainName, downstream2.name)
+    val endpoint = domainConfigStore.getEndpoint(domainName, downstream2.name)
     assertNotNull(endpoint.categories)
     val descriptor = endpoint.categories(stringCategoryName).asInstanceOf[PrefixCategoryDescriptor]
     assertEquals(1, descriptor.prefixLength)
@@ -315,71 +320,71 @@ class HibernateConfigStoreTest {
 
   @Test
   def testUser = {
-    configStore.createOrUpdateUser(domainName, TEST_USER)
-    val result = configStore.listUsers(domainName)
+    domainConfigStore.createOrUpdateUser(domainName, TEST_USER)
+    val result = domainConfigStore.listUsers(domainName)
     assertEquals(1, result.length)
     assertEquals(TEST_USER, result(0))
-    val updated = User(TEST_USER.name, "somethingelse@bar.com")
-    configStore.createOrUpdateUser(domainName, updated)
-    val user = configStore.getUser(domainName, TEST_USER.name)
+    val updated = User(TEST_USER.name, HashSet(Domain(name = "domain")), "somethingelse@bar.com")
+    domainConfigStore.createOrUpdateUser(domainName, updated)
+    val user = domainConfigStore.getUser(domainName, TEST_USER.name)
     assertEquals(updated, user)
-    configStore.deleteUser(domainName, TEST_USER.name)
-    val users = configStore.listUsers(domainName)
+    domainConfigStore.deleteUser(domainName, TEST_USER.name)
+    val users = domainConfigStore.listUsers(domainName)
     assertEquals(0, users.length)    
   }
 
   @Test
   def testApplyingDefaultConfigOption = {
-    assertEquals("defaultVal", configStore.configOptionOrDefault(domainName,"some.option", "defaultVal"))
+    assertEquals("defaultVal", domainConfigStore.configOptionOrDefault(domainName,"some.option", "defaultVal"))
   }
 
   @Test
   def testReturningNoneForConfigOption {
-    assertEquals(None, configStore.maybeConfigOption(domainName, "some.option"))
+    assertEquals(None, domainConfigStore.maybeConfigOption(domainName, "some.option"))
   }
 
   @Test
   def testRetrievingConfigOption = {
-    configStore.setConfigOption(domainName, "some.option2", "storedVal")
-    assertEquals("storedVal", configStore.configOptionOrDefault(domainName, "some.option2", "defaultVal"))
-    assertEquals(Some("storedVal"), configStore.maybeConfigOption(domainName, "some.option2"))
+    domainConfigStore.setConfigOption(domainName, "some.option2", "storedVal")
+    assertEquals("storedVal", domainConfigStore.configOptionOrDefault(domainName, "some.option2", "defaultVal"))
+    assertEquals(Some("storedVal"), domainConfigStore.maybeConfigOption(domainName, "some.option2"))
   }
 
   @Test
   def testUpdatingConfigOption = {
-    configStore.setConfigOption(domainName, "some.option3", "storedVal")
-    configStore.setConfigOption(domainName, "some.option3", "storedVal2")
-    assertEquals("storedVal2", configStore.configOptionOrDefault(domainName, "some.option3", "defaultVal"))
-    assertEquals(Some("storedVal2"), configStore.maybeConfigOption(domainName, "some.option3"))
+    domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")
+    domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal2")
+    assertEquals("storedVal2", domainConfigStore.configOptionOrDefault(domainName, "some.option3", "defaultVal"))
+    assertEquals(Some("storedVal2"), domainConfigStore.maybeConfigOption(domainName, "some.option3"))
   }
 
   @Test
   def testRemovingConfigOption = {
-    configStore.setConfigOption(domainName, "some.option3", "storedVal")
-    configStore.clearConfigOption(domainName, "some.option3")
-    assertEquals("defaultVal", configStore.configOptionOrDefault(domainName, "some.option3", "defaultVal"))
-    assertEquals(None, configStore.maybeConfigOption(domainName, "some.option3"))
+    domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")
+    domainConfigStore.clearConfigOption(domainName, "some.option3")
+    assertEquals("defaultVal", domainConfigStore.configOptionOrDefault(domainName, "some.option3", "defaultVal"))
+    assertEquals(None, domainConfigStore.maybeConfigOption(domainName, "some.option3"))
   }
 
   @Test
   def testRetrievingAllOptions = {
-    configStore.setConfigOption(domainName, "some.option3", "storedVal")
-    configStore.setConfigOption(domainName, "some.option4", "storedVal3")
-    assertEquals(Map("some.option3" -> "storedVal", "some.option4" -> "storedVal3"), configStore.allConfigOptions(domainName))
+    domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")
+    domainConfigStore.setConfigOption(domainName, "some.option4", "storedVal3")
+    assertEquals(Map("some.option3" -> "storedVal", "some.option4" -> "storedVal3"), domainConfigStore.allConfigOptions(domainName))
   }
 
   @Test
   def testRetrievingOptionsIgnoresInternalOptions = {
-    configStore.setConfigOption(domainName, "some.option3", "storedVal")
-    configStore.setConfigOption(domainName, "some.option4", "storedVal3")
-    assertEquals(Map("some.option3" -> "storedVal"), configStore.allConfigOptions(domainName))
+    domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")
+    domainConfigStore.setConfigOption(domainName, "some.option4", "storedVal3")
+    assertEquals(Map("some.option3" -> "storedVal"), domainConfigStore.allConfigOptions(domainName))
   }
 
   @Test
   def testOptionCanBeUpdatedToBeInternal = {
-    configStore.setConfigOption(domainName, "some.option3", "storedVal")
-    configStore.setConfigOption(domainName, "some.option3", "storedVal3")
-    assertEquals(Map(), configStore.allConfigOptions(domainName))
+    domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")
+    domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal3")
+    assertEquals(Map(), domainConfigStore.allConfigOptions(domainName))
   }
 
   private def expectMissingObject(name:String)(f: => Unit) {
@@ -403,12 +408,12 @@ class HibernateConfigStoreTest {
   }
 }
 
-object HibernateConfigStoreTest {
+object HibernateDomainConfigStoreTest {
   private val config =
       new Configuration().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-        setProperty("hibernate.connection.url", "jdbc:derby:target/configStore;create=true").
+        setProperty("hibernate.connection.url", "jdbc:derby:target/domainConfigStore;create=true").
         setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
 
   val sessionFactory = {
@@ -417,7 +422,7 @@ object HibernateConfigStoreTest {
     sf
   }
 
-  val configStore = new HibernateConfigStore(sessionFactory)
+  val domainConfigStore = new HibernateDomainConfigStore(sessionFactory)
 
   def clearAllConfig = {
     val s = sessionFactory.openSession

@@ -20,14 +20,16 @@ import org.easymock.EasyMock._
 import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Before, Test}
-import net.lshift.diffa.kernel.config.{User, ConfigStore}
 import org.joda.time.{Period, DateTime}
 import net.lshift.diffa.kernel.differencing.{LiveWindow, SessionManager}
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{Domain, User, DomainConfigStore}
+import collection.mutable.HashSet
 
 class EventNotifierTest {
 
   val domain = "domain"
-  val configStore = createStrictMock("configStore", classOf[ConfigStore])
+  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
   val sessionManager = createStrictMock("sessionManager", classOf[SessionManager])
 
   val quietTimeMillis = 2000
@@ -35,7 +37,7 @@ class EventNotifierTest {
 
   @Before
   def setup = {
-    val user = User("Foo Bar", "dev_null@lshift.net")
+    val user = User("Foo Bar", HashSet(Domain(name = "domain")),"dev_null@lshift.net")
     expect(configStore.listUsers(domain)).andStubReturn(List(user))
     replay(configStore, sessionManager)
   }

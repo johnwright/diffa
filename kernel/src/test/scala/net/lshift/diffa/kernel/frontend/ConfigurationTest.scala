@@ -28,6 +28,8 @@ import scala.collection.JavaConversions._
 import org.easymock.IArgumentMatcher
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.DiffaConfig._
+import collection.mutable.HashSet
+import scala.collection.JavaConversions._
 
 /**
  * Test cases for the Configuration frontend.
@@ -40,7 +42,7 @@ class ConfigurationTest {
   private val endpointListener = createMock("endpointListener", classOf[EndpointLifecycleListener])
   private val scanScheduler = createMock("endpointListener", classOf[ScanScheduler])
 
-  private val configuration = new Configuration(HibernateConfigStoreTest.configStore,
+  private val configuration = new Configuration(HibernateDomainConfigStoreTest.domainConfigStore,
                                                 matchingManager,
                                                 versionCorrelationStoreFactory,
                                                 pairManager,
@@ -50,7 +52,7 @@ class ConfigurationTest {
 
   @Before
   def clearConfig {
-    HibernateConfigStoreTest.clearAllConfig
+    HibernateDomainConfigStoreTest.clearAllConfig
   }
 
   @Test
@@ -95,7 +97,8 @@ class ConfigurationTest {
           ))
     val config = new DiffaConfig(
       properties = Map("diffa.host" -> "localhost:1234", "a" -> "b"),
-      users = Set(User("abc", "a@example.com"), User("def", "b@example.com")),
+      users = Set(User("abc", HashSet(Domain(name = "domain")), "a@example.com"),
+                  User("def", HashSet(Domain(name = "domain")), "b@example.com")),
       endpoints = Set(ep1, ep2),
       pairs = Set(
         PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
@@ -142,7 +145,8 @@ class ConfigurationTest {
         // diffa.host is changed, a -> b is gone, c -> d is added
       properties = Map("diffa.host" -> "localhost:2345", "c" -> "d"),
         // abc is changed, def is gone, ghi is added
-      users = Set(User("abc", "a2@example.com"), User("ghi", "c@example.com")),
+      users = Set(User("abc", HashSet(Domain(name = "domain")), "a2@example.com"),
+                  User("ghi", HashSet(Domain(name = "domain")), "c@example.com")),
       endpoints = Set(ep1, ep2),
         // gaa is gone, gcc is created, gbb is the same
       pairs = Set(

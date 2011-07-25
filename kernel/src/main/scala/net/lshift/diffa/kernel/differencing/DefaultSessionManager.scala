@@ -21,13 +21,13 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
-import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
+import net.lshift.diffa.kernel.config.{Endpoint, DomainConfigStore}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
@@ -45,7 +45,8 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
  * whilst the matching manager waits for it to expire).
  */
 class DefaultSessionManager(
-        val config:InternalConfigStore,
+        val config:DomainConfigStore,
+        val systemConfig:SystemConfigStore,
         val cacheProvider:SessionCacheProvider,
         val matching:MatchingManager,
         val vpm:VersionPolicyManager,
@@ -364,7 +365,7 @@ class DefaultSessionManager(
 
   def pairsForScope(scope:SessionScope):Seq[DiffaPair] = {
     scope.includedPairs.size match {
-      case 0  => config.listPairs
+      case 0  => systemConfig.listPairs
       case _  => scope.includedPairs
     }
   }

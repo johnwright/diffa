@@ -82,23 +82,27 @@
 
   <class name="Domain" table="domains" abstract="false">
     <id name="name" type="string" column="name"/>
+    <set name="users" inverse="true" table="domain_users">
+      <key column="user_name"/>
+      <many-to-many column="name" class="User"/>
+    </set>
   </class>
 
   <class name="User" table="users" abstract="false">
-    <composite-id mapped="true">
-      <key-property name="name" type="string" column="name" />
-      <key-many-to-one name="domain" class="Domain" column="pair_key" />
-    </composite-id>
+    <id name="name" type="string" column="name"/>
+    <set name="domains" table="domain_users">
+      <key column="domain_name"/>
+      <many-to-many column="name" class="Domain"/>
+    </set>
     <property name="email" type="string" />
   </class>
 
   <class name="ConfigOption" table="config_options" abstract="false">
-    <composite-id mapped="true">
+    <composite-id mapped="true" class="net.lshift.diffa.kernel.config.DomainScopedKey">
       <key-property name="key" type="string" column="opt_key" />
       <key-many-to-one name="domain" class="Domain" column="pair_key" />
     </composite-id>
     <property name="value" type="string" column="opt_val" />
-    <property name="isInternal" type="boolean" column="is_internal" />
   </class>
 
   <class name="RepairAction" table="repair_actions" abstract="false">
@@ -183,6 +187,6 @@
     select o.value from ConfigOption o where o.key = :key
   </query>
   <query name="allNonInternalConfigOptions">
-    select o from ConfigOption o where o.isInternal = false
+    select o from ConfigOption o where o.domain is not 'root'
   </query>
 </hibernate-mapping>

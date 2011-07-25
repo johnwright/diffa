@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.config.internal
+package net.lshift.diffa.kernel.config.system
 
 import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.kernel.config.Endpoint._
 import collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-import net.lshift.diffa.kernel.config.{RangeCategoryDescriptor, Endpoint, PairDef}
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.config.{HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor, Endpoint, PairDef}
 
-class HibernateInternalConfigStoreTest {
+class HibernateSystemConfigStoreTest {
 
-  private val configStore: InternalConfigStore = null
+  private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
+  private val systemConfigStore:SystemConfigStore = null
 
   val domainName = "domain"
 
@@ -46,30 +46,30 @@ class HibernateInternalConfigStoreTest {
 
   @Test
   def testQueryingForAssociatedPairsReturnsNothingForUnusedEndpoint {
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
-    assertEquals(0, configStore.getPairsForEndpoint(upstream1.name).length)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
+    assertEquals(0, systemConfigStore.getPairsForEndpoint(upstream1.name).length)
   }
 
   @Test
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsUpstream {
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
-    configStore.createOrUpdateEndpoint(domainName, downstream1)
-    configStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
+    domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,
                                                upstream1.name, downstream1.name))
 
-    val res = configStore.getPairsForEndpoint(upstream1.name)
+    val res = systemConfigStore.getPairsForEndpoint(upstream1.name)
     assertEquals(1, res.length)
     assertEquals(pairKey, res(0).key)
   }
 
   @Test
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsDownstream {
-    configStore.createOrUpdateEndpoint(domainName, upstream1)
-    configStore.createOrUpdateEndpoint(domainName, downstream1)
-    configStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
+    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
+    domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,
                                                upstream1.name, downstream1.name))
 
-    val res = configStore.getPairsForEndpoint(downstream1.name)
+    val res = systemConfigStore.getPairsForEndpoint(downstream1.name)
     assertEquals(1, res.length)
     assertEquals(pairKey, res(0).key)
   }

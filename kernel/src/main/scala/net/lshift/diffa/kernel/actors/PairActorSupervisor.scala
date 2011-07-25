@@ -19,16 +19,17 @@ package net.lshift.diffa.kernel.actors
 import akka.actor._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 import net.lshift.diffa.kernel.differencing.{PairScanListener, DifferencingListener, VersionPolicyManager, VersionCorrelationStoreFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
+import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
-                               config:InternalConfigStore,
+                               config:DomainConfigStore,
+                               systemConfig:SystemConfigStore,
                                differencingMulticaster:DifferencingListener,
                                pairScanListener:PairScanListener,
                                participantFactory:ParticipantFactory,
@@ -45,7 +46,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   override def onAgentAssemblyCompleted = {
     // Initialize actors for any persistent pairs
-    config.listPairs.foreach(p => startActor(p))
+    systemConfig.listPairs.foreach(p => startActor(p))
   }
 
   def startActor(pair:DiffaPair) = {

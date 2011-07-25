@@ -22,12 +22,11 @@ import org.junit.Assert._
 import org.joda.time.DateTime
 import org.easymock.IAnswer
 import net.lshift.diffa.kernel.differencing.SessionManager
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
 import org.junit.runner.RunWith
 import net.lshift.diffa.kernel.util.{Concurrent, ConcurrentJunitRunner}
 import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-
+import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * Test cases for the QuartzScanScheduler.
@@ -35,7 +34,8 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 @RunWith(classOf[ConcurrentJunitRunner])
 @Concurrent(threads = 20)
 class QuartzScanSchedulerTest {
-  val config = createStrictMock(classOf[InternalConfigStore])
+  val config = createStrictMock(classOf[DomainConfigStore])
+  val systemConfig = createStrictMock(classOf[SystemConfigStore])
   val sessions = createStrictMock(classOf[SessionManager])
 
   @Test
@@ -47,7 +47,7 @@ class QuartzScanSchedulerTest {
 
     replayAll()
 
-    withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowScheduleCreation")) { scheduler =>
+    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldAllowScheduleCreation")) { scheduler =>
       scheduler.onUpdatePair(DiffaPair(key = "PairA"))
       
       mb.poll(3, TimeUnit.SECONDS) match {
@@ -65,7 +65,7 @@ class QuartzScanSchedulerTest {
 
     replayAll()
 
-    withScheduler(new QuartzScanScheduler(config, sessions, "shouldRestoreSchedulesOnStartup")) { scheduler =>
+    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldRestoreSchedulesOnStartup")) { scheduler =>
       mb.poll(3, TimeUnit.SECONDS) match {
         case null => fail("Scan was not triggered")
         case key:String => assertEquals("PairB", key)
@@ -81,7 +81,7 @@ class QuartzScanSchedulerTest {
 
     replayAll()
 
-    withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowSchedulesToBeDeleted")) { scheduler =>
+    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldAllowSchedulesToBeDeleted")) { scheduler =>
       scheduler.onDeletePair("domain","PairC")
 
       mb.poll(3, TimeUnit.SECONDS) match {
@@ -102,7 +102,7 @@ class QuartzScanSchedulerTest {
     replayAll()
 
     // Initially schedule with something too old to run, then update it with something new enough that will
-    withScheduler(new QuartzScanScheduler(config, sessions, "shouldAllowSchedulesToBeUpdated")) { scheduler =>
+    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldAllowSchedulesToBeUpdated")) { scheduler =>
       scheduler.onUpdatePair("domain","PairD")   // We'll get a different pair result on each call
       scheduler.onUpdatePair("domain","PairD")
 

@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.escalation
 
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.config.ConfigStore
+import net.lshift.diffa.kernel.config.DomainConfigStore
 import net.lshift.diffa.kernel.config.EscalationEvent._
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import org.slf4j.LoggerFactory
@@ -41,7 +41,7 @@ import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAwar
  * will not be driven by difference events, rather there will be a poll loop to drive the procedure
  * through configurable steps.
  */
-class EscalationManager(val config:ConfigStore,
+class EscalationManager(val config:DomainConfigStore,
                         val actionsClient:ActionsClient)
     extends DifferencingListener
     with AgentLifecycleAware {

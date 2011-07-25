@@ -34,7 +34,7 @@ class EscalationManagerTest {
   val domain = "domain"
   val pairKey = "some pair key"
 
-  val configStore = createMock(classOf[ConfigStore])
+  val configStore = createMock(classOf[DomainConfigStore])
   val actionsClient = createStrictMock(classOf[ActionsClient])
   val escalationManager = new EscalationManager(configStore, actionsClient)
 

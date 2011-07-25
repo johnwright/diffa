@@ -20,12 +20,12 @@ import collection.mutable.ListBuffer
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 import net.lshift.diffa.kernel.config.Endpoint
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * Manager for delegating inbound endpoint setup/destruction to InboundEndpointFactory instances.
  */
-class InboundEndpointManager(configStore:InternalConfigStore) extends EndpointLifecycleListener with AgentLifecycleAware {
+class InboundEndpointManager(configStore:SystemConfigStore) extends EndpointLifecycleListener with AgentLifecycleAware {
   private val factories = new ListBuffer[InboundEndpointFactory]
   private val log = LoggerFactory.getLogger(classOf[InboundEndpointFactory])
 

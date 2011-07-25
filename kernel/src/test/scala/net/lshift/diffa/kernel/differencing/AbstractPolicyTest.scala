@@ -67,7 +67,7 @@ abstract class AbstractPolicyTest {
 
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
-  val configStore = createStrictMock("configStore", classOf[ConfigStore])
+  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
   val domain = "domain"
   val pairKey = "A-B"
 

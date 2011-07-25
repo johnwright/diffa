@@ -30,13 +30,16 @@ import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.TriggerKey.triggerKey
 import org.quartz.CronScheduleBuilder.cronSchedule
 import org.quartz.JobBuilder.newJob
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Quartz backed implementation of the ScanScheduler.
  */
-class QuartzScanScheduler(config:InternalConfigStore, sessions:SessionManager, name:String)
+class QuartzScanScheduler(config:DomainConfigStore,
+                          systemConfig:SystemConfigStore,
+                          sessions:SessionManager,
+                          name:String)
     extends ScanScheduler
     with Closeable {
 
@@ -65,7 +68,7 @@ class QuartzScanScheduler(config:InternalConfigStore, sessions:SessionManager, n
   })
 
   // Ensure that a trigger is registered for each pair on startup
-  config.listPairs.foreach(onUpdatePair(_))
+  systemConfig.listPairs.foreach(onUpdatePair(_))
 
   def onUpdatePair(domain:String, pairKey: String) {
     onUpdatePair(config.getPair(domain, pairKey))

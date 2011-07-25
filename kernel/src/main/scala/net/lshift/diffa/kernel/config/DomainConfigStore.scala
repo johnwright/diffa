@@ -24,7 +24,10 @@ import net.lshift.diffa.kernel.participants._
 import org.quartz.CronExpression
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
 
-trait ConfigStore {
+/**
+ * Provides general configuration options within the scope of a particular domain.
+ */
+trait DomainConfigStore {
   def createOrUpdateEndpoint(domain:String, endpoint: Endpoint): Unit
   def deleteEndpoint(domain:String, name: String): Unit
   def listEndpoints(domain:String) : Seq[Endpoint]
@@ -64,12 +67,12 @@ trait ConfigStore {
   /**
    * Retrieves an agent configuration option, returning the None if it is unset.
    */
-  def maybeConfigOption(domain:String, key:String):Option[String]
+  def maybeConfigOption(domain:String, key:String) : Option[String]
 
   /**
    * Retrieves an agent configuration option, returning the provided default value if it is unset.
    */
-  def configOptionOrDefault(domain:String, key:String, defaultVal:String):String
+  def configOptionOrDefault(domain:String, key:String, defaultVal:String) : String
 
   /**
    * Sets the given configuration option to the given value.
@@ -219,13 +222,18 @@ case class PairDef(
 }
 
 case class Domain (
-  @BeanProperty var name: String
+  @BeanProperty var name: String = null,
+  @BeanProperty var users: java.util.Set[User] = new java.util.HashSet[User]
 ) {
   def this() = this(null)
 
   def validate(path:String = null) {
     // Nothing to validate
   }
+}
+
+object Domain {
+  val DEFAULT_DOMAIN = Domain(name = "root")
 }
 
 
@@ -322,7 +330,7 @@ object EscalationActionType {
 }
 
 case class User(@BeanProperty var name: String = null,
-                @BeanProperty var domain: String = null,
+                @BeanProperty var domains: java.util.Set[Domain] = new java.util.HashSet[Domain],
                 @BeanProperty var email: String = null) {
   def this() = this(name = null)
 
@@ -333,7 +341,15 @@ case class User(@BeanProperty var name: String = null,
 
 case class ConfigOption(@BeanProperty var key:String = null,
                         @BeanProperty var value:String = null,
-                        @BeanProperty var domain:String = null,
-                        @BeanProperty var isInternal:Boolean = false) {
+                        @BeanProperty var domain:Domain = null) {
+  def this() = this(key = null)
+}
+
+/**
+ * Convenience wrapper for a compound primary key
+ */
+case class DomainScopedKey(@BeanProperty var key:String = null,
+                           @BeanProperty var domain:Domain = null) extends java.io.Serializable
+{
   def this() = this(key = null)
 }

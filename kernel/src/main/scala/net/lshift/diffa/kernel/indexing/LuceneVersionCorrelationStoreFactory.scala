@@ -20,7 +20,7 @@ import java.io.File
 import org.apache.lucene.store.FSDirectory
 import net.lshift.diffa.kernel.differencing.VersionCorrelationStoreFactory
 import scala.collection.mutable.HashMap
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
@@ -29,7 +29,7 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 class LuceneVersionCorrelationStoreFactory[T <: FSDirectory](
   baseDir: String,
   directoryClass: Class[T],
-  configStore: InternalConfigStore
+  configStore: SystemConfigStore
 ) extends VersionCorrelationStoreFactory {
 
   private val stores = HashMap[DiffaPair, LuceneVersionCorrelationStore]()

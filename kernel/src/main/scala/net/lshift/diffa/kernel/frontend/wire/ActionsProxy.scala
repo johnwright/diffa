@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.frontend.wire
 
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
+import net.lshift.diffa.kernel.config.{RepairAction, Pair, DomainConfigStore}
 import InvocationResult._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
@@ -28,7 +28,7 @@ import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 /**
  * This is a conduit to the actions that are provided by participants
  */
-class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
+class ActionsProxy(val config:DomainConfigStore, val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
     extends ActionsClient {
 
   def listActions(domain:String, pairKey: String): Seq[Actionable] =

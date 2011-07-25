@@ -21,7 +21,7 @@ import net.lshift.diffa.kernel.participants._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{Endpoint, Pair, ConfigStore}
+import net.lshift.diffa.kernel.config.{Endpoint, Pair, DomainConfigStore}
 import org.slf4j.LoggerFactory
 import concurrent.SyncVar
 import scala.collection.JavaConversions._
@@ -34,7 +34,7 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
  */
 abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFactory,
                                          listener:DifferencingListener,
-                                         configStore:ConfigStore,
+                                         configStore:DomainConfigStore,
                                          diagnostics:DiagnosticsManager)
     extends VersionPolicy {
   protected val alerter = Alerter.forClass(getClass)

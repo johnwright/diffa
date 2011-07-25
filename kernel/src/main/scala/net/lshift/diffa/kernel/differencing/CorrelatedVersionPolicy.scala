@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.config.ConfigStore
+import net.lshift.diffa.kernel.config.DomainConfigStore
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
@@ -33,7 +33,7 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
  */
 class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               listener:DifferencingListener,
-                              configStore:ConfigStore,
+                              configStore:DomainConfigStore,
                               diagnostics:DiagnosticsManager)
     extends BaseScanningVersionPolicy(stores, listener, configStore, diagnostics) {
 

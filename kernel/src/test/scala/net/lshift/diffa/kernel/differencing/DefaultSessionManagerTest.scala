@@ -25,9 +25,9 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
-import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
+import net.lshift.diffa.kernel.config.{Endpoint, DomainConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
 
 /**
@@ -52,7 +52,8 @@ class DefaultSessionManagerTest {
 
   val matcher = createStrictMock("matcher", classOf[EventMatcher])
 
-  val configStore = createStrictMock("configStore", classOf[InternalConfigStore])
+  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
+  val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
   matchingManager.addListener(anyObject.asInstanceOf[MatchingStatusListener]); expectLastCall.once
   replay(matchingManager)
@@ -75,7 +76,7 @@ class DefaultSessionManagerTest {
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
   EasyMock.checkOrder(pairPolicyClient, false)
 
-  val manager = new DefaultSessionManager(configStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
+  val manager = new DefaultSessionManager(configStore, systemConfigStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
   verify(matchingManager); reset(matchingManager)    // The matching manager will have been called on session manager startup
 
   val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
@@ -100,7 +101,7 @@ class DefaultSessionManagerTest {
     //expect(configStore.getPair("pair")).andStubReturn(pair1)
     expect(configStore.getPair(domain, "pair1")).andStubReturn(pair1)
     expect(configStore.getPair(domain, "pair2")).andStubReturn(pair2)
-    expect(configStore.listPairs).andStubReturn(Seq(pair1,pair2))
+    expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
     expect(matchingManager.getMatcher(pair1)).andStubReturn(Some(matcher))
     expect(matcher.isVersionIDActive(new VersionID(pair, "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(new VersionID(pair, "id2"))).andStubReturn(false)

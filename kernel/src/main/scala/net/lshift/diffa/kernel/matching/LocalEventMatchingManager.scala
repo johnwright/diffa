@@ -17,13 +17,13 @@
 package net.lshift.diffa.kernel.matching
 
 import collection.mutable.{ListBuffer, HashMap}
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
- * Keeps track of and updates Local event matchers for pair entries from ConfigStore.
+ * Keeps track of and updates Local event matchers for pair entries from DomainConfigStore.
  */
-class LocalEventMatchingManager(configStore: InternalConfigStore) extends MatchingManager {
+class LocalEventMatchingManager(configStore: SystemConfigStore) extends MatchingManager {
   private val reaper = new LocalEventMatcherReaper
   private val matchers = new HashMap[DiffaPair, LocalEventMatcher]
   private val listeners = new ListBuffer[MatchingStatusListener]

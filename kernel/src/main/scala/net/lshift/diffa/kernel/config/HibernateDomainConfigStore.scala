@@ -21,8 +21,8 @@ import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 
-class HibernateConfigStore(val sessionFactory: SessionFactory)
-    extends ConfigStore
+class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
+    extends DomainConfigStore
     with HibernateQueryUtils {
   def createOrUpdateEndpoint(domain:String, e: Endpoint): Unit = sessionFactory.withSession(s => s.saveOrUpdate(e))
 
@@ -133,27 +133,8 @@ class HibernateConfigStore(val sessionFactory: SessionFactory)
       case None      => defaultVal
     }
 
-  def setConfigOption(domain:String, key:String, value:String) = setConfigOption(domain, key, value, false)
-
-  protected def setConfigOption(domain:String, key:String, value:String, isInternal:Boolean) = sessionFactory.withSession(s => {
-    val co = s.get(classOf[ConfigOption], key) match {
-      case null =>
-        new ConfigOption(key = key, value = value, isInternal = isInternal)
-      case current:ConfigOption =>  {
-        current.value = value
-        current.isInternal = isInternal
-        current
-      }
-    }
-    s.saveOrUpdate(co)
-  })
-  def clearConfigOption(domain:String, key:String) = sessionFactory.withSession(s => {
-    val co = s.get(classOf[ConfigOption], key) match {
-      case null =>
-      case current:ConfigOption =>  s.delete(current)
-
-    }
-  })
+  def setConfigOption(domain:String, key:String, value:String) = writeConfigOption(domain, key, value)
+  def clearConfigOption(domain:String, key:String) = deleteConfigOption(domain, key)
 
   private def getEndpoint(s: Session, domain:String, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint %s".format(name))
   private def getUser(s: Session, domain:String, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))

@@ -71,7 +71,7 @@ abstract class AbstractDataDrivenPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
   EasyMock.checkOrder(listener, false)   // Not all participant operations are going to be strictly ordered
 
-  val configStore = createStrictMock("configStore", classOf[ConfigStore])
+  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
 
   protected def replayAll = replay(configStore, usMock, dsMock, store, writer, listener)
   protected def verifyAll = verify(configStore, usMock, dsMock, store, writer, listener, configStore)

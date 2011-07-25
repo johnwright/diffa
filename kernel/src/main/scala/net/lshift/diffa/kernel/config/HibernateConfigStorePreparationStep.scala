@@ -66,10 +66,11 @@ class HibernateConfigStorePreparationStep
       (new SchemaExport(config)).create(false, true)
 
       // Apply the current version to the schema
-      val configOpt = new ConfigOption(key = schemaVersionKey, isInternal = true,
-                                       value = migrationSteps.last.versionId.toString)
+      val configOpt = ConfigOption(key = schemaVersionKey, domain = Domain.DEFAULT_DOMAIN,
+                                   value = migrationSteps.last.versionId.toString)
 
       sf.withSession(s => {
+        s.save(Domain.DEFAULT_DOMAIN)
         s.save(configOpt)
       })
     
@@ -77,7 +78,8 @@ class HibernateConfigStorePreparationStep
     } else {
       // Maybe upgrade the schema?
       sf.withSession(s => {
-        val currentVersion = s.load(classOf[ConfigOption], schemaVersionKey).asInstanceOf[ConfigOption]
+        val key = DomainScopedKey(schemaVersionKey, Domain.DEFAULT_DOMAIN)
+        val currentVersion = s.load(classOf[ConfigOption], key).asInstanceOf[ConfigOption]
         val currentVersionId = Integer.parseInt(currentVersion.value)
 
         val firstStepIdx = migrationSteps.indexWhere(step => step.versionId > currentVersionId)

@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
 import net.lshift.diffa.kernel.scheduler.ScanScheduler
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
-class Configuration(val configStore: ConfigStore,
+class Configuration(val configStore: DomainConfigStore,
                     val matchingManager: MatchingManager,
                     val versionCorrelationStoreFactory: VersionCorrelationStoreFactory,
                     val supervisor:ActivePairManager,

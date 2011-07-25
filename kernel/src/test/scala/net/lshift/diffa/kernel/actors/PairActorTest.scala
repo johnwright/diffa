@@ -22,9 +22,7 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.differencing._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{UpstreamPairChangeEvent, VersionID}
-import net.lshift.diffa.kernel.config.Endpoint
-import net.lshift.diffa.kernel.config.internal.InternalConfigStore
-import net.lshift.diffa.kernel.config.{Pair => Pair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.participants._
 import org.easymock.{EasyMock, IAnswer}
 import org.slf4j.LoggerFactory
@@ -36,7 +34,7 @@ import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DomainConfigStore, Endpoint, Pair => DiffaPair}
 
 class PairActorTest {
 
@@ -70,8 +68,9 @@ class PairActorTest {
   expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy))
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
-  val configStore = createStrictMock("configStore", classOf[InternalConfigStore])
-  expect(configStore.listPairs(domain)).andReturn(Array[Pair]())
+  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
+  val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
+  expect(configStore.listPairs(domain)).andReturn(Array[DiffaPair]())
   replay(configStore)
 
   val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
@@ -87,7 +86,7 @@ class PairActorTest {
   val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
   val scanListener = createStrictMock("scanListener", classOf[PairScanListener])
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, diffListener, scanListener, participantFactory, stores, diagnostics, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, systemConfigStore, diffListener, scanListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
