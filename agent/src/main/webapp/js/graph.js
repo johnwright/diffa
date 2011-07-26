@@ -99,6 +99,11 @@ function calibrateHeatmap() {
   scale.width = scale.offsetWidth;
   scale.height = scaleHeight;
   rightLimit = (maxColumns * gridSize) - canvas.width;
+
+  $('#heatmap-controls').
+      show().
+      css('top', $('#heatmap').offset().top + 20).
+      css('left', $('#heatmap').offset().left - $('#heatmap-controls')[0].offsetWidth);
 }
 
 /**
@@ -562,7 +567,7 @@ function drawGrid() {
     if (swimlaneLabels[lane] != null) {
       underlayContext.font = "11px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
       underlayContext.fillStyle = colours.black;
-      underlayContext.fillText(swimlaneLabels[lane], 40, s - laneHeight + arrowHeight);
+      underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + arrowHeight);
     }
     var leftCell = findCellWithVisibleBlob(viewportX, s - laneHeight, directions.left);
     if (nonEmptyCellExists(leftCell.row, 0, leftCell.column)) {
@@ -747,12 +752,24 @@ function mouseOver(e) {
   }
 }
 
+function updateZoomControls() {
+  if (bucketSize <= 1) {
+    $('#zoomIn').attr('disabled', 'disabled');
+  } else {
+    $('#zoomIn').removeAttr('disabled');
+  }
+}
+
 function zoomOut() {
   bucketSize = bucketSize * 2;
+  updateZoomControls();
+
   startPolling();
 }
 function zoomIn() {
   bucketSize = Math.round(bucketSize / 2);
+  updateZoomControls();
+  
   startPolling();
 }
 
