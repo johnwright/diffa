@@ -126,9 +126,11 @@ function resizeLayer(layer, width) {
 }
 
 function resizeLayerFromParent(layer, parent) {
+  var parentOffset = $(parent).offset();
+
   layer.style.position = "absolute";
-  layer.style.left = parent.offsetLeft;
-  layer.style.top = parent.offsetTop;
+  layer.style.left = parentOffset.left;
+  layer.style.top = parentOffset.top;
   resizeLayer(layer, parent.offsetWidth);
 }
 
@@ -180,10 +182,10 @@ function loadBuckets() {
 
   var now = endTime.toString(TIME_FORMAT);
 
-  startTime = endTime.add({hours: -1 * maxColumns});
+  startTime = endTime.add({seconds: -1 * bucketSize * maxColumns});
   var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
-  $.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=3600", function(data) {
+  $.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + bucketSize, function(data) {
     // update swimlane labels
     var i = 0;
     for (var pair in data) {
@@ -560,7 +562,7 @@ function drawGrid() {
     if (swimlaneLabels[lane] != null) {
       underlayContext.font = "11px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
       underlayContext.fillStyle = colours.black;
-      underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + arrowHeight);
+      underlayContext.fillText(swimlaneLabels[lane], 40, s - laneHeight + arrowHeight);
     }
     var leftCell = findCellWithVisibleBlob(viewportX, s - laneHeight, directions.left);
     if (nonEmptyCellExists(leftCell.row, 0, leftCell.column)) {
@@ -745,6 +747,15 @@ function mouseOver(e) {
   }
 }
 
+function zoomOut() {
+  bucketSize = bucketSize * 2;
+  startPolling();
+}
+function zoomIn() {
+  bucketSize = Math.round(bucketSize / 2);
+  startPolling();
+}
+
 function initGraph() {
   createSession(startPolling);
   initCanvas();
@@ -768,6 +779,32 @@ function initGraph() {
 
   $("#previous").click(function(e) {
     previous();
+  });
+  $("#zoomOut").click(function(e) {
+    zoomOut();
+  });
+  $(document).keypress(function(e) {
+    if (e.charCode == '+'.charCodeAt()) {
+      e.preventDefault();
+      zoomIn();
+    }
+    if (e.charCode == '-'.charCodeAt()) {
+      e.preventDefault();
+      zoomOut();
+    }
+
+    return true;
+  });
+  $("#zoomIn").click(function(e) {
+    zoomIn();
+  });
+
+  // Don't leave the buttons focussed
+  $('#zoomIn').focus(function(e) {
+    $(this).blur();
+  });
+  $('#zoomOut').focus(function(e) {
+    $(this).blur();
   });
 
   $("#navigation").hide();
