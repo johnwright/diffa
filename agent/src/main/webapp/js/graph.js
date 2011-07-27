@@ -761,8 +761,15 @@ function updateZoomControls() {
     }
   }
 
-  toggleControl('#zoomIn', bucketSize <= 1);    // Buckets can't be smaller than 1s
-  toggleControl('#zoomOut', bucketSize >= 180*24*3600);   // Buckets can't be wider than 6-months
+  toggleControl('#zoomIn', !shouldAllowMoreZoomIn());
+  toggleControl('#zoomOut', !shouldAllowMoreZoomOut());
+}
+
+function shouldAllowMoreZoomIn() {
+  return bucketSize > 1;      // Buckets can't be smaller than 1s
+}
+function shouldAllowMoreZoomOut() {
+  return bucketSize < 180*24*3600;  // Buckets can't be wider than 6-months
 }
 
 function zoomOut() {
@@ -808,11 +815,11 @@ function initGraph() {
   $(document).keypress(function(e) {
     if (e.charCode == '+'.charCodeAt()) {
       e.preventDefault();
-      zoomIn();
+      if (shouldAllowMoreZoomIn()) zoomIn();
     }
     if (e.charCode == '-'.charCodeAt()) {
       e.preventDefault();
-      zoomOut();
+      if (shouldAllowMoreZoomOut()) zoomOut();
     }
 
     return true;
