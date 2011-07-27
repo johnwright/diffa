@@ -99,6 +99,11 @@ function calibrateHeatmap() {
   scale.width = scale.offsetWidth;
   scale.height = scaleHeight;
   rightLimit = (maxColumns * gridSize) - canvas.width;
+
+  $('#heatmap-controls').
+      show().
+      css('top', $('#heatmap').offset().top + 20).
+      css('left', $('#heatmap').offset().left - $('#heatmap-controls')[0].offsetWidth);
 }
 
 /**
@@ -126,9 +131,11 @@ function resizeLayer(layer, width) {
 }
 
 function resizeLayerFromParent(layer, parent) {
+  var parentOffset = $(parent).offset();
+
   layer.style.position = "absolute";
-  layer.style.left = parent.offsetLeft;
-  layer.style.top = parent.offsetTop;
+  layer.style.left = parentOffset.left;
+  layer.style.top = parentOffset.top;
   resizeLayer(layer, parent.offsetWidth);
 }
 
@@ -180,10 +187,10 @@ function loadBuckets() {
 
   var now = endTime.toString(TIME_FORMAT);
 
-  startTime = endTime.add({hours: -1 * maxColumns});
+  startTime = endTime.add({seconds: -1 * bucketSize * maxColumns});
   var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
-  $.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=3600", function(data) {
+  $.get("rest/diffs/sessions/" + sessionId + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + bucketSize, function(data) {
     // update swimlane labels
     var i = 0;
     for (var pair in data) {
@@ -567,7 +574,7 @@ function drawGrid() {
       drawArrow(underlayContext, directions.left, 10, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
     var rightCell = findCellWithVisibleBlob(viewportX + canvas.width - 1, s - laneHeight, directions.right);
-    if (nonEmptyCellExists(rightCell.row, rightCell.column + 1, maxColumns - 1)) {
+    if (nonEmptyCellExists(rightCell.row, rightCell.column + 1, maxColumns)) {
       drawArrow(underlayContext, directions.right, canvas.width - 10 - arrowWidth, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
     lane++;
@@ -745,6 +752,39 @@ function mouseOver(e) {
   }
 }
 
+function updateZoomControls() {
+  function toggleControl(selector, isDisabled) {
+    if (isDisabled) {
+      $(selector).attr('disabled', 'disabled');
+    } else {
+      $(selector).removeAttr('disabled');
+    }
+  }
+
+  toggleControl('#zoomIn', !shouldAllowMoreZoomIn());
+  toggleControl('#zoomOut', !shouldAllowMoreZoomOut());
+}
+
+function shouldAllowMoreZoomIn() {
+  return bucketSize > 1;      // Buckets can't be smaller than 1s
+}
+function shouldAllowMoreZoomOut() {
+  return bucketSize < 180*24*3600;  // Buckets can't be wider than 6-months
+}
+
+function zoomOut() {
+  bucketSize = bucketSize * 2;
+  updateZoomControls();
+
+  startPolling();
+}
+function zoomIn() {
+  bucketSize = Math.round(bucketSize / 2);
+  updateZoomControls();
+  
+  startPolling();
+}
+
 function initGraph() {
   createSession(startPolling);
   initCanvas();
@@ -768,6 +808,32 @@ function initGraph() {
 
   $("#previous").click(function(e) {
     previous();
+  });
+  $("#zoomOut").click(function(e) {
+    zoomOut();
+  });
+  $(document).keypress(function(e) {
+    if (e.charCode == '+'.charCodeAt()) {
+      e.preventDefault();
+      if (shouldAllowMoreZoomIn()) zoomIn();
+    }
+    if (e.charCode == '-'.charCodeAt()) {
+      e.preventDefault();
+      if (shouldAllowMoreZoomOut()) zoomOut();
+    }
+
+    return true;
+  });
+  $("#zoomIn").click(function(e) {
+    zoomIn();
+  });
+
+  // Don't leave the buttons focussed
+  $('#zoomIn').focus(function(e) {
+    $(this).blur();
+  });
+  $('#zoomOut').focus(function(e) {
+    $(this).blur();
   });
 
   $("#navigation").hide();
