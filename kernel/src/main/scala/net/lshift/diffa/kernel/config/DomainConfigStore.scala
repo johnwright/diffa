@@ -225,7 +225,7 @@ case class Domain (
   @BeanProperty var name: String = null,
   @BeanProperty var users: java.util.Set[User] = new java.util.HashSet[User]
 ) {
-  def this() = this(null)
+  def this() = this(name = null)
 
   def validate(path:String = null) {
     // Nothing to validate

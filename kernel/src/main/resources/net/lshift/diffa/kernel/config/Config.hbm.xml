@@ -82,17 +82,17 @@
 
   <class name="Domain" table="domains" abstract="false">
     <id name="name" type="string" column="name"/>
-    <set name="users" inverse="true" table="domain_users">
-      <key column="user_name"/>
-      <many-to-many column="name" class="User"/>
+    <set name="users" table="domain_users">
+      <key column="domain_name"/>
+      <many-to-many column="user_name" class="User" lazy="false"/>
     </set>
   </class>
 
   <class name="User" table="users" abstract="false">
     <id name="name" type="string" column="name"/>
     <set name="domains" table="domain_users">
-      <key column="domain_name"/>
-      <many-to-many column="name" class="Domain"/>
+      <key column="user_name"/>
+      <many-to-many column="domain_name" class="Domain" lazy="false"/>
     </set>
     <property name="email" type="string" />
   </class>
@@ -179,7 +179,7 @@
     select o from ConfigOption o
   </query>
 
-  <!-- Queries by domain -->
+  <!-- Queries by domain only -->
 
   <query name="domainByName">
     select d from Domain d where d.name = :name
@@ -209,13 +209,37 @@
     select o from ConfigOption o where o.domain.name = :name
   </query>
 
-  <!-- Other -->
+  <!-- Query by pair with domain -->
 
   <query name="repairActionsByPair">
     select a from RepairAction a
     join a.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
   </query>
+
+  <query name="escalationsByPair">
+    select e from Escalation e
+    join e.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+  </query>
+
+  <!-- Query by pair with domain and key -->
+
+  <query name="repairActionsByNameAndPair">
+    select a from RepairAction a
+    join a.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+    where a.name = :name
+  </query>
+
+  <query name="escalationsByNameAndPair">
+    select e from Escalation e
+    join e.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+    where e.name = :name
+  </query>
+
+  <!-- Other -->
 
   <query name="configOptionByKey">
     select o.value from ConfigOption o where o.key = :key
