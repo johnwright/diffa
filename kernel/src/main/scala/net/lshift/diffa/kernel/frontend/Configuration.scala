@@ -57,8 +57,8 @@ class Configuration(val configStore: DomainConfigStore,
     // Remove missing repair actions, and create/update the rest
     val removedActions =
       configStore.listRepairActions(domain).filter(a => diffaConfig.repairActions
-        .find(newA => newA.name == a.name && newA.pairKey == a.pairKey).isEmpty)
-    removedActions.foreach(a => deleteRepairAction(domain, a.name, a.pairKey))
+        .find(newA => newA.name == a.name && newA.pair == a.pair).isEmpty)
+    removedActions.foreach(a => deleteRepairAction(domain, a.name, a.pair.key))
     diffaConfig.repairActions.foreach(a => createOrUpdateRepairAction(domain,a))
 
     // Remove old pairs and endpoints
@@ -73,7 +73,7 @@ class Configuration(val configStore: DomainConfigStore,
       users = configStore.listUsers(domain).toSet,
       endpoints = configStore.listEndpoints(domain).toSet,
       pairs = configStore.listPairs(domain).map(
-        p => PairDef(p.key, p.domain, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.scanCronSpec)).toSet,
+        p => PairDef(p.key, p.domain.name, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.scanCronSpec)).toSet,
       repairActions = configStore.listRepairActions(domain).toSet
     )
   }

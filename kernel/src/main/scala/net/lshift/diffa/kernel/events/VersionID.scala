@@ -28,5 +28,5 @@ case class VersionID(
   @BeanProperty var id:String = null) {
 
   def this() = this(pairKey = null)
-  def this(pair:DiffaPair, id:String) = this(pair.key, pair.domain, id)
+  def this(pair:DiffaPair, id:String) = this(pair.key, pair.domain.name, id)
 }

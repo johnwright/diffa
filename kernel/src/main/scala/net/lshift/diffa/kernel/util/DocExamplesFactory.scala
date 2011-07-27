@@ -34,13 +34,15 @@ class DocExamplesFactory {
   val up = new Endpoint(name = "upstream-system", scanUrl = "http://acme.com/upstream/scan", contentType = "application/json", categories = Map("bizDate" -> categoryDescriptor))
   val down = new Endpoint(name = "downstream-system", scanUrl = "http://acme.com/downstream/scan", contentType = "application/json", categories = Map("bizDate" -> categoryDescriptor))
 
-  val pair = Pair("pair-id", "domain-id", up, down, "correlated", 120)
+  // TODO Put these examples, back except that we need to wire exposed types as opposed to the internal types
 
-  val repair = RepairAction(name = "resend", url = "http://acme.com/repairs/resend/{id}", scope = "entity", pairKey = "pairKey")
+  //val pair = Pair("pair-id", "domain-id", up, down, "correlated", 120)
 
-  val escalation = Escalation(name = "some-escalation", pairKey = "pairKey", action = "resend", actionType = "repair", event = "downstream-missing", origin = "scan")
+  //val repair = RepairAction(name = "resend", url = "http://acme.com/repairs/resend/{id}", scope = "entity", pairKey = "pairKey")
 
-  val actionable = Actionable(name = "resend", scope = "entity", path = "/actions/pairKey/resend/entity/${id}", pairKey = "pairKey")
+  //val escalation = Escalation(name = "some-escalation", pairKey = "pairKey", action = "resend", actionType = "repair", event = "downstream-missing", origin = "scan")
+
+  //val actionable = Actionable(name = "resend", scope = "entity", path = "/actions/pairKey/resend/entity/${id}", pairKey = "pairKey")
 
   val result = InvocationResult(code = "200", output = "OK")
 
@@ -50,12 +52,12 @@ class DocExamplesFactory {
     val map = new java.util.HashMap[Class[_], Object]
 
     map.put(classOf[Endpoint], up)
-    map.put(classOf[Pair], pair)
+    //map.put(classOf[Pair], pair)
     map.put(classOf[PairDef], new PairDef("pairKey","versionPolicyName","domainName", 120,"upstreamName","downstreamName","0 15 10 ? * *"))
     map.put(classOf[SessionEvent], SessionEvent("6f72b9",VersionID("pairKey", "4f8a99"), new DateTime(), MatchState.UNMATCHED, "upstreamV", "downstreamV"))
-    map.put(classOf[RepairAction], repair)
-    map.put(classOf[Escalation], escalation)
-    map.put(classOf[Actionable], actionable)
+    //map.put(classOf[RepairAction], repair)
+    //map.put(classOf[Escalation], escalation)
+    //map.put(classOf[Actionable], actionable)
     map.put(classOf[InvocationResult], result)
     map.put(classOf[User], user)
 

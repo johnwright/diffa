@@ -136,7 +136,7 @@ class DefaultSessionManager(
 
   // TODO: This should be using a SessionID, and not a pair
   def end(pair: DiffaPair, listener: DifferencingListener) = {
-    forEachSession(new VersionID(pair.domain, pair.key, "dummy"), s => {
+    forEachSession(new VersionID(pair.domain.name, pair.key, "dummy"), s => {
       listeners.synchronized {
         listeners.get(s.sessionId) match {
           case None =>
@@ -331,11 +331,11 @@ class DefaultSessionManager(
    */
   def onUpdatePair(pair: DiffaPair) = {
     val isRelevantToASession =
-      sessionsByKey.values.foldLeft(false)((currentlyRelevant, s) => currentlyRelevant || s.isInScope(new VersionID(pair.domain, pair.key, "dummy")));
+      sessionsByKey.values.foldLeft(false)((currentlyRelevant, s) => currentlyRelevant || s.isInScope(new VersionID(pair.domain.name, pair.key, "dummy")));
     if (isRelevantToASession) {
       val (from, until) = defaultDateBounds()
 
-      runDifferenceForScope(SessionScope.forPairs(pair.domain, pair.key), from, until)
+      runDifferenceForScope(SessionScope.forPairs(pair.domain.name, pair.key), from, until)
     }
   }
 

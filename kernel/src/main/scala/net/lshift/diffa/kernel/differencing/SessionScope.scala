@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.differencing
 
 import collection.immutable.HashSet
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Domain, Pair => DiffaPair}
 
 /**
  * Provides the details of the scope of a session.
@@ -41,5 +41,5 @@ class SessionScope(private val pairs:HashSet[DiffaPair]) {
 object SessionScope {
   val all = new SessionScope(HashSet.empty)
   def forPairs(d:String, pairs:String*) =
-    new SessionScope(HashSet.empty ++ pairs.map(p => new DiffaPair(key = p, domain = d)))
+    new SessionScope(HashSet.empty ++ pairs.map(p => new DiffaPair(key = p, domain = Domain(name = d))))
 }
