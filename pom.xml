@@ -31,7 +31,7 @@
     <scala.plugin.version>2.14.1</scala.plugin.version>
     <spring.version>3.0.5.RELEASE</spring.version>
     <hibernate.version>3.6.5.Final</hibernate.version>
-    <derby.version>10.4.2.0</derby.version>
+    <derby.version>10.8.1.2</derby.version>
     <dbcp.version>1.2.2</dbcp.version>
     <jetty.version>7.3.0.v20110203</jetty.version>
     <rabbitmq.version>1.8.0</rabbitmq.version>

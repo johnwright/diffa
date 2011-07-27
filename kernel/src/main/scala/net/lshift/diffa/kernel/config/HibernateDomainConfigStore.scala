@@ -57,7 +57,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
 
     val up = getEndpoint(s, domain, p.upstreamName)
     val down = getEndpoint(s, domain, p.downstreamName)
-    val toUpdate = new Pair(p.pairKey, p.domain, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
+    val dom = getDomain(domain)
+    val toUpdate = new Pair(p.pairKey, dom, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
     s.saveOrUpdate(toUpdate)
   })
 
@@ -88,7 +89,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     sessionFactory.withSession(s => getEscalationsForPair(s, domain, pair))
 
   private def getRepairActionsInPair(s: Session, domain:String, pair: Pair): Seq[RepairAction] =
-    listQuery[RepairAction](s, "repairActionsByPair", Map("pairKey" -> pair.key))
+    listQuery[RepairAction](s, "repairActionsByPair", Map("pair_key" -> pair.key,
+                                                          "domain_name" -> pair.domain.name))
 
   private def getEscalationsForPair(s: Session, domain:String, pair: Pair): Seq[Escalation] =
     listQuery[Escalation](s, "escalationsByPairKey", Map("pairKey" -> pair.key))

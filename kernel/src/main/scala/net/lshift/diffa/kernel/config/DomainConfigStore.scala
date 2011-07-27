@@ -89,7 +89,7 @@ trait DomainConfigStore {
 
 case class Endpoint(
   @BeanProperty var name: String = null,
-  @BeanProperty var domain: String = null,
+  @BeanProperty var domain: Domain = null,
   @BeanProperty var scanUrl: String = null,
   @BeanProperty var contentRetrievalUrl: String = null,
   @BeanProperty var versionGenerationUrl: String = null,
@@ -173,7 +173,7 @@ case class Endpoint(
 
 case class Pair(
   @BeanProperty var key: String = null,
-  @BeanProperty var domain: String = null,
+  @BeanProperty var domain: Domain = null,
   @BeanProperty var upstream: Endpoint = null,
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var versionPolicyName: String = null,
@@ -241,8 +241,7 @@ case class RepairAction(
   @BeanProperty var name: String = null,
   @BeanProperty var url: String = null,
   @BeanProperty var scope: String = null,
-  @BeanProperty var pairKey: String = null,
-  @BeanProperty var domain: String = null
+  @BeanProperty var pair: Pair = null
 ) {
   import RepairAction._
 
@@ -250,7 +249,7 @@ case class RepairAction(
 
   def validate(path:String = null) {
     val actionPath = ValidationUtil.buildPath(
-      ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey)),
+      ValidationUtil.buildPath(path, "pair", Map("key" -> pair.key)),
       "repair-action", Map("name" -> name))
 
     // Ensure that the scope is supported
@@ -270,8 +269,7 @@ object RepairAction {
  */
 case class Escalation (
   @BeanProperty var name: String = null,
-  @BeanProperty var pairKey: String = null,
-  @BeanProperty var domain: String = null,
+  @BeanProperty var pair: Pair = null,
   @BeanProperty var action: String = null,
   @BeanProperty var actionType: String = null,
   @BeanProperty var event: String = null,
@@ -285,7 +283,7 @@ case class Escalation (
 
   def validate(path:String = null) {
     val escalationPath = ValidationUtil.buildPath(
-      ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey)),
+      ValidationUtil.buildPath(path, "pair", Map("key" -> pair.key)),
       "escalation", Map("name" -> name))
 
     // Ensure that the event is supported

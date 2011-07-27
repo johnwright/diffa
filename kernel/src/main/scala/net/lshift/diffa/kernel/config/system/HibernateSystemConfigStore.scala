@@ -16,10 +16,11 @@
 
 package net.lshift.diffa.kernel.config.system
 
-import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.util.SessionHelper._// for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.config.{ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
-import net.lshift.diffa.kernel.config.{DomainConfigStore, Domain}
-import org.hibernate.SessionFactory
+import org.hibernate.{Session, SessionFactory}
+import scala.collection.JavaConversions._
 
 class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
                                  val sessionFactory:SessionFactory)
@@ -27,9 +28,13 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
 
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => s.saveOrUpdate(d) )
 
-  def deleteDomain(name:String) = sessionFactory.withSession( s => {
-    val domain = getDomain(name)
-    s.delete(domain)
+  def deleteDomain(domain:String) = sessionFactory.withSession( s => {
+    deleteByDomain[Escalation](s, domain, "escalationsByDomain")
+    deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
+    deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
+    deleteByDomain[Endpoint](s, domain, "endpointsByDomain")
+    deleteByDomain[ConfigOption](s, domain, "configOptionsByDomain")
+    deleteByDomain[Domain](s, domain, "domainByName")
   })
 
   def listDomains  = sessionFactory.withSession(s => listQuery[Domain](s, "allDomains", Map()))
@@ -43,7 +48,6 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   def setSystemConfigOption(key:String, value:String) = writeConfigOption(Domain.DEFAULT_DOMAIN.name, key, value)
   def clearSystemConfigOption(key:String) = deleteConfigOption(Domain.DEFAULT_DOMAIN.name, key)
 
-  private def getDomain(name: String) = sessionFactory.withSession(s => {
-    singleQuery[Domain](s, "domainByName", Map("name" -> name), "domain %s".format(name))
-  })
+  private def deleteByDomain[T](s:Session, domain:String, queryName:String)
+    = listQuery[T](s, queryName, Map("name" -> domain)).foreach(s.delete(_))
 }

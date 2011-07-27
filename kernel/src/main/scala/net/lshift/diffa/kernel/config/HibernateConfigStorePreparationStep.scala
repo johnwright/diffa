@@ -52,7 +52,7 @@ class HibernateConfigStorePreparationStep
           val dbMetadata = new DatabaseMetadata(connection, Dialect.getDialect(props))
 
           val defaultCatalog = props.getProperty(Environment.DEFAULT_CATALOG)
-		      val defaultSchema = props.getProperty(Environment.DEFAULT_SCHEMA)
+          val defaultSchema = props.getProperty(Environment.DEFAULT_SCHEMA)
 
           if (dbMetadata.getTableMetadata("config_options", defaultSchema, defaultCatalog, false) == null) {
             // We need to export the schema
@@ -73,7 +73,7 @@ class HibernateConfigStorePreparationStep
         s.save(Domain.DEFAULT_DOMAIN)
         s.save(configOpt)
       })
-    
+
       log.info("Applied initial database schema")
     } else {
       // Maybe upgrade the schema?

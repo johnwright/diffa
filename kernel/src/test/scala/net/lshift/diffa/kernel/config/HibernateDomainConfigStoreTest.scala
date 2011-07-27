@@ -18,19 +18,21 @@ package net.lshift.diffa.kernel.config
 
 import org.junit.Assert._
 import org.hibernate.cfg.Configuration
-import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.{Test, Before}
 import scala.collection.Map
-import scala.collection.JavaConversions._
 import org.joda.time.DateTime
 import collection.mutable.HashSet
 import scala.collection.JavaConversions._
+import system.{HibernateSystemConfigStore, SystemConfigStore}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 class HibernateDomainConfigStoreTest {
+
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
-  private val log:Logger = LoggerFactory.getLogger(getClass)
+  private val systemConfigStore: SystemConfigStore =
+    new HibernateSystemConfigStore(domainConfigStore, HibernateDomainConfigStoreTest.sessionFactory)
 
   val dateCategoryName = "bizDate"
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
@@ -49,15 +51,20 @@ class HibernateDomainConfigStoreTest {
 
   val stringPrefixCategoriesMap = Map(stringCategoryName -> new PrefixCategoryDescriptor(1, 3, 1))
 
-  val upstream1 = new Endpoint(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1", contentType = "application/json", categories = dateRangeCategoriesMap)
-  val upstream2 = new Endpoint(name = "TEST_UPSTREAM_ALT", scanUrl = "testScanUrl2",
-    contentRetrievalUrl = "contentRetrieveUrl1", contentType = "application/json", categories = setCategoriesMap)
-  val downstream1 = new Endpoint(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3", contentType = "application/json", categories = intRangeCategoriesMap)
-  val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", scanUrl = "testScanUrl4",
-    versionGenerationUrl = "generateVersionUrl1", contentType = "application/json", categories = stringPrefixCategoriesMap)
-
   val domainName = "domain"
   val domain = new Domain(domainName)
+
+  val upstream1 = new Endpoint(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1", contentType = "application/json",
+                               categories = dateRangeCategoriesMap, domain = domain)
+  val upstream2 = new Endpoint(name = "TEST_UPSTREAM_ALT", scanUrl = "testScanUrl2",
+                               contentRetrievalUrl = "contentRetrieveUrl1", contentType = "application/json",
+                               categories = setCategoriesMap, domain = domain)
+
+  val downstream1 = new Endpoint(name = "TEST_DOWNSTREAM", domain = domain, scanUrl = "testScanUrl3",
+                                 contentType = "application/json", categories = intRangeCategoriesMap)
+  val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", domain = domain, scanUrl = "testScanUrl4",
+                                 versionGenerationUrl = "generateVersionUrl1", contentType = "application/json",
+                                 categories = stringPrefixCategoriesMap)
 
   val versionPolicyName1 = "TEST_VPNAME"
   val matchingTimeout = 120
@@ -65,10 +72,20 @@ class HibernateDomainConfigStoreTest {
   val pairKey = "TEST_PAIR"
   val pairDef = new PairDef(pairKey, domainName, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
+
+  val pair = DiffaPair(key = pairKey, domain = domain)
+
   val repairAction = new RepairAction(name="REPAIR_ACTION_NAME",
                                       scope=RepairAction.ENTITY_SCOPE,
-                                      url="resend",
-                                      pairKey=pairKey)
+                                      url="resend", pair=pair)
+
+  val escalation = Escalation(name="esc", action = "test_action", pair = pair,
+                              event = EscalationEvent.UPSTREAM_MISSING,
+                              actionType = EscalationActionType.REPAIR,
+                              origin = EscalationOrigin.SCAN)
+
+  val configKey = "foo"
+  val configValue = "bar"
 
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
   val pairRenamed = "TEST_PAIR_RENAMED"
@@ -76,19 +93,19 @@ class HibernateDomainConfigStoreTest {
   val TEST_USER = User("foo", HashSet(Domain(name = "domain")), "foo@bar.com")
 
   def declareAll() {
+    systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream2)
     domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
     domainConfigStore.createOrUpdateEndpoint(domainName, downstream2)
-    //domainConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdatePair(domainName, pairDef)
     domainConfigStore.createOrUpdateRepairAction(domainName, repairAction)
+    domainConfigStore.createOrUpdateEscalation(domainName, escalation)
+    domainConfigStore.setConfigOption(domainName, configKey, configValue)
   }
 
   @Before
-  def setUp: Unit = {
-    HibernateDomainConfigStoreTest.clearAllConfig
-  }
+  def setUp = HibernateDomainConfigStoreTest.clearAllConfig
 
   def exists (e:Endpoint, count:Int, offset:Int) : Unit = {
     val endpoints = domainConfigStore.listEndpoints(domainName)
@@ -104,9 +121,34 @@ class HibernateDomainConfigStoreTest {
   def exists (e:Endpoint, count:Int) : Unit = exists(e, count, count - 1)
 
   @Test
+  def domainShouldBeDeletable = {
+    declareAll()
+
+    exists(upstream1, 4, 0)
+    exists(upstream2, 4, 1)
+    exists(downstream1, 4, 2)
+    exists(downstream2, 4, 3)
+
+    assertFalse(domainConfigStore.listPairs(domainName).isEmpty)
+    assertFalse(domainConfigStore.allConfigOptions(domainName).isEmpty)
+    assertFalse(domainConfigStore.listRepairActions(domainName).isEmpty)
+    assertFalse(domainConfigStore.listEscalations(domainName).isEmpty)
+
+    systemConfigStore.deleteDomain(domainName)
+
+    assertTrue(domainConfigStore.listEndpoints(domainName).isEmpty)
+    assertTrue(domainConfigStore.listPairs(domainName).isEmpty)
+    assertTrue(domainConfigStore.allConfigOptions(domainName).isEmpty)
+    assertTrue(domainConfigStore.listRepairActions(domainName).isEmpty)
+    assertTrue(domainConfigStore.listEscalations(domainName).isEmpty)
+
+    assertTrue(systemConfigStore.listDomains.filter(_.name == domainName).isEmpty)
+  }
+
+  @Test
   def testDeclare: Unit = {
     // declare the domain
-    // TODO
+    systemConfigStore.createOrUpdateDomain(domain)
 
     // Declare endpoints
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
@@ -129,7 +171,7 @@ class HibernateDomainConfigStoreTest {
     domainConfigStore.createOrUpdateRepairAction(domainName, repairAction)
     val retrActions = domainConfigStore.listRepairActionsForPair(domainName, retrPair)
     assertEquals(1, retrActions.length)
-    assertEquals(Some(pairKey), retrActions.headOption.map(_.pairKey))
+    assertEquals(Some(pairKey), retrActions.headOption.map(_.pair.key))
   }
 
   @Test
@@ -414,7 +456,9 @@ object HibernateDomainConfigStoreTest {
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
         setProperty("hibernate.connection.url", "jdbc:derby:target/domainConfigStore;create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
+        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+                                                               // otherwise the preparation step will not get committed
 
   val sessionFactory = {
     val sf = config.buildSessionFactory
@@ -423,16 +467,7 @@ object HibernateDomainConfigStoreTest {
   }
 
   val domainConfigStore = new HibernateDomainConfigStore(sessionFactory)
+  val systemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sessionFactory)
 
-  def clearAllConfig = {
-    val s = sessionFactory.openSession
-    s.createCriteria(classOf[User]).list.foreach(u => s.delete(u))
-    s.createCriteria(classOf[Pair]).list.foreach(p => s.delete(p))
-    s.createCriteria(classOf[Endpoint]).list.foreach(p => s.delete(p))
-    s.createCriteria(classOf[ConfigOption]).list.foreach(o => s.delete(o))
-    s.createCriteria(classOf[RepairAction]).list.foreach(s.delete)
-    s.createCriteria(classOf[Domain]).list.foreach(s.delete)
-    s.flush
-    s.close
-  }
+  def clearAllConfig = systemConfigStore.deleteDomain("domain")
 }

@@ -16,11 +16,11 @@
 
 package net.lshift.diffa.kernel.util
 
-import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.util.SessionHelper._ // for implicit conversions Java collections <--> Scala collections
 import org.hibernate.{NonUniqueResultException, Query, Session, SessionFactory}
 import org.slf4j.{LoggerFactory, Logger}
-import net.lshift.diffa.kernel.config.ConfigOption
-import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, ConfigOption}
 import scala.collection.Map
 
 /**
@@ -80,13 +80,22 @@ trait HibernateQueryUtils {
   }
 
   /**
+   * Returns a domain by its name
+   */
+  def getDomain(name: String) = sessionFactory.withSession(s => {
+    singleQuery[Domain](s, "domainByName", Map("name" -> name), "domain %s".format(name))
+  })
+
+  /**
    * This is un-protected call to set a configuration option.
    * It is up to the calling context to establish this is authorized.
    */
-  def writeConfigOption(domain:String, key:String, value:String) = sessionFactory.withSession(s => {
-    val co = s.get(classOf[ConfigOption], key) match {
+  def writeConfigOption(domainName:String, key:String, value:String) = sessionFactory.withSession(s => {
+    val domain = getDomain(domainName)
+    val scopedKey = DomainScopedKey(key, domain)
+    val co = s.get(classOf[ConfigOption], scopedKey) match {
       case null =>
-        new ConfigOption(key = key, value = value)
+        new ConfigOption(domain = domain, key = key, value = value)
       case current:ConfigOption =>  {
         current.value = value
         current
@@ -100,7 +109,8 @@ trait HibernateQueryUtils {
    * It is up to the calling context to establish this is authorized.
    */
   def deleteConfigOption(domain:String, key:String) = sessionFactory.withSession(s => {
-    s.get(classOf[ConfigOption], key) match {
+    val scopedKey = DomainScopedKey(key, getDomain(domain))
+    s.get(classOf[ConfigOption], scopedKey) match {
       case null =>
       case current:ConfigOption =>  s.delete(current)
     }
