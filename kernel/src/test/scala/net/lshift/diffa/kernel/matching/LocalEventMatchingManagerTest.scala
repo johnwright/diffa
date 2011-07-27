@@ -21,13 +21,15 @@ import org.junit.Assert._
 import org.easymock.EasyMock.{createStrictMock, expect, replay, reset}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.Domain
 
 /**
  * Test cases for the LocalEventMatchingManager.
  */
 class LocalEventMatchingManagerTest {
 
-  val domain = "domain"
+  val domainName = "domain"
+  val domain = Domain(name=domainName)
 
   val pair1 = new DiffaPair(key = "pair1", domain = domain, matchingTimeout = 10)
   val pair2 = new DiffaPair(key = "pair2", domain = domain, matchingTimeout = 5)
@@ -37,9 +39,9 @@ class LocalEventMatchingManagerTest {
 
   val configStore = createStrictMock(classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock(classOf[SystemConfigStore])
-  expect(configStore.getPair(domain, "pair1")).andStubReturn(pair1)
-  expect(configStore.getPair(domain, "pair2")).andStubReturn(pair2)
-  expect(configStore.listPairs(domain)).andStubReturn(Seq(pair1,pair2))
+  expect(configStore.getPair(domainName, "pair1")).andStubReturn(pair1)
+  expect(configStore.getPair(domainName, "pair2")).andStubReturn(pair2)
+  expect(configStore.listPairs(domainName)).andStubReturn(Seq(pair1,pair2))
   replay(configStore)
 
   val matchingManager = new LocalEventMatchingManager(systemConfigStore)
@@ -57,7 +59,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldReturnAMatcherForAPairKeyLaterIntroduced {
     reset(configStore)
-    expect(configStore.getPair(domain, "pair3")).andStubReturn(pair3)
+    expect(configStore.getPair(domainName, "pair3")).andStubReturn(pair3)
     replay(configStore)
 
     matchingManager.onUpdatePair(pair3)
@@ -67,7 +69,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldNotReturnAMatcherForARemovedPair {
     reset(configStore)
-    expect(configStore.getPair(domain, "pair3")).andStubReturn(pair3)
+    expect(configStore.getPair(domainName, "pair3")).andStubReturn(pair3)
     replay(configStore)
 
     matchingManager.onUpdatePair(pair3)
@@ -88,7 +90,7 @@ class LocalEventMatchingManagerTest {
   @Test
   def shouldApplyListenersToNewMatchers {
     reset(configStore)
-    expect(configStore.getPair(domain, "pair3")).andStubReturn(pair3)
+    expect(configStore.getPair(domainName, "pair3")).andStubReturn(pair3)
     replay(configStore)
 
     val l1 = createStrictMock(classOf[MatchingStatusListener])

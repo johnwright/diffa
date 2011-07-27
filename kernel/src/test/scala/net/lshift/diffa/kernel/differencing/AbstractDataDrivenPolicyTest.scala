@@ -228,7 +228,7 @@ abstract class AbstractDataDrivenPolicyTest {
   //
 
   protected def setupStubs(scenario:Scenario) {
-    expect(configStore.getPair(scenario.pair.domain, scenario.pair.key)).andReturn(scenario.pair).anyTimes
+    expect(configStore.getPair(scenario.pair.domain.name, scenario.pair.key)).andReturn(scenario.pair).anyTimes
   }
 
   protected def expectUnmatchedVersionCheck(scenario:Scenario) = {

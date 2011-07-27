@@ -27,12 +27,14 @@ import net.lshift.diffa.kernel.differencing.{MatchOrigin, LiveWindow, TriggeredB
 import net.lshift.diffa.kernel.escalation.EscalationManagerTest.Scenario
 import net.lshift.diffa.kernel.config._
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theories, Theory}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
 
   val domain = "domain"
   val pairKey = "some pair key"
+  val pair = DiffaPair(key = pairKey, domain = Domain(name=domain))
 
   val configStore = createMock(classOf[DomainConfigStore])
   val actionsClient = createStrictMock(classOf[ActionsClient])
@@ -42,7 +44,7 @@ class EscalationManagerTest {
     expect(configStore.getPair(domain, pairKey)).andReturn(Pair()).anyTimes()
 
     expect(configStore.listEscalationsForPair(domain, EasyMock.isA(classOf[Pair]))).andReturn(
-      List(Escalation("foo", pairKey, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
+      List(Escalation("foo", pair, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
     ).anyTimes()
 
     replay(configStore)

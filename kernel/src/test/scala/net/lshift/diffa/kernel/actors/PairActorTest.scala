@@ -34,11 +34,11 @@ import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
-import net.lshift.diffa.kernel.config.{DomainConfigStore, Endpoint, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Domain, DomainConfigStore, Endpoint, Pair => DiffaPair}
 
 class PairActorTest {
 
-  val domain = "some-domain"
+  val domainName = "some-domain"
   val pairKey = "some-pairing"
   val policyName = ""
   val upstream = Endpoint(name = "up", scanUrl = "up", contentType = "application/json")
@@ -46,7 +46,7 @@ class PairActorTest {
 
   val pair = new DiffaPair()
   pair.key = pairKey
-  pair.domain = domain
+  pair.domain = Domain(name = domainName)
   pair.versionPolicyName = policyName
   pair.upstream = upstream
   pair.downstream = downstream
@@ -70,7 +70,7 @@ class PairActorTest {
 
   val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
-  expect(configStore.listPairs(domain)).andReturn(Array[DiffaPair]())
+  expect(configStore.listPairs(domainName)).andReturn(Array[DiffaPair]())
   replay(configStore)
 
   val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])

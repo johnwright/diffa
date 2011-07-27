@@ -25,10 +25,9 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
-import net.lshift.diffa.kernel.config.{Endpoint, DomainConfigStore}
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
+import net.lshift.diffa.kernel.config.{Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Test cases for the default session manager.
@@ -81,8 +80,9 @@ class DefaultSessionManagerTest {
 
   val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
   val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
-  
-  val domain = "domain"
+
+  val domainName = "domain"
+  val domain = Domain(name=domainName)
   val pair = DiffaPair(key = "pair", domain = domain)
   val pair1 = DiffaPair(key = "pair1", domain = domain, versionPolicyName = "policy", upstream = u, downstream = d)
   val pair2 = DiffaPair(key = "pair2", domain = domain, versionPolicyName = "policy", upstream = u, downstream = d)
@@ -99,8 +99,8 @@ class DefaultSessionManagerTest {
     participantFactory.createDownstreamParticipant(d) 
         
     //expect(configStore.getPair("pair")).andStubReturn(pair1)
-    expect(configStore.getPair(domain, "pair1")).andStubReturn(pair1)
-    expect(configStore.getPair(domain, "pair2")).andStubReturn(pair2)
+    expect(configStore.getPair(domainName, "pair1")).andStubReturn(pair1)
+    expect(configStore.getPair(domainName, "pair2")).andStubReturn(pair2)
     expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
     expect(matchingManager.getMatcher(pair1)).andStubReturn(Some(matcher))
     expect(matcher.isVersionIDActive(new VersionID(pair, "id"))).andStubReturn(true)

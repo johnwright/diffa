@@ -68,7 +68,8 @@ abstract class AbstractPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
   val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
-  val domain = "domain"
+  val domainName = "domain"
+  val domain = Domain(name=domainName)
   val pairKey = "A-B"
 
   val emptyAttributes:Map[String,TypedAttribute] = Map()
@@ -79,7 +80,7 @@ abstract class AbstractPolicyTest {
 
   val pair = new Pair(key=pairKey, domain=domain, upstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)), downstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)))
 
-  expect(configStore.getPair(domain,pairKey)).andReturn(pair).anyTimes
+  expect(configStore.getPair(domainName,pairKey)).andReturn(pair).anyTimes
   replay(configStore)
 
   protected def replayAll = replay(usMock, dsMock, store, writer, listener)

@@ -30,12 +30,11 @@ import org.apache.lucene.store.{MMapDirectory, FSDirectory, RAMDirectory}
 import java.io.File
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoints, Theory, DataPoint, Theories}
-import net.lshift.diffa.kernel.config.DomainConfigStore
 import org.easymock.EasyMock
 import org.joda.time.{LocalDate, DateTime}
 import net.lshift.diffa.participant.scanning._
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{Domain, DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -452,7 +451,8 @@ object LuceneVersionCorrelationStoreTest {
   EasyMock.expect(dummyConfigStore.maybeSystemConfigOption("correlationStore.schemaVersion")).andStubReturn(Some("0"))
   EasyMock.replay(dummyConfigStore)
 
-  val domain = "domain"
+  val domainName = "domain"
+  val domain = Domain(name=domainName)
   val pair = DiffaPair(key="pair",domain=domain)
   val otherPair = DiffaPair(key="other-pair",domain=domain)
   val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore)

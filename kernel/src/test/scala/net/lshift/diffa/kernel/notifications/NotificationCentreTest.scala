@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.{PairScanState, PairScanListener, TriggeredByScan, DifferencingListener}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.Domain
 
 /**
  * Test cases for the Notification Centre.
@@ -57,7 +58,7 @@ class NotificationCentreTest {
     nc.registerForPairScanEvents(l1)
     nc.registerForPairScanEvents(l2)
 
-    val pair = DiffaPair(key = "p", domain = "d")
+    val pair = DiffaPair(key = "p", domain = Domain(name="domain"))
 
     l1.pairScanStateChanged(pair, PairScanState.SCANNING)
     l2.pairScanStateChanged(pair, PairScanState.SCANNING)

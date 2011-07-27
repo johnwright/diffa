@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 import ch.qos.logback.classic.Level
 import net.lshift.diffa.participant.scanning.TimeRangeConstraint
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Domain, Pair => DiffaPair}
 
 /**
  * Performance test for the version correlation store.
@@ -51,7 +51,7 @@ class VersionCorrelationStorePerfTest {
   }
 
   private val stores = LuceneVersionCorrelationStoreTest.stores
-  private val pair = DiffaPair(key="ab",domain="domain")
+  private val pair = DiffaPair(key="ab",domain=Domain(name="domain"))
 
   @Test
   def canQueryWithLargeNumbersOfMatchingCorrelations() {

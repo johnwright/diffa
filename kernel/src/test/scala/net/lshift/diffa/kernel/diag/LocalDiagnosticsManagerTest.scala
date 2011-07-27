@@ -5,11 +5,11 @@ import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.HamcrestDateTimeHelpers._
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Domain, Pair => DiffaPair}
 
 class LocalDiagnosticsManagerTest {
   val diagnostics = new LocalDiagnosticsManager
-  val pair = DiffaPair(key="P1", domain="domain")
+  val pair = DiffaPair(key="P1", domain= Domain(name ="domain"))
 
   @Test
   def shouldAcceptAndStoreLogEventForPair() {
