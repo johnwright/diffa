@@ -574,7 +574,7 @@ function drawGrid() {
       drawArrow(underlayContext, directions.left, 10, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
     var rightCell = findCellWithVisibleBlob(viewportX + canvas.width - 1, s - laneHeight, directions.right);
-    if (nonEmptyCellExists(rightCell.row, rightCell.column + 1, maxColumns - 1)) {
+    if (nonEmptyCellExists(rightCell.row, rightCell.column + 1, maxColumns)) {
       drawArrow(underlayContext, directions.right, canvas.width - 10 - arrowWidth, s - (arrowHeight / 4) - (gridSize / 2), arrowWidth, arrowHeight);
     }
     lane++;
@@ -753,11 +753,16 @@ function mouseOver(e) {
 }
 
 function updateZoomControls() {
-  if (bucketSize <= 1) {
-    $('#zoomIn').attr('disabled', 'disabled');
-  } else {
-    $('#zoomIn').removeAttr('disabled');
+  function toggleControl(selector, isDisabled) {
+    if (isDisabled) {
+      $(selector).attr('disabled', 'disabled');
+    } else {
+      $(selector).removeAttr('disabled');
+    }
   }
+
+  toggleControl('#zoomIn', bucketSize <= 1);    // Buckets can't be smaller than 1s
+  toggleControl('#zoomOut', bucketSize >= 180*24*3600);   // Buckets can't be wider than 6-months
 }
 
 function zoomOut() {
