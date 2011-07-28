@@ -18,15 +18,15 @@ package net.lshift.diffa.kernel.config
 
 import org.hibernate.SessionFactory
 import org.hibernate.jdbc.Work
-import org.hibernate.tool.hbm2ddl.SchemaExport
 import org.hibernate.dialect.Dialect
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.util.SessionHelper._// for 'SessionFactory.withSession'
+import org.hibernate.criterion.ExistsSubqueryExpression
+import org.hibernate.tool.hbm2ddl.{DatabaseMetadata, SchemaExport}
+import org.hibernate.cfg.{Environment, Configuration}
 import org.hibernate.mapping.{Column, PrimaryKey}
 import collection.mutable.ListBuffer
 import java.sql.{Types, Connection}
-import org.hibernate.cfg.Configuration
-
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
  */
@@ -44,13 +44,13 @@ class HibernateConfigStorePreparationStep
 
   def prepare(sf: SessionFactory, config: Configuration) {
 
-    detectVersion(sf) match {
+    detectVersion(sf, config) match {
       case None          => {
         (new SchemaExport(config)).create(false, true)
 
         // Since we are creating a fresh schema, we need to populate the schema version as well
 
-        val createStmt = "create table schema_version (version integer not null, primary key (version))"
+        val createStmt = AddSchemaVersionMigrationStep.schemaVersionCreateStatement(Dialect.getDialect(config.getProperties))
         val insertStmt = HibernatePreparationUtils.schemaVersionInsertStatement(migrationSteps.last.versionId)
 
         sf.withSession(s => {
@@ -101,26 +101,45 @@ class HibernateConfigStorePreparationStep
   }
 
   /**
+   * Determines whether the given table exists in the underlying DB
+   */
+  def tableExists(sf: SessionFactory, config:Configuration, tableName:String) : Boolean = {
+    var hasTable:Boolean = false
+
+    sf.withSession(s => {
+      s.doWork(new Work {
+        def execute(connection: Connection) = {
+          val props = config.getProperties
+          val dbMetadata = new DatabaseMetadata(connection, Dialect.getDialect(props))
+
+          val defaultCatalog = props.getProperty(Environment.DEFAULT_CATALOG)
+          val defaultSchema = props.getProperty(Environment.DEFAULT_SCHEMA)
+
+          hasTable = (dbMetadata.getTableMetadata(tableName, defaultSchema, defaultCatalog, false) != null)
+        }
+      })
+    })
+
+    hasTable
+  }
+
+  /**
    * Detects the version of the schema using native SQL
    */
-  def detectVersion(sf: SessionFactory) : Option[Int] = {
-    try {
-      // Attempt to read the schema_version table, if it exists
+  def detectVersion(sf: SessionFactory, config:Configuration) : Option[Int] = {
+    // Attempt to read the schema_version table, if it exists
+    if (tableExists(sf, config, "schema_version") ) {
       Some(sf.withSession(_.createSQLQuery("select max(version) from schema_version").uniqueResult().asInstanceOf[Int]))
     }
-    catch {
-      case e => {
-        // The schema_version table doesn't exist, so look at the config_options table
-        try {
-          //Prior to version 2 of the database, the schema version was kept in the ConfigOptions table
-          val query = "select opt_val from config_options where opt_key = 'configStore.schemaVersion'"
-          Some(sf.withSession(_.createSQLQuery(query).uniqueResult().asInstanceOf[String].toInt))
-        }
-        catch {
-          // No table was available to read a schema version
-          case e => None
-        }
-      }
+    // The schema_version table doesn't exist, so look at the config_options table
+    else if (tableExists(sf, config, "config_options") ) {
+      //Prior to version 2 of the database, the schema version was kept in the ConfigOptions table
+      val query = "select opt_val from config_options where opt_key = 'configStore.schemaVersion'"
+      Some(sf.withSession(_.createSQLQuery(query).uniqueResult().asInstanceOf[String].toInt))
+    }
+    else {
+      // No known table was available to read a schema version
+      None
     }
   }
 }
@@ -205,15 +224,18 @@ object RemoveGroupsMigrationStep extends HibernateMigrationStep {
 }
 
 object AddSchemaVersionMigrationStep extends HibernateMigrationStep {
+
+  def schemaVersionCreateStatement(dialect:Dialect) = {
+    val schemaVersion = new TableDescriptor("schema_version", "version")
+    schemaVersion.addColumn("version", Types.INTEGER, false)
+    HibernatePreparationUtils.generateCreateSQL(dialect, schemaVersion)
+  }
+
   def versionId = 2
   def migrate(config: Configuration, connection: Connection) {
     val dialect = Dialect.getDialect(config.getProperties)
-
-    val schemaVersion = new TableDescriptor("schema_version", "version")
-    schemaVersion.addColumn("version", Types.INTEGER, false)
-
     val stmt = connection.createStatement()
-    stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, schemaVersion))
+    stmt.execute(schemaVersionCreateStatement(dialect))
     stmt.execute(HibernatePreparationUtils.schemaVersionInsertStatement(versionId))
   }
 }
