@@ -19,12 +19,17 @@ package net.lshift.diffa.kernel.config
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theory, Theories}
 import org.junit.Assert._
-import net.lshift.diffa.kernel.util.SessionHelper._ // for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.util.SessionHelper._
+import org.slf4j.LoggerFactory
+import org.hibernate.dialect.{DerbyDialect, Dialect}
+import java.util.jar.Attributes.Name
+import org.hibernate.mapping.{Column, PrimaryKey}
+import java.sql.{Types, Connection}
+
+// for 'SessionFactory.withSession'
 import org.hibernate.cfg.{Environment, Configuration}
 import org.hibernate.jdbc.Work
-import java.sql.Connection
 import scala.collection.JavaConversions._
-import org.hibernate.dialect.Dialect
 import org.junit.Test
 import org.hibernate.tool.hbm2ddl.{SchemaExport, DatabaseMetadata}
 import java.io.{File, InputStream}
@@ -36,6 +41,9 @@ import org.apache.commons.io.{FileUtils, IOUtils}
  */
 @RunWith(classOf[Theories])
 class HibernatePreparationTest {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   // The Hibernate validateSchema method won't check for too-many tables being present, presumably since this won't
   // adversely affect it's operation. Since we do care that we delete some objects, we'll have a specific ban-list of
   // objects that we don't want to be present.
@@ -49,7 +57,15 @@ class HibernatePreparationTest {
   )
 
   @Theory
+  def shouldGenerateWellFormedSQL(spec:TableSpecification) {
+    assertEquals(spec.sql, HibernatePreparationUtils.generateCreateSQL(spec.dialect, spec.descriptor))
+  }
+
+  @Theory
   def shouldBeAbleToPrepareDatabaseVersion(startVersion:StartingDatabaseVersion) {
+
+    log.info("Testing DB version: " + startVersion.startName)
+
     val prepResource = this.getClass.getResourceAsStream(startVersion.startName + "-config-db.sql")
     assertNotNull(prepResource)
     val prepStmts = loadStatements(prepResource)
@@ -154,6 +170,13 @@ object HibernatePreparationTest {
   @DataPoint def emptyDb = StartingDatabaseVersion("empty")
   @DataPoint def v0 = StartingDatabaseVersion("v0")
   @DataPoint def v1 = StartingDatabaseVersion("v1")
+  @DataPoint def v2 = StartingDatabaseVersion("v2")
+
+  @DataPoint def simple = TableSpecification(
+    new DerbyDialect(),
+    new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false),
+    "create table foo (bar integer not null, primary key (bar))")
 }
 
 case class StartingDatabaseVersion(startName:String)
+case class TableSpecification(dialect:Dialect,descriptor:TableDescriptor,sql:String)
