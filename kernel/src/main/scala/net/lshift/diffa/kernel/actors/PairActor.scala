@@ -356,7 +356,7 @@ case class PairActor(pair:DiffaPair,
   def handleDifferenceMessage() = {
     try {
       writer.flush()
-      policy.replayUnmatchedDifferences(pair, differencingListener)
+      policy.replayUnmatchedDifferences(pair, differencingListener, TriggeredByBoot)
     } catch {
       case ex => {
         diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Failed to Difference Pair: " + ex.getMessage)

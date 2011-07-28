@@ -103,7 +103,8 @@ class ConfigurationTest {
       pairs = Set(
         PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
         PairDef("ac", "domain", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
-      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", DiffaPair(key = "ab", domain = Domain(name="domain"))))
+      repairActions = Set(RepairAction("Resend Sauce", "resend", "pair", DiffaPair(key = "ab", domain = Domain(name="domain")))),
+      escalations = Set(Escalation("Resend Missing", DiffaPair(key = "ab", domain = Domain(name="domain")), "Resend Sauce", "repair", "downstream-missing", "scan"))
     )
 
     expect(endpointListener.onEndpointAvailable(ep1)).once
@@ -155,7 +156,8 @@ class ConfigurationTest {
           // ac is gone
         PairDef("ad", "domain", "same", 5, "upstream1", "downstream2")),
       // name of repair action is changed
-      repairActions = Set(RepairAction("Resend Source", "resend", "pair", DiffaPair(key = "ab", domain = Domain(name="domain"))))
+      repairActions = Set(RepairAction("Resend Source", "resend", "pair", DiffaPair(key = "ab", domain = Domain(name="domain")))),
+      escalations = Set(Escalation("Resend Another Missing", DiffaPair(key = "ab", domain = Domain(name="domain")), "Resend Source", "repair", "downstream-missing", "scan"))
     )
 
     expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once

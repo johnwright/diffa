@@ -60,6 +60,13 @@ class Configuration(val configStore: DomainConfigStore,
         .find(newA => newA.name == a.name && newA.pair == a.pair).isEmpty)
     removedActions.foreach(a => deleteRepairAction(domain, a.name, a.pair.key))
     diffaConfig.repairActions.foreach(a => createOrUpdateRepairAction(domain,a))
+      
+    // Remove missing escalations, and create/update the rest
+    var removedEscalations =
+      configStore.listEscalations(domain).filter(e => diffaConfig.escalations
+        .find(newE => newE.name == e.name && newE.pair == e.pair).isEmpty)
+    removedEscalations.foreach(e => deleteEscalation(domain, e.name, e.pair.key))
+    diffaConfig.escalations.foreach(createOrUpdateEscalation(domain,_))
 
     // Remove old pairs and endpoints
     val removedPairs = configStore.listPairs(domain).filter(currP => diffaConfig.pairs.find(newP => newP.pairKey == currP.key).isEmpty)
