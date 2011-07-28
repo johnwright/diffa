@@ -215,6 +215,7 @@ object HibernatePreparationTest {
   @DataPoint def v0 = StartingDatabaseVersion("v0")
   @DataPoint def v1 = StartingDatabaseVersion("v1")
   @DataPoint def v2 = StartingDatabaseVersion("v2")
+  @DataPoint def v3 = StartingDatabaseVersion("v3")
 
   @DataPoint def verySimple = TableSpecification(
     new DerbyDialect(),

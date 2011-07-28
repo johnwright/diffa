@@ -22,10 +22,6 @@ import org.hibernate.dialect.Dialect
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.mapping.{Column, Table, PrimaryKey, ForeignKey}
-import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation
-
-// for 'SessionFactory.withSession'
-import org.hibernate.criterion.ExistsSubqueryExpression
 import org.hibernate.tool.hbm2ddl.{DatabaseMetadata, SchemaExport}
 import org.hibernate.cfg.{Environment, Configuration}
 import collection.mutable.ListBuffer
@@ -333,8 +329,12 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     stmt.execute(HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN))
 
     // alter table config_options drop column is_internal
-    // TODO Find out why this drop statement doesn't work
-    //stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "config_options", "is_internal" ))
+    try {
+      stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "config_options", "is_internal" ))
+    }
+    catch {
+      case e => // TODO Find out why this drop statement doesn't work
+    }
 
     // Add domain column to config_option, endpoint and pair
     val domainColumn = new Column("domain"){
