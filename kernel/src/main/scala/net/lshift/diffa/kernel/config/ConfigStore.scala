@@ -312,3 +312,11 @@ case class ConfigOption(@BeanProperty var key:String,
                         @BeanProperty var isInternal:Boolean) {
   def this() = this(null, null, false)
 }
+
+/**
+ * Represents the current DB schema version
+ */
+case class SchemaVersion(@BeanProperty var version:Int = 0)
+{
+  def this() = this(0)
+}
