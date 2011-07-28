@@ -61,16 +61,28 @@ class HibernatePreparationTest {
     assertEquals("alter table foo drop column \"bar\"", instruction)
   }
 
+  @Test(expected = classOf[IllegalArgumentException])
+  def shouldHandleNullabilityConflict = {
+    val column = new Column("bar"){
+      setSqlTypeCode(Types.VARCHAR)
+      setNullable(false)
+    }
+    HibernatePreparationUtils.generateAddColumnSQL(genericConfig, "foo", column )
+    fail("Should have thrown an IllegalArgumentException")
+  }
+
   @Test
   def shouldGenerateAddColumn = {
     val column = new Column("bar"){
-      setSqlTypeCode(Types.VARCHAR);
-      setLength(255);
+      setSqlTypeCode(Types.VARCHAR)
+      setLength(255)
       setNullable(false)
+      setDefaultValue("baz")
     }
     val instruction = HibernatePreparationUtils.generateAddColumnSQL(genericConfig, "foo", column )
-    assertEquals("alter table foo add column bar varchar(255) not null", instruction)
+    assertEquals("alter table foo add column bar varchar(255) not null default 'baz'", instruction)
   }
+
 
   @Test
   def shouldGenerateForeignKeyConstraint = {
