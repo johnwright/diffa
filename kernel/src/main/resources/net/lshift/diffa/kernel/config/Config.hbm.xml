@@ -109,10 +109,6 @@
     <property name="origin" type="string" column="origin" not-null="true"/>
   </class>
 
-  <class name="SchemaVersion" table="schema_version" abstract="false">
-    <id name="version" type="int" column="version"/>
-  </class>
-
   <query name="endpointByName">
     select e from Endpoint e where e.name = :name
   </query>

@@ -21,13 +21,15 @@ import org.junit.experimental.theories.{DataPoint, Theory, Theories}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.slf4j.LoggerFactory
+import org.hibernate.dialect.{DerbyDialect, Dialect}
+import java.util.jar.Attributes.Name
+import org.hibernate.mapping.{Column, PrimaryKey}
+import java.sql.{Types, Connection}
 
 // for 'SessionFactory.withSession'
 import org.hibernate.cfg.{Environment, Configuration}
 import org.hibernate.jdbc.Work
-import java.sql.Connection
 import scala.collection.JavaConversions._
-import org.hibernate.dialect.Dialect
 import org.junit.Test
 import org.hibernate.tool.hbm2ddl.{SchemaExport, DatabaseMetadata}
 import java.io.{File, InputStream}
@@ -53,6 +55,11 @@ class HibernatePreparationTest {
       "name"    // Removed as of the v1 migration
     ) 
   )
+
+  @Theory
+  def shouldGenerateWellFormedSQL(spec:TableSpecification) {
+    assertEquals(spec.sql, HibernatePreparationUtils.generateCreateSQL(spec.dialect, spec.descriptor))
+  }
 
   @Theory
   def shouldBeAbleToPrepareDatabaseVersion(startVersion:StartingDatabaseVersion) {
@@ -164,6 +171,12 @@ object HibernatePreparationTest {
   @DataPoint def v0 = StartingDatabaseVersion("v0")
   @DataPoint def v1 = StartingDatabaseVersion("v1")
   @DataPoint def v2 = StartingDatabaseVersion("v2")
+
+  @DataPoint def simple = TableSpecification(
+    new DerbyDialect(),
+    new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false),
+    "create table foo (bar integer not null, primary key (bar))")
 }
 
 case class StartingDatabaseVersion(startName:String)
+case class TableSpecification(dialect:Dialect,descriptor:TableDescriptor,sql:String)
