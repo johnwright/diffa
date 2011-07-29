@@ -449,6 +449,7 @@ class HibernateDomainConfigStoreTest {
   @Test
   def testRetrievingOptionsIgnoresSystemOptions = {
     // declare the domain
+    systemConfigStore.createOrUpdateDomain(Domain.DEFAULT_DOMAIN)
     systemConfigStore.createOrUpdateDomain(domain)
 
     domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")

@@ -60,7 +60,7 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryUpstreams(constraints:Seq[ScanConstraint], handler:UpstreamVersionHandler):Unit = {
     queryUpstreams(constraints).foreach(c => {
-      val version = VersionID(c.pairing, c.id)
+      val version = VersionID(c.pairing, c.domain, c.id)
       val attributes = c.upstreamAttributes.toMap
       if (logger.isTraceEnabled) {
         logger.trace("US: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn))
@@ -74,12 +74,12 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryDownstreams(constraints:Seq[ScanConstraint], handler:DownstreamVersionHandler) : Unit = {
     queryDownstreams(constraints).foreach(c => {
-      val version = VersionID(c.pairing, c.id)
+      val version = VersionID(c.pairing, c.domain, c.id)
       val attributes = c.downstreamAttributes.toMap
       if (logger.isTraceEnabled) {
         logger.trace("DS: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s; dvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn, c.downstreamDVsn))
       }
-      handler(VersionID(c.pairing, c.id), c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
+      handler(version, c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }
 
