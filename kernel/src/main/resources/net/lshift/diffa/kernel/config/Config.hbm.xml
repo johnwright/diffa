@@ -235,12 +235,20 @@
     where e.name = :name
   </query>
 
+  <query name="configOptionByNameAndKey">
+    select o.value from ConfigOption o
+    where o.key = :key
+    and o.domain.name = :domain_name
+  </query>
+
   <!-- Other -->
 
-  <query name="configOptionByKey">
-    select o.value from ConfigOption o where o.key = :key
+  <query name="rootConfigOptionByKey">
+    select o.value from ConfigOption o where o.key = :key and o.domain = 'root'
   </query>
+
   <query name="allNonInternalConfigOptions">
     select o from ConfigOption o where o.domain is not 'root'
   </query>
+
 </hibernate-mapping>

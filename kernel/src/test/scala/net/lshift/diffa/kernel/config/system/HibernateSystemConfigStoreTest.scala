@@ -16,12 +16,12 @@
 
 package net.lshift.diffa.kernel.config.system
 
-import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.kernel.config.Endpoint
 import collection.JavaConversions._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.config.{Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor, Endpoint, PairDef}
+import org.junit.{Before, Test}
 
 class HibernateSystemConfigStoreTest {
 
@@ -50,16 +50,27 @@ class HibernateSystemConfigStoreTest {
   val pairDef = new PairDef(pairKey, domainName, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
 
+  @Before
+  def setup = {
+    systemConfigStore.deleteDomain(domainName)
+    systemConfigStore.createOrUpdateDomain(domain)
+  }
+
+  @Test
+  def shouldBeAbleToSetSystemProperty = {
+    systemConfigStore.createOrUpdateDomain(Domain.DEFAULT_DOMAIN)
+    systemConfigStore.setSystemConfigOption("foo", "bar")
+    assertEquals("bar", systemConfigStore.maybeSystemConfigOption("foo").get)
+  }
+
   @Test
   def testQueryingForAssociatedPairsReturnsNothingForUnusedEndpoint {
-    systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     assertEquals(0, systemConfigStore.getPairsForInboundEndpointURL(upstream1.name).length)
   }
 
   @Test
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsUpstream {
-    systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
     domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,
@@ -72,7 +83,6 @@ class HibernateSystemConfigStoreTest {
 
   @Test
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsDownstream {
-    systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
     domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,

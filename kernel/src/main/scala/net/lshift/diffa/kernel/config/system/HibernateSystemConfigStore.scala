@@ -46,7 +46,9 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   def listPairs = listDomains.flatMap(d => domainConfigStore.listPairs(d.name))
   def listEndpoints = listDomains.flatMap(d => domainConfigStore.listEndpoints(d.name))
 
-  def maybeSystemConfigOption(key: String) = null
+  def maybeSystemConfigOption(key: String) = {
+    sessionFactory.withSession(s => singleQueryOpt[String](s, "rootConfigOptionByKey", Map("key" -> key)))
+  }
   def setSystemConfigOption(key:String, value:String) = writeConfigOption(Domain.DEFAULT_DOMAIN.name, key, value)
   def clearSystemConfigOption(key:String) = deleteConfigOption(Domain.DEFAULT_DOMAIN.name, key)
 
