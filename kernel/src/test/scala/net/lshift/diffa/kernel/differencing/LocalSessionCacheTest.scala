@@ -25,7 +25,7 @@ import org.joda.time.{DateTime, Interval}
  * Test cases for the local session cache.
  */
 class LocalSessionCacheTest {
-  val cache = new LocalSessionCache("sessionID1234", SessionScope.forPairs("pair1", "pair2"))
+  val cache = new LocalSessionCache("sessionID1234", SessionScope.forPairs( "domain", "pair1", "pair2"))
 
   @Test
   def shouldMakeSessionIDAvailable {
@@ -34,15 +34,15 @@ class LocalSessionCacheTest {
 
   @Test
   def shouldDeferToScopeForInclusionChoice {
-    assertEquals(true, cache.isInScope(VersionID("pair1", "aaa")))
-    assertEquals(true, cache.isInScope(VersionID("pair2", "aaa")))
-    assertEquals(false, cache.isInScope(VersionID("pair3", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID("pair1", "domain", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID("pair2", "domain", "aaa")))
+    assertEquals(false, cache.isInScope(VersionID("pair3", "domain", "aaa")))
   }
 
   @Test
   def shouldNotPublishPendingUnmatchedEventInAllUnmatchedList {
     val now = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID("pair1", "id1"), now, "uV", "dV")
+    cache.addPendingUnmatchedEvent(VersionID("pair1", "domain", "id1"), now, "uV", "dV")
     val interval = new Interval(now.minusDays(1), now.plusDays(1))
     assertEquals(0, cache.retrieveUnmatchedEvents(interval).length)
   }
@@ -50,13 +50,13 @@ class LocalSessionCacheTest {
   @Test
   def shouldPublishUpgradedUnmatchedEventInAllUnmatchedList {
     val timestamp = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID("pair1", "id1"), timestamp, "uV", "dV")
-    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
+    cache.addPendingUnmatchedEvent(VersionID("pair1", "domain", "id1"), timestamp, "uV", "dV")
+    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "domain", "id1"))
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
     assertEquals(1, unmatched.length)
-    assertEquals(VersionID("pair1", "id1"), unmatched.first.objId)
+    assertEquals(VersionID("pair1",  "domain", "id1"), unmatched.first.objId)
     assertEquals(timestamp, unmatched.first.detectedAt)
     assertEquals("uV", unmatched.first.upstreamVsn)
     assertEquals("dV", unmatched.first.downstreamVsn)
@@ -64,7 +64,7 @@ class LocalSessionCacheTest {
 
   @Test
   def shouldIgnoreUpgradeRequestsForUnknownIDs {
-    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
+    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "domain", "id1"))
     val interval = new Interval(new DateTime(), new DateTime())
     assertEquals(0, cache.retrieveUnmatchedEvents(interval).length)
   }
@@ -72,9 +72,9 @@ class LocalSessionCacheTest {
   @Test
   def shouldIgnoreUpgradeRequestWhenPendingEventHasBeenUpgradedAlready {
     val timestamp = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID("pair1", "id1"), timestamp, "uV", "dV")
-    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
-    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "id1"))
+    cache.addPendingUnmatchedEvent(VersionID("pair1", "domain", "id1"), timestamp, "uV", "dV")
+    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "domain", "id1"))
+    cache.upgradePendingUnmatchedEvent(VersionID("pair1", "domain", "id1"))
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     assertEquals(1, cache.retrieveUnmatchedEvents(interval).length)
@@ -83,13 +83,13 @@ class LocalSessionCacheTest {
   @Test
   def shouldPublishAnAddedReportableUnmatchedEvent {
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uV", "dV")
+    cache.addReportableUnmatchedEvent(VersionID("pair2", "domain", "id2"), timestamp, "uV", "dV")
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
     assertEquals(1, unmatched.length)
     assertEquals(MatchState.UNMATCHED, unmatched.first.state)
-    assertEquals(VersionID("pair2", "id2"), unmatched.first.objId)
+    assertEquals(VersionID("pair2",  "domain", "id2"), unmatched.first.objId)
     assertEquals(timestamp, unmatched.first.detectedAt)
     assertEquals("uV", unmatched.first.upstreamVsn)
     assertEquals("dV", unmatched.first.downstreamVsn)
@@ -111,7 +111,7 @@ class LocalSessionCacheTest {
   def addUnmatchedEvents(start:DateTime, size:Int, frontFence:Int, rearFence:Int) : Interval = {
     for (i <- 1 to size) {
       val timestamp = start.plusMinutes(i)
-      cache.addReportableUnmatchedEvent(VersionID("pair2", "id" + i), timestamp, "uV", "dV")
+      cache.addReportableUnmatchedEvent(VersionID("pair2", "domain", "id" + i), timestamp, "uV", "dV")
     }
     new Interval(start.plusMinutes(frontFence), start.plusMinutes(size - rearFence))
   }
@@ -145,13 +145,13 @@ class LocalSessionCacheTest {
   @Test
   def shouldAddMatchedEventThatOverridesUnmatchedEventWhenAskingForSequenceUpdate {
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uuV", "ddV")
+    cache.addReportableUnmatchedEvent(VersionID("pair2", "domain", "id2"), timestamp, "uuV", "ddV")
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
     val lastSeq = unmatched.last.seqId
 
-    cache.addMatchedEvent(VersionID("pair2", "id2"), "uuV")
+    cache.addMatchedEvent(VersionID("pair2", "domain", "id2"), "uuV")
     val updates = cache.retrieveEventsSince(lastSeq)
 
     assertEquals(1, updates.length)
@@ -160,14 +160,14 @@ class LocalSessionCacheTest {
     // is timestamped on the fly from within the implementation of the cache
     // but we do want to assert that it is not before the reporting timestamp
     assertFalse(timestamp.isAfter(updates.first.detectedAt))
-    assertEquals(VersionID("pair2", "id2"), updates.first.objId)
+    assertEquals(VersionID("pair2", "domain", "id2"), updates.first.objId)
   }
 
   @Test
   def shouldRemoveUnmatchedEventFromAllUnmatchedWhenAMatchHasBeenAdded {
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uuV", "ddV")
-    cache.addMatchedEvent(VersionID("pair2", "id2"), "uuV")
+    cache.addReportableUnmatchedEvent(VersionID("pair2", "domain", "id2"), timestamp, "uuV", "ddV")
+    cache.addMatchedEvent(VersionID("pair2", "domain", "id2"), "uuV")
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val updates = cache.retrieveUnmatchedEvents(interval)
 
@@ -178,13 +178,13 @@ class LocalSessionCacheTest {
   def shouldIgnoreMatchedEventWhenNoOverridableUnmatchedEventIsStored {
     val timestamp = new DateTime()
     // Get an initial event and a sequence number
-    cache.addReportableUnmatchedEvent(VersionID("pair2", "id2"), timestamp, "uV", "dV")
+    cache.addReportableUnmatchedEvent(VersionID("pair2", "domain", "id2"), timestamp, "uV", "dV")
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
     val lastSeq = unmatched.last.seqId
 
     // Add a matched event for something that we don't have marked as unmatched
-    cache.addMatchedEvent(VersionID("pair3", "id3"), "eV")
+    cache.addMatchedEvent(VersionID("pair3", "domain", "id3"), "eV")
     val updates = cache.retrieveEventsSince(lastSeq)
     assertEquals(0, updates.length)
   }
