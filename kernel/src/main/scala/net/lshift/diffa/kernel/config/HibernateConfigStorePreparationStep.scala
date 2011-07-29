@@ -197,7 +197,7 @@ object HibernatePreparationUtils {
     val buffer = new StringBuffer("alter table ").append(qualifyName(config, tableName))
                                                  .append(" drop column ")
                                                  .append(dialect.openQuote())
-                                                 .append(columnName)
+                                                 .append(columnName.toUpperCase)
                                                  .append(dialect.openQuote())
     buffer.toString
   }
@@ -329,12 +329,7 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     stmt.execute(HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN))
 
     // alter table config_options drop column is_internal
-    try {
-      stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "config_options", "is_internal" ))
-    }
-    catch {
-      case e => // TODO Find out why this drop statement doesn't work
-    }
+    stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "config_options", "is_internal" ))
 
     // Add domain column to config_option, endpoint and pair
     val domainColumn = new Column("domain"){

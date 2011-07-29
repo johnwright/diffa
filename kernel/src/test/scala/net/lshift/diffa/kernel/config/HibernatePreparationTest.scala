@@ -23,8 +23,8 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import org.slf4j.LoggerFactory
 import java.sql.{Types, Connection}
 import org.hibernate.dialect.{DerbyDialect, Dialect}
-import org.hibernate.mapping._ // for 'SessionFactory.withSession'
-import org.hibernate.cfg.{Environment, Configuration}
+import org.hibernate.mapping.{ForeignKey, Column, Table, PrimaryKey}
+import org.hibernate.cfg.{Configuration, Environment}
 import org.hibernate.jdbc.Work
 import scala.collection.JavaConversions._
 import org.junit.Test
@@ -49,16 +49,19 @@ class HibernatePreparationTest {
   val invalidTables = Seq(
     "pair_group"      // Removed as of the v1 migration
   )
-//  val invalidColumns = Map(
-//    "pair" -> Seq(
-//      "name"    // Removed as of the v1 migration
-//    )
-//  )
+  val invalidColumns = Map(
+    "pair" -> Seq(
+      "name"    // Removed as of the v1 migration
+    ),
+    "config_options" -> Seq(
+      "is_internal"    // Removed as of the v3 migration
+    )
+  )
 
   @Test
   def shouldGenerateDropColumn = {
     val instruction = HibernatePreparationUtils.generateDropColumnSQL(genericConfig, "foo", "bar" )
-    assertEquals("alter table foo drop column \"bar\"", instruction)
+    assertEquals("alter table foo drop column \"BAR\"", instruction)
   }
 
   @Test(expected = classOf[IllegalArgumentException])
@@ -198,16 +201,16 @@ class HibernatePreparationTest {
    * Since hibernate only validates for presence, check for things we know should be gone
    */
   private def validateNotTooManyObjects(config:Configuration, dbMetadata:DatabaseMetadata) {
-//    val defaultCatalog = config.getProperties.getProperty(Environment.DEFAULT_CATALOG)
-//    val defaultSchema = config.getProperties.getProperty(Environment.DEFAULT_SCHEMA)
-//
-//    invalidTables.foreach(invalidTable =>
-//      assertNull("Table '" + invalidTable + "' should not be present in the database",
-//        dbMetadata.getTableMetadata(invalidTable, defaultSchema, defaultCatalog, false)))
-//    invalidColumns.keys.foreach(owningTable =>
-//      invalidColumns(owningTable).foreach(col =>
-//        assertNull("Column '" + col + "' should not be present in table '" + owningTable + "'",
-//        dbMetadata.getTableMetadata(owningTable, defaultSchema, defaultCatalog, false).getColumnMetadata(col))))
+    val defaultCatalog = config.getProperties.getProperty(Environment.DEFAULT_CATALOG)
+    val defaultSchema = config.getProperties.getProperty(Environment.DEFAULT_SCHEMA)
+
+    invalidTables.foreach(invalidTable =>
+      assertNull("Table '" + invalidTable + "' should not be present in the database",
+        dbMetadata.getTableMetadata(invalidTable, defaultSchema, defaultCatalog, false)))
+    invalidColumns.keys.foreach(owningTable =>
+      invalidColumns(owningTable).foreach(col =>
+        assertNull("Column '" + col + "' should not be present in table '" + owningTable + "'",
+        dbMetadata.getTableMetadata(owningTable, defaultSchema, defaultCatalog, false).getColumnMetadata(col))))
   }
 }
 object HibernatePreparationTest {
