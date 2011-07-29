@@ -142,9 +142,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
 
   private def getEndpoint(s: Session, domain:String, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint %s".format(name))
   private def getUser(s: Session, domain:String, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
-  //private def getEndpointOpt(s: Session, domain:String, name: String) = singleQueryOpt[Endpoint](s, "endpointByName", Map("name" -> name))
+
   private def getPair(s: Session, domain:String, key: String) = singleQuery[DiffaPair](s, "pairByKey", Map("key" -> key), "pair %s".format(key))
-  //private def getPairOpt(s: Session, domain:String, key: String) = singleQueryOpt[Pair](s, "pairByKey", Map("key" -> key))
+
   private def getRepairAction(s: Session, domain:String, name: String, pairKey: String) =
     singleQuery[RepairAction](s, "repairActionsByNameAndPair",
                               Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),

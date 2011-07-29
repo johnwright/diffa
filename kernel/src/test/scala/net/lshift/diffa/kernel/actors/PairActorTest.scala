@@ -70,8 +70,9 @@ class PairActorTest {
 
   val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
-  expect(configStore.listPairs(domainName)).andReturn(Array[DiffaPair]())
-  replay(configStore)
+
+  expect(systemConfigStore.listPairs).andReturn(Array(pair))
+  replay(systemConfigStore)
 
   val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
 
@@ -89,9 +90,6 @@ class PairActorTest {
   val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, systemConfigStore, diffListener, scanListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
-
-  verify(configStore)
-
 
   @After
   def stop = supervisor.stopActor(pair)
@@ -193,6 +191,9 @@ class PairActorTest {
 
     val event = buildUpstreamEvent()
 
+    expect(configStore.getPair(domainName, pairKey)).andReturn(pair)
+    replay(configStore)
+
     scanListener.pairScanStateChanged(pair, PairScanState.SCANNING); expectLastCall
     scanListener.pairScanStateChanged(pair, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
@@ -242,6 +243,7 @@ class PairActorTest {
 
     verify(versionPolicy)
     verify(scanListener)
+    verify(configStore)
   }
 
   @Test
@@ -449,11 +451,11 @@ class PairActorTest {
 
   @Test
   def propagateChange = {
-    val id = VersionID(pairKey, "foo")
-    val lastUpdate = new DateTime()
-    val vsn = "foobar"
-    val event = UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
+    val event = buildUpstreamEvent()
     val monitor = new Object
+
+    expect(configStore.getPair(domainName, pairKey)).andReturn(pair)
+    replay(configStore)
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
@@ -475,6 +477,7 @@ class PairActorTest {
     }
 
     verify(versionPolicy)
+    verify(configStore)
   }
 
   @Test
@@ -508,7 +511,7 @@ class PairActorTest {
   }
 
   def buildUpstreamEvent() = {
-    val id = VersionID(pairKey, "foo")
+    val id = VersionID(pairKey, domainName, "foo")
     val lastUpdate = new DateTime
     val vsn = "foobar"
     UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)
