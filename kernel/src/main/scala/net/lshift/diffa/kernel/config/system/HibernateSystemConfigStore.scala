@@ -37,9 +37,11 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
     deleteByDomain[Domain](s, domain, "domainByName")
   })
 
-  def listDomains  = sessionFactory.withSession(s => listQuery[Domain](s, "allDomains", Map()))
+  def listDomains = sessionFactory.withSession(s => listQuery[Domain](s, "allDomains", Map()))
 
-  def getPairsForEndpoint(epName: String) = null
+  def getPairsForInboundEndpointURL(url: String) = {
+    sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByInboundEndpointUrl", Map("url" -> url)))
+  }
 
   def listPairs = listDomains.flatMap(d => domainConfigStore.listPairs(d.name))
   def listEndpoints = listDomains.flatMap(d => domainConfigStore.listEndpoints(d.name))

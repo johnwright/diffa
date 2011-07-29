@@ -137,18 +137,6 @@
     select c from Pair c where c.key = :key
   </query>
 
-  <!--query name="repairActionByNameAndPairKey">
-    select a from RepairAction a where a.name = :name and a.pairKey = :pairKey
-  </query-->
-
-  <!--query name="escalationByNameAndPairKey">
-    select e from Escalation e where e.name = :name and e.pairKey = :pairKey
-  </query-->
-
-  <!--query name="escalationsByPairKey">
-    select e from Escalation e where e.pairKey = :pairKey
-  </query-->
-
   <!-- Select all statements -->
 
   <query name="allEndpoints">
@@ -177,6 +165,14 @@
 
   <query name="allConfigs">
     select o from ConfigOption o
+  </query>
+
+  <!-- Queries by endpoint -->
+
+  <query name="pairsByInboundEndpointUrl">
+    select p from Pair p
+    where p.upstream.inboundUrl = :url
+    or p.downstream.inboundUrl = :url
   </query>
 
   <!-- Queries by domain only -->

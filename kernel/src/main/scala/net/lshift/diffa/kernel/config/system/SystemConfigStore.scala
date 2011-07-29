@@ -27,7 +27,7 @@ trait SystemConfigStore {
   def createOrUpdateDomain(domain: Domain) : Unit
   def deleteDomain(name: String): Unit
   def listDomains : Seq[Domain]
-  def getPairsForEndpoint(epName:String) : Seq[DiffaPair]
+  def getPairsForInboundEndpointURL(url:String) : Seq[DiffaPair]
 
   /**
    * Sets the given configuration option to the given value.
