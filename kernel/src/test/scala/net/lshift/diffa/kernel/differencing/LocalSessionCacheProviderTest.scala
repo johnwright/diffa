@@ -40,12 +40,12 @@ class LocalSessionCacheProviderTest {
 
   @Test
   def shouldReturnACacheWithTheProvidedScopeWhenCreating {
-    val scope = SessionScope.forPairs("ab", "bc")
+    val scope = SessionScope.forPairs("domain", "ab", "bc")
 
     val cache = provider.retrieveOrAllocateCache("session1", scope)
-    assertEquals(true, cache.isInScope(VersionID("ab", "aaa")))
-    assertEquals(true, cache.isInScope(VersionID("bc", "aaa")))
-    assertEquals(false, cache.isInScope(VersionID("de", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID("ab", "domain", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID("bc", "domain", "aaa")))
+    assertEquals(false, cache.isInScope(VersionID("de", "domain", "aaa")))
   }
 
   @Test
@@ -62,13 +62,13 @@ class LocalSessionCacheProviderTest {
 
   @Test
   def shouldNotChangeTheSessionScopeWhenRetrievingAnExistingCache {
-    val scope = SessionScope.forPairs("ab", "bc")
+    val scope = SessionScope.forPairs("domain", "ab", "bc")
 
     // Allocate, then retrieve afresh
     provider.retrieveOrAllocateCache("session3", scope)
     val cache = provider.retrieveOrAllocateCache("session3", scope)
-    assertEquals(true, cache.isInScope(VersionID("ab", "aaa")))
-    assertEquals(true, cache.isInScope(VersionID("bc", "aaa")))
-    assertEquals(false, cache.isInScope(VersionID("de", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID("ab", "domain", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID("bc", "domain", "aaa")))
+    assertEquals(false, cache.isInScope(VersionID("de", "domain", "aaa")))
   }
 }

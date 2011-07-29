@@ -25,11 +25,11 @@ import net.lshift.diffa.kernel.config.{Domain, Pair => DiffaPair}
 class SessionScope(private val pairs:HashSet[DiffaPair]) {
   def includedPairs = pairs.toSeq
 
-  def includes(pair:String) = {
+  def includes(pair:DiffaPair) = {
     if (pairs.size == 0) {
       true
     } else {
-      pairs.map(_.key).contains(pair)
+      pairs.contains(pair)
     }
   }
 

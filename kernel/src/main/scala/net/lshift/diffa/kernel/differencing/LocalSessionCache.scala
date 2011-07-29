@@ -40,7 +40,7 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
     }
   }
 
-  def isInScope(id: VersionID) = scope.includes(id.pairKey)
+  def isInScope(id: VersionID) = scope.includes(id.pair)
 
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) {
     pending(id) = SessionEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
