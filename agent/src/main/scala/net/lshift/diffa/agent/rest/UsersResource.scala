@@ -23,39 +23,36 @@ import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.config.User
 import javax.ws.rs._
-import core.{UriInfo, Context}
+import core.UriInfo
 import net.lshift.diffa.agent.rest.ResponseUtils._
 
 /**
  * This handles all of the user specific admin
  */
-@Path("/security")
-@Component
-class UsersResource {
-
-  @Autowired var config:Configuration = null
-  @Context var uriInfo:UriInfo = null
+class UsersResource(val config:Configuration,
+                    val domain:String,
+                    val uri:UriInfo) {
 
   @GET
   @Path("/users")
   @Produces(Array("application/json"))
   @Description("Returns a list of all the users registered with the agent.")
-  def listUsers() = config.listUsers.toArray
+  def listUsers() = config.listUsers(domain).toArray
 
   @GET
   @Produces(Array("application/json"))
   @Path("/users/{name}")
   @Description("Returns a user by its name.")
   @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
-  def getUser(@PathParam("name") name:String) = config.getUser(name)
+  def getUser(@PathParam("name") name:String) = config.getUser(domain, name)
 
   @POST
   @Path("/users")
   @Consumes(Array("application/json"))
   @Description("Registers a new user with the agent.")
   def createEndpoint(e:User) = {
-    config.createOrUpdateUser(e)
-    resourceCreated(e.name, uriInfo)
+    config.createOrUpdateUser(domain,e)
+    resourceCreated(e.name, uri)
   }
 
   @PUT
@@ -64,12 +61,12 @@ class UsersResource {
   @Path("/users/{name}")
   @Description("Updates the attributes of a user that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
-  def updateEndpoint(@PathParam("name") name:String, u:User) = config.createOrUpdateUser(u)
+  def updateEndpoint(@PathParam("name") name:String, u:User) = config.createOrUpdateUser(domain,u)
   // TODO This PUT is buggy
 
   @DELETE
   @Path("/users/{name}")
   @Description("Removes an endpoint that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
-  def deleteEndpoint(@PathParam("name") name:String) = config.deleteUser(name)
+  def deleteEndpoint(@PathParam("name") name:String) = config.deleteUser(domain, name)
 }

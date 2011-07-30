@@ -22,7 +22,6 @@ import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam._
 import javax.ws.rs._
 import net.lshift.diffa.kernel.config.Escalation
 import org.springframework.stereotype.Component
-import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.kernel.frontend.Configuration
 
 /**
@@ -31,17 +30,14 @@ import net.lshift.diffa.kernel.frontend.Configuration
  *
  * This is likely to change when #274 lands
  */
-@Path("/escalations")
-@Component
-class EscalationsResource {
-
-  @Autowired var config:Configuration = null
+class EscalationsResource(val config:Configuration,
+                          val domain:String) {
 
   @GET
   @Path("/{pairId}")
   @Produces(Array("application/json"))
   @Description("Returns a list of escalations that are configured for a pair.")
   @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
-  def listEscalations(@PathParam("pairId") pairId: String): Array[Escalation] = config.listEscalationForPair(pairId).toArray
+  def listEscalations(@PathParam("pairId") pairId: String): Array[Escalation] = config.listEscalationForPair(domain, pairId).toArray
 
 }

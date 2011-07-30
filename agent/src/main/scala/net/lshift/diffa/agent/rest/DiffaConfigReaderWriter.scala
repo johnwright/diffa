@@ -30,7 +30,7 @@ import scala.collection.JavaConversions._
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.differencing.PairScanState
-import net.lshift.diffa.kernel.frontend.DiffaConfig
+import net.lshift.diffa.kernel.frontend.{RepairActionDef, EscalationDef, DiffaConfig}
 
 /**
  * Provider for encoding and decoding diffa configuration blocks.
@@ -89,8 +89,8 @@ class DiffaCastorSerializableConfig {
     this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
     this.endpoints = c.endpoints.map { e => (new CastorSerializableEndpoint).fromDiffaEndpoint(e) }.toList
     this.pairs = c.pairs.map(p => {
-      def repairActionsForPair(pairKey: String) = c.repairActions.filter(_.pairKey == pairKey).toList
-      def escalationsForPair(pairKey: String) = c.escalations.filter(_.pairKey == pairKey).toList
+      def repairActionsForPair(pairKey: String) = c.repairActions.filter(_.pair == pairKey).toList
+      def escalationsForPair(pairKey: String) = c.escalations.filter(_.pair == pairKey).toList
       CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.pairKey), escalationsForPair(p.pairKey))
     }).toList
     this
@@ -102,8 +102,8 @@ class DiffaCastorSerializableConfig {
       properties = properties.map(p => p.key -> p.value).toMap,
       endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
       pairs = (for (p <- pairs) yield p.toPairDef).toSet,
-      repairActions = (for (p <- pairs; a <- p.repairActions) yield { a.pairKey = p.key ; a }).toSet,
-      escalations = (for (p <- pairs; e <- p.escalations) yield { e.pairKey = p.key ; e }).toSet
+      repairActions = (for (p <- pairs; a <- p.repairActions) yield { a.pair = p.key ; a }).toSet,
+      escalations = (for (p <- pairs; e <- p.escalations) yield { e.pair = p.key ; e }).toSet
     )
 
 }
@@ -114,6 +114,7 @@ class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String
 
 class CastorSerializableEndpoint {
   @BeanProperty var name: String = null
+  @BeanProperty var domain: String = null
   @BeanProperty var scanUrl: String = null
   @BeanProperty var contentRetrievalUrl: String = null
   @BeanProperty var versionGenerationUrl: String = null
@@ -126,6 +127,7 @@ class CastorSerializableEndpoint {
 
   def fromDiffaEndpoint(e:Endpoint) = {
     this.name = e.name
+    this.domain = e.domain.name
     this.scanUrl = e.scanUrl
     this.contentRetrievalUrl = e.contentRetrievalUrl
     this.versionGenerationUrl = e.versionGenerationUrl
@@ -182,22 +184,23 @@ class SetValue(@BeanProperty var value:String) {
 
 class CastorSerializablePair(
   @BeanProperty var key: String = null,
+  @BeanProperty var domain: String = null,
   @BeanProperty var upstream: String = null,
   @BeanProperty var downstream: String = null,
   @BeanProperty var versionPolicy: String = null,
   @BeanProperty var matchingTimeout: Int = 0,
-  @BeanProperty var repairActions: java.util.List[RepairAction] = new java.util.ArrayList[RepairAction],
-  @BeanProperty var escalations: java.util.List[Escalation] = new java.util.ArrayList[Escalation],
+  @BeanProperty var repairActions: java.util.List[RepairActionDef] = new java.util.ArrayList[RepairActionDef],
+  @BeanProperty var escalations: java.util.List[EscalationDef] = new java.util.ArrayList[EscalationDef],
   @BeanProperty var scanCronSpec: String = null
 ) {
   def this() = this(key = null)
 
-  def toPairDef = new PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, scanCronSpec)
+  def toPairDef = new PairDef(key, domain, versionPolicy, matchingTimeout, upstream, downstream, scanCronSpec)
 }
 
 object CastorSerializablePair {
-  def fromPairDef(p: PairDef, repairActions: java.util.List[RepairAction],
-                              escalations: java.util.List[Escalation]): CastorSerializablePair =
-    new CastorSerializablePair(p.pairKey, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
+  def fromPairDef(p: PairDef, repairActions: java.util.List[RepairActionDef],
+                              escalations: java.util.List[EscalationDef]): CastorSerializablePair =
+    new CastorSerializablePair(p.pairKey, p.domain, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
                                repairActions, escalations, p.scanCronSpec)
 }

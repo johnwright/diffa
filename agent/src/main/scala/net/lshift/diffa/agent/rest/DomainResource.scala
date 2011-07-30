@@ -21,18 +21,46 @@ import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.kernel.frontend.Configuration
 import javax.ws.rs.core.{UriInfo, Context}
 import javax.ws.rs.{PathParam, Path}
+import net.lshift.diffa.kernel.client.ActionsClient
+import net.lshift.diffa.kernel.differencing.SessionManager
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.actors.PairPolicyClient
 
 @Path("/{domain}")
 @Component
 class DomainResource {
 
   @Context var uriInfo:UriInfo = null
+
   @Autowired var config:Configuration = null
+  @Autowired var actionsClient:ActionsClient = null
+  @Autowired var sessionManager:SessionManager = null
+  @Autowired var diagnosticsManager:DiagnosticsManager = null
+  @Autowired var pairPolicyClient:PairPolicyClient = null
 
   @Path("/config")
   def getConfigResource(@Context uri:UriInfo,
-                        @PathParam("domain") domain:String)
-    = new ConfigurationResource(config, domain, uri)
+                        @PathParam("domain") domain:String) = new ConfigurationResource(config, domain, uri)
 
+  @Path("/security")
+  def getUsersResource(@Context uri:UriInfo,
+                       @PathParam("domain") domain:String) = new UsersResource(config, domain, uri)
+
+  @Path("/diffs")
+  def getDifferencesResource(@Context uri:UriInfo,
+                             @PathParam("domain") domain:String) = new DifferencesResource(sessionManager, domain, uri)
+
+  @Path("/escalations")
+  def getEscalationsResource(@PathParam("domain") domain:String) = new EscalationsResource(config, domain)
+
+  @Path("/actions")
+  def getActionsResource(@Context uri:UriInfo,
+                         @PathParam("domain") domain:String) = new ActionsResource(actionsClient, domain, uri)
+
+  @Path("/diagnostics")
+  def getDiagnosticsResource(@PathParam("domain") domain:String) = new DiagnosticsResource(diagnosticsManager, config, domain)
+
+  @Path("/scanning")
+  def getScanningResource(@PathParam("domain") domain:String) = new ScanningResource(pairPolicyClient, config, domain)
 
 }

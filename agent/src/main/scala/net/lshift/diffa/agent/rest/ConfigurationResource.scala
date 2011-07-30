@@ -36,38 +36,38 @@ class ConfigurationResource(val config:Configuration,
   @GET
   @Path("/xml")
   @Produces(Array("application/xml"))
-  def retrieveConfiguration():DiffaConfig = config.retrieveConfiguration
+  def retrieveConfiguration():DiffaConfig = config.retrieveConfiguration(domain)
 
   @POST
   @Path("/xml")
   @Consumes(Array("application/xml"))
-  def applyConfiguration(newConfig:DiffaConfig) = config.applyConfiguration(newConfig)
+  def applyConfiguration(newConfig:DiffaConfig) = config.applyConfiguration(domain,newConfig)
 
   @GET
   @Path("/endpoints")
   @Produces(Array("application/json"))
   @Description("Returns a list of all the endpoints registered with the agent.")
-  def listEndpoints() = config.listEndpoints.toArray
+  def listEndpoints() = config.listEndpoints(domain).toArray
 
   @GET
   @Path("/repair-actions")
   @Produces(Array("application/json"))
   @Description("Returns a list of all the repair actions registered with the agent.")
-  def listRepairActions: Array[RepairAction] = config.listRepairActions.toArray
+  def listRepairActions: Array[RepairAction] = config.listRepairActions(domain).toArray
 
   @GET
   @Produces(Array("application/json"))
   @Path("/endpoints/{id}")
   @Description("Returns an endpoint by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
-  def getEndpoint(@PathParam("id") id:String) = config.getEndpoint(id)
+  def getEndpoint(@PathParam("id") id:String) = config.getEndpoint(domain, id)
 
   @POST
   @Path("/endpoints")
   @Consumes(Array("application/json"))
   @Description("Registers a new endpoint with the agent.")
   def createEndpoint(e:Endpoint) = {
-    config.createOrUpdateEndpoint(e)
+    config.createOrUpdateEndpoint(domain, e)
     resourceCreated(e.name, uri)
   }
 
@@ -78,7 +78,7 @@ class ConfigurationResource(val config:Configuration,
   @Description("Updates the attributes of an endpoint that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
   def updateEndpoint(@PathParam("id") id:String, e:Endpoint) = {
-    config.createOrUpdateEndpoint(e)
+    config.createOrUpdateEndpoint(domain, e)
     e
   }
 
@@ -86,14 +86,14 @@ class ConfigurationResource(val config:Configuration,
   @Path("/endpoints/{id}")
   @Description("Removes an endpoint that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
-  def deleteEndpoint(@PathParam("id") id:String) = config.deleteEndpoint(id)
+  def deleteEndpoint(@PathParam("id") id:String) = config.deleteEndpoint(domain, id)
 
   @POST
   @Path("/pairs")
   @Consumes(Array("application/json"))
   @Description("Creates a new pairing between two endpoints that are already registered with the agent.")
   def createPair(p:PairDef) = {
-    config.createOrUpdatePair(p)
+    config.createOrUpdatePair(domain, p)
     resourceCreated(p.pairKey, uri)
   }
 
@@ -104,7 +104,7 @@ class ConfigurationResource(val config:Configuration,
   @Description("Updates the attributes of a pairing between two endpoints that are already registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   def updatePair(@PathParam("id") id:String, p:PairDef) = {
-    config.createOrUpdatePair(p)
+    config.createOrUpdatePair(domain, p)
     p
   }
 
@@ -112,14 +112,14 @@ class ConfigurationResource(val config:Configuration,
   @Path("/pairs/{id}")
   @Description("Removes a pairing between two endpoints that are registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
-  def deletePair(@PathParam("id") id:String) = config.deletePair(id)
+  def deletePair(@PathParam("id") id:String) = config.deletePair(domain, id)
 
   @GET
   @Path("/pairs/{id}/repair-actions")
   @Produces(Array("application/json"))
   @Description("Returns a list of the repair actions associated with a pair")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
-  def listRepairActionsForPair(@PathParam("id") pairKey: String) = config.listRepairActionsForPair(pairKey).toArray
+  def listRepairActionsForPair(@PathParam("id") pairKey: String) = config.listRepairActionsForPair(domain, pairKey).toArray
 
   @POST
   @Path("/pairs/{id}/repair-actions")
@@ -127,7 +127,7 @@ class ConfigurationResource(val config:Configuration,
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   @Description("Creates a new repair action associated with a pair that is registered with the agent.")
   def createRepairAction(a: RepairAction) = {
-    config.createOrUpdateRepairAction(a)
+    config.createOrUpdateRepairAction(domain, a)
     resourceCreated(a.name, uri)
   }
 
@@ -137,7 +137,7 @@ class ConfigurationResource(val config:Configuration,
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair ID"),
                          new MandatoryParam(name="name", datatype="string", description="Action name")))
   def deleteRepairAction(@PathParam("name") name: String, @PathParam("pairKey") pairKey: String) {
-    config.deleteRepairAction(name, pairKey)
+    config.deleteRepairAction(domain, name, pairKey)
   }
 
   @POST
@@ -146,7 +146,7 @@ class ConfigurationResource(val config:Configuration,
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   @Description("Creates a new escalation associated with a pair that is registered with the agent.")
   def createEscalation(e: Escalation) = {
-    config.createOrUpdateEscalation(e)
+    config.createOrUpdateEscalation(domain, e)
     resourceCreated(e.name, uri)
   }
 
@@ -156,7 +156,7 @@ class ConfigurationResource(val config:Configuration,
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair ID"),
                          new MandatoryParam(name="name", datatype="string", description="Escalation name")))
   def deleteEscalation(@PathParam("name") name: String, @PathParam("pairKey") pairKey: String) {
-    config.deleteEscalation(name, pairKey)
+    config.deleteEscalation(domain, name, pairKey)
   }
 
   @GET
@@ -164,6 +164,6 @@ class ConfigurationResource(val config:Configuration,
   @Path("/pairs/{id}")
   @Description("Returns an endpoint pairing by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
-  def getPair(@PathParam("id") id:String) = config.getPair(id)
+  def getPair(@PathParam("id") id:String) = config.getPair(domain, id)
 
 }
