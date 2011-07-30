@@ -37,6 +37,9 @@ class Configuration(val configStore: DomainConfigStore,
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   def applyConfiguration(domain:String, diffaConfig:DiffaConfig) = {
+
+    val dom = Domain(name = domain)
+
     // Ensure that the configuration is valid upfront
     diffaConfig.validate()
     
@@ -51,7 +54,11 @@ class Configuration(val configStore: DomainConfigStore,
     diffaConfig.users.foreach(u => createOrUpdateUser(domain, u))
 
     // Apply endpoint and pair updates
-    diffaConfig.endpoints.foreach(e => createOrUpdateEndpoint(domain, e))
+    diffaConfig.endpoints.foreach(e => {
+      // TODO Fusing this in doesn't seem like the right option
+      e.domain = dom
+      createOrUpdateEndpoint(domain, e)
+    })
     diffaConfig.pairs.foreach(p => createOrUpdatePair(domain, p))
 
     // Remove missing repair actions, and create/update the rest
@@ -59,14 +66,14 @@ class Configuration(val configStore: DomainConfigStore,
       configStore.listRepairActions(domain).filter(a => diffaConfig.repairActions
         .find(newA => newA.name == a.name && newA.pair == a.pair).isEmpty)
     removedActions.foreach(a => deleteRepairAction(domain, a.name, a.pair.key))
-    diffaConfig.repairActions.foreach(a => createOrUpdateRepairAction(domain,a))
+    diffaConfig.repairActions.foreach(a => createOrUpdateRepairAction(domain,a.asRepairAction(domain)))
       
     // Remove missing escalations, and create/update the rest
     var removedEscalations =
       configStore.listEscalations(domain).filter(e => diffaConfig.escalations
         .find(newE => newE.name == e.name && newE.pair == e.pair).isEmpty)
     removedEscalations.foreach(e => deleteEscalation(domain, e.name, e.pair.key))
-    diffaConfig.escalations.foreach(createOrUpdateEscalation(domain,_))
+    diffaConfig.escalations.foreach(e => createOrUpdateEscalation(domain,e.asEscalation(domain)))
 
     // Remove old pairs and endpoints
     val removedPairs = configStore.listPairs(domain).filter(currP => diffaConfig.pairs.find(newP => newP.pairKey == currP.key).isEmpty)
@@ -81,7 +88,10 @@ class Configuration(val configStore: DomainConfigStore,
       endpoints = configStore.listEndpoints(domain).toSet,
       pairs = configStore.listPairs(domain).map(
         p => PairDef(p.key, p.domain.name, p.versionPolicyName, p.matchingTimeout, p.upstream.name, p.downstream.name, p.scanCronSpec)).toSet,
-      repairActions = configStore.listRepairActions(domain).toSet
+      repairActions = configStore.listRepairActions(domain).map(
+        a => RepairActionDef(a.name, a.url, a.scope, a.pair.key)).toSet,
+      escalations = configStore.listEscalations(domain).map(
+        e => EscalationDef(e.name, e.pair.key, e.action, e.actionType, e.event, e.origin)).toSet
     )
   }
 
@@ -196,7 +206,7 @@ class Configuration(val configStore: DomainConfigStore,
 
   def createOrUpdateEscalation(domain:String, escalation: Escalation) {
     log.debug("Processing escalation declare/update request: " + escalation.name)
-    escalation.validate()
+    //escalation.validate()
     configStore.createOrUpdateEscalation(domain, escalation)
   }
 

@@ -16,8 +16,8 @@
 
 package net.lshift.diffa.kernel.config.system
 
-import net.lshift.diffa.kernel.util.SessionHelper._// for 'SessionFactory.withSession'
-import net.lshift.diffa.kernel.config.{ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
+import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.config.{User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
@@ -34,7 +34,10 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
     deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
     deleteByDomain[Endpoint](s, domain, "endpointsByDomain")
     deleteByDomain[ConfigOption](s, domain, "configOptionsByDomain")
-    deleteByDomain[Domain](s, domain, "domainByName")
+    s.flush()
+    // TODO find out how to express this in HQL
+    s.createSQLQuery("delete from domain_users where domain_name = '%s'".format(domain)).executeUpdate()
+    s.createSQLQuery("delete from domains where name = '%s'".format(domain)).executeUpdate()
   })
 
   def listDomains = sessionFactory.withSession(s => listQuery[Domain](s, "allDomains", Map()))

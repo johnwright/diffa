@@ -230,6 +230,13 @@ case class Domain (
   def validate(path:String = null) {
     // Nothing to validate
   }
+  override def equals(that:Any) = that match {
+    case d:Domain => d.name == name
+    case _        => false
+  }
+
+  override def hashCode = name.hashCode
+  override def toString = name
 }
 
 object Domain {
@@ -275,33 +282,33 @@ case class Escalation (
   @BeanProperty var event: String = null,
   @BeanProperty var origin: String = null
 ) {
-  import EscalationEvent._
-  import EscalationOrigin._
-  import EscalationActionType._
+  //import EscalationEvent._
+  //import EscalationOrigin._
+  //import EscalationActionType._
 
   def this() = this(name = null)
 
-  def validate(path:String = null) {
-    val escalationPath = ValidationUtil.buildPath(
-      ValidationUtil.buildPath(path, "pair", Map("key" -> pair.key)),
-      "escalation", Map("name" -> name))
-
-    // Ensure that the event is supported
-    this.event = event match {
-      case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
-      case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
-    }
-    // Ensure that the origin is supported
-    this.origin = origin match {
-      case SCAN => origin
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
-    }
-    // Ensure that the action type is supported
-    this.actionType = actionType match {
-      case REPAIR => actionType
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
-    }
-  }
+//  def validate(path:String = null) {
+//    val escalationPath = ValidationUtil.buildPath(
+//      ValidationUtil.buildPath(path, "pair", Map("key" -> pair.key)),
+//      "escalation", Map("name" -> name))
+//
+//    // Ensure that the event is supported
+//    this.event = event match {
+//      case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
+//      case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
+//    }
+//    // Ensure that the origin is supported
+//    this.origin = origin match {
+//      case SCAN => origin
+//      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
+//    }
+//    // Ensure that the action type is supported
+//    this.actionType = actionType match {
+//      case REPAIR => actionType
+//      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
+//    }
+//  }
 }
 
 /**
@@ -335,6 +342,14 @@ case class User(@BeanProperty var name: String = null,
   def validate(path:String = null) {
     // Nothing to validate
   }
+
+  override def equals(that:Any) = that match {
+    case u:User => u.name == name
+    case _      => false
+  }
+
+  override def hashCode = name.hashCode
+  override def toString = name
 }
 
 case class ConfigOption(@BeanProperty var key:String = null,

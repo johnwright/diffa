@@ -378,6 +378,7 @@ class HibernateDomainConfigStoreTest {
   @Test
   def testUser = {
     // declare the domain
+    systemConfigStore.deleteDomain(domainName)
     systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateUser(domainName, TEST_USER)
     val result = domainConfigStore.listUsers(domainName)

@@ -117,7 +117,7 @@
   <class name="Escalation" table="escalations" abstract="false">
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
-      <key-many-to-one name="pair" class="Pair" column="pair_key" />
+      <key-many-to-one name="pair" class="Pair" column="pair_key" lazy="false"/>
     </composite-id>
     <property name="action" type="string" column="action" not-null="true" />
     <property name="actionType" type="string" column="action_type" not-null="true"/>
@@ -176,6 +176,12 @@
   </query>
 
   <!-- Queries by domain only -->
+
+  <query name="usersByDomain">
+    select u from User u
+    join u.domains d
+    where d.name = :domain_name
+  </query>
 
   <query name="domainByName">
     select d from Domain d where d.name = :name
