@@ -27,12 +27,13 @@ import collection.mutable.HashSet
 import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.util.SessionHelper._
 
 class HibernateDomainConfigStoreTest {
 
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
-  private val systemConfigStore: SystemConfigStore =
-    new HibernateSystemConfigStore(domainConfigStore, HibernateDomainConfigStoreTest.sessionFactory)
+  private val sessionFactory = HibernateDomainConfigStoreTest.sessionFactory
+  private val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sessionFactory)
 
   val dateCategoryName = "bizDate"
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
@@ -377,6 +378,22 @@ class HibernateDomainConfigStoreTest {
 
   @Test
   def testUser = {
+
+    // TODO
+    // During re-runs of tests, some users may be left behind
+    // Because of the m:n relationship between users and domains,
+    // we need to figure out how we are going to construct the API for this
+    // so for now, nuke the table manually.
+
+    sessionFactory.withSession( s => {
+      s.createCriteria(classOf[User]).list.foreach(u => {
+        val user = u.asInstanceOf[User]
+        user.domains.clear
+        s.delete(u)
+      })
+    })
+
+
     // declare the domain
     systemConfigStore.deleteDomain(domainName)
     systemConfigStore.createOrUpdateDomain(domain)
