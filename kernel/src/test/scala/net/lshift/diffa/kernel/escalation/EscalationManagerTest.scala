@@ -41,9 +41,9 @@ class EscalationManagerTest {
   val escalationManager = new EscalationManager(configStore, actionsClient)
 
   def expectConfigStore(event:String) = {
-    expect(configStore.getPair(domain, pairKey)).andReturn(Pair()).anyTimes()
+    expect(configStore.getPair(domain, pairKey)).andReturn(pair).anyTimes()
 
-    expect(configStore.listEscalationsForPair(domain, EasyMock.isA(classOf[Pair]))).andReturn(
+    expect(configStore.listEscalationsForPair(EasyMock.eq(domain), EasyMock.isA(classOf[DiffaPair]))).andReturn(
       List(Escalation("foo", pair, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
     ).anyTimes()
 
@@ -63,7 +63,7 @@ class EscalationManagerTest {
     expectConfigStore(scenario.event)
     expectActionsClient(scenario.invocations)
 
-    escalationManager.onMismatch(VersionID(pairKey, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
+    escalationManager.onMismatch(new VersionID(pairKey, domain, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
 
     verify(configStore, actionsClient)
   }

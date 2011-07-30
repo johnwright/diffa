@@ -41,8 +41,8 @@ class LocalEventMatchingManagerTest {
   val systemConfigStore = createStrictMock(classOf[SystemConfigStore])
   expect(configStore.getPair(domainName, "pair1")).andStubReturn(pair1)
   expect(configStore.getPair(domainName, "pair2")).andStubReturn(pair2)
-  expect(configStore.listPairs(domainName)).andStubReturn(Seq(pair1,pair2))
-  replay(configStore)
+  expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
+  replay(configStore,systemConfigStore)
 
   val matchingManager = new LocalEventMatchingManager(systemConfigStore)
 
