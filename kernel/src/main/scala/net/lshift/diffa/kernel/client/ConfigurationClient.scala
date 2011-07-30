@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.client
 
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef}
 
 /**
  * Interface supported by clients capable of configuring the diffa agent.
@@ -24,9 +25,9 @@ import net.lshift.diffa.kernel.config._
 trait ConfigurationClient {
   def declareEndpoint(e:Endpoint) : Endpoint
   def declarePair(p:PairDef):PairDef
-  def declareRepairAction(name: String, url: String, scope: String, pairKey: String): RepairAction
+  def declareRepairAction(name: String, url: String, scope: String, pairKey: String): RepairActionDef
   def removeRepairAction(name: String, pairKey: String)
-  def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) : Escalation
+  def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) : EscalationDef
   def removeEscalation(name: String, pairKey: String)
   def deletePair(pairKey: String) : Unit
   def getEndpoint(name:String) : Endpoint

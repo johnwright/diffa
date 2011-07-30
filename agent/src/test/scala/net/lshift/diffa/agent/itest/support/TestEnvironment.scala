@@ -88,6 +88,9 @@ class TestEnvironment(val pairKey: String,
   val usersClient:UsersClient = new UsersRestClient(serverRoot)
   val scanningClient:ScanningClient = new ScanningRestClient(serverRoot)
 
+  // Domain
+  val domain = "domain"
+
   // Participants
   val upstreamEpName = pairKey + "-us"
   val downstreamEpName = pairKey + "-ds"
@@ -133,7 +136,7 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
   createPair
 
-  def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
+  def createPair = configurationClient.declarePair(PairDef(pairKey, domain, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
   def deletePair() {
    configurationClient.deletePair(pairKey)
   }

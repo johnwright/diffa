@@ -17,13 +17,15 @@ package net.lshift.diffa.agent.client
  */
 
 import net.lshift.diffa.kernel.client.UsersClient
-import net.lshift.diffa.kernel.config.User
 import net.lshift.diffa.messaging.json.AbstractRestClient
+import net.lshift.diffa.kernel.config.{Domain, User}
+import collection.mutable.HashSet
+import scala.collection.JavaConversions._
 
 class UsersRestClient(u:String) extends AbstractRestClient(u, "rest/security/") with UsersClient {
 
   def declareUser(name: String, email:String) : User = {
-    val user = User(name, email)
+    val user = User(name, HashSet(Domain(name="domain")), email)
     create("users", user)
     user
   }

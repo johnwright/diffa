@@ -47,7 +47,7 @@ class DifferencesRestClient(serverRootUrl:String)
     params.add("start", f(start) )
     params.add("end", f(end) )
     params.add("pairs", scope.includedPairs.foldLeft("") {
-      case ("", p)  => p
+      case ("", p)  => p.key
       case (acc, p) => acc + "," + p
     })
 

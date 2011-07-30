@@ -18,11 +18,11 @@ package net.lshift.diffa.agent.rest
 import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.frontend.DiffaConfig
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import net.lshift.diffa.agent.util.ConfigComparisonUtil
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.frontend.DiffaConfig._
+import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, DiffaConfig}
 
 /*
 * Test cases for the DiffaConfigReaderWriter.
@@ -32,7 +32,8 @@ class DiffaConfigReaderWriterTest {
   def roundtrip = {
     val config = new DiffaConfig(
       properties = Map("diffa.host" -> "localhost:1234", "a" -> "b"),
-      users = Set(User("abc", "a@example.com")),
+      // TODO The n:m relationship between users and domains needs to be thought out
+      users = Set(User("abc", null, "a@example.com")),
       endpoints = Set(
         Endpoint(name = "upstream1", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
@@ -47,16 +48,17 @@ class DiffaConfigReaderWriterTest {
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
           ))),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0"),
-        PairDef("ac", "same", 5, "upstream1", "downstream1")),
+        // TODO Should *Def carrier objects actually contain the domain - this should be symetric for every type
+        PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0"),
+        PairDef("ac", "domain","same", 5, "upstream1", "downstream1")),
       repairActions = Set(
-        RepairAction(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pairKey="ab"),
-        RepairAction(name="Delete Result", scope="entity", url="http://example.com/delete/{id}", pairKey="ab")
+        RepairActionDef(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pair="ab"),
+        RepairActionDef(name="Delete Result", scope="entity", url="http://example.com/delete/{id}", pair="ab")
       ),
       escalations = Set(
-        Escalation(name="Delete From Upstream", action="Delete Result", actionType="repair", event="upstream-missing", origin="scan", pairKey="ab"),
-        Escalation(name="Resend Missing Downstream", action="Resend Sauce", actionType="repair", event="downstream-missing", origin="scan", pairKey="ab"),
-        Escalation(name="Resend On Mismatch", action="Resend Sauce", actionType="repair", event="mismatch", origin="scan", pairKey="ab")
+        EscalationDef(name="Delete From Upstream", action="Delete Result", actionType="repair", event="upstream-missing", origin="scan", pair="ab"),
+        EscalationDef(name="Resend Missing Downstream", action="Resend Sauce", actionType="repair", event="downstream-missing", origin="scan", pair="ab"),
+        EscalationDef(name="Resend On Mismatch", action="Resend Sauce", actionType="repair", event="mismatch", origin="scan", pair="ab")
       )
     )
 

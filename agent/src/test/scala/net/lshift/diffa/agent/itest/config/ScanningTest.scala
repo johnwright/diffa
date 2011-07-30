@@ -49,7 +49,7 @@ class ScanningTest {
 
     configClient.declareEndpoint(Endpoint(name = up, scanUrl = "http://upstream.com", contentType = "application/json", categories = categories))
     configClient.declareEndpoint(Endpoint(name = down, scanUrl = "http://downstream.com", contentType = "application/json", categories = categories))
-    configClient.declarePair(PairDef(pair, "same", 1, up, down, "0 0 0 0 0 0"))
+    configClient.declarePair(PairDef(pair, "same", "domain", 1, up, down, "0 0 0 0 0 0"))
 
     // Simple smoke test - you could kick off a scan and verify that it gets interrupted,
     // but this code path is tested in the unit test

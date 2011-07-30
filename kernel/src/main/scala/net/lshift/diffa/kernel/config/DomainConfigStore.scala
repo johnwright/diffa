@@ -195,6 +195,7 @@ object Pair {
 
 case class PairDef(
   @BeanProperty var pairKey: String = null,
+  // TODO Should the domain property actually be on the *Def objects?
   @BeanProperty var domain: String = null,
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = 0,

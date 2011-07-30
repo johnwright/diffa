@@ -21,6 +21,7 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
 import com.sun.jersey.api.client.ClientResponse
+import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef}
 
 class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")
@@ -37,7 +38,7 @@ class ConfigurationRestClient(serverRootUrl:String)
   }
 
   def declareRepairAction(name: String, id: String, scope: String, pairKey: String) = {
-    val action = new RepairAction(name, id, scope, pairKey)
+    val action = new RepairActionDef(name, id, scope, pairKey)
     create("/pairs/"+pairKey+"/repair-actions", action)
     action
   }
@@ -47,7 +48,7 @@ class ConfigurationRestClient(serverRootUrl:String)
   }
 
   def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) = {
-    val escalation = new Escalation(name, pairKey, action, actionType, event, origin)
+    val escalation = new EscalationDef(name, pairKey, action, actionType, event, origin)
     create("/pairs/"+pairKey+"/escalations", escalation)
     escalation
   }
