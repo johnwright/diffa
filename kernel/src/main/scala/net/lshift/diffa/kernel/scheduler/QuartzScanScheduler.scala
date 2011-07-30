@@ -51,7 +51,7 @@ class QuartzScanScheduler(config:DomainConfigStore,
   scheduler.start()
   scheduler.getListenerManager.addTriggerListener(new TriggerListenerSupport {
     override def triggerFired(trigger: Trigger, context: JobExecutionContext) {
-      val pairId = trigger.getKey.getName
+      val pairId = trigger.getJobKey.getName
       var (domain,pairKey) = DiffaPair.fromIdentifier(pairId)
       val pair = config.getPair(domain,pairKey)
 
@@ -126,7 +126,7 @@ class QuartzScanScheduler(config:DomainConfigStore,
   }
 
   private def jobForPair(pair:DiffaPair) = scheduler.getJobDetail(jobIdentifier(pair))
-  private def jobIdentifier(pair:DiffaPair) = jobKey(pair.domain + "/" + pair.key)
+  private def jobIdentifier(pair:DiffaPair) = new JobKey(pair.identifier)
   private def createScheduler() = {
     val threadPool = new SimpleThreadPool(1, Thread.NORM_PRIORITY)
     threadPool.initialize()
