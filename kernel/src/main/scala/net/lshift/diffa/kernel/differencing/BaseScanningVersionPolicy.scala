@@ -103,7 +103,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   private def generateDifferenceEvents(pair:Pair, l:DifferencingListener, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
     stores(pair).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
-      corr => l.onMismatch(VersionID(corr.pairing, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
+      corr => l.onMismatch(VersionID(corr.pairing, corr.domain, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
   }
 
   /**
@@ -200,7 +200,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       // Unmatched versions will be evented at the end of the scan. Matched versions should be evented immediately, as
       // we won't know what went from unmatched -> matched later.
       if (corr.isMatched.booleanValue) {
-        listener.onMatch(VersionID(corr.pairing, corr.id), corr.upstreamVsn, TriggeredByScan)
+        listener.onMatch(VersionID(corr.pairing, corr.domain, corr.id), corr.upstreamVsn, TriggeredByScan)
       }
     }
 
