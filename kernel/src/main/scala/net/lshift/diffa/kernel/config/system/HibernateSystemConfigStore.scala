@@ -58,5 +58,5 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   def clearSystemConfigOption(key:String) = deleteConfigOption(Domain.DEFAULT_DOMAIN.name, key)
 
   private def deleteByDomain[T](s:Session, domain:String, queryName:String)
-    = listQuery[T](s, queryName, Map("name" -> domain)).foreach(s.delete(_))
+    = listQuery[T](s, queryName, Map("domain_name" -> domain)).foreach(s.delete(_))
 }

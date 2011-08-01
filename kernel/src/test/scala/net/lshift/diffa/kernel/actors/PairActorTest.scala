@@ -70,6 +70,7 @@ class PairActorTest {
 
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
 
+  expect(systemConfigStore.getPair(domainName, pairKey)).andStubReturn(pair)
   expect(systemConfigStore.listPairs).andReturn(Array(pair))
   replay(systemConfigStore)
 
@@ -189,9 +190,6 @@ class PairActorTest {
     val eventMonitor = new Object
 
     val event = buildUpstreamEvent()
-
-    expect(systemConfigStore.getPair(domainName, pairKey)).andReturn(pair)
-    replay(systemConfigStore)
 
     scanListener.pairScanStateChanged(pair, PairScanState.SCANNING); expectLastCall
     scanListener.pairScanStateChanged(pair, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
@@ -451,9 +449,6 @@ class PairActorTest {
   def propagateChange = {
     val event = buildUpstreamEvent()
     val monitor = new Object
-
-    expect(systemConfigStore.getPair(domainName, pairKey)).andReturn(pair)
-    replay(systemConfigStore)
 
     expect(writer.flush()).atLeastOnce
     replay(writer)

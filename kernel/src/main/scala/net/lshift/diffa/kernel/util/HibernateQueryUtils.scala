@@ -84,7 +84,7 @@ trait HibernateQueryUtils {
    * Returns a domain by its name
    */
   def getDomain(name: String) = sessionFactory.withSession(s => {
-    singleQuery[Domain](s, "domainByName", Map("name" -> name), "domain %s".format(name))
+    singleQuery[Domain](s, "domainByName", Map("domain_name" -> name), "domain %s".format(name))
   })
 
   /**
