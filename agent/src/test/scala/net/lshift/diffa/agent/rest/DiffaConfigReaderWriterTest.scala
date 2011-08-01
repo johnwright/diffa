@@ -22,7 +22,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import net.lshift.diffa.agent.util.ConfigComparisonUtil
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.frontend.DiffaConfig._
-import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, DiffaConfig}
+import net.lshift.diffa.kernel.frontend._
 
 /*
 * Test cases for the DiffaConfigReaderWriter.
@@ -35,22 +35,21 @@ class DiffaConfigReaderWriterTest {
       // TODO The n:m relationship between users and domains needs to be thought out
       users = Set(User("abc", null, "a@example.com")),
       endpoints = Set(
-        Endpoint(name = "upstream1", contentType = "application/json",
+        EndpointDef(name = "upstream1", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           scanUrl = "http://localhost:1234/scan", contentRetrievalUrl = "http://localhost:1234/content",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c")))),
-        Endpoint(name = "downstream1", contentType = "application/json",
+        EndpointDef(name = "downstream1", contentType = "application/json",
           scanUrl = "http://localhost:5432/scan", versionGenerationUrl = "http://localhost:5432/generate-version",
           categories = Map(
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
           ))),
       pairs = Set(
-        // TODO Should *Def carrier objects actually contain the domain - this should be symetric for every type
-        PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0"),
-        PairDef("ac", "domain","same", 5, "upstream1", "downstream1")),
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0"),
+        PairDef("ac", "same", 5, "upstream1", "downstream1")),
       repairActions = Set(
         RepairActionDef(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pair="ab"),
         RepairActionDef(name="Delete Result", scope="entity", url="http://example.com/delete/{id}", pair="ab")

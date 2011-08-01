@@ -33,6 +33,7 @@ import collection.mutable.HashMap
 import net.lshift.diffa.agent.client._
 import java.util.List
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
+import net.lshift.diffa.kernel.frontend.PairDef
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -136,7 +137,7 @@ class TestEnvironment(val pairKey: String,
   configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
   createPair
 
-  def createPair = configurationClient.declarePair(PairDef(pairKey, domain, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
+  def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
   def deletePair() {
    configurationClient.deletePair(pairKey)
   }

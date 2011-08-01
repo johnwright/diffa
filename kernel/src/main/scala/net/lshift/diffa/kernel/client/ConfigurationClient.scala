@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.client
 
 import net.lshift.diffa.kernel.config._
-import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef}
+import net.lshift.diffa.kernel.frontend.{PairDef, EscalationDef, RepairActionDef}
 
 /**
  * Interface supported by clients capable of configuring the diffa agent.

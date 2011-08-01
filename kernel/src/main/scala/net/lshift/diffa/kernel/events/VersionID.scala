@@ -20,7 +20,8 @@ import reflect.BeanProperty
 import net.lshift.diffa.kernel.config.{Domain, Pair => DiffaPair}
 
 
-// TODO Should we deprecated the VersionID(string,string,string) constructor in favor of VersionID(DiffaPair,string)?
+// TODO Should we deprecate the VersionID(string,string,string) constructor in favor of VersionID(DiffaPair,string)?
+// The problem with this is that the VersionID is serialized as part of the SessionEvent object
 /**
  * Identifier for a version within a given pair.
  */

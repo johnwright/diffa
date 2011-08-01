@@ -37,6 +37,7 @@ import net.lshift.diffa.kernel.util.NonCancellingFeedbackHandle
 import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * Base class for the various policy tests.
@@ -67,7 +68,7 @@ abstract class AbstractPolicyTest {
 
   val listener = createStrictMock("listener", classOf[DifferencingListener])
 
-  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
+  val systemConfigStore = createStrictMock("configStore", classOf[SystemConfigStore])
   val domainName = "domain"
   val domain = Domain(name=domainName)
   val pairKey = "A-B"
@@ -80,11 +81,11 @@ abstract class AbstractPolicyTest {
 
   val pair = new DiffaPair(key=pairKey, domain=domain, upstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)), downstream=new Endpoint(categories=Map("bizDate" -> dateCategoryDescriptor)))
 
-  expect(configStore.getPair(domainName,pairKey)).andReturn(pair).anyTimes
-  replay(configStore)
+  expect(systemConfigStore.getPair(domainName,pairKey)).andReturn(pair).anyTimes
+  replay(systemConfigStore)
 
   protected def replayAll = replay(usMock, dsMock, store, writer, listener)
-  protected def verifyAll = verify(usMock, dsMock, store, writer, listener, configStore)
+  protected def verifyAll = verify(usMock, dsMock, store, writer, listener, systemConfigStore)
 
   // Make declaring of sequences of specific types clearer
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)

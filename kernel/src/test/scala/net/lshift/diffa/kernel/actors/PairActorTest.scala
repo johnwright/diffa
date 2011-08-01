@@ -68,7 +68,6 @@ class PairActorTest {
   expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy))
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
-  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
 
   expect(systemConfigStore.listPairs).andReturn(Array(pair))
@@ -87,7 +86,7 @@ class PairActorTest {
   val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
   val scanListener = createStrictMock("scanListener", classOf[PairScanListener])
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, configStore, systemConfigStore, diffListener, scanListener, participantFactory, stores, diagnostics, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, diffListener, scanListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
@@ -191,8 +190,8 @@ class PairActorTest {
 
     val event = buildUpstreamEvent()
 
-    expect(configStore.getPair(domainName, pairKey)).andReturn(pair)
-    replay(configStore)
+    expect(systemConfigStore.getPair(domainName, pairKey)).andReturn(pair)
+    replay(systemConfigStore)
 
     scanListener.pairScanStateChanged(pair, PairScanState.SCANNING); expectLastCall
     scanListener.pairScanStateChanged(pair, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
@@ -243,7 +242,6 @@ class PairActorTest {
 
     verify(versionPolicy)
     verify(scanListener)
-    verify(configStore)
   }
 
   @Test
@@ -454,8 +452,8 @@ class PairActorTest {
     val event = buildUpstreamEvent()
     val monitor = new Object
 
-    expect(configStore.getPair(domainName, pairKey)).andReturn(pair)
-    replay(configStore)
+    expect(systemConfigStore.getPair(domainName, pairKey)).andReturn(pair)
+    replay(systemConfigStore)
 
     expect(writer.flush()).atLeastOnce
     replay(writer)
@@ -477,7 +475,6 @@ class PairActorTest {
     }
 
     verify(versionPolicy)
-    verify(configStore)
   }
 
   @Test

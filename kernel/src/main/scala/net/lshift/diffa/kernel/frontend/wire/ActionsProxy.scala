@@ -18,22 +18,26 @@ package net.lshift.diffa.kernel.frontend.wire
 
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import net.lshift.diffa.kernel.config.{RepairAction, Pair, DomainConfigStore}
+import net.lshift.diffa.kernel.config.{RepairAction, Pair => DiffaPair, DomainConfigStore}
 import InvocationResult._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
 import io.Source
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
+import net.lshift.diffa.kernel.frontend.PairDef
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * This is a conduit to the actions that are provided by participants
  */
-class ActionsProxy(val config:DomainConfigStore, val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
+class ActionsProxy(val config:DomainConfigStore,
+                   val systemConfig:SystemConfigStore,
+                   val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
     extends ActionsClient {
 
   def listActions(domain:String, pairKey: String): Seq[Actionable] =
     withValidPair(domain, pairKey) { pair =>
-      config.listRepairActionsForPair(domain, pair).map(Actionable.fromRepairAction)
+      config.listRepairActionsForPair(domain, pairKey).map(Actionable.fromRepairAction(domain,_))
     }
 
   def listEntityScopedActions(domain:String, pairKey: String) = listActions(domain, pairKey).filter(_.scope == RepairAction.ENTITY_SCOPE)
@@ -43,7 +47,7 @@ class ActionsProxy(val config:DomainConfigStore, val factory:ParticipantFactory,
   def invoke(request: ActionableRequest): InvocationResult =
     withValidPair(request.domain, request.pairKey) { pair =>
       val client = new DefaultHttpClient
-      val repairAction = config.getRepairAction(request.domain, request.actionId, request.pairKey)
+      val repairAction = config.getRepairActionDef(request.domain, request.actionId, request.pairKey)
       val url = repairAction.scope match {
         case RepairAction.ENTITY_SCOPE => repairAction.url.replace("{id}", request.entityId)
         case RepairAction.PAIR_SCOPE => repairAction.url
@@ -73,8 +77,8 @@ class ActionsProxy(val config:DomainConfigStore, val factory:ParticipantFactory,
       }
     }
 
-  def withValidPair[T](domain:String, pairKey: String)(f: Pair => T): T = {
-    val pair = config.getPair(domain, pairKey)
+  def withValidPair[T](domain:String, pairKey: String)(f: DiffaPair => T): T = {
+    val pair = systemConfig.getPair(domain, pairKey)
     f(pair)
   }
 

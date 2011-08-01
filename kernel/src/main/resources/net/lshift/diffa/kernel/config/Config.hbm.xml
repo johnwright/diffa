@@ -188,17 +188,17 @@
   </query>
 
   <query name="pairsByDomain">
-    select p from Pair p where p.domain.name = :name
+    select p from Pair p where p.domain.name = :domain_name
   </query>
 
   <query name="endpointsByDomain">
-    select e from Endpoint e where e.domain.name = :name
+    select e from Endpoint e where e.domain.name = :domain_name
   </query>
 
   <query name="escalationsByDomain">
     select e from Escalation e
     join e.pair as p
-    join p.domain as d with d.name = :name
+    join p.domain as d with d.name = :domain_name
   </query>
 
   <query name="repairActionsByDomain">

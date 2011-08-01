@@ -39,13 +39,18 @@ trait SystemConfigStore {
   def maybeSystemConfigOption(key:String) : Option[String]
 
   /**
-   * Enumerate all pairs of all domains
+   * Return the internal representation of a pair
    */
-  def listPairs : Seq[DiffaPair]//= listDomains.flatMap(d => listPairs(d.name))
+  def getPair(domain:String, pairKey:String) : DiffaPair
 
   /**
    * Enumerate all pairs of all domains
    */
-  def listEndpoints : Seq[Endpoint]// = listDomains.flatMap(d => listEndpoints(d.name))
+  def listPairs : Seq[DiffaPair]
+
+  /**
+   * Enumerate all pairs of all domains
+   */
+  def listEndpoints : Seq[Endpoint]
 
 }

@@ -51,7 +51,6 @@ class DefaultSessionManagerTest {
 
   val matcher = createStrictMock("matcher", classOf[EventMatcher])
 
-  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
   matchingManager.addListener(anyObject.asInstanceOf[MatchingStatusListener]); expectLastCall.once
@@ -75,7 +74,7 @@ class DefaultSessionManagerTest {
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
   EasyMock.checkOrder(pairPolicyClient, false)
 
-  val manager = new DefaultSessionManager(configStore, systemConfigStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
+  val manager = new DefaultSessionManager(systemConfigStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
   verify(matchingManager); reset(matchingManager)    // The matching manager will have been called on session manager startup
 
   val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
@@ -101,8 +100,8 @@ class DefaultSessionManagerTest {
     participantFactory.createUpstreamParticipant(u)
     participantFactory.createDownstreamParticipant(d) 
 
-    expect(configStore.getPair(domainName, "pair1")).andStubReturn(pair1)
-    expect(configStore.getPair(domainName, "pair2")).andStubReturn(pair2)
+    expect(systemConfigStore.getPair(domainName, "pair1")).andStubReturn(pair1)
+    expect(systemConfigStore.getPair(domainName, "pair2")).andStubReturn(pair2)
     expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
     expect(matchingManager.getMatcher(pair1)).andStubReturn(Some(matcher))
     expect(matchingManager.getMatcher(pair2)).andStubReturn(Some(matcher))
@@ -110,7 +109,7 @@ class DefaultSessionManagerTest {
     expect(matcher.isVersionIDActive(new VersionID(pair2.key, domainName, "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(new VersionID(pair1.key, domainName, "id2"))).andStubReturn(false)
 
-    replay(configStore, systemConfigStore, matchingManager, matcher)
+    replay(systemConfigStore, matchingManager, matcher)
   }
 
   def expectDifferenceForPair(pairs:DiffaPair*)  = {

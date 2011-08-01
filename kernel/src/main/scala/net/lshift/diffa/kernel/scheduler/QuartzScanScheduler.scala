@@ -36,7 +36,7 @@ import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
 /**
  * Quartz backed implementation of the ScanScheduler.
  */
-class QuartzScanScheduler(config:DomainConfigStore,
+class QuartzScanScheduler(//config:DomainConfigStore,
                           systemConfig:SystemConfigStore,
                           sessions:SessionManager,
                           name:String)
@@ -53,7 +53,7 @@ class QuartzScanScheduler(config:DomainConfigStore,
     override def triggerFired(trigger: Trigger, context: JobExecutionContext) {
       val pairId = trigger.getJobKey.getName
       var (domain,pairKey) = DiffaPair.fromIdentifier(pairId)
-      val pair = config.getPair(domain,pairKey)
+      val pair = systemConfig.getPair(domain,pairKey)
 
       log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
       try {
@@ -71,7 +71,7 @@ class QuartzScanScheduler(config:DomainConfigStore,
   systemConfig.listPairs.foreach(onUpdatePair(_))
 
   def onUpdatePair(domain:String, pairKey: String) {
-    onUpdatePair(config.getPair(domain, pairKey))
+    onUpdatePair(systemConfig.getPair(domain, pairKey))
   }
 
   def onUpdatePair(pair:DiffaPair) {
@@ -115,7 +115,7 @@ class QuartzScanScheduler(config:DomainConfigStore,
   }
 
   def onDeletePair(domain:String, pairKey: String) {
-    val existingJob = jobForPair(config.getPair(domain, pairKey))
+    val existingJob = jobForPair(systemConfig.getPair(domain, pairKey))
     if (existingJob != null) {
       scheduler.deleteJob(jobKey(pairKey))
     }

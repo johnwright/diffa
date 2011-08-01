@@ -21,9 +21,9 @@ import core.UriInfo
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
-import net.lshift.diffa.kernel.frontend.{DiffaConfig, Configuration}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.agent.rest.ResponseUtils._
+import net.lshift.diffa.kernel.frontend._
 
 /**
  * This is a REST interface to the Configuration abstraction.
@@ -53,20 +53,20 @@ class ConfigurationResource(val config:Configuration,
   @Path("/repair-actions")
   @Produces(Array("application/json"))
   @Description("Returns a list of all the repair actions registered with the agent.")
-  def listRepairActions: Array[RepairAction] = config.listRepairActions(domain).toArray
+  def listRepairActions: Array[RepairActionDef] = config.listRepairActions(domain).toArray
 
   @GET
   @Produces(Array("application/json"))
   @Path("/endpoints/{id}")
   @Description("Returns an endpoint by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
-  def getEndpoint(@PathParam("id") id:String) = config.getEndpoint(domain, id)
+  def getEndpoint(@PathParam("id") id:String) = config.getEndpointDef(domain, id)
 
   @POST
   @Path("/endpoints")
   @Consumes(Array("application/json"))
   @Description("Registers a new endpoint with the agent.")
-  def createEndpoint(e:Endpoint) = {
+  def createEndpoint(e:EndpointDef) = {
     config.createOrUpdateEndpoint(domain, e)
     resourceCreated(e.name, uri)
   }
@@ -77,7 +77,7 @@ class ConfigurationResource(val config:Configuration,
   @Path("/endpoints/{id}")
   @Description("Updates the attributes of an endpoint that is registered with the agent.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Endpoint ID")))
-  def updateEndpoint(@PathParam("id") id:String, e:Endpoint) = {
+  def updateEndpoint(@PathParam("id") id:String, e:EndpointDef) = {
     config.createOrUpdateEndpoint(domain, e)
     e
   }
@@ -94,7 +94,7 @@ class ConfigurationResource(val config:Configuration,
   @Description("Creates a new pairing between two endpoints that are already registered with the agent.")
   def createPair(p:PairDef) = {
     config.createOrUpdatePair(domain, p)
-    resourceCreated(p.pairKey, uri)
+    resourceCreated(p.key, uri)
   }
 
   @PUT
@@ -126,7 +126,7 @@ class ConfigurationResource(val config:Configuration,
   @Consumes(Array("application/json"))
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   @Description("Creates a new repair action associated with a pair that is registered with the agent.")
-  def createRepairAction(a: RepairAction) = {
+  def createRepairAction(a: RepairActionDef) = {
     config.createOrUpdateRepairAction(domain, a)
     resourceCreated(a.name, uri)
   }
@@ -145,7 +145,7 @@ class ConfigurationResource(val config:Configuration,
   @Consumes(Array("application/json"))
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   @Description("Creates a new escalation associated with a pair that is registered with the agent.")
-  def createEscalation(e: Escalation) = {
+  def createEscalation(e: EscalationDef) = {
     config.createOrUpdateEscalation(domain, e)
     resourceCreated(e.name, uri)
   }

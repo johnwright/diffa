@@ -21,7 +21,7 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
 import com.sun.jersey.api.client.ClientResponse
-import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef}
+import net.lshift.diffa.kernel.frontend.{PairDef, EscalationDef, RepairActionDef}
 
 class ConfigurationRestClient(serverRootUrl:String)
     extends AbstractRestClient(serverRootUrl, "rest/config/")

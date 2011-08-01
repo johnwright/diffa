@@ -17,10 +17,10 @@
 package net.lshift.diffa.kernel.config.system
 
 import org.junit.Assert._
-import net.lshift.diffa.kernel.config.Endpoint
 import collection.JavaConversions._
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.config.{Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor, Endpoint, PairDef}
+import net.lshift.diffa.kernel.frontend.{PairDef, EndpointDef}
+import net.lshift.diffa.kernel.config.{Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor, Endpoint}
 import org.junit.{Before, Test}
 
 class HibernateSystemConfigStoreTest {
@@ -40,14 +40,14 @@ class HibernateSystemConfigStoreTest {
   val bound = new DateTime().toString()
   val categories = Map("cat" ->  new RangeCategoryDescriptor("datetime", bound, bound))
 
-  val upstream1 = new Endpoint(name = "TEST_UPSTREAM", domain = domain, scanUrl = "testScanUrl1",
+  val upstream1 = new EndpointDef(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1",
                                inboundUrl = "http://foo.com",
                                contentType = "application/json", categories = categories)
-  val downstream1 = new Endpoint(name = "TEST_DOWNSTREAM", domain = domain, scanUrl = "testScanUrl3",
+  val downstream1 = new EndpointDef(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3",
                                  inboundUrl = "http://bar.com",
                                  contentType = "application/json", categories = categories)
 
-  val pairDef = new PairDef(pairKey, domainName, versionPolicyName1, matchingTimeout, upstream1.name,
+  val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
 
   @Before
@@ -73,7 +73,7 @@ class HibernateSystemConfigStoreTest {
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsUpstream {
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
-    domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,
+    domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName2, DiffaPair.NO_MATCHING,
                                                upstream1.name, downstream1.name))
 
     val res = systemConfigStore.getPairsForInboundEndpointURL(upstream1.inboundUrl)
@@ -85,7 +85,7 @@ class HibernateSystemConfigStoreTest {
   def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsDownstream {
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
-    domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName2, DiffaPair.NO_MATCHING,
+    domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName2, DiffaPair.NO_MATCHING,
                                                upstream1.name, downstream1.name))
 
     val res = systemConfigStore.getPairsForInboundEndpointURL(downstream1.inboundUrl)

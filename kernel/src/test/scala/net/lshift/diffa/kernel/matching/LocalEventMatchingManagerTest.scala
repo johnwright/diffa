@@ -37,12 +37,11 @@ class LocalEventMatchingManagerTest {
 
   val invalid = new DiffaPair(key = "invalid", domain = domain, matchingTimeout = 5)
 
-  val configStore = createStrictMock(classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock(classOf[SystemConfigStore])
-  expect(configStore.getPair(domainName, "pair1")).andStubReturn(pair1)
-  expect(configStore.getPair(domainName, "pair2")).andStubReturn(pair2)
+  expect(systemConfigStore.getPair(domainName, "pair1")).andStubReturn(pair1)
+  expect(systemConfigStore.getPair(domainName, "pair2")).andStubReturn(pair2)
   expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
-  replay(configStore,systemConfigStore)
+  replay(systemConfigStore)
 
   val matchingManager = new LocalEventMatchingManager(systemConfigStore)
 
@@ -58,9 +57,9 @@ class LocalEventMatchingManagerTest {
 
   @Test
   def shouldReturnAMatcherForAPairKeyLaterIntroduced {
-    reset(configStore)
-    expect(configStore.getPair(domainName, "pair3")).andStubReturn(pair3)
-    replay(configStore)
+    reset(systemConfigStore)
+    expect(systemConfigStore.getPair(domainName, "pair3")).andStubReturn(pair3)
+    replay(systemConfigStore)
 
     matchingManager.onUpdatePair(pair3)
     assertFalse(None.equals(matchingManager.getMatcher(pair3)))
@@ -68,9 +67,9 @@ class LocalEventMatchingManagerTest {
 
   @Test
   def shouldNotReturnAMatcherForARemovedPair {
-    reset(configStore)
-    expect(configStore.getPair(domainName, "pair3")).andStubReturn(pair3)
-    replay(configStore)
+    reset(systemConfigStore)
+    expect(systemConfigStore.getPair(domainName, "pair3")).andStubReturn(pair3)
+    replay(systemConfigStore)
 
     matchingManager.onUpdatePair(pair3)
     matchingManager.onDeletePair(pair3)
@@ -89,9 +88,9 @@ class LocalEventMatchingManagerTest {
 
   @Test
   def shouldApplyListenersToNewMatchers {
-    reset(configStore)
-    expect(configStore.getPair(domainName, "pair3")).andStubReturn(pair3)
-    replay(configStore)
+    reset(systemConfigStore)
+    expect(systemConfigStore.getPair(domainName, "pair3")).andStubReturn(pair3)
+    replay(systemConfigStore)
 
     val l1 = createStrictMock(classOf[MatchingStatusListener])
     matchingManager.addListener(l1)

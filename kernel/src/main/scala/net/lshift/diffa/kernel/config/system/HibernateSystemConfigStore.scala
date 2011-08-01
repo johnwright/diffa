@@ -46,8 +46,10 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
     sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByInboundEndpointUrl", Map("url" -> url)))
   }
 
-  def listPairs = listDomains.flatMap(d => domainConfigStore.listPairs(d.name))
-  def listEndpoints = listDomains.flatMap(d => domainConfigStore.listEndpoints(d.name))
+  def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
+
+  def listPairs = sessionFactory.withSession(s => listQuery[DiffaPair](s, "allPairs", Map()))
+  def listEndpoints = sessionFactory.withSession(s => listQuery[Endpoint](s, "allEndpoints", Map()))
 
   def maybeSystemConfigOption(key: String) = {
     sessionFactory.withSession(s => singleQueryOpt[String](s, "rootConfigOptionByKey", Map("key" -> key)))

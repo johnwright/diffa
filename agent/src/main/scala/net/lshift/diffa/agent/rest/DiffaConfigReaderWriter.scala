@@ -30,7 +30,7 @@ import scala.collection.JavaConversions._
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.differencing.PairScanState
-import net.lshift.diffa.kernel.frontend.{RepairActionDef, EscalationDef, DiffaConfig}
+import net.lshift.diffa.kernel.frontend._
 
 /**
  * Provider for encoding and decoding diffa configuration blocks.
@@ -91,7 +91,7 @@ class DiffaCastorSerializableConfig {
     this.pairs = c.pairs.map(p => {
       def repairActionsForPair(pairKey: String) = c.repairActions.filter(_.pair == pairKey).toList
       def escalationsForPair(pairKey: String) = c.escalations.filter(_.pair == pairKey).toList
-      CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.pairKey), escalationsForPair(p.pairKey))
+      CastorSerializablePair.fromPairDef(p, repairActionsForPair(p.key), escalationsForPair(p.key))
     }).toList
     this
   }
@@ -114,7 +114,6 @@ class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String
 
 class CastorSerializableEndpoint {
   @BeanProperty var name: String = null
-  @BeanProperty var domain: String = null
   @BeanProperty var scanUrl: String = null
   @BeanProperty var contentRetrievalUrl: String = null
   @BeanProperty var versionGenerationUrl: String = null
@@ -125,9 +124,8 @@ class CastorSerializableEndpoint {
   @BeanProperty var prefixCategories: java.util.List[CastorSerializablePrefixCategoryDescriptor] = new java.util.ArrayList[CastorSerializablePrefixCategoryDescriptor]
   @BeanProperty var setCategories: java.util.List[CastorSerializableSetCategoryDescriptor] = new java.util.ArrayList[CastorSerializableSetCategoryDescriptor]
 
-  def fromDiffaEndpoint(e:Endpoint) = {
+  def fromDiffaEndpoint(e:EndpointDef) = {
     this.name = e.name
-    this.domain = e.domain.name
     this.scanUrl = e.scanUrl
     this.contentRetrievalUrl = e.contentRetrievalUrl
     this.versionGenerationUrl = e.versionGenerationUrl
@@ -146,7 +144,7 @@ class CastorSerializableEndpoint {
   }
 
   def toDiffaEndpoint =
-    Endpoint(
+    EndpointDef(
       name = name, contentType = contentType, inboundUrl = inboundUrl, inboundContentType = inboundContentType,
       scanUrl = scanUrl, contentRetrievalUrl = contentRetrievalUrl, versionGenerationUrl = versionGenerationUrl,
       categories =
@@ -184,7 +182,6 @@ class SetValue(@BeanProperty var value:String) {
 
 class CastorSerializablePair(
   @BeanProperty var key: String = null,
-  @BeanProperty var domain: String = null,
   @BeanProperty var upstream: String = null,
   @BeanProperty var downstream: String = null,
   @BeanProperty var versionPolicy: String = null,
@@ -195,12 +192,12 @@ class CastorSerializablePair(
 ) {
   def this() = this(key = null)
 
-  def toPairDef = new PairDef(key, domain, versionPolicy, matchingTimeout, upstream, downstream, scanCronSpec)
+  def toPairDef = PairDef(key, versionPolicy, matchingTimeout, upstream, downstream, scanCronSpec)
 }
 
 object CastorSerializablePair {
   def fromPairDef(p: PairDef, repairActions: java.util.List[RepairActionDef],
                               escalations: java.util.List[EscalationDef]): CastorSerializablePair =
-    new CastorSerializablePair(p.pairKey, p.domain, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
+    new CastorSerializablePair(p.key, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
                                repairActions, escalations, p.scanCronSpec)
 }

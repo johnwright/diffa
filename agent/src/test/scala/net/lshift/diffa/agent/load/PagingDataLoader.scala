@@ -24,7 +24,8 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 import com.eaio.uuid.UUID
-import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.{Endpoint, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.frontend.PairDef
 
 /**
  * Utility class to load lots of unmatched events into the agent.
@@ -58,7 +59,7 @@ object PagingDataLoader {
     configClient.declareEndpoint(Endpoint(name = up, scanUrl = host, contentType = content, categories = categories))
     configClient.declareEndpoint(Endpoint(name = down, scanUrl = host, contentType = content, categories = categories))
     // TODO should domain be part of PairDef
-    configClient.declarePair(PairDef(pair, "domain", "same", 0, up, down, "0 15 10 ? * *"))
+    configClient.declarePair(PairDef(pair, "same", 0, up, down, "0 15 10 ? * *"))
 
     val start = new DateTime().minusHours(hours)
 

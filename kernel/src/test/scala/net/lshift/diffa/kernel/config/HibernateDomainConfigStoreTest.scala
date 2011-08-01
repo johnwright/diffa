@@ -28,6 +28,7 @@ import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.frontend.{RepairActionDef, PairDef, EndpointDef, EscalationDef}
 
 class HibernateDomainConfigStoreTest {
 
@@ -55,35 +56,35 @@ class HibernateDomainConfigStoreTest {
   val domainName = "domain"
   val domain = new Domain(domainName)
 
-  val upstream1 = new Endpoint(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1", contentType = "application/json",
-                               categories = dateRangeCategoriesMap, domain = domain)
-  val upstream2 = new Endpoint(name = "TEST_UPSTREAM_ALT", scanUrl = "testScanUrl2",
-                               contentRetrievalUrl = "contentRetrieveUrl1", contentType = "application/json",
-                               categories = setCategoriesMap, domain = domain)
+  val upstream1 = new EndpointDef(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1", contentType = "application/json",
+                                  categories = dateRangeCategoriesMap)
+  val upstream2 = new EndpointDef(name = "TEST_UPSTREAM_ALT", scanUrl = "testScanUrl2",
+                                  contentRetrievalUrl = "contentRetrieveUrl1", contentType = "application/json",
+                                  categories = setCategoriesMap)
 
-  val downstream1 = new Endpoint(name = "TEST_DOWNSTREAM", domain = domain, scanUrl = "testScanUrl3",
-                                 contentType = "application/json", categories = intRangeCategoriesMap)
-  val downstream2 = new Endpoint(name = "TEST_DOWNSTREAM_ALT", domain = domain, scanUrl = "testScanUrl4",
-                                 versionGenerationUrl = "generateVersionUrl1", contentType = "application/json",
-                                 categories = stringPrefixCategoriesMap)
+  val downstream1 = new EndpointDef(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3",
+                                    contentType = "application/json", categories = intRangeCategoriesMap)
+  val downstream2 = new EndpointDef(name = "TEST_DOWNSTREAM_ALT", scanUrl = "testScanUrl4",
+                                    versionGenerationUrl = "generateVersionUrl1", contentType = "application/json",
+                                    categories = stringPrefixCategoriesMap)
 
   val versionPolicyName1 = "TEST_VPNAME"
   val matchingTimeout = 120
   val versionPolicyName2 = "TEST_VPNAME_ALT"
   val pairKey = "TEST_PAIR"
-  val pairDef = new PairDef(pairKey, domainName, versionPolicyName1, matchingTimeout, upstream1.name,
+  val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
 
   val pair = DiffaPair(key = pairKey, domain = domain)
 
-  val repairAction = new RepairAction(name="REPAIR_ACTION_NAME",
-                                      scope=RepairAction.ENTITY_SCOPE,
-                                      url="resend", pair=pair)
+  val repairAction = RepairActionDef(name="REPAIR_ACTION_NAME",
+                                     scope=RepairAction.ENTITY_SCOPE,
+                                     url="resend", pair=pairKey)
 
-  val escalation = Escalation(name="esc", action = "test_action", pair = pair,
-                              event = EscalationEvent.UPSTREAM_MISSING,
-                              actionType = EscalationActionType.REPAIR,
-                              origin = EscalationOrigin.SCAN)
+  val escalation = EscalationDef(name="esc", action = "test_action", pair = pairKey,
+                                 event = EscalationEvent.UPSTREAM_MISSING,
+                                 actionType = EscalationActionType.REPAIR,
+                                 origin = EscalationOrigin.SCAN)
 
   val configKey = "foo"
   val configValue = "bar"
@@ -108,7 +109,7 @@ class HibernateDomainConfigStoreTest {
   @Before
   def setUp = HibernateDomainConfigStoreTest.clearAllConfig
 
-  def exists (e:Endpoint, count:Int, offset:Int) : Unit = {
+  def exists (e:EndpointDef, count:Int, offset:Int) : Unit = {
     val endpoints = domainConfigStore.listEndpoints(domainName)
     assertEquals(count, endpoints.length)
     assertEquals(e.name, endpoints(offset).name)
@@ -119,7 +120,7 @@ class HibernateDomainConfigStoreTest {
     assertEquals(e.versionGenerationUrl, endpoints(offset).versionGenerationUrl)
   }
 
-  def exists (e:Endpoint, count:Int) : Unit = exists(e, count, count - 1)
+  def exists (e:EndpointDef, count:Int) : Unit = exists(e, count, count - 1)
 
   @Test
   def domainShouldBeDeletable = {
@@ -161,18 +162,18 @@ class HibernateDomainConfigStoreTest {
     // Declare a pair
     domainConfigStore.createOrUpdatePair(domainName, pairDef)
 
-    val retrPair = domainConfigStore.getPair(domainName, pairDef.pairKey)
+    val retrPair = domainConfigStore.getPairDef(domainName, pairDef.key)
     assertEquals(pairKey, retrPair.key)
-    assertEquals(upstream1.name, retrPair.upstream.name)
-    assertEquals(downstream1.name, retrPair.downstream.name)
+    assertEquals(upstream1.name, retrPair.upstreamName)
+    assertEquals(downstream1.name, retrPair.downstreamName)
     assertEquals(versionPolicyName1, retrPair.versionPolicyName)
     assertEquals(matchingTimeout, retrPair.matchingTimeout)
 
     // Declare a repair action
     domainConfigStore.createOrUpdateRepairAction(domainName, repairAction)
-    val retrActions = domainConfigStore.listRepairActionsForPair(domainName, retrPair)
+    val retrActions = domainConfigStore.listRepairActionsForPair(domainName, retrPair.key)
     assertEquals(1, retrActions.length)
-    assertEquals(Some(pairKey), retrActions.headOption.map(_.pair.key))
+    assertEquals(Some(pairKey), retrActions.headOption.map(_.pair))
   }
 
   @Test
@@ -221,15 +222,15 @@ class HibernateDomainConfigStoreTest {
 
     domainConfigStore.deleteEndpoint(domainName, upstream1.name)
     expectMissingObject("endpoint") {
-      domainConfigStore.getEndpoint(domainName, upstream1.name)
+      domainConfigStore.getEndpointDef(domainName, upstream1.name)
     }
         
     // Change its name
-    domainConfigStore.createOrUpdateEndpoint(domainName, Endpoint(name = upstreamRenamed, domain = domain,
-                                                                  scanUrl = upstream1.scanUrl, contentType = "application/json",
-                                                                  inboundUrl = "changes", inboundContentType = "application/json"))
+    domainConfigStore.createOrUpdateEndpoint(domainName, EndpointDef(name = upstreamRenamed,
+                                                                     scanUrl = upstream1.scanUrl, contentType = "application/json",
+                                                                     inboundUrl = "changes", inboundContentType = "application/json"))
 
-    val retrieved = domainConfigStore.getEndpoint(domainName, upstreamRenamed)
+    val retrieved = domainConfigStore.getEndpointDef(domainName, upstreamRenamed)
     assertEquals(upstreamRenamed, retrieved.name)
   }
 
@@ -240,16 +241,16 @@ class HibernateDomainConfigStoreTest {
     // Rename, change a few fields and swap endpoints by deleting and creating new
     domainConfigStore.deletePair(domainName, pairKey)
     expectMissingObject("pair") {
-      domainConfigStore.getPair(domainName, pairKey)
+      domainConfigStore.getPairDef(domainName, pairKey)
     }
 
-    domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairRenamed, domainName,  versionPolicyName2, Pair.NO_MATCHING,
+    domainConfigStore.createOrUpdatePair(domainName, PairDef(pairRenamed, versionPolicyName2, Pair.NO_MATCHING,
       downstream1.name, upstream1.name, "0 0 * * * ?"))
     
-    val retrieved = domainConfigStore.getPair(domainName, pairRenamed)
+    val retrieved = domainConfigStore.getPairDef(domainName, pairRenamed)
     assertEquals(pairRenamed, retrieved.key)
-    assertEquals(downstream1.name, retrieved.upstream.name) // check endpoints are swapped
-    assertEquals(upstream1.name, retrieved.downstream.name)
+    assertEquals(downstream1.name, retrieved.upstreamName) // check endpoints are swapped
+    assertEquals(upstream1.name, retrieved.downstreamName)
     assertEquals(versionPolicyName2, retrieved.versionPolicyName)
     assertEquals("0 0 * * * ?", retrieved.scanCronSpec)
     assertEquals(Pair.NO_MATCHING, retrieved.matchingTimeout)
@@ -259,13 +260,13 @@ class HibernateDomainConfigStoreTest {
   def testDeleteEndpointCascade: Unit = {
     declareAll
 
-    assertEquals(upstream1.name, domainConfigStore.getEndpoint(domainName, upstream1.name).name)
+    assertEquals(upstream1.name, domainConfigStore.getEndpointDef(domainName, upstream1.name).name)
     domainConfigStore.deleteEndpoint(domainName, upstream1.name)
     expectMissingObject("endpoint") {
-      domainConfigStore.getEndpoint(domainName, upstream1.name)
+      domainConfigStore.getEndpointDef(domainName, upstream1.name)
     }
     expectMissingObject("pair") {
-      domainConfigStore.getPair(domainName, pairKey) // delete should cascade
+      domainConfigStore.getPairDef(domainName, pairKey) // delete should cascade
     }
   }
 
@@ -273,10 +274,10 @@ class HibernateDomainConfigStoreTest {
   def testDeletePair: Unit = {
     declareAll
 
-    assertEquals(pairKey, domainConfigStore.getPair(domainName, pairKey).key)
+    assertEquals(pairKey, domainConfigStore.getPairDef(domainName, pairKey).key)
     domainConfigStore.deletePair(domainName, pairKey)
     expectMissingObject("pair") {
-      domainConfigStore.getPair(domainName, pairKey)
+      domainConfigStore.getPairDef(domainName, pairKey)
     }
   }
 
@@ -286,7 +287,7 @@ class HibernateDomainConfigStoreTest {
     assertEquals(Some(repairAction.name), domainConfigStore.listRepairActions(domainName).headOption.map(_.name))
     domainConfigStore.deletePair(domainName, pairKey)
     expectMissingObject("repair action") {
-      domainConfigStore.getRepairAction(domainName, repairAction.name, pairKey)
+      domainConfigStore.getRepairActionDef(domainName, repairAction.name, pairKey)
     }
   }
 
@@ -297,7 +298,7 @@ class HibernateDomainConfigStoreTest {
 
     domainConfigStore.deleteRepairAction(domainName, repairAction.name, pairKey)
     expectMissingObject("repair action") {
-      domainConfigStore.getRepairAction(domainName, repairAction.name, pairKey)
+      domainConfigStore.getRepairActionDef(domainName, repairAction.name, pairKey)
     }
   }
 
@@ -322,10 +323,10 @@ class HibernateDomainConfigStoreTest {
       // TODO: We should probably get an exception indicating that the constraint was null, not that the object
       //       we're linking to is missing.
     expectMissingObject("endpoint") {
-      domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName1, Pair.NO_MATCHING, null, downstream1.name))
+      domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, null, downstream1.name))
     }
     expectMissingObject("endpoint") {
-      domainConfigStore.createOrUpdatePair(domainName, new PairDef(pairKey, domainName, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null))
+      domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName1, Pair.NO_MATCHING, upstream1.name, null))
     }
   }
 
@@ -334,22 +335,25 @@ class HibernateDomainConfigStoreTest {
     // declare the domain
     systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    domainConfigStore.createOrUpdateEndpoint(domainName, Endpoint(name = upstream1.name, scanUrl = "DIFFERENT_URL",
-                                                                  contentType = "application/json", inboundUrl = "changes",
-                                                                  inboundContentType = "application/json",
-                                                                  domain = domain))
+    domainConfigStore.createOrUpdateEndpoint(domainName, EndpointDef(name = upstream1.name, scanUrl = "DIFFERENT_URL",
+                                                                     contentType = "application/json", inboundUrl = "changes",
+                                                                     inboundContentType = "application/json"))
     assertEquals(1, domainConfigStore.listEndpoints(domainName).length)
-    assertEquals("DIFFERENT_URL", domainConfigStore.getEndpoint(domainName, upstream1.name).scanUrl)
+    assertEquals("DIFFERENT_URL", domainConfigStore.getEndpointDef(domainName, upstream1.name).scanUrl)
   }
 
   @Test
   def rangeCategory = {
     declareAll
-    val pair = domainConfigStore.getPair(domainName, pairKey)
-    assertNotNull(pair.upstream.categories)
-    assertNotNull(pair.downstream.categories)
-    val us_descriptor = pair.upstream.categories(dateCategoryName).asInstanceOf[RangeCategoryDescriptor]
-    val ds_descriptor = pair.downstream.categories(intCategoryName).asInstanceOf[RangeCategoryDescriptor]
+    val pair = domainConfigStore.getPairDef(domainName, pairKey)
+    assertNotNull(pair.upstreamName)
+    assertNotNull(pair.downstreamName)
+    val upstream = domainConfigStore.getEndpointDef(domainName, pair.upstreamName)
+    val downstream = domainConfigStore.getEndpointDef(domainName, pair.downstreamName)
+    assertNotNull(upstream.categories)
+    assertNotNull(downstream.categories)
+    val us_descriptor = upstream.categories(dateCategoryName).asInstanceOf[RangeCategoryDescriptor]
+    val ds_descriptor = downstream.categories(intCategoryName).asInstanceOf[RangeCategoryDescriptor]
     assertEquals("datetime", us_descriptor.dataType)
     assertEquals(intCategoryType, ds_descriptor.dataType)
     assertEquals(dateCategoryLower, us_descriptor.lower)
@@ -359,7 +363,7 @@ class HibernateDomainConfigStoreTest {
   @Test
   def setCategory = {
     declareAll
-    val endpoint = domainConfigStore.getEndpoint(domainName, upstream2.name)
+    val endpoint = domainConfigStore.getEndpointDef(domainName, upstream2.name)
     assertNotNull(endpoint.categories)
     val descriptor = endpoint.categories(dateCategoryName).asInstanceOf[SetCategoryDescriptor]
     assertEquals(setCategoryValues, descriptor.values.toSet)
@@ -368,7 +372,7 @@ class HibernateDomainConfigStoreTest {
   @Test
   def prefixCategory = {
     declareAll
-    val endpoint = domainConfigStore.getEndpoint(domainName, downstream2.name)
+    val endpoint = domainConfigStore.getEndpointDef(domainName, downstream2.name)
     assertNotNull(endpoint.categories)
     val descriptor = endpoint.categories(stringCategoryName).asInstanceOf[PrefixCategoryDescriptor]
     assertEquals(1, descriptor.prefixLength)

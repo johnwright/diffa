@@ -28,7 +28,6 @@ import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
-                               config:DomainConfigStore,
                                systemConfig:SystemConfigStore,
                                differencingMulticaster:DifferencingListener,
                                pairScanListener:PairScanListener,
@@ -102,7 +101,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     }
   }
 
-  def findActor(id:VersionID) : ActorRef = findActor(config.getPair(id.domain, id.pairKey))
+  def findActor(id:VersionID) : ActorRef = findActor(systemConfig.getPair(id.domain, id.pairKey))
 
   def findActor(pair:DiffaPair) = {
     val actors = Actor.registry.actorsFor(pair.identifier)
