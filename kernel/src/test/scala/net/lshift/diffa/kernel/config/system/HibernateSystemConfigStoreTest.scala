@@ -22,7 +22,7 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.{PairDef, EndpointDef}
 import org.junit.{Before, Test}
-import net.lshift.diffa.kernel.config.{User, Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor, Endpoint}
+import net.lshift.diffa.kernel.config.{User, Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor}
 import collection.mutable.HashSet
 
 class HibernateSystemConfigStoreTest {

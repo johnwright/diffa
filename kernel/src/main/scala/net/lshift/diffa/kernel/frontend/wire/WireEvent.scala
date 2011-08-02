@@ -39,7 +39,7 @@ object WireEvent {
 
   val ID = "id"
   val LAST_UPDATE = "lastUpdate"
-  val ENDPOINT = "endpoint"
+  val INBOUND_URL = "inboundURL"
   val VSN = "vsn"
   val DVSN = "dvsn"
   val UVSN = "uvsn"
@@ -54,7 +54,7 @@ object WireEvent {
   def extractMetaData(event:ChangeEvent) = {
     collection.immutable.Map(
       ID -> event.id.toString(),
-      ENDPOINT -> event.endpoint.toString(),
+      INBOUND_URL -> event.inboundURL.toString(),
       LAST_UPDATE -> event.lastUpdate.toString()
     )
   }

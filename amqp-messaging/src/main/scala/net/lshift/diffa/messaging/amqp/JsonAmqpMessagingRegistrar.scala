@@ -47,7 +47,9 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
 
     // handler only has one endpoint, called "changes"
     object ChangesEndpointMapper extends EndpointMapper {
-      def apply(msg: ReceivedMessage) = "changes"
+      def apply(msg: ReceivedMessage) = {
+        msg.getProperties.getMessageId
+      }
     }
 
     def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =

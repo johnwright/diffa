@@ -37,7 +37,7 @@ class Changes(val config:SystemConfigStore,
   def onChange(evt:ChangeEvent) {
     log.debug("Received change event: " + evt)
 
-    config.getPairsForInboundEndpointURL(evt.endpoint).foreach(pair => {
+    config.getPairsForInboundEndpointURL(evt.inboundURL).foreach(pair => {
       val pairEvt = evt match {
         case UpstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, vsn)
         case DownstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, vsn)
