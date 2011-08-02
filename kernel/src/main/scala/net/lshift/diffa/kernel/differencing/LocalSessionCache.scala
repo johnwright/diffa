@@ -94,6 +94,9 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
   def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) =
     retrieveUnmatchedEvents(interval).filter(_.objId.pairKey == pairKey).slice(offset, offset + length)
 
+  def countEvents(pairKey: String, interval: Interval) =
+    retrieveUnmatchedEvents(interval).filter(_.objId.pairKey == pairKey).length
+
   def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent] = {
     val seqIdNum = Integer.parseInt(evtSeqId)
 
