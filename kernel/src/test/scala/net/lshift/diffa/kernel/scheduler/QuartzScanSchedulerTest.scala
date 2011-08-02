@@ -92,7 +92,7 @@ class QuartzScanSchedulerTest {
     replayAll()
 
     withScheduler(new QuartzScanScheduler(systemConfig, sessions, "shouldAllowSchedulesToBeDeleted")) { scheduler =>
-      scheduler.onDeletePair("domain","PairC")
+      scheduler.onDeletePair(pair)
 
       mb.poll(3, TimeUnit.SECONDS) match {
         case null =>
@@ -116,8 +116,8 @@ class QuartzScanSchedulerTest {
 
     // Initially schedule with something too old to run, then update it with something new enough that will
     withScheduler(new QuartzScanScheduler(systemConfig, sessions, "shouldAllowSchedulesToBeUpdated")) { scheduler =>
-      scheduler.onUpdatePair("domain","PairD")   // We'll get a different pair result on each call
-      scheduler.onUpdatePair("domain","PairD")
+      scheduler.onUpdatePair(p1)   // We'll get a different pair result on each call
+      scheduler.onUpdatePair(p2)
 
       mb.poll(5, TimeUnit.SECONDS) match {
         case null => fail("Scan was not triggered")

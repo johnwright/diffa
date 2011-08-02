@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.client
+package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.kernel.config.Escalation
+import net.lshift.diffa.messaging.json.AbstractRestClient
+import net.lshift.diffa.kernel.frontend.DomainDef
 
+class SystemConfigRestClient(rootUrl:String) extends AbstractRestClient(rootUrl, "rest/root/") {
 
-/**
- * Interface supported by clients capable of listing escalations.
- */
-trait EscalationsClient {
+  def declareDomain(domain:DomainDef) = create("domains", domain)
 
-  /**
-   * Lists all escalations that a pairing offers
-   */
-  def listEscalations(pairKey: String): Seq[Escalation]
-
+  def removeDomain(name: String) = delete("/domains/" + name)
 }

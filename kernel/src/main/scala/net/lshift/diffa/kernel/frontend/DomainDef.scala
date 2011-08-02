@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.client
+package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config.Escalation
+import reflect.BeanProperty
 
-class EscalationsRestClient(serverRootUrl:String, domain:String)
-    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/escalations/") {
+/**
+ * Serializable representation of a domain within the context of a domain.
+ */
+case class DomainDef(@BeanProperty var name: String = null) {
 
-  def listEscalations(pairKey: String) = {
-    val t = classOf[Array[Escalation]]
-    rpc(pairKey, t)
-  }
+  def this() = this(name = null)
+
+  def validate(path:String = null) {}
+
 }

@@ -70,10 +70,6 @@ class QuartzScanScheduler(//config:DomainConfigStore,
   // Ensure that a trigger is registered for each pair on startup
   systemConfig.listPairs.foreach(onUpdatePair(_))
 
-  def onUpdatePair(domain:String, pairKey: String) {
-    onUpdatePair(systemConfig.getPair(domain, pairKey))
-  }
-
   def onUpdatePair(pair:DiffaPair) {
     val existingJob = jobForPair(pair)
     val jobId = jobIdentifier(pair)
@@ -114,10 +110,13 @@ class QuartzScanScheduler(//config:DomainConfigStore,
     }
   }
 
-  def onDeletePair(domain:String, pairKey: String) {
-    val existingJob = jobForPair(systemConfig.getPair(domain, pairKey))
+  def onDeletePair(pair:DiffaPair) {
+    val existingJob = jobForPair(pair)
     if (existingJob != null) {
-      scheduler.deleteJob(jobKey(pairKey))
+      scheduler.deleteJob(jobIdentifier(pair))
+    }
+    else {
+      log.warn("Received pair delete event (%s) for non-existent job".format(pair))
     }
   }
 

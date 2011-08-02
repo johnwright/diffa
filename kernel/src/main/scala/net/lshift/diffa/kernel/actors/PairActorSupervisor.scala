@@ -109,6 +109,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
       case 1 => actors(0)
       case 0 => {
         log.error("Could not resolve actor for key: " + pair.identifier)
+        log.error("Found %s actors: %s".format(Actor.registry.size, Actor.registry.actors))
         throw new MissingObjectException(pair.identifier)
       }
       case x => {

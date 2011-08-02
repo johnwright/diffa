@@ -21,7 +21,7 @@ import net.lshift.diffa.kernel.config.{Domain, User}
 import collection.mutable.HashSet
 import scala.collection.JavaConversions._
 
-class UsersRestClient(u:String, domain:String) extends AbstractRestClient(u, domain, "security/") {
+class UsersRestClient(u:String) extends AbstractRestClient(u, "rest/security/") {
 
   def declareUser(name: String, email:String) : User = {
     val user = User(name, HashSet(Domain(name="domain")), email)

@@ -29,7 +29,7 @@ trait CommonActionTests {
 
   @Test
   def shouldListEntityScopedActions {
-    val actions = env.actionsClient.listEntityScopedActions(env.domain, env.pairKey)
+    val actions = env.actionsClient.listEntityScopedActions(env.domain.name, env.pairKey)
     assertNotNull(actions)
     assertEquals(1, actions.size)
     assertEquals("Resend Source", actions(0).name)
@@ -38,7 +38,7 @@ trait CommonActionTests {
   @Test
   def invokeEntityScopedAction {
     env.withActionsServer {
-      val request = ActionableRequest(env.pairKey, env.domain, env.entityScopedActionName, "abc")
+      val request = ActionableRequest(env.pairKey, env.domain.name, env.entityScopedActionName, "abc")
       val response = env.actionsClient.invoke(request)
       assertNotNull(response)
       assertEquals("200", response.code)
@@ -49,7 +49,7 @@ trait CommonActionTests {
   @Test
   def invokeInvalidAction {
     // Note: Actions test server should NOT be running for this test
-    val request = ActionableRequest(env.pairKey, env.domain, env.entityScopedActionName, "abc")
+    val request = ActionableRequest(env.pairKey, env.domain.name, env.entityScopedActionName, "abc")
     val response = env.actionsClient.invoke(request)
     assertEquals(AlertCodes.ACTION_ENDPOINT_FAILURE, response.code)
   }
@@ -57,7 +57,7 @@ trait CommonActionTests {
   @Test
   def shouldListPairScopedActions {
     env.createPairScopedAction
-    val actions = env.actionsClient.listPairScopedActions(env.domain, env.pairKey)
+    val actions = env.actionsClient.listPairScopedActions(env.domain.name, env.pairKey)
     assertNotNull(actions)
     assertEquals(Some(env.pairScopedActionName), actions.headOption.map(_.name))
   }
@@ -66,7 +66,7 @@ trait CommonActionTests {
   def invokePairScopedAction {
     env.withActionsServer {
       env.createPairScopedAction
-      val request = ActionableRequest(env.pairKey, env.domain, env.pairScopedActionName, null)
+      val request = ActionableRequest(env.pairKey, env.domain.name, env.pairScopedActionName, null)
       val response = env.actionsClient.invoke(request)
       assertNotNull(response)
       assertEquals("200", response.code)
@@ -76,7 +76,7 @@ trait CommonActionTests {
 
   @Test
   def canDeleteAction {
-    def actionName = env.actionsClient.listEntityScopedActions(env.domain, env.pairKey).headOption.map(_.name)
+    def actionName = env.actionsClient.listEntityScopedActions(env.domain.name, env.pairKey).headOption.map(_.name)
     assertEquals(Some(env.entityScopedActionName), actionName)
     env.configurationClient.removeRepairAction(env.entityScopedActionName, env.pairKey)
     assertEquals(None, actionName)

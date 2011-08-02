@@ -23,8 +23,8 @@ import org.apache.commons.io.IOUtils
 /**
  * JSON/REST content participant client.
  */
-class ContentParticipantRestClient(contentUrl:String, domain:String)
-    extends AbstractRestClient(contentUrl, domain, "", "")
+class ContentParticipantRestClient(contentUrl:String)
+    extends AbstractRestClient(contentUrl, "")
     with ContentParticipantRef {
 
   def retrieveContent(identifier: String) = {

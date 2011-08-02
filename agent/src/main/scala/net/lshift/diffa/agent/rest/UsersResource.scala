@@ -18,14 +18,16 @@ package net.lshift.diffa.agent.rest
 
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
-import net.lshift.diffa.kernel.frontend.Configuration
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.config.User
 import javax.ws.rs._
 import core.UriInfo
 import net.lshift.diffa.agent.rest.ResponseUtils._
+import net.lshift.diffa.kernel.frontend.{Configuration}
 
+
+// TODO This resource is completely wrong - requires redesign
 /**
  * This handles all of the user specific admin
  */

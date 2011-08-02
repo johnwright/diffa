@@ -133,11 +133,11 @@ class ConfigurationTest {
     expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep2))).once
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair(ab)).once
-    expect(scanScheduler.onUpdatePair("domain","ab")).once
+    expect(scanScheduler.onUpdatePair(ab)).once
     expect(sessionManager.onUpdatePair(ab)).once
     expect(pairManager.startActor(pairInstance("ac"))).once
     expect(matchingManager.onUpdatePair(ac)).once
-    expect(scanScheduler.onUpdatePair("domain","ac")).once
+    expect(scanScheduler.onUpdatePair(ac)).once
     expect(sessionManager.onUpdatePair(ac)).once
     replayAll
 
@@ -183,19 +183,28 @@ class ConfigurationTest {
       escalations = Set(EscalationDef("Resend Another Missing", "ab", "Resend Source", "repair", "downstream-missing", "scan"))
     )
 
+    val ab = DiffaPair(key = "ab", domain = Domain(name="domain"), matchingTimeout = 5,
+                          versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
+
+    val ac = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
+                          versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
+
+    val ad = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
+                          versionPolicyName = "same", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
+
     expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onUpdatePair("domain","ab")).once
+    expect(scanScheduler.onUpdatePair(ab)).once
     expect(sessionManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(pairManager.stopActor(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onDeletePair("domain","ac")).once
+    expect(scanScheduler.onDeletePair(ac)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onUpdatePair("domain","ad")).once
+    expect(scanScheduler.onUpdatePair(ad)).once
     expect(sessionManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
 
     expect(endpointListener.onEndpointRemoved("downstream1")).once
@@ -219,12 +228,15 @@ class ConfigurationTest {
     shouldApplyConfigurationToEmptySystem
     resetAll
 
+    val ab = DiffaPair(key = "ab", domain = Domain(name="domain"))
+    val ac = DiffaPair(key = "ac", domain = Domain(name="domain"))
+
     expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(pairManager.stopActor(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onDeletePair("domain","ab")).once
-    expect(scanScheduler.onDeletePair("domain","ac")).once
+    expect(scanScheduler.onDeletePair(ab)).once
+    expect(scanScheduler.onDeletePair(ac)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(sessionManager.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once

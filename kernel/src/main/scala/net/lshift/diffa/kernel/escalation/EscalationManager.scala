@@ -75,7 +75,7 @@ class EscalationManager(val config:DomainConfigStore,
   def escalateByEventType(id: VersionID, eventType:String) = {
     val escalations = config.listEscalationsForPair(id.pair.domain.name, id.pair.key).filter(_.event == eventType)
     escalations.foreach( e => {
-      val result = actionsClient.invoke(ActionableRequest(id.pairKey, e.action, id.id))
+      val result = actionsClient.invoke(ActionableRequest(id.pairKey, id.domain, e.action, id.id))
       log.debug("Escalation result for action [%s] using %s is %s".format(e.name, id, result))
     })
   }

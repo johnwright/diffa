@@ -143,16 +143,14 @@ class Configuration(val configStore: DomainConfigStore,
     log.debug("[%s] Processing pair declare/update request: %s".format(domain,pairDef.key))
     pairDef.validate()
     // Stop a running actor, if there is one
-    withCurrentPair(domain, pairDef.key, (p:DiffaPair) => supervisor.stopActor(p) )
+    maybeWithPair(domain, pairDef.key, (p:DiffaPair) => supervisor.stopActor(p) )
     configStore.createOrUpdatePair(domain, pairDef)
     withCurrentPair(domain, pairDef.key, (p:DiffaPair) => {
       supervisor.startActor(p)
       matchingManager.onUpdatePair(p)
       sessionManager.onUpdatePair(p)
+      scanScheduler.onUpdatePair(p)
     })
-
-    scanScheduler.onUpdatePair(domain, pairDef.key)
-
   }
 
   def deletePair(domain:String, key: String): Unit = {
@@ -162,20 +160,32 @@ class Configuration(val configStore: DomainConfigStore,
       matchingManager.onDeletePair(p)
       sessionManager.onDeletePair(p)
       versionCorrelationStoreFactory.remove(p)
+      scanScheduler.onDeletePair(p)
     })
     configStore.deletePair(domain, key)
-    scanScheduler.onDeletePair(domain, key)
-
   }
 
-  def withCurrentPair(domain:String, pairKey: String, f:Function1[DiffaPair,Unit]) = {
+  /**
+   * This will execute the lambda if the pair exists. If the pair does not exist
+   * this will return normally.
+   * @see withCurrentPair
+   */
+  def maybeWithPair(domain:String, pairKey: String, f:Function1[DiffaPair,Unit]) = {
     try {
-      val current = systemConfigStore.getPair(domain, pairKey)
-      f(current)
+      withCurrentPair(domain,pairKey,f)
     }
     catch {
       case e:MissingObjectException => // Do nothing, the pair doesn't currently exist
     }
+  }
+
+  /**
+   * This will execute the lambda if the pair exists.
+   * @throws MissingObjectException If the pair does not exist.
+   */
+  def withCurrentPair(domain:String, pairKey: String, f:Function1[DiffaPair,Unit]) = {
+    val current = systemConfigStore.getPair(domain, pairKey)
+    f(current)
   }
 
   def declareRepairAction(domain:String, action: RepairActionDef) {

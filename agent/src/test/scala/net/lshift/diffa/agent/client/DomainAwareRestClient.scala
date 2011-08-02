@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.kernel.config.Escalation
+import net.lshift.diffa.messaging.json.AbstractRestClient
 
-class EscalationsRestClient(serverRootUrl:String, domain:String)
-    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/escalations/") {
+/**
+ * Superclass that is aware of the domain to execute requests for.
+ */
+abstract class DomainAwareRestClient(val root:String, val domain:String, val resourcePattern:String)
+    extends AbstractRestClient(root, "") {
 
-  def listEscalations(pairKey: String) = {
-    val t = classOf[Array[Escalation]]
-    rpc(pairKey, t)
-  }
+  override val resourcePath = resourcePattern.replace("{domain}", domain)
+
 }

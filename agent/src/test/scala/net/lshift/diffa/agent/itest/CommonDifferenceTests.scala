@@ -30,8 +30,8 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import java.util.{UUID, Properties}
 import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope, SessionEvent}
-import net.lshift.diffa.kernel.client.DifferencesClient
 import org.joda.time.DateTime
+import net.lshift.diffa.agent.client.DifferencesRestClient
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -117,14 +117,14 @@ trait CommonDifferenceTests {
 
     val offset = 5
 
-    val diffs1 = tryAgain((d:DifferencesClient) => d.getEvents(sessionId, env.pairKey, start, end, offset, size))
+    val diffs1 = tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, start, end, offset, size))
     val max = size - offset
     val length = diffs1.size
     assertTrue("Diffs was %s, but should have been maximally %s".format(length,max), max >= length)
 
     // Select the 7th and 8th differences and validate their content
     val subset = 2
-    val diffs2 = tryAgain((d:DifferencesClient) => d.getEvents(sessionId, env.pairKey, start, end, 6, subset))
+    val diffs2 = tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, start, end, 6, subset))
 
     assertTrue("Diffs was %s, but should have been maximally %s".format(diffs2.length,subset), subset >= diffs2.length)
     // TODO [#224] Put back in
@@ -257,9 +257,9 @@ trait CommonDifferenceTests {
   }
 
   def pollForAllDifferences(sessionId:String, from:DateTime, until:DateTime, n:Int = 20, wait:Int = 100) =
-    tryAgain((d:DifferencesClient) => d.getEvents(sessionId, env.pairKey, from, until, 0, 100) ,n,wait)
+    tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, from, until, 0, 100) ,n,wait)
 
-  def tryAgain(poll:DifferencesClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
+  def tryAgain(poll:DifferencesRestClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
     var i = n
     var diffs = poll(env.diffClient)
     while(diffs.isEmpty && i > 0) {

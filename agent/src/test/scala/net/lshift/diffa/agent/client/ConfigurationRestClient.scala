@@ -16,16 +16,14 @@ package net.lshift.diffa.agent.client
  * limitations under the License.
  */
 
-import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config._
 import com.sun.jersey.api.client.ClientResponse
-import net.lshift.diffa.kernel.frontend.{PairDef, EscalationDef, RepairActionDef}
+import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef, EscalationDef, RepairActionDef}
 
 class ConfigurationRestClient(serverRootUrl:String, domain:String)
-    extends AbstractRestClient(serverRootUrl, domain, "config/") {
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/config/") {
 
-  def declareEndpoint(e:Endpoint) = {
+  def declareEndpoint(e:EndpointDef) = {
     create("endpoints", e)
     e
   }
@@ -56,13 +54,14 @@ class ConfigurationRestClient(serverRootUrl:String, domain:String)
   }
 
   def deletePair(pairKey: String) = {
-    val response = resource.path("pairs").path(pairKey).delete(classOf[ClientResponse])
+    val path = resource.path("pairs").path(pairKey)
+    val response = path.delete(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 204     => // Successfully submitted (202 is "No Content")
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int   => handleHTTPError(x,path, status)
     }
   }
 
-  def getEndpoint(name:String) = rpc("endpoints/" + name, classOf[Endpoint])
+  def getEndpoint(name:String) = rpc("endpoints/" + name, classOf[EndpointDef])
 }

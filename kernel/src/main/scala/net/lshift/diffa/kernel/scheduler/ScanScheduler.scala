@@ -16,6 +16,7 @@
 
 package net.lshift.diffa.kernel.scheduler
 
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 /**
  * Trait to be implemented by Scan Scheduler implementations.
  */
@@ -24,12 +25,10 @@ trait ScanScheduler {
    * Handler for new pair creation or update of an existing one. This method will ensure that the scheduler
    * takes account of the given pair's configuration.
    */
-  // TODO consider passing in a pair type instead of the domain/pairkey combo
-  def onUpdatePair(domain:String, pairKey:String)
+  def onUpdatePair(pair:DiffaPair)
 
   /**
    * Handler for pair deletion.
    */
-  // TODO consider passing in a pair type instead of the domain/pairkey combo
-  def onDeletePair(domain:String, pairKey:String)
+  def onDeletePair(pair:DiffaPair)
 }

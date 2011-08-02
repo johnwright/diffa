@@ -83,4 +83,6 @@ object FrontendConversions {
     origin = e.origin,
     event = e.event
   )
+
+  def fromDomainDef(d:DomainDef) = Domain(name=d.name)
 }

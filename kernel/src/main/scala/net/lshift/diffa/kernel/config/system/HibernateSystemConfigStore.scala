@@ -18,17 +18,34 @@ package net.lshift.diffa.kernel.config.system
 
 import net.lshift.diffa.kernel.util.SessionHelper._
 import net.lshift.diffa.kernel.config.{User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
-import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException, HibernateQueryUtils}
 
 class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
                                  val sessionFactory:SessionFactory)
     extends SystemConfigStore with HibernateQueryUtils {
 
+  val logger = LoggerFactory.getLogger(getClass)
+
+  // Verify that root domain exists - if not, we cannot proceed with the boot phase
+  try {
+    getDomain(Domain.DEFAULT_DOMAIN.name)
+  }
+  catch {
+    case e:MissingObjectException => {
+      logger.error("%s: Could not locate the default domain, exiting now".format(AlertCodes.INVALID_SYSTEM_CONFIGURATION))
+      throw new InvalidSystemConfigurationException("Missing default domain")
+    }
+  }
+
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => s.saveOrUpdate(d) )
 
   def deleteDomain(domain:String) = sessionFactory.withSession( s => {
+    if (domain == Domain.DEFAULT_DOMAIN.name) {
+      throw new RuntimeException("Attempt to delete the default domain")
+    }
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
     deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
@@ -51,6 +68,8 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   def listPairs = sessionFactory.withSession(s => listQuery[DiffaPair](s, "allPairs", Map()))
   def listEndpoints = sessionFactory.withSession(s => listQuery[Endpoint](s, "allEndpoints", Map()))
 
+
+  // TODO Add a unit test for this
   def maybeSystemConfigOption(key: String) = {
     sessionFactory.withSession(s => singleQueryOpt[String](s, "rootConfigOptionByKey", Map("key" -> key)))
   }
@@ -67,3 +86,8 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   private def deleteByDomain[T](s:Session, domain:String, queryName:String)
     = listQuery[T](s, queryName, Map("domain_name" -> domain)).foreach(s.delete(_))
 }
+
+/**
+ * Indicates that the system not configured correctly
+ */
+class InvalidSystemConfigurationException(msg:String) extends RuntimeException(msg)

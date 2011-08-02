@@ -31,9 +31,10 @@ import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 import org.springframework.core.io.ClassPathResource
-import net.lshift.diffa.agent.client.DifferencesRestClient
 import collection.mutable.HashMap
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.frontend.DomainDef
+import net.lshift.diffa.agent.client.{SystemConfigRestClient, DifferencesRestClient}
 
 /**
  * Integration test for change events over AMQP in an example JSON format.
@@ -46,12 +47,17 @@ class ExampleEventFormatMapperIntegrationTest {
 
   val httpClient = new DefaultHttpClient()
   val serverRoot = "http://localhost:19093/diffa-agent"
+  val systemConfig = new SystemConfigRestClient(serverRoot)
+
+  val domain = DomainDef(name="domain")
 
   @Before
   def setup {
+    systemConfig.declareDomain(domain)
+
     val resource = new ClassPathResource("diffa-config.xml")
     val entity = new FileEntity(resource.getFile, "application/xml")
-    val post = new HttpPost(serverRoot + "/rest/config/xml")
+    val post = new HttpPost(serverRoot + "/rest/" + domain.name + "/config/xml")
     post.setEntity(entity)
 
     val response = httpClient.execute(post)
@@ -64,8 +70,8 @@ class ExampleEventFormatMapperIntegrationTest {
     val queueName = "exampleChanges"
     val changeEventProducer = new AmqpProducer(connectorHolder.connector, queueName)
 
-    val diffClient = new DifferencesRestClient(serverRoot)
-    val sessionId = diffClient.subscribe(SessionScope.forPairs("pair"))
+    val diffClient = new DifferencesRestClient(serverRoot, domain.name)
+    val sessionId = diffClient.subscribe(SessionScope.forPairs(domain.name, "pair"))
 
     log.info("Sending change event")
     val changeEvent = IOUtils.toString(getClass.getResourceAsStream("/event.json"))

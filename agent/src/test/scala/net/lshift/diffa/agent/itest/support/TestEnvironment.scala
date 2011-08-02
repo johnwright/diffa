@@ -33,7 +33,7 @@ import collection.mutable.HashMap
 import net.lshift.diffa.agent.client._
 import java.util.List
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
-import net.lshift.diffa.kernel.frontend.PairDef
+import net.lshift.diffa.kernel.frontend.{EndpointDef, DomainDef, PairDef}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -72,6 +72,9 @@ class TestEnvironment(val pairKey: String,
     }
   }
 
+  // Domain
+  val domain = DomainDef(name="domain")
+
   def serverRoot = agentURL
   val contentType = "application/json"
   val matchingTimeout = 1  // 1 second
@@ -81,16 +84,14 @@ class TestEnvironment(val pairKey: String,
   val versionForDownstream = versionScheme.downstreamVersionGen
 
   // Clients
-  val configurationClient:ConfigurationClient = new ConfigurationRestClient(serverRoot)
-  val diffClient:DifferencesClient = new DifferencesRestClient(serverRoot)
-  val actionsClient:ActionsClient = new ActionsRestClient(serverRoot)
-  val escalationsClient:EscalationsClient = new EscalationsRestClient(serverRoot)
+  val configurationClient:ConfigurationRestClient = new ConfigurationRestClient(serverRoot, domain.name)
+  val diffClient:DifferencesRestClient = new DifferencesRestClient(serverRoot, domain.name)
+  val actionsClient:ActionsClient = new ActionsRestClient(serverRoot, domain.name)
+  val escalationsClient:EscalationsRestClient = new EscalationsRestClient(serverRoot, domain.name)
   val changesClient:ChangesClient = changesClientBuilder(this)
-  val usersClient:UsersClient = new UsersRestClient(serverRoot)
-  val scanningClient:ScanningClient = new ScanningRestClient(serverRoot)
-
-  // Domain
-  val domain = "domain"
+  val usersClient:UsersRestClient = new UsersRestClient(serverRoot)
+  val scanningClient:ScanningRestClient = new ScanningRestClient(serverRoot, domain.name)
+  val systemConfig = new SystemConfigRestClient(serverRoot)
 
   // Participants
   val upstreamEpName = pairKey + "-us"
@@ -124,18 +125,22 @@ class TestEnvironment(val pairKey: String,
   participants.startDownstreamServer(downstream, downstream, downstream)
 
   // Ensure that the configuration exists
-  configurationClient.declareEndpoint(Endpoint(name = upstreamEpName,
+  systemConfig.declareDomain(domain)
+  configurationClient.declareEndpoint(EndpointDef(name = upstreamEpName,
     scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
-  configurationClient.declareEndpoint(Endpoint(name = downstreamEpName,
+  configurationClient.declareEndpoint(EndpointDef(name = downstreamEpName,
     scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
     versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
     inboundUrl = participants.inboundUrl, inboundContentType = contentType,
     categories = categories))
+
+  createPair
+
   configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
   configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
-  createPair
+
 
   def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
   def deletePair() {
@@ -145,7 +150,7 @@ class TestEnvironment(val pairKey: String,
   
   val username = "foo"
   val mail = "foo@bar.com"
-  usersClient.declareUser(username,mail)
+  //usersClient.declareUser(username,mail)
 
   /**
    * Requests that the environment remove all stored state from the participants.

@@ -19,25 +19,26 @@ package net.lshift.diffa.agent.client
 import org.joda.time.DateTime
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import com.sun.jersey.api.client.{WebResource, ClientResponse}
-import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.participants.ParticipantType
 import javax.ws.rs.core.{Response, MediaType}
 import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
-import net.lshift.diffa.messaging.json.{NotFoundException, AbstractRestClient}
 import org.joda.time.format.ISODateTimeFormat
+import net.lshift.diffa.messaging.json.NotFoundException
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
  */
 class DifferencesRestClient(serverRootUrl:String, domain:String)
-    extends AbstractRestClient(serverRootUrl, domain, "diffs/") {
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/diffs/") {
 
   val supportsStreaming = false
   val supportsPolling = true
 
   val formatter = ISODateTimeFormat.basicDateTimeNoMillis
 
+
+  def subscribe(scope:SessionScope) : String = subscribe(scope, null, null)
   /**
    * Creates a differencing session that can be polled for match events.
    * @return The id of the session containing the events
@@ -63,12 +64,12 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
   }
 
   def runScan(sessionId: String) = {
-    val p = resource.path("sessions").path(sessionId).path("scan")
-    val response = p.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
+    val path = resource.path("sessions").path(sessionId).path("scan")
+    val response = path.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 202     => // Successfully submitted (202 is "Accepted")
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int   => handleHTTPError(x, path, status)
     }
   }
 
@@ -102,9 +103,6 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
     }
 
   }
-
-  def handleHTTPError(x:Int, path:WebResource, status:ClientResponse.Status) =
-    throw new RuntimeException("HTTP %s for resource %s ; Reason: %s".format(x, path ,status.getReasonPhrase))
 
   def getEvents(sessionId:String, pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
     val path = resource.path("sessions/" + sessionId)
