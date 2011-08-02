@@ -38,6 +38,9 @@ trait SystemConfigStore {
   def clearSystemConfigOption(key:String)
   def maybeSystemConfigOption(key:String) : Option[String]
 
+  // TODO This requires a unit test
+  def systemConfigOptionOrDefault(key:String, defaultVal:String) : String
+
   /**
    * Return the internal representation of a pair
    */
