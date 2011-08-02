@@ -45,23 +45,22 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
 
     val consumers = new HashMap[String, AmqpConsumer]
 
-    // handler only has one endpoint, called "changes"
-    object ChangesEndpointMapper extends EndpointMapper {
-      def apply(msg: ReceivedMessage) = {
-        msg.getProperties.getMessageId
-      }
-    }
-
     def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =
       inboundUrl.startsWith("amqp://") && eventFormatMapperManager.lookup(contentType).isDefined
 
     def ensureEndpointReceiver(e: Endpoint) {
       log.info("Starting consumer for endpoint: %s".format(e))
       val eventFormatMapper = eventFormatMapperManager.lookup(e.inboundContentType).get
+
+      // handler only has one endpoint, which is the queue that it consumes from
+      object ChangesEndpointMapper extends EndpointMapper {
+        def apply(msg: ReceivedMessage) = e.inboundUrl
+      }
+
       val c = new AmqpConsumer(connectorHolder.connector,
                                AmqpQueueUrl.parse(e.inboundUrl).queue,
                                ChangesEndpointMapper,
-                               new ChangesHandler(changes, e.name, eventFormatMapper))
+                               new ChangesHandler(changes, e.inboundUrl, eventFormatMapper))
       consumers.put(e.name, c)
       c.start()
     }

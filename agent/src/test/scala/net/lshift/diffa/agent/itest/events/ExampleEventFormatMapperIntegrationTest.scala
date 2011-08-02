@@ -83,7 +83,7 @@ class ExampleEventFormatMapperIntegrationTest {
     val sessionEvents = poll(diffClient,sessionId, "pair", recordDate.minusDays(1), recordDate.plusDays(1), 0, 100)
     assertEquals(1, sessionEvents.length)
     val sessionEvent = sessionEvents(0)
-    assertEquals(VersionID("pair", "5509a836-ca75-42a4-855a-71893448cc9d"), sessionEvent.objId)
+    assertEquals(VersionID("pair", domain.name, "5509a836-ca75-42a4-855a-71893448cc9d"), sessionEvent.objId)
     assertEquals("2011-01-24T00:00:00.000Z", ISODateTimeFormat.dateTime.print(sessionEvent.detectedAt))
     assertEquals(UNMATCHED, sessionEvent.state)
     assertEquals("479", sessionEvent.upstreamVsn)
