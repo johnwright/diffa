@@ -213,7 +213,6 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
   selectedEvent: null,
   model: Diffa.Models.Diff,
   totalEvents: 0,
-  page: 0,
   totalPages: 0,
   lastSeqId: null,
 
@@ -985,6 +984,8 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
       if (!actionList) {
         return;
       }
+      
+      $("#actionlist").empty();
       $.each(actionList, function(i, action) {
         var repairStatus = $('#repairstatus');
         appendActionButtonToContainer(actionListContainer, action, pairKey, itemID, repairStatus);
