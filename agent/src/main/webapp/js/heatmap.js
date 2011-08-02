@@ -209,7 +209,7 @@ Diffa.Models.Diff = Backbone.Model.extend({
 Diffa.Collections.Diffs = Backbone.Collection.extend({
   range: null,
   page: 0,
-  listSize: 10,
+  listSize: 20,
   selectedEvent: null,
   model: Diffa.Models.Diff,
   totalEvents: 0,
@@ -217,7 +217,7 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
   lastSeqId: null,
 
   initialize: function() {
-    _.bindAll(this, "sync", "select", "selectEvent");
+    _.bindAll(this, "sync", "select", "selectEvent", "selectNextEvent");
   },
 
   sync: function(force) {
@@ -226,7 +226,6 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
     if (this.range == null) {
       this.reset([]);
     } else {
-      itemCount = 0;
       var url = "rest/diffs/sessions/" + Diffa.SessionID + "?pairKey=" + this.range.pairKey + "&range-start="
           + this.range.start + "&range-end=" + this.range.end
           + "&offset=" + (this.page * this.listSize) + "&length=" + this.listSize;
@@ -263,6 +262,11 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
             self.selectEvent(null);
         }
 
+        // If we're now beyond the last page, then scroll back to it
+        if (self.page >= self.totalPages && self.totalPages > 0) {
+          self.setPage(self.totalPages - 1, true);
+        }
+
         self.lastSeqId = data.seqId;
       });
     }
@@ -274,12 +278,33 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
       start: start,
       end: end
     };
-    this.sync(true);
+    this.setPage(0, true);
   },
 
   selectEvent: function(evtId) {
     this.selectedEvent = this.get(evtId);
     this.trigger("change:selectedEvent", this.selectedEvent);
+  },
+
+  selectNextEvent: function() {
+    this.selectEventWithOffset(1);
+  },
+
+  selectPreviousEvent: function() {
+    this.selectEventWithOffset(-1);
+  },
+
+  selectEventWithOffset: function(offset) {
+    if (this.selectedEvent != null) {
+      var selectedIdx = this.indexOf(this.selectedEvent);
+      var newIdx = selectedIdx + offset;
+      if (newIdx >= 0 && newIdx < this.length) {
+        var nextEvent = this.at(newIdx);
+        if (nextEvent != null) {
+          this.selectEvent(nextEvent.id);
+        }
+      }
+    }
   },
 
   nextPage: function() {
@@ -290,8 +315,8 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
     if (this.page > 0) this.setPage(this.page - 1);
   },
 
-  setPage: function(page) {
-    if (this.page != page) {
+  setPage: function(page, force) {
+    if (force || this.page != page) {
       this.page = page;
       this.trigger("change:page", this);
 
@@ -771,6 +796,8 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
   },
 
   initialize: function() {
+    var self = this;
+
     _.bindAll(this, "render");
 
     this.model.bind("changed:bucketSize", "render");
@@ -778,11 +805,11 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
     $(document).keypress(function(e) {
       if (e.charCode == '+'.charCodeAt()) {
         e.preventDefault();
-        if (this.shouldAllowMoreZoomIn()) this.zoomIn();
+        if (self.shouldAllowMoreZoomIn()) self.zoomIn();
       }
       if (e.charCode == '-'.charCodeAt()) {
         e.preventDefault();
-        if (this.shouldAllowMoreZoomOut()) this.zoomOut();
+        if (self.shouldAllowMoreZoomOut()) self.zoomOut();
       }
 
       return true;
@@ -824,11 +851,35 @@ Diffa.Views.DiffList = Backbone.View.extend({
   },
 
   initialize: function() {
+    var self = this;
+
     _.bindAll(this, "rebuildDiffList", "renderNavigation");
 
     this.model.bind("reset",              this.rebuildDiffList);
     this.model.bind("change:totalEvents", this.renderNavigation);
     this.model.bind("change:page",        this.renderNavigation);
+
+    $(document).keydown(function(e) {
+      if (e.keyCode == 38) {  // Up arrow
+        e.preventDefault();
+        self.model.selectPreviousEvent();
+      }
+      if (e.keyCode == 40) {    // Down arrow
+        e.preventDefault();
+        self.model.selectNextEvent();
+      }
+      if (e.keyCode == 37) {  // Left arrow
+        e.preventDefault();
+        self.model.previousPage();
+      }
+
+      if (e.keyCode == 39) {  // Right arrow
+        e.preventDefault();
+        self.model.nextPage();
+      }
+
+      return true;
+    });
 
     this.renderNavigation();
   },
@@ -845,7 +896,10 @@ Diffa.Views.DiffList = Backbone.View.extend({
   },
 
   renderNavigation: function() {
-    this.$("#pagecount").text("Page " + (this.model.page + 1) + " of " + this.model.totalPages);
+    var startIdx = (this.model.page * this.model.listSize) + 1;
+    var endIdx = Math.min(startIdx + this.model.listSize - 1, this.model.totalEvents);
+
+    this.$("#pagecount").text("Showing " + startIdx + " - " + endIdx + " of " + this.model.totalEvents + " differences");
     this.$("#navigation").toggle(this.model.totalPages > 1);
   },
 
@@ -936,6 +990,8 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
       this.$('#item1 .diff-hash').text('');
       this.$('#item2 .downstreamLabel').text('downstream');
       this.$('#item2 .diff-hash').text('');
+      this.$('#item1 pre').text('');
+      this.$('#item2 pre').text('');
 
       $("#actionlist").empty();
       return;
