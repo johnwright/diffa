@@ -27,7 +27,7 @@ import net.lshift.diffa.participant.correlation.ProcessingResponse
  * JSON/REST versioning participant client.
  */
 class VersioningParticipantRestClient(scanUrl:String)
-    extends AbstractRestClient(scanUrl, "")
+    extends AbstractRestClient(scanUrl, "", "")
     with VersioningParticipantRef {
 
 

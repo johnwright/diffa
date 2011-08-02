@@ -30,9 +30,9 @@ import org.joda.time.format.ISODateTimeFormat
 /**
  * A RESTful client to start a matching session and poll for events from it.
  */
-class DifferencesRestClient(serverRootUrl:String)
-    extends AbstractRestClient(serverRootUrl, "rest/diffs/")
-        with DifferencesClient {
+class DifferencesRestClient(serverRootUrl:String, domain:String)
+    extends AbstractRestClient(serverRootUrl, domain, "diffs/") {
+
   val supportsStreaming = false
   val supportsPolling = true
 

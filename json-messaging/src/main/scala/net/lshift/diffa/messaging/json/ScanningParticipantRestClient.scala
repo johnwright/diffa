@@ -29,7 +29,7 @@ import net.lshift.diffa.participant.scanning._
  */
 
 class ScanningParticipantRestClient(scanUrl:String)
-    extends AbstractRestClient(scanUrl, "")
+    extends AbstractRestClient(scanUrl, "", "")
     with ScanningParticipantRef {
 
   def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) = {

@@ -17,12 +17,10 @@
 package net.lshift.diffa.agent.client
 
 import net.lshift.diffa.messaging.json.AbstractRestClient
-import net.lshift.diffa.kernel.client.EscalationsClient
 import net.lshift.diffa.kernel.config.Escalation
 
-class EscalationsRestClient(serverRootUrl:String)
-    extends AbstractRestClient(serverRootUrl, "rest/escalations/")
-    with EscalationsClient {
+class EscalationsRestClient(serverRootUrl:String, domain:String)
+    extends AbstractRestClient(serverRootUrl, domain, "escalations/") {
 
   def listEscalations(pairKey: String) = {
     val t = classOf[Array[Escalation]]

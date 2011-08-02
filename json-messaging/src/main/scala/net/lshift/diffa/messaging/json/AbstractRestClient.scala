@@ -23,13 +23,13 @@ import org.slf4j.{LoggerFactory, Logger}
 import org.apache.commons.io.IOUtils
 import java.io.Closeable
 import java.lang.RuntimeException
-import com.sun.jersey.api.client.{WebResource, UniformInterfaceException, ClientResponse, Client}
+import com.sun.jersey.api.client.{UniformInterfaceException, ClientResponse, Client}
 
-abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubUrl:String) extends Closeable {
+abstract class AbstractRestClient(val serverRootUrl:String, val domain:String, val restResourceSubUrl:String) extends Closeable {
 
   val log:Logger = LoggerFactory.getLogger(getClass)
 
-  log.debug("Configured to initialize using the server URL (" + serverRootUrl + ") with a sub URL (" + restResourceSubUrl + ")")
+  log.debug("Configured to initialize using the server URL (" + serverRootUrl + ") with a sub URL (" + domain + "/"+ restResourceSubUrl + ")")
 
   private var isClosing = false
 
@@ -38,7 +38,7 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
   config.getProperties().put(ClientConfig.PROPERTY_FOLLOW_REDIRECTS, true.asInstanceOf[AnyRef]);
   config.getClasses().add(classOf[JacksonJsonProvider]);
   val client = Client.create(config)
-  val serverRootResource = client.resource(serverRootUrl)
+  val serverRootResource = client.resource(serverRootUrl + "/rest/" + domain)
   val resource = serverRootResource.path(restResourceSubUrl)
 
   override def close() = {

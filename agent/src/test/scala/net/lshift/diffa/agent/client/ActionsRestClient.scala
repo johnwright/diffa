@@ -21,8 +21,8 @@ import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.config.RepairAction
 
-class ActionsRestClient(serverRootUrl:String)
-        extends AbstractRestClient(serverRootUrl, "rest/actions/")
+class ActionsRestClient(serverRootUrl:String, domain:String)
+        extends AbstractRestClient(serverRootUrl, domain, "actions/")
         with ActionsClient {
 
   def listActions(domain:String, pairKey: String): Seq[Actionable] = {
