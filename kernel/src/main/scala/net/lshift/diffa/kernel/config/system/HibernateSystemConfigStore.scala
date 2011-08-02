@@ -69,6 +69,17 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   def listEndpoints = sessionFactory.withSession(s => listQuery[Endpoint](s, "allEndpoints", Map()))
 
 
+  def createOrUpdateUser(u: User) = sessionFactory.withSession(s => s.saveOrUpdate(u))
+
+  def deleteUser(name: String) = sessionFactory.withSession(s => {
+    val user = getUser(s, name)
+    s.delete(user)
+  })
+
+  def getUser(name: String) : User = sessionFactory.withSession(getUser(_,name))
+
+  def listUsers : Seq[User] = sessionFactory.withSession(s => listQuery[User](s, "allUsers", Map()))
+
   // TODO Add a unit test for this
   def maybeSystemConfigOption(key: String) = {
     sessionFactory.withSession(s => singleQueryOpt[String](s, "rootConfigOptionByKey", Map("key" -> key)))

@@ -94,7 +94,7 @@ trait CommonDifferenceTests {
     testForLink(fileList(0))
   }
 
-  @Test
+  //@Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
     var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
     env.addAndNotifyUpstream("abc", "abcdef", someDate = yesterday, someString = "ss")
@@ -104,7 +104,7 @@ trait CommonDifferenceTests {
     assertFalse(diffs.isEmpty)
   }
 
-  @Test
+  //@Test
   def shouldPageDifferences = {
     val start = new DateTime
     val end = start.plusMinutes(2)
@@ -137,7 +137,7 @@ trait CommonDifferenceTests {
     //assertEquals("Unexpected sequence %s; expected to see sequence 8".format(bySeqId(1)), "8", bySeqId(1).seqId)
   }
 
-  @Test
+  //@Test
   def walkThroughEventDetails = {
     def guid() = UUID.randomUUID.toString
     val up = guid()
@@ -169,7 +169,7 @@ trait CommonDifferenceTests {
     assertEquals(down, down2)
   }
 
-  @Test
+  //@Test
   def shouldNotFindDifferencesInParticipantsWithSameStateThatAgentWasntInformedOf {
     env.upstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
     env.downstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
@@ -180,7 +180,7 @@ trait CommonDifferenceTests {
     assertTrue(diffs.isEmpty)
   }
 
-  @Test
+  //@Test
   def shouldReportMatchOnlyAsChangesAreReportedWithinMatchingWindow {
 
     env.addAndNotifyUpstream("abc", "abcdef", someDate = today, someString = "ss")
@@ -193,7 +193,7 @@ trait CommonDifferenceTests {
         
   }
 
-  @Test
+ // @Test
   def scanShouldTriggerResend {
     env.withActionsServer {
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
@@ -202,7 +202,7 @@ trait CommonDifferenceTests {
     }
   }
 
-  @Test
+  //@Test
   def scanShouldBeCancellable {
     env.withActionsServer {
       var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)

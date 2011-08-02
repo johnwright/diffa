@@ -18,10 +18,12 @@ package net.lshift.diffa.kernel.config.system
 
 import org.junit.Assert._
 import collection.JavaConversions._
+import net.lshift.diffa.kernel.util.SessionHelper._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.{PairDef, EndpointDef}
-import net.lshift.diffa.kernel.config.{Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor, Endpoint}
 import org.junit.{Before, Test}
+import net.lshift.diffa.kernel.config.{User, Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor, Endpoint}
+import collection.mutable.HashSet
 
 class HibernateSystemConfigStoreTest {
 
@@ -49,6 +51,8 @@ class HibernateSystemConfigStoreTest {
 
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
+
+  val TEST_USER = User("foo", null, "foo@bar.com")
 
   @Before
   def setup = {
@@ -91,5 +95,39 @@ class HibernateSystemConfigStoreTest {
     val res = systemConfigStore.getPairsForInboundEndpointURL(downstream1.inboundUrl)
     assertEquals(1, res.length)
     assertEquals(pairKey, res(0).key)
+  }
+
+  // TODO It is still unclear as to whether user management should be in the system config interface
+  @Test
+  def testUserCRUD = {
+
+    // TODO
+    // During re-runs of tests, some users may be left behind
+    // Because of the m:n relationship between users and domains,
+    // we need to figure out how we are going to construct the API for this
+    // so for now, nuke the table manually.
+
+    sf.withSession( s => {
+      s.createCriteria(classOf[User]).list.foreach(u => {
+        val user = u.asInstanceOf[User]
+        user.domains.clear
+        s.delete(u)
+      })
+    })
+
+    systemConfigStore.createOrUpdateUser(TEST_USER)
+    val result = systemConfigStore.listUsers
+    assertEquals(1, result.length)
+    // Hibernate doesn't seem to able to hydrate the many-to-many eagerly,
+    // so let's just verify that the user object is fine for now
+    assertEquals(TEST_USER.name, result(0).name)
+    val updated = User(TEST_USER.name, HashSet(Domain(name = "domain")), "somethingelse@bar.com")
+    systemConfigStore.createOrUpdateUser(updated)
+    val user = systemConfigStore.getUser(TEST_USER.name)
+    // See note above about lazy fetching
+    assertEquals(updated.name, user.name)
+    systemConfigStore.deleteUser(TEST_USER.name)
+    val users = systemConfigStore.listUsers
+    assertEquals(0, users.length)
   }
 }

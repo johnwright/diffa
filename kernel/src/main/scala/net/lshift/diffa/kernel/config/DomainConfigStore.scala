@@ -51,14 +51,7 @@ trait DomainConfigStore {
   def getEndpointDef(domain:String, name: String) : EndpointDef
   def getPairDef(domain:String, key: String) : PairDef
 
-  def getUser(domain:String, name: String) : User
   def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
-
-  def createOrUpdateUser(domain:String, user: User): Unit
-  def deleteUser(domain:String, name: String): Unit
-  def listUsers(domain:String) : Seq[User]
-
-
 
   /**
    * Retrieves all (domain-specific, non-internal) agent configuration options.

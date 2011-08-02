@@ -150,7 +150,7 @@ class TestEnvironment(val pairKey: String,
   
   val username = "foo"
   val mail = "foo@bar.com"
-  //usersClient.declareUser(username,mail)
+  usersClient.declareUser(username,mail)
 
   /**
    * Requests that the environment remove all stored state from the participants.

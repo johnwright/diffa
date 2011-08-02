@@ -115,17 +115,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
   def listRepairActions(domain:String) : Seq[RepairActionDef] = sessionFactory.withSession(s =>
     listQuery[RepairAction](s, "repairActionsByDomain", Map("domain_name" -> domain)).map(toRepairActionDef(_)))
 
-  def createOrUpdateUser(domain:String, u: User) = sessionFactory.withSession(s => s.saveOrUpdate(u))
-
-  def deleteUser(domain:String, name: String) = sessionFactory.withSession(s => {
-    val user = getUser(s, domain, name)
-    s.delete(user)
-  })
-  
-  def listUsers(domain:String) : Seq[User] = sessionFactory.withSession(s => {
-    listQuery[User](s, "allUsers", Map())
-  })
-
   def getPairsForEndpoint(domain:String, epName:String):Seq[Pair] = sessionFactory.withSession(s => {
     val q = s.createQuery("SELECT p FROM Pair p WHERE p.upstream.name = :epName OR p.downstream.name = :epName")
     q.setParameter("epName", epName)
@@ -136,8 +125,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
   def getEndpointDef(domain:String, name: String) = sessionFactory.withSession(s => toEndpointDef(getEndpoint(s, domain, name)))
   def getPairDef(domain:String, key: String) = sessionFactory.withSession(s => toPairDef(getPair(s, domain, key)))
   def getRepairActionDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toRepairActionDef(getRepairAction(s, domain, name, pairKey)))
-
-  def getUser(domain:String, name: String) : User = sessionFactory.withSession(s => getUser(s, domain, name))
 
   def allConfigOptions(domain:String) = {
     sessionFactory.withSession(s => {

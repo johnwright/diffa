@@ -51,8 +51,9 @@ class Configuration(val configStore: DomainConfigStore,
     diffaConfig.properties.foreach { case (k, v) => configStore.setConfigOption(domain, k, v) }
 
     // Remove missing users, and create/update the rest
-    val removedUsers = configStore.listUsers(domain).filter(currU => diffaConfig.users.find(newU => newU.name == currU.name).isEmpty)
-    removedUsers.foreach(u => deleteUser(domain, u.name))
+    // TODO replace with memberhsip
+    val removedUsers = systemConfigStore.listUsers.filter(currU => diffaConfig.users.find(newU => newU.name == currU.name).isEmpty)
+    removedUsers.foreach(u => deleteUser(u.name))
     diffaConfig.users.foreach(u => createOrUpdateUser(domain, u))
 
     // Apply endpoint and pair updates
@@ -82,7 +83,7 @@ class Configuration(val configStore: DomainConfigStore,
   def retrieveConfiguration(domain:String) : DiffaConfig = {
     DiffaConfig(
       properties = configStore.allConfigOptions(domain),
-      users = configStore.listUsers(domain).toSet,
+      users = systemConfigStore.listUsers.toSet,
       endpoints = configStore.listEndpoints(domain).toSet,
       pairs = configStore.listPairs(domain).map(
         p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstreamName, p.downstreamName, p.scanCronSpec)).toSet,
@@ -112,7 +113,7 @@ class Configuration(val configStore: DomainConfigStore,
   }
 
   def listEndpoints(domain:String) : Seq[EndpointDef] = configStore.listEndpoints(domain)
-  def listUsers(domain:String) : Seq[User] = configStore.listUsers(domain)
+  def listUsers(domain:String) : Seq[User] = systemConfigStore.listUsers
 
   // TODO There is no particular reason why these are just passed through
   // basically the value of this Configuration frontend is that the matching Manager
@@ -122,17 +123,17 @@ class Configuration(val configStore: DomainConfigStore,
   def getEndpointDef(domain:String, x:String) = configStore.getEndpointDef(domain, x)
   def getPairDef(domain:String, x:String) = configStore.getPairDef(domain, x)
   def getPair(domain:String, x:String) = systemConfigStore.getPair(domain, x)
-  def getUser(domain:String, x:String) = configStore.getUser(domain, x)
+  def getUser(x:String) = systemConfigStore.getUser(x)
 
   def createOrUpdateUser(domain:String, u: User): Unit = {
-    log.debug("[%s] Processing user declare/update request: %s".format(domain, u))
+    log.debug("Processing user declare/update request: %s".format(u))
     u.validate()
-    configStore.createOrUpdateUser(domain, u)
+    systemConfigStore.createOrUpdateUser(u)
   }
 
-  def deleteUser(domain:String, name: String): Unit = {
-    log.debug("[%s] Processing user delete request: %s".format(domain,name))
-    configStore.deleteUser(domain, name)
+  def deleteUser(name: String): Unit = {
+    log.debug("Processing user delete request: %s".format(name))
+    systemConfigStore.deleteUser(name)
   }
   /*
   * Pair CRUD

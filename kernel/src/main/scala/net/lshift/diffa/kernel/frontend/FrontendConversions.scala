@@ -16,7 +16,7 @@
 
 package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config.{Domain, Escalation, RepairAction, Endpoint, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{User, Domain, Escalation, RepairAction, Endpoint, Pair => DiffaPair}
 
 /**
  * A bunch of converter functions to translate frontend objects from their internal counterparts
@@ -85,4 +85,8 @@ object FrontendConversions {
   )
 
   def fromDomainDef(d:DomainDef) = Domain(name=d.name)
+
+  def fromUserDef(u:UserDef) = User(name = u.name, email = u.email)
+
+  def toUserDef(u:User) = UserDef(name = u.name, email = u.email)
 }

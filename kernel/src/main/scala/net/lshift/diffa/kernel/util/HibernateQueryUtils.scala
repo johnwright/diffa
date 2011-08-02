@@ -119,7 +119,7 @@ trait HibernateQueryUtils {
 
   def getEndpoint(s: Session, domain:String, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint %s".format(name))
 
-  def getUser(s: Session, domain:String, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
+  def getUser(s: Session, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
 
   def getPair(s: Session, domain:String, key: String) = singleQuery[DiffaPair](s, "pairByKey", Map("key" -> key), "pair %s".format(key))
 

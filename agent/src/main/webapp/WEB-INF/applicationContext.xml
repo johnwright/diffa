@@ -126,7 +126,7 @@
 
   <bean id="notifier" class="net.lshift.diffa.kernel.notifications.EventNotifier" destroy-method="destroy">
     <constructor-arg ref="sessionManager" />
-    <constructor-arg ref="domainConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
     <constructor-arg>
       <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
         <property name="targetClass" value="org.joda.time.Period"/>

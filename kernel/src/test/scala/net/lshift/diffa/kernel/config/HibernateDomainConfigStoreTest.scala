@@ -92,8 +92,6 @@ class HibernateDomainConfigStoreTest {
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
   val pairRenamed = "TEST_PAIR_RENAMED"
 
-  val TEST_USER = User("foo", HashSet(Domain(name = "domain")), "foo@bar.com")
-
   def declareAll() {
     systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
@@ -378,43 +376,6 @@ class HibernateDomainConfigStoreTest {
     assertEquals(1, descriptor.prefixLength)
     assertEquals(3, descriptor.maxLength)
     assertEquals(1, descriptor.step)
-  }
-
-  @Test
-  def testUser = {
-
-    // TODO
-    // During re-runs of tests, some users may be left behind
-    // Because of the m:n relationship between users and domains,
-    // we need to figure out how we are going to construct the API for this
-    // so for now, nuke the table manually.
-
-    sessionFactory.withSession( s => {
-      s.createCriteria(classOf[User]).list.foreach(u => {
-        val user = u.asInstanceOf[User]
-        user.domains.clear
-        s.delete(u)
-      })
-    })
-
-
-    // declare the domain
-    systemConfigStore.deleteDomain(domainName)
-    systemConfigStore.createOrUpdateDomain(domain)
-    domainConfigStore.createOrUpdateUser(domainName, TEST_USER)
-    val result = domainConfigStore.listUsers(domainName)
-    assertEquals(1, result.length)
-    // Hibernate doesn't seem to able to hydrate the many-to-many eagerly,
-    // so let's just verify that the user object is fine for now
-    assertEquals(TEST_USER.name, result(0).name)
-    val updated = User(TEST_USER.name, HashSet(Domain(name = "domain")), "somethingelse@bar.com")
-    domainConfigStore.createOrUpdateUser(domainName, updated)
-    val user = domainConfigStore.getUser(domainName, TEST_USER.name)
-    // See note above about lazy fetching
-    assertEquals(updated.name, user.name)
-    domainConfigStore.deleteUser(domainName, TEST_USER.name)
-    val users = domainConfigStore.listUsers(domainName)
-    assertEquals(0, users.length)    
   }
 
   @Test
