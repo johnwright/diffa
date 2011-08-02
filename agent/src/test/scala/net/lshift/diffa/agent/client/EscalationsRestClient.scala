@@ -16,13 +16,13 @@
 
 package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.kernel.config.Escalation
+import net.lshift.diffa.kernel.frontend.EscalationDef
 
 class EscalationsRestClient(serverRootUrl:String, domain:String)
     extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/escalations/") {
 
   def listEscalations(pairKey: String) = {
-    val t = classOf[Array[Escalation]]
+    val t = classOf[Array[EscalationDef]]
     rpc(pairKey, t)
   }
 }
