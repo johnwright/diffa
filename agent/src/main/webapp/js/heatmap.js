@@ -215,12 +215,13 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
   totalEvents: 0,
   page: 0,
   totalPages: 0,
+  lastSeqId: null,
 
   initialize: function() {
-    _.bindAll(this, "sync", "select", "selectEvent", "stopPolling", "startPolling");
+    _.bindAll(this, "sync", "select", "selectEvent");
   },
 
-  sync: function() {
+  sync: function(force) {
     var self = this;
 
     if (this.range == null) {
@@ -232,20 +233,38 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
           + "&offset=" + (this.page * this.listSize) + "&length=" + this.listSize;
 
       $.get(url, function(data) {
-        var diffs = data.diffs;
+        if (!force && data.seqId == self.lastSeqId) return;
 
-        self.totalEvents = data.total;
-        self.totalPages = Math.ceil(self.totalEvents / self.listSize);
-        self.trigger("change:totalEvents", self);
+        var diffs = _.map(data.diffs, function(diffEl) { diffEl.id = diffEl.seqId; return diffEl; });
 
-        self.reset(_.map(diffs, function(diffEl) { diffEl.id = diffEl.seqId; return diffEl; }));
+        if (self.totalEvents != data.total) {
+          self.totalEvents = data.total;
+          self.totalPages = Math.ceil(self.totalEvents / self.listSize);
+          self.trigger("change:totalEvents", self);
+        }
 
-        // Select the first event
-          // TODO: Suppress this when the payload hasn't changed?
-        if (diffs.length > 0)
-          self.selectEvent(diffs[0].seqId);
-        else
-          self.selectEvent(null);
+        // Apply updates to the diffs that we currently have
+        var newDiffEls = _.map(diffs, function(diff) {
+          var current = self.get(diff.seqId);
+          if (current == null) {
+            return diff;
+          } else {
+            current.set(diff);    // Apply changes to the difference
+            return current;
+          }
+        });
+        self.reset(newDiffEls);
+
+        // Select the first event when we don't have anything selected, or when the current selection is no longer
+        // valid
+        if (self.selectedEvent == null || !self.get(self.selectedEvent.id)) {
+          if (diffs.length > 0)
+            self.selectEvent(diffs[0].seqId);
+          else
+            self.selectEvent(null);
+        }
+
+        self.lastSeqId = data.seqId;
       });
     }
   },
@@ -256,7 +275,7 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
       start: start,
       end: end
     };
-    this.sync();
+    this.sync(true);
   },
 
   selectEvent: function(evtId) {
@@ -264,27 +283,20 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
     this.trigger("change:selectedEvent", this.selectedEvent);
   },
 
-  startPolling: function() {
-    // TODO: Implement ability to suspend polling
-    this.set({polling: true});
-  },
-
-  stopPolling: function() {
-    // TODO: Implement ability to suspend polling
-    this.set({polling: false});
-  },
-
   nextPage: function() {
-    if (this.page < this.totalPages) {
-      this.page++;
-      this.sync();
-    }
+    if (this.page < this.totalPages) this.setPage(this.page + 1);
   },
 
   previousPage: function() {
-    if (this.page > 0) {
-      this.page--;
-      this.sync();
+    if (this.page > 0) this.setPage(this.page - 1);
+  },
+
+  setPage: function(page) {
+    if (this.page != page) {
+      this.page = page;
+      this.trigger("change:page", this);
+
+      this.sync(true);
     }
   }
 });
@@ -817,6 +829,7 @@ Diffa.Views.DiffList = Backbone.View.extend({
 
     this.model.bind("reset",              this.rebuildDiffList);
     this.model.bind("change:totalEvents", this.renderNavigation);
+    this.model.bind("change:page",        this.renderNavigation);
 
     this.renderNavigation();
   },
@@ -873,6 +886,8 @@ Diffa.Views.DiffListItem = Backbone.View.extend({
     else {
       row.append("<div class='span-4 last'>Data difference</div>");
     }
+
+    this.updateSelected(this.collection.selectedEvent);
 
     return this;
   },
@@ -1009,6 +1024,6 @@ createSession(function() {
   Diffa.BlobsModel.sync();
   Diffa.DiffsCollection.sync();
   setInterval('Diffa.BlobsModel.periodicSync()', Diffa.Config.BlobInterval);
-//  setInterval('Diffa.DiffsCollection.sync()', Diffa.Config.DiffInterval);
+  setInterval('Diffa.DiffsCollection.sync()', Diffa.Config.DiffInterval);
 });
 });

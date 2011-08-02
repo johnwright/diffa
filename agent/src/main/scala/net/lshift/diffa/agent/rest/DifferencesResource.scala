@@ -142,6 +142,7 @@ class DifferencesResource {
       val diffs = sessionManager.retrievePagedEvents(sessionId, pairKey, interval, offset, length)
 
       val responseObj = Map(
+        "seqId" -> sessionVsn.getValue,
         "diffs" -> diffs.toArray,
         "total" -> sessionManager.countEvents(sessionId, pairKey, interval)
       )
