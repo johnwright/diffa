@@ -169,7 +169,7 @@ trait CommonDifferenceTests {
     assertEquals(down, down2)
   }
 
-  //@Test
+  @Test
   def shouldNotFindDifferencesInParticipantsWithSameStateThatAgentWasntInformedOf {
     env.upstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
     env.downstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
@@ -180,7 +180,7 @@ trait CommonDifferenceTests {
     assertTrue(diffs.isEmpty)
   }
 
-  //@Test
+  @Test
   def shouldReportMatchOnlyAsChangesAreReportedWithinMatchingWindow {
 
     env.addAndNotifyUpstream("abc", "abcdef", someDate = today, someString = "ss")
