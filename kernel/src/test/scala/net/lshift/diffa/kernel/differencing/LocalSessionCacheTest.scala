@@ -108,6 +108,19 @@ class LocalSessionCacheTest {
     assertEquals(size - frontFence - rearFence, unmatched.length)
   }
 
+  @Test
+  def shouldCountUnmatchedEventWithinInterval = {
+    val start = new DateTime(2004, 11, 6, 3, 5, 15, 0)
+    val size = 60
+    var frontFence = 10
+    var rearFence = 10
+
+    val interval = addUnmatchedEvents(start, size, frontFence, rearFence)
+
+    val unmatchedCount = cache.countEvents("pair2", interval)
+    assertEquals(size - frontFence - rearFence, unmatchedCount)
+  }
+
   def addUnmatchedEvents(start:DateTime, size:Int, frontFence:Int, rearFence:Int) : Interval = {
     for (i <- 1 to size) {
       val timestamp = start.plusMinutes(i)

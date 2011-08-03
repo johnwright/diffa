@@ -84,6 +84,11 @@ trait SessionCache {
   def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
+   * Count the number of events for the given pair within the given interval.
+   */
+  def countEvents(pairKey:String, interval:Interval) : Int
+
+  /**
    * Retrieves all events that have occurred within a session since the provided sequence id.
    * @param evtSeqId the last known sequence id. All events occurring after (not including) this event will be returned.
    * @throws InvalidSessionIDException if the requested session does not exist or has expired.
