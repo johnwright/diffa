@@ -104,7 +104,7 @@ trait CommonDifferenceTests {
     assertFalse("Session(%s) : %s -> %s".format(sessionId, yearAgo, nextYear),diffs.isEmpty)
   }
 
-  //@Test
+  @Test
   def shouldPageDifferences = {
     val start = new DateTime
     val end = start.plusMinutes(2)
@@ -193,7 +193,7 @@ trait CommonDifferenceTests {
         
   }
 
- // @Test
+  @Test
   def scanShouldTriggerResend {
     env.withActionsServer {
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
@@ -202,7 +202,7 @@ trait CommonDifferenceTests {
     }
   }
 
-  //@Test
+  @Test
   def scanShouldBeCancellable {
     env.withActionsServer {
       var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
