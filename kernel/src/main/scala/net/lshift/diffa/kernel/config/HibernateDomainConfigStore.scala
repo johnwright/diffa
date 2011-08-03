@@ -150,4 +150,18 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     s.delete(pair)
   }
 
+  def makeDomainMember(domain:String, userName:String) = sessionFactory.withSession(s => {
+    val member = Member(User(name = userName), Domain(name = domain))
+    s.saveOrUpdate(member)
+    member
+  })
+
+  def removeDomainMembership(domain:String, userName:String) = sessionFactory.withSession(s => {
+    s.delete(Member(User(name = userName), Domain(name = domain)))
+  })
+
+  def listDomainMembers(domain:String) = sessionFactory.withSession(s => {
+    listQuery[Member](s, "membersByDomain", Map("domain_name" -> domain))
+  })
+
 }

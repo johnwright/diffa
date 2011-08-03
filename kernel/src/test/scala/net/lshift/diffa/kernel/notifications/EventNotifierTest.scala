@@ -38,7 +38,7 @@ class EventNotifierTest {
 
   @Before
   def setup = {
-    val user = User("Foo Bar", HashSet(Domain(name = "domain")),"dev_null@lshift.net")
+    val user = User("Foo Bar","dev_null@lshift.net")
     expect(systemConfigStore.listUsers).andStubReturn(List(user))
     replay(systemConfigStore, sessionManager)
   }

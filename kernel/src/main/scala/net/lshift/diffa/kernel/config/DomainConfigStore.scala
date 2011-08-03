@@ -79,6 +79,22 @@ trait DomainConfigStore {
    * Removes the setting for the given configuration option.
    */
   def clearConfigOption(domain:String, key:String)
+
+
+  /**
+   * Make the given user a member of this domain.
+   */
+  def makeDomainMember(domain:String, userName:String) : Member
+
+  /**
+   * Remove the given user a from this domain.
+   */
+  def removeDomainMembership(domain:String, userName:String) : Unit
+
+  /**
+   * Lists all of the members of the given domain
+   */
+  def listDomainMembers(domain:String) : Seq[Member]
 }
 
 case class Endpoint(
@@ -192,14 +208,11 @@ object Pair {
 }
 
 case class Domain (
-  @BeanProperty var name: String = null,
-  @BeanProperty var users: java.util.Set[User] = new java.util.HashSet[User]
+  @BeanProperty var name: String = null//,
+  //@BeanProperty var users: java.util.Set[User] = new java.util.HashSet[User]
 ) {
   def this() = this(name = null)
 
-  def validate(path:String = null) {
-    // Nothing to validate
-  }
   override def equals(that:Any) = that match {
     case d:Domain => d.name == name
     case _        => false
@@ -280,13 +293,9 @@ object EscalationActionType {
 }
 
 case class User(@BeanProperty var name: String = null,
-                @BeanProperty var domains: java.util.Set[Domain] = new java.util.HashSet[Domain],
+                //@BeanProperty var domains: java.util.Set[Domain] = new java.util.HashSet[Domain],
                 @BeanProperty var email: String = null) {
   def this() = this(name = null)
-
-  def validate(path:String = null) {
-    // Nothing to validate
-  }
 
   override def equals(that:Any) = that match {
     case u:User => u.name == name
@@ -295,6 +304,16 @@ case class User(@BeanProperty var name: String = null,
 
   override def hashCode = name.hashCode
   override def toString = name
+}
+
+/**
+ * Defines a user's membership to a domain
+ */
+case class Member(@BeanProperty var user: User = null,
+                  @BeanProperty var domain: Domain = null) {
+
+  def this() = this(user = null)
+
 }
 
 case class ConfigOption(@BeanProperty var key:String = null,

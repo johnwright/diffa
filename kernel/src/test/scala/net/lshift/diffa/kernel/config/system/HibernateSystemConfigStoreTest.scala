@@ -52,7 +52,7 @@ class HibernateSystemConfigStoreTest {
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
 
-  val TEST_USER = User("foo", null, "foo@bar.com")
+  val TEST_USER = User("foo","foo@bar.com")
 
   @Before
   def setup = {
@@ -110,7 +110,7 @@ class HibernateSystemConfigStoreTest {
     sf.withSession( s => {
       s.createCriteria(classOf[User]).list.foreach(u => {
         val user = u.asInstanceOf[User]
-        user.domains.clear
+        //user.domains.clear
         s.delete(u)
       })
     })
@@ -121,7 +121,7 @@ class HibernateSystemConfigStoreTest {
     // Hibernate doesn't seem to able to hydrate the many-to-many eagerly,
     // so let's just verify that the user object is fine for now
     assertEquals(TEST_USER.name, result(0).name)
-    val updated = User(TEST_USER.name, HashSet(Domain(name = "domain")), "somethingelse@bar.com")
+    val updated = User(TEST_USER.name, "somethingelse@bar.com")
     systemConfigStore.createOrUpdateUser(updated)
     val user = systemConfigStore.getUser(TEST_USER.name)
     // See note above about lazy fetching

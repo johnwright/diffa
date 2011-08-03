@@ -37,7 +37,9 @@ case class DiffaConfig(
   def validate() {
     val path = "config"
 
-    users.foreach(_.validate(path))
+    // TODO add memebers
+    //users.foreach(_.validate(path))
+
     endpoints.foreach(_.validate(path))
     pairs.foreach(_.validate(path))
     repairActions.foreach(_.validate(path))

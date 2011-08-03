@@ -127,7 +127,6 @@ class Configuration(val configStore: DomainConfigStore,
 
   def createOrUpdateUser(domain:String, u: User): Unit = {
     log.debug("Processing user declare/update request: %s".format(u))
-    u.validate()
     systemConfigStore.createOrUpdateUser(u)
   }
 

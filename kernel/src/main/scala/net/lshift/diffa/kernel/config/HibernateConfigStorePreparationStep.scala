@@ -331,6 +331,12 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     // Make sure the default domain is in the DB
     stmt.execute(HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN))
 
+    // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));
+    val membersTable = new TableDescriptor("members", "user_name", "domain_name")
+    membersTable.addColumn("domain_name", Types.VARCHAR, 255, false)
+    membersTable.addColumn("user_name", Types.VARCHAR, 255, false)
+    stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, membersTable))
+
     // alter table config_options drop column is_internal
     stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "config_options", "is_internal" ))
 
@@ -349,13 +355,6 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     // alter table pair add column domain varchar(255) not null
     stmt.execute(HibernatePreparationUtils.generateAddColumnSQL(config, "pair", domainColumn))
 
-    // create table domain_users (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (user_name, domain_name));
-    val domainUserLinkTable = new TableDescriptor("domain_users", "user_name", "domain_name")
-    domainUserLinkTable.addColumn("domain_name", Types.VARCHAR, 255, false)
-    domainUserLinkTable.addColumn("user_name", Types.VARCHAR, 255, false)
-    stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, domainUserLinkTable))
-
-
     Seq(
       // alter table config_options add constraint FK80C74EA1C3C204DC foreign key (domain) references domains;
       new ForeignKey() {
@@ -368,22 +367,22 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
           })
         })
       },
-      // alter table domain_users add constraint FKC0CD22CD1902E93E foreign key (domain_name) references domains;
+      // alter table members add constraint FK388EC9191902E93E foreign key (domain_name) references domains;
       new ForeignKey() {
-        setName("FKC0CD22CD1902E93E")
+        setName("FK388EC9191902E93E")
         addColumn(new Column("domain_name"))
-        setTable(new Table("domain_users") )
+        setTable(new Table("members") )
         setReferencedTable(new Table("domains"){
           setPrimaryKey(new PrimaryKey(){
             addColumn(new Column("name"))
           })
         })
       },
-      //alter table domain_users add constraint FKC0CD22CD5A11FA9E foreign key (user_name) references users;
+      // alter table members add constraint FK388EC9195A11FA9E foreign key (user_name) references users;
       new ForeignKey() {
-        setName("FKC0CD22CD5A11FA9E")
+        setName("FK388EC9195A11FA9E")
         addColumn(new Column("user_name"))
-        setTable(new Table("domain_users") )
+        setTable(new Table("members") )
         setReferencedTable(new Table("users"){
           setPrimaryKey(new PrimaryKey(){
             addColumn(new Column("name"))

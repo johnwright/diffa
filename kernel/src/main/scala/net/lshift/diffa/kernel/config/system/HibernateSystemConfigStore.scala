@@ -53,7 +53,7 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
     deleteByDomain[ConfigOption](s, domain, "configOptionsByDomain")
     s.flush()
     // TODO find out how to express this in HQL
-    s.createSQLQuery("delete from domain_users where domain_name = '%s'".format(domain)).executeUpdate()
+    s.createSQLQuery("delete from members where domain_name = '%s'".format(domain)).executeUpdate()
     s.createSQLQuery("delete from domains where name = '%s'".format(domain)).executeUpdate()
   })
 

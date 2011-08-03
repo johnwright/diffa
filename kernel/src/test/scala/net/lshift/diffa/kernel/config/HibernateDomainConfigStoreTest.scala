@@ -92,6 +92,8 @@ class HibernateDomainConfigStoreTest {
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
   val pairRenamed = "TEST_PAIR_RENAMED"
 
+  val user = User(name = "test_user", email = "dev_null@lshift.net")
+
   def declareAll() {
     systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
@@ -438,6 +440,25 @@ class HibernateDomainConfigStoreTest {
     domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")
     systemConfigStore.setSystemConfigOption("some.option4", "storedVal3")
     assertEquals(Map("some.option3" -> "storedVal"), domainConfigStore.allConfigOptions(domainName))
+  }
+
+  @Test
+  def shouldBeAbleToManageDomainMembership = {
+
+    def assertIsDomainMember(member:Member, expectation:Boolean) = {
+      val members = domainConfigStore.listDomainMembers(domain.name)
+      val isMember = members.contains(member)
+      assertEquals(expectation, isMember)
+    }
+
+    systemConfigStore.createOrUpdateDomain(domain)
+    systemConfigStore.createOrUpdateUser(user)
+
+    val member = domainConfigStore.makeDomainMember(domain.name, user.name)
+    assertIsDomainMember(member, true)
+
+    domainConfigStore.removeDomainMembership(domain.name, user.name)
+    assertIsDomainMember(member, false)
   }
 
   private def expectMissingObject(name:String)(f: => Unit) {
