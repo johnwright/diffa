@@ -741,8 +741,12 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         var hash = "blobs/" + selectedPair + '/' + selectionStartTime.toString(TIME_FORMAT) + '-' + selectionEndTime.toString(TIME_FORMAT);
         Diffa.BlobsApp.navigate(hash, true);
       }
+    } else {
+      if (Math.abs(this.o_x) >= this.rightLimit) {
+        this.model.startPolling();
+      }
     }
-    dragged = false;
+    this.dragged = false;
     e.target.style.cursor = "default";
   },
 
