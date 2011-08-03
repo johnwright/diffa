@@ -173,6 +173,14 @@ case class Pair(
   def this() = this(key = null)
 
   def identifier = "%s/%s".format(domain,key)
+
+  override def equals(that:Any) = that match {
+    case p:Pair => p.key == key && p.domain == domain
+    case _      => false
+  }
+
+  // TODO This looks a bit strange
+  override def hashCode = 31 * (31 + key.hashCode) + domain.hashCode
 }
 
 object Pair {
