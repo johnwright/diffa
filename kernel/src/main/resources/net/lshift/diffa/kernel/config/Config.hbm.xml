@@ -82,20 +82,11 @@
 
   <class name="Domain" table="domains" abstract="false">
     <id name="name" type="string" column="name"/>
-    <!--<set name="users" table="domain_users">-->
-      <!--<key column="domain_name"/>-->
-      <!--<many-to-many column="user_name" class="User" lazy="false"/>-->
-    <!--</set>-->
   </class>
 
   <class name="User" table="users" abstract="false">
     <id name="name" type="string" column="name"/>
     <property name="email" type="string" />
-    <!--<set name="domains" table="domain_users">-->
-      <!--<key column="user_name"/>-->
-      <!--<many-to-many column="domain_name" class="Domain" lazy="false"/>-->
-    <!--</set>-->
-
   </class>
 
   <class name="Member" table="members" abstract="false">
@@ -184,12 +175,6 @@
   </query>
 
   <!-- Queries by domain only -->
-
-  <!--query name="usersByDomain">
-    select u from User u
-    join u.domains d
-    where d.name = :domain_name
-  </query-->
 
   <query name="membersByDomain">
     select m from Member m where m.domain.name = :domain_name
