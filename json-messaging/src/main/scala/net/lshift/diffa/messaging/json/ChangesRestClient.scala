@@ -36,5 +36,6 @@ class ChangesRestClient(serverRootUrl:String)
     }
     submit("", serializeEvent(wire))
   }
-  
+
+  def inboundURL = resource.getURI.getPath
 }

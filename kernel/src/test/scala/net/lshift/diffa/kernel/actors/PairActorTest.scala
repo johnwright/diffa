@@ -34,7 +34,7 @@ import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
-import net.lshift.diffa.kernel.config.{Domain, DomainConfigStore, Endpoint, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Domain, Endpoint, Pair => DiffaPair}
 
 class PairActorTest {
 

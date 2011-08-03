@@ -58,7 +58,7 @@ trait CommonDifferenceTests {
   }
 
   def getReport(from:DateTime, until:DateTime) : Array[SessionEvent]= {
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.domain.name, env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, today)
     env.diffClient.getEvents(sessionId, env.pairKey, from, until, 0, 100)
   }
 
@@ -96,12 +96,12 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.domain.name,env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, today)
     env.addAndNotifyUpstream("abc", "abcdef", someDate = yesterday, someString = "ss")
 
     val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
 
-    assertFalse(diffs.isEmpty)
+    assertFalse("Session(%s) : %s -> %s".format(sessionId, yearAgo, nextYear),diffs.isEmpty)
   }
 
   //@Test
@@ -113,7 +113,7 @@ trait CommonDifferenceTests {
     for (i <- 1 to size) {
       env.addAndNotifyUpstream("" + i, "" + i, someDate = yesterday, someString = "ss")
     }
-    val sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    val sessionId = subscribeAndRunScan(yearAgo, today)
 
     val offset = 5
 
@@ -143,7 +143,7 @@ trait CommonDifferenceTests {
     val up = guid()
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, today)
     env.addAndNotifyUpstream("abc", up, someDate = yesterday, someString = "ss")
 
     val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
@@ -197,7 +197,7 @@ trait CommonDifferenceTests {
   def scanShouldTriggerResend {
     env.withActionsServer {
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
-      subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+      subscribeAndRunScan(yearAgo, today)
       assertEquals(1, env.entityResendTally("abc"))
     }
   }
@@ -221,8 +221,8 @@ trait CommonDifferenceTests {
     }
   }
 
-  def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
-    var sessionId = env.diffClient.subscribe(scope, from, until)
+  def subscribeAndRunScan(from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
+    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.domain.name, env.pairKey), from, until)
     env.diffClient.runScan(sessionId)
 
     waitForScanStatus(sessionId, PairScanState.UP_TO_DATE, n, wait)
@@ -248,7 +248,7 @@ trait CommonDifferenceTests {
   def getVerifiedDiffsWithSessionId() = {
     env.upstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
 
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.domain.name, env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, today)
     val diffs = pollForAllDifferences(sessionId, yearAgo, today)
 
     assertNotNull(diffs)

@@ -128,12 +128,12 @@ class TestEnvironment(val pairKey: String,
   systemConfig.declareDomain(domain)
   configurationClient.declareEndpoint(EndpointDef(name = upstreamEpName,
     scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
-    inboundUrl = participants.inboundUrl, inboundContentType = contentType,
+    inboundUrl = changesClient.inboundURL, inboundContentType = contentType,
     categories = categories))
   configurationClient.declareEndpoint(EndpointDef(name = downstreamEpName,
     scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
     versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
-    inboundUrl = participants.inboundUrl, inboundContentType = contentType,
+    inboundUrl = changesClient.inboundURL, inboundContentType = contentType,
     categories = categories))
 
   createPair
@@ -164,7 +164,7 @@ class TestEnvironment(val pairKey: String,
     val attributes = pack(someDate = someDate, someString = someString)
 
     upstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
-    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
+    changesClient.onChangeEvent(new UpstreamChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
   def addAndNotifyDownstream(id:String, content:String, someDate:DateTime, someString:String) {
     val attributes = pack(someDate = someDate, someString = someString)
