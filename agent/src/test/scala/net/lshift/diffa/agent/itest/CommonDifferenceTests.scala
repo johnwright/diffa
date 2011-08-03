@@ -205,7 +205,7 @@ trait CommonDifferenceTests {
   @Test
   def scanShouldBeCancellable {
     env.withActionsServer {
-      var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), yearAgo, today)
+      var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.domain.name, env.pairKey), yearAgo, nextYear)
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
 
       // Make the upstream wait 5s before responding so the scan doesn't complete too quickly
