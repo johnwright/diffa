@@ -25,15 +25,6 @@
     </field>
   </class>
 
-  <class name="net.lshift.diffa.kernel.config.User">
-    <field name="name" type="string">
-      <bind-xml name="name" node="attribute" />
-    </field>
-    <field name="email" type="string">
-      <bind-xml name="email" node="attribute" />
-    </field>
-  </class>
-
   <class name="net.lshift.diffa.agent.rest.CastorSerializableRangeCategoryDescriptor">
     <field name="name" type="string" required="true">
       <bind-xml name="name" node="attribute" />
@@ -173,8 +164,8 @@
     <field name="properties" type="net.lshift.diffa.agent.rest.DiffaProperty" collection="arraylist">
       <bind-xml name="property" />
     </field>
-    <field name="users" type="net.lshift.diffa.kernel.config.User" collection="arraylist">
-      <bind-xml name="user" />
+    <field name="members" type="string" collection="set">
+      <bind-xml name="member" />
     </field>
     <field name="endpoints" type="net.lshift.diffa.agent.rest.CastorSerializableEndpoint" collection="arraylist">
       <bind-xml name="endpoint" />

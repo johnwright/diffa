@@ -68,7 +68,7 @@ class DiffaConfigReaderWriterTest {
       <diffa-config>
         <property key="diffa.host">localhost:1234</property>
         <property key="a">b</property>
-        <user name="abc" email="a@example.com"/>
+        <member>abc</member>
         <endpoint name="upstream1" content-type="application/json"
                   inbound-url="http://inbound" inbound-content-type="application/xml"
                   scan-url="http://localhost:1234/scan" content-url="http://localhost:1234/content">
