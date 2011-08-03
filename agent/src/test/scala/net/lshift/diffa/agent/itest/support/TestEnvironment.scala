@@ -151,6 +151,8 @@ class TestEnvironment(val pairKey: String,
   val username = "foo"
   val mail = "foo@bar.com"
   usersClient.declareUser(username,mail)
+  // Add a user to the domain so that at least 1 mail will be sent
+  configurationClient.makeDomainMember(username)
 
   /**
    * Requests that the environment remove all stored state from the participants.
