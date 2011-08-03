@@ -32,8 +32,7 @@ class DiffaConfigReaderWriterTest {
   def roundtrip = {
     val config = new DiffaConfig(
       properties = Map("diffa.host" -> "localhost:1234", "a" -> "b"),
-      // TODO The n:m relationship between users and domains needs to be thought out
-      users = Set(User("abc", null, "a@example.com")),
+      members = Set("abc"),
       endpoints = Set(
         EndpointDef(name = "upstream1", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",

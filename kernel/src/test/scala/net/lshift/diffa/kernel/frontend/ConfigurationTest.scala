@@ -100,6 +100,11 @@ class ConfigurationTest {
   @Test
   def shouldApplyConfigurationToEmptySystem() {
 
+    // Create users that have membership references in the domain config
+
+    systemConfigStore.createOrUpdateUser(User(name = "abc"))
+    systemConfigStore.createOrUpdateUser(User(name = "def"))
+
     val ep1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:1234", contentType = "application/json",
                 inboundUrl = "http://inbound", inboundContentType = "application/xml",
                 categories = Map(
@@ -112,8 +117,7 @@ class ConfigurationTest {
           ))
     val config = new DiffaConfig(
       properties = Map("diffa.host" -> "localhost:1234", "a" -> "b"),
-      users = Set(User("abc", "a@example.com"),
-                  User("def", "b@example.com")),
+      members = Set("abc","def"),
       endpoints = Set(ep1, ep2),
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
@@ -169,8 +173,7 @@ class ConfigurationTest {
         // diffa.host is changed, a -> b is gone, c -> d is added
       properties = Map("diffa.host" -> "localhost:2345", "c" -> "d"),
         // abc is changed, def is gone, ghi is added
-      users = Set(User("abc", "a2@example.com"),
-                  User("ghi", "c@example.com")),
+      members = Set("abc","ghi"),
       endpoints = Set(ep1, ep2),
         // gaa is gone, gcc is created, gbb is the same
       pairs = Set(

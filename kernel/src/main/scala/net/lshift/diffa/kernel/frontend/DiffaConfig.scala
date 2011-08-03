@@ -26,7 +26,7 @@ import java.util.HashMap
  * defined in a single config belong to a particular domain.
  */
 case class DiffaConfig(
-  users:Set[User] = Set(),
+  members:Set[String] = Set(),
   properties:Map[String, String] = Map(),
   endpoints:Set[EndpointDef] = Set(),
   pairs:Set[PairDef] = Set(),
@@ -36,10 +36,6 @@ case class DiffaConfig(
 
   def validate() {
     val path = "config"
-
-    // TODO add memebers
-    //users.foreach(_.validate(path))
-
     endpoints.foreach(_.validate(path))
     pairs.foreach(_.validate(path))
     repairActions.foreach(_.validate(path))

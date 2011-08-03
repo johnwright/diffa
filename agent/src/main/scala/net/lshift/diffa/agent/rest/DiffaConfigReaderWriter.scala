@@ -79,13 +79,13 @@ class DiffaConfigReaderWriter
  * Describes a complete diffa configuration.
  */
 class DiffaCastorSerializableConfig {
-  @BeanProperty var users:java.util.List[User] = new java.util.ArrayList[User]
+  @BeanProperty var members:java.util.List[String] = new java.util.ArrayList[String]
   @BeanProperty var properties:java.util.List[DiffaProperty] = new java.util.ArrayList[DiffaProperty]
   @BeanProperty var endpoints:java.util.List[CastorSerializableEndpoint] = new java.util.ArrayList[CastorSerializableEndpoint]
   @BeanProperty var pairs:java.util.List[CastorSerializablePair] = new java.util.ArrayList[CastorSerializablePair]
 
   def fromDiffaConfig(c:DiffaConfig) = {
-    this.users = c.users.toList
+    this.members = c.members.toList
     this.properties = c.properties.map { case (k, v) => new DiffaProperty(k, v) }.toList
     this.endpoints = c.endpoints.map { e => (new CastorSerializableEndpoint).fromDiffaEndpoint(e) }.toList
     this.pairs = c.pairs.map(p => {
@@ -98,7 +98,7 @@ class DiffaCastorSerializableConfig {
 
   def toDiffaConfig:DiffaConfig =
     DiffaConfig(
-      users = users.toSet,
+      members = members.toSet,
       properties = properties.map(p => p.key -> p.value).toMap,
       endpoints = endpoints.map(_.toDiffaEndpoint).toSet,
       pairs = (for (p <- pairs) yield p.toPairDef).toSet,

@@ -40,8 +40,6 @@ class Configuration(val configStore: DomainConfigStore,
 
   def applyConfiguration(domain:String, diffaConfig:DiffaConfig) = {
 
-    val dom = Domain(name = domain)
-
     // Ensure that the configuration is valid upfront
     diffaConfig.validate()
     
@@ -50,11 +48,10 @@ class Configuration(val configStore: DomainConfigStore,
     removedProps.foreach(p => configStore.clearConfigOption(domain, p))
     diffaConfig.properties.foreach { case (k, v) => configStore.setConfigOption(domain, k, v) }
 
-    // Remove missing users, and create/update the rest
-    // TODO replace with memberhsip
-    val removedUsers = systemConfigStore.listUsers.filter(currU => diffaConfig.users.find(newU => newU.name == currU.name).isEmpty)
-    removedUsers.foreach(u => deleteUser(u.name))
-    diffaConfig.users.foreach(u => createOrUpdateUser(domain, u))
+    // Remove missing members, and create/update the rest
+    val removedMembers = configStore.listDomainMembers(domain).filter(m => diffaConfig.members.find(newM => newM == m.user.name).isEmpty)
+    removedMembers.foreach(m => configStore.removeDomainMembership(domain,m.user.name))
+    diffaConfig.members.foreach(configStore.makeDomainMember(domain,_))
 
     // Apply endpoint and pair updates
     diffaConfig.endpoints.foreach(createOrUpdateEndpoint(domain, _))
@@ -83,7 +80,7 @@ class Configuration(val configStore: DomainConfigStore,
   def retrieveConfiguration(domain:String) : DiffaConfig = {
     DiffaConfig(
       properties = configStore.allConfigOptions(domain),
-      users = systemConfigStore.listUsers.toSet,
+      members = configStore.listDomainMembers(domain).map(_.user.name).toSet,
       endpoints = configStore.listEndpoints(domain).toSet,
       pairs = configStore.listPairs(domain).map(
         p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstreamName, p.downstreamName, p.scanCronSpec)).toSet,
