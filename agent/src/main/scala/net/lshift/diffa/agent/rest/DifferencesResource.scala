@@ -135,7 +135,13 @@ class DifferencesResource(val sessionManager: SessionManager,
 
       val interval = new Interval(from,until)
       val diffs = sessionManager.retrievePagedEvents(sessionId, pairKey, interval, offset, length)
-      Response.ok(diffs.toArray).tag(sessionVsn).build
+
+      val responseObj = Map(
+        "seqId" -> sessionVsn.getValue,
+        "diffs" -> diffs.toArray,
+        "total" -> sessionManager.countEvents(sessionId, pairKey, interval)
+      )
+      Response.ok(mapAsJavaMap(responseObj)).tag(sessionVsn).build
     }
     catch {
       case e:NoSuchElementException =>
@@ -190,7 +196,7 @@ class DifferencesResource(val sessionManager: SessionManager,
       })
 
       // Convert to an appropriate web response
-      val respObj = asJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
+      val respObj = mapAsJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
 
       Response.ok(respObj).tag(sessionVsn).build
     }

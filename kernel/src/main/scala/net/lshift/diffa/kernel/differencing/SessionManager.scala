@@ -121,6 +121,11 @@ trait SessionManager {
   def retrievePagedEvents(sessionId:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
+   * Count the number of events for the given pair within the given interval.
+   */
+  def countEvents(sessionId:String, pairKey:String, interval:Interval) : Int
+
+  /**
    * Retrieves any additional information that the session manager knows about an event (eg, mismatched hashes,
    * differing content bodies). This information may be retrieved by the manager on demand from remote sources, so
    * should generally only be called on explicit user request.

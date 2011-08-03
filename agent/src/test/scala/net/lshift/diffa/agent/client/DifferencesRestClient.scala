@@ -25,6 +25,8 @@ import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope, Sessio
 import scala.collection.JavaConversions._
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.messaging.json.NotFoundException
+import org.codehaus.jackson.map.ObjectMapper
+import org.codehaus.jackson.node.ObjectNode
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
@@ -115,7 +117,13 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
-      case 200 => response.getEntity(classOf[Array[SessionEvent]])
+      case 200 => {
+        val responseMap = response.getEntity(classOf[ObjectNode])
+        val diffs = responseMap.get("diffs")
+        val objMapper = new ObjectMapper()
+
+        objMapper.readValue(diffs, classOf[Array[SessionEvent]])
+      }
       case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
     }
   }
