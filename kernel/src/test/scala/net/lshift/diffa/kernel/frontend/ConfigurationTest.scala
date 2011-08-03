@@ -42,7 +42,7 @@ class ConfigurationTest {
   private val pairManager = createMock("pairManager", classOf[ActivePairManager])
   private val sessionManager = createMock("sessionManager", classOf[SessionManager])
   private val endpointListener = createMock("endpointListener", classOf[EndpointLifecycleListener])
-  private val scanScheduler = createMock("endpointListener", classOf[ScanScheduler])
+  private val scanScheduler = createMock("scanScheduler", classOf[ScanScheduler])
 
   // TODO This is a strange mixture of mock and real objects
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
@@ -150,8 +150,7 @@ class ConfigurationTest {
     verifyAll
   }
 
-  // TODO comment back in
-  //@Test
+  @Test
   def shouldUpdateConfigurationInNonEmptySystem() {
     // Apply the configuration used in the empty state test
     shouldApplyConfigurationToEmptySystem
@@ -173,7 +172,7 @@ class ConfigurationTest {
         // diffa.host is changed, a -> b is gone, c -> d is added
       properties = Map("diffa.host" -> "localhost:2345", "c" -> "d"),
         // abc is changed, def is gone, ghi is added
-      members = Set("abc","ghi"),
+      members = Set("abc","def"),
       endpoints = Set(ep1, ep2),
         // gaa is gone, gcc is created, gbb is the same
       pairs = Set(
@@ -192,7 +191,7 @@ class ConfigurationTest {
     val ac = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
                           versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
 
-    val ad = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
+    val ad = DiffaPair(key = "ad", domain = Domain(name="domain"), matchingTimeout = 5,
                           versionPolicyName = "same", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
 
     expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
@@ -220,7 +219,7 @@ class ConfigurationTest {
     assertEquals(config, newConfig)
 
     // check that the action was updated
-    assertEquals(Set(RepairAction("Resend Source", "resend", "pair", DiffaPair(key = "ab", domain = Domain(name="domain")))), newConfig.repairActions)
+    assertEquals(Set(RepairActionDef("Resend Source", "resend", "pair", "ab")), newConfig.repairActions)
     verifyAll
   }
 
