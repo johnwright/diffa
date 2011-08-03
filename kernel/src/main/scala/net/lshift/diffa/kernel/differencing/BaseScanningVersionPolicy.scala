@@ -28,13 +28,14 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * Standard behaviours supported by scanning version policies.
  */
 abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFactory,
                                          listener:DifferencingListener,
-                                         configStore:DomainConfigStore,
+                                         systemConfigStore:SystemConfigStore,
                                          diagnostics:DiagnosticsManager)
     extends VersionPolicy {
   protected val alerter = Alerter.forClass(getClass)
@@ -45,7 +46,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
    */
   def onChange(writer: LimitedVersionCorrelationWriter, evt: PairChangeEvent) = {
 
-    val pair = configStore.getPair(evt.id.domain, evt.id.pairKey)
+    val pair = systemConfigStore.getPair(evt.id.domain, evt.id.pairKey)
 
     val corr = evt match {
       case UpstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {

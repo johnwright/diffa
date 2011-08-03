@@ -20,9 +20,7 @@ import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam._
 import javax.ws.rs._
-import net.lshift.diffa.kernel.config.Escalation
-import org.springframework.stereotype.Component
-import net.lshift.diffa.kernel.frontend.Configuration
+import net.lshift.diffa.kernel.frontend.{EscalationDef, Configuration}
 
 /**
  * ATM this resource proxies directly through to the underlying configuration, because the current scope of
@@ -38,6 +36,6 @@ class EscalationsResource(val config:Configuration,
   @Produces(Array("application/json"))
   @Description("Returns a list of escalations that are configured for a pair.")
   @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
-  def listEscalations(@PathParam("pairId") pairId: String): Array[Escalation] = config.listEscalationForPair(domain, pairId).toArray
+  def listEscalations(@PathParam("pairId") pairId: String): Array[EscalationDef] = config.listEscalationForPair(domain, pairId).toArray
 
 }

@@ -16,13 +16,12 @@ package net.lshift.diffa.agent.client
  * limitations under the License.
  */
 
-import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.config.RepairAction
 
-class ActionsRestClient(serverRootUrl:String)
-        extends AbstractRestClient(serverRootUrl, "rest/actions/")
+class ActionsRestClient(serverRootUrl:String, domain:String)
+  extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/actions/")
         with ActionsClient {
 
   def listActions(domain:String, pairKey: String): Seq[Actionable] = {

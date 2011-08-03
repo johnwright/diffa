@@ -17,22 +17,26 @@
 package net.lshift.diffa.agent.itest.config
 
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.agent.client.DifferencesRestClient
-import net.lshift.diffa.kernel.participants.ParticipantType
-import com.eaio.uuid.UUID
+import net.lshift.diffa.agent.client.SystemConfigRestClient
 import org.junit.Test
+import com.eaio.uuid.UUID
+import net.lshift.diffa.kernel.frontend.DomainDef
 import net.lshift.diffa.messaging.json.NotFoundException
 
-/**
- * A bunch of smoke tests for the differences reporting of a known agent
- */
-class DifferenceReportingTest {
+class SystemConfigTest {
 
-  val client = new DifferencesRestClient(agentURL, domain)
+  val client = new SystemConfigRestClient(agentURL)
 
-  @Test(expected = classOf[NotFoundException])
-  def nonExistentSessionShouldGenerateNotFoundError = {
-    client.eventDetail(new UUID().toString, new UUID().toString, ParticipantType.UPSTREAM)
-    ()
+  @Test
+  def shouldDeclareAndDeleteDomain = {
+    val domain = DomainDef(name = new UUID().toString)
+    client.declareDomain(domain)
+    client.removeDomain(domain.name)
+  }
+
+  // TODO This should work at some stage
+  //@Test(expected = classOf[NotFoundException])
+  def nonExistentDomainShouldRaiseError = {
+    client.removeDomain(new UUID().toString)
   }
 }

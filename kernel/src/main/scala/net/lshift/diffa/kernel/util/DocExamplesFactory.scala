@@ -24,6 +24,7 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
 import net.lshift.diffa.kernel.client.Actionable
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
+import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.
@@ -51,9 +52,9 @@ class DocExamplesFactory {
   def getExamples: java.util.Map[Class[_], Object] = {
     val map = new java.util.HashMap[Class[_], Object]
 
-    map.put(classOf[Endpoint], up)
+    map.put(classOf[EndpointDef], up)
     //map.put(classOf[Pair], pair)
-    map.put(classOf[PairDef], new PairDef("pairKey","versionPolicyName","domainName", 120,"upstreamName","downstreamName","0 15 10 ? * *"))
+    map.put(classOf[PairDef], new PairDef("pairKey", "versionPolicyName", 120,"upstreamName","downstreamName","0 15 10 ? * *"))
     map.put(classOf[SessionEvent], SessionEvent("6f72b9",VersionID("pairKey", "4f8a99"), new DateTime(), MatchState.UNMATCHED, "upstreamV", "downstreamV"))
     //map.put(classOf[RepairAction], repair)
     //map.put(classOf[Escalation], escalation)

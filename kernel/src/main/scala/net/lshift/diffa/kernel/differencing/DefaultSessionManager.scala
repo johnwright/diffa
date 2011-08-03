@@ -45,7 +45,6 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
  * whilst the matching manager waits for it to expire).
  */
 class DefaultSessionManager(
-        val config:DomainConfigStore,
         val systemConfig:SystemConfigStore,
         val cacheProvider:SessionCacheProvider,
         val matching:MatchingManager,
@@ -229,7 +228,7 @@ class DefaultSessionManager(
     check(event) match {
       case true  => {
        val versionID = event.objId
-       val pair = config.getPair(versionID.domain, versionID.pairKey)
+       val pair = systemConfig.getPair(versionID.domain, versionID.pairKey)
        val endpoint = resolve(pair)
        if (!participants.contains(endpoint)) {
          participants(endpoint) = p(endpoint)
@@ -265,7 +264,7 @@ class DefaultSessionManager(
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin) = {
     log.trace("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
-    val pair = config.getPair(id.domain, id.pairKey)
+    val pair = systemConfig.getPair(id.domain, id.pairKey)
 
     matching.getMatcher(pair) match {
       case Some(matcher) => {

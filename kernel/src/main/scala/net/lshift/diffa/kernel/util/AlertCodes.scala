@@ -59,4 +59,9 @@ object AlertCodes {
    * Indicates the scheduler failed to start a scheduled scan.
    */
   val SCHEDULED_SCAN_FAILURE = "D8"
+
+  /**
+   * Indicates the system is not configured properly.
+   */
+  val INVALID_SYSTEM_CONFIGURATION = "D9"
 }

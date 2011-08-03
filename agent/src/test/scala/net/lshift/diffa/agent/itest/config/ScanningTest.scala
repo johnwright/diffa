@@ -24,15 +24,16 @@ import com.eaio.uuid.UUID
 import net.lshift.diffa.agent.client.{ConfigurationRestClient, ScanningRestClient}
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 
 /**
  * Smoke tests for the scan interface.
  */
 class ScanningTest {
 
-  val scanClient = new ScanningRestClient(agentURL)
-  val configClient = new ConfigurationRestClient(agentURL)
+  val scanClient = new ScanningRestClient(agentURL, domain)
+  val configClient = new ConfigurationRestClient(agentURL, domain)
 
   @Test(expected = classOf[NotFoundException])
   def nonExistentPairShouldGenerateNotFoundError = {
@@ -47,9 +48,9 @@ class ScanningTest {
 
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
-    configClient.declareEndpoint(Endpoint(name = up, scanUrl = "http://upstream.com", contentType = "application/json", categories = categories))
-    configClient.declareEndpoint(Endpoint(name = down, scanUrl = "http://downstream.com", contentType = "application/json", categories = categories))
-    configClient.declarePair(PairDef(pair, "same", "domain", 1, up, down, "0 0 0 0 0 0"))
+    configClient.declareEndpoint(EndpointDef(name = up, scanUrl = "http://upstream.com", contentType = "application/json", categories = categories))
+    configClient.declareEndpoint(EndpointDef(name = down, scanUrl = "http://downstream.com", contentType = "application/json", categories = categories))
+    configClient.declarePair(PairDef(pair, "same", 1, up, down, "0 0 0 0 0 0"))
 
     // Simple smoke test - you could kick off a scan and verify that it gets interrupted,
     // but this code path is tested in the unit test

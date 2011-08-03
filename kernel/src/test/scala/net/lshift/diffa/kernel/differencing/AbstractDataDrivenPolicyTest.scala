@@ -38,6 +38,7 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import org.junit.Assume._
 import java.util.HashMap
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * Framework and scenario definitions for data-driven policy tests.
@@ -71,10 +72,10 @@ abstract class AbstractDataDrivenPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
   EasyMock.checkOrder(listener, false)   // Not all participant operations are going to be strictly ordered
 
-  val configStore = createStrictMock("configStore", classOf[DomainConfigStore])
+  val systemConfigStore = createStrictMock("configStore", classOf[SystemConfigStore])
 
-  protected def replayAll = replay(configStore, usMock, dsMock, store, writer, listener)
-  protected def verifyAll = verify(configStore, usMock, dsMock, store, writer, listener, configStore)
+  protected def replayAll = replay(systemConfigStore, usMock, dsMock, store, writer, listener)
+  protected def verifyAll = verify(systemConfigStore, usMock, dsMock, store, writer, listener)
 
   /**
    * Scenario with the top levels matching. The policy should not progress any further than the top level.
@@ -228,7 +229,7 @@ abstract class AbstractDataDrivenPolicyTest {
   //
 
   protected def setupStubs(scenario:Scenario) {
-    expect(configStore.getPair(scenario.pair.domain.name, scenario.pair.key)).andReturn(scenario.pair).anyTimes
+    expect(systemConfigStore.getPair(scenario.pair.domain.name, scenario.pair.key)).andReturn(scenario.pair).anyTimes
   }
 
   protected def expectUnmatchedVersionCheck(scenario:Scenario) = {

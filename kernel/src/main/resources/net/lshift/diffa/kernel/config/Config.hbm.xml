@@ -177,38 +177,38 @@
 
   <!-- Queries by domain only -->
 
-  <query name="usersByDomain">
+  <!--query name="usersByDomain">
     select u from User u
     join u.domains d
     where d.name = :domain_name
-  </query>
+  </query-->
 
   <query name="domainByName">
-    select d from Domain d where d.name = :name
+    select d from Domain d where d.name = :domain_name
   </query>
 
   <query name="pairsByDomain">
-    select p from Pair p where p.domain.name = :name
+    select p from Pair p where p.domain.name = :domain_name
   </query>
 
   <query name="endpointsByDomain">
-    select e from Endpoint e where e.domain.name = :name
+    select e from Endpoint e where e.domain.name = :domain_name
   </query>
 
   <query name="escalationsByDomain">
     select e from Escalation e
     join e.pair as p
-    join p.domain as d with d.name = :name
+    join p.domain as d with d.name = :domain_name
   </query>
 
   <query name="repairActionsByDomain">
     select a from RepairAction a
     join a.pair as p
-    join p.domain as d with d.name = :name
+    join p.domain as d with d.name = :domain_name
   </query>
 
   <query name="configOptionsByDomain">
-    select o from ConfigOption o where o.domain.name = :name
+    select o from ConfigOption o where o.domain.name = :domain_name
   </query>
 
   <!-- Query by pair with domain -->

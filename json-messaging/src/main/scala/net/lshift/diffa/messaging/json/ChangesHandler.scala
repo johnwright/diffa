@@ -27,13 +27,13 @@ import net.lshift.diffa.kernel.participants.EventFormatMapper
  */
 
 class ChangesHandler(val frontend: Changes,
-                     inboundEndpoint: String,
+                     inboundURL: String,
                      eventFormatMapper: EventFormatMapper) extends AbstractJSONHandler {
 
   override val contentType = eventFormatMapper.contentType
 
   protected val endpoints = Map(
-    "changes" -> skeleton((eventFormatMapper.map(_: String, inboundEndpoint)
+    inboundURL -> skeleton((eventFormatMapper.map(_: String, inboundURL)
                              .foreach { wireEvent => frontend.onChange(resolveEvent(wireEvent)) })
                            andThen (_ => serializeEmptyResponse()))
   )

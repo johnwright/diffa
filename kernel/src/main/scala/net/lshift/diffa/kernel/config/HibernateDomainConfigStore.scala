@@ -16,16 +16,24 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.util.SessionHelper._// for 'SessionFactory.withSession'
+import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     extends DomainConfigStore
     with HibernateQueryUtils {
-  def createOrUpdateEndpoint(domain:String, e: Endpoint): Unit = sessionFactory.withSession(s => s.saveOrUpdate(e))
+
+  def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = sessionFactory.withSession(s => {
+    val domain = getDomain(domainName)
+    val endpoint = fromEndpointDef(domain, e)
+    s.saveOrUpdate(endpoint)
+    endpoint
+  })
 
   def deleteEndpoint(domain:String, name: String): Unit = sessionFactory.withSession(s => {
     val endpoint = getEndpoint(s, domain, name)
@@ -38,13 +46,14 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     s.delete(endpoint)
   })
 
-  def listEndpoints(domain:String): Seq[Endpoint] = sessionFactory.withSession(s => {
-    listQuery[Endpoint](s, "allEndpoints", Map())
+  def listEndpoints(domain:String): Seq[EndpointDef] = sessionFactory.withSession(s => {
+    listQuery[Endpoint](s, "endpointsByDomain", Map("domain_name" -> domain)).map(toEndpointDef(_))
   })
 
-  def createOrUpdateRepairAction(domain:String, a: RepairAction) {
-    sessionFactory.withSession(_.saveOrUpdate(a))
-  }
+  def createOrUpdateRepairAction(domain:String, a: RepairActionDef) = sessionFactory.withSession(s => {
+    val pair = getPair(s, domain, a.pair)
+    s.saveOrUpdate(fromRepairActionDef(pair, a))
+  })
 
   def deleteRepairAction(domain:String, name: String, pairKey: String) {
     sessionFactory.withSession(s => {
@@ -59,7 +68,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     val up = getEndpoint(s, domain, p.upstreamName)
     val down = getEndpoint(s, domain, p.downstreamName)
     val dom = getDomain(domain)
-    val toUpdate = new Pair(p.pairKey, dom, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
+    val toUpdate = new Pair(p.key, dom, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
     s.saveOrUpdate(toUpdate)
   })
 
@@ -68,13 +77,16 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     deletePairInSession(s, domain, pair)
   })
 
-  def listPairs(domain:String) = sessionFactory.withSession(s => listQuery[Pair](s, "allPairs", Map()))
+  def listPairs(domain:String) = sessionFactory.withSession(s => listQuery[Pair](s, "pairsByDomain", Map("domain_name" -> domain)).map(toPairDef(_)))
 
-  def listRepairActionsForPair(domain:String, pair: DiffaPair): Seq[RepairAction] =
-    sessionFactory.withSession(s => getRepairActionsInPair(s, domain, pair))
+  def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] =
+    sessionFactory.withSession(s => {
+      getRepairActionsInPair(s, domain, pairKey).map(toRepairActionDef(_))
+    })
 
-  def listEscalations(domain:String) = sessionFactory.withSession(s =>
-    listQuery[Escalation](s, "allEscalations", Map()))
+  def listEscalations(domain:String) = sessionFactory.withSession(s => {
+    listQuery[Escalation](s, "escalationsByDomain", Map("domain_name" -> domain)).map(toEscalationDef(_))
+  })
 
   def deleteEscalation(domain:String, name: String, pairKey: String) = {
     sessionFactory.withSession(s => {
@@ -83,32 +95,25 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     })
   }
 
-  def createOrUpdateEscalation(domain:String, e: Escalation) = sessionFactory.withSession( s => s.saveOrUpdate(e) )
-
-  def listEscalationsForPair(domain:String, pair: DiffaPair) =
-    sessionFactory.withSession(s => getEscalationsForPair(s, domain, pair))
-
-  private def getRepairActionsInPair(s: Session, domain:String, pair: DiffaPair): Seq[RepairAction] =
-    listQuery[RepairAction](s, "repairActionsByPair", Map("pair_key" -> pair.key,
-                                                          "domain_name" -> pair.domain.name))
-
-  private def getEscalationsForPair(s: Session, domain:String, pair: DiffaPair): Seq[Escalation] =
-    listQuery[Escalation](s, "escalationsByPair", Map("pair_key" -> pair.key,
-                                                      "domain_name" -> pair.domain.name))
-
-  def listRepairActions(domain:String) : Seq[RepairAction] = sessionFactory.withSession(s =>
-    listQuery[RepairAction](s, "allRepairActions", Map()))
-
-  def createOrUpdateUser(domain:String, u: User) = sessionFactory.withSession(s => s.saveOrUpdate(u))
-
-  def deleteUser(domain:String, name: String) = sessionFactory.withSession(s => {
-    val user = getUser(s, domain, name)
-    s.delete(user)
+  def createOrUpdateEscalation(domain:String, e: EscalationDef) = sessionFactory.withSession( s => {
+    val pair = getPair(s, domain, e.pair)
+    val escalation = fromEscalationDef(pair,e)
+    s.saveOrUpdate(escalation)
   })
-  
-  def listUsers(domain:String) : Seq[User] = sessionFactory.withSession(s => {
-    listQuery[User](s, "allUsers", Map())
-  })
+
+  def listEscalationsForPair(domain:String, pairKey: String) : Seq[EscalationDef] =
+    sessionFactory.withSession(s => getEscalationsForPair(s, domain, pairKey).map(toEscalationDef(_)))
+
+  private def getRepairActionsInPair(s: Session, domain:String, pairKey: String): Seq[RepairAction] =
+    listQuery[RepairAction](s, "repairActionsByPair", Map("pair_key" -> pairKey,
+                                                          "domain_name" -> domain))
+
+  private def getEscalationsForPair(s: Session, domain:String, pairKey:String): Seq[Escalation] =
+    listQuery[Escalation](s, "escalationsByPair", Map("pair_key" -> pairKey,
+                                                      "domain_name" -> domain))
+
+  def listRepairActions(domain:String) : Seq[RepairActionDef] = sessionFactory.withSession(s =>
+    listQuery[RepairAction](s, "repairActionsByDomain", Map("domain_name" -> domain)).map(toRepairActionDef(_)))
 
   def getPairsForEndpoint(domain:String, epName:String):Seq[Pair] = sessionFactory.withSession(s => {
     val q = s.createQuery("SELECT p FROM Pair p WHERE p.upstream.name = :epName OR p.downstream.name = :epName")
@@ -117,10 +122,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
     q.list.map(_.asInstanceOf[Pair]).toSeq
   })
 
-  def getEndpoint(domain:String, name: String) = sessionFactory.withSession(s => getEndpoint(s, domain, name))
-  def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
-  def getUser(domain:String, name: String) : User = sessionFactory.withSession(s => getUser(s, domain, name))
-  def getRepairAction(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => getRepairAction(s, domain, name, pairKey))
+  def getEndpointDef(domain:String, name: String) = sessionFactory.withSession(s => toEndpointDef(getEndpoint(s, domain, name)))
+  def getPairDef(domain:String, key: String) = sessionFactory.withSession(s => toPairDef(getPair(s, domain, key)))
+  def getRepairActionDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toRepairActionDef(getRepairAction(s, domain, name, pairKey)))
 
   def allConfigOptions(domain:String) = {
     sessionFactory.withSession(s => {
@@ -140,23 +144,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
   def setConfigOption(domain:String, key:String, value:String) = writeConfigOption(domain, key, value)
   def clearConfigOption(domain:String, key:String) = deleteConfigOption(domain, key)
 
-  private def getEndpoint(s: Session, domain:String, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint %s".format(name))
-  private def getUser(s: Session, domain:String, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
-
-  private def getPair(s: Session, domain:String, key: String) = singleQuery[DiffaPair](s, "pairByKey", Map("key" -> key), "pair %s".format(key))
-
-  private def getRepairAction(s: Session, domain:String, name: String, pairKey: String) =
-    singleQuery[RepairAction](s, "repairActionsByNameAndPair",
-                              Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
-                              "repair action %s for pair %s".format(name,pairKey))
-  private def getEscalation(s: Session, domain:String, name: String, pairKey: String) =
-    singleQuery[Escalation](s, "escalationsByNameAndPair",
-                            Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
-                            "esclation %s for pair %s".format(name,pairKey))
-
   def deletePairInSession(s:Session, domain:String, pair:DiffaPair) = {
-    listRepairActionsForPair(domain, pair).foreach(s.delete)
-    listEscalationsForPair(domain, pair).foreach(s.delete)
+    getRepairActionsInPair(s, domain, pair.key).foreach(s.delete)
+    getEscalationsForPair(s, domain, pair.key).foreach(s.delete)
     s.delete(pair)
   }
 

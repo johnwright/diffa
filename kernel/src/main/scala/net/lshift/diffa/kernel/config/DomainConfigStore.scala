@@ -21,43 +21,37 @@ import scala.collection.JavaConversions._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
-import org.quartz.CronExpression
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
+import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
 
 /**
  * Provides general configuration options within the scope of a particular domain.
  */
 trait DomainConfigStore {
-  def createOrUpdateEndpoint(domain:String, endpoint: Endpoint): Unit
-  def deleteEndpoint(domain:String, name: String): Unit
-  def listEndpoints(domain:String) : Seq[Endpoint]
 
-  def createOrUpdatePair(domain:String, pairDef: PairDef): Unit
-  def deletePair(domain:String, key: String): Unit
-  def listPairs(domain:String) : Seq[Pair]
+  def createOrUpdateEndpoint(domain:String, endpoint: EndpointDef) : Endpoint
+  def deleteEndpoint(domain:String, name: String) : Unit
+  def listEndpoints(domain:String) : Seq[EndpointDef]
 
-  def createOrUpdateRepairAction(domain:String, action: RepairAction): Unit
-  def deleteRepairAction(domain:String, name: String, pairKey: String): Unit
+  def createOrUpdatePair(domain:String, pairDef: PairDef) : Unit
+  def deletePair(domain:String, key: String) : Unit
+  def listPairs(domain:String) : Seq[PairDef]
 
-  def listRepairActions(domain:String) : Seq[RepairAction]
-  def listRepairActionsForPair(domain:String, pair: Pair): Seq[RepairAction]
+  def createOrUpdateRepairAction(domain:String, action: RepairActionDef) : Unit
+  def deleteRepairAction(domain:String, name: String, pairKey: String) : Unit
 
-  def listEscalations(domain:String): Seq[Escalation]
+  def listRepairActions(domain:String) : Seq[RepairActionDef]
+  def listRepairActionsForPair(domain:String, key: String) : Seq[RepairActionDef]
+
+  def listEscalations(domain:String) : Seq[EscalationDef]
   def deleteEscalation(domain:String, s: String, s1: String)
-  def createOrUpdateEscalation(domain:String, escalation: Escalation)
-  def listEscalationsForPair(domain:String, pair: Pair): Seq[Escalation]
+  def createOrUpdateEscalation(domain:String, escalation : EscalationDef)
+  def listEscalationsForPair(domain:String, key: String) : Seq[EscalationDef]
 
-  def getEndpoint(domain:String, name: String): Endpoint
-  def getPair(domain:String, key: String): Pair
+  def getEndpointDef(domain:String, name: String) : EndpointDef
+  def getPairDef(domain:String, key: String) : PairDef
 
-  def getUser(domain:String, name: String) : User
-  def getRepairAction(domain:String, name: String, pairKey: String): RepairAction
-
-  def createOrUpdateUser(domain:String, user: User): Unit
-  def deleteUser(domain:String, name: String): Unit
-  def listUsers(domain:String) : Seq[User]
-
-
+  def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
 
   /**
    * Retrieves all (domain-specific, non-internal) agent configuration options.
@@ -165,10 +159,6 @@ case class Endpoint(
         }
       }
     }).toList
-
-  def validate(path:String = null) {
-    // TODO: Add validation of endpoint parameters
-  }
 }
 
 case class Pair(
@@ -183,6 +173,14 @@ case class Pair(
   def this() = this(key = null)
 
   def identifier = "%s/%s".format(domain,key)
+
+  override def equals(that:Any) = that match {
+    case p:Pair => p.key == key && p.domain == domain
+    case _      => false
+  }
+
+  // TODO This looks a bit strange
+  override def hashCode = 31 * (31 + key.hashCode) + domain.hashCode
 }
 
 object Pair {
@@ -190,35 +188,6 @@ object Pair {
   def fromIdentifier(id:String) = {
     val Array(domain,key) = id.split("/")
     (domain,key)
-  }
-}
-
-case class PairDef(
-  @BeanProperty var pairKey: String = null,
-  // TODO Should the domain property actually be on the *Def objects?
-  @BeanProperty var domain: String = null,
-  @BeanProperty var versionPolicyName: String = null,
-  @BeanProperty var matchingTimeout: Int = 0,
-  @BeanProperty var upstreamName: String = null,
-  @BeanProperty var downstreamName: String = null,
-  @BeanProperty var scanCronSpec: String = null) {
-
-  def this() = this(pairKey = null)
-
-  def validate(path:String = null) {
-    val pairPath = ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey))
-
-    // Ensure that cron specs are valid
-    if (scanCronSpec != null) {
-      try {
-        // Will throw an exception if the expression is invalid. The exception message will also include useful
-        // diagnostics of why it is wrong.
-        new CronExpression(scanCronSpec)
-      } catch {
-        case ex =>
-          throw new ConfigValidationException(pairPath, "Schedule '" + scanCronSpec + "' is not a valid: " + ex.getMessage)
-      }
-    }
   }
 }
 
@@ -283,33 +252,8 @@ case class Escalation (
   @BeanProperty var event: String = null,
   @BeanProperty var origin: String = null
 ) {
-  //import EscalationEvent._
-  //import EscalationOrigin._
-  //import EscalationActionType._
 
   def this() = this(name = null)
-
-//  def validate(path:String = null) {
-//    val escalationPath = ValidationUtil.buildPath(
-//      ValidationUtil.buildPath(path, "pair", Map("key" -> pair.key)),
-//      "escalation", Map("name" -> name))
-//
-//    // Ensure that the event is supported
-//    this.event = event match {
-//      case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
-//      case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
-//    }
-//    // Ensure that the origin is supported
-//    this.origin = origin match {
-//      case SCAN => origin
-//      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
-//    }
-//    // Ensure that the action type is supported
-//    this.actionType = actionType match {
-//      case REPAIR => actionType
-//      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
-//    }
-//  }
 }
 
 /**

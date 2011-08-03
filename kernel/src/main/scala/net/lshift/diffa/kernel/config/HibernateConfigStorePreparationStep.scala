@@ -49,10 +49,11 @@ class HibernateConfigStorePreparationStep
       case None          => {
         (new SchemaExport(config)).create(false, true)
 
-        // Since we are creating a fresh schema, we need to populate the schema version as well
+        // Since we are creating a fresh schema, we need to populate the schema version as well as inserting the default domain
 
         val createStmt = AddSchemaVersionMigrationStep.schemaVersionCreateStatement(Dialect.getDialect(config.getProperties))
-        val insertStmt = HibernatePreparationUtils.schemaVersionInsertStatement(migrationSteps.last.versionId)
+        val insertSchemaVersion = HibernatePreparationUtils.schemaVersionInsertStatement(migrationSteps.last.versionId)
+        val insertDefaultDomain = HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN)
 
         sf.withSession(s => {
           s.doWork(new Work() {
@@ -61,7 +62,9 @@ class HibernateConfigStorePreparationStep
 
               try {
                 stmt.execute(createStmt)
-                stmt.execute(insertStmt)
+                // Make sure that the DB has a version and that the default domain is in the DB
+                stmt.execute(insertSchemaVersion)
+                stmt.execute(insertDefaultDomain)
               } catch {
                 case ex =>
                   println("Failed to prepare the schema_version table")

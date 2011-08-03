@@ -28,6 +28,7 @@ import net.lshift.diffa.kernel.escalation.EscalationManagerTest.Scenario
 import net.lshift.diffa.kernel.config._
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theories, Theory}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.frontend.EscalationDef
 
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
@@ -41,10 +42,9 @@ class EscalationManagerTest {
   val escalationManager = new EscalationManager(configStore, actionsClient)
 
   def expectConfigStore(event:String) = {
-    expect(configStore.getPair(domain, pairKey)).andReturn(pair).anyTimes()
 
-    expect(configStore.listEscalationsForPair(EasyMock.eq(domain), EasyMock.isA(classOf[DiffaPair]))).andReturn(
-      List(Escalation("foo", pair, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
+    expect(configStore.listEscalationsForPair(domain, pairKey)).andReturn(
+      List(EscalationDef("foo", pairKey, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
     ).anyTimes()
 
     replay(configStore)

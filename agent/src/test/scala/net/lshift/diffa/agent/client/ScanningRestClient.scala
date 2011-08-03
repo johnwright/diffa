@@ -16,15 +16,14 @@ package net.lshift.diffa.agent.client
  * limitations under the License.
  */
 
-import net.lshift.diffa.messaging.json.AbstractRestClient
-import net.lshift.diffa.kernel.client.ScanningClient
 import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
 
 /**
  * A RESTful client to manage participant scanning.
  */
-class ScanningRestClient(u:String) extends AbstractRestClient(u, "rest/scanning/") with ScanningClient {
+class ScanningRestClient(serverRootUrl:String, domain:String)
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/scanning/") {
 
   def startScan(pairKey: String) = {
     val p = resource.path("pairs").path(pairKey).path("scan")

@@ -25,5 +25,5 @@ class DefaultEventFormatMapper extends EventFormatMapper {
 
   val contentType = "application/json"
 
-  def map(event: String, endpoint: String) = Seq(JSONEncodingUtils.deserializeEvent(event))
+  def map(event: String, inboundURL: String) = Seq(JSONEncodingUtils.deserializeEvent(event))
 }

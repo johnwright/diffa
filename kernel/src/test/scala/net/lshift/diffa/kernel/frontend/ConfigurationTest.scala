@@ -31,6 +31,7 @@ import net.lshift.diffa.kernel.frontend.DiffaConfig._
 import collection.mutable.HashSet
 import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
+import net.lshift.diffa.kernel.frontend.FrontendConversions._
 
 /**
  * Test cases for the Configuration frontend.
@@ -49,6 +50,7 @@ class ConfigurationTest {
   private val systemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sf)
 
   private val configuration = new Configuration(domainConfigStore,
+                                                systemConfigStore,
                                                 matchingManager,
                                                 versionCorrelationStoreFactory,
                                                 pairManager,
@@ -77,13 +79,13 @@ class ConfigurationTest {
 
   @Test
   def shouldGenerateExceptionWhenInvalidConfigurationIsApplied() {
-    val e1 = Endpoint(name = "upstream1", scanUrl = "http://localhost:1234/scan", contentType = "application/json",
+    val e1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:1234/scan", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml")
-    val e2 = Endpoint(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json")
+    val e2 = EndpointDef(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json")
     val conf = new DiffaConfig(
       endpoints = Set(e1, e2),
       pairs = Set(
-        PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "bad-cron-spec"))
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "bad-cron-spec"))
     )
 
     try {
@@ -98,12 +100,12 @@ class ConfigurationTest {
   @Test
   def shouldApplyConfigurationToEmptySystem() {
 
-    val ep1 = Endpoint(name = "upstream1", scanUrl = "http://localhost:1234", contentType = "application/json",
+    val ep1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:1234", contentType = "application/json",
                 inboundUrl = "http://inbound", inboundContentType = "application/xml",
                 categories = Map(
                   "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
                   "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
-    val ep2 = Endpoint(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json",
+    val ep2 = EndpointDef(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json",
           categories = Map(
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
@@ -114,28 +116,28 @@ class ConfigurationTest {
                   User("def", HashSet(Domain(name = "domain")), "b@example.com")),
       endpoints = Set(ep1, ep2),
       pairs = Set(
-        PairDef("ab", "domain", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
-        PairDef("ac", "domain", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
+        PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
       repairActions = Set(RepairActionDef("Resend Sauce", "resend", "pair", "ab")),
       escalations = Set(EscalationDef("Resend Missing", "ab", "Resend Sauce", "repair", "downstream-missing", "scan"))
     )
 
     val ab = DiffaPair(key = "ab", domain = Domain(name="domain"), matchingTimeout = 5,
-                       versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = ep1, downstream = ep2)
+                       versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
 
     val ac = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
-                       versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = ep1, downstream = ep2)
+                       versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
 
 
-    expect(endpointListener.onEndpointAvailable(ep1)).once
-    expect(endpointListener.onEndpointAvailable(ep2)).once
+    expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep1))).once
+    expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep2))).once
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair(ab)).once
-    expect(scanScheduler.onUpdatePair("domain","ab")).once
+    expect(scanScheduler.onUpdatePair(ab)).once
     expect(sessionManager.onUpdatePair(ab)).once
     expect(pairManager.startActor(pairInstance("ac"))).once
     expect(matchingManager.onUpdatePair(ac)).once
-    expect(scanScheduler.onUpdatePair("domain","ac")).once
+    expect(scanScheduler.onUpdatePair(ac)).once
     expect(sessionManager.onUpdatePair(ac)).once
     replayAll
 
@@ -152,13 +154,13 @@ class ConfigurationTest {
     resetAll
 
       // upstream1 is kept but changed
-    val ep1 = Endpoint(name = "upstream1", scanUrl = "http://localhost:6543/scan", contentType = "application/json",
+    val ep1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:6543/scan", contentType = "application/json",
           inboundUrl = "http://inbound", inboundContentType = "application/xml",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
       // downstream1 is gone, downstream2 is added
-    val ep2 = Endpoint(name = "downstream2", scanUrl = "http://localhost:54321/scan", contentType = "application/json",
+    val ep2 = EndpointDef(name = "downstream2", scanUrl = "http://localhost:54321/scan", contentType = "application/json",
           categories = Map(
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
@@ -173,32 +175,41 @@ class ConfigurationTest {
         // gaa is gone, gcc is created, gbb is the same
       pairs = Set(
           // ab has moved from gaa to gcc
-        PairDef("ab", "domain", "same", 5, "upstream1", "downstream2", "0 * * * * ?"),
+        PairDef("ab", "same", 5, "upstream1", "downstream2", "0 * * * * ?"),
           // ac is gone
-        PairDef("ad", "domain", "same", 5, "upstream1", "downstream2")),
+        PairDef("ad", "same", 5, "upstream1", "downstream2")),
       // name of repair action is changed
       repairActions = Set(RepairActionDef("Resend Source", "resend", "pair", "ab")),
       escalations = Set(EscalationDef("Resend Another Missing", "ab", "Resend Source", "repair", "downstream-missing", "scan"))
     )
 
+    val ab = DiffaPair(key = "ab", domain = Domain(name="domain"), matchingTimeout = 5,
+                          versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
+
+    val ac = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
+                          versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
+
+    val ad = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
+                          versionPolicyName = "same", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
+
     expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onUpdatePair("domain","ab")).once
+    expect(scanScheduler.onUpdatePair(ab)).once
     expect(sessionManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(pairManager.stopActor(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onDeletePair("domain","ac")).once
+    expect(scanScheduler.onDeletePair(ac)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onUpdatePair("domain","ad")).once
+    expect(scanScheduler.onUpdatePair(ad)).once
     expect(sessionManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
 
     expect(endpointListener.onEndpointRemoved("downstream1")).once
-    expect(endpointListener.onEndpointAvailable(ep1)).once
-    expect(endpointListener.onEndpointAvailable(ep2)).once
+    expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep1))).once
+    expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep2))).once
     replayAll
 
     configuration.applyConfiguration("domain",config)
@@ -217,12 +228,15 @@ class ConfigurationTest {
     shouldApplyConfigurationToEmptySystem
     resetAll
 
+    val ab = DiffaPair(key = "ab", domain = Domain(name="domain"))
+    val ac = DiffaPair(key = "ac", domain = Domain(name="domain"))
+
     expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(pairManager.stopActor(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(scanScheduler.onDeletePair("domain","ab")).once
-    expect(scanScheduler.onDeletePair("domain","ac")).once
+    expect(scanScheduler.onDeletePair(ab)).once
+    expect(scanScheduler.onDeletePair(ac)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(sessionManager.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once

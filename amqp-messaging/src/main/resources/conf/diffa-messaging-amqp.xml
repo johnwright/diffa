@@ -39,8 +39,8 @@
     <constructor-arg ref="changesFrontend" />
     <constructor-arg>
       <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="diffaConfigStore"/>
-        <property name="targetMethod" value="configOptionOrDefault"/>
+        <property name="targetObject" ref="systemConfigStore"/>
+        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
         <property name="arguments">
           <list>
             <value>diffa.amqp.rpc.timeout</value>

@@ -20,8 +20,8 @@ import reflect.BeanProperty
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.config.RepairAction
 import net.lshift.diffa.kernel.config.RepairAction._
-import scala.Predef.Pair
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.frontend.RepairActionDef
 
 /**
  * Interface supported by clients capable of listing and invoking actions for pairs.
@@ -54,14 +54,14 @@ case class Actionable (
   @BeanProperty var name:String,
   @BeanProperty var scope:String,
   @BeanProperty var path:String,
-  @BeanProperty var pair:DiffaPair) {
+  @BeanProperty var pair:String) {
 
  def this() = this(null, null, null, null)
 }
 
 object Actionable {
-  def fromRepairAction(a: RepairAction): Actionable = {
-    val path = "/" + a.pair.domain.name + "/actions/" + a.pair.key + "/" + a.name + (a.scope match {
+  def fromRepairAction(domain:String, a: RepairActionDef): Actionable = {
+    val path = "/" + domain + "/actions/" + a.pair + "/" + a.name + (a.scope match {
       case ENTITY_SCOPE =>  "/${id}"
       case PAIR_SCOPE => ""
     })

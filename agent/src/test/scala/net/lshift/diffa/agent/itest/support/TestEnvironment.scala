@@ -33,6 +33,7 @@ import collection.mutable.HashMap
 import net.lshift.diffa.agent.client._
 import java.util.List
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
+import net.lshift.diffa.kernel.frontend.{EndpointDef, DomainDef, PairDef}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -71,6 +72,9 @@ class TestEnvironment(val pairKey: String,
     }
   }
 
+  // Domain
+  val domain = DomainDef(name="domain")
+
   def serverRoot = agentURL
   val contentType = "application/json"
   val matchingTimeout = 1  // 1 second
@@ -80,16 +84,14 @@ class TestEnvironment(val pairKey: String,
   val versionForDownstream = versionScheme.downstreamVersionGen
 
   // Clients
-  val configurationClient:ConfigurationClient = new ConfigurationRestClient(serverRoot)
-  val diffClient:DifferencesClient = new DifferencesRestClient(serverRoot)
-  val actionsClient:ActionsClient = new ActionsRestClient(serverRoot)
-  val escalationsClient:EscalationsClient = new EscalationsRestClient(serverRoot)
+  val configurationClient:ConfigurationRestClient = new ConfigurationRestClient(serverRoot, domain.name)
+  val diffClient:DifferencesRestClient = new DifferencesRestClient(serverRoot, domain.name)
+  val actionsClient:ActionsClient = new ActionsRestClient(serverRoot, domain.name)
+  val escalationsClient:EscalationsRestClient = new EscalationsRestClient(serverRoot, domain.name)
   val changesClient:ChangesClient = changesClientBuilder(this)
-  val usersClient:UsersClient = new UsersRestClient(serverRoot)
-  val scanningClient:ScanningClient = new ScanningRestClient(serverRoot)
-
-  // Domain
-  val domain = "domain"
+  val usersClient:UsersRestClient = new UsersRestClient(serverRoot)
+  val scanningClient:ScanningRestClient = new ScanningRestClient(serverRoot, domain.name)
+  val systemConfig = new SystemConfigRestClient(serverRoot)
 
   // Participants
   val upstreamEpName = pairKey + "-us"
@@ -123,20 +125,24 @@ class TestEnvironment(val pairKey: String,
   participants.startDownstreamServer(downstream, downstream, downstream)
 
   // Ensure that the configuration exists
-  configurationClient.declareEndpoint(Endpoint(name = upstreamEpName,
+  systemConfig.declareDomain(domain)
+  configurationClient.declareEndpoint(EndpointDef(name = upstreamEpName,
     scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
-    inboundUrl = participants.inboundUrl, inboundContentType = contentType,
+    inboundUrl = changesClient.inboundURL, inboundContentType = contentType,
     categories = categories))
-  configurationClient.declareEndpoint(Endpoint(name = downstreamEpName,
+  configurationClient.declareEndpoint(EndpointDef(name = downstreamEpName,
     scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
     versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
-    inboundUrl = participants.inboundUrl, inboundContentType = contentType,
+    inboundUrl = changesClient.inboundURL, inboundContentType = contentType,
     categories = categories))
-  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
-  configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
+
   createPair
 
-  def createPair = configurationClient.declarePair(PairDef(pairKey, domain, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
+  configurationClient.declareRepairAction(entityScopedActionName, entityScopedActionUrl, RepairAction.ENTITY_SCOPE, pairKey)
+  configurationClient.declareEscalation(escalationName, pairKey, entityScopedActionName, EscalationActionType.REPAIR, EscalationEvent.DOWNSTREAM_MISSING, EscalationOrigin.SCAN)
+
+
+  def createPair = configurationClient.declarePair(PairDef(pairKey, versionScheme.policyName, matchingTimeout, upstreamEpName, downstreamEpName, "0 15 10 15 * ?"))
   def deletePair() {
    configurationClient.deletePair(pairKey)
   }
@@ -158,7 +164,7 @@ class TestEnvironment(val pairKey: String,
     val attributes = pack(someDate = someDate, someString = someString)
 
     upstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
-    changesClient.onChangeEvent(new UpstreamChangeEvent(upstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
+    changesClient.onChangeEvent(new UpstreamChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
   def addAndNotifyDownstream(id:String, content:String, someDate:DateTime, someString:String) {
     val attributes = pack(someDate = someDate, someString = someString)
@@ -166,9 +172,9 @@ class TestEnvironment(val pairKey: String,
     downstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
+        changesClient.onChangeEvent(new DownstreamChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
       case CorrelatedVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated,
+        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated,
           versionForUpstream(content), versionForDownstream(content)))
     }
   }

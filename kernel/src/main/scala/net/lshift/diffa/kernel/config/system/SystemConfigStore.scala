@@ -1,5 +1,7 @@
 package net.lshift.diffa.kernel.config.system
 
+import net.lshift.diffa.kernel.config.{User, Endpoint, Domain, Pair => DiffaPair}
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -15,8 +17,6 @@ package net.lshift.diffa.kernel.config.system
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import net.lshift.diffa.kernel.config.{Endpoint, Domain, Pair => DiffaPair}
 
 /**
  * This provides configuration options for the entire system and hence should only be
@@ -38,14 +38,31 @@ trait SystemConfigStore {
   def clearSystemConfigOption(key:String)
   def maybeSystemConfigOption(key:String) : Option[String]
 
+  // TODO This requires a unit test
+  def systemConfigOptionOrDefault(key:String, defaultVal:String) : String
+
   /**
-   * Enumerate all pairs of all domains
+   * Return the internal representation of a pair
    */
-  def listPairs : Seq[DiffaPair]//= listDomains.flatMap(d => listPairs(d.name))
+  def getPair(domain:String, pairKey:String) : DiffaPair
 
   /**
    * Enumerate all pairs of all domains
    */
-  def listEndpoints : Seq[Endpoint]// = listDomains.flatMap(d => listEndpoints(d.name))
+  def listPairs : Seq[DiffaPair]
+
+  /**
+   * Enumerate all pairs of all domains
+   */
+  def listEndpoints : Seq[Endpoint]
+
+
+  // CRUD operations for users
+  // TODO should this be in a separate interface?
+
+  def createOrUpdateUser(user: User) : Unit
+  def deleteUser(name: String): Unit
+  def listUsers : Seq[User]
+  def getUser(name: String) : User
 
 }

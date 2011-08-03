@@ -49,7 +49,7 @@
         <bean class="net.lshift.diffa.kernel.differencing.SameVersionPolicy">
             <constructor-arg ref="versionCorrelationStoreFactory" />
             <constructor-arg ref="sessionManager" />
-            <constructor-arg ref="diffaConfigStore" />
+            <constructor-arg ref="systemConfigStore" />
             <constructor-arg ref="diagnosticsManager" />
           </bean>
       </list>
@@ -65,7 +65,7 @@
         <bean class="net.lshift.diffa.kernel.differencing.CorrelatedVersionPolicy">
           <constructor-arg ref="versionCorrelationStoreFactory" />
           <constructor-arg ref="sessionManager" />
-          <constructor-arg ref="diffaConfigStore" />
+          <constructor-arg ref="systemConfigStore" />
           <constructor-arg ref="diagnosticsManager" />
         </bean>
       </list>
@@ -78,7 +78,7 @@
     ============
   -->
   <bean id="matchingManager" class="net.lshift.diffa.kernel.matching.LocalEventMatchingManager" destroy-method="close">
-    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
   </bean>
 
   <!--
@@ -87,7 +87,7 @@
     ==============
   -->
   <bean id="scanScheduler" class="net.lshift.diffa.kernel.scheduler.QuartzScanScheduler" destroy-method="close">
-    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
     <constructor-arg ref="sessionManager" />
     <constructor-arg value="DiffaScanScheduler" />
   </bean>
@@ -98,7 +98,7 @@
     ============
   -->
   <bean id="sessionManager" class="net.lshift.diffa.kernel.differencing.DefaultSessionManager">
-    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
     <constructor-arg ref="sessionCacheProvider" />
     <constructor-arg ref="matchingManager" />
     <constructor-arg ref="versionPolicyManager" />
@@ -114,7 +114,7 @@
   -->
 
   <bean id="escalationManager" class="net.lshift.diffa.kernel.escalation.EscalationManager">
-    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="domainConfigStore" />
     <constructor-arg ref="actionsFrontend" />
   </bean>
 
@@ -126,7 +126,7 @@
 
   <bean id="notifier" class="net.lshift.diffa.kernel.notifications.EventNotifier" destroy-method="destroy">
     <constructor-arg ref="sessionManager" />
-    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
     <constructor-arg>
       <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
         <property name="targetClass" value="org.joda.time.Period"/>
@@ -134,8 +134,8 @@
         <property name="arguments">
           <list>
             <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-              <property name="targetObject" ref="diffaConfigStore"/>
-              <property name="targetMethod" value="configOptionOrDefault"/>
+              <property name="targetObject" ref="systemConfigStore"/>
+              <property name="targetMethod" value="systemConfigOptionOrDefault"/>
               <property name="arguments">
                 <list>
                   <value>event.notifier.quiet.time</value>
@@ -166,8 +166,8 @@
         </constructor-arg>
         <constructor-arg index="2">
           <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-            <property name="targetObject" ref="diffaConfigStore"/>
-            <property name="targetMethod" value="configOptionOrDefault"/>
+            <property name="targetObject" ref="systemConfigStore"/>
+            <property name="targetMethod" value="systemConfigOptionOrDefault"/>
             <property name="arguments">
               <list>
                 <value>diffa.host</value>
@@ -214,7 +214,7 @@
   -->
 
   <bean id="inboundEndpointManager" class="net.lshift.diffa.kernel.participants.InboundEndpointManager">
-    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
   </bean>
 
     <!--
@@ -233,7 +233,7 @@
 
   <bean id="pairActorSupervisor" class="net.lshift.diffa.kernel.actors.PairActorSupervisor">
     <constructor-arg ref="versionPolicyManager"/>
-    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="systemConfigStore"/>
     <constructor-arg ref="notificationCentre" />
     <constructor-arg ref="notificationCentre" />
     <constructor-arg ref="participantFactory"/>
@@ -241,8 +241,8 @@
     <constructor-arg ref="diagnosticsManager" />
     <constructor-arg>
       <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="diffaConfigStore"/>
-        <property name="targetMethod" value="configOptionOrDefault"/>
+        <property name="targetObject" ref="systemConfigStore"/>
+        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
         <property name="arguments">
           <list>
             <value>diffa.change.busy.timeout</value>
@@ -253,8 +253,8 @@
     </constructor-arg>
     <constructor-arg>
       <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="diffaConfigStore"/>
-        <property name="targetMethod" value="configOptionOrDefault"/>
+        <property name="targetObject" ref="systemConfigStore"/>
+        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
         <property name="arguments">
           <list>
             <value>diffa.change.quiet.timeout</value>
@@ -271,7 +271,8 @@
     =============
   -->
   <bean id="configurationFrontend" class="net.lshift.diffa.kernel.frontend.Configuration">
-    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="domainConfigStore"/>
+    <constructor-arg ref="systemConfigStore"/>
     <constructor-arg ref="matchingManager"/>
     <constructor-arg ref="versionCorrelationStoreFactory"/>
     <constructor-arg ref="pairActorSupervisor"/>
@@ -280,12 +281,13 @@
     <constructor-arg ref="scanScheduler" />
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
-    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="systemConfigStore"/>
     <constructor-arg ref="pairActorSupervisor"/>
     <constructor-arg ref="matchingManager"/>
   </bean>
   <bean id="actionsFrontend" class="net.lshift.diffa.kernel.frontend.wire.ActionsProxy">
-    <constructor-arg ref="diffaConfigStore"/>
+    <constructor-arg ref="domainConfigStore"/>
+    <constructor-arg ref="systemConfigStore"/>
     <constructor-arg ref="participantFactory" />
     <constructor-arg ref="diagnosticsManager" />
   </bean>
@@ -325,8 +327,20 @@
       </list>
     </property>
   </bean>
-  <bean id="diffaConfigStore" class="net.lshift.diffa.kernel.config.HibernateDomainConfigStore">
-    <constructor-arg index="0" ref="diffaSessionFactory" />
+
+  <!--
+    ===========
+      Configuration
+    ===========
+  -->
+
+  <bean id="domainConfigStore" class="net.lshift.diffa.kernel.config.HibernateDomainConfigStore">
+    <constructor-arg ref="diffaSessionFactory" />
+  </bean>
+
+  <bean id="systemConfigStore" class="net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore">
+    <constructor-arg ref="domainConfigStore" />
+    <constructor-arg ref="diffaSessionFactory" />
   </bean>
 
   <!--
@@ -343,7 +357,7 @@
       </bean>
     </constructor-arg>
     <constructor-arg value="org.apache.lucene.store.MMapDirectory" />
-    <constructor-arg ref="diffaConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
   </bean>
 
   <!--

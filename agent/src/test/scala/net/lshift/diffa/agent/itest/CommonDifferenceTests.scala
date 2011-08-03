@@ -30,8 +30,8 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import java.util.{UUID, Properties}
 import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope, SessionEvent}
-import net.lshift.diffa.kernel.client.DifferencesClient
 import org.joda.time.DateTime
+import net.lshift.diffa.agent.client.DifferencesRestClient
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -57,14 +57,14 @@ trait CommonDifferenceTests {
     }
   }
 
-  def getReport(pair:String, from:DateTime, until:DateTime) : Array[SessionEvent]= {
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+  def getReport(from:DateTime, until:DateTime) : Array[SessionEvent]= {
+    var sessionId = subscribeAndRunScan(yearAgo, today)
     env.diffClient.getEvents(sessionId, env.pairKey, from, until, 0, 100)
   }
 
   @Test
   def shouldFindNoDifferencesInEmptyParticipants {
-    val diffs = getReport(env.pairKey, yearAgo, today)
+    val diffs = getReport(yearAgo, today)
     assertNotNull(diffs)
     assertTrue(diffs.isEmpty)
   }
@@ -96,12 +96,12 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, today)
     env.addAndNotifyUpstream("abc", "abcdef", someDate = yesterday, someString = "ss")
 
     val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
 
-    assertFalse(diffs.isEmpty)
+    assertFalse("Session(%s) : %s -> %s".format(sessionId, yearAgo, nextYear),diffs.isEmpty)
   }
 
   @Test
@@ -113,18 +113,18 @@ trait CommonDifferenceTests {
     for (i <- 1 to size) {
       env.addAndNotifyUpstream("" + i, "" + i, someDate = yesterday, someString = "ss")
     }
-    val sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    val sessionId = subscribeAndRunScan(yearAgo, today)
 
     val offset = 5
 
-    val diffs1 = tryAgain((d:DifferencesClient) => d.getEvents(sessionId, env.pairKey, start, end, offset, size))
+    val diffs1 = tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, start, end, offset, size))
     val max = size - offset
     val length = diffs1.size
     assertTrue("Diffs was %s, but should have been maximally %s".format(length,max), max >= length)
 
     // Select the 7th and 8th differences and validate their content
     val subset = 2
-    val diffs2 = tryAgain((d:DifferencesClient) => d.getEvents(sessionId, env.pairKey, start, end, 6, subset))
+    val diffs2 = tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, start, end, 6, subset))
 
     assertTrue("Diffs was %s, but should have been maximally %s".format(diffs2.length,subset), subset >= diffs2.length)
     // TODO [#224] Put back in
@@ -143,7 +143,7 @@ trait CommonDifferenceTests {
     val up = guid()
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, nextYear)
     env.addAndNotifyUpstream("abc", up, someDate = yesterday, someString = "ss")
 
     val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
@@ -174,7 +174,7 @@ trait CommonDifferenceTests {
     env.upstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
     env.downstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
 
-    val diffs = getReport(env.pairKey, yearAgo, today)
+    val diffs = getReport(yearAgo, today)
 
     assertNotNull(diffs)
     assertTrue(diffs.isEmpty)
@@ -186,7 +186,7 @@ trait CommonDifferenceTests {
     env.addAndNotifyUpstream("abc", "abcdef", someDate = today, someString = "ss")
     env.addAndNotifyDownstream("abc", "abcdef", someDate = today, someString = "ss")
 
-    val diffs = getReport(env.pairKey, yearAgo, today)
+    val diffs = getReport(yearAgo, today)
 
     assertNotNull(diffs)
     assertTrue(diffs.isEmpty)
@@ -197,7 +197,7 @@ trait CommonDifferenceTests {
   def scanShouldTriggerResend {
     env.withActionsServer {
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
-      subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+      subscribeAndRunScan(yearAgo, today)
       assertEquals(1, env.entityResendTally("abc"))
     }
   }
@@ -221,8 +221,8 @@ trait CommonDifferenceTests {
     }
   }
 
-  def subscribeAndRunScan(scope:SessionScope, from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
-    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.pairKey), from, until)
+  def subscribeAndRunScan(from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
+    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.domain.name, env.pairKey), from, until)
     env.diffClient.runScan(sessionId)
 
     waitForScanStatus(sessionId, PairScanState.UP_TO_DATE, n, wait)
@@ -248,7 +248,7 @@ trait CommonDifferenceTests {
   def getVerifiedDiffsWithSessionId() = {
     env.upstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
 
-    var sessionId = subscribeAndRunScan(SessionScope.forPairs(env.pairKey), yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, today)
     val diffs = pollForAllDifferences(sessionId, yearAgo, today)
 
     assertNotNull(diffs)
@@ -257,9 +257,9 @@ trait CommonDifferenceTests {
   }
 
   def pollForAllDifferences(sessionId:String, from:DateTime, until:DateTime, n:Int = 20, wait:Int = 100) =
-    tryAgain((d:DifferencesClient) => d.getEvents(sessionId, env.pairKey, from, until, 0, 100) ,n,wait)
+    tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, from, until, 0, 100) ,n,wait)
 
-  def tryAgain(poll:DifferencesClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
+  def tryAgain(poll:DifferencesRestClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
     var i = n
     var diffs = poll(env.diffClient)
     while(diffs.isEmpty && i > 0) {

@@ -34,7 +34,7 @@ import net.lshift.diffa.kernel.config.{Domain, DomainConfigStore, Pair => DiffaP
 @RunWith(classOf[ConcurrentJunitRunner])
 @Concurrent(threads = 20)
 class QuartzScanSchedulerTest {
-  val config = createStrictMock(classOf[DomainConfigStore])
+
   val systemConfig = createStrictMock(classOf[SystemConfigStore])
   val sessions = createStrictMock(classOf[SessionManager])
 
@@ -47,11 +47,11 @@ class QuartzScanSchedulerTest {
     val pair = DiffaPair(key = "PairA", domain=domain, scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq())
-    expect(config.getPair("domain", "PairA")).andReturn(pair)
+    expect(systemConfig.getPair("domain", "PairA")).andReturn(pair)
 
     replayAll()
 
-    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldAllowScheduleCreation")) { scheduler =>
+    withScheduler(new QuartzScanScheduler(systemConfig, sessions, "shouldAllowScheduleCreation")) { scheduler =>
       scheduler.onUpdatePair(pair)
       
       mb.poll(3, TimeUnit.SECONDS) match {
@@ -68,11 +68,11 @@ class QuartzScanSchedulerTest {
     val pair = DiffaPair(key = "PairB", domain=domain, scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq(pair))
-    expect(config.getPair("domain", "PairB")).andReturn(pair)
+    expect(systemConfig.getPair("domain", "PairB")).andReturn(pair)
 
     replayAll()
 
-    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldRestoreSchedulesOnStartup")) { scheduler =>
+    withScheduler(new QuartzScanScheduler(systemConfig, sessions, "shouldRestoreSchedulesOnStartup")) { scheduler =>
       mb.poll(3, TimeUnit.SECONDS) match {
         case null => fail("Scan was not triggered")
         case pair:DiffaPair => assertEquals("PairB", pair.key)
@@ -87,12 +87,12 @@ class QuartzScanSchedulerTest {
     val pair = DiffaPair(key = "PairC", domain=domain, scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq(pair))
-    expect(config.getPair("domain", "PairC")).andReturn(pair)
+    expect(systemConfig.getPair("domain", "PairC")).andReturn(pair)
 
     replayAll()
 
-    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldAllowSchedulesToBeDeleted")) { scheduler =>
-      scheduler.onDeletePair("domain","PairC")
+    withScheduler(new QuartzScanScheduler(systemConfig, sessions, "shouldAllowSchedulesToBeDeleted")) { scheduler =>
+      scheduler.onDeletePair(pair)
 
       mb.poll(3, TimeUnit.SECONDS) match {
         case null =>
@@ -109,26 +109,26 @@ class QuartzScanSchedulerTest {
     val p2 = DiffaPair(key = "PairD", domain=domain, scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq())
-    expect(config.getPair("domain","PairD")).andReturn(p1).once()
-    expect(config.getPair("domain","PairD")).andReturn(p2).times(2)
+    expect(systemConfig.getPair("domain","PairD")).andReturn(p1).once()
+    expect(systemConfig.getPair("domain","PairD")).andReturn(p2).times(2)
 
     replayAll()
 
     // Initially schedule with something too old to run, then update it with something new enough that will
-    withScheduler(new QuartzScanScheduler(config, systemConfig, sessions, "shouldAllowSchedulesToBeUpdated")) { scheduler =>
-      scheduler.onUpdatePair("domain","PairD")   // We'll get a different pair result on each call
-      scheduler.onUpdatePair("domain","PairD")
+    withScheduler(new QuartzScanScheduler(systemConfig, sessions, "shouldAllowSchedulesToBeUpdated")) { scheduler =>
+      scheduler.onUpdatePair(p1)   // We'll get a different pair result on each call
+      scheduler.onUpdatePair(p2)
 
       mb.poll(5, TimeUnit.SECONDS) match {
         case null => fail("Scan was not triggered")
         case p:DiffaPair => assertEquals("PairD", p.key)
       }
 
-      verify(config, sessions)
+      verify(sessions)
     }
   }
 
-  private def replayAll() { replay(config, systemConfig, sessions) }
+  private def replayAll() { replay(systemConfig, sessions) }
 
   private def withScheduler[T](s:QuartzScanScheduler)(f:(QuartzScanScheduler) => T) {
     try {

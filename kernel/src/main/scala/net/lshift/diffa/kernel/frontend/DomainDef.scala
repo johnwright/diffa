@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.itest.support
+package net.lshift.diffa.kernel.frontend
 
-import org.joda.time.DateTime
+import reflect.BeanProperty
 
 /**
- * Useful constants for use in test cases.
+ * Serializable representation of a domain within the context of a domain.
  */
-object TestConstants {
-  val today = new DateTime
-  val yesterday = (new DateTime).minusDays(1)
-  val yearAgo = today.minusYears(1)
-  val nextYear = today.plusYears(1)
-  val agentURL = "http://localhost:19093/diffa-agent"
-  val domain = "domain"
+case class DomainDef(@BeanProperty var name: String = null) {
+
+  def this() = this(name = null)
+
+  def validate(path:String = null) {}
+
 }

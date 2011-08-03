@@ -42,10 +42,6 @@ class DomainResource {
   def getConfigResource(@Context uri:UriInfo,
                         @PathParam("domain") domain:String) = new ConfigurationResource(config, domain, uri)
 
-  @Path("/security")
-  def getUsersResource(@Context uri:UriInfo,
-                       @PathParam("domain") domain:String) = new UsersResource(config, domain, uri)
-
   @Path("/diffs")
   def getDifferencesResource(@Context uri:UriInfo,
                              @PathParam("domain") domain:String) = new DifferencesResource(sessionManager, domain, uri)

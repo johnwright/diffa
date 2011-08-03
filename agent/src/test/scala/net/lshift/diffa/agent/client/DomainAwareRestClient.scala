@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.diffa.agent.client
 
-package net.lshift.diffa.agent.itest.support
-
-import org.joda.time.DateTime
+import net.lshift.diffa.messaging.json.AbstractRestClient
 
 /**
- * Useful constants for use in test cases.
+ * Superclass that is aware of the domain to execute requests for.
  */
-object TestConstants {
-  val today = new DateTime
-  val yesterday = (new DateTime).minusDays(1)
-  val yearAgo = today.minusYears(1)
-  val nextYear = today.plusYears(1)
-  val agentURL = "http://localhost:19093/diffa-agent"
-  val domain = "domain"
+abstract class DomainAwareRestClient(val root:String, val domain:String, val resourcePattern:String)
+    extends AbstractRestClient(root, "") {
+
+  override val resourcePath = resourcePattern.replace("{domain}", domain)
+
 }
