@@ -221,8 +221,7 @@ class ConfigurationTest {
     verifyAll
   }
 
-  // TODO comment back in
-  //@Test
+  @Test
   def shouldBlankConfigurationOfNonEmptySystem() {
     // Apply the configuration used in the empty state test
     shouldApplyConfigurationToEmptySystem
