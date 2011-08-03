@@ -137,13 +137,13 @@ trait CommonDifferenceTests {
     //assertEquals("Unexpected sequence %s; expected to see sequence 8".format(bySeqId(1)), "8", bySeqId(1).seqId)
   }
 
-  //@Test
+  @Test
   def walkThroughEventDetails = {
     def guid() = UUID.randomUUID.toString
     val up = guid()
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
-    var sessionId = subscribeAndRunScan(yearAgo, today)
+    var sessionId = subscribeAndRunScan(yearAgo, nextYear)
     env.addAndNotifyUpstream("abc", up, someDate = yesterday, someString = "ss")
 
     val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)

@@ -172,9 +172,9 @@ class TestEnvironment(val pairKey: String,
     downstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
+        changesClient.onChangeEvent(new DownstreamChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
       case CorrelatedVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(downstreamEpName, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated,
+        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated,
           versionForUpstream(content), versionForDownstream(content)))
     }
   }
