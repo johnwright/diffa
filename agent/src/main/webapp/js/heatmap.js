@@ -50,9 +50,8 @@ Diffa.Routers.Blobs = Backbone.Router.extend({
   },
 
   viewBlob: function(pairKey, start, end) {
+    // Currently, only the Diff list displays selection. When #320 is done, this will also need to inform the heatmap.
     Diffa.DiffsCollection.select(pairKey, start, end);
-
-    // TODO: Activate selection in various models
   }
 });
 
@@ -183,12 +182,6 @@ Diffa.Models.Diff = Backbone.Model.extend({
             success: function(data) {
               setContent(data || "no content found for " + upOrDown);
             },
-            /*complete: function(x,status) {
-              if (status != "abort") {
-                // Clear the pending request upon non-abortive completion
-                self.pendingRequest = undefined;
-              }
-            },*/
             error: function(xhr, status, ex) {
               if (status != "abort") {
                 if(console && console.log)
@@ -346,19 +339,12 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
   highlighted: null,
 
-    // TODO: mousemove and mouseUp don't seem to work when not bound to document
-//  events: {
-//    "mousemove":  "mouseMove",
-//    "mouseup":    "mouseUp"
-//  },
-
   initialize: function() {
     _.bindAll(this, "render", "update", "mouseUp", "mouseMove", "mouseDown");
 
     $(document).mouseup(this.mouseUp);
     $(document).mousemove(this.mouseMove);
 
-//    this.model.bind('change:swimlaneLabels',  this.update);
     this.model.bind('change:buckets',         this.update);
     this.model.bind('change:maxRows',         this.update);
     this.model.bind('change:polling',         this.update);
