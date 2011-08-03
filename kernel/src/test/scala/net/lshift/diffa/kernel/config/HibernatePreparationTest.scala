@@ -220,24 +220,23 @@ object HibernatePreparationTest {
   @DataPoint def v2 = StartingDatabaseVersion("v2")
   @DataPoint def v3 = StartingDatabaseVersion("v3")
 
-  @DataPoints def createTableSpecifications = Array(
-    TableSpecification(
+  @DataPoint def defaultColumnSize = TableSpecification(
       new DerbyDialect(),
       new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false),
       "create table foo (bar integer not null, primary key (bar))"
-    ),
-    TableSpecification(
+  )
+
+  @DataPoint def explicitColumnSize = TableSpecification(
       new DerbyDialect(),
       new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false)
                                                .addColumn("baz", Types.VARCHAR, 4096, true),
       "create table foo (bar integer not null, baz varchar(4096), primary key (bar))"
-    ),
-    TableSpecification(
+  )
+  @DataPoint def compoundPrimaryKey = TableSpecification(
       new DerbyDialect(),
       new TableDescriptor(name="foo", pk="bar","baz").addColumn("bar", Types.INTEGER, false)
                                                      .addColumn("baz", Types.VARCHAR, 4096, false),
       "create table foo (bar integer not null, baz varchar(4096) not null, primary key (bar, baz))"
-    )
   )
 
 }
