@@ -17,7 +17,6 @@
 package net.lshift.diffa.kernel.config
 
 import org.junit.runner.RunWith
-import org.junit.experimental.theories.{DataPoint, Theory, Theories}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.slf4j.LoggerFactory
@@ -31,6 +30,7 @@ import org.junit.Test
 import org.hibernate.tool.hbm2ddl.{SchemaExport, DatabaseMetadata}
 import java.io.{File, InputStream}
 import org.apache.commons.io.{FileUtils, IOUtils}
+import org.junit.experimental.theories.{DataPoints, DataPoint, Theory, Theories}
 
 /**
  * Test cases for ensuring that preparation steps apply to database schemas at various levels, and allow us to upgrade
@@ -220,22 +220,25 @@ object HibernatePreparationTest {
   @DataPoint def v2 = StartingDatabaseVersion("v2")
   @DataPoint def v3 = StartingDatabaseVersion("v3")
 
-  @DataPoint def verySimple = TableSpecification(
-    new DerbyDialect(),
-    new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false),
-    "create table foo (bar integer not null, primary key (bar))")
-
-  @DataPoint def fairlySimple = TableSpecification(
-    new DerbyDialect(),
-    new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false)
-                                             .addColumn("baz", Types.VARCHAR, 4096, true),
-    "create table foo (bar integer not null, baz varchar(4096), primary key (bar))")
-
-  @DataPoint def compoundPK = TableSpecification(
-    new DerbyDialect(),
-    new TableDescriptor(name="foo", pk="bar","baz").addColumn("bar", Types.INTEGER, false)
-                                                   .addColumn("baz", Types.VARCHAR, 4096, false),
-    "create table foo (bar integer not null, baz varchar(4096) not null, primary key (bar, baz))")
+  @DataPoints def createTableSpecifications = Array(
+    TableSpecification(
+      new DerbyDialect(),
+      new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false),
+      "create table foo (bar integer not null, primary key (bar))"
+    ),
+    TableSpecification(
+      new DerbyDialect(),
+      new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false)
+                                               .addColumn("baz", Types.VARCHAR, 4096, true),
+      "create table foo (bar integer not null, baz varchar(4096), primary key (bar))"
+    ),
+    TableSpecification(
+      new DerbyDialect(),
+      new TableDescriptor(name="foo", pk="bar","baz").addColumn("bar", Types.INTEGER, false)
+                                                     .addColumn("baz", Types.VARCHAR, 4096, false),
+      "create table foo (bar integer not null, baz varchar(4096) not null, primary key (bar, baz))"
+    )
+  )
 
 }
 
