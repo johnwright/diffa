@@ -18,7 +18,9 @@ package net.lshift.diffa.agent.client
 
 import scala.collection.JavaConversions._
 import com.sun.jersey.api.client.ClientResponse
-import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef, EscalationDef, RepairActionDef}
+import net.lshift.diffa.kernel.frontend._
+import javax.ws.rs.core.MediaType
+import org.eclipse.jetty.io.EndPoint
 
 class ConfigurationRestClient(serverRootUrl:String, domain:String)
     extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/config/") {
@@ -52,6 +54,10 @@ class ConfigurationRestClient(serverRootUrl:String, domain:String)
   def removeEscalation(name: String, pairKey: String) = {
     delete("/pairs/" + pairKey + "/escalations/" + name)
   }
+
+  def makeDomainMember(userName: String) = resource.path("members/" + userName).post()
+  def removeDomainMembership(userName: String) = delete("/members/" + userName)
+  def listDomainMembers = rpc("members/",classOf[Array[UserDef]])
 
   def deletePair(pairKey: String) = {
     val path = resource.path("pairs").path(pairKey)

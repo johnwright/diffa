@@ -24,6 +24,7 @@ import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import scala.collection.JavaConversions._
 import net.lshift.diffa.agent.rest.ResponseUtils._
 import net.lshift.diffa.kernel.frontend._
+import net.lshift.diffa.kernel.frontend.FrontendConversions._
 
 /**
  * This is a REST interface to the Configuration abstraction.
@@ -160,10 +161,30 @@ class ConfigurationResource(val config:Configuration,
   }
 
   @GET
-  @Produces(Array("application/json"))
   @Path("/pairs/{id}")
   @Description("Returns an endpoint pairing by its identifier.")
   @MandatoryParams(Array(new MandatoryParam(name="id", datatype="string", description="Pair ID")))
   def getPair(@PathParam("id") id:String) = config.getPair(domain, id)
+
+  @POST
+  @Path("/members/{username}")
+  @Description("Assigns the given user to the current domain.")
+  @MandatoryParams(Array(new MandatoryParam(name="username", datatype="string", description="Username")))
+  def makeDomainMember(@PathParam("username") userName:String) = {
+    val member = config.makeDomainMember(domain, userName)
+    resourceCreated(member.user.name, uri)
+  }
+
+  @DELETE
+  @Path("/members/{username}")
+  @Description("Removes the given user from the current domain.")
+  @MandatoryParams(Array(new MandatoryParam(name="username", datatype="string", description="Username")))
+  def removeDomainMembership(@PathParam("username") userName:String) = config.removeDomainMembership(domain, userName)
+
+  @GET
+  @Path("/members")
+  @Produces(Array("application/json"))
+  @Description("Returns a list of all of the members of this domain.")
+  def listDomainMembers : Array[UserDef] = config.listDomainMembers(domain).map(m => toUserDef(m.user)).toArray
 
 }

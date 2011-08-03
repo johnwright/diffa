@@ -228,4 +228,8 @@ class Configuration(val configStore: DomainConfigStore,
   def listEscalationForPair(domain:String, pairKey: String): Seq[EscalationDef] = {
     configStore.listEscalationsForPair(domain, pairKey)
   }
+
+  def makeDomainMember(domain:String, userName:String) = configStore.makeDomainMember(domain,userName)
+  def removeDomainMembership(domain:String, userName:String) = configStore.removeDomainMembership(domain, userName)
+  def listDomainMembers(domain:String) = configStore.listDomainMembers(domain)
 }
