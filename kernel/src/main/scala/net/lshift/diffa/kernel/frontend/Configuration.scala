@@ -140,7 +140,7 @@ class Configuration(val configStore: DomainConfigStore,
     log.debug("[%s] Processing pair declare/update request: %s".format(domain,pairDef.key))
     pairDef.validate()
     // Stop a running actor, if there is one
-    maybeWithPair(domain, pairDef.key, (p:DiffaPair) => supervisor.stopActor(p) )
+    maybeWithPair(domain, pairDef.key, (p:DiffaPair) => supervisor.stopActor(p.asRef) )
     configStore.createOrUpdatePair(domain, pairDef)
     withCurrentPair(domain, pairDef.key, (p:DiffaPair) => {
       supervisor.startActor(p)
@@ -153,7 +153,7 @@ class Configuration(val configStore: DomainConfigStore,
   def deletePair(domain:String, key: String): Unit = {
     log.debug("Processing pair delete request: " + key)
     withCurrentPair(domain, key, (p:DiffaPair) => {
-      supervisor.stopActor(p)
+      supervisor.stopActor(p.asRef)
       matchingManager.onDeletePair(p)
       sessionManager.onDeletePair(p)
       versionCorrelationStoreFactory.remove(p)

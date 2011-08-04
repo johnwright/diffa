@@ -501,5 +501,12 @@ object HibernateDomainConfigStoreTest {
   val domainConfigStore = new HibernateDomainConfigStore(sessionFactory)
   val systemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sessionFactory)
 
-  def clearAllConfig = systemConfigStore.deleteDomain("domain")
+  def clearAllConfig = {
+    try {
+      systemConfigStore.deleteDomain("domain")
+    }
+    catch {
+      case e:MissingObjectException => // ignore non-existent domain, since the point of this call was to delete it anyway
+    }
+  }
 }

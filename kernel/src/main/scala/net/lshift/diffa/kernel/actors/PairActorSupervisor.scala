@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.differencing.{PairScanListener, DifferencingListe
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
-import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, Pair => DiffaPair}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -73,7 +73,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     }
   }
 
-  def stopActor(pair:DiffaPair) = {
+  def stopActor(pair:DiffaPairRef) = {
     val actors = Actor.registry.actorsFor(pair.identifier)
     actors.length match {
       case 1 => {

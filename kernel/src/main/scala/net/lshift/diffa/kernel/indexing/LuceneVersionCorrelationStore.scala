@@ -33,8 +33,9 @@ import org.apache.lucene.document._
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import net.lshift.diffa.participant.scanning._
 import org.joda.time.{DateTime, LocalDate, DateTimeZone}
-import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{Domain, DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.util.AlertCodes
+import net.lshift.diffa.kernel.config.system.{InvalidSystemConfigurationException, SystemConfigStore}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
@@ -49,11 +50,21 @@ class LuceneVersionCorrelationStore(val pair: DiffaPair, index:Directory, config
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  val schemaVersionKey = "correlationStore.schemaVersion"
-  configStore.maybeSystemConfigOption(schemaVersionKey) match {
-    case None      => configStore.setSystemConfigOption(schemaVersionKey, "0")
-    case Some("0") => // We're up to date
-      // When new schema versions appear, we can handle their upgrade here
+  val version = VersionCorrelationStore.currentSchemaVersion.toString
+  val schemaKey = VersionCorrelationStore.schemaVersionKey
+
+  configStore.maybeSystemConfigOption(schemaKey) match {
+    case None          => configStore.setSystemConfigOption(schemaKey,version)
+    case Some(x)       => {
+      // Check to see if we're up to date
+      if (x != version) {
+        // We're not up to date, so perform an upgrade
+        // Ticket #323 - We need to migrate from this version, but we currently don't have the capability to do this
+        val msg = "%s: Do not have the ability the migrate the correlation store from version %s (see ticket #323), exiting now"
+        log.error(msg.format(AlertCodes.INVALID_SYSTEM_CONFIGURATION, x))
+        throw new InvalidSystemConfigurationException("Cannot migrate correlation store")
+      }
+    }
   }
 
   val writer = new LuceneWriter(index)

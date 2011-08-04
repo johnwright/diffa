@@ -26,6 +26,7 @@ import org.hibernate.tool.hbm2ddl.{DatabaseMetadata, SchemaExport}
 import org.hibernate.cfg.{Environment, Configuration}
 import collection.mutable.ListBuffer
 import java.sql.{Types, Connection}
+import net.lshift.diffa.kernel.differencing.VersionCorrelationStore
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -54,6 +55,7 @@ class HibernateConfigStorePreparationStep
         val createStmt = AddSchemaVersionMigrationStep.schemaVersionCreateStatement(Dialect.getDialect(config.getProperties))
         val insertSchemaVersion = HibernatePreparationUtils.schemaVersionInsertStatement(migrationSteps.last.versionId)
         val insertDefaultDomain = HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN)
+        val insertCorrelationSchemaVersion = HibernatePreparationUtils.correlationStoreVersionInsertStatement
 
         sf.withSession(s => {
           s.doWork(new Work() {
@@ -65,6 +67,8 @@ class HibernateConfigStorePreparationStep
                 // Make sure that the DB has a version and that the default domain is in the DB
                 stmt.execute(insertSchemaVersion)
                 stmt.execute(insertDefaultDomain)
+                // Make sure that we have the correct version for the correlation store
+                stmt.execute(insertCorrelationSchemaVersion)
               } catch {
                 case ex =>
                   println("Failed to prepare the schema_version table")
@@ -152,6 +156,9 @@ class HibernateConfigStorePreparationStep
  * A set of helper functions to build portable SQL strings
  */
 object HibernatePreparationUtils {
+
+  val correlationStoreVersion = VersionCorrelationStore.currentSchemaVersion.toString
+  val correlationStoreSchemaKey = VersionCorrelationStore.schemaVersionKey
 
   /**
    * Generates a CREATE TABLE statement based on the descriptor and dialect
@@ -247,6 +254,23 @@ object HibernatePreparationUtils {
   def schemaVersionInsertStatement(version:Int) =  "insert into schema_version(version) values(%s)".format(version)
 
   /**
+   * Generates a statement to insert a fresh schema version for the correlation store
+   */
+
+  def correlationStoreVersionInsertStatement = rootOptionInsertStatement(correlationStoreSchemaKey, correlationStoreVersion)
+  /**
+   * Generates a statement to insert a key/value pair into the root domain
+   */
+  def rootOptionInsertStatement(key:String, value:String) =
+    "insert into config_options (opt_key, opt_val, domain) values ('%s', '%s', 'root')".format(key,value)
+
+  /**
+   * Generates a statement to update the schema version for the correlation store
+   */
+  def correlationSchemaVersionUpdateStatement(version:String) =
+    "update config_options set opt_val = '%s' where opt_key = '%s' and domain = 'root'".format(version, correlationStoreSchemaKey)
+
+  /**
    * Generates a statement to update the schema_version table
    */
   def schemaVersionUpdateStatement(version:Int) =  "update schema_version set version = %s".format(version)
@@ -293,8 +317,6 @@ abstract class HibernateMigrationStep {
 object RemoveGroupsMigrationStep extends HibernateMigrationStep {
   def versionId = 1
   def migrate(config: Configuration, connection: Connection) {
-    val dialect = Dialect.getDialect(config.getProperties)
-
     val stmt = connection.createStatement()
     stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "pair", "NAME" ))
     stmt.execute("drop table pair_group")
@@ -354,6 +376,9 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     stmt.execute(HibernatePreparationUtils.generateAddColumnSQL(config, "endpoint", domainColumn))
     // alter table pair add column domain varchar(255) not null
     stmt.execute(HibernatePreparationUtils.generateAddColumnSQL(config, "pair", domainColumn))
+
+    // Upgrade the schema version for the correlation store
+    stmt.execute(HibernatePreparationUtils.correlationSchemaVersionUpdateStatement("1"))
 
     Seq(
       // alter table config_options add constraint FK80C74EA1C3C204DC foreign key (domain) references domains;

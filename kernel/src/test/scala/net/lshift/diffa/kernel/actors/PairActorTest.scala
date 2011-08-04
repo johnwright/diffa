@@ -92,7 +92,7 @@ class PairActorTest {
   supervisor.onAgentConfigurationActivated
 
   @After
-  def stop = supervisor.stopActor(pair)
+  def stop = supervisor.stopActor(pair.asRef)
 
   // Check for spurious actor events
   val spuriousEventAppender = new SpuriousEventAppender

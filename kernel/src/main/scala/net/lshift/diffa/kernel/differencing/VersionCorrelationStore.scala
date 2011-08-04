@@ -94,6 +94,11 @@ trait VersionCorrelationStore extends Closeable {
   def queryDownstreams(constraints:Seq[ScanConstraint]) : Seq[Correlation]
 }
 
+object VersionCorrelationStore {
+  val schemaVersionKey = "correlationStore.schemaVersion"
+  val currentSchemaVersion = 1
+}
+
 /**
  * Issues write commands to an underlying correlation store.
  */

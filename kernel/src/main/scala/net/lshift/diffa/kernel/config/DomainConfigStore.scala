@@ -188,7 +188,9 @@ case class Pair(
 
   def this() = this(key = null)
 
-  def identifier = "%s/%s".format(domain,key)
+  def identifier = asRef.identifier
+
+  def asRef = DiffaPairRef(key,domain.name)
 
   override def equals(that:Any) = that match {
     case p:Pair => p.key == key && p.domain == domain
@@ -197,6 +199,17 @@ case class Pair(
 
   // TODO This looks a bit strange
   override def hashCode = 31 * (31 + key.hashCode) + domain.hashCode
+}
+
+/**
+ * This is a light weight pointer to a pair in Diffa.
+ */
+case class DiffaPairRef(@BeanProperty var key: String = null,
+                        @BeanProperty var domain: String = null) {
+  def this() = this(key = null)
+
+  def identifier = "%s/%s".format(domain,key)
+
 }
 
 object Pair {

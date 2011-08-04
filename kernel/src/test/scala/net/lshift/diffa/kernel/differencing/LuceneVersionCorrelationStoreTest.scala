@@ -448,7 +448,9 @@ class Collector {
 
 object LuceneVersionCorrelationStoreTest {
   val dummyConfigStore = EasyMock.createMock(classOf[SystemConfigStore])
-  EasyMock.expect(dummyConfigStore.maybeSystemConfigOption("correlationStore.schemaVersion")).andStubReturn(Some("0"))
+  EasyMock.expect(dummyConfigStore.
+      maybeSystemConfigOption(VersionCorrelationStore.schemaVersionKey)).
+      andStubReturn(Some(VersionCorrelationStore.currentSchemaVersion.toString))
   EasyMock.replay(dummyConfigStore)
 
   val domainName = "domain"

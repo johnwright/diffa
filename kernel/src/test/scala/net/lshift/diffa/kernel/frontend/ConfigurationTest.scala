@@ -32,6 +32,7 @@ import collection.mutable.HashSet
 import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 /**
  * Test cases for the Configuration frontend.
@@ -65,7 +66,12 @@ class ConfigurationTest {
 
   @Before
   def clearConfig = {
-    systemConfigStore.deleteDomain(domainName)
+    try {
+      systemConfigStore.deleteDomain(domainName)
+    }
+    catch {
+      case e:MissingObjectException => // ignore non-existent domain, since the point of this call was to delete it anyway
+    }
     systemConfigStore.createOrUpdateDomain(domain)
   }
 
@@ -194,12 +200,12 @@ class ConfigurationTest {
     val ad = DiffaPair(key = "ad", domain = Domain(name="domain"), matchingTimeout = 5,
                           versionPolicyName = "same", upstream = fromEndpointDef(domain, ep1), downstream = fromEndpointDef(domain, ep2))
 
-    expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
+    expect(pairManager.stopActor(DiffaPairRef(key = "ab", domain = "domain"))).once
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(scanScheduler.onUpdatePair(ab)).once
     expect(sessionManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
-    expect(pairManager.stopActor(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
+    expect(pairManager.stopActor(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(scanScheduler.onDeletePair(ac)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
@@ -232,8 +238,8 @@ class ConfigurationTest {
     val ab = DiffaPair(key = "ab", domain = Domain(name="domain"))
     val ac = DiffaPair(key = "ac", domain = Domain(name="domain"))
 
-    expect(pairManager.stopActor(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
-    expect(pairManager.stopActor(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
+    expect(pairManager.stopActor(DiffaPairRef(key = "ab", domain = "domain"))).once
+    expect(pairManager.stopActor(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(scanScheduler.onDeletePair(ab)).once
