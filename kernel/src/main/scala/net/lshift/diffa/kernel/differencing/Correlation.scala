@@ -40,7 +40,7 @@ case class Correlation(
   @BeanProperty var downstreamDVsn:String = null,
   @BeanProperty var isMatched:java.lang.Boolean = null
 ) {
-  def this() = this(null, null, null, null, null, null, null, null, null, null, null, null)
+  def this() = this(oid= null)
   def this(oid:java.lang.Integer,pair:DiffaPair,
            id:String,
            up:Map[String,String],

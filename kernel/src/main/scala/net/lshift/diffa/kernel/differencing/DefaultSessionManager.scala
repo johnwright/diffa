@@ -348,8 +348,6 @@ class DefaultSessionManager(
     pairStates.synchronized { pairStates.remove(pair) }
   }
 
-  //def withPair[T](pair:String)(f:Function0[T]) = withValidPair(pair, f)
-
   def runScanForScope(scope:SessionScope, start:DateTime, end:DateTime) {
     pairsForScope(scope).foreach(runScanForPair(_))
   }
