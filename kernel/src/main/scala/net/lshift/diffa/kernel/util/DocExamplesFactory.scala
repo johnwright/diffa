@@ -20,11 +20,11 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import scala.collection.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
 import net.lshift.diffa.kernel.client.Actionable
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
+import net.lshift.diffa.kernel.frontend._
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.
@@ -32,35 +32,52 @@ import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 class DocExamplesFactory {
 
   val categoryDescriptor = new RangeCategoryDescriptor("datetime")
-  val up = new Endpoint(name = "upstream-system", scanUrl = "http://acme.com/upstream/scan", contentType = "application/json", categories = Map("bizDate" -> categoryDescriptor))
-  val down = new Endpoint(name = "downstream-system", scanUrl = "http://acme.com/downstream/scan", contentType = "application/json", categories = Map("bizDate" -> categoryDescriptor))
 
-  // TODO Put these examples, back except that we need to wire exposed types as opposed to the internal types
+  val up = new EndpointDef(name = "upstream-system",
+                           scanUrl = "http://acme.com/upstream/scan",
+                           contentType = "application/json",
+                           contentRetrievalUrl = "http://acme.com/upstream/node-content",
+                           inboundUrl = "http://diff.io/domain/changes",
+                           inboundContentType = "application/json",
+                           categories = Map("bizDate" -> categoryDescriptor))
 
-  //val pair = Pair("pair-id", "domain-id", up, down, "correlated", 120)
+  val pair = PairDef(key = "pairKey", upstreamName = "upstream", downstreamName = "downstream",
+                     versionPolicyName = "same", scanCronSpec = "0 15 10 ? * *", matchingTimeout = 10)
 
-  //val repair = RepairAction(name = "resend", url = "http://acme.com/repairs/resend/{id}", scope = "entity", pairKey = "pairKey")
+  val repair = RepairActionDef(name = "resend",
+                               url = "http://acme.com/repairs/resend/{id}",
+                               scope = "entity",
+                               pair = "pairKey")
 
-  //val escalation = Escalation(name = "some-escalation", pairKey = "pairKey", action = "resend", actionType = "repair", event = "downstream-missing", origin = "scan")
+  val escalation = EscalationDef(name = "some-escalation",
+                                 pair = "pairKey",
+                                 action = "resend", actionType = "repair",
+                                 event = "downstream-missing", origin = "scan")
 
-  //val actionable = Actionable(name = "resend", scope = "entity", path = "/actions/pairKey/resend/entity/${id}", pairKey = "pairKey")
+  val actionable = Actionable(name = "resend",
+                              scope = "entity",
+                              path = "/actions/pairKey/resend/entity/${id}",
+                              pair = "pairKey")
 
   val result = InvocationResult(code = "200", output = "OK")
 
-  val user = User(name = "joe.public", email = "joe.public@acme.com")
+  val user = UserDef(name = "joe.public", email = "joe.public@acme.com")
+
+  val event = SessionEvent("6f72b9",VersionID("pairKey", "mydomain", "4f8a99"),
+                           new DateTime(),
+                           MatchState.UNMATCHED, "upstreamV", "downstreamV")
 
   def getExamples: java.util.Map[Class[_], Object] = {
     val map = new java.util.HashMap[Class[_], Object]
 
     map.put(classOf[EndpointDef], up)
-    //map.put(classOf[Pair], pair)
-    map.put(classOf[PairDef], new PairDef("pairKey", "versionPolicyName", 120,"upstreamName","downstreamName","0 15 10 ? * *"))
-    map.put(classOf[SessionEvent], SessionEvent("6f72b9",VersionID("pairKey", "4f8a99"), new DateTime(), MatchState.UNMATCHED, "upstreamV", "downstreamV"))
-    //map.put(classOf[RepairAction], repair)
-    //map.put(classOf[Escalation], escalation)
-    //map.put(classOf[Actionable], actionable)
+    map.put(classOf[PairDef], pair)
+    map.put(classOf[SessionEvent], event)
+    map.put(classOf[RepairActionDef], repair)
+    map.put(classOf[EscalationDef], escalation)
+    map.put(classOf[Actionable], actionable)
     map.put(classOf[InvocationResult], result)
-    map.put(classOf[User], user)
+    map.put(classOf[UserDef], user)
 
     map
   }
