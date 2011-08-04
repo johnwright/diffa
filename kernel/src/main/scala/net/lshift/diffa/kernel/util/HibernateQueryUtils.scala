@@ -60,7 +60,6 @@ trait HibernateQueryUtils {
    * object.
    */
   def singleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] = {
-    //val list = listQuery[ReturnType](s, queryName, params)
 
     val query: Query = s.getNamedQuery(queryName)
     params foreach {case (param, value) => query.setParameter(param, value)}
