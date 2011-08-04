@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.frontend.wire
 
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import net.lshift.diffa.kernel.config.{RepairAction, Pair => DiffaPair, DomainConfigStore}
 import InvocationResult._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
@@ -26,6 +25,7 @@ import io.Source
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.frontend.PairDef
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{DiffaPairRef, RepairAction, Pair => DiffaPair, DomainConfigStore}
 
 /**
  * This is a conduit to the actions that are provided by participants
@@ -35,14 +35,14 @@ class ActionsProxy(val config:DomainConfigStore,
                    val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
     extends ActionsClient {
 
-  def listActions(domain:String, pairKey: String): Seq[Actionable] =
-    withValidPair(domain, pairKey) { pair =>
-      config.listRepairActionsForPair(domain, pairKey).map(Actionable.fromRepairAction(domain,_))
+  def listActions(pair:DiffaPairRef): Seq[Actionable] =
+    withValidPair(pair) { p =>
+      config.listRepairActionsForPair(pair.domain, pair.key).map(Actionable.fromRepairAction(pair.domain,_))
     }
 
-  def listEntityScopedActions(domain:String, pairKey: String) = listActions(domain, pairKey).filter(_.scope == RepairAction.ENTITY_SCOPE)
+  def listEntityScopedActions(pair:DiffaPairRef) = listActions(pair).filter(_.scope == RepairAction.ENTITY_SCOPE)
 
-  def listPairScopedActions(domain:String, pairKey: String) = listActions(domain, pairKey).filter(_.scope == RepairAction.PAIR_SCOPE)
+  def listPairScopedActions(pair:DiffaPairRef) = listActions(pair).filter(_.scope == RepairAction.PAIR_SCOPE)
 
   def invoke(request: ActionableRequest): InvocationResult =
     withValidPair(request.domain, request.pairKey) { pair =>
@@ -77,9 +77,11 @@ class ActionsProxy(val config:DomainConfigStore,
       }
     }
 
-  def withValidPair[T](domain:String, pairKey: String)(f: DiffaPair => T): T = {
-    val pair = systemConfig.getPair(domain, pairKey)
-    f(pair)
+  def withValidPair[T](pair:DiffaPairRef)(f: DiffaPair => T) : T = withValidPair(pair.domain, pair.key)(f)
+
+  def withValidPair[T](domain:String,pairKey:String)(f: DiffaPair => T) : T = {
+    val p = systemConfig.getPair(domain, pairKey)
+    f(p)
   }
 
 }

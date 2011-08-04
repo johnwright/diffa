@@ -18,10 +18,9 @@ package net.lshift.diffa.kernel.client
 
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-import net.lshift.diffa.kernel.config.RepairAction
 import net.lshift.diffa.kernel.config.RepairAction._
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.RepairActionDef
+import net.lshift.diffa.kernel.config.{DiffaPairRef, RepairAction, Pair => DiffaPair}
 
 /**
  * Interface supported by clients capable of listing and invoking actions for pairs.
@@ -31,17 +30,17 @@ trait ActionsClient {
   /**
    * Lists all actions that a pairing offers
    */
-  def listActions(domain:String, pairKey: String): Seq[Actionable]
+  def listActions(pair:DiffaPairRef): Seq[Actionable]
 
   /**
    * Lists the entity-scoped actions that a pairing offers
    */
-  def listEntityScopedActions(domain:String, pairKey: String): Seq[Actionable]
+  def listEntityScopedActions(pair:DiffaPairRef): Seq[Actionable]
 
   /**
    * Lists the pair-scoped actions that a pairing offers
    */
-  def listPairScopedActions(domain:String, pairKey:String): Seq[Actionable]
+  def listPairScopedActions(pair:DiffaPairRef): Seq[Actionable]
 
   /**
    * Invokes an action against a pairing

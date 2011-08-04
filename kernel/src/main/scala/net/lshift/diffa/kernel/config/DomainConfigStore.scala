@@ -221,8 +221,7 @@ object Pair {
 }
 
 case class Domain (
-  @BeanProperty var name: String = null//,
-  //@BeanProperty var users: java.util.Set[User] = new java.util.HashSet[User]
+  @BeanProperty var name: String = null
 ) {
   def this() = this(name = null)
 
@@ -306,7 +305,6 @@ object EscalationActionType {
 }
 
 case class User(@BeanProperty var name: String = null,
-                //@BeanProperty var domains: java.util.Set[Domain] = new java.util.HashSet[Domain],
                 @BeanProperty var email: String = null) {
   def this() = this(name = null)
 

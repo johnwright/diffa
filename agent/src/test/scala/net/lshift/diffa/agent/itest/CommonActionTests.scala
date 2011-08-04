@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.client.ActionableRequest
 import net.lshift.diffa.messaging.json.BadRequestException
 import org.junit._
 import net.lshift.diffa.kernel.util.AlertCodes
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 trait CommonActionTests {
 
@@ -29,7 +30,8 @@ trait CommonActionTests {
 
   @Test
   def shouldListEntityScopedActions {
-    val actions = env.actionsClient.listEntityScopedActions(env.domain.name, env.pairKey)
+    val pairRef = DiffaPairRef(env.pairKey,env.domain.name)
+    val actions = env.actionsClient.listEntityScopedActions(pairRef)
     assertNotNull(actions)
     assertEquals(1, actions.size)
     assertEquals("Resend Source", actions(0).name)
@@ -57,7 +59,8 @@ trait CommonActionTests {
   @Test
   def shouldListPairScopedActions {
     env.createPairScopedAction
-    val actions = env.actionsClient.listPairScopedActions(env.domain.name, env.pairKey)
+    val pairRef = DiffaPairRef(env.pairKey,env.domain.name)
+    val actions = env.actionsClient.listPairScopedActions(pairRef)
     assertNotNull(actions)
     assertEquals(Some(env.pairScopedActionName), actions.headOption.map(_.name))
   }
@@ -76,7 +79,8 @@ trait CommonActionTests {
 
   @Test
   def canDeleteAction {
-    def actionName = env.actionsClient.listEntityScopedActions(env.domain.name, env.pairKey).headOption.map(_.name)
+    val pairRef = DiffaPairRef(env.pairKey,env.domain.name)
+    def actionName = env.actionsClient.listEntityScopedActions(pairRef).headOption.map(_.name)
     assertEquals(Some(env.entityScopedActionName), actionName)
     env.configurationClient.removeRepairAction(env.entityScopedActionName, env.pairKey)
     assertEquals(None, actionName)

@@ -22,7 +22,7 @@ import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import net.lshift.diffa.kernel.config.RepairAction
+import net.lshift.diffa.kernel.config.{DiffaPairRef, RepairAction}
 
 class ActionsResource(val proxy:ActionsClient,
                       val domain:String,
@@ -35,9 +35,9 @@ class ActionsResource(val proxy:ActionsClient,
   @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
   def listActions(@PathParam("pairId") pairId: String,
                   @QueryParam("scope") scope: String): Array[Actionable] = (scope match {
-    case RepairAction.ENTITY_SCOPE => proxy.listEntityScopedActions(domain, pairId)
-    case RepairAction.PAIR_SCOPE => proxy.listPairScopedActions(domain, pairId)
-    case _ => proxy.listActions(domain, pairId)
+    case RepairAction.ENTITY_SCOPE => proxy.listEntityScopedActions(DiffaPairRef(pairId,domain))
+    case RepairAction.PAIR_SCOPE => proxy.listPairScopedActions(DiffaPairRef(pairId,domain))
+    case _ => proxy.listActions(DiffaPairRef(pairId,domain))
   }).toArray
 
   @POST
