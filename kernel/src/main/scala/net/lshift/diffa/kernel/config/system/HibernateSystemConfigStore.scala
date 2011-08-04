@@ -21,7 +21,7 @@ import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException, HibernateQueryUtils}
-import net.lshift.diffa.kernel.config.{DiffaPairRef, User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Member, DiffaPairRef, User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
 
 class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
                                  val sessionFactory:SessionFactory)
@@ -46,14 +46,16 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
     if (domain == Domain.DEFAULT_DOMAIN.name) {
       throw new InvalidSystemConfigurationException("Attempt to delete the default domain")
     }
+
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
     deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
     deleteByDomain[Endpoint](s, domain, "endpointsByDomain")
     deleteByDomain[ConfigOption](s, domain, "configOptionsByDomain")
+    deleteByDomain[Member](s, domain, "membersByDomain")
+
     s.flush()
-    // TODO find out how to express this in HQL
-    s.createSQLQuery("delete from members where domain_name = '%s'".format(domain)).executeUpdate()
+
     val deleted = s.createSQLQuery("delete from domains where name = '%s'".format(domain)).executeUpdate()
     if (deleted == 0) {
       logger.error("%s: Attempt to delete non-existent domain: %s".format(AlertCodes.INVALID_DOMAIN, domain))
