@@ -38,7 +38,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
   def deleteEndpoint(domain:String, name: String): Unit = sessionFactory.withSession(s => {
     val endpoint = getEndpoint(s, domain, name)
 
-    // Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
+    // TODO (see ticket #324) Delete children manually - Hibernate can't cascade on delete without a one-to-many relationship,
     // which would create an infinite loop in computing the hashCode of pairs
     s.createQuery("FROM Pair WHERE upstream = :endpoint OR downstream = :endpoint").
             setEntity("endpoint", endpoint).list.foreach(p => deletePairInSession(s, domain, p.asInstanceOf[DiffaPair]))
