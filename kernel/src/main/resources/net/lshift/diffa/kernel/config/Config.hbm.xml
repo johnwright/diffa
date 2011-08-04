@@ -56,6 +56,7 @@
 
   <class name="Endpoint" table="endpoint" abstract="false">
     <id name="name" type="string"/>
+    <many-to-one name="domain" class="Domain" not-null="true" lazy="false" fetch="join"/>
     <property name="scanUrl" column="scan_url" type="string" not-null="false" unique="false"/>
     <property name="contentRetrievalUrl" column="content_retrieval_url" type="string" not-null="false" unique="false"/>
     <property name="versionGenerationUrl" column="version_generation_url" type="string" not-null="false" unique="false"/>
@@ -73,26 +74,40 @@
     <id name="key" type="string" column="pair_key"/>
     <many-to-one name="upstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
     <many-to-one name="downstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
+    <many-to-one name="domain" class="Domain" not-null="true" lazy="false" fetch="join"/>
     <property name="versionPolicyName" type="string" column="version_policy_name" not-null="false"/>
     <property name="matchingTimeout" type="int" column="matching_timeout" not-null="false"/>
     <property name="scanCronSpec" type="string" column="scan_cron_spec" not-null="false"/>
   </class>
 
+  <class name="Domain" table="domains" abstract="false">
+    <id name="name" type="string" column="name"/>
+  </class>
+
   <class name="User" table="users" abstract="false">
-    <id name="name" type="string"/>
+    <id name="name" type="string" column="name"/>
     <property name="email" type="string" />
   </class>
 
+  <class name="Member" table="members" abstract="false">
+    <composite-id mapped="true">
+      <key-many-to-one name="domain" class="Domain" column="domain_name" lazy="false"/>
+      <key-many-to-one name="user" class="User" column="user_name" lazy="false"/>
+    </composite-id>
+  </class>
+
   <class name="ConfigOption" table="config_options" abstract="false">
-    <id name="key" type="string" column="opt_key" />
+    <composite-id mapped="true" class="net.lshift.diffa.kernel.config.DomainScopedKey">
+      <key-property name="key" type="string" column="opt_key" />
+      <key-many-to-one name="domain" class="Domain" column="domain" />
+    </composite-id>
     <property name="value" type="string" column="opt_val" />
-    <property name="isInternal" type="boolean" column="is_internal" />
   </class>
 
   <class name="RepairAction" table="repair_actions" abstract="false">
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
-      <key-property name="pairKey" type="string" column="pair_key" />
+      <key-many-to-one name="pair" class="Pair" column="pair_key" lazy="false" />
     </composite-id>
     <property name="url" type="string" column="url" />
     <property name="scope" type="string" column="scope" />
@@ -101,7 +116,7 @@
   <class name="Escalation" table="escalations" abstract="false">
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
-      <key-property name="pairKey" type="string" column="pair_key" />
+      <key-many-to-one name="pair" class="Pair" column="pair_key" lazy="false"/>
     </composite-id>
     <property name="action" type="string" column="action" not-null="true" />
     <property name="actionType" type="string" column="action_type" not-null="true"/>
@@ -121,17 +136,7 @@
     select c from Pair c where c.key = :key
   </query>
 
-  <query name="repairActionByNameAndPairKey">
-    select a from RepairAction a where a.name = :name and a.pairKey = :pairKey
-  </query>
-
-  <query name="escalationByNameAndPairKey">
-    select e from Escalation e where e.name = :name and e.pairKey = :pairKey
-  </query>
-
-  <query name="escalationsByPairKey">
-    select e from Escalation e where e.pairKey = :pairKey
-  </query>
+  <!-- Select all statements -->
 
   <query name="allEndpoints">
     select e from Endpoint e
@@ -145,6 +150,10 @@
     select p from Pair p
   </query>
 
+  <query name="allDomains">
+    select d from Domain d
+  </query>
+
   <query name="allRepairActions">
     select a from RepairAction a
   </query>
@@ -153,14 +162,96 @@
     select e from Escalation e
   </query>
 
-  <query name="repairActionsByPair">
-    select a from RepairAction a where a.pairKey = :pairKey
+  <query name="allConfigs">
+    select o from ConfigOption o
   </query>
 
-  <query name="configOptionByKey">
-    select o.value from ConfigOption o where o.key = :key
+  <!-- Queries by endpoint -->
+
+  <query name="pairsByInboundEndpointUrl">
+    select p from Pair p
+    where p.upstream.inboundUrl = :url
+    or p.downstream.inboundUrl = :url
   </query>
+
+  <!-- Queries by domain only -->
+
+  <query name="membersByDomain">
+    select m from Member m where m.domain.name = :domain_name
+  </query>
+
+  <query name="domainByName">
+    select d from Domain d where d.name = :domain_name
+  </query>
+
+  <query name="pairsByDomain">
+    select p from Pair p where p.domain.name = :domain_name
+  </query>
+
+  <query name="endpointsByDomain">
+    select e from Endpoint e where e.domain.name = :domain_name
+  </query>
+
+  <query name="escalationsByDomain">
+    select e from Escalation e
+    join e.pair as p
+    join p.domain as d with d.name = :domain_name
+  </query>
+
+  <query name="repairActionsByDomain">
+    select a from RepairAction a
+    join a.pair as p
+    join p.domain as d with d.name = :domain_name
+  </query>
+
+  <query name="configOptionsByDomain">
+    select o from ConfigOption o where o.domain.name = :domain_name
+  </query>
+
+  <!-- Query by pair with domain -->
+
+  <query name="repairActionsByPair">
+    select a from RepairAction a
+    join a.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+  </query>
+
+  <query name="escalationsByPair">
+    select e from Escalation e
+    join e.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+  </query>
+
+  <!-- Query by pair with domain and key -->
+
+  <query name="repairActionsByNameAndPair">
+    select a from RepairAction a
+    join a.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+    where a.name = :name
+  </query>
+
+  <query name="escalationsByNameAndPair">
+    select e from Escalation e
+    join e.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+    where e.name = :name
+  </query>
+
+  <query name="configOptionByNameAndKey">
+    select o.value from ConfigOption o
+    where o.key = :key
+    and o.domain.name = :domain_name
+  </query>
+
+  <!-- Other -->
+
+  <query name="rootConfigOptionByKey">
+    select o.value from ConfigOption o where o.key = :key and o.domain = 'root'
+  </query>
+
   <query name="allNonInternalConfigOptions">
-    select o from ConfigOption o where o.isInternal = false
+    select o from ConfigOption o where o.domain is not 'root'
   </query>
+
 </hibernate-mapping>

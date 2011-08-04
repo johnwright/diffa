@@ -19,15 +19,16 @@ package net.lshift.diffa.kernel.actors
 import akka.actor._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
-import net.lshift.diffa.kernel.config.ConfigStore
-import net.lshift.diffa.kernel.events.PairChangeEvent
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 import net.lshift.diffa.kernel.differencing.{PairScanListener, DifferencingListener, VersionPolicyManager, VersionCorrelationStoreFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, Pair => DiffaPair}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
-                               config:ConfigStore,
+                               systemConfig:SystemConfigStore,
                                differencingMulticaster:DifferencingListener,
                                pairScanListener:PairScanListener,
                                participantFactory:ParticipantFactory,
@@ -44,11 +45,11 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   override def onAgentAssemblyCompleted = {
     // Initialize actors for any persistent pairs
-    config.listPairs.foreach(p => startActor(p))
+    systemConfig.listPairs.foreach(p => startActor(p))
   }
 
-  def startActor(pair:net.lshift.diffa.kernel.config.Pair) = {
-    val actors = Actor.registry.actorsFor(pair.key)
+  def startActor(pair:DiffaPair) = {
+    val actors = Actor.registry.actorsFor(pair.identifier)
     actors.length match {
       case 0 => {
         policyManager.lookupPolicy(pair.versionPolicyName) match {
@@ -56,61 +57,64 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
             val us = participantFactory.createUpstreamParticipant(pair.upstream)
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
             val pairActor = Actor.actorOf(
-              new PairActor(pair.key, us, ds, p, stores(pair.key),
+              new PairActor(pair, us, ds, p, stores(pair),
                             differencingMulticaster, pairScanListener,
                             diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
             )
             pairActor.start
-            log.info("Started actor for key: " + pair.key)
+            log.info("Started actor for key: " + pair.identifier)
           }
           case None    => log.error("Failed to find policy for name: " + pair.versionPolicyName)
         }
 
       }
-      case 1    => log.warn("Attempting to re-spawn actor for key: " + pair.key)
-      case x    => log.error("Too many actors for key: " + pair.key + "; actors = " + x)
+      case 1    => log.warn("Attempting to re-spawn actor for key: " + pair.identifier)
+      case x    => log.error("Too many actors for key: " + pair.identifier + "; actors = " + x)
     }
   }
 
-  def stopActor(key:String) = {
-    val actors = Actor.registry.actorsFor(key)
+  def stopActor(pair:DiffaPairRef) = {
+    val actors = Actor.registry.actorsFor(pair.identifier)
     actors.length match {
       case 1 => {
         val actor = actors(0)
         actor.stop
-        log.info("Stopped actor for key: " + key)
+        log.info("Stopped actor for key: " + pair.identifier)
       }
-      case 0    => log.warn("Could not resolve actor for key: " + key)
-      case x    => log.error("Too many actors for key: " + key + "; actors = " + x)
+      case 0    => log.warn("Could not resolve actor for key: " + pair.identifier)
+      case x    => log.error("Too many actors for key: " + pair.identifier + "; actors = " + x)
     }
   }
 
-  def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id.pairKey) ! ChangeMessage(event)
+  def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id) ! ChangeMessage(event)
 
-  def difference(pairKey:String) =
-    findActor(pairKey) ! DifferenceMessage
+  def difference(pair:DiffaPair) =
+    findActor(pair) ! DifferenceMessage
 
-  def scanPair(pairKey:String) =
-    findActor(pairKey) ! ScanMessage
+  def scanPair(pair:DiffaPair) =
+    findActor(pair) ! ScanMessage
 
-  def cancelScans(pairKey:String) = {
-    (findActor(pairKey) !! CancelMessage) match {
+  def cancelScans(pair:DiffaPair) = {
+    (findActor(pair) !! CancelMessage) match {
       case Some(flag) => true
       case None       => false
     }
   }
 
-  def findActor(pairKey:String) = {
-    val actors = Actor.registry.actorsFor(pairKey)
+  def findActor(id:VersionID) : ActorRef = findActor(systemConfig.getPair(id.pair))
+
+  def findActor(pair:DiffaPair) = {
+    val actors = Actor.registry.actorsFor(pair.identifier)
     actors.length match {
       case 1 => actors(0)
       case 0 => {
-        log.error("Could not resolve actor for key: " + pairKey)
-        throw new MissingObjectException(pairKey)
+        log.error("Could not resolve actor for key: " + pair.identifier)
+        log.error("Found %s actors: %s".format(Actor.registry.size, Actor.registry.actors))
+        throw new MissingObjectException(pair.identifier)
       }
       case x => {
-        log.error("Too many actors for key: " + pairKey + "; actors = " + x)
-        throw new RuntimeException("Too many actors: " + pairKey)
+        log.error("Too many actors for key: " + pair.identifier + "; actors = " + x)
+        throw new RuntimeException("Too many actors: " + pair.identifier)
       }
     }
   }

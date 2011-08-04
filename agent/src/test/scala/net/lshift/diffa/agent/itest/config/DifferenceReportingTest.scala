@@ -28,7 +28,7 @@ import net.lshift.diffa.messaging.json.NotFoundException
  */
 class DifferenceReportingTest {
 
-  val client = new DifferencesRestClient(agentURL)
+  val client = new DifferencesRestClient(agentURL, domain)
 
   @Test(expected = classOf[NotFoundException])
   def nonExistentSessionShouldGenerateNotFoundError = {

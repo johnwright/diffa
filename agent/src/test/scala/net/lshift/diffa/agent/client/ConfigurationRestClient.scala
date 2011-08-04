@@ -16,17 +16,16 @@ package net.lshift.diffa.agent.client
  * limitations under the License.
  */
 
-import net.lshift.diffa.kernel.client.ConfigurationClient
-import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config._
 import com.sun.jersey.api.client.ClientResponse
+import net.lshift.diffa.kernel.frontend._
+import javax.ws.rs.core.MediaType
+import org.eclipse.jetty.io.EndPoint
 
-class ConfigurationRestClient(serverRootUrl:String)
-    extends AbstractRestClient(serverRootUrl, "rest/config/")
-        with ConfigurationClient {
+class ConfigurationRestClient(serverRootUrl:String, domain:String)
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/config/") {
 
-  def declareEndpoint(e:Endpoint) = {
+  def declareEndpoint(e:EndpointDef) = {
     create("endpoints", e)
     e
   }
@@ -37,7 +36,7 @@ class ConfigurationRestClient(serverRootUrl:String)
   }
 
   def declareRepairAction(name: String, id: String, scope: String, pairKey: String) = {
-    val action = new RepairAction(name, id, scope, pairKey)
+    val action = new RepairActionDef(name, id, scope, pairKey)
     create("/pairs/"+pairKey+"/repair-actions", action)
     action
   }
@@ -47,7 +46,7 @@ class ConfigurationRestClient(serverRootUrl:String)
   }
 
   def declareEscalation(name: String, pairKey: String, action: String, actionType: String, event: String, origin: String) = {
-    val escalation = new Escalation(name, pairKey, action, actionType, event, origin)
+    val escalation = new EscalationDef(name, pairKey, action, actionType, event, origin)
     create("/pairs/"+pairKey+"/escalations", escalation)
     escalation
   }
@@ -56,14 +55,19 @@ class ConfigurationRestClient(serverRootUrl:String)
     delete("/pairs/" + pairKey + "/escalations/" + name)
   }
 
+  def makeDomainMember(userName: String) = resource.path("members/" + userName).post()
+  def removeDomainMembership(userName: String) = delete("/members/" + userName)
+  def listDomainMembers = rpc("members/",classOf[Array[UserDef]])
+
   def deletePair(pairKey: String) = {
-    val response = resource.path("pairs").path(pairKey).delete(classOf[ClientResponse])
+    val path = resource.path("pairs").path(pairKey)
+    val response = path.delete(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 204     => // Successfully submitted (202 is "No Content")
-      case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
+      case x:Int   => handleHTTPError(x,path, status)
     }
   }
 
-  def getEndpoint(name:String) = rpc("endpoints/" + name, classOf[Endpoint])
+  def getEndpoint(name:String) = rpc("endpoints/" + name, classOf[EndpointDef])
 }

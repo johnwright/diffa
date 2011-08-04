@@ -17,9 +17,10 @@
 package net.lshift.diffa.kernel.matching
 
 import java.io.Closeable
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
- * Keeps track of event matchers and updates them upon receiving a notification of changes in ConfigStore.
+ * Keeps track of event matchers and updates them upon receiving a notification of changes in DomainConfigStore.
  */
 trait MatchingManager extends Closeable {
   /**
@@ -28,18 +29,18 @@ trait MatchingManager extends Closeable {
   def addListener(l:MatchingStatusListener)
 
   /**
-   * Returns a matcher for the given pair key if it exists; None otherwise..
+   * Returns a matcher for the given pair if it exists; None otherwise..
    */
-  def getMatcher(pairKey:String):Option[EventMatcher]
+  def getMatcher(pair:DiffaPair) : Option[EventMatcher]
 
   /**
    * Handler for new pair creation or update of an existing one. This method should
    * recreate/keep intact all set-up matcher listeners before the update.
    */
-  def onUpdatePair(pairKey:String):Unit
+  def onUpdatePair(pair:DiffaPair) : Unit
 
   /**
    * Handler for pair deletion.
    */
-  def onDeletePair(pairKey:String):Unit
+  def onDeletePair(pair:DiffaPair) : Unit
 }

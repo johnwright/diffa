@@ -30,12 +30,11 @@ import net.lshift.diffa.kernel.util.FullDateTimes._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.ScanResultEntry
 
-
 /**
  * Test cases for the same version policy.
  */
 class SameVersionPolicyTest extends AbstractPolicyTest {
-  val policy = new SameVersionPolicy(stores, listener, configStore, diagnostics)
+  val policy = new SameVersionPolicy(stores, listener, systemConfigStore, diagnostics)
 
   def downstreamVersionFor(v:String) = v
 
@@ -80,7 +79,7 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
       VersionsFromStore(
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4"))))
-    expectDownstreamEntityScan2(abPair, testData.constraints(3),
+    expectDownstreamEntityScan2(testData.constraints(3),
       DigestsFromParticipant(
         ScanResultEntry.forEntity("id2", downstreamVersionFor("vsn2"), JUL_8_2010_1, testData.values(1)),
         ScanResultEntry.forEntity("id3", downstreamVersionFor("vsn3"), JUL_8_2010_1, testData.values(1))),
@@ -89,21 +88,21 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4"))))
 
     // We should see id3 be updated, and id4 be removed
-    expect(writer.storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
-      andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
-    expect(writer.clearDownstreamVersion(VersionID(abPair, "id4"))).
-      andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
+    expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
+      andReturn(new Correlation(null, pair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
+    expect(writer.clearDownstreamVersion(VersionID(pair.asRef, "id4"))).
+      andReturn(Correlation.asDeleted(pair, "id4", new DateTime))
 
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
-    listener.onMatch(VersionID(abPair, "id4"), null, TriggeredByScan); expectLastCall
+    listener.onMatch(VersionID(pair.asRef, "id4"), null, TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
-    expect(stores(pair.key).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(stores(pair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(abPair, listener)
+    policy.scanUpstream(pair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.replayUnmatchedDifferences(pair, listener)
 
     verifyAll
   }

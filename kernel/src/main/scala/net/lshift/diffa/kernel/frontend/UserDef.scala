@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.client
+package net.lshift.diffa.kernel.frontend
 
-trait ScanningClient {
+import reflect.BeanProperty
 
-  /**
-   * Starts a scan on the given pair.
-   */
-  def startScan(pairKey: String): Boolean
 
-  /**
-   * Cancels any running and/or pending scans for the given pair.
-   */
-  def cancelScanning(pairKey:String) : Boolean
+/**
+ * Serializable representation of a domain within the context of a domain.
+ */
+case class UserDef(@BeanProperty var name: String = null,
+                   @BeanProperty var email: String = null) {
+
+  def this() = this(name = null)
+
+  def validate(path:String = null) {}
 }

@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -41,22 +42,22 @@ trait VersionPolicy {
    * Invokes the underlying <code>replayUnmatchedDifferences</code> call,
    * defaulting the origin to <code>TriggeredByScan</code>.
    */
-  def replayUnmatchedDifferences(pairKey:String, listener:DifferencingListener) : Unit =
-    replayUnmatchedDifferences(pairKey, listener, TriggeredByScan)
+  def replayUnmatchedDifferences(pair:DiffaPair, listener:DifferencingListener) : Unit =
+    replayUnmatchedDifferences(pair, listener, TriggeredByScan)
 
   /**
    * Requests that the policy generate a series of events describing the differences between the endpoints
    * within the given pair. This does not perform any endpoint scanning, it operates entirely from
    * local data stores.
    */
-  def replayUnmatchedDifferences(pairKey:String, listener:DifferencingListener, origin:MatchOrigin) : Unit
+  def replayUnmatchedDifferences(pair:DiffaPair, listener:DifferencingListener, origin:MatchOrigin) : Unit
 
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
    * @throws If the shouldRun variable is set to false, this will throw a ScanCancelledException
    */
-  def scanUpstream(pairKey:String, writer: LimitedVersionCorrelationWriter,
+  def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter,
                    participant:UpstreamParticipant, listener:DifferencingListener,
                    handle:FeedbackHandle)
 
@@ -65,7 +66,7 @@ trait VersionPolicy {
    * detected will be reported to the listener provided.
    * @throws If the shouldRun variable is set to false, this will throw a ScanCancelledException
    */
-  def scanDownstream(pairKey:String, writer: LimitedVersionCorrelationWriter,
+  def scanDownstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter,
                      us:UpstreamParticipant, ds:DownstreamParticipant,
                      listener:DifferencingListener, handle:FeedbackHandle)
 
@@ -90,4 +91,4 @@ trait FeedbackHandle {
 /**
  * Thrown when a scan has been cancelled.
  */
-class ScanCancelledException(pairKey:String) extends Exception(pairKey)
+class ScanCancelledException(pair:DiffaPair) extends Exception(pair.identifier)

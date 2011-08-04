@@ -30,11 +30,12 @@ import akka.actor._
 import collection.mutable.{SynchronizedQueue, Queue}
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
  */
-case class PairActor(pairKey:String,
+case class PairActor(pair:DiffaPair,
                      us:UpstreamParticipant,
                      ds:DownstreamParticipant,
                      policy:VersionPolicy,
@@ -47,7 +48,7 @@ case class PairActor(pairKey:String,
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
-  self.id_=(pairKey)
+  self.id_=(pair.identifier)
 
   private var lastEventTime: Long = 0
   private var scheduledFlushes: ScheduledFuture[_] = _
@@ -147,7 +148,7 @@ case class PairActor(pairKey:String,
     def call(command:(LimitedVersionCorrelationWriter => Correlation)) = {
       val message = VersionCorrelationWriterCommand(scanUuid, command)
       (self !!(message, 1000L * timeout)) match {
-        case Some(CancelMessage)  => throw new ScanCancelledException(pairKey)
+        case Some(CancelMessage)  => throw new ScanCancelledException(pair)
         case Some(result)         => result.asInstanceOf[Correlation]
         case None                 =>
           logger.error("%s: Writer proxy timed out after %s seconds processing command: %s "
@@ -263,7 +264,7 @@ case class PairActor(pairKey:String,
    * Handles all messages that arrive whilst the actor is cancelling a scan
    */
   def handleCancellation() = {
-    logger.info("%s: Scan %s for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, activeScan.uuid, pairKey))
+    logger.info("%s: Scan %s for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, activeScan.uuid, pair.identifier))
     feedbackHandle.cancel()
 
     // Leave the scanning state as cancelled
@@ -282,7 +283,7 @@ case class PairActor(pairKey:String,
 
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
-      policy.replayUnmatchedDifferences(pairKey, differencingListener)
+      policy.replayUnmatchedDifferences(pair, differencingListener)
 
       // Re-queue all buffered commands
       leaveScanState(PairScanState.UP_TO_DATE)
@@ -302,9 +303,9 @@ case class PairActor(pairKey:String,
     }
 
     state match {
-      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Scan failed")
-      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan cancelled")
-      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairKey, "Scan completed")
+      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Scan failed")
+      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Scan cancelled")
+      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Scan completed")
       case _                        => // Ignore - not a state that we'll see
     }
 
@@ -332,7 +333,7 @@ case class PairActor(pairKey:String,
    */
   def processBacklog(state:PairScanState) = {
     if (pairScanListener != null) {
-      pairScanListener.pairScanStateChanged(pairKey, state)
+      pairScanListener.pairScanStateChanged(pair, state)
     }
     deferred.dequeueAll(d => {self ! d; true})
   }
@@ -355,11 +356,11 @@ case class PairActor(pairKey:String,
   def handleDifferenceMessage() = {
     try {
       writer.flush()
-      policy.replayUnmatchedDifferences(pairKey, differencingListener, TriggeredByBoot)
+      policy.replayUnmatchedDifferences(pair, differencingListener, TriggeredByBoot)
     } catch {
       case ex => {
-        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Failed to Difference Pair: " + ex.getMessage)
-        logger.error("Failed to difference pair " + pairKey, ex)
+        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Failed to Difference Pair: " + ex.getMessage)
+        logger.error("Failed to difference pair " + pair.identifier, ex)
       }
     }
   }
@@ -380,7 +381,7 @@ case class PairActor(pairKey:String,
       bufferedMatchEvents.clear()
     }
 
-    pairScanListener.pairScanStateChanged(pairKey, PairScanState.SCANNING)
+    pairScanListener.pairScanStateChanged(pair, PairScanState.SCANNING)
 
     try {
       writer.flush()
@@ -389,17 +390,17 @@ case class PairActor(pairKey:String,
 
       Actor.spawn {
         try {
-          policy.scanUpstream(pairKey, writerProxy, us, bufferingListener, feedbackHandle)
+          policy.scanUpstream(pair, writerProxy, us, bufferingListener, feedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Up, Success)
         }
         catch {
           case c:ScanCancelledException => {
-            logger.warn("Upstream scan on pair %s was cancelled".format(pairKey))
+            logger.warn("Upstream scan on pair %s was cancelled".format(pair.identifier))
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Cancellation)
           }
           case e:Exception => {
-            logger.error("Upstream scan failed: " + pairKey, e)
-            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Upstream scan failed: " + e.getMessage)
+            logger.error("Upstream scan failed: " + pair.identifier, e)
+            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Upstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Failure)
           }
         }
@@ -407,17 +408,17 @@ case class PairActor(pairKey:String,
 
       Actor.spawn {
         try {
-          policy.scanDownstream(pairKey, writerProxy, us, ds, bufferingListener, feedbackHandle)
+          policy.scanDownstream(pair, writerProxy, us, ds, bufferingListener, feedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Down, Success)
         }
         catch {
           case c:ScanCancelledException => {
-            logger.warn("Downstream scan on pair %s was cancelled".format(pairKey))
+            logger.warn("Downstream scan on pair %s was cancelled".format(pair.identifier))
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Cancellation)
           }
           case e:Exception => {
-            logger.error("Downstream scan failed: " + pairKey, e)
-            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Downstream scan failed: " + e.getMessage)
+            logger.error("Downstream scan failed: " + pair.identifier, e)
+            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Downstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Failure)
           }
         }
@@ -433,8 +434,8 @@ case class PairActor(pairKey:String,
 
     } catch {
       case x: Exception => {
-        logger.error("Failed to initiate scan for pair: " + pairKey, x)
-        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairKey, "Failed to initiate scan for pair: " + x.getMessage)
+        logger.error("Failed to initiate scan for pair: " + pair.identifier, x)
+        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Failed to initiate scan for pair: " + x.getMessage)
         processBacklog(PairScanState.FAILED)
         false
       }

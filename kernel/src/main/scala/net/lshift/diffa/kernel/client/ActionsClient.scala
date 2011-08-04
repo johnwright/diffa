@@ -18,8 +18,9 @@ package net.lshift.diffa.kernel.client
 
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
-import net.lshift.diffa.kernel.config.RepairAction
 import net.lshift.diffa.kernel.config.RepairAction._
+import net.lshift.diffa.kernel.frontend.RepairActionDef
+import net.lshift.diffa.kernel.config.{DiffaPairRef, RepairAction, Pair => DiffaPair}
 
 /**
  * Interface supported by clients capable of listing and invoking actions for pairs.
@@ -29,17 +30,17 @@ trait ActionsClient {
   /**
    * Lists all actions that a pairing offers
    */
-  def listActions(pairKey: String): Seq[Actionable]
+  def listActions(pair:DiffaPairRef): Seq[Actionable]
 
   /**
    * Lists the entity-scoped actions that a pairing offers
    */
-  def listEntityScopedActions(pairKey: String): Seq[Actionable]
+  def listEntityScopedActions(pair:DiffaPairRef): Seq[Actionable]
 
   /**
    * Lists the pair-scoped actions that a pairing offers
    */
-  def listPairScopedActions(pairKey: String): Seq[Actionable]
+  def listPairScopedActions(pair:DiffaPairRef): Seq[Actionable]
 
   /**
    * Invokes an action against a pairing
@@ -52,26 +53,27 @@ case class Actionable (
   @BeanProperty var name:String,
   @BeanProperty var scope:String,
   @BeanProperty var path:String,
-  @BeanProperty var pairKey:String) {
+  @BeanProperty var pair:String) {
 
  def this() = this(null, null, null, null)
 }
 
 object Actionable {
-  def fromRepairAction(a: RepairAction): Actionable = {
-    val path = "/actions/" + a.pairKey + "/" + a.name + (a.scope match {
+  def fromRepairAction(domain:String, a: RepairActionDef): Actionable = {
+    val path = "/" + domain + "/actions/" + a.pair + "/" + a.name + (a.scope match {
       case ENTITY_SCOPE =>  "/${id}"
       case PAIR_SCOPE => ""
     })
-    new Actionable(a.name, a.scope, path, a.pairKey)
+    new Actionable(a.name, a.scope, path, a.pair)
   }
 }
 
 case class ActionableRequest (
-  @BeanProperty var pairKey:String,
-  @BeanProperty var actionId:String,
-  @BeanProperty var entityId:String) {
+  @BeanProperty var pairKey:String = null,
+  @BeanProperty var domain:String = null,
+  @BeanProperty var actionId:String = null,
+  @BeanProperty var entityId:String = null) {
 
- def this() = this(null, null, null)
+ def this() = this(pairKey = null)
 
 }

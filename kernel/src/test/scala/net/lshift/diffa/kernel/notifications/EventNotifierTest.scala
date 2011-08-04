@@ -20,28 +20,32 @@ import org.easymock.EasyMock._
 import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Before, Test}
-import net.lshift.diffa.kernel.config.{User, ConfigStore}
 import org.joda.time.{Period, DateTime}
 import net.lshift.diffa.kernel.differencing.{LiveWindow, SessionManager}
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.DiffaPairRef._
+import net.lshift.diffa.kernel.config._
 
 class EventNotifierTest {
 
-  val configStore = createStrictMock("configStore", classOf[ConfigStore])
+  val domain = Domain(name="domain")
+  val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
   val sessionManager = createStrictMock("sessionManager", classOf[SessionManager])
 
   val quietTimeMillis = 2000
-  val notifier = new EventNotifier(sessionManager, configStore, Period.millis(quietTimeMillis))
+  val notifier = new EventNotifier(sessionManager, domainConfigStore, Period.millis(quietTimeMillis))
 
   @Before
   def setup = {
-    val user = User("Foo Bar", "dev_null@lshift.net")
-    expect(configStore.listUsers).andStubReturn(List(user))
-    replay(configStore, sessionManager)
+    val user = User("Foo Bar","dev_null@lshift.net")
+    val member = Member(domain = domain, user = user)
+    expect(domainConfigStore.listDomainMembers(domain.name)).andStubReturn(List(member))
+    replay(domainConfigStore, sessionManager)
   }
 
   @Test
   def quiteTime = {
-    val id = VersionID("pair","abc")
+    val id = VersionID(DiffaPairRef("pair", domain.name), "abc")
     val timestamp = new DateTime()
     val up = "foo"
     val down = "bar"

@@ -21,70 +21,85 @@ import scala.collection.JavaConversions._
 import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
-import org.quartz.CronExpression
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
+import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
 
-trait ConfigStore {
-  def createOrUpdateEndpoint(endpoint: Endpoint): Unit
-  def deleteEndpoint(name: String): Unit
-  def listEndpoints: Seq[Endpoint]
+/**
+ * Provides general configuration options within the scope of a particular domain.
+ */
+trait DomainConfigStore {
 
-  def createOrUpdatePair(pairDef: PairDef): Unit
-  def deletePair(key: String): Unit
-  def listPairs : Seq[Pair]
+  def createOrUpdateEndpoint(domain:String, endpoint: EndpointDef) : Endpoint
+  def deleteEndpoint(domain:String, name: String) : Unit
+  def listEndpoints(domain:String) : Seq[EndpointDef]
 
-  def createOrUpdateRepairAction(action: RepairAction): Unit
-  def deleteRepairAction(name: String, pairKey: String): Unit
+  def createOrUpdatePair(domain:String, pairDef: PairDef) : Unit
+  def deletePair(domain:String, key: String) : Unit
+  def listPairs(domain:String) : Seq[PairDef]
 
-  def listRepairActions: Seq[RepairAction]
-  def listRepairActionsForPair(pair: Pair): Seq[RepairAction]
+  def createOrUpdateRepairAction(domain:String, action: RepairActionDef) : Unit
+  def deleteRepairAction(domain:String, name: String, pairKey: String) : Unit
 
-  def listEscalations: Seq[Escalation]
-  def deleteEscalation(s: String, s1: String)
-  def createOrUpdateEscalation(escalation: Escalation)
-  def listEscalationsForPair(pair: Pair): Seq[Escalation]
+  def listRepairActions(domain:String) : Seq[RepairActionDef]
+  def listRepairActionsForPair(domain:String, key: String) : Seq[RepairActionDef]
 
-  def getEndpoint(name: String): Endpoint
-  def getPair(key: String): Pair
-  def getUser(name: String) : User
-  def getRepairAction(name: String, pairKey: String): RepairAction
+  def listEscalations(domain:String) : Seq[EscalationDef]
+  def deleteEscalation(domain:String, s: String, s1: String)
+  def createOrUpdateEscalation(domain:String, escalation : EscalationDef)
+  def listEscalationsForPair(domain:String, key: String) : Seq[EscalationDef]
 
-  def createOrUpdateUser(user: User): Unit
-  def deleteUser(name: String): Unit
-  def listUsers: Seq[User]
+  def getEndpointDef(domain:String, name: String) : EndpointDef
+  def getPairDef(domain:String, key: String) : PairDef
 
-  def getPairsForEndpoint(epName:String):Seq[Pair]
+  def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
 
   /**
-   * Retrieves all (non-internal) agent configuration options.
+   * Retrieves all (domain-specific, non-internal) agent configuration options.
    */
-  def allConfigOptions:Map[String, String]
+  def allConfigOptions(domain:String) : Map[String, String]
 
   /**
    * Retrieves an agent configuration option, returning the None if it is unset.
    */
-  def maybeConfigOption(key:String):Option[String]
+  def maybeConfigOption(domain:String, key:String) : Option[String]
 
   /**
    * Retrieves an agent configuration option, returning the provided default value if it is unset.
    */
-  def configOptionOrDefault(key:String, defaultVal:String):String
+  def configOptionOrDefault(domain:String, key:String, defaultVal:String) : String
 
   /**
    * Sets the given configuration option to the given value.
    * @param isInternal options marked as internal will not be returned by the allConfigOptions method. This allows
    *   properties to be prevented from being shown in the user-visible system configuration views.
    */
-  def setConfigOption(key:String, value:String, isInternal:Boolean = false)
+  def setConfigOption(domain:String, key:String, value:String)
 
   /**
    * Removes the setting for the given configuration option.
    */
-  def clearConfigOption(key:String)
+  def clearConfigOption(domain:String, key:String)
+
+
+  /**
+   * Make the given user a member of this domain.
+   */
+  def makeDomainMember(domain:String, userName:String) : Member
+
+  /**
+   * Remove the given user a from this domain.
+   */
+  def removeDomainMembership(domain:String, userName:String) : Unit
+
+  /**
+   * Lists all of the members of the given domain
+   */
+  def listDomainMembers(domain:String) : Seq[Member]
 }
 
 case class Endpoint(
   @BeanProperty var name: String = null,
+  @BeanProperty var domain: Domain = null,
   @BeanProperty var scanUrl: String = null,
   @BeanProperty var contentRetrievalUrl: String = null,
   @BeanProperty var versionGenerationUrl: String = null,
@@ -160,14 +175,11 @@ case class Endpoint(
         }
       }
     }).toList
-
-  def validate(path:String = null) {
-    // TODO: Add validation of endpoint parameters
-  }
 }
 
 case class Pair(
   @BeanProperty var key: String = null,
+  @BeanProperty var domain: Domain = null,
   @BeanProperty var upstream: Endpoint = null,
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var versionPolicyName: String = null,
@@ -175,52 +187,73 @@ case class Pair(
   @BeanProperty var scanCronSpec: String = null) {
 
   def this() = this(key = null)
+
+  def identifier = asRef.identifier
+
+  def asRef = DiffaPairRef(key,domain.name)
+
+  override def equals(that:Any) = that match {
+    case p:Pair => p.key == key && p.domain == domain
+    case _      => false
+  }
+
+  // TODO This looks a bit strange
+  override def hashCode = 31 * (31 + key.hashCode) + domain.hashCode
+}
+
+/**
+ * This is a light weight pointer to a pair in Diffa.
+ */
+case class DiffaPairRef(@BeanProperty var key: String = null,
+                        @BeanProperty var domain: String = null) {
+  def this() = this(key = null)
+
+  def identifier = "%s/%s".format(domain,key)
+
+  def toInternalFormat = Pair(key = key, domain = Domain(name = domain))
+
 }
 
 object Pair {
   val NO_MATCHING = null.asInstanceOf[Int]
-}
-
-case class PairDef(
-  @BeanProperty var pairKey: String = null,
-  @BeanProperty var versionPolicyName: String = null,
-  @BeanProperty var matchingTimeout: Int = 0,
-  @BeanProperty var upstreamName: String = null,
-  @BeanProperty var downstreamName: String = null,
-  @BeanProperty var scanCronSpec: String = null) {
-
-  def this() = this(pairKey = null)
-
-  def validate(path:String = null) {
-    val pairPath = ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey))
-
-    // Ensure that cron specs are valid
-    if (scanCronSpec != null) {
-      try {
-        // Will throw an exception if the expression is invalid. The exception message will also include useful
-        // diagnostics of why it is wrong.
-        new CronExpression(scanCronSpec)
-      } catch {
-        case ex =>
-          throw new ConfigValidationException(pairPath, "Schedule '" + scanCronSpec + "' is not a valid: " + ex.getMessage)
-      }
-    }
+  def fromIdentifier(id:String) = {
+    val Array(domain,key) = id.split("/")
+    (domain,key)
   }
 }
 
+case class Domain (
+  @BeanProperty var name: String = null
+) {
+  def this() = this(name = null)
+
+  override def equals(that:Any) = that match {
+    case d:Domain => d.name == name
+    case _        => false
+  }
+
+  override def hashCode = name.hashCode
+  override def toString = name
+}
+
+object Domain {
+  val DEFAULT_DOMAIN = Domain(name = "root")
+}
+
+
 case class RepairAction(
-  @BeanProperty var name: String,
-  @BeanProperty var url: String,
-  @BeanProperty var scope: String,
-  @BeanProperty var pairKey: String
+  @BeanProperty var name: String = null,
+  @BeanProperty var url: String = null,
+  @BeanProperty var scope: String = null,
+  @BeanProperty var pair: Pair = null
 ) {
   import RepairAction._
 
-  def this() = this(null, null, null, null)
+  def this() = this(name = null)
 
   def validate(path:String = null) {
     val actionPath = ValidationUtil.buildPath(
-      ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey)),
+      ValidationUtil.buildPath(path, "pair", Map("key" -> pair.key)),
       "repair-action", Map("name" -> name))
 
     // Ensure that the scope is supported
@@ -239,40 +272,15 @@ object RepairAction {
  * Defines a step for escalating a detected difference.
  */
 case class Escalation (
-  @BeanProperty var name: String,
-  @BeanProperty var pairKey: String,
-  @BeanProperty var action: String,
-  @BeanProperty var actionType: String,
-  @BeanProperty var event: String,
-  @BeanProperty var origin: String
+  @BeanProperty var name: String = null,
+  @BeanProperty var pair: Pair = null,
+  @BeanProperty var action: String = null,
+  @BeanProperty var actionType: String = null,
+  @BeanProperty var event: String = null,
+  @BeanProperty var origin: String = null
 ) {
-  import EscalationEvent._
-  import EscalationOrigin._
-  import EscalationActionType._
 
-  def this() = this(null, null, null, null, null, null)
-
-  def validate(path:String = null) {
-    val escalationPath = ValidationUtil.buildPath(
-      ValidationUtil.buildPath(path, "pair", Map("key" -> pairKey)),
-      "escalation", Map("name" -> name))
-
-    // Ensure that the event is supported
-    this.event = event match {
-      case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
-      case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
-    }
-    // Ensure that the origin is supported
-    this.origin = origin match {
-      case SCAN => origin
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
-    }
-    // Ensure that the action type is supported
-    this.actionType = actionType match {
-      case REPAIR => actionType
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
-    }
-  }
+  def this() = this(name = null)
 }
 
 /**
@@ -298,17 +306,40 @@ object EscalationActionType {
   val REPAIR = "repair"
 }
 
-case class User(@BeanProperty var name: String,
-                @BeanProperty var email: String) {
-  def this() = this(null, null)
+case class User(@BeanProperty var name: String = null,
+                @BeanProperty var email: String = null) {
+  def this() = this(name = null)
 
-  def validate(path:String = null) {
-    // Nothing to validate
+  override def equals(that:Any) = that match {
+    case u:User => u.name == name
+    case _      => false
   }
+
+  override def hashCode = name.hashCode
+  override def toString = name
 }
 
-case class ConfigOption(@BeanProperty var key:String,
-                        @BeanProperty var value:String,
-                        @BeanProperty var isInternal:Boolean) {
-  def this() = this(null, null, false)
+/**
+ * Defines a user's membership to a domain
+ */
+case class Member(@BeanProperty var user: User = null,
+                  @BeanProperty var domain: Domain = null) {
+
+  def this() = this(user = null)
+
+}
+
+case class ConfigOption(@BeanProperty var key:String = null,
+                        @BeanProperty var value:String = null,
+                        @BeanProperty var domain:Domain = null) {
+  def this() = this(key = null)
+}
+
+/**
+ * Convenience wrapper for a compound primary key
+ */
+case class DomainScopedKey(@BeanProperty var key:String = null,
+                           @BeanProperty var domain:Domain = null) extends java.io.Serializable
+{
+  def this() = this(key = null)
 }

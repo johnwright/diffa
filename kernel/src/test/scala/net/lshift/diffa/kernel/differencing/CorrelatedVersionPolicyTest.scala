@@ -36,7 +36,7 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry
  * Test cases for the correlated version policy test.
  */
 class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
-  val policy = new CorrelatedVersionPolicy(stores, listener, configStore, diagnostics)
+  val policy = new CorrelatedVersionPolicy(stores, listener, systemConfigStore, diagnostics)
 
   /**
    * Generates the internal downstream version of a given version string. Since the correlated policy expects
@@ -66,7 +66,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     pair.downstream.categories = testData.downstreamCategories
     val timestamp = new DateTime
     // Expect only a top-level scan for the upstream, but a full scan for the downstream
-    expectUpstreamAggregateScan(abPair, testData.bucketing(0), testData.constraints(0),
+    expectUpstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1"), testData.attributes(0)),
         ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), testData.attributes(1))),
@@ -74,7 +74,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         Up("id1", testData.values(0), "vsn1"),
         Up("id2", testData.values(1), "vsn2")))
 
-    expectDownstreamAggregateScan(abPair, testData.bucketing(0), testData.constraints(0),
+    expectDownstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn1")), testData.attributes(0)),
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")), testData.attributes(1))),
@@ -83,21 +83,21 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
         Down("id5", testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
-    expectDownstreamAggregateScan(abPair, testData.bucketing(1), testData.constraints(1),
+    expectDownstreamAggregateScan(testData.bucketing(1), testData.constraints(1),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")), testData.attributes(2))),
       VersionsFromStore(
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
         Down("id5", testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
-    expectDownstreamAggregateScan(abPair, testData.bucketing(2), testData.constraints(2),
+    expectDownstreamAggregateScan(testData.bucketing(2), testData.constraints(2),
       DigestsFromParticipant(
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3") + downstreamVersionFor("vsn5a")), testData.attributes(3))),
       VersionsFromStore(
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2")),
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4")),
         Down("id5", testData.values(1), "vsn5", downstreamVersionFor("vsn5"))))
-    expectDownstreamEntityScan2(abPair, testData.constraints(3),
+    expectDownstreamEntityScan2(testData.constraints(3),
       DigestsFromParticipant(
         ScanResultEntry.forEntity("id2", downstreamVersionFor("vsn2"), JUL_8_2010_1, testData.values(1)),
         ScanResultEntry.forEntity("id3", downstreamVersionFor("vsn3"), JUL_8_2010_1, testData.values(1)),
@@ -110,25 +110,25 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // We should see id3 re-run through the system, and id4 be removed
     expect(usMock.retrieveContent("id3")).andReturn("content3")
     expect(dsMock.generateVersion("content3")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3", downstreamVersionFor("vsn3")))
-    expect(writer.storeDownstreamVersion(VersionID(abPair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
-      andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
-    expect(writer.clearDownstreamVersion(VersionID(abPair, "id4"))).
-      andReturn(Correlation.asDeleted(abPair, "id4", new DateTime))
+    expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
+      andReturn(new Correlation(null, pair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
+    expect(writer.clearDownstreamVersion(VersionID(pair.asRef, "id4"))).
+      andReturn(Correlation.asDeleted(pair, "id4", new DateTime))
     expect(usMock.retrieveContent("id5")).andReturn("content5")
     expect(dsMock.generateVersion("content5")).andReturn(new ProcessingResponse("id5", testData.values(1), "vsn5a", downstreamVersionFor("vsn5a")))
-    expect(writer.storeDownstreamVersion(VersionID(abPair, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
-        andReturn(Correlation(null, abPair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
+    expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
+        andReturn(new Correlation(null, pair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
-    listener.onMatch(VersionID(abPair, "id4"), null, TriggeredByScan); expectLastCall
+    listener.onMatch(VersionID(pair.asRef, "id4"), null, TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
-    expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(stores(pair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.scanUpstream(abPair, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, nullListener, feedbackHandle)
-    policy.replayUnmatchedDifferences(abPair, nullListener)
+    policy.scanUpstream(pair, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(pair, writer, usMock, dsMock, nullListener, feedbackHandle)
+    policy.replayUnmatchedDifferences(pair, nullListener)
 
     verifyAll
   }
@@ -160,7 +160,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
         ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2") + downstreamVersionFor("vsn3")), testData.attributes(3))),
       VersionsFromStore(
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
-    expectDownstreamEntityScan2(abPair, testData.constraints(3),
+    expectDownstreamEntityScan2(testData.constraints(3),
       DigestsFromParticipant(
         ScanResultEntry.forEntity("id2", downstreamVersionFor("vsn2"), JUL_8_2010_1, testData.values(1)),
         ScanResultEntry.forEntity("id3", downstreamVersionFor("vsn3"), JUL_8_2010_1, testData.values(1))),
@@ -172,15 +172,15 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(dsMock.generateVersion("content3a")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3a", downstreamVersionFor("vsn3a")))
 
     // We should see a replayStoredDifferences being generated
-    listener.onMismatch(VersionID(abPair, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan); expectLastCall
+    listener.onMismatch(VersionID(pair.asRef, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
-    expect(stores(abPair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(stores(pair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
-    policy.scanUpstream(abPair, writer, usMock, listener, feedbackHandle)
-    policy.scanDownstream(abPair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(abPair, nullListener)
+    policy.scanUpstream(pair, writer, usMock, listener, feedbackHandle)
+    policy.scanDownstream(pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.replayUnmatchedDifferences(pair, nullListener)
 
     verifyAll
   }

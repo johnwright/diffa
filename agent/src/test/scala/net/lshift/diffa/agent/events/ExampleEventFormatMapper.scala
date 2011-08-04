@@ -35,8 +35,8 @@ class ExampleEventFormatMapper extends EventFormatMapper {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  def map(content: String, endpoint: String) = {
-    log.debug("Received change event %s for endpoint %s".format(content, endpoint))
+  def map(content: String, inboundURL: String) = {
+    log.debug("Received change event %s for endpoint %s".format(content, inboundURL))
 
     val in = objectMapper.readTree(content)
 
@@ -48,7 +48,7 @@ class ExampleEventFormatMapper extends EventFormatMapper {
 
     Seq(WireEvent(eventType = UpstreamChangeEventType.name,
                   metadata = Map(WireEvent.ID -> id,
-                                  WireEvent.ENDPOINT -> endpoint,
+                                  WireEvent.INBOUND_URL -> inboundURL,
                                   WireEvent.LAST_UPDATE -> dateTime.print(lastUpdate),
                                   WireEvent.VSN -> vsn),
                   attributes = List(dateTime.print(effectiveDate), value)))

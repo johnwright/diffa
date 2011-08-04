@@ -31,16 +31,16 @@ object EventRegistry {
   def resolveEvent(wire:WireEvent) : ChangeEvent = {
 
     val id = wire.metadata(ID)
-    val endpoint = wire.metadata(ENDPOINT)
+    val inboundURL = wire.metadata(INBOUND_URL)
     val lastUpdate = formatter.parseDateTime(wire.metadata(LAST_UPDATE))
 
     wire.eventType match {
-      case UpstreamChangeEventType.name => UpstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
-      case DownstreamChangeEventType.name => DownstreamChangeEvent(endpoint, id, wire.attributes, lastUpdate, wire.metadata(VSN))
+      case UpstreamChangeEventType.name => UpstreamChangeEvent(inboundURL, id, wire.attributes, lastUpdate, wire.metadata(VSN))
+      case DownstreamChangeEventType.name => DownstreamChangeEvent(inboundURL, id, wire.attributes, lastUpdate, wire.metadata(VSN))
       case DownstreamCorrelatedChangeEventType.name =>
         val up = wire.metadata(UVSN)
         val down = wire.metadata(DVSN)
-        DownstreamCorrelatedChangeEvent(endpoint, id, wire.attributes, lastUpdate, up, down)
+        DownstreamCorrelatedChangeEvent(inboundURL, id, wire.attributes, lastUpdate, up, down)
     }
   }
 }

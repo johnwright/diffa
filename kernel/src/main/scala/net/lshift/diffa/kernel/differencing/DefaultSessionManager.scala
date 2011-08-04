@@ -20,13 +20,14 @@ import collection.mutable.{ListBuffer, HashMap}
 import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
-import net.lshift.diffa.kernel.actors.{PairPolicyClient, PairActor}
-import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
+import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Standard implementation of the SessionManager.
@@ -43,7 +44,7 @@ import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAwar
  * whilst the matching manager waits for it to expire).
  */
 class DefaultSessionManager(
-        val config:ConfigStore,
+        val systemConfig:SystemConfigStore,
         val cacheProvider:SessionCacheProvider,
         val matching:MatchingManager,
         val vpm:VersionPolicyManager,
@@ -63,7 +64,7 @@ class DefaultSessionManager(
 
   private val participants = new HashMap[Endpoint, Participant]
 
-  private val pairStates = new HashMap[String, PairScanState]
+  private val pairStates = new HashMap[DiffaPair, PairScanState]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
@@ -132,8 +133,8 @@ class DefaultSessionManager(
   }
 
   // TODO: This should be using a SessionID, and not a pair
-  def end(pair: String, listener: DifferencingListener) = {
-    forEachSession(VersionID(pair, "dummy"), s => {
+  def end(pair: DiffaPair, listener: DifferencingListener) = {
+    forEachSession(VersionID(pair.asRef, "dummy"), s => {
       listeners.synchronized {
         listeners.get(s.sessionId) match {
           case None =>
@@ -156,9 +157,9 @@ class DefaultSessionManager(
   def retrieveAllPairScanStates = pairScanStates(SessionScope.all)
 
   def pairScanStates(scope:SessionScope) = {
-    val pairKeys = pairKeysForScope(scope)
+    val pairs = pairsForScope(scope)
     pairStates.synchronized {
-      pairKeys.map(pairKey => pairKey -> pairStates.getOrElse(pairKey, PairScanState.UNKNOWN)).toMap
+      pairs.map(p => p.key -> pairStates.getOrElse(p, PairScanState.UNKNOWN)).toMap
     }
   }
 
@@ -228,14 +229,14 @@ class DefaultSessionManager(
     val event = safeGetSession(sessionID).getEvent(evtSeqId)
     check(event) match {
       case true  => {
-       val versionID = event.objId
-       val pair = config.getPair(versionID.pairKey)
+       val id = event.objId
+       val pair = systemConfig.getPair(id.pair.domain, id.pair.key)
        val endpoint = resolve(pair)
        if (!participants.contains(endpoint)) {
          participants(endpoint) = p(endpoint)
        }
        val participant = participants(endpoint)
-       participant.retrieveContent(versionID.id)
+       participant.retrieveContent(id.id)
       }
       case false => "Expanded detail not available"
     }
@@ -265,7 +266,9 @@ class DefaultSessionManager(
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin) = {
     log.trace("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
-    matching.getMatcher(id.pairKey) match {
+    val pair = systemConfig.getPair(id.pair.domain, id.pair.key)
+
+    matching.getMatcher(pair) match {
       case Some(matcher) => {
         matcher.isVersionIDActive(id) match {
           case true  => reportPending(id, lastUpdate, upstreamVsn, downstreamVsn)
@@ -313,7 +316,7 @@ class DefaultSessionManager(
   // Pair Scan Notifications
   //
 
-  def pairScanStateChanged(pairKey: String, scanState: PairScanState) = updatePairScanState(pairKey, scanState)
+  def pairScanStateChanged(pair: DiffaPair, scanState: PairScanState) = updatePairScanState(pair, scanState)
 
 
   //
@@ -327,49 +330,41 @@ class DefaultSessionManager(
   /**
    * When pairs are updated, perform a differencing run to scan with their status.
    */
-  def onUpdatePair(pairKey: String) = {
+  def onUpdatePair(pair: DiffaPair) = {
     val isRelevantToASession =
-      sessionsByKey.values.foldLeft(false)((currentlyRelevant, s) => currentlyRelevant || s.isInScope(VersionID(pairKey, "dummy")));
+      sessionsByKey.values.foldLeft(false)((currentlyRelevant, s) => currentlyRelevant || s.isInScope(VersionID(pair.asRef, "dummy")));
     if (isRelevantToASession) {
       val (from, until) = defaultDateBounds()
 
-      runDifferenceForScope(SessionScope.forPairs(pairKey), from, until)
+      runDifferenceForScope(SessionScope.forPairs(pair.domain.name, pair.key), from, until)
     }
   }
 
   /**
    * When pairs are deleted, we stop tracking their status in the pair scan map.
    */
-  def onDeletePair(pairKey:String) = {
-    pairStates.synchronized { pairStates.remove(pairKey) }
+  def onDeletePair(pair:DiffaPair) = {
+    pairStates.synchronized { pairStates.remove(pair) }
   }
-
-  def withPair[T](pair:String)(f:Function0[T]) = withValidPair(pair, f)
 
   def runScanForScope(scope:SessionScope, start:DateTime, end:DateTime) {
-    pairKeysForScope(scope).foreach(runScanForPair(_))
+    pairsForScope(scope).foreach(runScanForPair(_))
   }
 
-  def runScanForPair(pairKey:String) {
-    withPair[Unit](pairKey)(() => {
-      // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
-      // asynchronously, we might have returned before then, and this may potentially result in clients seeing
-      // a "Up To Date" view, even though we're just about to transition out of that state.
-      updatePairScanState(pairKey, PairScanState.SCANNING)
-
-      pairPolicyClient.scanPair(pairKey)
-    })
+  def runScanForPair(pair:DiffaPair) {
+    // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
+    // asynchronously, we might have returned before then, and this may potentially result in clients seeing
+    // a "Up To Date" view, even though we're just about to transition out of that state.
+    updatePairScanState(pair, PairScanState.SCANNING)
+    pairPolicyClient.scanPair(pair)
   }
 
-  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime) {
-    pairKeysForScope(scope).foreach(pairKey => {
-      pairPolicyClient.difference(pairKey)
-    })
-  }
+  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime)
+  = pairsForScope(scope).foreach(pairPolicyClient.difference(_))
 
-  def pairKeysForScope(scope:SessionScope):Seq[String] = {
+  def pairsForScope(scope:SessionScope):Seq[DiffaPair] = {
     scope.includedPairs.size match {
-      case 0  => config.listPairs.map(p => p.key)
+      case 0  => systemConfig.listPairs
       case _  => scope.includedPairs
     }
   }
@@ -426,25 +421,18 @@ class DefaultSessionManager(
   def generateSessionId(scope: SessionScope, start: DateTime, end: DateTime) = DigestUtils.md5Hex(scope.toString + start + end)
 
   /**
-   * Utility function to make sure that the session refers to a valid pair
-   */
-  def withValidPair[T](pair:String, f: () => T) = {
-    config.getPair(pair)
-    f()
-  }
-
-  /**
    * Utility function to make sure that a scope refers only to valid pairs.
    */
   def withValidScope[T](scope:SessionScope, f: () => T) = {
-    scope.includedPairs.foreach(p => config.getPair(p))
+    // Ignore this because scope will be deprecated soon
+    //scope.includedPairs.foreach(p => config.getPair(p))
     f()
   }
 
-  def updatePairScanState(pairKey:String, state:PairScanState) = {
+  def updatePairScanState(pair:DiffaPair, state:PairScanState) = {
     pairStates.synchronized {
-      pairStates(pairKey) = state
+      pairStates(pair) = state
     }
-    log.info("Pair " + pairKey + " entered scan state: " + state)
+    log.info("Pair " + pair.identifier + " entered scan state: " + state)
   }
 }

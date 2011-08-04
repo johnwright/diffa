@@ -15,6 +15,8 @@
  */
 package net.lshift.diffa.kernel.actors
 
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
+
 /**
  * Trait supported by components that manage active pairs.
  */
@@ -22,10 +24,10 @@ trait ActivePairManager {
   /**
    * Activates resources necessary to manage the given pair.
    */
-  def startActor(pair:net.lshift.diffa.kernel.config.Pair)
+  def startActor(pair:DiffaPair)
 
   /**
    * De-activates any resources associated with the pair.
    */
-  def stopActor(key:String)
+  def stopActor(pair:DiffaPairRef)
 }

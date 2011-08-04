@@ -48,9 +48,7 @@ object TestEnvironments {
 
   def sameAmqp(key:String) =
     new TestEnvironment(key,
-                        new HttpParticipants(nextPort, nextPort) {
-                          override val inboundUrl:String = AmqpQueueUrl("changes-same" + key).toString
-                        },
+                        new HttpParticipants(nextPort, nextPort),
                         { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
                                                      "changes-same" + key,
                                                      10000) },
@@ -58,9 +56,7 @@ object TestEnvironments {
 
   def correlatedAmqp(key:String) =
     new TestEnvironment(key,
-                        new HttpParticipants(nextPort, nextPort) {
-                          override val inboundUrl:String = AmqpQueueUrl("changes-correlated" + key).toString
-                        },
+                        new HttpParticipants(nextPort, nextPort),
                         { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
                                                      "changes-correlated" + key,
                                                      10000) },

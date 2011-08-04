@@ -30,17 +30,19 @@ import net.lshift.diffa.kernel.participants._
 import collection.mutable.{ListBuffer, HashMap, HashSet}
 import net.lshift.diffa.kernel.differencing._
 import org.apache.lucene.document._
-import net.lshift.diffa.kernel.config.ConfigStore
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import net.lshift.diffa.participant.scanning._
 import org.joda.time.{DateTime, LocalDate, DateTimeZone}
+import net.lshift.diffa.kernel.config.{Domain, DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.util.AlertCodes
+import net.lshift.diffa.kernel.config.system.{InvalidSystemConfigurationException, SystemConfigStore}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
  * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
  * of pair attributes.
  */
-class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, configStore:ConfigStore)
+class LuceneVersionCorrelationStore(val pair: DiffaPair, index:Directory, configStore:SystemConfigStore)
     extends VersionCorrelationStore
     with Closeable {
 
@@ -48,11 +50,21 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  val schemaVersionKey = "correlationStore.schemaVersion"
-  configStore.maybeConfigOption(schemaVersionKey) match {
-    case None      => configStore.setConfigOption(schemaVersionKey, "0", isInternal = true)
-    case Some("0") => // We're up to date
-      // When new schema versions appear, we can handle their upgrade here
+  val version = VersionCorrelationStore.currentSchemaVersion.toString
+  val schemaKey = VersionCorrelationStore.schemaVersionKey
+
+  configStore.maybeSystemConfigOption(schemaKey) match {
+    case None          => configStore.setSystemConfigOption(schemaKey,version)
+    case Some(x)       => {
+      // Check to see if we're up to date
+      if (x != version) {
+        // We're not up to date, so perform an upgrade
+        // Ticket #323 - We need to migrate from this version, but we currently don't have the capability to do this
+        val msg = "%s: Do not have the ability the migrate the correlation store from version %s (see ticket #323), exiting now"
+        log.error(msg.format(AlertCodes.INVALID_SYSTEM_CONFIGURATION, x))
+        throw new InvalidSystemConfigurationException("Cannot migrate correlation store")
+      }
+    }
   }
 
   val writer = new LuceneWriter(index)
@@ -75,7 +87,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
   def retrieveCurrentCorrelation(id:VersionID) = {
     retrieveCurrentDoc(index, id) match {
       case None => None
-      case Some(doc) => Some(docToCorrelation(doc, id.pairKey))
+      case Some(doc) => Some(docToCorrelation(doc, id))
     }
   }
 
@@ -164,7 +176,7 @@ class LuceneVersionCorrelationStore(val pairKey: String, index:Directory, config
     def allCorrelations(searcher:IndexSearcher) = {
       docIds.map(id => {
         val doc = searcher.doc(id)
-        docToCorrelation(doc, pairKey)
+        docToCorrelation(doc, pair)
       })
     }
 
@@ -204,9 +216,13 @@ object LuceneVersionCorrelationStore {
     }
   }
 
-  def docToCorrelation(doc:Document, pairKey: String) = {
+  def docToCorrelation(doc:Document, pair:DiffaPair) : Correlation = docToCorrelation(doc,pair.key,pair.domain.name)
+  def docToCorrelation(doc:Document, id:VersionID) : Correlation = docToCorrelation(doc,id.pair.key,id.pair.domain)
+
+  def docToCorrelation(doc:Document, pairKey:String, domain:String) = {
     Correlation(
-      pairing = pairKey, id = doc.get("id"),
+      pairing = pairKey, domain = domain,
+      id = doc.get("id"),
       upstreamAttributes = findAttributes(doc, "up."),
       downstreamAttributes = findAttributes(doc, "down."),
       lastUpdate = parseDate(doc.get("lastUpdated")),
@@ -423,7 +439,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
     prepareUpdate(id, doc)
 
-    docToCorrelation(doc, id.pairKey)
+    docToCorrelation(doc, id)
   }
 
   private def doClearAttributes(id:VersionID, f:Document => Boolean) = {
@@ -436,7 +452,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
         retrieveCurrentDoc(index, id)
 
     currentDoc match {
-      case None => Correlation.asDeleted(id.pairKey, id.id, new DateTime)
+      case None => Correlation.asDeleted(id, new DateTime)
       case Some(doc) => {
         if (f(doc)) {
           // We want to keep the document. Update match status and write it out
@@ -444,12 +460,12 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
           prepareUpdate(id, doc)
 
-          docToCorrelation(doc, id.pairKey)
+          docToCorrelation(doc, id)
         } else {
           // We'll just delete the doc if it doesn't have an upstream
           prepareDelete(id)
 
-          Correlation.asDeleted(id.pairKey, id.id, new DateTime)
+          Correlation.asDeleted(id, new DateTime)
         }
       }
     }

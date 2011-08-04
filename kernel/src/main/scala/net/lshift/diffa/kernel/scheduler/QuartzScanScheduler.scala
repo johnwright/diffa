@@ -15,7 +15,6 @@
  */
 package net.lshift.diffa.kernel.scheduler
 
-import net.lshift.diffa.kernel.config.{ConfigStore, Pair}
 import java.io.Closeable
 import org.quartz.impl.DirectSchedulerFactory
 import org.quartz.jobs.NoOpJob
@@ -31,11 +30,16 @@ import org.quartz.TriggerBuilder.newTrigger
 import org.quartz.TriggerKey.triggerKey
 import org.quartz.CronScheduleBuilder.cronSchedule
 import org.quartz.JobBuilder.newJob
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Quartz backed implementation of the ScanScheduler.
  */
-class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:String)
+class QuartzScanScheduler(//config:DomainConfigStore,
+                          systemConfig:SystemConfigStore,
+                          sessions:SessionManager,
+                          name:String)
     extends ScanScheduler
     with Closeable {
 
@@ -47,11 +51,13 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
   scheduler.start()
   scheduler.getListenerManager.addTriggerListener(new TriggerListenerSupport {
     override def triggerFired(trigger: Trigger, context: JobExecutionContext) {
-      val pairKey = trigger.getKey.getName
+      val pairId = trigger.getJobKey.getName
+      var (domain,pairKey) = DiffaPair.fromIdentifier(pairId)
+      val pair = systemConfig.getPair(domain,pairKey)
 
       log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
       try {
-        sessions.runScanForPair(pairKey)
+        sessions.runScanForPair(pair)
       } catch {
           // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
         case ex =>
@@ -62,28 +68,26 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
   })
 
   // Ensure that a trigger is registered for each pair on startup
-  config.listPairs.foreach(onUpdatePair(_))
+  systemConfig.listPairs.foreach(onUpdatePair(_))
 
-  def onUpdatePair(pairKey: String) {
-    onUpdatePair(config.getPair(pairKey))
-  }
-
-  def onUpdatePair(pair:Pair) {
-    val existingJob = jobForPair(pair.key)
+  def onUpdatePair(pair:DiffaPair) {
+    val existingJob = jobForPair(pair)
+    val jobId = jobIdentifier(pair)
+    val jobName = jobId.toString
 
     def unschedulePair() {
-      log.debug("Removing schedule for pair %s".format(pair.key))
-      scheduler.deleteJob(jobKey(pair.key))
+      log.debug("Removing schedule for pair %s".format(jobName))
+      scheduler.deleteJob(jobId)
     }
 
     def schedulePair() {
-      log.debug("Applying schedule '%s' for pair %s".format(pair.scanCronSpec, pair.key))
+      log.debug("Applying schedule '%s' for pair %s".format(pair.scanCronSpec, jobName))
       val trigger = newTrigger()
-        .withIdentity(triggerKey(pair.key))
+        .withIdentity(triggerKey(jobName))
         .withSchedule(cronSchedule(pair.scanCronSpec))
         .build()
       val job = newJob(classOf[NoOpJob])
-        .withIdentity(jobKey(pair.key))
+        .withIdentity(jobId)
         .build()
       scheduler.scheduleJob(job, trigger)
     }
@@ -92,9 +96,9 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
       // No scan spec present, so just delete the schedule
       unschedulePair()
     } else if (existingJob != null) {
-      val triggers = scheduler.getTriggersOfJob(jobKey(pair.key))
+      val triggers = scheduler.getTriggersOfJob(jobId)
       if (triggers.size != 1)
-        throw new IllegalStateException("Expected exactly 1 trigger for " + pair.key + ", but instead found " + triggers)
+        throw new IllegalStateException("Expected exactly 1 trigger for " + pair.identifier + ", but instead found " + triggers)
 
       val currentExpr = triggers.get(0).asInstanceOf[CronTrigger].getCronExpression
       if (pair.scanCronSpec != currentExpr) {   // Only re-schedule if the cronspec has changed
@@ -106,10 +110,13 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
     }
   }
 
-  def onDeletePair(pairKey: String) {
-    val existingJob = jobForPair(pairKey)
+  def onDeletePair(pair:DiffaPair) {
+    val existingJob = jobForPair(pair)
     if (existingJob != null) {
-      scheduler.deleteJob(jobKey(pairKey))
+      scheduler.deleteJob(jobIdentifier(pair))
+    }
+    else {
+      log.warn("Received pair delete event (%s) for non-existent job".format(pair))
     }
   }
 
@@ -117,7 +124,8 @@ class QuartzScanScheduler(config:ConfigStore, sessions:SessionManager, name:Stri
     scheduler.shutdown()
   }
 
-  private def jobForPair(key:String) = scheduler.getJobDetail(jobKey(key))
+  private def jobForPair(pair:DiffaPair) = scheduler.getJobDetail(jobIdentifier(pair))
+  private def jobIdentifier(pair:DiffaPair) = new JobKey(pair.identifier)
   private def createScheduler() = {
     val threadPool = new SimpleThreadPool(1, Thread.NORM_PRIORITY)
     threadPool.initialize()
