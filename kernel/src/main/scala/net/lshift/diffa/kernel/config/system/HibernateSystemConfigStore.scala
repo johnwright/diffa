@@ -44,7 +44,7 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
 
   def deleteDomain(domain:String) = sessionFactory.withSession( s => {
     if (domain == Domain.DEFAULT_DOMAIN.name) {
-      throw new RuntimeException("Attempt to delete the default domain")
+      throw new InvalidSystemConfigurationException("Attempt to delete the default domain")
     }
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
@@ -54,7 +54,11 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
     s.flush()
     // TODO find out how to express this in HQL
     s.createSQLQuery("delete from members where domain_name = '%s'".format(domain)).executeUpdate()
-    s.createSQLQuery("delete from domains where name = '%s'".format(domain)).executeUpdate()
+    val deleted = s.createSQLQuery("delete from domains where name = '%s'".format(domain)).executeUpdate()
+    if (deleted == 0) {
+      logger.error("%s: Attempt to delete non-existent domain: %s".format(AlertCodes.INVALID_DOMAIN, domain))
+      throw new MissingObjectException(domain)
+    }
   })
 
   def listDomains = sessionFactory.withSession(s => listQuery[Domain](s, "allDomains", Map()))

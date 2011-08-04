@@ -34,9 +34,7 @@ class SystemConfigTest {
     client.removeDomain(domain.name)
   }
 
-  // TODO This should work at some stage
-  //@Test(expected = classOf[NotFoundException])
-  def nonExistentDomainShouldRaiseError = {
-    client.removeDomain(new UUID().toString)
-  }
+  @Test(expected = classOf[NotFoundException])
+  def nonExistentDomainShouldRaiseError = client.removeDomain(new UUID().toString)
+
 }

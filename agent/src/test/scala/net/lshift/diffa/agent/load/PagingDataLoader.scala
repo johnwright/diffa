@@ -58,7 +58,7 @@ object PagingDataLoader {
 
     configClient.declareEndpoint(EndpointDef(name = up, scanUrl = host, contentType = content, categories = categories))
     configClient.declareEndpoint(EndpointDef(name = down, scanUrl = host, contentType = content, categories = categories))
-    // TODO should domain be part of PairDef
+
     configClient.declarePair(PairDef(pair, "same", 0, up, down, "0 15 10 ? * *"))
 
     val start = new DateTime().minusHours(hours)
