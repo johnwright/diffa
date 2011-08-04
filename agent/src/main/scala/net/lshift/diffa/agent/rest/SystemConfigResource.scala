@@ -17,21 +17,19 @@
 package net.lshift.diffa.agent.rest
 
 import org.springframework.beans.factory.annotation.Autowired
-import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import org.springframework.stereotype.Component
 import net.lshift.diffa.agent.rest.ResponseUtils._
-import net.lshift.diffa.kernel.frontend.DomainDef
-import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import javax.ws.rs.core.{UriInfo, Context}
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import javax.ws.rs._
+import net.lshift.diffa.kernel.frontend.{SystemConfiguration, DomainDef}
 
 @Path("/root")
 @Component
 class SystemConfigResource {
 
-  @Autowired var systemConfig:SystemConfigStore = null
+  @Autowired var systemConfig:SystemConfiguration = null
   @Context var uriInfo:UriInfo = null
 
   @POST
@@ -39,9 +37,7 @@ class SystemConfigResource {
   @Consumes(Array("application/json"))
   @Description("Creates a new domain within the agent.")
   def createDomain(domain:DomainDef) = {
-    // TODO Should we have a frontend that is analogus to the Configuration frontend, or should we re-use that, or just leave it?
-    domain.validate()
-    systemConfig.createOrUpdateDomain(fromDomainDef(domain))
+    systemConfig.createOrUpdateDomain(domain)
     resourceCreated(domain.name, uriInfo)
   }
 
