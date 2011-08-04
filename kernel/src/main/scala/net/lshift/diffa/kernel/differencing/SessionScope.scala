@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.differencing
 
 import collection.immutable.HashSet
-import net.lshift.diffa.kernel.config.{Domain, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{Domain, DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Provides the details of the scope of a session.
@@ -32,6 +32,8 @@ class SessionScope(private val pairs:HashSet[DiffaPair]) {
       pairs.contains(pair)
     }
   }
+
+  def includes(pair:DiffaPairRef) : Boolean = includes(pair.toInternalFormat)
 
   override def toString = "pairs:" + pairs.map(_.key).toArray.foldLeft("") {
     case ("", p)  => p

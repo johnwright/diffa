@@ -155,7 +155,7 @@ abstract class AbstractDataDrivenPolicyTest {
       expectUpstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
 
       // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
-      listener.onMatch(VersionID(scenario.pair.key, scenario.pair.domain.name, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
+      listener.onMatch(VersionID(scenario.pair.asRef, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
 
       tx match {
         case atx:AggregateTx =>
@@ -209,7 +209,7 @@ abstract class AbstractDataDrivenPolicyTest {
       expectDownstreamEntityStore(scenario.pair, Seq(updated.firstVsn), true)
 
       // Expect to see an event about the version being matched (since we told the datastore to report it as matched)
-      listener.onMatch(VersionID(scenario.pair.key, scenario.pair.domain.name, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
+      listener.onMatch(VersionID(scenario.pair.asRef, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
     }
 
     expectUnmatchedVersionCheck(scenario)
@@ -272,7 +272,7 @@ abstract class AbstractDataDrivenPolicyTest {
     entities.foreach(v => {
       val downstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
 
-      expect(writer.storeUpstreamVersion(VersionID(pair.key, pair.domain.name, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
+      expect(writer.storeUpstreamVersion(VersionID(pair.asRef, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
         andReturn(new Correlation(null, pair, v.id, v.strAttrs, null, v.lastUpdated, new DateTime, v.vsn, downstreamVsnToUse, downstreamVsnToUse, matched))
     })
   }
@@ -280,7 +280,7 @@ abstract class AbstractDataDrivenPolicyTest {
     entities.foreach(v => {
       val upstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
 
-      expect(writer.storeDownstreamVersion(VersionID(pair.key, pair.domain.name, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
+      expect(writer.storeDownstreamVersion(VersionID(pair.asRef, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
         andReturn(new Correlation(null, pair, v.id, null, v.strAttrs, v.lastUpdated, new DateTime, upstreamVsnToUse, v.vsn, v.vsn, matched))
     })
   }
@@ -307,13 +307,13 @@ abstract class AbstractDataDrivenPolicyTest {
   protected case class UpstreamVersionAnswer(pair:Pair, res:Seq[Bucket])
       extends VersionAnswer[Function4[VersionID, Map[String, String], DateTime, String, Unit]] {
     def answerEntities(entities:Seq[Vsn], cb:Function4[VersionID, Map[String, String], DateTime, String, Unit]) {
-      entities.foreach(v => cb(VersionID(pair.key, pair.domain.name, v.id), v.strAttrs, v.lastUpdated, v.vsn))
+      entities.foreach(v => cb(VersionID(pair.asRef, v.id), v.strAttrs, v.lastUpdated, v.vsn))
     }
   }
   protected case class DownstreamVersionAnswer(pair:Pair, res:Seq[Bucket])
       extends VersionAnswer[Function5[VersionID, Map[String, String], DateTime, String, String, Unit]] {
     def answerEntities(entities:Seq[Vsn], cb:Function5[VersionID, Map[String, String], DateTime, String, String, Unit]) {
-      entities.foreach(v => cb(VersionID(pair.key, pair.domain.name, v.id), v.strAttrs, v.lastUpdated, v.vsn, v.vsn))
+      entities.foreach(v => cb(VersionID(pair.asRef, v.id), v.strAttrs, v.lastUpdated, v.vsn, v.vsn))
     }
   }
 

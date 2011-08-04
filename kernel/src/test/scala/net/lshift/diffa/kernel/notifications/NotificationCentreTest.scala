@@ -23,6 +23,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.{PairScanState, PairScanListener, TriggeredByScan, DifferencingListener}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.config.Domain
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 /**
  * Test cases for the Notification Centre.
@@ -39,14 +40,14 @@ class NotificationCentreTest {
     nc.registerForDifferenceEvents(l1)
     nc.registerForDifferenceEvents(l2)
 
-    l1.onMatch(VersionID("p", "e"), "v", TriggeredByScan)
-    l2.onMatch(VersionID("p", "e"), "v", TriggeredByScan)
-    l1.onMismatch(VersionID("p", "e"), now, "uv", "dv", TriggeredByScan)
-    l2.onMismatch(VersionID("p", "e"), now, "uv", "dv", TriggeredByScan)
+    l1.onMatch(VersionID(DiffaPairRef("p","d"), "e"), "v", TriggeredByScan)
+    l2.onMatch(VersionID(DiffaPairRef("p","d"), "e"), "v", TriggeredByScan)
+    l1.onMismatch(VersionID(DiffaPairRef("p","d"), "e"), now, "uv", "dv", TriggeredByScan)
+    l2.onMismatch(VersionID(DiffaPairRef("p","d"), "e"), now, "uv", "dv", TriggeredByScan)
     replay(l1, l2)
 
-    nc.onMatch(VersionID("p", "e"), "v", TriggeredByScan)
-    nc.onMismatch(VersionID("p", "e"), now, "uv", "dv", TriggeredByScan)
+    nc.onMatch(VersionID(DiffaPairRef("p","d"), "e"), "v", TriggeredByScan)
+    nc.onMismatch(VersionID(DiffaPairRef("p","d"), "e"), now, "uv", "dv", TriggeredByScan)
     verify(l1, l2)
   }
 

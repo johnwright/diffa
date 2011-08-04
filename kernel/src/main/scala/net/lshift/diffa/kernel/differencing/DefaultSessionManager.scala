@@ -21,14 +21,13 @@ import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
-import net.lshift.diffa.kernel.config.{Endpoint, DomainConfigStore}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Standard implementation of the SessionManager.
@@ -135,7 +134,7 @@ class DefaultSessionManager(
 
   // TODO: This should be using a SessionID, and not a pair
   def end(pair: DiffaPair, listener: DifferencingListener) = {
-    forEachSession(new VersionID(pair.domain.name, pair.key, "dummy"), s => {
+    forEachSession(VersionID(pair.asRef, "dummy"), s => {
       listeners.synchronized {
         listeners.get(s.sessionId) match {
           case None =>
@@ -230,14 +229,14 @@ class DefaultSessionManager(
     val event = safeGetSession(sessionID).getEvent(evtSeqId)
     check(event) match {
       case true  => {
-       val versionID = event.objId
-       val pair = systemConfig.getPair(versionID.domain, versionID.pairKey)
+       val id = event.objId
+       val pair = systemConfig.getPair(id.pair.domain, id.pair.key)
        val endpoint = resolve(pair)
        if (!participants.contains(endpoint)) {
          participants(endpoint) = p(endpoint)
        }
        val participant = participants(endpoint)
-       participant.retrieveContent(versionID.id)
+       participant.retrieveContent(id.id)
       }
       case false => "Expanded detail not available"
     }
@@ -267,7 +266,7 @@ class DefaultSessionManager(
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin) = {
     log.trace("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
-    val pair = systemConfig.getPair(id.domain, id.pairKey)
+    val pair = systemConfig.getPair(id.pair.domain, id.pair.key)
 
     matching.getMatcher(pair) match {
       case Some(matcher) => {
@@ -333,7 +332,7 @@ class DefaultSessionManager(
    */
   def onUpdatePair(pair: DiffaPair) = {
     val isRelevantToASession =
-      sessionsByKey.values.foldLeft(false)((currentlyRelevant, s) => currentlyRelevant || s.isInScope(new VersionID(pair.domain.name, pair.key, "dummy")));
+      sessionsByKey.values.foldLeft(false)((currentlyRelevant, s) => currentlyRelevant || s.isInScope(VersionID(pair.asRef, "dummy")));
     if (isRelevantToASession) {
       val (from, until) = defaultDateBounds()
 

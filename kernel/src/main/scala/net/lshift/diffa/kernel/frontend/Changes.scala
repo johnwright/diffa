@@ -39,10 +39,10 @@ class Changes(val config:SystemConfigStore,
 
     config.getPairsForInboundEndpointURL(evt.inboundURL).foreach(pair => {
       val pairEvt = evt match {
-        case UpstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, vsn)
-        case DownstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, vsn)
+        case UpstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, vsn)
+        case DownstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, vsn)
         case DownstreamCorrelatedChangeEvent(_, id, attributes, lastUpdate, uvsn, dvsn) =>
-          DownstreamCorrelatedPairChangeEvent(new VersionID(pair, id), attributes, lastUpdate, uvsn, dvsn)
+          DownstreamCorrelatedPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, uvsn, dvsn)
       }
 
       // TODO: Write a test to enforce that the matching manager processes first. This is necessary to ensure

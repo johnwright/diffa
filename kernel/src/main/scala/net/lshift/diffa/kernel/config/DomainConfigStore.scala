@@ -210,6 +210,8 @@ case class DiffaPairRef(@BeanProperty var key: String = null,
 
   def identifier = "%s/%s".format(domain,key)
 
+  def toInternalFormat = Pair(key = key, domain = Domain(name = domain))
+
 }
 
 object Pair {

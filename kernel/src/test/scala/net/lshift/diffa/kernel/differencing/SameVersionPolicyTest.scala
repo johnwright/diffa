@@ -88,13 +88,13 @@ class SameVersionPolicyTest extends AbstractPolicyTest {
         Down("id4", testData.values(1), "vsn4", downstreamVersionFor("vsn4"))))
 
     // We should see id3 be updated, and id4 be removed
-    expect(writer.storeDownstreamVersion(new VersionID(pair, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
+    expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
       andReturn(new Correlation(null, pair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
-    expect(writer.clearDownstreamVersion(new VersionID(pair, "id4"))).
+    expect(writer.clearDownstreamVersion(VersionID(pair.asRef, "id4"))).
       andReturn(Correlation.asDeleted(pair, "id4", new DateTime))
 
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
-    listener.onMatch(new VersionID(pair, "id4"), null, TriggeredByScan); expectLastCall
+    listener.onMatch(VersionID(pair.asRef, "id4"), null, TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
     expect(stores(pair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())

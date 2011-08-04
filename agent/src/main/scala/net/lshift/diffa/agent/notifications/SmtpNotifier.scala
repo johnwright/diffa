@@ -51,10 +51,10 @@ class SmtpNotifier(val session:Session,
     try {
 
       val subject = subjectMaster.getInstanceOf
-      subject.setAttribute("pairKey", event.id.pairKey)
+      subject.setAttribute("pairKey", event.id.pair.key)
 
       val body = bodyMaster.getInstanceOf
-      body.setAttribute("pairKey", event.id.pairKey)
+      body.setAttribute("pairKey", event.id.pair.key)
       body.setAttribute("entityId", event.id.id)
       body.setAttribute("timestamp", event.lastUpdated.toString())
       body.setAttribute("upstream", event.upstreamVsn)

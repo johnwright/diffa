@@ -23,7 +23,8 @@ import org.junit.{Before, Test}
 import org.joda.time.{Period, DateTime}
 import net.lshift.diffa.kernel.differencing.{LiveWindow, SessionManager}
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{Member, Domain, DomainConfigStore, User}
+import net.lshift.diffa.kernel.config.DiffaPairRef._
+import net.lshift.diffa.kernel.config._
 
 class EventNotifierTest {
 
@@ -44,7 +45,7 @@ class EventNotifierTest {
 
   @Test
   def quiteTime = {
-    val id = VersionID(pairKey = "pair", domain = domain.name, id = "abc")
+    val id = VersionID(DiffaPairRef("pair", domain.name), "abc")
     val timestamp = new DateTime()
     val up = "foo"
     val down = "bar"

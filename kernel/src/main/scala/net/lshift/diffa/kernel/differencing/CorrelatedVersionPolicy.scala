@@ -57,17 +57,17 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
     def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, categories, _, null, storedVsn) =>
-          handleUpdatedCorrelation(writer.clearDownstreamVersion(new VersionID(pair, id)))
+          handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pair.asRef, id)))
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)
 
           if (response.getDvsn == partVsn) {
             // This is the same destination object, so we're safe to store the correlation
-            handleUpdatedCorrelation(writer.storeDownstreamVersion(new VersionID(pair, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
+            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pair.asRef, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
           } else {
             // We can't update our datastore, so we just have to generate a mismatch
-            listener.onMismatch(new VersionID(pair, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan)
+            listener.onMismatch(VersionID(pair.asRef, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan)
           }
       }
     }

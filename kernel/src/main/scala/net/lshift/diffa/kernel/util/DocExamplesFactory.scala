@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
 import net.lshift.diffa.kernel.client.Actionable
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.frontend._
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import net.lshift.diffa.kernel.config.{DiffaPairRef, RangeCategoryDescriptor}
 
 /**
  * Factory that returns a map of example usages of classes for doc generation.
@@ -63,7 +63,7 @@ class DocExamplesFactory {
 
   val user = UserDef(name = "joe.public", email = "joe.public@acme.com")
 
-  val event = SessionEvent("6f72b9",VersionID("pairKey", "mydomain", "4f8a99"),
+  val event = SessionEvent("6f72b9",VersionID(DiffaPairRef("pairKey", "mydomain"), "4f8a99"),
                            new DateTime(),
                            MatchState.UNMATCHED, "upstreamV", "downstreamV")
 

@@ -21,6 +21,7 @@ import org.junit.Assert._
 import org.hamcrest.core.Is._
 import org.hamcrest.core.IsInstanceOf._
 import net.lshift.diffa.kernel.events.VersionID
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 /**
  * Test cases for the LocalSessionCacheProvider.
@@ -43,9 +44,9 @@ class LocalSessionCacheProviderTest {
     val scope = SessionScope.forPairs("domain", "ab", "bc")
 
     val cache = provider.retrieveOrAllocateCache("session1", scope)
-    assertEquals(true, cache.isInScope(VersionID("ab", "domain", "aaa")))
-    assertEquals(true, cache.isInScope(VersionID("bc", "domain", "aaa")))
-    assertEquals(false, cache.isInScope(VersionID("de", "domain", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID(DiffaPairRef("ab", "domain"), "aaa")))
+    assertEquals(true, cache.isInScope(VersionID(DiffaPairRef("bc", "domain"), "aaa")))
+    assertEquals(false, cache.isInScope(VersionID(DiffaPairRef("de", "domain"), "aaa")))
   }
 
   @Test
@@ -67,8 +68,8 @@ class LocalSessionCacheProviderTest {
     // Allocate, then retrieve afresh
     provider.retrieveOrAllocateCache("session3", scope)
     val cache = provider.retrieveOrAllocateCache("session3", scope)
-    assertEquals(true, cache.isInScope(VersionID("ab", "domain", "aaa")))
-    assertEquals(true, cache.isInScope(VersionID("bc", "domain", "aaa")))
-    assertEquals(false, cache.isInScope(VersionID("de", "domain", "aaa")))
+    assertEquals(true, cache.isInScope(VersionID(DiffaPairRef("ab", "domain"), "aaa")))
+    assertEquals(true, cache.isInScope(VersionID(DiffaPairRef("bc", "domain"), "aaa")))
+    assertEquals(false, cache.isInScope(VersionID(DiffaPairRef("de", "domain"), "aaa")))
   }
 }

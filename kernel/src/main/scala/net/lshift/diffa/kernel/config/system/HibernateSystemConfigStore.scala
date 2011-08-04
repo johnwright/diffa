@@ -17,11 +17,11 @@
 package net.lshift.diffa.kernel.config.system
 
 import net.lshift.diffa.kernel.util.SessionHelper._
-import net.lshift.diffa.kernel.config.{User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException, HibernateQueryUtils}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
 
 class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
                                  val sessionFactory:SessionFactory)
@@ -67,6 +67,7 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
     sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByInboundEndpointUrl", Map("url" -> url)))
   }
 
+  def getPair(pair:DiffaPairRef) : DiffaPair = getPair(pair.domain, pair.key)
   def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
 
   def listPairs = sessionFactory.withSession(s => listQuery[DiffaPair](s, "allPairs", Map()))

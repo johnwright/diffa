@@ -22,8 +22,9 @@ import scala.collection.Map
 import scala.collection.JavaConversions.MapWrapper
 import scala.collection.JavaConversions.asMap
 import collection.mutable.HashMap
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.events.VersionID
+import net.lshift.diffa.kernel.config.DiffaPairRef._
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 // Base type for upstream and downstream correlations allowing pairs to be managed
 case class Correlation(
@@ -73,12 +74,13 @@ case class Correlation(
 
   def setUpstreamAttributes(a:java.util.Map[String,String]) : Unit = upstreamAttributes = asMap(a)
   def setDownstreamAttributes(a:java.util.Map[String,String]) : Unit = downstreamAttributes = asMap(a)
-  
+
+  def asVersionID = VersionID(DiffaPairRef(pairing,domain),id)
 }
 
 object Correlation {
   def asDeleted(pair:DiffaPair, id:String, lastUpdate:DateTime) =
     Correlation(null, pair.key, pair.domain.name, id, null, null, lastUpdate, new DateTime, null, null, null, true)
   def asDeleted(id:VersionID, lastUpdate:DateTime) =
-    Correlation(null, id.pairKey, id.domain, id.id, null, null, lastUpdate, new DateTime, null, null, null, true)
+    Correlation(null, id.pair.key, id.pair.domain, id.id, null, null, lastUpdate, new DateTime, null, null, null, true)
 }

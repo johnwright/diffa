@@ -191,7 +191,7 @@ class DifferencesResource(val sessionManager: SessionManager,
       // Bucket the events
       val pairs = scala.collection.mutable.Map[String, ZoomPair]()
       interestingEvents.foreach(evt => {
-        val pair = pairs.getOrElseUpdate(evt.objId.pairKey, new ZoomPair(evt.objId.pairKey, rangeStartDate, width, max))
+        val pair = pairs.getOrElseUpdate(evt.objId.pair.key, new ZoomPair(evt.objId.pair.key, rangeStartDate, width, max))
         pair.addEvent(evt)
       })
 

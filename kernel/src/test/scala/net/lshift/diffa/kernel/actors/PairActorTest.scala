@@ -34,7 +34,7 @@ import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
-import net.lshift.diffa.kernel.config.{Domain, Endpoint, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, Pair => DiffaPair}
 
 class PairActorTest {
 
@@ -71,6 +71,7 @@ class PairActorTest {
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
 
   expect(systemConfigStore.getPair(domainName, pairKey)).andStubReturn(pair)
+  expect(systemConfigStore.getPair(DiffaPairRef(pairKey, domainName))).andStubReturn(pair)
   expect(systemConfigStore.listPairs).andReturn(Array(pair))
   replay(systemConfigStore)
 
@@ -358,7 +359,7 @@ class PairActorTest {
 
         val writer = EasyMock.getCurrentArguments()(1).asInstanceOf[LimitedVersionCorrelationWriter]
         try {
-          writer.clearDownstreamVersion(VersionID("p1", "abc"))
+          writer.clearDownstreamVersion(VersionID(DiffaPairRef("p1","domain"), "abc"))
           proxyDidGenerateException.set(false)
         } catch {
           case c:ScanCancelledException => proxyDidGenerateException.set(true)
@@ -396,7 +397,7 @@ class PairActorTest {
             if (secondScanIsRunning.get(waitForSecondScanToStartDelay).isDefined) {
               val writer = EasyMock.getCurrentArguments()(1).asInstanceOf[LimitedVersionCorrelationWriter]
               try {
-                writer.clearDownstreamVersion(VersionID("p1", "abc"))
+                writer.clearDownstreamVersion(VersionID(DiffaPairRef("p1","domain"), "abc"))
                 proxyDidGenerateException.set(false)
               } catch {
                 case c:ScanCancelledException => proxyDidGenerateException.set(true)
@@ -503,7 +504,7 @@ class PairActorTest {
   }
 
   def buildUpstreamEvent() = {
-    val id = VersionID(pairKey, domainName, "foo")
+    val id = VersionID(DiffaPairRef(pairKey, domainName), "foo")
     val lastUpdate = new DateTime
     val vsn = "foobar"
     UpstreamPairChangeEvent(id, Seq(), lastUpdate, vsn)

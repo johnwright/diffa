@@ -27,7 +27,7 @@ import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
-import net.lshift.diffa.kernel.config.{Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Test cases for the default session manager.
@@ -105,9 +105,9 @@ class DefaultSessionManagerTest {
     expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
     expect(matchingManager.getMatcher(pair1)).andStubReturn(Some(matcher))
     expect(matchingManager.getMatcher(pair2)).andStubReturn(Some(matcher))
-    expect(matcher.isVersionIDActive(new VersionID(pair1.key, domainName, "id"))).andStubReturn(true)
-    expect(matcher.isVersionIDActive(new VersionID(pair2.key, domainName, "id"))).andStubReturn(true)
-    expect(matcher.isVersionIDActive(new VersionID(pair1.key, domainName, "id2"))).andStubReturn(false)
+    expect(matcher.isVersionIDActive(VersionID(pair1.asRef, "id"))).andStubReturn(true)
+    expect(matcher.isVersionIDActive(VersionID(pair2.asRef, "id"))).andStubReturn(true)
+    expect(matcher.isVersionIDActive(VersionID(pair1.asRef, "id2"))).andStubReturn(false)
 
     replay(systemConfigStore, matchingManager, matcher)
   }
@@ -143,13 +143,13 @@ class DefaultSessionManagerTest {
   @Test
   def shouldAlwaysInformMatchEvents {
 
-    expect(listener1.onMatch(VersionID("pair", "id"), "vsn", LiveWindow))
+    expect(listener1.onMatch(VersionID(DiffaPairRef("pair","domain"), "id"), "vsn", LiveWindow))
     replayAll
 
     expectDifferenceForPair(pair1, pair2)
 
     manager.start(SessionScope.forPairs("pair"), listener1)
-    manager.onMatch(VersionID("pair", "id"), "vsn", LiveWindow)
+    manager.onMatch(VersionID(DiffaPairRef("pair","domain"), "id"), "vsn", LiveWindow)
 
     verifyAll
   }
@@ -164,21 +164,21 @@ class DefaultSessionManagerTest {
 
     manager.start(SessionScope.forPairs("pair1"), listener1)
     
-    manager.onMismatch(new VersionID("pair1", domainName, "id"), timestamp, "uvsn", "dvsn", LiveWindow)
+    manager.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 
   @Test
   def shouldTriggerMismatchEventsWhenIdIsInactive {
     val timestamp = new DateTime()
-    expect(listener1.onMismatch(new VersionID("pair1", domainName, "id2"), timestamp, "uvsn", "dvsn", LiveWindow))
+    expect(listener1.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id2"), timestamp, "uvsn", "dvsn", LiveWindow))
     replayAll
 
     expectDifferenceForPair(pair1, pair2)
 
     manager.start(SessionScope.forPairs("pair1"), listener1)
 
-    manager.onMismatch(new VersionID("pair1", domainName, "id2"), timestamp, "uvsn", "dvsn", LiveWindow)
+    manager.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id2"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 
@@ -192,8 +192,8 @@ class DefaultSessionManagerTest {
 
     manager.start(SessionScope.forPairs("pair"), listener1)
     manager.end(pair, listener1)
-    manager.onMatch(new VersionID("pair1", domainName,  "id"), "vsn", LiveWindow)
-    manager.onMismatch(new VersionID("pair2", domainName, "id"), timestamp, "uvsn", "dvsn", LiveWindow)
+    manager.onMatch(VersionID(DiffaPairRef("pair1", domainName),  "id"), "vsn", LiveWindow)
+    manager.onMismatch(VersionID(DiffaPairRef("pair2", domainName), "id"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 
@@ -201,14 +201,14 @@ class DefaultSessionManagerTest {
   @Test
   def shouldNotInformListenerOfEventsOnOtherPairs {
     val timestamp = new DateTime()
-    expect(listener1.onMatch(new VersionID("pair1", domainName, "id"), "vsn", LiveWindow))
+    expect(listener1.onMatch(VersionID(DiffaPairRef("pair1", domainName), "id"), "vsn", LiveWindow))
     replayAll
 
     expectDifferenceForPair(pair1, pair2)
 
     manager.start(SessionScope.forPairs("pair"), listener1)
-    manager.onMatch(new VersionID("pair1", domainName, "id"), "vsn", LiveWindow)
-    manager.onMismatch(new VersionID("pair2", domainName, "id"), timestamp, "uvsn", "dvsn", LiveWindow)
+    manager.onMatch(VersionID(DiffaPairRef("pair1", domainName), "id"), "vsn", LiveWindow)
+    manager.onMismatch(VersionID(DiffaPairRef("pair2", domainName), "id"), timestamp, "uvsn", "dvsn", LiveWindow)
     verifyAll
   }
 
@@ -223,7 +223,7 @@ class DefaultSessionManagerTest {
     expectDifferenceForPair(pair1, pair2)
 
     manager.start(SessionScope.forPairs("pair"), listener1)
-    manager.onDownstreamExpired(new VersionID("pair", domainName, "unknownid"), "dvsn")
+    manager.onDownstreamExpired(VersionID(DiffaPairRef("pair",domainName), "unknownid"), "dvsn")
   }
 
   @Test

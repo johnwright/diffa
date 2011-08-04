@@ -217,7 +217,7 @@ object LuceneVersionCorrelationStore {
   }
 
   def docToCorrelation(doc:Document, pair:DiffaPair) : Correlation = docToCorrelation(doc,pair.key,pair.domain.name)
-  def docToCorrelation(doc:Document, id:VersionID) : Correlation = docToCorrelation(doc,id.pairKey,id.domain)
+  def docToCorrelation(doc:Document, id:VersionID) : Correlation = docToCorrelation(doc,id.pair.key,id.pair.domain)
 
   def docToCorrelation(doc:Document, pairKey:String, domain:String) = {
     Correlation(

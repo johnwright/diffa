@@ -21,7 +21,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.participant.scanning.ScanConstraint
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Store used for caching version correlation information between a pair of participants.
@@ -60,7 +60,7 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryUpstreams(constraints:Seq[ScanConstraint], handler:UpstreamVersionHandler):Unit = {
     queryUpstreams(constraints).foreach(c => {
-      val version = VersionID(c.pairing, c.domain, c.id)
+      val version = VersionID(DiffaPairRef(c.pairing, c.domain), c.id)
       val attributes = c.upstreamAttributes.toMap
       if (logger.isTraceEnabled) {
         logger.trace("US: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn))
@@ -74,7 +74,7 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryDownstreams(constraints:Seq[ScanConstraint], handler:DownstreamVersionHandler) : Unit = {
     queryDownstreams(constraints).foreach(c => {
-      val version = VersionID(c.pairing, c.domain, c.id)
+      val version = VersionID(DiffaPairRef(c.pairing, c.domain), c.id)
       val attributes = c.downstreamAttributes.toMap
       if (logger.isTraceEnabled) {
         logger.trace("DS: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s; dvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn, c.downstreamDVsn))

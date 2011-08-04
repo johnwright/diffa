@@ -21,14 +21,13 @@ import net.lshift.diffa.kernel.participants._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{Endpoint, Pair, DomainConfigStore}
 import org.slf4j.LoggerFactory
 import concurrent.SyncVar
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, Pair => DiffaPair}
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -46,7 +45,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
    */
   def onChange(writer: LimitedVersionCorrelationWriter, evt: PairChangeEvent) = {
 
-    val pair = systemConfigStore.getPair(evt.id.domain, evt.id.pairKey)
+    val pair = systemConfigStore.getPair(evt.id.pair.domain, evt.id.pair.key)
 
     val corr = evt match {
       case UpstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
@@ -101,10 +100,10 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     else
       Seq(Seq())
 
-  private def generateDifferenceEvents(pair:Pair, l:DifferencingListener, origin:MatchOrigin) {
+  private def generateDifferenceEvents(pair:DiffaPair, l:DifferencingListener, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
     stores(pair).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
-      corr => l.onMismatch(VersionID(corr.pairing, corr.domain, corr.id), corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
+      corr => l.onMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
   }
 
   /**
@@ -119,7 +118,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
     val log = LoggerFactory.getLogger(getClass)
 
-    def scanParticipant(pair:Pair,
+    def scanParticipant(pair:DiffaPair,
                         writer:LimitedVersionCorrelationWriter,
                         endpoint:Endpoint,
                         bucketing:Seq[CategoryFunction],
@@ -135,7 +134,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
     }
 
-    def scanAggregates(pair:Pair,
+    def scanAggregates(pair:DiffaPair,
                        writer:LimitedVersionCorrelationWriter,
                        endpoint:Endpoint,
                        bucketing:Seq[CategoryFunction],
@@ -165,7 +164,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
     }
 
-    def scanEntities(pair:Pair,
+    def scanEntities(pair:DiffaPair,
                      writer:LimitedVersionCorrelationWriter,
                      endpoint:Endpoint,
                      constraints:Seq[ScanConstraint],
@@ -187,7 +186,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
         .foreach(handleMismatch(pair, writer, _, listener))
     }
 
-    def checkForCancellation(handle:FeedbackHandle, pair:Pair) = {
+    def checkForCancellation(handle:FeedbackHandle, pair:DiffaPair) = {
       if (handle.isCancelled) {
         throw new ScanCancelledException(pair)
       }
@@ -201,7 +200,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       // Unmatched versions will be evented at the end of the scan. Matched versions should be evented immediately, as
       // we won't know what went from unmatched -> matched later.
       if (corr.isMatched.booleanValue) {
-        listener.onMatch(VersionID(corr.pairing, corr.domain, corr.id), corr.upstreamVsn, TriggeredByScan)
+        listener.onMatch(corr.asVersionID, corr.upstreamVsn, TriggeredByScan)
       }
     }
 
@@ -228,9 +227,9 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            handleUpdatedCorrelation(writer.storeUpstreamVersion(new VersionID(pair, id), attributes, lastUpdate, usVsn))
+            handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pair.asRef, id), attributes, lastUpdate, usVsn))
           } else {
-            handleUpdatedCorrelation(writer.clearUpstreamVersion(new VersionID(pair, id)))
+            handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pair.asRef, id)))
           }
       }
     }

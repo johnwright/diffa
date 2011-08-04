@@ -63,7 +63,7 @@ class EscalationManagerTest {
     expectConfigStore(scenario.event)
     expectActionsClient(scenario.invocations)
 
-    escalationManager.onMismatch(new VersionID(pairKey, domain, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
+    escalationManager.onMismatch(VersionID(pair.asRef, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
 
     verify(configStore, actionsClient)
   }

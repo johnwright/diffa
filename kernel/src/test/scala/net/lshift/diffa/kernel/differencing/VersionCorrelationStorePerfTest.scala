@@ -60,7 +60,7 @@ class VersionCorrelationStorePerfTest {
     withTiming("load upstream versions") {
       val writer = stores(pair).openWriter()
       for (i <- 0 until vsnCount) {
-        writer.storeUpstreamVersion(new VersionID(pair, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
+        writer.storeUpstreamVersion(VersionID(pair.asRef, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
       }
       writer.flush()
     }
@@ -74,7 +74,7 @@ class VersionCorrelationStorePerfTest {
     withTiming("load downstream versions") {
       val writer = stores(pair).openWriter()
       for (i <- 0 until vsnCount) {
-        writer.storeDownstreamVersion(new VersionID(pair, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
+        writer.storeDownstreamVersion(VersionID(pair.asRef, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
       }
       writer.flush()
     }

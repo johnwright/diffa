@@ -101,7 +101,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     }
   }
 
-  def findActor(id:VersionID) : ActorRef = findActor(systemConfig.getPair(id.domain, id.pairKey))
+  def findActor(id:VersionID) : ActorRef = findActor(systemConfig.getPair(id.pair))
 
   def findActor(pair:DiffaPair) = {
     val actors = Actor.registry.actorsFor(pair.identifier)
