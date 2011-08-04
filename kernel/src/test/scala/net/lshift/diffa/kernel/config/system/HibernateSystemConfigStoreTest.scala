@@ -105,23 +105,11 @@ class HibernateSystemConfigStoreTest {
     assertEquals(pairKey, res(0).key)
   }
 
-  // TODO It is still unclear as to whether user management should be in the system config interface
   @Test
   def testUserCRUD = {
 
-    // TODO
-    // During re-runs of tests, some users may be left behind
-    // Because of the m:n relationship between users and domains,
-    // we need to figure out how we are going to construct the API for this
-    // so for now, nuke the table manually.
-
-    sf.withSession( s => {
-      s.createCriteria(classOf[User]).list.foreach(u => {
-        val user = u.asInstanceOf[User]
-        //user.domains.clear
-        s.delete(u)
-      })
-    })
+    // Deleting every user isn't something that the API exposes
+    sf.withSession( s => s.createCriteria(classOf[User]).list.foreach(s.delete(_)))
 
     systemConfigStore.createOrUpdateUser(TEST_USER)
     val result = systemConfigStore.listUsers
