@@ -23,13 +23,16 @@ import javax.ws.rs.core.Response
 import net.lshift.diffa.kernel.frontend.Configuration
 import javax.ws.rs._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
-import net.lshift.diffa.kernel.config.DomainConfigStore
+import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore}
+import org.slf4j.{LoggerFactory, Logger}
 
 class ScanningResource(val pairPolicyClient:PairPolicyClient,
                        val config:Configuration,
                        val domainConfigStore:DomainConfigStore,
                        val diagnostics:DiagnosticsManager,
                        val domain:String) {
+
+  private val log: Logger = LoggerFactory.getLogger(getClass)
 
   @GET
   @Path("/states")
@@ -44,8 +47,7 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
   @Description("Starts a scan for the given pair.")
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
   def startScan(@PathParam("pairKey") pairKey:String) = {
-    val pair = config.getPair(domain, pairKey)
-    pairPolicyClient.scanPair(pair)
+    pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain))
     Response.status(Response.Status.ACCEPTED).build
   }
 
@@ -54,7 +56,7 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
   @Description("Forces Diffa to execute a scan operation for every configured pair within this domain.")
   def scanAllPairings = {
     log.info("Initiating scan of all known pairs")
-    domainConfigStore.listPairs(domain).foreach(p => pairPolicyClient.scanPair(p))
+    domainConfigStore.listPairs(domain).foreach(p => pairPolicyClient.scanPair(DiffaPairRef(p.key, domain)))
 
     Response.status(Response.Status.ACCEPTED).build
   }
@@ -64,8 +66,7 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
   @Description("Cancels any current and/or pending scans for the given pair.")
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
   def cancelScanning(@PathParam("pairKey") pairKey:String) = {
-    val pair = config.getPair(domain, pairKey)
-    pairPolicyClient.cancelScans(pair)
+    pairPolicyClient.cancelScans(DiffaPairRef(pairKey, domain))
     Response.status(Response.Status.OK).build
   }
 
