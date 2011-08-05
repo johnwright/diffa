@@ -26,9 +26,4 @@ trait ChangesClient {
    * Reports a change with the given details to the agent.
    */
   def onChangeEvent(evt:ChangeEvent)
-
-  /**
-   * Returns the the URL of the inbound endpoint
-   */
-  def inboundURL : String
 }

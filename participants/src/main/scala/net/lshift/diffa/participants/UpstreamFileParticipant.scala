@@ -25,10 +25,10 @@ import net.lshift.diffa.kernel.differencing.AttributesUtil
 /**
  * Upstream participant implementation backed off the filesystem.
  */
-class UpstreamFileParticipant(epName:String, root:String, agentRoot:String) extends FileParticipant(root, agentRoot)
+class UpstreamFileParticipant(epName:String, root:String, agentRoot:String) extends FileParticipant(root, agentRoot, epName)
     with UpstreamParticipant {
 
   protected def onFileChange(f: File) = {
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
+    changesClient.onChangeEvent(UpstreamChangeEvent(idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
   }
 }

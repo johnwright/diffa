@@ -22,7 +22,6 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import org.joda.time.format.ISODateTimeFormat.{date, dateTime}
-import net.lshift.diffa.kernel.events.UpstreamChangeEventType
 
 /**
  * Content mapper for an example data type.
@@ -35,8 +34,8 @@ class ExampleEventFormatMapper extends EventFormatMapper {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  def map(content: String, inboundURL: String) = {
-    log.debug("Received change event %s for endpoint %s".format(content, inboundURL))
+  def map(content: String, endpoint: String) = {
+    log.debug("Received change event %s for endpoint %s".format(content, endpoint))
 
     val in = objectMapper.readTree(content)
 
@@ -46,9 +45,8 @@ class ExampleEventFormatMapper extends EventFormatMapper {
     val lastUpdate = date.parseDateTime(in.path("record-date").getValueAsText)
     val vsn = in.path("version").getValueAsText
 
-    Seq(WireEvent(eventType = UpstreamChangeEventType.name,
+    Seq(WireEvent(eventType = WireEvent.UPSTREAM_EVENT,
                   metadata = Map(WireEvent.ID -> id,
-                                  WireEvent.INBOUND_URL -> inboundURL,
                                   WireEvent.LAST_UPDATE -> dateTime.print(lastUpdate),
                                   WireEvent.VSN -> vsn),
                   attributes = List(dateTime.print(effectiveDate), value)))

@@ -26,20 +26,20 @@ import org.apache.commons.codec.digest.DigestUtils
  * An implementation of the UpstreamParticipant using the MemoryParticipant base, whereby the body is the version
  * of an entity.
  */
-class UpstreamWebParticipant(epName:String, val agentRoot:String)
+class UpstreamWebParticipant(val epName:String, val agentRoot:String, val domain:String)
     extends UpstreamMemoryParticipant(DigestUtils.md5Hex)
     with WebParticipant {
 
   override def addEntity(id: String, someDate:DateTime, someString:String, lastUpdated:DateTime, body: String) = {
     super.addEntity(id, someDate, someString, lastUpdated, body)
 
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, id, Seq(someDate.toString, someString), lastUpdated, uvsnGen(body)))
+    changesClient.onChangeEvent(UpstreamChangeEvent(id, Seq(someDate.toString, someString), lastUpdated, uvsnGen(body)))
   }
 
 
   override def removeEntity(id: String) = {
     super.removeEntity(id)
 
-    changesClient.onChangeEvent(UpstreamChangeEvent(epName, id, Seq(), new DateTime, null))
+    changesClient.onChangeEvent(UpstreamChangeEvent(id, Seq(), new DateTime, null))
   }
 }

@@ -33,9 +33,9 @@ trait EventFormatMapper {
    * Maps event data from an incoming content type to Diffa's native format.
    *
    * @param event  The incoming event data
-   * @param inboundURL  The URL of the receiving endpoint. This may be used
+   * @param endpoint  The name of the receiving endpoint. This may be used
    *                    contextually to reconstruct a WireEvent object.
    * @return sequence of zero or more WireEvent instances mapped from the incoming event data.
    */
-  def map(event: String, inboundURL: String): Seq[WireEvent]
+  def map(event: String, endpoint: String): Seq[WireEvent]
 }

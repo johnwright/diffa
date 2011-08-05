@@ -36,6 +36,7 @@ trait DomainConfigStore {
   def createOrUpdatePair(domain:String, pairDef: PairDef) : Unit
   def deletePair(domain:String, key: String) : Unit
   def listPairs(domain:String) : Seq[PairDef]
+  def listPairsForEndpoint(domain:String, endpoint:String) : Seq[Pair]
 
   def createOrUpdateRepairAction(domain:String, action: RepairActionDef) : Unit
   def deleteRepairAction(domain:String, name: String, pairKey: String) : Unit

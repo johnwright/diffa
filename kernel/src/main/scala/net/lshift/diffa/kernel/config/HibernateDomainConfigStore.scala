@@ -79,6 +79,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
 
   def listPairs(domain:String) = sessionFactory.withSession(s => listQuery[Pair](s, "pairsByDomain", Map("domain_name" -> domain)).map(toPairDef(_)))
 
+  def listPairsForEndpoint(domain:String, endpoint:String) = sessionFactory.withSession(s =>
+    listQuery[Pair](s, "pairsByEndpoint", Map("domain_name" -> domain, "endpoint_name" -> endpoint)))
+
   def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] =
     sessionFactory.withSession(s => {
       getRepairActionsInPair(s, domain, pairKey).map(toRepairActionDef(_))

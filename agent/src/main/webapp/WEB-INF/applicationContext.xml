@@ -284,7 +284,7 @@
     <constructor-arg ref="systemConfigStore"/>
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
-    <constructor-arg ref="systemConfigStore"/>
+    <constructor-arg ref="domainConfigStore"/>
     <constructor-arg ref="pairActorSupervisor"/>
     <constructor-arg ref="matchingManager"/>
   </bean>
