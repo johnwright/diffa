@@ -37,7 +37,7 @@
   <bean id="httpClient" class="org.apache.http.impl.client.DefaultHttpClient"/>
 
   <bean id="httpPost" class="org.apache.http.client.methods.HttpPost">
-    <constructor-arg value="${demo.agentUrl}/rest/config/xml"/>
+    <constructor-arg value="${demo.agentUrl}/rest/${demo.domain}/config/xml"/>
     <property name="entity">
       <bean class="org.apache.http.entity.FileEntity">
         <constructor-arg value="classpath:diffa-config.xml"/>
@@ -59,10 +59,12 @@
   <bean id="upstreamPart" class="net.lshift.diffa.participants.UpstreamWebParticipant">
     <constructor-arg value="a" />
     <constructor-arg value="${demo.agentUrl}" />
+    <constructor-arg value="${demo.domain}" />
   </bean>
   <bean id="downstreamPart" class="net.lshift.diffa.participants.DownstreamWebParticipant">
     <constructor-arg value="b" />
     <constructor-arg value="${demo.agentUrl}" />
+    <constructor-arg value="${demo.domain}" />
   </bean>
 
   <bean id="upstreamContentHandler" class="net.lshift.diffa.participant.content.ContentParticipantDelegator">

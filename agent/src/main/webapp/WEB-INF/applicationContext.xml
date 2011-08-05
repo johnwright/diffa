@@ -197,17 +197,6 @@
   </bean>
 
   <!--
-    ========================
-      HTTP Request Proxying
-      (baked in transport)
-    ========================
-  -->
-
-  <bean id="requestHandlerProxy" class="net.lshift.diffa.agent.http.RequestHandlerProxy">
-    <constructor-arg ref="protocolMapper" />
-  </bean>
-
-  <!--
     ===============================
       Inbound Endpoint Management
     ===============================
@@ -285,7 +274,7 @@
     <constructor-arg ref="systemConfigStore"/>
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
-    <constructor-arg ref="systemConfigStore"/>
+    <constructor-arg ref="domainConfigStore"/>
     <constructor-arg ref="pairActorSupervisor"/>
     <constructor-arg ref="matchingManager"/>
   </bean>
@@ -343,7 +332,6 @@
   </bean>
 
   <bean id="systemConfigStore" class="net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore">
-    <constructor-arg ref="domainConfigStore" />
     <constructor-arg ref="diffaSessionFactory" />
   </bean>
 

@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.participants.{CategoryFunction, DownstreamPartici
 /**
  * Downstream participant implementation backed off the filesystem.
  */
-class DownstreamFileParticipant(epName:String, root:String, agentRoot:String) extends FileParticipant(root, agentRoot)
+class DownstreamFileParticipant(epName:String, root:String, agentRoot:String) extends FileParticipant(root, agentRoot, epName)
     with DownstreamParticipant {
 
     // TODO: Since we'll use the same version policy to begin with, this doesn't really matter. But we do
@@ -33,6 +33,6 @@ class DownstreamFileParticipant(epName:String, root:String, agentRoot:String) ex
   def generateVersion(entityBody: String) = null
 
   protected def onFileChange(f: File) = {
-    changesClient.onChangeEvent(DownstreamChangeEvent(epName, idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
+    changesClient.onChangeEvent(DownstreamChangeEvent(idFor(f), AttributesUtil.toSeq(attributesFor(f)), dateFor(f), versionFor(f)))
   }
 }

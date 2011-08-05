@@ -20,12 +20,12 @@ import net.lshift.diffa.kernel.matching.MatchingManager
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.actors.PairPolicyClient
-import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.DomainConfigStore
 
 /**
  * Front-end for reporting changes.
  */
-class Changes(val config:SystemConfigStore,
+class Changes(val domainConfig:DomainConfigStore,
               val changeEventClient:PairPolicyClient,
               val mm:MatchingManager) {
   private val log:Logger = LoggerFactory.getLogger(getClass)
@@ -34,14 +34,14 @@ class Changes(val config:SystemConfigStore,
    * Indicates that a change has occurred within a participant. Locates the appropriate policy for the pair the
    * event is targeted for, and provides the event to the policy.
    */
-  def onChange(evt:ChangeEvent) {
-    log.debug("Received change event: " + evt)
+  def onChange(domain:String, endpoint:String, evt:ChangeEvent) {
+    log.debug("Received change event for %s %s: %s".format(domain, endpoint, evt))
 
-    config.getPairsForInboundEndpointURL(evt.inboundURL).foreach(pair => {
+    domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
       val pairEvt = evt match {
-        case UpstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, vsn)
-        case DownstreamChangeEvent(_, id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, vsn)
-        case DownstreamCorrelatedChangeEvent(_, id, attributes, lastUpdate, uvsn, dvsn) =>
+        case UpstreamChangeEvent(id, attributes, lastUpdate, vsn) => UpstreamPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, vsn)
+        case DownstreamChangeEvent(id, attributes, lastUpdate, vsn) => DownstreamPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, vsn)
+        case DownstreamCorrelatedChangeEvent(id, attributes, lastUpdate, uvsn, dvsn) =>
           DownstreamCorrelatedPairChangeEvent(VersionID(pair.asRef, id), attributes, lastUpdate, uvsn, dvsn)
       }
 

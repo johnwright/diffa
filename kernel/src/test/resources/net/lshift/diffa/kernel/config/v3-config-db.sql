@@ -11,6 +11,7 @@ create table range_category_descriptor (id integer not null, data_type varchar(2
 create table repair_actions (name varchar(255) not null, pair_key varchar(255) not null, url varchar(255), scope varchar(255), primary key (name, pair_key));
 create table set_category_descriptor (id integer not null, primary key (id));
 create table set_constraint_values (value_id integer not null, value_name varchar(255) not null, primary key (value_id, value_name));
+create table system_config_options (opt_key varchar(255) not null, opt_val varchar(255), primary key (opt_key));
 create table users (name varchar(255) not null, email varchar(255), primary key (name));
 create table schema_version (version integer not null, primary key (version));
 alter table config_options add constraint FK80C74EA1C3C204DC foreign key (domain) references domains;
@@ -28,6 +29,6 @@ alter table range_category_descriptor add constraint FKDC53C74E7A220B71 foreign 
 alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;
 alter table set_category_descriptor add constraint FKA51D45F39810CA56 foreign key (id) references category_descriptor;
 alter table set_constraint_values add constraint FK96C7B32744035BE4 foreign key (value_id) references category_descriptor;
-insert into domains(name) values('root');
+insert into domains(name) values('diffa');
 insert into schema_version(version) values(3);
-insert into config_options (opt_key, opt_val, domain) values ('correlationStore.schemaVersion', '1', 'root');
+insert into system_config_options (opt_key, opt_val) values ('correlationStore.schemaVersion', '1');

@@ -18,7 +18,6 @@ package net.lshift.diffa.agent.rest
 
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
-import net.lshift.diffa.kernel.frontend.Configuration
 import javax.ws.rs.core.{UriInfo, Context}
 import javax.ws.rs.{PathParam, Path}
 import net.lshift.diffa.kernel.client.ActionsClient
@@ -26,6 +25,7 @@ import net.lshift.diffa.kernel.differencing.SessionManager
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.config.DomainConfigStore
+import net.lshift.diffa.kernel.frontend.{Changes, Configuration}
 
 @Path("/{domain}")
 @Component
@@ -39,6 +39,7 @@ class DomainResource {
   @Autowired var diagnosticsManager:DiagnosticsManager = null
   @Autowired var pairPolicyClient:PairPolicyClient = null
   @Autowired var domainConfigStore:DomainConfigStore = null
+  @Autowired var changes:Changes = null
 
   @Path("/config")
   def getConfigResource(@Context uri:UriInfo,
@@ -60,5 +61,8 @@ class DomainResource {
 
   @Path("/scanning")
   def getScanningResource(@PathParam("domain") domain:String) = new ScanningResource(pairPolicyClient, config, domainConfigStore, diagnosticsManager, domain)
+
+  @Path("/changes")
+  def getChangesResource(@PathParam("domain") domain:String) = new ChangesResource(changes, domain)
 
 }

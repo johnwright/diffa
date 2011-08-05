@@ -36,6 +36,7 @@ trait DomainConfigStore {
   def createOrUpdatePair(domain:String, pairDef: PairDef) : Unit
   def deletePair(domain:String, key: String) : Unit
   def listPairs(domain:String) : Seq[PairDef]
+  def listPairsForEndpoint(domain:String, endpoint:String) : Seq[Pair]
 
   def createOrUpdateRepairAction(domain:String, action: RepairActionDef) : Unit
   def deleteRepairAction(domain:String, name: String, pairKey: String) : Unit
@@ -237,7 +238,7 @@ case class Domain (
 }
 
 object Domain {
-  val DEFAULT_DOMAIN = Domain(name = "root")
+  val DEFAULT_DOMAIN = Domain(name = "diffa")
 }
 
 
@@ -332,6 +333,11 @@ case class Member(@BeanProperty var user: User = null,
 case class ConfigOption(@BeanProperty var key:String = null,
                         @BeanProperty var value:String = null,
                         @BeanProperty var domain:Domain = null) {
+  def this() = this(key = null)
+}
+
+case class SystemConfigOption(@BeanProperty var key:String = null,
+                              @BeanProperty var value:String = null) {
   def this() = this(key = null)
 }
 

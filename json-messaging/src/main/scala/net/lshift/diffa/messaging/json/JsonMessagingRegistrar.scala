@@ -49,13 +49,6 @@ class JsonMessagingRegistrar(val protocolMapper:ProtocolMapper,
   participantFactory.registerContentFactory(contentFactory)
   participantFactory.registerVersioningFactory(versioningFactory)
 
-  override def onAgentAssemblyCompleted {
-    // Register a handler so requests made to the /changes endpoint on the agent with inbound content types of
-    // application/json are decoded by our ChangesHandler.
-    val changesHandler = new ChangesHandler(changes, "changes", eventFormatMapperManager.lookup("application/json").get)
-    protocolMapper.registerHandler("changes", changesHandler)
-  }
-
   private def isValidProtocol(address: String, protocol: String) =
       protocol == "application/json" && address.startsWith("http://")
 }

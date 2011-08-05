@@ -24,8 +24,8 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent._
 /**
  * JSON-over-REST client for the changes endpoint.
  */
-class ChangesRestClient(serverRootUrl:String)
-    extends AbstractRestClient(serverRootUrl, "changes/")
+class ChangesRestClient(serverRootUrl:String, domain:String, endpoint:String)
+    extends AbstractRestClient(serverRootUrl, "rest/" + domain + "/changes/")
         with ChangesClient {
 
   def onChangeEvent(evt:ChangeEvent) {
@@ -34,8 +34,6 @@ class ChangesRestClient(serverRootUrl:String)
       case ds:DownstreamChangeEvent => toWire(ds)
       case dsc:DownstreamCorrelatedChangeEvent => toWire(dsc)
     }
-    submit("", serializeEvent(wire))
+    submit(endpoint, serializeEvent(wire))
   }
-
-  def inboundURL = resource.getURI.getPath
 }

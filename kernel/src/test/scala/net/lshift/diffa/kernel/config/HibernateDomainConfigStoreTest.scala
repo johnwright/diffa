@@ -34,7 +34,7 @@ class HibernateDomainConfigStoreTest {
 
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
   private val sessionFactory = HibernateDomainConfigStoreTest.sessionFactory
-  private val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sessionFactory)
+  private val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(sessionFactory)
 
   val dateCategoryName = "bizDate"
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
@@ -433,8 +433,7 @@ class HibernateDomainConfigStoreTest {
 
   @Test
   def testRetrievingOptionsIgnoresSystemOptions = {
-    // declare the domain
-    systemConfigStore.createOrUpdateDomain(Domain.DEFAULT_DOMAIN)
+    // declare the child domain
     systemConfigStore.createOrUpdateDomain(domain)
 
     domainConfigStore.setConfigOption(domainName, "some.option3", "storedVal")
@@ -499,7 +498,7 @@ object HibernateDomainConfigStoreTest {
   }
 
   val domainConfigStore = new HibernateDomainConfigStore(sessionFactory)
-  val systemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sessionFactory)
+  val systemConfigStore = new HibernateSystemConfigStore(sessionFactory)
 
   def clearAllConfig = {
     try {

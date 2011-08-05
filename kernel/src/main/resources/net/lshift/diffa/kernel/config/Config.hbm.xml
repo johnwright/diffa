@@ -104,6 +104,11 @@
     <property name="value" type="string" column="opt_val" />
   </class>
 
+  <class name="SystemConfigOption" table="system_config_options" abstract="false">
+    <id name="key" type="string" column="opt_key" />
+    <property name="value" type="string" column="opt_val" />
+  </class>
+
   <class name="RepairAction" table="repair_actions" abstract="false">
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
@@ -167,11 +172,11 @@
   </query>
 
   <!-- Queries by endpoint -->
-
-  <query name="pairsByInboundEndpointUrl">
+  <query name="pairsByEndpoint">
     select p from Pair p
-    where p.upstream.inboundUrl = :url
-    or p.downstream.inboundUrl = :url
+    where
+      p.domain.name = :domain_name and
+      (p.upstream.name = :endpoint_name or p.downstream.name = :endpoint_name)
   </query>
 
   <!-- Queries by domain only -->
@@ -242,16 +247,6 @@
     select o.value from ConfigOption o
     where o.key = :key
     and o.domain.name = :domain_name
-  </query>
-
-  <!-- Other -->
-
-  <query name="rootConfigOptionByKey">
-    select o.value from ConfigOption o where o.key = :key and o.domain = 'root'
-  </query>
-
-  <query name="allNonInternalConfigOptions">
-    select o from ConfigOption o where o.domain is not 'root'
   </query>
 
 </hibernate-mapping>

@@ -42,15 +42,14 @@ object PagingDataLoader {
   def loadData(size:Int, hours:Int, pair:String) = {
     val host = "http://localhost:19093/diffa-agent/"
     val domain = "domain"
+    val up = "up"
+    val down = "down"
 
     println("Loading %s events onto %s".format(size,host))
 
     val configClient = new ConfigurationRestClient(host, domain)
-    val changesClient = new ChangesRestClient(host)
+    val changesClient = new ChangesRestClient(host, domain, up)
     val diffsClient = new DifferencesRestClient(host, domain)
-
-    val up = "up"
-    val down = "down"
 
     val content = "application/json"
 
@@ -67,7 +66,7 @@ object PagingDataLoader {
       val timestamp = start.plusMinutes(i)
       val id = "id_" + i
       val version = "vsn_" + i
-      changesClient.onChangeEvent(UpstreamChangeEvent(up, id, List(start.toString), timestamp, version))
+      changesClient.onChangeEvent(UpstreamChangeEvent(id, List(start.toString), timestamp, version))
     }
 
     Thread.sleep(1000)
