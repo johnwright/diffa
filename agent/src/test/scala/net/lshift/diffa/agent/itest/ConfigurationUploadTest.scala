@@ -24,6 +24,9 @@ import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.{Client, ClientResponse}
 import com.sun.jersey.api.client.config.{ClientConfig, DefaultClientConfig}
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider
+import net.lshift.diffa.agent.client.SystemConfigRestClient
+import net.lshift.diffa.kernel.frontend.DomainDef
+
 /**
  * Tests for bulk configuration upload over the rest interface.
  */
@@ -69,14 +72,21 @@ class ConfigurationUploadTest {
     assertEquals("config/pair[key=invalidPair]: Schedule 'invalid' is not a valid: Illegal characters for this position: 'INV'", responseContent)
   }
 
+  val rootURL = "http://localhost:19093/diffa-agent"
+
+  // Create the domain
+  val domain = DomainDef(name="domain")
+  val systemConfig = new SystemConfigRestClient(rootURL)
+  systemConfig.declareDomain(domain)
+
   // Create our own Client here, since this mechanism doesn't really fit any of the other REST clients
 
   val config = new DefaultClientConfig()
   config.getProperties().put(ClientConfig.PROPERTY_FOLLOW_REDIRECTS, true.asInstanceOf[AnyRef]);
   config.getClasses().add(classOf[JacksonJsonProvider]);
   val client = Client.create(config)
-  val serverRootResource = client.resource("http://localhost:19093/diffa-agent")
-  val resource = serverRootResource.path("rest/config/xml").`type`(MediaType.APPLICATION_XML_TYPE)
+  val serverRootResource = client.resource(rootURL)
+  val resource = serverRootResource.path("rest/" + domain.name + "/config/xml").`type`(MediaType.APPLICATION_XML_TYPE)
 
   def uploadConfigRaw(body:String):Tuple2[Int, String] = {
     val response = resource.post(classOf[ClientResponse], body)

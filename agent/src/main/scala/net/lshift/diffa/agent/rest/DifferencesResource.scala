@@ -16,11 +16,9 @@
 
 package net.lshift.diffa.agent.rest
 
-import org.springframework.stereotype.Component
 import javax.ws.rs._
 import core._
 import org.slf4j.{Logger, LoggerFactory}
-import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.participants.ParticipantType
@@ -30,17 +28,14 @@ import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, Sessi
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 
-@Path("/diffs")
-@Component
-class DifferencesResource {
+class DifferencesResource(val sessionManager: SessionManager,
+                          val domain:String,
+                          val uriInfo:UriInfo) {
 
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
   val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
-
-  @Autowired var sessionManager: SessionManager = null
-  @Context var uriInfo:UriInfo = null
 
   @POST
   @Path("/sessions")
@@ -56,7 +51,7 @@ class DifferencesResource {
                 @QueryParam("end") end: String) = {
     val scope = pairs match {
       case null => SessionScope.all
-      case _ => SessionScope.forPairs(pairs.split(","): _*)
+      case _ => SessionScope.forPairs(domain, pairs.split(","): _*)
     }
     if (log.isTraceEnabled) {
       log.debug("Creating a subscription for this scope: " + scope)
@@ -132,7 +127,13 @@ class DifferencesResource {
 
       val interval = new Interval(from,until)
       val diffs = sessionManager.retrievePagedEvents(sessionId, pairKey, interval, offset, length)
-      Response.ok(diffs.toArray).tag(sessionVsn).build
+
+      val responseObj = Map(
+        "seqId" -> sessionVsn.getValue,
+        "diffs" -> diffs.toArray,
+        "total" -> sessionManager.countEvents(sessionId, pairKey, interval)
+      )
+      Response.ok(mapAsJavaMap(responseObj)).tag(sessionVsn).build
     }
     catch {
       case e:NoSuchElementException =>
@@ -182,12 +183,12 @@ class DifferencesResource {
       // Bucket the events
       val pairs = scala.collection.mutable.Map[String, ZoomPair]()
       interestingEvents.foreach(evt => {
-        val pair = pairs.getOrElseUpdate(evt.objId.pairKey, new ZoomPair(evt.objId.pairKey, rangeStartDate, width, max))
+        val pair = pairs.getOrElseUpdate(evt.objId.pair.key, new ZoomPair(evt.objId.pair.key, rangeStartDate, width, max))
         pair.addEvent(evt)
       })
 
       // Convert to an appropriate web response
-      val respObj = asJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
+      val respObj = mapAsJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
 
       Response.ok(respObj).tag(sessionVsn).build
     }

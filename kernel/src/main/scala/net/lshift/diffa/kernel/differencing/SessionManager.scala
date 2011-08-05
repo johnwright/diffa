@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.ParticipantType
 import org.joda.time.{Interval, DateTime}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * A SessionManager provides a stateful view of the differencing of pairs, and provides mechanisms for polling
@@ -110,6 +111,11 @@ trait SessionManager {
   def retrievePagedEvents(sessionId:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
+   * Count the number of events for the given pair within the given interval.
+   */
+  def countEvents(sessionId:String, pairKey:String, interval:Interval) : Int
+
+  /**
    * Retrieves any additional information that the session manager knows about an event (eg, mismatched hashes,
    * differing content bodies). This information may be retrieved by the manager on demand from remote sources, so
    * should generally only be called on explicit user request.
@@ -124,17 +130,17 @@ trait SessionManager {
   /**
    * Indicates that the given session is no longer required.
    */
-  def end(pair: String, listener: DifferencingListener)
+  def end(pair:DiffaPair, listener: DifferencingListener)
 
   /**
    * Informs the session manager that a pair has been updated.
    */
-  def onUpdatePair(pairKey:String)
+  def onUpdatePair(pair:DiffaPair)
 
   /**
    * Informs the session manager that a pair has been deleted.
    */
-  def onDeletePair(pairKey:String)
+  def onDeletePair(pair:DiffaPair)
 }
 
 class InvalidSessionIDException extends Exception

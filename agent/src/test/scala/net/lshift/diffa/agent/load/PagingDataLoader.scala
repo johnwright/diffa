@@ -21,10 +21,10 @@ import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.agent.client.{DifferencesRestClient, ConfigurationRestClient}
 import org.junit.Assert._
-import net.lshift.diffa.kernel.client.DifferencesClient
 import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
 import com.eaio.uuid.UUID
-import net.lshift.diffa.kernel.config.{Endpoint, PairDef, RangeCategoryDescriptor}
+import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
+import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 
 /**
  * Utility class to load lots of unmatched events into the agent.
@@ -41,12 +41,13 @@ object PagingDataLoader {
 
   def loadData(size:Int, hours:Int, pair:String) = {
     val host = "http://localhost:19093/diffa-agent/"
+    val domain = "domain"
 
     println("Loading %s events onto %s".format(size,host))
 
-    val configClient = new ConfigurationRestClient(host)
+    val configClient = new ConfigurationRestClient(host, domain)
     val changesClient = new ChangesRestClient(host)
-    val diffsClient = new DifferencesRestClient(host)
+    val diffsClient = new DifferencesRestClient(host, domain)
 
     val up = "up"
     val down = "down"
@@ -55,8 +56,9 @@ object PagingDataLoader {
 
     val categories = Map("bizDate" -> new RangeCategoryDescriptor("datetime"))
 
-    configClient.declareEndpoint(Endpoint(name = up, scanUrl = host, contentType = content, categories = categories))
-    configClient.declareEndpoint(Endpoint(name = down, scanUrl = host, contentType = content, categories = categories))
+    configClient.declareEndpoint(EndpointDef(name = up, scanUrl = host, contentType = content, categories = categories))
+    configClient.declareEndpoint(EndpointDef(name = down, scanUrl = host, contentType = content, categories = categories))
+
     configClient.declarePair(PairDef(pair, "same", 0, up, down, "0 15 10 ? * *"))
 
     val start = new DateTime().minusHours(hours)
@@ -75,8 +77,8 @@ object PagingDataLoader {
 
     val sessionId = diffsClient.subscribe(SessionScope.forPairs(pair), from, until)
 
-    def firstPage(client:DifferencesClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 0, 10).toSeq
-    def secondPage(client:DifferencesClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 10, 10).toSeq
+    def firstPage(client:DifferencesRestClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 0, 10).toSeq
+    def secondPage(client:DifferencesRestClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 10, 10).toSeq
 
     println("First page:")
     tryAgain(diffsClient, firstPage).foreach(println(_))
@@ -86,7 +88,7 @@ object PagingDataLoader {
 
   }
 
-  def tryAgain(client:DifferencesClient, poll:DifferencesClient => Seq[SessionEvent], n:Int = 10, wait:Int = 100) : Seq[SessionEvent]= {
+  def tryAgain(client:DifferencesRestClient, poll:DifferencesRestClient => Seq[SessionEvent], n:Int = 10, wait:Int = 100) : Seq[SessionEvent]= {
     var i = n
     var diffs = poll(client)
     while(diffs.isEmpty && i > 0) {

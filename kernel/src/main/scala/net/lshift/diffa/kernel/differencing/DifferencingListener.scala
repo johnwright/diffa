@@ -98,3 +98,8 @@ case object LiveWindow extends MatchOrigin
  * The match event originates from a scan
  */
 case object TriggeredByScan extends MatchOrigin
+
+/**
+ * The match event originates due to system boot.
+ */
+case object TriggeredByBoot extends MatchOrigin

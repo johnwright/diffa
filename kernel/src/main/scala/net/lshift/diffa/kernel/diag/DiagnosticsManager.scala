@@ -2,6 +2,7 @@ package net.lshift.diffa.kernel.diag
 
 import org.joda.time.DateTime
 import reflect.BeanProperty
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 
 /**
  * Manager responsible for collecting and providing access to diagnostic information within the system. Diagnostics
@@ -12,12 +13,12 @@ trait DiagnosticsManager {
   /**
    * Logs an event relevant to a given pair.
    */
-  def logPairEvent(level:DiagnosticLevel, pair:String, msg:String)
+  def logPairEvent(level:DiagnosticLevel, pair:DiffaPair, msg:String)
 
   /**
    * Queries for known events about the given pair.
    */
-  def queryEvents(pair:String, maxEvents:Int):Seq[PairEvent]
+  def queryEvents(pair:DiffaPair, maxEvents:Int):Seq[PairEvent]
 }
 
 /**

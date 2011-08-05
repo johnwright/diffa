@@ -17,10 +17,11 @@
 package net.lshift.diffa.kernel.util
 
 import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import org.hibernate.{NonUniqueResultException, Query, Session, SessionFactory}
 import org.slf4j.{LoggerFactory, Logger}
-// for 'SessionFactory.withSession'
-import scala.collection.JavaConversions._ // for implicit conversions Java collections <--> Scala collections
+import scala.collection.JavaConversions._
 import scala.collection.Map
 
 /**
@@ -59,7 +60,6 @@ trait HibernateQueryUtils {
    * object.
    */
   def singleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] = {
-    val list = listQuery[ReturnType](s, queryName, params)
 
     val query: Query = s.getNamedQuery(queryName)
     params foreach {case (param, value) => query.setParameter(param, value)}
@@ -78,4 +78,58 @@ trait HibernateQueryUtils {
       }
     }
   }
+
+  /**
+   * Returns a domain by its name
+   */
+  def getDomain(name: String) = sessionFactory.withSession(s => {
+    singleQuery[Domain](s, "domainByName", Map("domain_name" -> name), "domain %s".format(name))
+  })
+
+  /**
+   * This is un-protected call to set a configuration option.
+   * It is up to the calling context to establish this is authorized.
+   */
+  def writeConfigOption(domainName:String, key:String, value:String) = sessionFactory.withSession(s => {
+    val domain = getDomain(domainName)
+    val scopedKey = DomainScopedKey(key, domain)
+    val co = s.get(classOf[ConfigOption], scopedKey) match {
+      case null =>
+        new ConfigOption(domain = domain, key = key, value = value)
+      case current:ConfigOption =>  {
+        current.value = value
+        current
+      }
+    }
+    s.saveOrUpdate(co)
+  })
+
+  /**
+   * This is un-protected call to clear a configuration option.
+   * It is up to the calling context to establish this is authorized.
+   */
+  def deleteConfigOption(domain:String, key:String) = sessionFactory.withSession(s => {
+    val scopedKey = DomainScopedKey(key, getDomain(domain))
+    s.get(classOf[ConfigOption], scopedKey) match {
+      case null =>
+      case current:ConfigOption =>  s.delete(current)
+    }
+  })
+
+  def getEndpoint(s: Session, domain:String, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint %s".format(name))
+
+  def getUser(s: Session, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
+
+  def getPair(s: Session, domain:String, key: String) = singleQuery[DiffaPair](s, "pairByKey", Map("key" -> key), "pair %s".format(key))
+
+  def getRepairAction(s: Session, domain:String, name: String, pairKey: String) =
+    singleQuery[RepairAction](s, "repairActionsByNameAndPair",
+                              Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
+                              "repair action %s for pair %s in domain %s".format(name, pairKey, domain))
+
+  def getEscalation(s: Session, domain:String, name: String, pairKey: String) =
+    singleQuery[Escalation](s, "escalationsByNameAndPair",
+                            Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
+                            "esclation %s for pair %s in domain %s".format(name, pairKey, domain))
+
 }

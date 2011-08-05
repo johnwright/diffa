@@ -16,14 +16,14 @@ package net.lshift.diffa.agent.client
  * limitations under the License.
  */
 
-import net.lshift.diffa.kernel.client.UsersClient
-import net.lshift.diffa.kernel.config.User
 import net.lshift.diffa.messaging.json.AbstractRestClient
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.frontend.UserDef
 
-class UsersRestClient(u:String) extends AbstractRestClient(u, "rest/security/") with UsersClient {
+class UsersRestClient(u:String) extends AbstractRestClient(u, "rest/security/") {
 
-  def declareUser(name: String, email:String) : User = {
-    val user = User(name, email)
+  def declareUser(name: String, email:String) : UserDef = {
+    val user = UserDef(name, email)
     create("users", user)
     user
   }

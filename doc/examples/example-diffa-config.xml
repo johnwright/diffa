@@ -1,9 +1,10 @@
 <diffa-config>
-  <user name="user1" email="user1@example.com" />
-  <user name="user2" email="user2@example.com" />
 
   <property key="diffa.host">diffa-internal.lshift.net:1234</property>
-  
+
+  <!-- This user must exist in the Diffa agent -->
+  <member>user1</member>
+
   <endpoint name="upstream1"
             url="http://localhost:19293/diffa-participants/p/upstream"
             content-type="application/json">

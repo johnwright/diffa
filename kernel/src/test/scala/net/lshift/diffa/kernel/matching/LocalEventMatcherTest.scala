@@ -19,6 +19,8 @@ package net.lshift.diffa.kernel.matching
 import net.lshift.diffa.kernel.util.{ConcurrentJunitRunner, Concurrent}
 import org.junit.runner.RunWith
 import org.junit.After
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.Domain
 
 /**
  * Test cases for the locally maintained matching engine. Attempts to exercise various matching and expiration code paths.
@@ -33,5 +35,6 @@ class LocalEventMatcherTest extends AbstractMatcherTest {
     reaper.dispose
   }
 
-  def createMatcher(id: String, timeout: Int) = new LocalEventMatcher(id, timeout, reaper)
+  def createMatcher(id: String, timeout: Int) =
+    new LocalEventMatcher(DiffaPair(key = id, domain = Domain(name="domain"), matchingTimeout = timeout), reaper)
 }

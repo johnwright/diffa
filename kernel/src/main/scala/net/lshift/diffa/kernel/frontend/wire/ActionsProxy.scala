@@ -18,32 +18,36 @@ package net.lshift.diffa.kernel.frontend.wire
 
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import net.lshift.diffa.kernel.config.{RepairAction, Pair, ConfigStore}
 import InvocationResult._
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpPost
 import io.Source
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
+import net.lshift.diffa.kernel.frontend.PairDef
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{DiffaPairRef, RepairAction, Pair => DiffaPair, DomainConfigStore}
 
 /**
  * This is a conduit to the actions that are provided by participants
  */
-class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
+class ActionsProxy(val config:DomainConfigStore,
+                   val systemConfig:SystemConfigStore,
+                   val factory:ParticipantFactory, val diagnostics:DiagnosticsManager)
     extends ActionsClient {
 
-  def listActions(pairKey: String): Seq[Actionable] =
-    withValidPair(pairKey) { pair =>
-      config.listRepairActionsForPair(pair).map(Actionable.fromRepairAction)
+  def listActions(pair:DiffaPairRef): Seq[Actionable] =
+    withValidPair(pair) { p =>
+      config.listRepairActionsForPair(pair.domain, pair.key).map(Actionable.fromRepairAction(pair.domain,_))
     }
 
-  def listEntityScopedActions(pairKey: String) = listActions(pairKey).filter(_.scope == RepairAction.ENTITY_SCOPE)
+  def listEntityScopedActions(pair:DiffaPairRef) = listActions(pair).filter(_.scope == RepairAction.ENTITY_SCOPE)
 
-  def listPairScopedActions(pairKey: String) = listActions(pairKey).filter(_.scope == RepairAction.PAIR_SCOPE)
+  def listPairScopedActions(pair:DiffaPairRef) = listActions(pair).filter(_.scope == RepairAction.PAIR_SCOPE)
 
   def invoke(request: ActionableRequest): InvocationResult =
-    withValidPair(request.pairKey) { pair =>
+    withValidPair(request.domain, request.pairKey) { pair =>
       val client = new DefaultHttpClient
-      val repairAction = config.getRepairAction(request.actionId, request.pairKey)
+      val repairAction = config.getRepairActionDef(request.domain, request.actionId, request.pairKey)
       val url = repairAction.scope match {
         case RepairAction.ENTITY_SCOPE => repairAction.url.replace("{id}", request.entityId)
         case RepairAction.PAIR_SCOPE => repairAction.url
@@ -52,7 +56,7 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory, val d
         case RepairAction.ENTITY_SCOPE => "entity " + request.entityId + " of pair " + request.pairKey
         case RepairAction.PAIR_SCOPE => "pair " + request.pairKey
       })
-      diagnostics.logPairEvent(DiagnosticLevel.INFO, request.pairKey, "Initiating action " + actionDescription)
+      diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Initiating action " + actionDescription)
 
       try {
         val httpResponse = client.execute(new HttpPost(url))
@@ -60,22 +64,24 @@ class ActionsProxy(val config:ConfigStore, val factory:ParticipantFactory, val d
         val httpEntity = Source.fromInputStream(httpResponse.getEntity.getContent).mkString
 
         if (httpCode >= 200 && httpCode < 300) {
-          diagnostics.logPairEvent(DiagnosticLevel.INFO, request.pairKey, "Action " + actionDescription + " succeeded: " + httpEntity)
+          diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Action " + actionDescription + " succeeded: " + httpEntity)
         } else {
-          diagnostics.logPairEvent(DiagnosticLevel.ERROR, request.pairKey, "Action " + actionDescription + " failed: " + httpEntity)
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Action " + actionDescription + " failed: " + httpEntity)
         }
         InvocationResult.received(httpCode, httpEntity)
       }
       catch {
         case e =>
-          diagnostics.logPairEvent(DiagnosticLevel.ERROR, request.pairKey, "Action " + actionDescription + " failed: " + e.getMessage)
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Action " + actionDescription + " failed: " + e.getMessage)
           InvocationResult.failure(e)
       }
     }
 
-  def withValidPair[T](pairKey: String)(f: Pair => T): T = {
-    val pair = config.getPair(pairKey)
-    f(pair)
+  def withValidPair[T](pair:DiffaPairRef)(f: DiffaPair => T) : T = withValidPair(pair.domain, pair.key)(f)
+
+  def withValidPair[T](domain:String,pairKey:String)(f: DiffaPair => T) : T = {
+    val p = systemConfig.getPair(domain, pairKey)
+    f(p)
   }
 
 }

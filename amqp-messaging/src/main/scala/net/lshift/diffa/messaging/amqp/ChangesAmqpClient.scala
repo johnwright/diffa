@@ -47,4 +47,6 @@ class ChangesAmqpClient(connector: Connector,
     }
     send(payload)
   }
+
+  def inboundURL = AmqpQueueUrl(queueName).toString
 }

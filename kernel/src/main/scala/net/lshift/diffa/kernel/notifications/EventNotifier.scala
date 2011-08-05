@@ -19,16 +19,16 @@ package net.lshift.diffa.kernel.notifications
 import net.lshift.diffa.kernel.events.VersionID
 import org.slf4j.{Logger, LoggerFactory}
 import org.joda.time.{Period, DateTime}
-import net.lshift.diffa.kernel.config.ConfigStore
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
 import net.lshift.diffa.kernel.differencing.{MatchOrigin, SessionScope, DifferencingListener, SessionManager}
+import net.lshift.diffa.kernel.config.DomainConfigStore
 
 /**
  * This fires mismatch events out to each registered NotificationProvider.
  */
 class EventNotifier(val sessionManager:SessionManager,
-                    val config:ConfigStore,
+                    val domainConfigStore:DomainConfigStore,
                     val quietTime:Period)
     extends DifferencingListener
     with AgentLifecycleAware {
@@ -62,7 +62,7 @@ class EventNotifier(val sessionManager:SessionManager,
       log.trace("About to notify users, the received event was " + id + " at " + lastUpdated)
       nextRun = now.plus(quietTime)
       val e = new NotificationEvent(id, lastUpdated, upstreamVsn, downstreamVsn)      
-      config.listUsers.foreach(u => providers.foreach( p => p.notify(e,u)))
+      domainConfigStore.listDomainMembers(id.pair.domain).foreach(m => providers.foreach( p => p.notify(e,m.user)))
     }
     
   }

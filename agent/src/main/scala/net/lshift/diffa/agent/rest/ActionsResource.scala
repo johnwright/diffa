@@ -17,21 +17,16 @@
 package net.lshift.diffa.agent.rest
 
 import javax.ws.rs._
-import core.{UriInfo, Context}
-import org.springframework.stereotype.Component
-import org.springframework.beans.factory.annotation.Autowired
+import core.UriInfo
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
-import net.lshift.diffa.kernel.config.RepairAction
+import net.lshift.diffa.kernel.config.{DiffaPairRef, RepairAction}
 
-@Path("/actions")
-@Component
-class ActionsResource {
-
-  @Autowired var proxy:ActionsClient = null
-  @Context var uriInfo:UriInfo = null
+class ActionsResource(val proxy:ActionsClient,
+                      val domain:String,
+                      val uriInfo:UriInfo) {
 
   @GET
   @Path("/{pairId}")
@@ -40,9 +35,9 @@ class ActionsResource {
   @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
   def listActions(@PathParam("pairId") pairId: String,
                   @QueryParam("scope") scope: String): Array[Actionable] = (scope match {
-    case RepairAction.ENTITY_SCOPE => proxy.listEntityScopedActions(pairId)
-    case RepairAction.PAIR_SCOPE => proxy.listPairScopedActions(pairId)
-    case _ => proxy.listActions(pairId)
+    case RepairAction.ENTITY_SCOPE => proxy.listEntityScopedActions(DiffaPairRef(pairId,domain))
+    case RepairAction.PAIR_SCOPE => proxy.listPairScopedActions(DiffaPairRef(pairId,domain))
+    case _ => proxy.listActions(DiffaPairRef(pairId,domain))
   }).toArray
 
   @POST
@@ -55,7 +50,7 @@ class ActionsResource {
   ))
   def invokeAction(@PathParam("pairId") pairId:String,
                    @PathParam("actionId") actionId:String)
-    = proxy.invoke(ActionableRequest(pairId, actionId, null))
+    = proxy.invoke(ActionableRequest(pairId, domain, actionId, null))
 
   @POST
   @Path("/{pairId}/{actionId}/{entityId}")
@@ -69,6 +64,6 @@ class ActionsResource {
   def invokeAction(@PathParam("pairId") pairId:String,
                    @PathParam("actionId") actionId:String,
                    @PathParam("entityId") entityId:String) : InvocationResult
-    = proxy.invoke(ActionableRequest(pairId, actionId, entityId))
+    = proxy.invoke(ActionableRequest(pairId, domain, actionId, entityId))
 
 }

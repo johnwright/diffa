@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent
  * Note that this is the external representation of a change, as opposed to the internal PairChangeEvent type
  */
 abstract class ChangeEvent {
-  def endpoint:String
+  def inboundURL:String
   def id:String
   def attributes:Seq[String]
   def lastUpdate:DateTime
@@ -44,15 +44,15 @@ case object DownstreamCorrelatedChangeEventType extends ChangeEventType("downstr
 /**
  * Event indicating that a change has occurred within an upstream system.
  */
-case class UpstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
+case class UpstreamChangeEvent(inboundURL:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent {
   def eventType = UpstreamChangeEventType
 }
 
 /**
- * Event indicating that a change has occurred within a downsteam system.
+ * Event indicating that a change has occurred within a downstream system.
  */
-case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
+case class DownstreamChangeEvent(inboundURL:String, id:String, attributes:Seq[String], lastUpdate:DateTime, vsn:String)
   extends ChangeEvent {
   def eventType = DownstreamChangeEventType
 }
@@ -62,7 +62,7 @@ case class DownstreamChangeEvent(endpoint:String, id:String, attributes:Seq[Stri
  * change indicates that the change occurring in the downstream did not result in the same content being at the
  * downstream, but provides details on correlating the version information between the systems.
  */
-case class DownstreamCorrelatedChangeEvent(endpoint:String, id:String, attributes:Seq[String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
+case class DownstreamCorrelatedChangeEvent(inboundURL:String, id:String, attributes:Seq[String], lastUpdate:DateTime,  upstreamVsn:String, downstreamVsn:String)
   extends ChangeEvent {
   def eventType = DownstreamCorrelatedChangeEventType
 }

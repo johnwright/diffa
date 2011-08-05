@@ -23,6 +23,7 @@ import org.joda.time.DateTime
 import org.junit.Assert._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import collection.mutable.HashMap
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 /**
  * Standard tests for a matcher.
@@ -34,18 +35,19 @@ abstract class AbstractMatcherTest {
   val ackCallbackBListener = new MailBox
 
   val pairId = "pair" + AbstractMatcherTest.nextPairId
+  val domain = "domain"
 
   val ackCallbackA = () => ackCallbackAListener.send(new Object)
   val ackCallbackB = () => ackCallbackBListener.send(new Object)
 
-  val id1 = VersionID(pairId, "aaaa1")
-  val id2 = VersionID(pairId, "aaaa2")
-  val id3 = VersionID(pairId, "aaaa3")
-  val id4 = VersionID(pairId, "aaaa4")
-  val id5 = VersionID(pairId, "aaaa5")
-  val id6 = VersionID(pairId, "aaaa6")
-  val idB6 = VersionID(pairId, "bbbb6")
-  val id7 = VersionID(pairId, "aaaa7")
+  val id1 = VersionID(DiffaPairRef(pairId,domain), "aaaa1")
+  val id2 = VersionID(DiffaPairRef(pairId,domain), "aaaa2")
+  val id3 = VersionID(DiffaPairRef(pairId,domain), "aaaa3")
+  val id4 = VersionID(DiffaPairRef(pairId,domain), "aaaa4")
+  val id5 = VersionID(DiffaPairRef(pairId,domain), "aaaa5")
+  val id6 = VersionID(DiffaPairRef(pairId,domain), "aaaa6")
+  val idB6 = VersionID(DiffaPairRef(pairId,domain), "bbbb6")
+  val id7 = VersionID(DiffaPairRef(pairId,domain), "aaaa7")
 
   def createMatcher(id:String, timeout:Int):EventMatcher
 

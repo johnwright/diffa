@@ -18,10 +18,12 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.config.{ConfigStore,Pair}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
+
 
 /**
  * Version policy where two events are considered the same based on the downstream reporting the same upstream
@@ -31,41 +33,41 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
  */
 class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               listener:DifferencingListener,
-                              configStore:ConfigStore,
+                              systemConfigStore:SystemConfigStore,
                               diagnostics:DiagnosticsManager)
-    extends BaseScanningVersionPolicy(stores, listener, configStore, diagnostics) {
+    extends BaseScanningVersionPolicy(stores, listener, systemConfigStore, diagnostics) {
 
   def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingScanStrategy(us,ds)
   
   protected class DownstreamCorrelatingScanStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
       extends ScanStrategy {
     
-    def getAggregates(pairKey:String, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
+    def getAggregates(pair:DiffaPair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
-      stores(pairKey).queryDownstreams(constraints, aggregator.collectDownstream)
+      stores(pair).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
-    def getEntities(pairKey:String, constraints:Seq[ScanConstraint]) = {
-      stores(pairKey).queryDownstreams(constraints).map(x => {
+    def getEntities(pair:DiffaPair, constraints:Seq[ScanConstraint]) = {
+      stores(pair).queryDownstreams(constraints).map(x => {
         ScanResultEntry.forEntity(x.id, x.downstreamDVsn, x.lastUpdate, mapAsJavaMap(x.downstreamAttributes))
       })
     }
 
-    def handleMismatch(pairKey:String, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, categories, _, null, storedVsn) =>
-          handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pairKey, id)))
+          handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pair.asRef, id)))
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)
 
           if (response.getDvsn == partVsn) {
             // This is the same destination object, so we're safe to store the correlation
-            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pairKey, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
+            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pair.asRef, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
           } else {
             // We can't update our datastore, so we just have to generate a mismatch
-            listener.onMismatch(VersionID(pairKey, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan)
+            listener.onMismatch(VersionID(pair.asRef, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan)
           }
       }
     }

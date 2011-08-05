@@ -21,6 +21,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.participant.scanning.ScanConstraint
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Store used for caching version correlation information between a pair of participants.
@@ -35,7 +36,7 @@ trait VersionCorrelationStore extends Closeable {
   /**
    * The unique key for the upstream and downstream participant pair
    */
-  val pairKey: String
+  val pair: DiffaPair
 
   /**
    * Opens a new writer, giving access to write operations on the store.
@@ -59,7 +60,7 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryUpstreams(constraints:Seq[ScanConstraint], handler:UpstreamVersionHandler):Unit = {
     queryUpstreams(constraints).foreach(c => {
-      val version = VersionID(c.pairing, c.id)
+      val version = VersionID(DiffaPairRef(c.pairing, c.domain), c.id)
       val attributes = c.upstreamAttributes.toMap
       if (logger.isTraceEnabled) {
         logger.trace("US: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn))
@@ -73,12 +74,12 @@ trait VersionCorrelationStore extends Closeable {
    */
   def queryDownstreams(constraints:Seq[ScanConstraint], handler:DownstreamVersionHandler) : Unit = {
     queryDownstreams(constraints).foreach(c => {
-      val version = VersionID(c.pairing, c.id)
+      val version = VersionID(DiffaPairRef(c.pairing, c.domain), c.id)
       val attributes = c.downstreamAttributes.toMap
       if (logger.isTraceEnabled) {
         logger.trace("DS: version = %s; attributes = %s; lastUpdate = %s; uvsn = %s; dvsn = %s".format(version, attributes, c.lastUpdate, c.upstreamVsn, c.downstreamDVsn))
       }
-      handler(VersionID(c.pairing, c.id), c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
+      handler(version, c.downstreamAttributes.toMap, c.lastUpdate, c.downstreamUVsn, c.downstreamDVsn)
     })
   }
 
@@ -91,6 +92,11 @@ trait VersionCorrelationStore extends Closeable {
    * Queries for all downstream versions for the given pair based on the given constraints.
    */
   def queryDownstreams(constraints:Seq[ScanConstraint]) : Seq[Correlation]
+}
+
+object VersionCorrelationStore {
+  val schemaVersionKey = "correlationStore.schemaVersion"
+  val currentSchemaVersion = 1
 }
 
 /**
@@ -146,9 +152,9 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
  */
 trait VersionCorrelationStoreFactory extends Closeable {
 
-  def apply(pairKey: String): VersionCorrelationStore
+  def apply(pair: DiffaPair): VersionCorrelationStore
 
-  def remove(pairKey: String): Unit
+  def remove(pair: DiffaPair): Unit
 }
 
 abstract class TypedAttribute { def value:String }

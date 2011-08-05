@@ -25,15 +25,6 @@
     </field>
   </class>
 
-  <class name="net.lshift.diffa.kernel.config.User">
-    <field name="name" type="string">
-      <bind-xml name="name" node="attribute" />
-    </field>
-    <field name="email" type="string">
-      <bind-xml name="email" node="attribute" />
-    </field>
-  </class>
-
   <class name="net.lshift.diffa.agent.rest.CastorSerializableRangeCategoryDescriptor">
     <field name="name" type="string" required="true">
       <bind-xml name="name" node="attribute" />
@@ -129,15 +120,15 @@
     <field name="scanCronSpec" type="string">
       <bind-xml name="scan-schedule" node="attribute" />
     </field>
-    <field name="repairActions" type="net.lshift.diffa.kernel.config.RepairAction" collection="arraylist">
+    <field name="repairActions" type="net.lshift.diffa.kernel.frontend.RepairActionDef" collection="arraylist">
       <bind-xml name="repair-action" />
     </field>
-    <field name="escalations" type="net.lshift.diffa.kernel.config.Escalation" collection="arraylist">
+    <field name="escalations" type="net.lshift.diffa.kernel.frontend.EscalationDef" collection="arraylist">
       <bind-xml name="escalation" />
     </field>
   </class>
 
-  <class name="net.lshift.diffa.kernel.config.RepairAction">
+  <class name="net.lshift.diffa.kernel.frontend.RepairActionDef">
     <field name="name" type="string">
       <bind-xml name="name" node="attribute" />
     </field>
@@ -149,7 +140,7 @@
     </field>
   </class>
 
-  <class name="net.lshift.diffa.kernel.config.Escalation">
+  <class name="net.lshift.diffa.kernel.frontend.EscalationDef">
     <field name="name" type="string">
       <bind-xml name="name" node="attribute" />
     </field>
@@ -173,8 +164,8 @@
     <field name="properties" type="net.lshift.diffa.agent.rest.DiffaProperty" collection="arraylist">
       <bind-xml name="property" />
     </field>
-    <field name="users" type="net.lshift.diffa.kernel.config.User" collection="arraylist">
-      <bind-xml name="user" />
+    <field name="members" type="string" collection="set">
+      <bind-xml name="member" />
     </field>
     <field name="endpoints" type="net.lshift.diffa.agent.rest.CastorSerializableEndpoint" collection="arraylist">
       <bind-xml name="endpoint" />

@@ -18,14 +18,15 @@ package net.lshift.diffa.kernel.participants
 
 import org.junit.Test
 import org.easymock.EasyMock._
-import net.lshift.diffa.kernel.config.{Endpoint, ConfigStore}
+import net.lshift.diffa.kernel.config.Endpoint
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import org.junit.Assert._
 
 /**
  * Test cases for the InboundEndpointManager.
  */
 class InboundEndpointManagerTest {
-  val configStore = createMock(classOf[ConfigStore])
+  val configStore = createMock(classOf[SystemConfigStore])
   val manager = new InboundEndpointManager(configStore)
   val jsonFactory = new InboundEndpointFactory {
     var lastEp:Endpoint = null

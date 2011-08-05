@@ -27,9 +27,11 @@ import com.sun.jersey.api.client.{WebResource, UniformInterfaceException, Client
 
 abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubUrl:String) extends Closeable {
 
-  val log:Logger = LoggerFactory.getLogger(getClass)
+  val log:Logger = LoggerFactory.getLogger(classOf[AbstractRestClient])
 
   log.debug("Configured to initialize using the server URL (" + serverRootUrl + ") with a sub URL (" + restResourceSubUrl + ")")
+
+  def resourcePath = restResourceSubUrl
 
   private var isClosing = false
 
@@ -39,7 +41,8 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
   config.getClasses().add(classOf[JacksonJsonProvider]);
   val client = Client.create(config)
   val serverRootResource = client.resource(serverRootUrl)
-  val resource = serverRootResource.path(restResourceSubUrl)
+
+  def resource = serverRootResource.path(resourcePath)
 
   override def close() = {
     if (!isClosing) {
@@ -47,6 +50,9 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
       client.destroy
     }    
   }
+
+  def handleHTTPError(x:Int, path:WebResource, status:ClientResponse.Status) =
+    throw new RuntimeException("HTTP %s for resource %s ; Reason: %s".format(x, path ,status.getReasonPhrase))
 
   // TODO This is quite sketchy at the moment
   def rpc(path:String) = {
@@ -91,16 +97,21 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
 
   def create (where:String, what:Any) {
     val endpoint = resource.path(where)
+
+    def logError(status:Int) = {
+      log.error("HTTP %s: Could not create resource %s at %s".format(status, what, endpoint.getURI))
+    }
+
     val media = endpoint.`type`(MediaType.APPLICATION_JSON_TYPE)
     val response = media.post(classOf[ClientResponse], what)
     response.getStatus match {
       case 201 => ()
       case 400 => {
-        log.error(response.getStatus + "")
+        logError(response.getStatus)
         throw new BadRequestException(response.getStatus + "")
       }
       case _   => {
-        log.error(response.getStatus + "")
+        logError(response.getStatus)
         throw new RuntimeException(response.getStatus + "")
       }
     }
@@ -108,13 +119,21 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
 
   def delete(where: String) {
     val endpoint = resource.path(where)
+
+    def logError(status:Int) = {
+      log.error("HTTP %s: Could not delete resource %s".format(status, endpoint.getURI))
+    }
+
     val media = endpoint.`type`(MediaType.APPLICATION_JSON_TYPE)
     val response = media.delete(classOf[ClientResponse])
     response.getStatus match {
       case 200 | 204 => ()
-      case 404 => throw new NotFoundException(where)
+      case 404 => {
+        logError(response.getStatus)
+        throw new NotFoundException(where)
+      }
       case _ => {
-        log.error(response.getStatus.toString)
+        logError(response.getStatus)
         throw new RuntimeException(response.getStatus.toString)
       }
     }

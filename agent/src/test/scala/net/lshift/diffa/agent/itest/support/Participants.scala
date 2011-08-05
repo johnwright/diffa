@@ -16,14 +16,9 @@
 
 package net.lshift.diffa.agent.itest.support
 
-import net.lshift.diffa.kernel.protocol.ProtocolHandler
 import net.lshift.diffa.participants.ParticipantRpcServer
 import concurrent.SyncVar
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.messaging.amqp._
-import net.lshift.diffa.kernel.config.Endpoint
-import net.lshift.diffa.kernel.participants.{ParticipantFactory, Participant, DownstreamParticipant, UpstreamParticipant}
-import net.lshift.diffa.messaging.json._
 import net.lshift.diffa.participant.content.ContentParticipantHandler
 import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
 import net.lshift.diffa.participant.correlation.VersioningParticipantHandler
@@ -39,8 +34,6 @@ trait Participants {
   val downstreamScanUrl: String
   val downstreamContentUrl: String
   val downstreamVersionUrl: String
-
-  val inboundUrl: String
 
   def startUpstreamServer(scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler)
   def startDownstreamServer(scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler, versioning:VersioningParticipantHandler)
@@ -59,8 +52,6 @@ class HttpParticipants(usPort: Int, dsPort: Int) extends Participants {
   val downstreamScanUrl = downstreamUrl + "/scan"
   val downstreamContentUrl = downstreamUrl + "/content"
   val downstreamVersionUrl = downstreamUrl + "/corr-version"
-
-  val inboundUrl:String = null
 
   def startUpstreamServer(scanning:ScanningParticipantRequestHandler, content:ContentParticipantHandler) =
     forkServer(usPort, scanning, content, null)

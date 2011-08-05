@@ -27,21 +27,24 @@ import net.lshift.diffa.kernel.differencing.{MatchOrigin, LiveWindow, TriggeredB
 import net.lshift.diffa.kernel.escalation.EscalationManagerTest.Scenario
 import net.lshift.diffa.kernel.config._
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theories, Theory}
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.frontend.EscalationDef
 
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
 
-  var pairKey = "some pair key"
+  val domain = "domain"
+  val pairKey = "some pair key"
+  val pair = DiffaPair(key = pairKey, domain = Domain(name=domain))
 
-  val configStore = createMock(classOf[ConfigStore])
+  val configStore = createMock(classOf[DomainConfigStore])
   val actionsClient = createStrictMock(classOf[ActionsClient])
   val escalationManager = new EscalationManager(configStore, actionsClient)
 
   def expectConfigStore(event:String) = {
-    expect(configStore.getPair(pairKey)).andReturn(Pair()).anyTimes()
 
-    expect(configStore.listEscalationsForPair(EasyMock.isA(classOf[Pair]))).andReturn(
-      List(Escalation("foo", pairKey, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
+    expect(configStore.listEscalationsForPair(domain, pairKey)).andReturn(
+      List(EscalationDef("foo", pairKey, "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN))
     ).anyTimes()
 
     replay(configStore)
@@ -60,7 +63,7 @@ class EscalationManagerTest {
     expectConfigStore(scenario.event)
     expectActionsClient(scenario.invocations)
 
-    escalationManager.onMismatch(VersionID(pairKey, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
+    escalationManager.onMismatch(VersionID(pair.asRef, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
 
     verify(configStore, actionsClient)
   }
