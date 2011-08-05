@@ -38,15 +38,6 @@
     <url-pattern>/rest/*</url-pattern>
   </servlet-mapping>
 
-  <servlet>
-    <servlet-name>requestHandlerProxy</servlet-name>
-    <servlet-class>org.springframework.web.context.support.HttpRequestHandlerServlet</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>requestHandlerProxy</servlet-name>
-    <url-pattern>/changes/*</url-pattern>
-  </servlet-mapping>
-
   <filter>
     <filter-name>sitemesh</filter-name>
     <filter-class>com.opensymphony.sitemesh.webapp.SiteMeshFilter</filter-class>

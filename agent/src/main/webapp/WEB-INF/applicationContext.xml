@@ -197,17 +197,6 @@
   </bean>
 
   <!--
-    ========================
-      HTTP Request Proxying
-      (baked in transport)
-    ========================
-  -->
-
-  <bean id="requestHandlerProxy" class="net.lshift.diffa.agent.http.RequestHandlerProxy">
-    <constructor-arg ref="protocolMapper" />
-  </bean>
-
-  <!--
     ===============================
       Inbound Endpoint Management
     ===============================
