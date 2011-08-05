@@ -37,7 +37,7 @@
   <bean id="httpClient" class="org.apache.http.impl.client.DefaultHttpClient"/>
 
   <bean id="httpPost" class="org.apache.http.client.methods.HttpPost">
-    <constructor-arg value="${demo.agentUrl}/rest/config/xml"/>
+    <constructor-arg value="${demo.agentUrl}/rest/diffa/config/xml"/>
     <property name="entity">
       <bean class="org.apache.http.entity.FileEntity">
         <constructor-arg value="classpath:diffa-config.xml"/>

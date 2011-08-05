@@ -31,7 +31,7 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
 
   // Verify that root domain exists - if not, we cannot proceed with the boot phase
   try {
-    getDomain(Domain.DEFAULT_DOMAIN.name)
+    getDomain(Domain.SYSTEM_DOMAIN.name)
   }
   catch {
     case e:MissingObjectException => {
@@ -43,7 +43,7 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => s.saveOrUpdate(d) )
 
   def deleteDomain(domain:String) = sessionFactory.withSession( s => {
-    if (domain == Domain.DEFAULT_DOMAIN.name) {
+    if (domain == Domain.SYSTEM_DOMAIN.name) {
       throw new InvalidSystemConfigurationException("Attempt to delete the default domain")
     }
 
@@ -91,8 +91,8 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
   def maybeSystemConfigOption(key: String) = {
     sessionFactory.withSession(s => singleQueryOpt[String](s, "rootConfigOptionByKey", Map("key" -> key)))
   }
-  def setSystemConfigOption(key:String, value:String) = writeConfigOption(Domain.DEFAULT_DOMAIN.name, key, value)
-  def clearSystemConfigOption(key:String) = deleteConfigOption(Domain.DEFAULT_DOMAIN.name, key)
+  def setSystemConfigOption(key:String, value:String) = writeConfigOption(Domain.SYSTEM_DOMAIN.name, key, value)
+  def clearSystemConfigOption(key:String) = deleteConfigOption(Domain.SYSTEM_DOMAIN.name, key)
 
   def systemConfigOptionOrDefault(key:String, defaultVal:String) = {
     maybeSystemConfigOption(key) match {

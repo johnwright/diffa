@@ -70,7 +70,7 @@ class HibernateSystemConfigStoreTest {
 
   @Test
   def shouldBeAbleToSetSystemProperty = {
-    systemConfigStore.createOrUpdateDomain(Domain.DEFAULT_DOMAIN)
+    systemConfigStore.createOrUpdateDomain(Domain.SYSTEM_DOMAIN)
     systemConfigStore.setSystemConfigOption("foo", "bar")
     assertEquals("bar", systemConfigStore.maybeSystemConfigOption("foo").get)
   }

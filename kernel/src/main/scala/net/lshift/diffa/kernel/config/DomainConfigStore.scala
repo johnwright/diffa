@@ -237,7 +237,8 @@ case class Domain (
 }
 
 object Domain {
-  val DEFAULT_DOMAIN = Domain(name = "root")
+  val SYSTEM_DOMAIN = Domain(name = "root")
+  val DEFAULT_DOMAIN = Domain(name = "diffa")
 }
 
 

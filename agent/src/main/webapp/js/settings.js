@@ -70,14 +70,14 @@ Diffa.Models.Pair = Backbone.Model.extend({
 
   fetchActions: function() {
     var self = this;
-    $.getJSON(API_BASE + '/actions/' + this.id + '?scope=pair', function(actions) {
+    $.getJSON(API_BASE + "/" + Diffa.currentDomain + '/actions/' + this.id + '?scope=pair', function(actions) {
       self.set({actions: actions});
     });
   },
 
   syncLog: function() {
     var self = this;
-    $.getJSON(API_BASE + "/diagnostics/" + this.id + "/log", function(logEntries) {
+    $.getJSON(API_BASE + "/" + Diffa.currentDomain + "/diagnostics/" + this.id + "/log", function(logEntries) {
       self.set({logEntries: logEntries});
     });
   },
@@ -87,7 +87,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
 
     this.set({state: 'REQUESTING'});
     $.ajax({
-      url: API_BASE + "/scanning/pairs/" + this.id + "/scan",
+      url: API_BASE + "/" + Diffa.currentDomain + "/scanning/pairs/" + this.id + "/scan",
       type: "POST",
       success: function() {
         self.set({state: 'SCANNING'});
@@ -103,7 +103,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
 
     this.set({state: 'CANCELLED'});
     $.ajax({
-      url: API_BASE + "/scanning/pairs/" + this.id + "/scan",
+      url: API_BASE + "/" + Diffa.currentDomain + "/scanning/pairs/" + this.id + "/scan",
       type: "DELETE",
       success: function() {
       },
@@ -116,7 +116,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
 
 Diffa.Collections.Pairs = Backbone.Collection.extend({
   model: Diffa.Models.Pair,
-  url: API_BASE + "/diffs/sessions/all_scan_states",
+  url: function() { return API_BASE + "/" + Diffa.currentDomain + "/diffs/sessions/all_scan_states"; },
 
   initialize: function() {
     _.bindAll(this, "sync", "scanAll", "select");
@@ -129,7 +129,7 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
   sync: function() {
     var self = this;
 
-    $.getJSON(this.url, function(states) {
+    $.getJSON(this.url(), function(states) {
       var toRemove = [];
 
       // Update any pairs we've already got
@@ -164,7 +164,7 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
     });
 
     $.ajax({
-      url: API_BASE + "/diffs/sessions/scan_all",
+      url: API_BASE + "/" + Diffa.currentDomain + "/diffs/sessions/scan_all",
       type: "POST",
       success: function() {
         self.each(function(pair) {
@@ -397,6 +397,7 @@ $('#scan_all').click(function(e) {
   Diffa.PairsCollection.scanAll();
 });
 
+Diffa.currentDomain = "diffa";    // TODO: Allow user to change this
 Diffa.SettingsApp = new Diffa.Routers.Pairs();
 Diffa.PairsCollection = new Diffa.Collections.Pairs();
 Diffa.PairListView = new Diffa.Views.PairList({model: Diffa.PairsCollection});

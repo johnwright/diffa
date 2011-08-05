@@ -54,6 +54,7 @@ class HibernateConfigStorePreparationStep
 
         val createStmt = AddSchemaVersionMigrationStep.schemaVersionCreateStatement(Dialect.getDialect(config.getProperties))
         val insertSchemaVersion = HibernatePreparationUtils.schemaVersionInsertStatement(migrationSteps.last.versionId)
+        val insertRootDomain = HibernatePreparationUtils.domainInsertStatement(Domain.SYSTEM_DOMAIN)
         val insertDefaultDomain = HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN)
         val insertCorrelationSchemaVersion = HibernatePreparationUtils.correlationStoreVersionInsertStatement
 
@@ -64,8 +65,9 @@ class HibernateConfigStorePreparationStep
 
               try {
                 stmt.execute(createStmt)
-                // Make sure that the DB has a version and that the default domain is in the DB
+                // Make sure that the DB has a version and that the default and root domains are in the DB
                 stmt.execute(insertSchemaVersion)
+                stmt.execute(insertRootDomain)
                 stmt.execute(insertDefaultDomain)
                 // Make sure that we have the correct version for the correlation store
                 stmt.execute(insertCorrelationSchemaVersion)
@@ -350,7 +352,8 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     domainTable.addColumn("name", Types.VARCHAR, 255, false)
     stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, domainTable))
 
-    // Make sure the default domain is in the DB
+    // Make sure the default and root domains are in the DB
+    stmt.execute(HibernatePreparationUtils.domainInsertStatement(Domain.SYSTEM_DOMAIN))
     stmt.execute(HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN))
 
     // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));
@@ -367,7 +370,7 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
       setSqlTypeCode(Types.VARCHAR)
       setNullable(false)
       setLength(255)
-      setDefaultValue(Domain.DEFAULT_DOMAIN.name)
+      setDefaultValue(Domain.SYSTEM_DOMAIN.name)
     }
 
     // alter table config_options add column domain varchar(255) not null
