@@ -3,6 +3,7 @@ package net.lshift.diffa.kernel.diag
 import org.joda.time.DateTime
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.differencing.PairScanState
 
 /**
  * Manager responsible for collecting and providing access to diagnostic information within the system. Diagnostics
@@ -19,6 +20,16 @@ trait DiagnosticsManager {
    * Queries for known events about the given pair.
    */
   def queryEvents(pair:DiffaPair, maxEvents:Int):Seq[PairEvent]
+
+  /**
+   * Retrieves the scan states for each pair configured within the given domain.
+   */
+  def retrievePairScanStatesForDomain(domain:String):Map[String, PairScanState]
+
+  /**
+   * Informs the diagnostics manager that a pair has been deleted.
+   */
+  def onDeletePair(pair:DiffaPair)
 }
 
 /**

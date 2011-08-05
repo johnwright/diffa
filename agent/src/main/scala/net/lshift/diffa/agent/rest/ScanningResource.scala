@@ -19,13 +19,25 @@ package net.lshift.diffa.agent.rest
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
-import javax.ws.rs.{POST, PathParam, Path, DELETE}
 import javax.ws.rs.core.Response
 import net.lshift.diffa.kernel.frontend.Configuration
+import javax.ws.rs._
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.config.DomainConfigStore
 
 class ScanningResource(val pairPolicyClient:PairPolicyClient,
                        val config:Configuration,
+                       val domainConfigStore:DomainConfigStore,
+                       val diagnostics:DiagnosticsManager,
                        val domain:String) {
+
+  @GET
+  @Path("/states")
+  @Description("Lists the scanning state for every configured pair within this domain.")
+  def getAllPairStates = {
+    val states = diagnostics.retrievePairScanStatesForDomain(domain)
+    Response.ok(scala.collection.JavaConversions.mapAsJavaMap(states)).build
+  }
 
   @POST
   @Path("/pairs/{pairKey}/scan")
@@ -37,15 +49,15 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
     Response.status(Response.Status.ACCEPTED).build
   }
 
-  @POST
+  /*@POST
   @Path("/scan_all")
-  @Description("Forces Diffa to execute a scan operation for every configured pair.")
+  @Description("Forces Diffa to execute a scan operation for every configured pair within this domain.")
   def scanAllPairings = {
     log.info("Initiating scan of all known pairs")
-    configStore.listPairs.foreach(p => pairPolicyClient.scanPair(p.key))
+    domainConfigStore.listPairs(domain).foreach(p => pairPolicyClient.scanPair(p))
 
     Response.status(Response.Status.ACCEPTED).build
-  }
+  }*/
 
   @DELETE
   @Path("/pairs/{pairKey}/scan")

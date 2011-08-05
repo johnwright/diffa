@@ -51,7 +51,7 @@ class DefaultSessionManager(
         val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory)
     extends SessionManager
-    with DifferencingListener with MatchingStatusListener with PairScanListener with AgentLifecycleAware {
+    with DifferencingListener with MatchingStatusListener with AgentLifecycleAware {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -63,8 +63,6 @@ class DefaultSessionManager(
   private val sessionsByKey = new HashMap[String, SessionCache]
 
   private val participants = new HashMap[Endpoint, Participant]
-
-  private val pairStates = new HashMap[DiffaPair, PairScanState]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
@@ -144,23 +142,6 @@ class DefaultSessionManager(
         }
       }
     })
-  }
-
-  def retrievePairScanStates(sessionID: String) = {
-    // Gather the states for all pairs in the given session. Since some session
-    sessionsByKey.get(sessionID) match {
-      case Some(cache) => pairScanStates(cache.scope)
-      case None        => Map()     // No pairs in an inactive session
-    }
-  }
-
-  def retrieveAllPairScanStates = pairScanStates(SessionScope.all)
-
-  def pairScanStates(scope:SessionScope) = {
-    val pairs = pairsForScope(scope)
-    pairStates.synchronized {
-      pairs.map(p => p.key -> pairStates.getOrElse(p, PairScanState.UNKNOWN)).toMap
-    }
   }
 
   def runScan(sessionID:String) = {
@@ -245,7 +226,6 @@ class DefaultSessionManager(
 
   override def onAgentInstantiationCompleted(nc: NotificationCentre) {
     nc.registerForDifferenceEvents(this)
-    nc.registerForPairScanEvents(this)
   }
 
   //
@@ -309,13 +289,6 @@ class DefaultSessionManager(
 
 
   //
-  // Pair Scan Notifications
-  //
-
-  def pairScanStateChanged(pair: DiffaPair, scanState: PairScanState) = updatePairScanState(pair, scanState)
-
-
-  //
   // Configuration Change Notifications
   //
 
@@ -334,13 +307,6 @@ class DefaultSessionManager(
 
       runDifferenceForScope(SessionScope.forPairs(pair.domain.name, pair.key), from, until)
     }
-  }
-
-  /**
-   * When pairs are deleted, we stop tracking their status in the pair scan map.
-   */
-  def onDeletePair(pair:DiffaPair) = {
-    pairStates.synchronized { pairStates.remove(pair) }
   }
 
   def runScanForScope(scope:SessionScope, start:DateTime, end:DateTime) {
@@ -415,12 +381,5 @@ class DefaultSessionManager(
     // Ignore this because scope will be deprecated soon
     //scope.includedPairs.foreach(p => config.getPair(p))
     f()
-  }
-
-  def updatePairScanState(pair:DiffaPair, state:PairScanState) = {
-    pairStates.synchronized {
-      pairStates(pair) = state
-    }
-    log.info("Pair " + pair.identifier + " entered scan state: " + state)
   }
 }

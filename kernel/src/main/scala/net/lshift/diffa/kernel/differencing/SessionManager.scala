@@ -74,17 +74,6 @@ trait SessionManager {
   def start(scope:SessionScope, start:DateTime, end:DateTime, listener:DifferencingListener): String
 
   /**
-   * Retrieves the scanning state of all pairs associated with the given session.
-   * @param sessionID the identifier of the session to query the pairs from.
-   */
-  def retrievePairScanStates(sessionID:String):Map[String, PairScanState]
-
-  /**
-   * Retrieves the scanning state of all pairs known to the system.
-   */
-  def retrieveAllPairScanStates : Map[String, PairScanState]
-
-  /**
    * Requests that a scan be run on all pairs associated with the given session.
    * @param sessionID the session.
    */
@@ -136,11 +125,6 @@ trait SessionManager {
    * Informs the session manager that a pair has been updated.
    */
   def onUpdatePair(pair:DiffaPair)
-
-  /**
-   * Informs the session manager that a pair has been deleted.
-   */
-  def onDeletePair(pair:DiffaPair)
 }
 
 class InvalidSessionIDException extends Exception

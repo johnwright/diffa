@@ -33,6 +33,7 @@ import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.util.MissingObjectException
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Test cases for the Configuration frontend.
@@ -44,6 +45,7 @@ class ConfigurationTest {
   private val sessionManager = createMock("sessionManager", classOf[SessionManager])
   private val endpointListener = createMock("endpointListener", classOf[EndpointLifecycleListener])
   private val scanScheduler = createMock("scanScheduler", classOf[ScanScheduler])
+  private val diagnostics = createMock("diagnostics", classOf[DiagnosticsManager])
 
   // TODO This is a strange mixture of mock and real objects
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
@@ -57,7 +59,8 @@ class ConfigurationTest {
                                                 pairManager,
                                                 sessionManager,
                                                 endpointListener,
-                                                scanScheduler)
+                                                scanScheduler,
+                                                diagnostics)
 
   val domainName = "domain"
   val domain = Domain(name = domainName)
@@ -209,7 +212,7 @@ class ConfigurationTest {
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(scanScheduler.onDeletePair(ac)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
+    expect(diagnostics.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
     expect(scanScheduler.onUpdatePair(ad)).once
@@ -246,8 +249,8 @@ class ConfigurationTest {
     expect(scanScheduler.onDeletePair(ac)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(sessionManager.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
-    expect(sessionManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
+    expect(diagnostics.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
+    expect(diagnostics.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(endpointListener.onEndpointRemoved("upstream1")).once
     expect(endpointListener.onEndpointRemoved("downstream1")).once
     replayAll

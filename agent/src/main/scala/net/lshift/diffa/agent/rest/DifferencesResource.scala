@@ -74,24 +74,6 @@ class DifferencesResource(val sessionManager: SessionManager,
   }
 
   @GET
-  @Path("/sessions/all_scan_states")
-  @Description("Lists the scanning state for every configured pair.")
-  def getAllPairStates = {
-    val states = sessionManager.retrieveAllPairScanStates
-    Response.ok(scala.collection.JavaConversions.mapAsJavaMap(states)).build
-  }
-
-  @GET
-  @Path("/sessions/{sessionId}/scan")
-  @Produces(Array("application/json"))
-  @Description("Retrieves the scan states of pairs in the current session.")
-  @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
-  def getPairStates(@PathParam("sessionId") sessionId: String): Response = {
-    val states = sessionManager.retrievePairScanStates(sessionId)
-    Response.ok(scala.collection.JavaConversions.mapAsJavaMap(states)).build
-  }
-
-  @GET
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))
   @Description("Returns a list of outstanding differences in the current session in a paged format.")
