@@ -172,13 +172,6 @@
   </query>
 
   <!-- Queries by endpoint -->
-
-  <query name="pairsByInboundEndpointUrl">
-    select p from Pair p
-    where p.upstream.inboundUrl = :url
-    or p.downstream.inboundUrl = :url
-  </query>
-
   <query name="pairsByEndpoint">
     select p from Pair p
     where
@@ -254,12 +247,6 @@
     select o.value from ConfigOption o
     where o.key = :key
     and o.domain.name = :domain_name
-  </query>
-
-  <!-- Other -->
-
-  <query name="allNonInternalConfigOptions">
-    select o from ConfigOption o where o.domain is not 'root'
   </query>
 
 </hibernate-mapping>

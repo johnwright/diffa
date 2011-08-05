@@ -75,36 +75,6 @@ class HibernateSystemConfigStoreTest {
   }
 
   @Test
-  def testQueryingForAssociatedPairsReturnsNothingForUnusedEndpoint {
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    assertEquals(0, systemConfigStore.getPairsForInboundEndpointURL(upstream1.name).length)
-  }
-
-  @Test
-  def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsUpstream {
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
-    domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName2, DiffaPair.NO_MATCHING,
-                                               upstream1.name, downstream1.name))
-
-    val res = systemConfigStore.getPairsForInboundEndpointURL(upstream1.inboundUrl)
-    assertEquals(1, res.length)
-    assertEquals(pairKey, res(0).key)
-  }
-
-  @Test
-  def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsDownstream {
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
-    domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName2, DiffaPair.NO_MATCHING,
-                                               upstream1.name, downstream1.name))
-
-    val res = systemConfigStore.getPairsForInboundEndpointURL(downstream1.inboundUrl)
-    assertEquals(1, res.length)
-    assertEquals(pairKey, res(0).key)
-  }
-
-  @Test
   def testUserCRUD = {
 
     // Deleting every user isn't something that the API exposes

@@ -131,7 +131,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory)
 
   def allConfigOptions(domain:String) = {
     sessionFactory.withSession(s => {
-      listQuery[ConfigOption](s, "allNonInternalConfigOptions", Map()).map(opt => opt.key -> opt.value).toMap
+      listQuery[ConfigOption](s, "configOptionsByDomain", Map("domain_name" -> domain)).map(opt => opt.key -> opt.value).toMap
     })
   }
 

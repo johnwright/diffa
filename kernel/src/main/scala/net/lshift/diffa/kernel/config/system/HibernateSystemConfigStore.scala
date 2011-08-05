@@ -49,10 +49,6 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory)
 
   def listDomains = sessionFactory.withSession(s => listQuery[Domain](s, "allDomains", Map()))
 
-  def getPairsForInboundEndpointURL(url: String) = {
-    sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByInboundEndpointUrl", Map("url" -> url)))
-  }
-
   def getPair(pair:DiffaPairRef) : DiffaPair = getPair(pair.domain, pair.key)
   def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
 

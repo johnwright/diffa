@@ -64,7 +64,7 @@ class HibernateConfigStorePreparationStep
 
               try {
                 stmt.execute(createStmt)
-                // Make sure that the DB has a version and that the default and root domains are in the DB
+                // Make sure that the DB has a version and that the default domain is in the DB
                 stmt.execute(insertSchemaVersion)
                 stmt.execute(insertDefaultDomain)
                 // Make sure that we have the correct version for the correlation store
