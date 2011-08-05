@@ -213,35 +213,35 @@ trait CommonDifferenceTests {
 
       // Get into a scanning state
       env.scanningClient.startScan(env.pairKey)
-      waitForScanStatus(sessionId, PairScanState.SCANNING)
+      waitForScanStatus(env.pairKey, PairScanState.SCANNING)
 
       // Cancel the scan
       env.scanningClient.cancelScanning(env.pairKey)
-      waitForScanStatus(sessionId, PairScanState.CANCELLED)
+      waitForScanStatus(env.pairKey, PairScanState.CANCELLED)
     }
   }
 
   def subscribeAndRunScan(from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
     var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.domain.name, env.pairKey), from, until)
-    env.diffClient.runScan(sessionId)
+    env.scanningClient.startScan(env.pairKey)
 
-    waitForScanStatus(sessionId, PairScanState.UP_TO_DATE, n, wait)
+    waitForScanStatus(env.pairKey, PairScanState.UP_TO_DATE, n, wait)
 
     sessionId
   }
 
-  def waitForScanStatus(sessionId:String, state:PairScanState, n:Int = 30, wait:Int = 100) {
-    def hasReached(states:Map[String, PairScanState]) = states.values.forall(s => s == state)
+  def waitForScanStatus(pairKey:String, state:PairScanState, n:Int = 30, wait:Int = 100) {
+    def hasReached(states:Map[String, PairScanState]) = states.getOrElse(pairKey, PairScanState.UNKNOWN) == state
 
     var i = n
-    var scanStatus = env.diffClient.getScanStatus(sessionId)
+    var scanStatus = env.scanningClient.getScanStatus
     while(!hasReached(scanStatus) && i > 0) {
       Thread.sleep(wait)
 
-      scanStatus = env.diffClient.getScanStatus(sessionId)
+      scanStatus = env.scanningClient.getScanStatus
       i-=1
     }
-    assertTrue("Unexpected scan state (session = %s): %s (wanted %s)".format(sessionId, scanStatus, state), hasReached(scanStatus))
+    assertTrue("Unexpected scan state (pair = %s): %s (wanted %s)".format(pairKey, scanStatus, state), hasReached(scanStatus))
   }
 
 

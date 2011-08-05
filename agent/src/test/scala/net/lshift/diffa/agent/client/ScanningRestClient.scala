@@ -18,6 +18,8 @@ package net.lshift.diffa.agent.client
 
 import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
+import net.lshift.diffa.kernel.differencing.PairScanState
+import scala.collection.JavaConversions._
 
 /**
  * A RESTful client to manage participant scanning.
@@ -34,6 +36,22 @@ class ScanningRestClient(serverRootUrl:String, domain:String)
       case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
     }
     true
+  }
+
+  def getScanStatus = {
+    val path = resource.path("states")
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.get(classOf[ClientResponse])
+
+    val status = response.getClientResponseStatus
+
+    status.getStatusCode match {
+      case 200 => {
+        val responseData = response.getEntity(classOf[java.util.Map[String, String]])
+        responseData.map {case (k, v) => k -> PairScanState.valueOf(v) }.toMap
+      }
+      case x:Int   => handleHTTPError(x, path, status)
+    }
   }
 
   def cancelScanning(pairKey: String) = {
