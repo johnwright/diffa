@@ -116,7 +116,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
 
 Diffa.Collections.Pairs = Backbone.Collection.extend({
   model: Diffa.Models.Pair,
-  url: function() { return API_BASE + "/" + Diffa.currentDomain + "/diffs/sessions/all_scan_states"; },
+  url: function() { return API_BASE + "/" + Diffa.currentDomain + "/scanning/states"; },
 
   initialize: function() {
     _.bindAll(this, "sync", "scanAll", "select");
@@ -164,7 +164,7 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
     });
 
     $.ajax({
-      url: API_BASE + "/" + Diffa.currentDomain + "/diffs/sessions/scan_all",
+      url: API_BASE + "/" + Diffa.currentDomain + "/scanning/scan_all",
       type: "POST",
       success: function() {
         self.each(function(pair) {
