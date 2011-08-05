@@ -104,6 +104,11 @@
     <property name="value" type="string" column="opt_val" />
   </class>
 
+  <class name="SystemConfigOption" table="system_config_options" abstract="false">
+    <id name="key" type="string" column="opt_key" />
+    <property name="value" type="string" column="opt_val" />
+  </class>
+
   <class name="RepairAction" table="repair_actions" abstract="false">
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
@@ -252,10 +257,6 @@
   </query>
 
   <!-- Other -->
-
-  <query name="rootConfigOptionByKey">
-    select o.value from ConfigOption o where o.key = :key and o.domain = 'root'
-  </query>
 
   <query name="allNonInternalConfigOptions">
     select o from ConfigOption o where o.domain is not 'root'

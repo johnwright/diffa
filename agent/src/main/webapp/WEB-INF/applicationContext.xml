@@ -331,7 +331,6 @@
   </bean>
 
   <bean id="systemConfigStore" class="net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore">
-    <constructor-arg ref="domainConfigStore" />
     <constructor-arg ref="diffaSessionFactory" />
   </bean>
 

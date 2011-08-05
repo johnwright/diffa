@@ -48,7 +48,7 @@ class ConfigurationTest {
   // TODO This is a strange mixture of mock and real objects
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
-  private val systemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sf)
+  private val systemConfigStore = new HibernateSystemConfigStore(sf)
 
   private val configuration = new Configuration(domainConfigStore,
                                                 systemConfigStore,

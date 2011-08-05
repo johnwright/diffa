@@ -21,32 +21,16 @@ import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException, HibernateQueryUtils}
-import net.lshift.diffa.kernel.config.{Member, DiffaPairRef, User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{SystemConfigOption, Member, DiffaPairRef, User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
 
-class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
-                                 val sessionFactory:SessionFactory)
+class HibernateSystemConfigStore(val sessionFactory:SessionFactory)
     extends SystemConfigStore with HibernateQueryUtils {
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  // Verify that root domain exists - if not, we cannot proceed with the boot phase
-  try {
-    getDomain(Domain.SYSTEM_DOMAIN.name)
-  }
-  catch {
-    case e:MissingObjectException => {
-      logger.error("%s: Could not locate the default domain, exiting now".format(AlertCodes.INVALID_SYSTEM_CONFIGURATION))
-      throw new InvalidSystemConfigurationException("Missing default domain")
-    }
-  }
-
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => s.saveOrUpdate(d) )
 
   def deleteDomain(domain:String) = sessionFactory.withSession( s => {
-    if (domain == Domain.SYSTEM_DOMAIN.name) {
-      throw new InvalidSystemConfigurationException("Attempt to delete the default domain")
-    }
-
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
     deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
@@ -89,10 +73,32 @@ class HibernateSystemConfigStore(domainConfigStore:DomainConfigStore,
 
   // TODO Add a unit test for this
   def maybeSystemConfigOption(key: String) = {
-    sessionFactory.withSession(s => singleQueryOpt[String](s, "rootConfigOptionByKey", Map("key" -> key)))
+    sessionFactory.withSession(s => {
+      s.get(classOf[SystemConfigOption], key) match {
+        case null                       => None
+        case current:SystemConfigOption => Some(current.value)
+      }
+    })
   }
-  def setSystemConfigOption(key:String, value:String) = writeConfigOption(Domain.SYSTEM_DOMAIN.name, key, value)
-  def clearSystemConfigOption(key:String) = deleteConfigOption(Domain.SYSTEM_DOMAIN.name, key)
+  def setSystemConfigOption(key:String, value:String) {
+    sessionFactory.withSession(s => {
+      val co = s.get(classOf[SystemConfigOption], key) match {
+        case null =>
+          new SystemConfigOption(key = key, value = value)
+        case current:SystemConfigOption =>  {
+          current.value = value
+          current
+        }
+      }
+      s.saveOrUpdate(co)
+    })
+  }
+  def clearSystemConfigOption(key:String) = sessionFactory.withSession(s => {
+    s.get(classOf[SystemConfigOption], key) match {
+      case null =>
+      case current:SystemConfigOption =>  s.delete(current)
+    }
+  })
 
   def systemConfigOptionOrDefault(key:String, defaultVal:String) = {
     maybeSystemConfigOption(key) match {

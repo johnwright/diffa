@@ -30,7 +30,7 @@ class HibernateSystemConfigStoreTest {
 
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
-  private val systemConfigStore:SystemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sf)
+  private val systemConfigStore:SystemConfigStore = new HibernateSystemConfigStore(sf)
 
   val domainName = "domain"
   val domain = Domain(name=domainName)
@@ -70,7 +70,6 @@ class HibernateSystemConfigStoreTest {
 
   @Test
   def shouldBeAbleToSetSystemProperty = {
-    systemConfigStore.createOrUpdateDomain(Domain.SYSTEM_DOMAIN)
     systemConfigStore.setSystemConfigOption("foo", "bar")
     assertEquals("bar", systemConfigStore.maybeSystemConfigOption("foo").get)
   }
