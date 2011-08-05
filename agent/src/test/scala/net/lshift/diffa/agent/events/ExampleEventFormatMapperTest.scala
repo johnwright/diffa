@@ -36,7 +36,6 @@ class ExampleEventFormatMapperTest {
 
     assertEquals("upstream", wireEvent.eventType)
     assertEquals("5509a836-ca75-42a4-855a-71893448cc9d", wireEvent.metadata.get("id"))
-    assertEquals("exampleEndpoint", wireEvent.metadata.get(WireEvent.INBOUND_URL))
     assertEquals("2011-01-24T00:00:00.000Z", wireEvent.metadata.get("lastUpdate"))
     assertEquals("479", wireEvent.metadata.get("vsn"))
     assertEquals(2, wireEvent.attributes.size)

@@ -31,5 +31,7 @@ trait WebParticipant {
   def allEntities = entities
 
   def agentRoot:String
-  val changesClient:ChangesClient = new ChangesRestClient(agentRoot)
+  def domain:String
+  def epName:String
+  val changesClient:ChangesClient = new ChangesRestClient(agentRoot, domain, epName)
 }

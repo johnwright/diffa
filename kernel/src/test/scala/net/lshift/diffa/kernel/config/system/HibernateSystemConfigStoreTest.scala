@@ -30,7 +30,7 @@ class HibernateSystemConfigStoreTest {
 
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
-  private val systemConfigStore:SystemConfigStore = new HibernateSystemConfigStore(domainConfigStore, sf)
+  private val systemConfigStore:SystemConfigStore = new HibernateSystemConfigStore(sf)
 
   val domainName = "domain"
   val domain = Domain(name=domainName)
@@ -70,39 +70,8 @@ class HibernateSystemConfigStoreTest {
 
   @Test
   def shouldBeAbleToSetSystemProperty = {
-    systemConfigStore.createOrUpdateDomain(Domain.DEFAULT_DOMAIN)
     systemConfigStore.setSystemConfigOption("foo", "bar")
     assertEquals("bar", systemConfigStore.maybeSystemConfigOption("foo").get)
-  }
-
-  @Test
-  def testQueryingForAssociatedPairsReturnsNothingForUnusedEndpoint {
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    assertEquals(0, systemConfigStore.getPairsForInboundEndpointURL(upstream1.name).length)
-  }
-
-  @Test
-  def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsUpstream {
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
-    domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName2, DiffaPair.NO_MATCHING,
-                                               upstream1.name, downstream1.name))
-
-    val res = systemConfigStore.getPairsForInboundEndpointURL(upstream1.inboundUrl)
-    assertEquals(1, res.length)
-    assertEquals(pairKey, res(0).key)
-  }
-
-  @Test
-  def testQueryingForAssociatedPairsReturnsPairUsingEndpointAsDownstream {
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
-    domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName2, DiffaPair.NO_MATCHING,
-                                               upstream1.name, downstream1.name))
-
-    val res = systemConfigStore.getPairsForInboundEndpointURL(downstream1.inboundUrl)
-    assertEquals(1, res.length)
-    assertEquals(pairKey, res(0).key)
   }
 
   @Test

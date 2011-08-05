@@ -262,7 +262,7 @@ object HibernatePreparationUtils {
    * Generates a statement to insert a key/value pair into the root domain
    */
   def rootOptionInsertStatement(key:String, value:String) =
-    "insert into config_options (opt_key, opt_val, domain) values ('%s', '%s', 'root')".format(key,value)
+    "insert into system_config_options (opt_key, opt_val) values ('%s', '%s')".format(key,value)
 
   /**
    * Generates a statement to update the schema version for the correlation store
@@ -350,7 +350,13 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     domainTable.addColumn("name", Types.VARCHAR, 255, false)
     stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, domainTable))
 
-    // Make sure the default domain is in the DB
+    //create table system_config_options (opt_key varchar(255) not null, opt_val varchar(255), primary key (opt_key));
+    val systemConfigOptionsTable = new TableDescriptor("system_config_options", "opt_key")
+    systemConfigOptionsTable.addColumn("opt_key", Types.VARCHAR, 255, false)
+    systemConfigOptionsTable.addColumn("opt_val", Types.VARCHAR, 255, false)
+    stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, systemConfigOptionsTable))
+
+    // Make sure the default is in the DB
     stmt.execute(HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN))
 
     // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));

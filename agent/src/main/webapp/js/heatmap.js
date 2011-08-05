@@ -84,7 +84,7 @@ Diffa.Models.Blobs = Backbone.Model.extend({
     startTime = endTime.add({seconds: -1 * self.get('bucketSize') * self.maxColumns});
     var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
-    $.getJSON("rest/diffs/sessions/" + Diffa.SessionID + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + self.get('bucketSize'), function(data) {
+    $.getJSON("rest/" + Diffa.currentDomain + "/diffs/sessions/" + Diffa.SessionID + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + self.get('bucketSize'), function(data) {
       var swimlaneLabels = self.get('swimlaneLabels').slice(0);     // Retrieve a cloned copy of the swimlane labels
       var buckets = [];
       var maxRows = self.get('maxRows');
@@ -162,8 +162,8 @@ Diffa.Models.Diff = Backbone.Model.extend({
 
     // Only retrieve the pair info if we don't already have it
     if (!self.get('upstreamName') || !self.get('downstreamName')) {
-      $.get("rest/config/pairs/" + this.get('objId').pairKey, function(data, status, xhr) {
-        self.set({upstreamName: data.upstream.name, downstreamName: data.downstream.name});
+      $.get("rest/" + Diffa.currentDomain + "/config/pairs/" + this.get('objId').pair.key, function(data, status, xhr) {
+        self.set({upstreamName: data.upstreamName, downstreamName: data.downstreamName});
       });
     }
 
@@ -178,7 +178,7 @@ Diffa.Models.Diff = Backbone.Model.extend({
       }
 
       pendingRequest = $.ajax({
-            url: "rest/diffs/events/" + Diffa.SessionID + "/" + self.id + "/" + upOrDown,
+            url: "rest/" + Diffa.currentDomain + "/diffs/events/" + Diffa.SessionID + "/" + self.id + "/" + upOrDown,
             success: function(data) {
               setContent(data || "no content found for " + upOrDown);
             },
@@ -219,7 +219,7 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
     if (this.range == null) {
       this.reset([]);
     } else {
-      var url = "rest/diffs/sessions/" + Diffa.SessionID + "?pairKey=" + this.range.pairKey + "&range-start="
+      var url = "rest/" + Diffa.currentDomain + "/diffs/sessions/" + Diffa.SessionID + "?pairKey=" + this.range.pairKey + "&range-start="
           + this.range.start + "&range-end=" + this.range.end
           + "&offset=" + (this.page * this.listSize) + "&length=" + this.listSize;
 
@@ -917,7 +917,7 @@ Diffa.Views.DiffListItem = Backbone.View.extend({
     var row = $(this.el)
         .append("<div class='span-2'>" + date + "</div>")
         .append("<div class='span-2'>" + time + "</div>")
-        .append("<div class='span-3 wrappable'>" + this.model.get('objId').pairKey + "</div>")
+        .append("<div class='span-3 wrappable'>" + this.model.get('objId').pair.key + "</div>")
         .append("<div class='span-3 wrappable'>" + this.model.get('objId').id + "</div>");
 
     if (!this.model.get('upstreamVsn')) {
@@ -1023,7 +1023,7 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
   renderEntityScopedActions: function() {
     var event = this.model.selectedEvent;
 
-    var pairKey = event.get('objId').pairKey;
+    var pairKey = event.get('objId').pair.key;
     var itemID = event.get('objId').id;
     var actionListContainer = $("#actionlist").empty();
     var actionListCallback = function(actionList, status, xhr) {
@@ -1038,7 +1038,7 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
       });
     };
 
-    $.ajax({ url: API_BASE + '/actions/' + pairKey + '?scope=entity', success: actionListCallback });
+    $.ajax({ url: API_BASE + "/" + Diffa.currentDomain + '/actions/' + pairKey + '?scope=entity', success: actionListCallback });
   }
 });
 
@@ -1055,9 +1055,10 @@ function createSession(withValidSessionId) {
     Diffa.SessionID = sessionID;
     withValidSessionId();
   };
-  $.post(API_BASE + '/diffs/sessions', {}, handleSessionId, "json");
+  $.post(API_BASE + "/" + Diffa.currentDomain + '/diffs/sessions', {}, handleSessionId, "json");
 }
-  
+
+Diffa.currentDomain = "diffa";    // TODO: Allow user to change this
 Diffa.BlobsApp = new Diffa.Routers.Blobs();
 Diffa.BlobsModel = new Diffa.Models.Blobs();
 Diffa.DiffsCollection = new Diffa.Collections.Diffs();

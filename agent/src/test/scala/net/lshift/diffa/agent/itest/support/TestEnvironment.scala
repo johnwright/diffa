@@ -41,8 +41,9 @@ import net.lshift.diffa.kernel.frontend.{EndpointDef, DomainDef, PairDef}
  */
 class TestEnvironment(val pairKey: String,
                       val participants: Participants,
-                      changesClientBuilder: TestEnvironment => ChangesClient,
-                      versionScheme: VersionScheme) {
+                      changesClientBuilder: (TestEnvironment, String) => ChangesClient,
+                      versionScheme: VersionScheme,
+                      inboundURLBuilder:String => String = (_) => null) {
 
   // Keep a tally of the amount of requested resends
   val entityResendTally = new HashMap[String,Int]
@@ -83,16 +84,6 @@ class TestEnvironment(val pairKey: String,
   val versionForUpstream = versionScheme.upstreamVersionGen
   val versionForDownstream = versionScheme.downstreamVersionGen
 
-  // Clients
-  val configurationClient:ConfigurationRestClient = new ConfigurationRestClient(serverRoot, domain.name)
-  val diffClient:DifferencesRestClient = new DifferencesRestClient(serverRoot, domain.name)
-  val actionsClient:ActionsClient = new ActionsRestClient(serverRoot, domain.name)
-  val escalationsClient:EscalationsRestClient = new EscalationsRestClient(serverRoot, domain.name)
-  val changesClient:ChangesClient = changesClientBuilder(this)
-  val usersClient:UsersRestClient = new UsersRestClient(serverRoot)
-  val scanningClient:ScanningRestClient = new ScanningRestClient(serverRoot, domain.name)
-  val systemConfig = new SystemConfigRestClient(serverRoot)
-
   // Participants
   val upstreamEpName = pairKey + "-us"
   val downstreamEpName = pairKey + "-ds"
@@ -107,6 +98,17 @@ class TestEnvironment(val pairKey: String,
     }
   }
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
+
+  // Clients
+  val configurationClient:ConfigurationRestClient = new ConfigurationRestClient(serverRoot, domain.name)
+  val diffClient:DifferencesRestClient = new DifferencesRestClient(serverRoot, domain.name)
+  val actionsClient:ActionsClient = new ActionsRestClient(serverRoot, domain.name)
+  val escalationsClient:EscalationsRestClient = new EscalationsRestClient(serverRoot, domain.name)
+  val upstreamChangesClient:ChangesClient = changesClientBuilder(this, upstreamEpName)
+  val downstreamChangesClient:ChangesClient = changesClientBuilder(this, downstreamEpName)
+  val usersClient:UsersRestClient = new UsersRestClient(serverRoot)
+  val scanningClient:ScanningRestClient = new ScanningRestClient(serverRoot, domain.name)
+  val systemConfig = new SystemConfigRestClient(serverRoot)
 
   // Actions
   val entityScopedActionName = "Resend Source"
@@ -128,12 +130,12 @@ class TestEnvironment(val pairKey: String,
   systemConfig.declareDomain(domain)
   configurationClient.declareEndpoint(EndpointDef(name = upstreamEpName,
     scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
-    inboundUrl = changesClient.inboundURL, inboundContentType = contentType,
+    inboundUrl = inboundURLBuilder(upstreamEpName), inboundContentType = contentType,
     categories = categories))
   configurationClient.declareEndpoint(EndpointDef(name = downstreamEpName,
     scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
     versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
-    inboundUrl = changesClient.inboundURL, inboundContentType = contentType,
+    inboundUrl = inboundURLBuilder(downstreamEpName), inboundContentType = contentType,
     categories = categories))
 
   createPair
@@ -166,7 +168,7 @@ class TestEnvironment(val pairKey: String,
     val attributes = pack(someDate = someDate, someString = someString)
 
     upstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
-    changesClient.onChangeEvent(new UpstreamChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
+    upstreamChangesClient.onChangeEvent(new UpstreamChangeEvent(id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForUpstream(content)))
   }
   def addAndNotifyDownstream(id:String, content:String, someDate:DateTime, someString:String) {
     val attributes = pack(someDate = someDate, someString = someString)
@@ -174,9 +176,9 @@ class TestEnvironment(val pairKey: String,
     downstream.addEntity(id, someDate, someString, Placeholders.dummyLastUpdated, content)
     versionScheme match {
       case SameVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
+        downstreamChangesClient.onChangeEvent(new DownstreamChangeEvent(id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated, versionForDownstream(content)))
       case CorrelatedVersionScheme =>
-        changesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(changesClient.inboundURL, id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated,
+        downstreamChangesClient.onChangeEvent(new DownstreamCorrelatedChangeEvent(id, AttributesUtil.toSeq(attributes), Placeholders.dummyLastUpdated,
           versionForUpstream(content), versionForDownstream(content)))
     }
   }

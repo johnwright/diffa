@@ -19,7 +19,6 @@ package net.lshift.diffa.kernel.frontend.wire
 import org.junit.Test
 import org.junit.Assert._
 import WireEvent._
-import EventRegistry._
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.events.{DownstreamCorrelatedChangeEvent, DownstreamChangeEvent, UpstreamChangeEvent}
 
@@ -27,25 +26,25 @@ class WireEventTest {
 
   @Test
   def upstreamToWireAndBack = {
-    val event = UpstreamChangeEvent("endpoint", "id", List("a","b", "c"), new DateTime, "version")
+    val event = UpstreamChangeEvent("id", List("a","b", "c"), new DateTime, "version")
     val wire = toWire(event)
-    val resolved = resolveEvent(wire)
+    val resolved = wire.toKernelEvent
     assertEquals(event, resolved)
   }
 
   @Test
   def downstreamToWireAndBack = {
-    val event = DownstreamChangeEvent("endpoint", "id", List("a","b", "c"), new DateTime, "version")
+    val event = DownstreamChangeEvent("id", List("a","b", "c"), new DateTime, "version")
     val wire = toWire(event)
-    val resolved = resolveEvent(wire)
+    val resolved = wire.toKernelEvent
     assertEquals(event, resolved)
   }
 
   @Test
   def downstreamCorrelatedToWireAndBack = {
-    val event = DownstreamCorrelatedChangeEvent("endpoint", "id", List("a","b", "c"), new DateTime, "up", "down")
+    val event = DownstreamCorrelatedChangeEvent("id", List("a","b", "c"), new DateTime, "up", "down")
     val wire = toWire(event)
-    val resolved = resolveEvent(wire)
+    val resolved = wire.toKernelEvent
     assertEquals(event, resolved)
   }
 }

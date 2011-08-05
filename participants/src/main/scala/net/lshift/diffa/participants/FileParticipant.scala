@@ -31,12 +31,12 @@ import net.lshift.diffa.participant.scanning.{TimeRangeConstraint, ScanResultEnt
 /**
  * Basic functionality requried for a file-based participant.
  */
-abstract class FileParticipant(val dir:String, val agentRoot:String) extends Closeable {
+abstract class FileParticipant(val dir:String, val agentRoot:String, val endpoint:String) extends Closeable {
 
   private var isClosing = false
   val rootDir = new File(dir)
   val watcher = new DirWatcher(dir, onFileChange)
-  val changesClient = new ChangesRestClient(agentRoot)
+  val changesClient = new ChangesRestClient(agentRoot, "diffa", endpoint)
 
   val isoFormat = ISODateTimeFormat.dateTime()
 

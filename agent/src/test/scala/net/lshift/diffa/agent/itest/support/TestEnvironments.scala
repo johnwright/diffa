@@ -37,28 +37,30 @@ object TestEnvironments {
   def same(key:String) =
     new TestEnvironment(key,
                         new HttpParticipants(nextPort, nextPort),
-                        { env: TestEnvironment => new ChangesRestClient(env.serverRoot) },
+                        { (env: TestEnvironment, epName:String) => new ChangesRestClient(env.serverRoot, env.domain.name, epName) },
                         SameVersionScheme)
 
   def correlated(key:String) =
     new TestEnvironment(key,
                         new HttpParticipants(nextPort, nextPort),
-                        { env: TestEnvironment => new ChangesRestClient(env.serverRoot) },
+                        { (env: TestEnvironment, epName:String) => new ChangesRestClient(env.serverRoot, env.domain.name, epName) },
                         CorrelatedVersionScheme)
 
   def sameAmqp(key:String) =
     new TestEnvironment(key,
                         new HttpParticipants(nextPort, nextPort),
-                        { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
-                                                     "changes-same" + key,
+                        { (_, epName) => new ChangesAmqpClient(amqpConnectorHolder.connector,
+                                                     epName + "-changes-same" + key,
                                                      10000) },
-                        SameVersionScheme)
+                        SameVersionScheme,
+                        (epName:String) => AmqpQueueUrl(epName + "-changes-same" + key).toString)
 
   def correlatedAmqp(key:String) =
     new TestEnvironment(key,
                         new HttpParticipants(nextPort, nextPort),
-                        { _ => new ChangesAmqpClient(amqpConnectorHolder.connector,
-                                                     "changes-correlated" + key,
-                                                     10000) },
-                        CorrelatedVersionScheme)
+                        { (_, epName:String) => new ChangesAmqpClient(amqpConnectorHolder.connector,
+                                                                      epName + "-changes-correlated" + key,
+                                                                      10000) },
+                        CorrelatedVersionScheme,
+                        (epName:String) => AmqpQueueUrl(epName + "-changes-correlated" + key).toString)
 }
