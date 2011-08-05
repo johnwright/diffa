@@ -51,7 +51,7 @@ class DefaultSessionManager(
         val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory)
     extends SessionManager
-    with DifferencingListener with MatchingStatusListener with PairScanListener with AgentLifecycleAware {
+    with DifferencingListener with MatchingStatusListener with AgentLifecycleAware {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -63,8 +63,6 @@ class DefaultSessionManager(
   private val sessionsByKey = new HashMap[String, SessionCache]
 
   private val participants = new HashMap[Endpoint, Participant]
-
-  private val pairStates = new HashMap[DiffaPair, PairScanState]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
@@ -146,36 +144,6 @@ class DefaultSessionManager(
     })
   }
 
-  def retrievePairScanStates(sessionID: String) = {
-    // Gather the states for all pairs in the given session. Since some session
-    sessionsByKey.get(sessionID) match {
-      case Some(cache) => pairScanStates(cache.scope)
-      case None        => Map()     // No pairs in an inactive session
-    }
-  }
-
-  def retrieveAllPairScanStates = pairScanStates(SessionScope.all)
-
-  def pairScanStates(scope:SessionScope) = {
-    val pairs = pairsForScope(scope)
-    pairStates.synchronized {
-      pairs.map(p => p.key -> pairStates.getOrElse(p, PairScanState.UNKNOWN)).toMap
-    }
-  }
-
-  def runScanForAllPairings() {
-    runScanForScope(SessionScope.all, null, null)
-  }
-
-  def runScan(sessionID:String) = {
-    sessionsByKey.get(sessionID) match {
-      case None => // No session. Nothing to do. TODO: Throw an exception?
-      case Some(cache) => {
-        runScanForScope(cache.scope, null, null)
-      }
-    }
-  }
-
   /**
    * If the session does not exist, throw a MissingObjectException which will be handled in a higher layer
    */
@@ -249,7 +217,6 @@ class DefaultSessionManager(
 
   override def onAgentInstantiationCompleted(nc: NotificationCentre) {
     nc.registerForDifferenceEvents(this)
-    nc.registerForPairScanEvents(this)
   }
 
   //
@@ -313,13 +280,6 @@ class DefaultSessionManager(
 
 
   //
-  // Pair Scan Notifications
-  //
-
-  def pairScanStateChanged(pair: DiffaPair, scanState: PairScanState) = updatePairScanState(pair, scanState)
-
-
-  //
   // Configuration Change Notifications
   //
 
@@ -340,27 +300,8 @@ class DefaultSessionManager(
     }
   }
 
-  /**
-   * When pairs are deleted, we stop tracking their status in the pair scan map.
-   */
-  def onDeletePair(pair:DiffaPair) = {
-    pairStates.synchronized { pairStates.remove(pair) }
-  }
-
-  def runScanForScope(scope:SessionScope, start:DateTime, end:DateTime) {
-    pairsForScope(scope).foreach(runScanForPair(_))
-  }
-
-  def runScanForPair(pair:DiffaPair) {
-    // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
-    // asynchronously, we might have returned before then, and this may potentially result in clients seeing
-    // a "Up To Date" view, even though we're just about to transition out of that state.
-    updatePairScanState(pair, PairScanState.SCANNING)
-    pairPolicyClient.scanPair(pair)
-  }
-
   def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime)
-  = pairsForScope(scope).foreach(pairPolicyClient.difference(_))
+  = pairsForScope(scope).foreach(p => pairPolicyClient.difference(p.asRef))
 
   def pairsForScope(scope:SessionScope):Seq[DiffaPair] = {
     scope.includedPairs.size match {
@@ -427,12 +368,5 @@ class DefaultSessionManager(
     // Ignore this because scope will be deprecated soon
     //scope.includedPairs.foreach(p => config.getPair(p))
     f()
-  }
-
-  def updatePairScanState(pair:DiffaPair, state:PairScanState) = {
-    pairStates.synchronized {
-      pairStates(pair) = state
-    }
-    log.info("Pair " + pair.identifier + " entered scan state: " + state)
   }
 }

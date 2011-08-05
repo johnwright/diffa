@@ -65,32 +65,6 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
     }
   }
 
-  def runScan(sessionId: String) = {
-    val path = resource.path("sessions").path(sessionId).path("scan")
-    val response = path.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
-    val status = response.getClientResponseStatus
-    status.getStatusCode match {
-      case 202     => // Successfully submitted (202 is "Accepted")
-      case x:Int   => handleHTTPError(x, path, status)
-    }
-  }
-
-  def getScanStatus(sessionId: String) = {
-    val path = resource.path("sessions").path(sessionId).path("scan")
-    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
-    val response = media.get(classOf[ClientResponse])
-
-    val status = response.getClientResponseStatus
-
-    status.getStatusCode match {
-      case 200 => {
-        val responseData = response.getEntity(classOf[java.util.Map[String, String]])
-        responseData.map {case (k, v) => k -> PairScanState.valueOf(v) }.toMap
-      }
-      case x:Int   => handleHTTPError(x, path, status)
-    }
-  }
-
   def getZoomedView(sessionId:String, from:DateTime, until:DateTime, bucketing:Int)  = {
     val path = resource.path("sessions").path(sessionId).path("zoom")
                         .queryParam("range-start", formatter.print(from))

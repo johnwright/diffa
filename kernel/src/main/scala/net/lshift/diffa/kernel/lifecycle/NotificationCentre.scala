@@ -20,7 +20,7 @@ import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.differencing.{PairScanState, MatchOrigin, PairScanListener, DifferencingListener}
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Central system component for subscribing to notifications. To prevent dependency loops, consumer components should not
@@ -62,7 +62,7 @@ class NotificationCentre
   // Pair Scan Listener Multicast
   //
 
-  def pairScanStateChanged(pair: DiffaPair, scanState: PairScanState) {
+  def pairScanStateChanged(pair: DiffaPairRef, scanState: PairScanState) {
     pairScanListeners.foreach(_.pairScanStateChanged(pair, scanState))
   }
 }

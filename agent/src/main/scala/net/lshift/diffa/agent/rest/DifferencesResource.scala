@@ -61,44 +61,6 @@ class DifferencesResource(val sessionManager: SessionManager,
     Response.created(uri).`type`("text/plain").build()
   }
 
-  @POST
-  @Path("/sessions/{sessionId}/scan")
-  @Description("Forces Diffa to execute a scan on the pairs underlying the session")
-  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
-  def scanAllInSession(@PathParam("sessionId") sessionId:String, @Context request:Request) : Response = {
-    if (log.isTraceEnabled) {
-      log.trace("Scan requested for sessionId = " + sessionId)
-    }
-    sessionManager.runScan(sessionId)
-    Response.status(Response.Status.ACCEPTED).build
-  }
-
-  @POST
-  @Path("/sessions/scan_all")
-  @Description("Forces Diffa to execute a scan operation for every configured pair.")
-  def scanAllPairings = {
-    log.info("Initiating scan of all known pairs")
-    sessionManager.runScanForAllPairings
-  }
-
-  @GET
-  @Path("/sessions/all_scan_states")
-  @Description("Lists the scanning state for every configured pair.")
-  def getAllPairStates = {
-    val states = sessionManager.retrieveAllPairScanStates
-    Response.ok(scala.collection.JavaConversions.mapAsJavaMap(states)).build
-  }
-
-  @GET
-  @Path("/sessions/{sessionId}/scan")
-  @Produces(Array("application/json"))
-  @Description("Retrieves the scan states of pairs in the current session.")
-  @MandatoryParams(Array(new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID")))
-  def getPairStates(@PathParam("sessionId") sessionId: String): Response = {
-    val states = sessionManager.retrievePairScanStates(sessionId)
-    Response.ok(scala.collection.JavaConversions.mapAsJavaMap(states)).build
-  }
-
   @GET
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))

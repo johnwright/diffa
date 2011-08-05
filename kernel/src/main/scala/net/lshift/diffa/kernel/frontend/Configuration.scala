@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
 import net.lshift.diffa.kernel.scheduler.ScanScheduler
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import system.SystemConfigStore
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 class Configuration(val configStore: DomainConfigStore,
                     val systemConfigStore: SystemConfigStore,
@@ -34,7 +35,8 @@ class Configuration(val configStore: DomainConfigStore,
                     val supervisor:ActivePairManager,
                     val sessionManager: SessionManager,
                     val endpointListener: EndpointLifecycleListener,
-                    val scanScheduler: ScanScheduler) {
+                    val scanScheduler: ScanScheduler,
+                    val diagnostics: DiagnosticsManager) {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -155,9 +157,9 @@ class Configuration(val configStore: DomainConfigStore,
     withCurrentPair(domain, key, (p:DiffaPair) => {
       supervisor.stopActor(p.asRef)
       matchingManager.onDeletePair(p)
-      sessionManager.onDeletePair(p)
       versionCorrelationStoreFactory.remove(p)
       scanScheduler.onDeletePair(p)
+      diagnostics.onDeletePair(p)
     })
     configStore.deletePair(domain, key)
   }

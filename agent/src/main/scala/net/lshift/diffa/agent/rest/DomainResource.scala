@@ -24,6 +24,7 @@ import net.lshift.diffa.kernel.client.ActionsClient
 import net.lshift.diffa.kernel.differencing.SessionManager
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.PairPolicyClient
+import net.lshift.diffa.kernel.config.DomainConfigStore
 import net.lshift.diffa.kernel.frontend.{Changes, Configuration}
 
 @Path("/{domain}")
@@ -37,6 +38,7 @@ class DomainResource {
   @Autowired var sessionManager:SessionManager = null
   @Autowired var diagnosticsManager:DiagnosticsManager = null
   @Autowired var pairPolicyClient:PairPolicyClient = null
+  @Autowired var domainConfigStore:DomainConfigStore = null
   @Autowired var changes:Changes = null
 
   @Path("/config")
@@ -58,7 +60,7 @@ class DomainResource {
   def getDiagnosticsResource(@PathParam("domain") domain:String) = new DiagnosticsResource(diagnosticsManager, config, domain)
 
   @Path("/scanning")
-  def getScanningResource(@PathParam("domain") domain:String) = new ScanningResource(pairPolicyClient, config, domain)
+  def getScanningResource(@PathParam("domain") domain:String) = new ScanningResource(pairPolicyClient, config, domainConfigStore, diagnosticsManager, domain)
 
   @Path("/changes")
   def getChangesResource(@PathParam("domain") domain:String) = new ChangesResource(changes, domain)
