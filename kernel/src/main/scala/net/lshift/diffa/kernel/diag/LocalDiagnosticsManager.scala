@@ -41,8 +41,8 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
     }
   }
 
-  def pairScanStateChanged(pair: DiffaPair, scanState: PairScanState) = pairs.synchronized {
-    val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair.asRef, new PairDiagnostics) }
+  def pairScanStateChanged(pair: DiffaPairRef, scanState: PairScanState) = pairs.synchronized {
+    val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair, new PairDiagnostics) }
     pairDiag.scanScate = scanState
   }
 

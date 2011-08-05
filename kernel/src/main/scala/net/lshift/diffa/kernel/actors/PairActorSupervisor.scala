@@ -88,10 +88,10 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id) ! ChangeMessage(event)
 
-  def difference(pair:DiffaPair) =
-    findActor(pair) ! DifferenceMessage
+  def difference(pairRef:DiffaPairRef) =
+    findActor(pairRef) ! DifferenceMessage
 
-  def scanPair(pair:DiffaPair) = {
+  def scanPair(pair:DiffaPairRef) = {
     // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
     // asynchronously, we might have returned before then, and this may potentially result in clients seeing
     // a "Up To Date" view, even though we're just about to transition out of that state.
@@ -100,16 +100,16 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     findActor(pair) ! ScanMessage
   }
 
-  def cancelScans(pair:DiffaPair) = {
-    (findActor(pair) !! CancelMessage) match {
+  def cancelScans(pairRef:DiffaPairRef) = {
+    (findActor(pairRef) !! CancelMessage) match {
       case Some(flag) => true
       case None       => false
     }
   }
 
-  def findActor(id:VersionID) : ActorRef = findActor(systemConfig.getPair(id.pair))
+  def findActor(id:VersionID) : ActorRef = findActor(id.pair)
 
-  def findActor(pair:DiffaPair) = {
+  def findActor(pair:DiffaPairRef) = {
     val actors = Actor.registry.actorsFor(pair.identifier)
     actors.length match {
       case 1 => actors(0)

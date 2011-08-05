@@ -61,11 +61,11 @@ class NotificationCentreTest {
 
     val pair = DiffaPair(key = "p", domain = Domain(name="domain"))
 
-    l1.pairScanStateChanged(pair, PairScanState.SCANNING)
-    l2.pairScanStateChanged(pair, PairScanState.SCANNING)
+    l1.pairScanStateChanged(pair.asRef, PairScanState.SCANNING)
+    l2.pairScanStateChanged(pair.asRef, PairScanState.SCANNING)
     replay(l1, l2)
 
-    nc.pairScanStateChanged(pair, PairScanState.SCANNING)
+    nc.pairScanStateChanged(pair.asRef, PairScanState.SCANNING)
     verify(l1, l2)
   }
 }

@@ -61,18 +61,6 @@ class DifferencesResource(val sessionManager: SessionManager,
     Response.created(uri).`type`("text/plain").build()
   }
 
-  @POST
-  @Path("/sessions/{sessionId}/scan")
-  @Description("Forces Diffa to execute a scan on the pairs underlying the session")
-  @MandatoryParams(Array(new MandatoryParam(name="sessionId", datatype="string", description="Session ID")))
-  def scanAllInSession(@PathParam("sessionId") sessionId:String, @Context request:Request) : Response = {
-    if (log.isTraceEnabled) {
-      log.trace("Scan requested for sessionId = " + sessionId)
-    }
-    sessionManager.runScan(sessionId)
-    Response.status(Response.Status.ACCEPTED).build
-  }
-
   @GET
   @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))

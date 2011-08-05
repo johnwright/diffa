@@ -74,12 +74,6 @@ trait SessionManager {
   def start(scope:SessionScope, start:DateTime, end:DateTime, listener:DifferencingListener): String
 
   /**
-   * Requests that a scan be run on all pairs associated with the given session.
-   * @param sessionID the session.
-   */
-  def runScan(sessionID:String)
-
-  /**
    * Retrieves a version for the given session.
    */
   def retrieveSessionVersion(sessionID:String):String

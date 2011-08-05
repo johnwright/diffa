@@ -333,7 +333,7 @@ case class PairActor(pair:DiffaPair,
    */
   def processBacklog(state:PairScanState) = {
     if (pairScanListener != null) {
-      pairScanListener.pairScanStateChanged(pair, state)
+      pairScanListener.pairScanStateChanged(pair.asRef, state)
     }
     deferred.dequeueAll(d => {self ! d; true})
   }
@@ -381,7 +381,7 @@ case class PairActor(pair:DiffaPair,
       bufferedMatchEvents.clear()
     }
 
-    pairScanListener.pairScanStateChanged(pair, PairScanState.SCANNING)
+    pairScanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING)
 
     try {
       writer.flush()

@@ -56,12 +56,12 @@ class LocalDiagnosticsManagerTest {
       diagnostics.retrievePairScanStatesForDomain("domain"))
 
     // Notify that the pair1 is now in Up To Date state
-    diagnostics.pairScanStateChanged(pair1, PairScanState.UP_TO_DATE)
+    diagnostics.pairScanStateChanged(pair1.asRef, PairScanState.UP_TO_DATE)
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.UNKNOWN),
       diagnostics.retrievePairScanStatesForDomain("domain"))
 
     // Notify that the pair2 is now in Failed state
-    diagnostics.pairScanStateChanged(pair2, PairScanState.FAILED)
+    diagnostics.pairScanStateChanged(pair2.asRef, PairScanState.FAILED)
     assertEquals(Map("pair1" -> PairScanState.UP_TO_DATE, "pair2" -> PairScanState.FAILED),
       diagnostics.retrievePairScanStatesForDomain("domain"))
 
@@ -69,8 +69,8 @@ class LocalDiagnosticsManagerTest {
       diagnostics.retrievePairScanStatesForDomain("domain"))
 
     // Report a scan as being started. We should enter the scanning state again
-    diagnostics.pairScanStateChanged(pair1, PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
-    diagnostics.pairScanStateChanged(pair2, PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
+    diagnostics.pairScanStateChanged(pair1.asRef, PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
+    diagnostics.pairScanStateChanged(pair2.asRef, PairScanState.SCANNING)    // Simulate the supervisor indicating a scan start
     assertEquals(Map("pair1" -> PairScanState.SCANNING, "pair2" -> PairScanState.SCANNING),
       diagnostics.retrievePairScanStatesForDomain("domain"))
 
@@ -85,7 +85,7 @@ class LocalDiagnosticsManagerTest {
         andStubReturn(Seq(FrontendConversions.toPairDef(pair1), FrontendConversions.toPairDef(pair2)))
     replayAll()
 
-    diagnostics.pairScanStateChanged(pair1, PairScanState.SCANNING)
+    diagnostics.pairScanStateChanged(pair1.asRef, PairScanState.SCANNING)
     assertEquals(Map("pair1" -> PairScanState.SCANNING, "pair2" -> PairScanState.UNKNOWN), diagnostics.retrievePairScanStatesForDomain("domain"))
 
     // Remove the pair, and report it

@@ -114,17 +114,17 @@ class DefaultSessionManagerTest {
 
   def expectDifferenceForPair(pairs:DiffaPair*)  = {
     pairs.foreach(p => {
-      expect(pairPolicyClient.difference(p)).atLeastOnce
+      expect(pairPolicyClient.difference(p.asRef)).atLeastOnce
     })
 
     replay(pairPolicyClient)
   }
   def expectScanAndDifferenceForPair(pairs:DiffaPair*)  = {
     pairs.foreach(p => {
-      expect(pairPolicyClient.difference(p)).atLeastOnce
+      expect(pairPolicyClient.difference(p.asRef)).atLeastOnce
     })
     pairs.foreach(p => {
-      expect(pairPolicyClient.scanPair(p)).atLeastOnce
+      expect(pairPolicyClient.scanPair(p.asRef)).atLeastOnce
     })
 
     replay(pairPolicyClient)

@@ -32,7 +32,7 @@ import org.quartz.CronScheduleBuilder.cronSchedule
 import org.quartz.JobBuilder.newJob
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
-import net.lshift.diffa.kernel.config.{DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Quartz backed implementation of the ScanScheduler.
@@ -51,11 +51,10 @@ class QuartzScanScheduler(systemConfig:SystemConfigStore, pairPolicyClient:PairP
     override def triggerFired(trigger: Trigger, context: JobExecutionContext) {
       val pairId = trigger.getJobKey.getName
       var (domain,pairKey) = DiffaPair.fromIdentifier(pairId)
-      val pair = systemConfig.getPair(domain,pairKey)
 
       log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
       try {
-        pairPolicyClient.scanPair(pair)
+        pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain))
       } catch {
           // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
         case ex =>

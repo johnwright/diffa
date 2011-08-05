@@ -144,15 +144,6 @@ class DefaultSessionManager(
     })
   }
 
-  def runScan(sessionID:String) = {
-    sessionsByKey.get(sessionID) match {
-      case None => // No session. Nothing to do. TODO: Throw an exception?
-      case Some(cache) => {
-        runScanForScope(cache.scope, null, null)
-      }
-    }
-  }
-
   /**
    * If the session does not exist, throw a MissingObjectException which will be handled in a higher layer
    */
@@ -309,12 +300,8 @@ class DefaultSessionManager(
     }
   }
 
-  def runScanForScope(scope:SessionScope, start:DateTime, end:DateTime) {
-    pairsForScope(scope).foreach(pairPolicyClient.scanPair(_))
-  }
-
   def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime)
-  = pairsForScope(scope).foreach(pairPolicyClient.difference(_))
+  = pairsForScope(scope).foreach(p => pairPolicyClient.difference(p.asRef))
 
   def pairsForScope(scope:SessionScope):Seq[DiffaPair] = {
     scope.includedPairs.size match {

@@ -49,7 +49,7 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
     Response.status(Response.Status.ACCEPTED).build
   }
 
-  /*@POST
+  @POST
   @Path("/scan_all")
   @Description("Forces Diffa to execute a scan operation for every configured pair within this domain.")
   def scanAllPairings = {
@@ -57,7 +57,7 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
     domainConfigStore.listPairs(domain).foreach(p => pairPolicyClient.scanPair(p))
 
     Response.status(Response.Status.ACCEPTED).build
-  }*/
+  }
 
   @DELETE
   @Path("/pairs/{pairKey}/scan")
