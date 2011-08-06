@@ -290,20 +290,24 @@
           </execution>
         </executions>
       </plugin>
-      <!--plugin>
+      <plugin>
         <groupId>net.lshift.diffa</groupId>
         <artifactId>diffa-docgen-maven-plugin</artifactId>
         <version>${project.version}</version>
         <configuration>
           <templateDir>${basedir}/src/main/resources/docgen/md</templateDir>
           <examplesFactoryClass>net.lshift.diffa.kernel.util.DocExamplesFactory</examplesFactoryClass>
+          <parentResource>net.lshift.diffa.agent.rest.DomainResource</parentResource>
           <resources>
+            <resource>net.lshift.diffa.agent.rest.ChangesResource</resource>
             <resource>net.lshift.diffa.agent.rest.ConfigurationResource</resource>
+            <resource>net.lshift.diffa.agent.rest.ScanningResource</resource>
+            <resource>net.lshift.diffa.agent.rest.DiagnosticsResource</resource>
             <resource>net.lshift.diffa.agent.rest.DifferencesResource</resource>
             <resource>net.lshift.diffa.agent.rest.ActionsResource</resource>
             <resource>net.lshift.diffa.agent.rest.UsersResource</resource>
             <resource>net.lshift.diffa.agent.rest.EscalationsResource</resource>
-            <resource>net.lshift.diffa.agent.rest.ScanningResource</resource>
+            <resource>net.lshift.diffa.agent.rest.SystemConfigResource</resource>
           </resources>
           <targetDir>${docs.targetDir}</targetDir>
           <consoleOutput>false</consoleOutput>
@@ -316,7 +320,7 @@
             </goals>
           </execution>
         </executions>
-      </plugin-->
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>

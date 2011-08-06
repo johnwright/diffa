@@ -38,16 +38,24 @@ public class RestGen {
     private final Map<String, String> resultFiles = new HashMap<String, String>();
     private final List<ResourceCollection> collections = new ArrayList<ResourceCollection>();
     private static final String BASE_PATH = "/doc/rest";
+    private final Map<Class,Path> pathIndex = new HashMap<Class,Path>();
 
     //mapper.getSerializationConfig().set(SerializationConfig.Feature.INDENT_OUTPUT, true);
     //mapper.getSerializationConfig().set(SerializationConfig.Feature.WRAP_ROOT_VALUE, true);
-    public RestGen(String templateDir) {
+    public RestGen(String templateDir, Class parentResource) {
         this.group = new StringTemplateGroup("rest", templateDir);
+
+        for(Method m : parentResource.getMethods()) {
+          Path path = m.getAnnotation(Path.class);
+          if (path != null) {
+            pathIndex.put(m.getReturnType(),path);
+          }
+        }
     }
 
     public void addResources(Class<?> clazz, Map<Class<?>, Object> examples)
             throws Exception {
-        collections.add(generateCollection(clazz, examples));
+        collections.add(generateCollection(pathIndex, clazz, examples));
     }
 
 
@@ -102,9 +110,19 @@ public class RestGen {
         return "Array of " + type;
     }
 
-    private static <T> ResourceCollection generateCollection(Class<T> clazz, Map<Class<?>, Object> examples)
+    private static <T> ResourceCollection generateCollection(Map<Class,Path> pathIndex, Class<T> clazz, Map<Class<?>, Object> examples)
             throws Exception {
-        Path path = clazz.getAnnotation(Path.class);
+        boolean domain = true;
+
+        // For domain bound resources, the path is annotated on the parent resource
+        Path path = pathIndex.get(clazz);
+
+        // For non-domain resources, the path is annotated on itself
+        if (path == null) {
+          path = clazz.getAnnotation(Path.class);
+          domain = false;
+        }
+
 
         List<ResourceDescriptor> resources = new java.util.ArrayList<ResourceDescriptor>();
 
@@ -113,6 +131,7 @@ public class RestGen {
             if (p != null) {
                 ResourceDescriptor rd = new ResourceDescriptor();
                 rd.setCollectionPath(path.value());
+                rd.setDomain(domain);
 
                 if (x.isAnnotationPresent(GET.class))
                     rd.setMethod("GET");
@@ -161,6 +180,6 @@ public class RestGen {
 
         }
 
-        return new ResourceCollection(clazz.getName(), path.value(), resources);
+        return new ResourceCollection(clazz.getName(), path.value(), resources, domain);
     }
 }

@@ -18,10 +18,12 @@ package net.lshift.diffa.docgen;
 
 import org.codehaus.jackson.schema.JsonSchema;
 
+import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ResourceDescriptor {
+    private boolean domain = true;
     private String method = "";
     private String path = "";
     private String description = "";
@@ -33,6 +35,14 @@ public class ResourceDescriptor {
     private String collectionPath;
 
     public ResourceDescriptor() {}
+
+    public boolean isDomain() {
+      return domain;
+    }
+
+    public void setDomain(boolean domain) {
+      this.domain = domain;
+    }
 
     public String getMethod() {
         return method;
@@ -97,7 +107,7 @@ public class ResourceDescriptor {
     public String getNicePath() {
         // Replace {param} with :param
         String nicePath = path.replaceAll("\\{([a-zA-z0-9_-]*)\\}", ":$1");
-        return getCleanCollectionPath() + nicePath;
+        return getCleanCollectionPath().replaceFirst("domain",":domain") + nicePath;
     }
 
     /**
@@ -106,11 +116,17 @@ public class ResourceDescriptor {
      */
     public String getDocPath() {
         // Replace {param} with p_param
-        return getCleanCollectionPath() + '/' + method.toLowerCase() + path.replaceAll("\\{([a-zA-z0-9_-]*)\\}", "p_$1");
+        String docPath = getCleanCollectionPath() + '/' + method.toLowerCase() + path;
+        docPath = docPath.replaceFirst("domain", "p_domain");
+        return docPath.replaceAll("\\{([a-zA-z0-9_-]*)\\}", "p_$1");
     }
 
     private String getCleanCollectionPath() {
-        return collectionPath.startsWith("/") ? collectionPath.substring(1) : collectionPath;
+        String path = collectionPath.startsWith("/") ? collectionPath.substring(1) : collectionPath;
+        if (domain) {
+          path = "domain/" + path;
+        }
+        return path;
     }
 
     public boolean isActive() {

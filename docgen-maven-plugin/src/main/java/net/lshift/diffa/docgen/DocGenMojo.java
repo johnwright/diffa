@@ -71,6 +71,12 @@ public class DocGenMojo extends AbstractMojo
      */
     private String examplesFactoryClass;
 
+    /**
+     * @parameter
+     * @required
+     */
+    private String parentResource;
+
     public void execute() throws MojoExecutionException
     {
         try {
@@ -81,7 +87,9 @@ public class DocGenMojo extends AbstractMojo
             // IntelliJ doesn't like this but it's fine, trust me
             Map<Class<?>, Object> examples = examplesFactory.getExamples();
 
-            RestGen gen = new RestGen(templateDir);
+            Class parentClazz = projectClassLoader.loadClass(parentResource);
+
+            RestGen gen = new RestGen(templateDir, parentClazz);
             for (String clazz : resources)
                 gen.addResources(projectClassLoader.loadClass(clazz), examples);
 

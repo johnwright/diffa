@@ -19,14 +19,20 @@ package net.lshift.diffa.docgen;
 import java.util.List;
 
 public class ResourceCollection {
+    private final boolean inDomain;
     private final String name;
     private final String path;
     private final List<ResourceDescriptor> resources;
 
-    public ResourceCollection(String name, String path, List<ResourceDescriptor> resources) {
+    public ResourceCollection(String name, String path, List<ResourceDescriptor> resources, boolean domain) {
+        this.inDomain = domain;
         this.name = name;
         this.path = path;
         this.resources = resources;
+    }
+
+    public boolean isInDomain() {
+      return inDomain;
     }
 
     public String getName() {
