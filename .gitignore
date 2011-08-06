@@ -30,3 +30,6 @@ target/*
 */logs/
 /logs/
 akka.log
+
+.DS_Store
+.class
