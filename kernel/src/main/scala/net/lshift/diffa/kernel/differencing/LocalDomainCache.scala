@@ -23,27 +23,25 @@ import collection.mutable.{LinkedHashMap, HashMap}
 import org.joda.time.{Interval, DateTime}
 
 /**
- * Local implementation of the session cache trait. In no way clustered or crash tolerant.
+ * Local implementation of the domain cache trait. In no way clustered or crash tolerant.
  *
  * TODO: Expire matched events and overridden unmatched events.
  */
-class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends SessionCache {
-  private val pending = new HashMap[VersionID, SessionEvent]
-  private val events = new LinkedHashMap[String,SessionEvent]
+class LocalDomainCache(val domain:String) extends DomainCache {
+  private val pending = new HashMap[VersionID, DifferenceEvent]
+  private val events = new LinkedHashMap[String,DifferenceEvent]
   private val seqGenerator = new AtomicInteger(1)
 
-  def currentVersion = events.size match {
+  def currentSequenceId = events.size match {
     case 0 => "0"
     case _ => {
-      val (_, session) = events.last
-      session.seqId
+      val (_, event) = events.last
+      event.seqId
     }
   }
 
-  def isInScope(id: VersionID) = scope.includes(id.pair)
-
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) {
-    pending(id) = SessionEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
+    pending(id) = DifferenceEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
   }
 
   def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) = {
@@ -53,7 +51,7 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
 
   def upgradePendingUnmatchedEvent(id:VersionID) = {
     pending.remove(id) match {
-      case Some(SessionEvent(_, _, lastUpdate, _, upstreamVsn, downstreamVsn)) =>
+      case Some(DifferenceEvent(_, _, lastUpdate, _, upstreamVsn, downstreamVsn)) =>
         addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
       case None => null
     }
@@ -83,7 +81,7 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
 
   def nextSequence(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, state:MatchState) = {
     val sequence = nextSequenceId.toString
-    val event = new SessionEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn)
+    val event = new DifferenceEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn)
     events(sequence)= event
     event
   }
@@ -97,7 +95,7 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
   def countEvents(pairKey: String, interval: Interval) =
     retrieveUnmatchedEvents(interval).filter(_.objId.pair.key == pairKey).length
 
-  def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent] = {
+  def retrieveEventsSince(evtSeqId:String):Seq[DifferenceEvent] = {
     val seqIdNum = Integer.parseInt(evtSeqId)
 
     events.dropWhile(p => {
@@ -106,7 +104,7 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
     }).values.toSeq
   }
 
-  def getEvent(evtSeqId:String) : SessionEvent = {    
+  def getEvent(evtSeqId:String) : DifferenceEvent = {    
     events.get(evtSeqId) match {
       case None    => throw new InvalidSequenceNumberException(evtSeqId)
       case Some(e) => e
@@ -116,17 +114,17 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
   private def nextSequenceId = seqGenerator.getAndIncrement
 }
 
-class LocalSessionCacheProvider extends SessionCacheProvider {
-  private val sessions = new HashMap[String, LocalSessionCache]
+class LocalDomainCacheProvider extends DomainCacheProvider {
+  private val domains = new HashMap[String, LocalDomainCache]
 
-  def retrieveCache(sessionID: String) = sessions.synchronized { sessions.get(sessionID) }
-  def retrieveOrAllocateCache(sessionID: String, scope:SessionScope) = sessions.synchronized {
-    sessions.get(sessionID) match {
+  def retrieveCache(domain: String) = domains.synchronized { domains.get(domain) }
+  def retrieveOrAllocateCache(domain: String) = domains.synchronized {
+    domains.get(domain) match {
       case Some(s) => s
       case None => {
-        val session = new LocalSessionCache(sessionID, scope)
-        sessions(sessionID) = session
-        session
+        val domainCache = new LocalDomainCache(domain)
+        domains(domain) = domainCache
+        domainCache
       }
     }
   }

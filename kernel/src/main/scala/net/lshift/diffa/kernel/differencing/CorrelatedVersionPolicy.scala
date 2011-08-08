@@ -67,7 +67,7 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
             handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pair.asRef, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
           } else {
             // We can't update our datastore, so we just have to generate a mismatch
-            listener.onMismatch(VersionID(pair.asRef, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan)
+            listener.onMismatch(VersionID(pair.asRef, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan, Unfiltered)
           }
       }
     }

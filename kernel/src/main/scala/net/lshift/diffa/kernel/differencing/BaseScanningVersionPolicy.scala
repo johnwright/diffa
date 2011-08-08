@@ -65,7 +65,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     if (corr.isMatched.booleanValue) {
       listener.onMatch(evt.id, corr.upstreamVsn, LiveWindow)
     } else {
-      listener.onMismatch(evt.id, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, LiveWindow)
+      listener.onMismatch(evt.id, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, LiveWindow, Unfiltered)
     }
   }
 
@@ -103,7 +103,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   private def generateDifferenceEvents(pair:DiffaPair, l:DifferencingListener, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
     stores(pair).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
-      corr => l.onMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
+      corr => l.onMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin, Unfiltered))
   }
 
   /**

@@ -16,11 +16,12 @@
 
 package net.lshift.diffa.kernel.lifecycle
 
-import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.differencing.{PairScanState, MatchOrigin, PairScanListener, DifferencingListener}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
+import net.lshift.diffa.kernel.differencing._
+import collection.mutable.{ListBuffer}
+import collection.immutable.HashSet
 
 /**
  * Central system component for subscribing to notifications. To prevent dependency loops, consumer components should not
@@ -30,14 +31,17 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 class NotificationCentre
     extends DifferencingListener
     with PairScanListener {
-  private val differenceListeners = new ListBuffer[DifferencingListener]
+  private val unfilteredDifferenceListeners = new ListBuffer[DifferencingListener]
+  private val filteredDifferenceListeners = new ListBuffer[DifferencingListener]
+  private var allDifferenceListeners = Set[DifferencingListener]()
   private val pairScanListeners = new ListBuffer[PairScanListener]
 
   /**
    * Registers a listener to receive different events.
    */
-  def registerForDifferenceEvents(l:DifferencingListener) {
-    differenceListeners += l
+  def registerForDifferenceEvents(l:DifferencingListener, level:DifferenceFilterLevel) {
+    selectListenerList(level) += l
+    allDifferenceListeners = unfilteredDifferenceListeners.toSet ++ filteredDifferenceListeners.toSet
   }
 
    /**
@@ -51,11 +55,16 @@ class NotificationCentre
   // Differencing Listener Multicast
   //
 
-  def onMismatch(id: VersionID, lastUpdated: DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
-    differenceListeners.foreach(_.onMismatch(id, lastUpdated, upstreamVsn, downstreamVsn, origin))
+  def onMismatch(id: VersionID, lastUpdated: DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin, level:DifferenceFilterLevel) {
+    selectListenerList(level).foreach(_.onMismatch(id, lastUpdated, upstreamVsn, downstreamVsn, origin, level))
   }
   def onMatch(id: VersionID, vsn: String, origin: MatchOrigin) {
-    differenceListeners.foreach(_.onMatch(id, vsn, origin))
+    allDifferenceListeners.foreach(_.onMatch(id, vsn, origin))
+  }
+
+  private def selectListenerList(level:DifferenceFilterLevel) = level match {
+    case Unfiltered      => unfilteredDifferenceListeners
+    case MatcherFiltered => filteredDifferenceListeners
   }
 
   //

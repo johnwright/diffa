@@ -21,7 +21,7 @@ import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.agent.client.{DifferencesRestClient, ConfigurationRestClient}
 import org.junit.Assert._
-import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
+import net.lshift.diffa.kernel.differencing.DifferenceEvent
 import com.eaio.uuid.UUID
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
@@ -74,10 +74,8 @@ object PagingDataLoader {
     val from = start.minusHours(1)
     val until = start.plusHours(1)
 
-    val sessionId = diffsClient.subscribe(SessionScope.forPairs(pair), from, until)
-
-    def firstPage(client:DifferencesRestClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 0, 10).toSeq
-    def secondPage(client:DifferencesRestClient) = client.getEvents(sessionId, pair, start, start.plusHours(1), 10, 10).toSeq
+    def firstPage(client:DifferencesRestClient) = client.getEvents(pair, start, start.plusHours(1), 0, 10).toSeq
+    def secondPage(client:DifferencesRestClient) = client.getEvents(pair, start, start.plusHours(1), 10, 10).toSeq
 
     println("First page:")
     tryAgain(diffsClient, firstPage).foreach(println(_))
@@ -87,7 +85,7 @@ object PagingDataLoader {
 
   }
 
-  def tryAgain(client:DifferencesRestClient, poll:DifferencesRestClient => Seq[SessionEvent], n:Int = 10, wait:Int = 100) : Seq[SessionEvent]= {
+  def tryAgain(client:DifferencesRestClient, poll:DifferencesRestClient => Seq[DifferenceEvent], n:Int = 10, wait:Int = 100) : Seq[DifferenceEvent]= {
     var i = n
     var diffs = poll(client)
     while(diffs.isEmpty && i > 0) {

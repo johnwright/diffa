@@ -21,26 +21,26 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Before, Test}
 import org.joda.time.{Period, DateTime}
-import net.lshift.diffa.kernel.differencing.{LiveWindow, SessionManager}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.DiffaPairRef._
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.differencing.{MatcherFiltered, LiveWindow, DifferencesManager}
 
 class EventNotifierTest {
 
   val domain = Domain(name="domain")
   val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
-  val sessionManager = createStrictMock("sessionManager", classOf[SessionManager])
+  val differencesManager = createStrictMock("differencesManager", classOf[DifferencesManager])
 
   val quietTimeMillis = 2000
-  val notifier = new EventNotifier(sessionManager, domainConfigStore, Period.millis(quietTimeMillis))
+  val notifier = new EventNotifier(differencesManager, domainConfigStore, Period.millis(quietTimeMillis))
 
   @Before
   def setup = {
     val user = User("Foo Bar","dev_null@lshift.net")
     val member = Member(domain = domain, user = user)
     expect(domainConfigStore.listDomainMembers(domain.name)).andStubReturn(List(member))
-    replay(domainConfigStore, sessionManager)
+    replay(domainConfigStore, differencesManager)
   }
 
   @Test
@@ -62,12 +62,12 @@ class EventNotifierTest {
     Thread.sleep(quietTimeMillis)
 
     notifier.registerProvider(provider)
-    notifier.onMismatch(id, timestamp, up, down, LiveWindow)
+    notifier.onMismatch(id, timestamp, up, down, LiveWindow, MatcherFiltered)
     assertEquals(1,notifications)
-    notifier.onMismatch(id, timestamp, up, down, LiveWindow)
+    notifier.onMismatch(id, timestamp, up, down, LiveWindow, MatcherFiltered)
     assertEquals(1,notifications)
     Thread.sleep(quietTimeMillis * 110/100)
-    notifier.onMismatch(id, timestamp, up, down, LiveWindow)
+    notifier.onMismatch(id, timestamp, up, down, LiveWindow, MatcherFiltered)
     assertEquals(2,notifications)
   }
 }

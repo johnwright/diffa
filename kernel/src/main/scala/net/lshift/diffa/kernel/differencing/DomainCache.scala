@@ -20,68 +20,57 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
 
 /**
- * The session cache provides facilities for storing difference events that occur, and managing the states of these
- * events. A session cache instance should exist for each session that has been opened with the system.
+ * The domain cache provides facilities for storing difference events that occur, and managing the states of these
+ * events. A domain cache instance should exist for each domain that has been created in the system.
  */
-trait SessionCache {
+trait DomainCache {
   /**
-   * Retrieves the identifier of this cache.
+   * Retrieves the domain of this cache.
    */
-  def sessionId:String
+  def domain:String
 
   /**
-   * The scope assigned to this session.
+   * Retrieves the current sequence id of the cache
    */
-  def scope:SessionScope
-
-  /**
-   * Retrieves the current version of the cache
-   */
-  def currentVersion:String
-
-  /**
-   * Queries whether the session cache's scope includes the given version identifier.
-   */
-  def isInScope(id:VersionID):Boolean
+  def currentSequenceId:String
 
   /**
    * Adds a pending event for the given version id into the cache.
    */
-  // TODO the default session manager implementation should then keep track of the listeners
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String)
 
   /**
    * Adds a reportable unmatched event for the given version id into the cache. Returns the detail of the event
    * (including a sequence id). Any previous matched event for the same id will be removed.
    */
-  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String):SessionEvent
+  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String):DifferenceEvent
 
   /**
    * Upgrades the given pending event to a reportable event. Returns the detail of the event (including a sequence id).
    * Any previous matched event for the same id will be removed. If no event is available to upgrade with the given
    * id, then null will be returned.
    */
-  def upgradePendingUnmatchedEvent(id:VersionID):SessionEvent
+  def upgradePendingUnmatchedEvent(id:VersionID):DifferenceEvent
 
   /**
    * Adds a matched event to the cache. This will result in the removal of any earlier unmatched event for the same id.
    * The matched event will also be marked for expiry at some interval defined by the cache implementation, ensuring
    * that matched events do not result in the cache becoming full.
    */
-  def addMatchedEvent(id:VersionID, vsn:String):SessionEvent
+  def addMatchedEvent(id:VersionID, vsn:String):DifferenceEvent
 
   /**
    * Retrieves all unmatched events that have been added to the cache where their detection timestamp
    * falls within the specified period
    */
-  def retrieveUnmatchedEvents(interval:Interval) : Seq[SessionEvent]
+  def retrieveUnmatchedEvents(interval:Interval) : Seq[DifferenceEvent]
 
   /**
    * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.
    */
-  def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
+  def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.
@@ -89,38 +78,36 @@ trait SessionCache {
   def countEvents(pairKey:String, interval:Interval) : Int
 
   /**
-   * Retrieves all events that have occurred within a session since the provided sequence id.
+   * Retrieves all events that have occurred within a domain since the provided sequence id.
    * @param evtSeqId the last known sequence id. All events occurring after (not including) this event will be returned.
-   * @throws InvalidSessionIDException if the requested session does not exist or has expired.
    * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary scan information cannot be
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
-  def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent]
+  def retrieveEventsSince(evtSeqId:String):Seq[DifferenceEvent]
 
   /**
    * Retrieves a single event by its id.
    * @param evtSeqId sequence id of the event to be retrieved.
    * @throws InvalidSequenceNumberException if the requested sequence id does not exist or has expired.
    */
-  def getEvent(evtSeqId:String) : SessionEvent
+  def getEvent(evtSeqId:String) : DifferenceEvent
 }
 
 /**
- * Provider that manages a series of session cache instances.
+ * Provider that manages a series of domain cache instances.
  */
-trait SessionCacheProvider {
+trait DomainCacheProvider {
   /**
-   * Retrieves a cache for the given session. If no cache has been allocated, then this method will return None. This
+   * Retrieves a cache for the given domain. If no cache has been allocated, then this method will return None. This
    * method should be used for query operations that are not intended to result in a new cache being created.
    */
-  def retrieveCache(sessionID:String):Option[SessionCache]
+  def retrieveCache(domain:String):Option[DomainCache]
 
   /**
-   * Retrieves or allocates a new cache for the given session identifier. If a cache has previously been allocated for
-   * the given session ID, then that cache will be returned. If no cache has been allocated, then a new cache will be
+   * Retrieves or allocates a new cache for the given domain. If a cache has previously been allocated for
+   * the given domain, then that cache will be returned. If no cache has been allocated, then a new cache will be
    * initialised.
-   * @param sessionID the id of the session requested;
-   * @param scope the scope to be applied to the session 
+   * @param domain the domain of the cache requested;
    */
-  def retrieveOrAllocateCache(sessionID:String, scope:SessionScope):SessionCache
+  def retrieveOrAllocateCache(domain:String):DomainCache
 }

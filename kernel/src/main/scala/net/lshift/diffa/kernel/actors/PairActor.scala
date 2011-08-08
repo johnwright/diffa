@@ -171,7 +171,7 @@ case class PairActor(pair:DiffaPair,
     /**
      * Drop the mismatch, since we will be doing a full replayUnmatchedDifferences and the end of the scan process.
      */
-    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String, origin:MatchOrigin) = ()
+    def onMismatch(id:VersionID, update:DateTime, uvsn:String, dvsn:String, origin:MatchOrigin, level:DifferenceFilterLevel) = ()
   }
 
   /**

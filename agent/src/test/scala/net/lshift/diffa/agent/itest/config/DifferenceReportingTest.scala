@@ -22,17 +22,24 @@ import net.lshift.diffa.kernel.participants.ParticipantType
 import com.eaio.uuid.UUID
 import org.junit.Test
 import net.lshift.diffa.messaging.json.NotFoundException
+import net.lshift.diffa.kernel.differencing.InvalidSequenceNumberException
 
 /**
  * A bunch of smoke tests for the differences reporting of a known agent
  */
 class DifferenceReportingTest {
 
-  val client = new DifferencesRestClient(agentURL, domain)
-
   @Test(expected = classOf[NotFoundException])
-  def nonExistentSessionShouldGenerateNotFoundError = {
-    client.eventDetail(new UUID().toString, new UUID().toString, ParticipantType.UPSTREAM)
-    ()
+  def nonExistentDomainShouldGenerateNotFoundError() {
+    val client = new DifferencesRestClient(agentURL, "invalid-domain")
+
+    client.eventDetail(new UUID().toString, ParticipantType.UPSTREAM)
+  }
+
+  @Test(expected = classOf[InvalidSequenceNumberException])
+  def nonExistentSequenceNumberShouldGenerateNotSequenceError() {
+    val client = new DifferencesRestClient(agentURL, domain)
+
+    client.eventDetail(new UUID().toString, ParticipantType.UPSTREAM)
   }
 }

@@ -29,7 +29,7 @@ import java.net.URI
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import java.util.{UUID, Properties}
-import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{PairScanState, DifferenceEvent}
 import org.joda.time.DateTime
 import net.lshift.diffa.agent.client.DifferencesRestClient
 
@@ -57,9 +57,9 @@ trait CommonDifferenceTests {
     }
   }
 
-  def getReport(from:DateTime, until:DateTime) : Array[SessionEvent]= {
-    var sessionId = subscribeAndRunScan(yearAgo, today)
-    env.diffClient.getEvents(sessionId, env.pairKey, from, until, 0, 100)
+  def getReport(from:DateTime, until:DateTime) : Array[DifferenceEvent]= {
+    runScanAndWaitForCompletion(yearAgo, today)
+    env.diffClient.getEvents(env.pairKey, from, until, 0, 100)
   }
 
   @Test
@@ -71,7 +71,7 @@ trait CommonDifferenceTests {
 
   @Test
   def detectionTimeShouldBeMatchTheMostRecentUpdatedTimeOnAParticipatingEntity = {
-    val (diffs,_) = getVerifiedDiffsWithSessionId()
+    val diffs = getVerifiedDiffs()
     assertNotNull(diffs(0))
     val detectionTime = diffs(0).detectedAt
     // TODO On a rainy day, look into why using a millisecond comparison is necessary
@@ -80,10 +80,10 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldFindDifferencesInDifferingParticipants {
-    val (diffs, sessionId) = getVerifiedDiffsWithSessionId()
+    val diffs = getVerifiedDiffs()
     val seqId = diffs(0).seqId
 
-    val detail = env.diffClient.eventDetail(sessionId, seqId, ParticipantType.UPSTREAM)
+    val detail = env.diffClient.eventDetail(seqId, ParticipantType.UPSTREAM)
     assertNotNull(diffs)
 
     assertEquals("abcdef", detail)
@@ -96,12 +96,12 @@ trait CommonDifferenceTests {
 
   @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
-    var sessionId = subscribeAndRunScan(yearAgo, today)
+    runScanAndWaitForCompletion(yearAgo, today)
     env.addAndNotifyUpstream("abc", "abcdef", someDate = yesterday, someString = "ss")
 
-    val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
+    val diffs = pollForAllDifferences(yearAgo, nextYear)
 
-    assertFalse("Session(%s) : %s -> %s".format(sessionId, yearAgo, nextYear),diffs.isEmpty)
+    assertFalse("Expected to find differences in range: %s -> %s".format(yearAgo, nextYear),diffs.isEmpty)
   }
 
   @Test
@@ -113,18 +113,18 @@ trait CommonDifferenceTests {
     for (i <- 1 to size) {
       env.addAndNotifyUpstream("" + i, "" + i, someDate = yesterday, someString = "ss")
     }
-    val sessionId = subscribeAndRunScan(yearAgo, today)
+    runScanAndWaitForCompletion(yearAgo, today)
 
     val offset = 5
 
-    val diffs1 = tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, start, end, offset, size))
+    val diffs1 = tryAgain((d:DifferencesRestClient) => d.getEvents(env.pairKey, start, end, offset, size))
     val max = size - offset
     val length = diffs1.size
     assertTrue("Diffs was %s, but should have been maximally %s".format(length,max), max >= length)
 
     // Select the 7th and 8th differences and validate their content
     val subset = 2
-    val diffs2 = tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, start, end, 6, subset))
+    val diffs2 = tryAgain((d:DifferencesRestClient) => d.getEvents(env.pairKey, start, end, 6, subset))
 
     assertTrue("Diffs was %s, but should have been maximally %s".format(diffs2.length,subset), subset >= diffs2.length)
     // TODO [#224] Put back in
@@ -143,28 +143,29 @@ trait CommonDifferenceTests {
     val up = guid()
     val down = guid()
     val NO_CONTENT = "Expanded detail not available"
-    var sessionId = subscribeAndRunScan(yearAgo, nextYear)
+
+    runScanAndWaitForCompletion(yearAgo, nextYear)
     env.addAndNotifyUpstream("abc", up, someDate = yesterday, someString = "ss")
 
-    val diffs = pollForAllDifferences(sessionId, yearAgo, nextYear)
+    val diffs = pollForAllDifferences(yearAgo, nextYear)
     val seqId1 = diffs(0).seqId
 
-    val up1 = env.diffClient.eventDetail(sessionId, seqId1, ParticipantType.UPSTREAM)
-    val down1 = env.diffClient.eventDetail(sessionId, seqId1, ParticipantType.DOWNSTREAM)
+    val up1 = env.diffClient.eventDetail(seqId1, ParticipantType.UPSTREAM)
+    val down1 = env.diffClient.eventDetail(seqId1, ParticipantType.DOWNSTREAM)
 
     assertEquals(up, up1)
     assertEquals(NO_CONTENT, down1)
 
     env.addAndNotifyDownstream("abc", down, someDate = yesterday, someString = "ss")
     Thread.sleep(2000)
-    val diffs2 = pollForAllDifferences(sessionId, yearAgo, nextYear)
+    val diffs2 = pollForAllDifferences(yearAgo, nextYear)
     assertEquals(1, diffs2.length)
     val seqId2 = diffs2(0).seqId
 
     assertTrue("Invalid sequence ids: seqId1 = %s, seqId2 = %s".format(seqId1, seqId2), seqId2 > seqId1)
 
-    val up2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.UPSTREAM)
-    val down2 = env.diffClient.eventDetail(sessionId, seqId2, ParticipantType.DOWNSTREAM)
+    val up2 = env.diffClient.eventDetail(seqId2, ParticipantType.UPSTREAM)
+    val down2 = env.diffClient.eventDetail(seqId2, ParticipantType.DOWNSTREAM)
     assertEquals(up, up2)
     assertEquals(down, down2)
   }
@@ -197,7 +198,7 @@ trait CommonDifferenceTests {
   def scanShouldTriggerResend {
     env.withActionsServer {
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
-      subscribeAndRunScan(yearAgo, today)
+      runScanAndWaitForCompletion(yearAgo, today)
       assertEquals(1, env.entityResendTally("abc"))
     }
   }
@@ -205,7 +206,6 @@ trait CommonDifferenceTests {
   @Test
   def scanShouldBeCancellable {
     env.withActionsServer {
-      var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.domain.name, env.pairKey), yearAgo, nextYear)
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
 
       // Make the upstream wait 5s before responding so the scan doesn't complete too quickly
@@ -221,13 +221,10 @@ trait CommonDifferenceTests {
     }
   }
 
-  def subscribeAndRunScan(from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) = {
-    var sessionId = env.diffClient.subscribe(SessionScope.forPairs(env.domain.name, env.pairKey), from, until)
+  def runScanAndWaitForCompletion(from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100) {
     env.scanningClient.startScan(env.pairKey)
 
     waitForScanStatus(env.pairKey, PairScanState.UP_TO_DATE, n, wait)
-
-    sessionId
   }
 
   def waitForScanStatus(pairKey:String, state:PairScanState, n:Int = 30, wait:Int = 100) {
@@ -245,21 +242,21 @@ trait CommonDifferenceTests {
   }
 
 
-  def getVerifiedDiffsWithSessionId() = {
+  def getVerifiedDiffs() = {
     env.upstream.addEntity("abc", yesterday, "ss", yesterday, "abcdef")
 
-    var sessionId = subscribeAndRunScan(yearAgo, today)
-    val diffs = pollForAllDifferences(sessionId, yearAgo, today)
+    runScanAndWaitForCompletion(yearAgo, today)
+    val diffs = pollForAllDifferences(yearAgo, today)
 
     assertNotNull(diffs)
     assertFalse(diffs.isEmpty)
-    (diffs, sessionId)
+    diffs
   }
 
-  def pollForAllDifferences(sessionId:String, from:DateTime, until:DateTime, n:Int = 20, wait:Int = 100) =
-    tryAgain((d:DifferencesRestClient) => d.getEvents(sessionId, env.pairKey, from, until, 0, 100) ,n,wait)
+  def pollForAllDifferences(from:DateTime, until:DateTime, n:Int = 20, wait:Int = 100) =
+    tryAgain((d:DifferencesRestClient) => d.getEvents(env.pairKey, from, until, 0, 100) ,n,wait)
 
-  def tryAgain(poll:DifferencesRestClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
+  def tryAgain(poll:DifferencesRestClient => Seq[DifferenceEvent], n:Int = 20, wait:Int = 100) : Seq[DifferenceEvent]= {
     var i = n
     var diffs = poll(env.diffClient)
     while(diffs.isEmpty && i > 0) {

@@ -29,7 +29,7 @@ import net.lshift.diffa.kernel.differencing.MatchState.UNMATCHED
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.differencing.{SessionEvent, SessionScope}
+import net.lshift.diffa.kernel.differencing.{DifferenceEvent}
 import org.springframework.core.io.ClassPathResource
 import collection.mutable.HashMap
 import org.joda.time.DateTime
@@ -72,7 +72,6 @@ class ExampleEventFormatMapperIntegrationTest {
     val changeEventProducer = new AmqpProducer(connectorHolder.connector, queueName)
 
     val diffClient = new DifferencesRestClient(serverRoot, domain.name)
-    val sessionId = diffClient.subscribe(SessionScope.forPairs(domain.name, "pair"))
 
     log.info("Sending change event")
     val changeEvent = IOUtils.toString(getClass.getResourceAsStream("/event.json"))
@@ -81,31 +80,31 @@ class ExampleEventFormatMapperIntegrationTest {
     // This is the observation date in the underlying message
     val recordDate = new DateTime(2011,01,24,0,0,0,0)
 
-    val sessionEvents = poll(diffClient,sessionId, "pair", recordDate.minusDays(1), recordDate.plusDays(1), 0, 100)
-    assertEquals(1, sessionEvents.length)
-    val sessionEvent = sessionEvents(0)
-    assertEquals(VersionID(DiffaPairRef("pair", domain.name), "5509a836-ca75-42a4-855a-71893448cc9d"), sessionEvent.objId)
-    assertEquals("2011-01-24T00:00:00.000Z", ISODateTimeFormat.dateTime.print(sessionEvent.detectedAt))
-    assertEquals(UNMATCHED, sessionEvent.state)
-    assertEquals("479", sessionEvent.upstreamVsn)
-    assertNull(sessionEvent.downstreamVsn)
+    val differenceEvents = poll(diffClient, "pair", recordDate.minusDays(1), recordDate.plusDays(1), 0, 100)
+    assertEquals(1, differenceEvents.length)
+    val differenceEvent = differenceEvents(0)
+    assertEquals(VersionID(DiffaPairRef("pair", domain.name), "5509a836-ca75-42a4-855a-71893448cc9d"), differenceEvent.objId)
+    assertEquals("2011-01-24T00:00:00.000Z", ISODateTimeFormat.dateTime.print(differenceEvent.detectedAt))
+    assertEquals(UNMATCHED, differenceEvent.state)
+    assertEquals("479", differenceEvent.upstreamVsn)
+    assertNull(differenceEvent.downstreamVsn)
   }
 
   def poll(diffClient: DifferencesRestClient,
-           sessionId: String, pairKey:String,
+           pairKey:String,
            from:DateTime, until:DateTime, offset:Int, length:Int,
            maxAttempts: Int = 10,
-           sleepTimeMillis: Int = 1000): Array[SessionEvent] = {
+           sleepTimeMillis: Int = 1000): Array[DifferenceEvent] = {
     
     var attempts = 0
     while (attempts < maxAttempts) {
       Thread.sleep(1000)
-      val sessionEvents = diffClient.getEvents(sessionId, pairKey, from, until, offset, length)
-      assertNotNull(sessionEvents)
-      if (sessionEvents.length > 0) return sessionEvents
+      val differenceEvents = diffClient.getEvents(pairKey, from, until, offset, length)
+      assertNotNull(differenceEvents)
+      if (differenceEvents.length > 0) return differenceEvents
       attempts += 1
     }
-    fail("Couldn't retrieve session events after %d attempts".format(maxAttempts))
+    fail("Couldn't retrieve difference events after %d attempts".format(maxAttempts))
     null
   }
 }

@@ -46,7 +46,7 @@ class Changes(val domainConfig:DomainConfigStore,
       }
 
       // TODO: Write a test to enforce that the matching manager processes first. This is necessary to ensure
-      //    that the SessionManager doesn't emit spurious events.
+      //    that the DifferencesManager doesn't emit spurious events.
 
       // If there is a matcher available, notify it first
       mm.getMatcher(pair) match {

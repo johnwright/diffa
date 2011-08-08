@@ -163,44 +163,44 @@ abstract class AbstractPolicyTest {
     shouldReportMismatchesReportedByUnderlyingStore(integerCategoryData)
 
   @Test
-  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifySessionManagerForQuasiLiveDate {
+  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifyDifferencesManagerForQuasiLiveDate {
     val lastUpdate = Some(JUL_8_2010_2)
     storeUpstreamChanges(emptyAttributes, lastUpdate)
   }
 
   @Test
-  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifySessionManagerWithoutLastUpdate {
+  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifyDifferencesManagerWithoutLastUpdate {
     val lastUpdate = None
     storeUpstreamChanges(emptyAttributes, lastUpdate)
   }
 
   @Test
-  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
-    shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManagerForDateCategories =
+    shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       attributes = bizDateStrMap(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
-  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
-    shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManagerForIntegerCategories =
+    shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("someInt" -> intCategoryDescriptor),
       downstreamCategories = Map("someInt" -> intCategoryDescriptor),
       attributes = Map("someInt" -> "1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   @Test
-  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
-    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManagerForDateCategories =
+    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       attributes = bizDateStrMap(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
-  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
-    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManagerForIntegerCategories =
+    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("someInt" -> intCategoryDescriptor),
       downstreamCategories = Map("someInt" -> intCategoryDescriptor),
       attributes = Map("someInt" -> "1234"),
@@ -245,8 +245,8 @@ abstract class AbstractPolicyTest {
     expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
       new Correlation(null, pair, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
       new Correlation(null, pair, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
-    listener.onMismatch(VersionID(pair.asRef, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan); expectLastCall
-    listener.onMismatch(VersionID(pair.asRef, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", TriggeredByScan); expectLastCall
+    listener.onMismatch(VersionID(pair.asRef, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan, Unfiltered); expectLastCall
+    listener.onMismatch(VersionID(pair.asRef, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", TriggeredByScan, Unfiltered); expectLastCall
 
     replayAll
 
@@ -270,14 +270,14 @@ abstract class AbstractPolicyTest {
       case Some(x)  => (x, x, () => writer.storeUpstreamVersion(VersionID(pair.asRef, "id1"), attrs, x, "vsn1"))
     }
     expect(f()).andReturn(new Correlation(null, pair, "id1", toStrMap(attrs), null, update, timestamp, "vsn1", null, null, false))
-    listener.onMismatch(VersionID(pair.asRef, "id1"), update, "vsn1", null, LiveWindow); expectLastCall
+    listener.onMismatch(VersionID(pair.asRef, "id1"), update, "vsn1", null, LiveWindow, Unfiltered); expectLastCall
     replayAll
 
     policy.onChange(writer, UpstreamPairChangeEvent(VersionID(pair.asRef, "id1"), toStrMap(attrs).values.toSeq, observationDate, "vsn1"))
     verifyAll
   }
 
-  protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+  protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManager(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
     attributes: Map[String, String],
@@ -289,14 +289,14 @@ abstract class AbstractPolicyTest {
 
     expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn1")).
       andReturn(new Correlation(null, pair, "id1", Map[String,String](), Map[String,String](), JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
-    listener.onMismatch(VersionID(pair.asRef, "id1"), JUL_8_2010_2, null, "vsn1", LiveWindow); expectLastCall
+    listener.onMismatch(VersionID(pair.asRef, "id1"), JUL_8_2010_2, null, "vsn1", LiveWindow, Unfiltered); expectLastCall
     replayAll
 
     policy.onChange(writer, DownstreamPairChangeEvent(VersionID(pair.asRef, "id1"), AttributesUtil.toSeq(attributes), JUL_8_2010_2, "vsn1"))
     verifyAll
   }
 
-  protected def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
+  protected def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManager(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
     attributes: Map[String, String],
@@ -307,7 +307,7 @@ abstract class AbstractPolicyTest {
     val timestamp = new DateTime
     expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id1"), downstreamAttributes, JUL_8_2010_2, "vsn1", "vsn2")).
       andReturn(new Correlation(null, pair, "id1", null, toStrMap(downstreamAttributes), JUL_8_2010_2, timestamp, null, "vsn1", "vsn1", false))
-    listener.onMismatch(VersionID(pair.asRef, "id1"), JUL_8_2010_2, null, "vsn1", LiveWindow); expectLastCall
+    listener.onMismatch(VersionID(pair.asRef, "id1"), JUL_8_2010_2, null, "vsn1", LiveWindow, Unfiltered); expectLastCall
     replayAll
 
     policy.onChange(writer, DownstreamCorrelatedPairChangeEvent(VersionID(pair.asRef, "id1"), AttributesUtil.toSeq(attributes), JUL_8_2010_2, "vsn1", "vsn2"))
