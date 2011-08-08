@@ -37,7 +37,7 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore
  *  - Reportable events are events that have resulted in differences, and the matching manager has expired its window for it;
  *
  * Events sent to clients all have sequence identifiers, allowing clients to incrementally update. Internally, the
- * session manager will not allocate a sequence number for an event until an event goes reportable, since many events
+ * differences manager will not allocate a sequence number for an event until an event goes reportable, since many events
  * are likely to be generated internally in normal flows that will never be shown externally (eg, a message sent from
  * A -> B will likely be marked as mismatched by the differencing engine for a short period of time, but be suppressed
  * whilst the matching manager waits for it to expire).
@@ -57,7 +57,7 @@ class DefaultDifferencesManager(
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
   /**
-   * This is a map of every open session (keyed on session id) keyed on the pairing it is linked to
+   * This is a map of every active domain (keyed on domain id) to the cache holding the differences
    */
   private val cachesByDomain = new HashMap[String, DomainCache]
 
@@ -69,18 +69,18 @@ class DefaultDifferencesManager(
   initCaches()
 
   //
-  // SessionManager Implementation
+  // DifferencesManager Implementation
   //
 
   /**
-   * If the session does not exist, throw a MissingObjectException which will be handled in a higher layer
+   * If the domain does not exist, throw a MissingObjectException which will be handled in a higher layer
    */
   def safeGetDomain(id:String) = {
     cachesByDomain.get(id) match {
       case Some(s) => s
       case None    => {
         if (log.isTraceEnabled) {
-          log.trace("Request for non-existent session: %s".format(id))
+          log.trace("Request for non-existent domain: %s".format(id))
         }
         throw new MissingObjectException(id)
       }
@@ -96,7 +96,7 @@ class DefaultDifferencesManager(
     }
   }
 
-  def retrieveDomainVersion(id:String) = safeGetDomain(id).currentVersion
+  def retrieveDomainSequenceNum(id:String) = safeGetDomain(id).currentSequenceId
 
   def retrieveAllEventsInInterval(domain:String, interval:Interval) =
     safeGetDomain(domain).retrieveUnmatchedEvents(interval)
@@ -177,7 +177,7 @@ class DefaultDifferencesManager(
   //
 
   /**
-   * This is the callback that channels mismatch events from the version policy into the session cache.
+   * This is the callback that channels mismatch events from the version policy into the domain cache.
    *
    * Queries the matching manager to see if it is actively monitoring this VersionID (ie, it has unexpired events around it).
    * If yes -> just record it as a pending event. Don't tell clients anything yet.
@@ -203,7 +203,7 @@ class DefaultDifferencesManager(
   }
 
   /**
-   * This is the callback that channels match events from the version policy into the session cache.
+   * This is the callback that channels match events from the version policy into the domain cache.
    * If the ID is currently in our list of reportable events, generate a match event to reverse it,
    * and end the reportable unmatched event.
    * If the ID is current in our list of pending events, then just end the id from our list of events.
@@ -222,7 +222,7 @@ class DefaultDifferencesManager(
   def onUpstreamExpired(id: VersionID, vsn: String) = upgradePending(id)
 
   /**
-   * This event is unimportant from the perspective of maintaining the session, hence just drop it 
+   * This event is unimportant from the perspective of maintaining the domain, hence just drop it
    */
   def onPaired(id: VersionID, vsn: String) = ()
 

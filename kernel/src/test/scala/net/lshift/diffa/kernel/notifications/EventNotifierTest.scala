@@ -30,17 +30,17 @@ class EventNotifierTest {
 
   val domain = Domain(name="domain")
   val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
-  val sessionManager = createStrictMock("sessionManager", classOf[DifferencesManager])
+  val differencesManager = createStrictMock("differencesManager", classOf[DifferencesManager])
 
   val quietTimeMillis = 2000
-  val notifier = new EventNotifier(sessionManager, domainConfigStore, Period.millis(quietTimeMillis))
+  val notifier = new EventNotifier(differencesManager, domainConfigStore, Period.millis(quietTimeMillis))
 
   @Before
   def setup = {
     val user = User("Foo Bar","dev_null@lshift.net")
     val member = Member(domain = domain, user = user)
     expect(domainConfigStore.listDomainMembers(domain.name)).andStubReturn(List(member))
-    replay(domainConfigStore, sessionManager)
+    replay(domainConfigStore, differencesManager)
   }
 
   @Test

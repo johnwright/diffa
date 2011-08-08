@@ -28,7 +28,7 @@ import net.lshift.diffa.kernel.differencing.{DifferencesManager, SessionEvent}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 
-class DifferencesResource(val sessionManager: DifferencesManager,
+class DifferencesResource(val differencesManager: DifferencesManager,
                           val domain:String,
                           val uriInfo:UriInfo) {
 
@@ -47,12 +47,12 @@ class DifferencesResource(val sessionManager: DifferencesManager,
     new OptionalParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
     new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
     new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
-  def getSessionEvents(@QueryParam("pairKey") pairKey:String,
-                       @QueryParam("range-start") from_param:String,
-                       @QueryParam("range-end") until_param:String,
-                       @QueryParam("offset") offset_param:String,
-                       @QueryParam("length") length_param:String,
-                       @Context request: Request) = {
+  def getDifferenceEvents(@QueryParam("pairKey") pairKey:String,
+                          @QueryParam("range-start") from_param:String,
+                          @QueryParam("range-end") until_param:String,
+                          @QueryParam("offset") offset_param:String,
+                          @QueryParam("length") length_param:String,
+                          @Context request: Request) = {
 
     val now = new DateTime()
     val from = defaultDateTime(from_param, now.minusDays(1))
@@ -61,7 +61,7 @@ class DifferencesResource(val sessionManager: DifferencesManager,
     val length = defaultInt(length_param, 100)
 
     try {
-      val domainVsn = new EntityTag(sessionManager.retrieveDomainVersion(domain))
+      val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain))
 
       request.evaluatePreconditions(domainVsn) match {
         case null => // We'll continue with the request
@@ -69,12 +69,12 @@ class DifferencesResource(val sessionManager: DifferencesManager,
       }
 
       val interval = new Interval(from,until)
-      val diffs = sessionManager.retrievePagedEvents(domain, pairKey, interval, offset, length)
+      val diffs = differencesManager.retrievePagedEvents(domain, pairKey, interval, offset, length)
 
       val responseObj = Map(
         "seqId" -> domainVsn.getValue,
         "diffs" -> diffs.toArray,
-        "total" -> sessionManager.countEvents(domain, pairKey, interval)
+        "total" -> differencesManager.countEvents(domain, pairKey, interval)
       )
       Response.ok(mapAsJavaMap(responseObj)).tag(domainVsn).build
     }
@@ -98,9 +98,9 @@ class DifferencesResource(val sessionManager: DifferencesManager,
                     @QueryParam("bucketing") width:Int,
                     @Context request: Request): Response = {
     try {
-      // Evaluate whether the version of the session has changed
-      val sessionVsn = new EntityTag(sessionManager.retrieveDomainVersion(domain))
-      request.evaluatePreconditions(sessionVsn) match {
+      // Evaluate whether the version of the domain has changed
+      val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain))
+      request.evaluatePreconditions(domainVsn) match {
         case null => // We'll continue with the request
         case r => throw new WebApplicationException(r.build)
       }
@@ -120,7 +120,7 @@ class DifferencesResource(val sessionManager: DifferencesManager,
       }
 
       // Calculate the zoomed view
-      val interestingEvents = sessionManager.retrieveAllEventsInInterval(domain, new Interval(rangeStartDate, rangeEndDate))
+      val interestingEvents = differencesManager.retrieveAllEventsInInterval(domain, new Interval(rangeStartDate, rangeEndDate))
 
       // Bucket the events
       val pairs = scala.collection.mutable.Map[String, ZoomPair]()
@@ -132,7 +132,7 @@ class DifferencesResource(val sessionManager: DifferencesManager,
       // Convert to an appropriate web response
       val respObj = mapAsJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
 
-      Response.ok(respObj).tag(sessionVsn).build
+      Response.ok(respObj).tag(domainVsn).build
     }
     catch {
       case e: NoSuchElementException => {
@@ -169,7 +169,7 @@ class DifferencesResource(val sessionManager: DifferencesManager,
   ))
   def getDetail(@PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String =
-    sessionManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
+    differencesManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
 
   def defaultDateTime(input:String, default:DateTime) = input match {
     case "" | null => default

@@ -163,44 +163,44 @@ abstract class AbstractPolicyTest {
     shouldReportMismatchesReportedByUnderlyingStore(integerCategoryData)
 
   @Test
-  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifySessionManagerForQuasiLiveDate {
+  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifyDifferencesManagerForQuasiLiveDate {
     val lastUpdate = Some(JUL_8_2010_2)
     storeUpstreamChanges(emptyAttributes, lastUpdate)
   }
 
   @Test
-  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifySessionManagerWithoutLastUpdate {
+  def shouldStoreUpstreamChangesToCorrelationStoreAndNotifyDifferencesManagerWithoutLastUpdate {
     val lastUpdate = None
     storeUpstreamChanges(emptyAttributes, lastUpdate)
   }
 
   @Test
-  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
-    shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManagerForDateCategories =
+    shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       attributes = bizDateStrMap(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
-  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
-    shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManagerForIntegerCategories =
+    shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("someInt" -> intCategoryDescriptor),
       downstreamCategories = Map("someInt" -> intCategoryDescriptor),
       attributes = Map("someInt" -> "1234"),
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   @Test
-  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForDateCategories =
-    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManagerForDateCategories =
+    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       downstreamCategories = Map("bizDate" -> dateCategoryDescriptor),
       attributes = bizDateStrMap(JUL_8_2010_2),
       downstreamAttributes = bizDateMap(JUL_8_2010_2))
 
   @Test
-  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManagerForIntegerCategories =
-    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
+  def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManagerForIntegerCategories =
+    shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManager(
       upstreamCategories = Map("someInt" -> intCategoryDescriptor),
       downstreamCategories = Map("someInt" -> intCategoryDescriptor),
       attributes = Map("someInt" -> "1234"),
@@ -277,7 +277,7 @@ abstract class AbstractPolicyTest {
     verifyAll
   }
 
-  protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifySessionManager(
+  protected def shouldStoreDownstreamChangesToCorrelationStoreAndNotifyDifferencesManager(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
     attributes: Map[String, String],
@@ -296,7 +296,7 @@ abstract class AbstractPolicyTest {
     verifyAll
   }
 
-  protected def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifySessionManager(
+  protected def shouldStoreDownstreamCorrelatedChangesToCorrelationStoreAndNotifyDifferencesManager(
     upstreamCategories: Map[String, CategoryDescriptor],
     downstreamCategories: Map[String, CategoryDescriptor],
     attributes: Map[String, String],

@@ -29,11 +29,17 @@ import net.lshift.diffa.kernel.differencing.InvalidSequenceNumberException
  */
 class DifferenceReportingTest {
 
-  val client = new DifferencesRestClient(agentURL, domain)
+  @Test(expected = classOf[NotFoundException])
+  def nonExistentDomainShouldGenerateNotFoundError() {
+    val client = new DifferencesRestClient(agentURL, "invalid-domain")
+
+    client.eventDetail(new UUID().toString, ParticipantType.UPSTREAM)
+  }
 
   @Test(expected = classOf[InvalidSequenceNumberException])
-  def nonExistentSessionShouldGenerateNotFoundError = {
+  def nonExistentSequenceNumberShouldGenerateNotSequenceError() {
+    val client = new DifferencesRestClient(agentURL, domain)
+
     client.eventDetail(new UUID().toString, ParticipantType.UPSTREAM)
-    ()
   }
 }

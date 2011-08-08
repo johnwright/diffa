@@ -20,8 +20,8 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
 
 /**
- * The session cache provides facilities for storing difference events that occur, and managing the states of these
- * events. A session cache instance should exist for each session that has been opened with the system.
+ * The domain cache provides facilities for storing difference events that occur, and managing the states of these
+ * events. A domain cache instance should exist for each domain that has been created in the system.
  */
 trait DomainCache {
   /**
@@ -30,9 +30,9 @@ trait DomainCache {
   def domain:String
 
   /**
-   * Retrieves the current version of the cache
+   * Retrieves the current sequence id of the cache
    */
-  def currentVersion:String
+  def currentSequenceId:String
 
   /**
    * Adds a pending event for the given version id into the cache.
@@ -78,9 +78,8 @@ trait DomainCache {
   def countEvents(pairKey:String, interval:Interval) : Int
 
   /**
-   * Retrieves all events that have occurred within a session since the provided sequence id.
+   * Retrieves all events that have occurred within a domain since the provided sequence id.
    * @param evtSeqId the last known sequence id. All events occurring after (not including) this event will be returned.
-   * @throws InvalidSessionIDException if the requested session does not exist or has expired.
    * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary scan information cannot be
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
@@ -99,7 +98,7 @@ trait DomainCache {
  */
 trait DomainCacheProvider {
   /**
-   * Retrieves a cache for the given session. If no cache has been allocated, then this method will return None. This
+   * Retrieves a cache for the given domain. If no cache has been allocated, then this method will return None. This
    * method should be used for query operations that are not intended to result in a new cache being created.
    */
   def retrieveCache(domain:String):Option[DomainCache]

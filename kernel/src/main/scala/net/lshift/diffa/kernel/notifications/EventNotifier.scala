@@ -27,7 +27,7 @@ import net.lshift.diffa.kernel.differencing._
 /**
  * This fires mismatch events out to each registered NotificationProvider.
  */
-class EventNotifier(val sessionManager:DifferencesManager,
+class EventNotifier(val differencesManager:DifferencesManager,
                     val domainConfigStore:DomainConfigStore,
                     val quietTime:Period)
     extends DifferencingListener

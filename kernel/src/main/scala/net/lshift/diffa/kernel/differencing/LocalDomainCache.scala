@@ -23,7 +23,7 @@ import collection.mutable.{LinkedHashMap, HashMap}
 import org.joda.time.{Interval, DateTime}
 
 /**
- * Local implementation of the session cache trait. In no way clustered or crash tolerant.
+ * Local implementation of the domain cache trait. In no way clustered or crash tolerant.
  *
  * TODO: Expire matched events and overridden unmatched events.
  */
@@ -32,7 +32,7 @@ class LocalDomainCache(val domain:String) extends DomainCache {
   private val events = new LinkedHashMap[String,SessionEvent]
   private val seqGenerator = new AtomicInteger(1)
 
-  def currentVersion = events.size match {
+  def currentSequenceId = events.size match {
     case 0 => "0"
     case _ => {
       val (_, session) = events.last

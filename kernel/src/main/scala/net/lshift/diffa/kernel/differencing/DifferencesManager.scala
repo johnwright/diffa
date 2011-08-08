@@ -30,32 +30,34 @@ trait DifferencesManager {
   /**
    * Retrieves a version for the given domain.
    */
-  def retrieveDomainVersion(domain:String):String
+  def retrieveDomainSequenceNum(domain:String):String
 
   /**
-   *  Retrieves all events known to this session in the given interval. Will only include unmatched events.
-   *  @throws InvalidSessionIDException if the requested session does not exist or has expired.
+   *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
+   *  @throws MissingObjectException if the requested domain does not exist
    */
   def retrieveAllEventsInInterval(domain:String, interval:Interval) : Seq[SessionEvent]
 
   /**
    *
-   * Retrieves all events known to this session. Will only include unmatched events.
+   * Retrieves all events known to this domain. Will only include unmatched events.
    * This pages the results to only contain events that are contained with the specified interval
    * and returns a subset of the underlying data set that corresponds to the offset and length specified.
-   * @throws InvalidSessionIDException if the requested session does not exist or has expired.
+   * @throws MissingObjectException if the requested domain does not exist
    */
   def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.
+   * @throws MissingObjectException if the requested domain does not exist
    */
   def countEvents(domain:String, pairKey:String, interval:Interval) : Int
 
   /**
-   * Retrieves any additional information that the session manager knows about an event (eg, mismatched hashes,
+   * Retrieves any additional information that the differences manager knows about an event (eg, mismatched hashes,
    * differing content bodies). This information may be retrieved by the manager on demand from remote sources, so
    * should generally only be called on explicit user request.
+   * @throws MissingObjectException if the requested domain does not exist
    */
   def retrieveEventDetail(domain:String, evtSeqId:String, t:ParticipantType.ParticipantType) : String
 
@@ -80,7 +82,6 @@ trait DifferencesManager {
   def onDeleteDomain(domain: String)
 }
 
-class InvalidSessionIDException extends Exception
 class InvalidSequenceNumberException(val id:String) extends Exception(id)
 class SequenceOutOfDateException extends Exception
 

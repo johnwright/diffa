@@ -37,7 +37,7 @@ trait DifferencingListener {
    * Note that the lastUpdated timestamp is not provided because this information would irrelevant to an end consumer:
    * - They would only receive a match event that follows a previously report mismatch, so the only action is to
    *   remove their representation of that mismatch
-   * - If there were older events when a client starts a session, only the mismatch events would be reported anyway. 
+   * - If there were older events when a client starts a session, only the mismatch events would be reported anyway.
    *
    */
   def onMatch(id:VersionID, vsn:String, origin:MatchOrigin)

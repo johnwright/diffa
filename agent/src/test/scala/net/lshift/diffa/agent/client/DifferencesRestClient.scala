@@ -29,7 +29,7 @@ import org.codehaus.jackson.node.ObjectNode
 import net.lshift.diffa.kernel.differencing.{InvalidSequenceNumberException, PairScanState, SessionEvent}
 
 /**
- * A RESTful client to start a matching session and poll for events from it.
+ * A RESTful client to poll for difference events on a domain.
  */
 class DifferencesRestClient(serverRootUrl:String, domain:String)
     extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/diffs") {
@@ -83,6 +83,7 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
     status.getStatusCode match {
       case 200    => response.getEntity(classOf[String])
       case 400    => throw new InvalidSequenceNumberException(evtSeqId)
+      case 404    => throw new NotFoundException(domain)
       case x:Int  => handleHTTPError(x, path, status)
     }
   }

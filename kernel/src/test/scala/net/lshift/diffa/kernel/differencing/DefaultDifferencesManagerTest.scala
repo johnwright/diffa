@@ -31,7 +31,7 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainCon
 import net.lshift.diffa.kernel.frontend.FrontendConversions
 
 /**
- * Test cases for the default session manager.
+ * Test cases for the participant protocol factory.
  */
 class StubParticipantProtocolFactory
     extends ScanningParticipantFactory {

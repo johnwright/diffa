@@ -22,7 +22,7 @@ import org.hamcrest.core.Is._
 import org.hamcrest.core.IsInstanceOf._
 
 /**
- * Test cases for the LocalSessionCacheProvider.
+ * Test cases for the LocalDomainCacheProvider.
  */
 class LocalDomainCacheProviderTest {
   val provider = new LocalDomainCacheProvider

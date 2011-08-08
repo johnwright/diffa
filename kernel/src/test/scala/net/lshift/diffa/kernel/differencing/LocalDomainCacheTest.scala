@@ -23,7 +23,7 @@ import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.kernel.config.DiffaPairRef
 
 /**
- * Test cases for the local session cache.
+ * Test cases for the local domain cache.
  */
 class LocalDomainCacheTest {
   val cache = new LocalDomainCache("domain1234")
