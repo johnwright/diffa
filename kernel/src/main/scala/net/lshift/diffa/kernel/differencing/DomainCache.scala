@@ -43,34 +43,34 @@ trait DomainCache {
    * Adds a reportable unmatched event for the given version id into the cache. Returns the detail of the event
    * (including a sequence id). Any previous matched event for the same id will be removed.
    */
-  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String):SessionEvent
+  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String):DifferenceEvent
 
   /**
    * Upgrades the given pending event to a reportable event. Returns the detail of the event (including a sequence id).
    * Any previous matched event for the same id will be removed. If no event is available to upgrade with the given
    * id, then null will be returned.
    */
-  def upgradePendingUnmatchedEvent(id:VersionID):SessionEvent
+  def upgradePendingUnmatchedEvent(id:VersionID):DifferenceEvent
 
   /**
    * Adds a matched event to the cache. This will result in the removal of any earlier unmatched event for the same id.
    * The matched event will also be marked for expiry at some interval defined by the cache implementation, ensuring
    * that matched events do not result in the cache becoming full.
    */
-  def addMatchedEvent(id:VersionID, vsn:String):SessionEvent
+  def addMatchedEvent(id:VersionID, vsn:String):DifferenceEvent
 
   /**
    * Retrieves all unmatched events that have been added to the cache where their detection timestamp
    * falls within the specified period
    */
-  def retrieveUnmatchedEvents(interval:Interval) : Seq[SessionEvent]
+  def retrieveUnmatchedEvents(interval:Interval) : Seq[DifferenceEvent]
 
   /**
    * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.
    */
-  def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
+  def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.
@@ -83,14 +83,14 @@ trait DomainCache {
    * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary scan information cannot be
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
-  def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent]
+  def retrieveEventsSince(evtSeqId:String):Seq[DifferenceEvent]
 
   /**
    * Retrieves a single event by its id.
    * @param evtSeqId sequence id of the event to be retrieved.
    * @throws InvalidSequenceNumberException if the requested sequence id does not exist or has expired.
    */
-  def getEvent(evtSeqId:String) : SessionEvent
+  def getEvent(evtSeqId:String) : DifferenceEvent
 }
 
 /**

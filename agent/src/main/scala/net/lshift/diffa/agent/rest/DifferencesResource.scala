@@ -24,7 +24,7 @@ import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
-import net.lshift.diffa.kernel.differencing.{DifferencesManager, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{DifferencesManager, DifferenceEvent}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 
@@ -148,7 +148,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   class ZoomPair(pairKey:String, rangeStart:DateTime, width:Int, max:Int) {
     private val buckets = new Array[Int](max)
 
-    def addEvent(evt:SessionEvent) = {
+    def addEvent(evt:DifferenceEvent) = {
       val offset = (evt.detectedAt.getMillis - rangeStart.getMillis) / 1000
       val bucketNum = (offset / width).asInstanceOf[Int]
 

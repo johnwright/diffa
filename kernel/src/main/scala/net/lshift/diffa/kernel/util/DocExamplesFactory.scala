@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import scala.collection.Map
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.differencing.{MatchState, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{MatchState, DifferenceEvent}
 import net.lshift.diffa.kernel.client.Actionable
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.frontend._
@@ -63,7 +63,7 @@ class DocExamplesFactory {
 
   val user = UserDef(name = "joe.public", email = "joe.public@acme.com")
 
-  val event = SessionEvent("6f72b9",VersionID(DiffaPairRef("pairKey", "mydomain"), "4f8a99"),
+  val event = DifferenceEvent("6f72b9",VersionID(DiffaPairRef("pairKey", "mydomain"), "4f8a99"),
                            new DateTime(),
                            MatchState.UNMATCHED, "upstreamV", "downstreamV")
 
@@ -72,7 +72,7 @@ class DocExamplesFactory {
 
     map.put(classOf[EndpointDef], up)
     map.put(classOf[PairDef], pair)
-    map.put(classOf[SessionEvent], event)
+    map.put(classOf[DifferenceEvent], event)
     map.put(classOf[RepairActionDef], repair)
     map.put(classOf[EscalationDef], escalation)
     map.put(classOf[Actionable], actionable)

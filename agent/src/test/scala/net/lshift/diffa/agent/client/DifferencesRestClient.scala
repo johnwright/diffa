@@ -26,7 +26,7 @@ import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.messaging.json.NotFoundException
 import org.codehaus.jackson.map.ObjectMapper
 import org.codehaus.jackson.node.ObjectNode
-import net.lshift.diffa.kernel.differencing.{InvalidSequenceNumberException, PairScanState, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{InvalidSequenceNumberException, PairScanState, DifferenceEvent}
 
 /**
  * A RESTful client to poll for difference events on a domain.
@@ -69,7 +69,7 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
         val diffs = responseMap.get("diffs")
         val objMapper = new ObjectMapper()
 
-        objMapper.readValue(diffs, classOf[Array[SessionEvent]])
+        objMapper.readValue(diffs, classOf[Array[DifferenceEvent]])
       }
       case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
     }
@@ -95,14 +95,14 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
     }    
   }
 
-  private def pollInternal(p:WebResource) : Array[SessionEvent] = {
+  private def pollInternal(p:WebResource) : Array[DifferenceEvent] = {
     val media = p.accept(MediaType.APPLICATION_JSON_TYPE)
     val response = media.get(classOf[ClientResponse])
 
     val status = response.getClientResponseStatus
 
     status.getStatusCode match {
-      case 200   => response.getEntity(classOf[Array[SessionEvent]])
+      case 200   => response.getEntity(classOf[Array[DifferenceEvent]])
       case x:Int   => throw new RuntimeException("HTTP " + x + " : " + status.getReasonPhrase)
     }
 

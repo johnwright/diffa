@@ -112,13 +112,13 @@ class DefaultDifferencesManager(
     t match {
       case ParticipantType.UPSTREAM => {
         withValidEvent(domain, evtSeqId,
-                      {e:SessionEvent => e.upstreamVsn != null},
+                      {e:DifferenceEvent => e.upstreamVsn != null},
                       {p:net.lshift.diffa.kernel.config.Pair => p.upstream},
                       {e:Endpoint => participantFactory.createUpstreamParticipant(e)})
       }
       case ParticipantType.DOWNSTREAM => {
         withValidEvent(domain, evtSeqId,
-                      {e:SessionEvent => e.downstreamVsn != null},
+                      {e:DifferenceEvent => e.downstreamVsn != null},
                       {p:net.lshift.diffa.kernel.config.Pair => p.downstream},
                       {e:Endpoint => participantFactory.createDownstreamParticipant(e)})
       }
@@ -128,7 +128,7 @@ class DefaultDifferencesManager(
   // TODO The fact that 3 lambdas are passed in probably indicates bad factoring
   // -> the participant factory call is probably low hanging fruit for refactoring
   def withValidEvent(domain:String, evtSeqId:String,
-                     check:Function1[SessionEvent,Boolean],
+                     check:Function1[DifferenceEvent,Boolean],
                      resolve:(net.lshift.diffa.kernel.config.Pair) => Endpoint,
                      p:(Endpoint) => Participant): String = {
     val event = safeGetDomain(domain).getEvent(evtSeqId)

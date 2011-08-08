@@ -29,7 +29,7 @@ import java.net.URI
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import java.util.{UUID, Properties}
-import net.lshift.diffa.kernel.differencing.{PairScanState, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{PairScanState, DifferenceEvent}
 import org.joda.time.DateTime
 import net.lshift.diffa.agent.client.DifferencesRestClient
 
@@ -57,7 +57,7 @@ trait CommonDifferenceTests {
     }
   }
 
-  def getReport(from:DateTime, until:DateTime) : Array[SessionEvent]= {
+  def getReport(from:DateTime, until:DateTime) : Array[DifferenceEvent]= {
     runScanAndWaitForCompletion(yearAgo, today)
     env.diffClient.getEvents(env.pairKey, from, until, 0, 100)
   }
@@ -256,7 +256,7 @@ trait CommonDifferenceTests {
   def pollForAllDifferences(from:DateTime, until:DateTime, n:Int = 20, wait:Int = 100) =
     tryAgain((d:DifferencesRestClient) => d.getEvents(env.pairKey, from, until, 0, 100) ,n,wait)
 
-  def tryAgain(poll:DifferencesRestClient => Seq[SessionEvent], n:Int = 20, wait:Int = 100) : Seq[SessionEvent]= {
+  def tryAgain(poll:DifferencesRestClient => Seq[DifferenceEvent], n:Int = 20, wait:Int = 100) : Seq[DifferenceEvent]= {
     var i = n
     var diffs = poll(env.diffClient)
     while(diffs.isEmpty && i > 0) {

@@ -28,20 +28,20 @@ import org.joda.time.{Interval, DateTime}
  * TODO: Expire matched events and overridden unmatched events.
  */
 class LocalDomainCache(val domain:String) extends DomainCache {
-  private val pending = new HashMap[VersionID, SessionEvent]
-  private val events = new LinkedHashMap[String,SessionEvent]
+  private val pending = new HashMap[VersionID, DifferenceEvent]
+  private val events = new LinkedHashMap[String,DifferenceEvent]
   private val seqGenerator = new AtomicInteger(1)
 
   def currentSequenceId = events.size match {
     case 0 => "0"
     case _ => {
-      val (_, session) = events.last
-      session.seqId
+      val (_, event) = events.last
+      event.seqId
     }
   }
 
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) {
-    pending(id) = SessionEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
+    pending(id) = DifferenceEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
   }
 
   def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) = {
@@ -51,7 +51,7 @@ class LocalDomainCache(val domain:String) extends DomainCache {
 
   def upgradePendingUnmatchedEvent(id:VersionID) = {
     pending.remove(id) match {
-      case Some(SessionEvent(_, _, lastUpdate, _, upstreamVsn, downstreamVsn)) =>
+      case Some(DifferenceEvent(_, _, lastUpdate, _, upstreamVsn, downstreamVsn)) =>
         addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
       case None => null
     }
@@ -81,7 +81,7 @@ class LocalDomainCache(val domain:String) extends DomainCache {
 
   def nextSequence(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, state:MatchState) = {
     val sequence = nextSequenceId.toString
-    val event = new SessionEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn)
+    val event = new DifferenceEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn)
     events(sequence)= event
     event
   }
@@ -95,7 +95,7 @@ class LocalDomainCache(val domain:String) extends DomainCache {
   def countEvents(pairKey: String, interval: Interval) =
     retrieveUnmatchedEvents(interval).filter(_.objId.pair.key == pairKey).length
 
-  def retrieveEventsSince(evtSeqId:String):Seq[SessionEvent] = {
+  def retrieveEventsSince(evtSeqId:String):Seq[DifferenceEvent] = {
     val seqIdNum = Integer.parseInt(evtSeqId)
 
     events.dropWhile(p => {
@@ -104,7 +104,7 @@ class LocalDomainCache(val domain:String) extends DomainCache {
     }).values.toSeq
   }
 
-  def getEvent(evtSeqId:String) : SessionEvent = {    
+  def getEvent(evtSeqId:String) : DifferenceEvent = {    
     events.get(evtSeqId) match {
       case None    => throw new InvalidSequenceNumberException(evtSeqId)
       case Some(e) => e

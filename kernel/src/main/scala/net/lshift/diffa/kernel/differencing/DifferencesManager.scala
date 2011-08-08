@@ -36,7 +36,7 @@ trait DifferencesManager {
    *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */
-  def retrieveAllEventsInInterval(domain:String, interval:Interval) : Seq[SessionEvent]
+  def retrieveAllEventsInInterval(domain:String, interval:Interval) : Seq[DifferenceEvent]
 
   /**
    *
@@ -45,7 +45,7 @@ trait DifferencesManager {
    * and returns a subset of the underlying data set that corresponds to the offset and length specified.
    * @throws MissingObjectException if the requested domain does not exist
    */
-  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[SessionEvent]
+  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.
@@ -85,7 +85,7 @@ trait DifferencesManager {
 class InvalidSequenceNumberException(val id:String) extends Exception(id)
 class SequenceOutOfDateException extends Exception
 
-case class SessionEvent(
+case class DifferenceEvent(
   @BeanProperty var seqId:String,
   @BeanProperty var objId:VersionID,
   @BeanProperty var detectedAt:DateTime,
