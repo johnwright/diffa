@@ -84,7 +84,7 @@ Diffa.Models.Blobs = Backbone.Model.extend({
     startTime = endTime.add({seconds: -1 * self.get('bucketSize') * self.maxColumns});
     var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
-    $.getJSON("rest/" + Diffa.currentDomain + "/diffs/sessions/" + Diffa.SessionID + "/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + self.get('bucketSize'), function(data) {
+    $.getJSON("rest/" + Diffa.currentDomain + "/diffs/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + self.get('bucketSize'), function(data) {
       var swimlaneLabels = self.get('swimlaneLabels').slice(0);     // Retrieve a cloned copy of the swimlane labels
       var buckets = [];
       var maxRows = self.get('maxRows');
@@ -178,7 +178,7 @@ Diffa.Models.Diff = Backbone.Model.extend({
       }
 
       pendingRequest = $.ajax({
-            url: "rest/" + Diffa.currentDomain + "/diffs/events/" + Diffa.SessionID + "/" + self.id + "/" + upOrDown,
+            url: "rest/" + Diffa.currentDomain + "/diffs/events/" + self.id + "/" + upOrDown,
             success: function(data) {
               setContent(data || "no content found for " + upOrDown);
             },
@@ -219,7 +219,7 @@ Diffa.Collections.Diffs = Backbone.Collection.extend({
     if (this.range == null) {
       this.reset([]);
     } else {
-      var url = "rest/" + Diffa.currentDomain + "/diffs/sessions/" + Diffa.SessionID + "?pairKey=" + this.range.pairKey + "&range-start="
+      var url = "rest/" + Diffa.currentDomain + "/diffs?pairKey=" + this.range.pairKey + "&range-start="
           + this.range.start + "&range-end=" + this.range.end
           + "&offset=" + (this.page * this.listSize) + "&length=" + this.listSize;
 
@@ -1047,17 +1047,6 @@ function nearestHour() {
   return Date.today().add({hours: hours});
 }
 
-function createSession(withValidSessionId) {
-  var handleSessionId = function(data, status, req) {
-    var location = req.getResponseHeader('Location');
-    var parts = location.split("/");
-    var sessionID = parts[parts.length - 1];
-    Diffa.SessionID = sessionID;
-    withValidSessionId();
-  };
-  $.post(API_BASE + "/" + Diffa.currentDomain + '/diffs/sessions', {}, handleSessionId, "json");
-}
-
 Diffa.currentDomain = "diffa";    // TODO: Allow user to change this
 Diffa.BlobsApp = new Diffa.Routers.Blobs();
 Diffa.BlobsModel = new Diffa.Models.Blobs();
@@ -1068,10 +1057,8 @@ Diffa.DiffListView = new Diffa.Views.DiffList({model: Diffa.DiffsCollection});
 Diffa.DiffDetailView = new Diffa.Views.DiffDetail({model: Diffa.DiffsCollection});
 Backbone.history.start();
 
-createSession(function() {
-  Diffa.BlobsModel.sync();
-  Diffa.DiffsCollection.sync();
-  setInterval('Diffa.BlobsModel.periodicSync()', Diffa.Config.BlobInterval);
-  setInterval('Diffa.DiffsCollection.sync()', Diffa.Config.DiffInterval);
-});
+Diffa.BlobsModel.sync();
+Diffa.DiffsCollection.sync();
+setInterval('Diffa.BlobsModel.periodicSync()', Diffa.Config.BlobInterval);
+setInterval('Diffa.DiffsCollection.sync()', Diffa.Config.DiffInterval);
 });

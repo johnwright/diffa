@@ -17,7 +17,6 @@
 package net.lshift.diffa.kernel.differencing
 
 import collection.mutable.{ListBuffer, HashMap}
-import org.apache.commons.codec.digest.DigestUtils
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
@@ -30,7 +29,7 @@ import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore, Pair => DiffaPair}
 
 /**
- * Standard implementation of the SessionManager.
+ * Standard implementation of the DifferencesManager.
  *
  * Terminology:
  *  - Pending events are events that have resulted in differences, but the matching manager is still waiting for a
@@ -43,112 +42,41 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore
  * A -> B will likely be marked as mismatched by the differencing engine for a short period of time, but be suppressed
  * whilst the matching manager waits for it to expire).
  */
-class DefaultSessionManager(
+class DefaultDifferencesManager(
         val systemConfig:SystemConfigStore,
-        val cacheProvider:SessionCacheProvider,
+        val domainConfig:DomainConfigStore,
+        val cacheProvider:DomainCacheProvider,
         val matching:MatchingManager,
         val vpm:VersionPolicyManager,
         val pairPolicyClient:PairPolicyClient,
-        val participantFactory:ParticipantFactory)
-    extends SessionManager
+        val participantFactory:ParticipantFactory,
+        val differenceListener:DifferencingListener)
+    extends DifferencesManager
     with DifferencingListener with MatchingStatusListener with AgentLifecycleAware {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
-  private val listeners = new HashMap[String, ListBuffer[DifferencingListener]]
-
   /**
    * This is a map of every open session (keyed on session id) keyed on the pairing it is linked to
    */
-  private val sessionsByKey = new HashMap[String, SessionCache]
+  private val cachesByDomain = new HashMap[String, DomainCache]
 
   private val participants = new HashMap[Endpoint, Participant]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
 
+  initCaches()
+
   //
   // SessionManager Implementation
   //
 
-  def start(scope:SessionScope, start:DateTime, end:DateTime) = {
-
-    def boot() = {
-      val sessionId = generateSessionId(scope, start, end)
-
-      // Only create a session if don't already have one for this key
-      val sessionToInit = sessionsByKey.synchronized {
-        sessionsByKey.get(sessionId) match {
-          case Some(s) => None
-          case None => {
-            val session = cacheProvider.retrieveOrAllocateCache(sessionId, scope)
-            sessionsByKey(sessionId) = session
-            Some(session)
-          }
-        }
-      }
-
-      // If a session to initialize was return, we should do that.
-      sessionToInit match {
-        case Some(session) => {
-          runDifferenceForScope(scope, start, end)
-        }
-        case None => // Do nothing
-      }
-
-      log.debug("Created session <" + sessionId + "> for the scope " + scope)
-      sessionId
-    }
-    
-    withValidScope(scope, boot)
-  }
-
-
-
-  def start(scope: SessionScope, sessionStart:DateTime, sessionEnd:DateTime, listener: DifferencingListener) : String = {
-    val sessionId = start(scope, sessionStart, sessionEnd)
-    listeners.synchronized {
-      val keyListeners = listeners.get(sessionId) match {
-        case Some(ll) => ll
-        case None => {
-          val newListeners = new ListBuffer[DifferencingListener]
-          listeners(sessionId) = newListeners
-          newListeners
-        }
-      }
-      keyListeners += listener
-    }
-    runDifferenceForScope(scope, sessionStart, sessionEnd)
-    sessionId
-  }
-
-
-  def end(sessionID: String) = {
-    sessionsByKey.contains(sessionID) match {
-      case false => ()
-      case true  => sessionsByKey.remove(sessionID)
-    }
-  }
-
-  // TODO: This should be using a SessionID, and not a pair
-  def end(pair: DiffaPair, listener: DifferencingListener) = {
-    forEachSession(VersionID(pair.asRef, "dummy"), s => {
-      listeners.synchronized {
-        listeners.get(s.sessionId) match {
-          case None =>
-          case Some(keyListeners) => {
-            keyListeners -= listener
-          }
-        }
-      }
-    })
-  }
-
   /**
    * If the session does not exist, throw a MissingObjectException which will be handled in a higher layer
    */
-  def safeGetSession(id:String) = {
-    sessionsByKey.get(id) match {
+  def safeGetDomain(id:String) = {
+    cachesByDomain.get(id) match {
       case Some(s) => s
       case None    => {
         if (log.isTraceEnabled) {
@@ -159,28 +87,37 @@ class DefaultSessionManager(
     }
   }
 
-  def retrieveSessionVersion(id:String) = safeGetSession(id).currentVersion
+  def quietWithDomainCache(domain:String):Option[DomainCache] = {
+    cachesByDomain.get(domain) match {
+      case Some(s) => Some(s)
+      case None    =>
+        log.error("Received event for unknown domain: %s".format(domain))
+        None
+    }
+  }
 
-  def retrieveAllEventsInInterval(sessionId:String, interval:Interval) =
-    sessionsByKey(sessionId).retrieveUnmatchedEvents(interval)
+  def retrieveDomainVersion(id:String) = safeGetDomain(id).currentVersion
 
-  def retrievePagedEvents(sessionId:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
-    sessionsByKey(sessionId).retrievePagedEvents(pairKey, interval, offset, length)
+  def retrieveAllEventsInInterval(domain:String, interval:Interval) =
+    safeGetDomain(domain).retrieveUnmatchedEvents(interval)
 
-  def countEvents(sessionId: String, pairKey: String, interval: Interval) =
-    sessionsByKey(sessionId).countEvents(pairKey, interval)
+  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
+    safeGetDomain(domain).retrievePagedEvents(pairKey, interval, offset, length)
 
-  def retrieveEventDetail(sessionID:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
-    log.trace("Requested a detail query for session (" + sessionID + ") and seq (" + evtSeqId + ") and type (" + t + ")")
+  def countEvents(domain: String, pairKey: String, interval: Interval) =
+    safeGetDomain(domain).countEvents(pairKey, interval)
+
+  def retrieveEventDetail(domain:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
+    log.trace("Requested a detail query for domain (" + domain + ") and seq (" + evtSeqId + ") and type (" + t + ")")
     t match {
       case ParticipantType.UPSTREAM => {
-        withValidEvent(sessionID, evtSeqId,
+        withValidEvent(domain, evtSeqId,
                       {e:SessionEvent => e.upstreamVsn != null},
                       {p:net.lshift.diffa.kernel.config.Pair => p.upstream},
                       {e:Endpoint => participantFactory.createUpstreamParticipant(e)})
       }
       case ParticipantType.DOWNSTREAM => {
-        withValidEvent(sessionID, evtSeqId,
+        withValidEvent(domain, evtSeqId,
                       {e:SessionEvent => e.downstreamVsn != null},
                       {p:net.lshift.diffa.kernel.config.Pair => p.downstream},
                       {e:Endpoint => participantFactory.createDownstreamParticipant(e)})
@@ -190,11 +127,11 @@ class DefaultSessionManager(
 
   // TODO The fact that 3 lambdas are passed in probably indicates bad factoring
   // -> the participant factory call is probably low hanging fruit for refactoring
-  def withValidEvent(sessionID:String, evtSeqId:String,
+  def withValidEvent(domain:String, evtSeqId:String,
                      check:Function1[SessionEvent,Boolean],
                      resolve:(net.lshift.diffa.kernel.config.Pair) => Endpoint,
                      p:(Endpoint) => Participant): String = {
-    val event = safeGetSession(sessionID).getEvent(evtSeqId)
+    val event = safeGetDomain(domain).getEvent(evtSeqId)
     check(event) match {
       case true  => {
        val id = event.objId
@@ -215,8 +152,24 @@ class DefaultSessionManager(
   // Lifecycle Management
   //
 
+  def initCaches() {
+    // Init the caches as soon as we're constructed. We'll defer filling them till the agent is completely constructed
+    // though.
+    systemConfig.listDomains.foreach(d => {
+      cachesByDomain(d.name) = cacheProvider.retrieveOrAllocateCache(d.name)
+    })
+  }
+
   override def onAgentInstantiationCompleted(nc: NotificationCentre) {
-    nc.registerForDifferenceEvents(this)
+    nc.registerForDifferenceEvents(this, Unfiltered)
+  }
+
+  override def onAgentConfigurationActivated {
+    // Once the configuration is activated, fill our domain caches up with differences again. When persistent
+    // differences (#294) come about, this won't be needed.
+    systemConfig.listDomains.foreach(d => {
+      domainConfig.listPairs(d.name).foreach(p => pairPolicyClient.difference(DiffaPairRef(domain = d.name, key = p.key)))
+    })
   }
 
   //
@@ -230,7 +183,7 @@ class DefaultSessionManager(
    * If yes -> just record it as a pending event. Don't tell clients anything yet.
    * If no -> this is a reportable event. Record it in the active list, and emit an event to our clients.
    */
-  def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin) = {
+  def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin, level:DifferenceFilterLevel) = {
     log.trace("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
     val pair = systemConfig.getPair(id.pair.domain, id.pair.key)
@@ -238,13 +191,13 @@ class DefaultSessionManager(
     matching.getMatcher(pair) match {
       case Some(matcher) => {
         matcher.isVersionIDActive(id) match {
-          case true  => reportPending(id, lastUpdate, upstreamVsn, downstreamVsn)
-          case false => reportUnmatched(id, lastUpdate, upstreamVsn, downstreamVsn)
+          case true  => reportPending(id, lastUpdate, upstreamVsn, downstreamVsn, origin)
+          case false => reportUnmatched(id, lastUpdate, upstreamVsn, downstreamVsn, origin)
         }
       }
       case None    => {
         // If no matcher is configured, then report mis-matches immediately
-        reportUnmatched(id, lastUpdate, upstreamVsn, downstreamVsn)
+        reportUnmatched(id, lastUpdate, upstreamVsn, downstreamVsn, origin)
       }
     }
   }
@@ -258,12 +211,7 @@ class DefaultSessionManager(
    */
   def onMatch(id: VersionID, vsn: String, origin:MatchOrigin) {
     log.debug("Processing match for " + id + " with vsn '" + vsn + "'")
-
-    // Rest API
     addMatched(id, vsn)
-
-    // Streaming API
-    forEachSession(id, s => forEachSessionListener(s, l => l.onMatch(id, vsn, LiveWindow)))
   }
   
   //
@@ -290,83 +238,66 @@ class DefaultSessionManager(
   /**
    * When pairs are updated, perform a differencing run to scan with their status.
    */
-  def onUpdatePair(pair: DiffaPair) = {
-    val isRelevantToASession =
-      sessionsByKey.values.foldLeft(false)((currentlyRelevant, s) => currentlyRelevant || s.isInScope(VersionID(pair.asRef, "dummy")));
-    if (isRelevantToASession) {
-      val (from, until) = defaultDateBounds()
+  def onUpdatePair(pairRef: DiffaPairRef) {
+    pairPolicyClient.difference(pairRef)
+  }
 
-      runDifferenceForScope(SessionScope.forPairs(pair.domain.name, pair.key), from, until)
+  def onDeletePair(pair: DiffaPairRef) {
+    // TODO: Release differences stored for pair
+  }
+
+
+  def onUpdateDomain(domain: String) {
+    cachesByDomain.synchronized {
+      cachesByDomain(domain) = cacheProvider.retrieveOrAllocateCache(domain)
     }
   }
 
-  def runDifferenceForScope(scope:SessionScope, start:DateTime, end:DateTime)
-  = pairsForScope(scope).foreach(p => pairPolicyClient.difference(p.asRef))
-
-  def pairsForScope(scope:SessionScope):Seq[DiffaPair] = {
-    scope.includedPairs.size match {
-      case 0  => systemConfig.listPairs
-      case _  => scope.includedPairs
+  def onDeleteDomain(domain: String) {
+    cachesByDomain.synchronized {
+      cachesByDomain.remove(domain)
     }
   }
 
-  def forEachSession(id:VersionID, f: Function1[SessionCache,Any]) = {
-    sessionsByKey.values.foreach(s => {
-      if (s.isInScope(id)) {
-        f(s)
-      }
+
+  //
+  // Visible Difference Reporting
+  //
+
+  def reportPending(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
+    quietWithDomainCache(id.pair.domain).foreach(c => {
+      // TODO: Record origin as well
+      c.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
     })
+
+    // TODO: Generate external event for pending difference?
   }
 
-  def forEachSessionListener(s:SessionCache, f: (DifferencingListener) => Any) = {
-    listeners.synchronized {
-      listeners.get(s.sessionId) match {
-        case None =>
-        case Some(keyListeners) => {
-          keyListeners.foreach(l => f(l))
-        }
-      }
-    }
-  }
-  
-  def reportPending(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String) =
-    forEachSession(id, s => s.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn))
 
-  def reportUnmatched(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String) = {
-    forEachSession(id, s => {
-      s.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
-
-      // Streaming API
-      forEachSessionListener(s, l => l.onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, LiveWindow))
+  def reportUnmatched(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
+    quietWithDomainCache(id.pair.domain).foreach(c => {
+      c.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
     })
+
+    differenceListener.onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, origin, MatcherFiltered)
   }
 
-  def addMatched(id:VersionID, vsn:String) = forEachSession(id, s => s.addMatchedEvent(id, vsn) )
-  def upgradePending(id:VersionID) = {
-    forEachSession(id, s => {
-      val evt = s.upgradePendingUnmatchedEvent(id)
+  def addMatched(id:VersionID, vsn:String) {
+    quietWithDomainCache(id.pair.domain).foreach(c => {
+      c.addMatchedEvent(id, vsn)
+    })
+
+    // TODO: Generate external event for matched? (Interested parties will already have seen the raw event)
+  }
+  def upgradePending(id:VersionID) {
+    quietWithDomainCache(id.pair.domain).foreach(c => {
+      val evt = c.upgradePendingUnmatchedEvent(id)
       if (evt != null) {
         log.debug("Processing upgrade from pending to unmatched for " + id)
-
-        val timestamp = new DateTime()
-        forEachSessionListener(s, l => l.onMismatch(id, timestamp, evt.upstreamVsn, evt.downstreamVsn, LiveWindow))
+        differenceListener.onMismatch(id, evt.detectedAt, evt.upstreamVsn, evt.downstreamVsn, LiveWindow, MatcherFiltered)
       } else {
         log.debug("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
       }
     })
-  }
-
-  /**
-   * Utility function to generate session ids based on hashing the query parameters
-   */
-  def generateSessionId(scope: SessionScope, start: DateTime, end: DateTime) = DigestUtils.md5Hex(scope.toString + start + end)
-
-  /**
-   * Utility function to make sure that a scope refers only to valid pairs.
-   */
-  def withValidScope[T](scope:SessionScope, f: () => T) = {
-    // Ignore this because scope will be deprecated soon
-    //scope.includedPairs.foreach(p => config.getPair(p))
-    f()
   }
 }

@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import javax.ws.rs.core.{UriInfo, Context}
 import javax.ws.rs.{PathParam, Path}
 import net.lshift.diffa.kernel.client.ActionsClient
-import net.lshift.diffa.kernel.differencing.SessionManager
+import net.lshift.diffa.kernel.differencing.DifferencesManager
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.config.DomainConfigStore
@@ -35,7 +35,7 @@ class DomainResource {
 
   @Autowired var config:Configuration = null
   @Autowired var actionsClient:ActionsClient = null
-  @Autowired var sessionManager:SessionManager = null
+  @Autowired var sessionManager:DifferencesManager = null
   @Autowired var diagnosticsManager:DiagnosticsManager = null
   @Autowired var pairPolicyClient:PairPolicyClient = null
   @Autowired var domainConfigStore:DomainConfigStore = null

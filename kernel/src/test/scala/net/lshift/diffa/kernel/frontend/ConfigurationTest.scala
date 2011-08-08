@@ -19,7 +19,7 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.matching.MatchingManager
 import net.lshift.diffa.kernel.scheduler.ScanScheduler
 import net.lshift.diffa.kernel.actors.ActivePairManager
-import net.lshift.diffa.kernel.differencing.{SessionManager, VersionCorrelationStoreFactory}
+import net.lshift.diffa.kernel.differencing.{DifferencesManager, VersionCorrelationStoreFactory}
 import org.junit.{Test, Before}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
@@ -42,7 +42,7 @@ class ConfigurationTest {
   private val matchingManager = createMock("matchingManager", classOf[MatchingManager])
   private val versionCorrelationStoreFactory = createMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
   private val pairManager = createMock("pairManager", classOf[ActivePairManager])
-  private val sessionManager = createMock("sessionManager", classOf[SessionManager])
+  private val sessionManager = createMock("sessionManager", classOf[DifferencesManager])
   private val endpointListener = createMock("endpointListener", classOf[EndpointLifecycleListener])
   private val scanScheduler = createMock("scanScheduler", classOf[ScanScheduler])
   private val diagnostics = createMock("diagnostics", classOf[DiagnosticsManager])
@@ -147,11 +147,11 @@ class ConfigurationTest {
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair(ab)).once
     expect(scanScheduler.onUpdatePair(ab)).once
-    expect(sessionManager.onUpdatePair(ab)).once
+    expect(sessionManager.onUpdatePair(ab.asRef)).once
     expect(pairManager.startActor(pairInstance("ac"))).once
     expect(matchingManager.onUpdatePair(ac)).once
     expect(scanScheduler.onUpdatePair(ac)).once
-    expect(sessionManager.onUpdatePair(ac)).once
+    expect(sessionManager.onUpdatePair(ac.asRef)).once
     replayAll
 
     configuration.applyConfiguration("domain", config)
@@ -207,16 +207,17 @@ class ConfigurationTest {
     expect(pairManager.startActor(pairInstance("ab"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(scanScheduler.onUpdatePair(ab)).once
-    expect(sessionManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
+    expect(sessionManager.onUpdatePair(DiffaPairRef(key = "ab", domain = "domain"))).once
     expect(pairManager.stopActor(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(scanScheduler.onDeletePair(ac)).once
+    expect(sessionManager.onDeletePair(ac.asRef)).once
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(diagnostics.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
     expect(scanScheduler.onUpdatePair(ad)).once
-    expect(sessionManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
+    expect(sessionManager.onUpdatePair(DiffaPairRef(key = "ad", domain = "domain"))).once
 
     expect(endpointListener.onEndpointRemoved("downstream1")).once
     expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep1))).once
@@ -251,6 +252,8 @@ class ConfigurationTest {
     expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(diagnostics.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(diagnostics.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
+    expect(sessionManager.onDeletePair(DiffaPairRef(key = "ab", domain = "domain"))).once
+    expect(sessionManager.onDeletePair(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(endpointListener.onEndpointRemoved("upstream1")).once
     expect(endpointListener.onEndpointRemoved("downstream1")).once
     replayAll

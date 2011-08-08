@@ -28,6 +28,7 @@ import org.easymock.EasyMock
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.frontend.FrontendConversions
 
 /**
  * Test cases for the default session manager.
@@ -43,15 +44,33 @@ class StubParticipantProtocolFactory
   }
 }
 
-class DefaultSessionManagerTest {
-  val cacheProvider = new LocalSessionCacheProvider
+class DefaultDifferencesManagerTest {
+  val cacheProvider = new LocalDomainCacheProvider
 
-  val listener1 = createStrictMock("listener1", classOf[DifferencingListener])
-  val listener2 = createStrictMock("listener2", classOf[DifferencingListener])
+  val listener = createStrictMock("listener1", classOf[DifferencingListener])
 
   val matcher = createStrictMock("matcher", classOf[EventMatcher])
 
+  val domainName = "domain"
+  val domainName2 = "domain2"
+  val domain1 = Domain(name=domainName)
+  val domain2 = Domain(name=domainName2)
+
+  val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+  val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+
+  val pair1 = DiffaPair(key = "pair1", domain = domain1, versionPolicyName = "policy", upstream = u, downstream = d)
+  val pair2 = DiffaPair(key = "pair2", domain = domain1, versionPolicyName = "policy", upstream = u, downstream = d, matchingTimeout = 5)
+
+
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
+  expect(systemConfigStore.listDomains).andStubReturn(Seq(domain1, domain2))
+  replay(systemConfigStore)
+
+  val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
+  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(FrontendConversions.toPairDef(pair1), FrontendConversions.toPairDef(pair2)))
+  replay(domainConfigStore)
+
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
   matchingManager.addListener(anyObject.asInstanceOf[MatchingStatusListener]); expectLastCall.once
   replay(matchingManager)
@@ -74,21 +93,16 @@ class DefaultSessionManagerTest {
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
   EasyMock.checkOrder(pairPolicyClient, false)
 
-  val manager = new DefaultSessionManager(systemConfigStore, cacheProvider, matchingManager, versionPolicyManager, pairPolicyClient, participantFactory)
-  verify(matchingManager); reset(matchingManager)    // The matching manager will have been called on session manager startup
 
-  val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
-  val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
+  val manager = new DefaultDifferencesManager(
+    systemConfigStore, domainConfigStore, cacheProvider, matchingManager,
+    versionPolicyManager, pairPolicyClient, participantFactory, listener)
 
-  val domainName = "domain"
-  val domain = Domain(name=domainName)
+  // The matching manager and config stores will have been called on difference manager startup. Reset them so they
+  // can be re-used
+  verify(matchingManager, systemConfigStore, domainConfigStore)
+  reset(matchingManager, systemConfigStore, domainConfigStore)
 
-  // TODO Do we still need this pair?
-  val pair = DiffaPair(key = "pair", domain = domain, upstream = u, downstream = d)
-
-  val pair1 = DiffaPair(key = "pair1", domain = domain, versionPolicyName = "policy", upstream = u, downstream = d)
-  val pair2 = DiffaPair(key = "pair2", domain = domain, versionPolicyName = "policy", upstream = u, downstream = d)
-  
   @Before
   def setupStubs = {
     // TODO consider using a stub factory to build stateful objects
@@ -109,7 +123,7 @@ class DefaultSessionManagerTest {
     expect(matcher.isVersionIDActive(VersionID(pair2.asRef, "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(VersionID(pair1.asRef, "id2"))).andStubReturn(false)
 
-    replay(systemConfigStore, matchingManager, matcher)
+    replay(systemConfigStore, matchingManager)
   }
 
   def expectDifferenceForPair(pairs:DiffaPair*)  = {
@@ -131,14 +145,12 @@ class DefaultSessionManagerTest {
   }
 
   @Test
- def shouldAlwaysInformMatchEvents {
-
-    expect(listener1.onMatch(VersionID(DiffaPairRef(pair1.key,pair1.domain.name), "id"), "vsn", LiveWindow))
+ def shouldNotInformMatchEvents {
+    // The listener should never be invoked, since listeners can just subscribe directly to the difference output
     replayAll
 
     expectDifferenceForPair(pair1, pair2)
 
-    manager.start(SessionScope.forPairs(pair1.domain.name, pair1.key), listener1)
     manager.onMatch(VersionID(DiffaPairRef(pair1.key,"domain"), "id"), "vsn", LiveWindow)
 
     verifyAll
@@ -152,59 +164,24 @@ class DefaultSessionManagerTest {
 
     expectDifferenceForPair(pair1, pair2)
 
-    manager.start(SessionScope.forPairs("pair1"), listener1)
-    
-    manager.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id"), timestamp, "uvsn", "dvsn", LiveWindow)
+    manager.onMismatch(VersionID(pair1.asRef, "id"), timestamp, "uvsn", "dvsn", LiveWindow, Unfiltered)
     verifyAll
   }
 
   @Test
   def shouldTriggerMismatchEventsWhenIdIsInactive {
     val timestamp = new DateTime()
-    expect(listener1.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id2"), timestamp, "uvsn", "dvsn", LiveWindow))
+    expect(listener.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id2"), timestamp, "uvsn", "dvsn", LiveWindow, MatcherFiltered))
     replayAll
 
     expectDifferenceForPair(pair1, pair2)
 
-    manager.start(SessionScope.forPairs("pair1"), listener1)
-
-    manager.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id2"), timestamp, "uvsn", "dvsn", LiveWindow)
+    manager.onMismatch(VersionID(DiffaPairRef("pair1", domainName), "id2"), timestamp, "uvsn", "dvsn", LiveWindow, Unfiltered)
     verifyAll
   }
 
-  // TODO Refactor this to deal with end() call in the manager
   @Test
-  def shouldNoLongerInformRemovedListenerOfMatchEvents {
-    val timestamp = new DateTime()
-    replayAll
-
-    expectDifferenceForPair(pair1, pair2)
-
-    manager.start(SessionScope.forPairs("pair"), listener1)
-    manager.end(pair, listener1)
-    manager.onMatch(VersionID(DiffaPairRef("pair1", domainName),  "id"), "vsn", LiveWindow)
-    manager.onMismatch(VersionID(DiffaPairRef("pair2", domainName), "id"), timestamp, "uvsn", "dvsn", LiveWindow)
-    verifyAll
-  }
-
-  // TODO This test seems to be very buggy
-  @Test
-  def shouldNotInformListenerOfEventsOnOtherPairs {
-    val timestamp = new DateTime()
-    expect(listener1.onMatch(VersionID(DiffaPairRef("pair1", domainName), "id"), "vsn", LiveWindow))
-    replayAll
-
-    expectDifferenceForPair(pair1, pair2)
-
-    manager.start(SessionScope.forPairs("pair"), listener1)
-    manager.onMatch(VersionID(DiffaPairRef("pair1", domainName), "id"), "vsn", LiveWindow)
-    manager.onMismatch(VersionID(DiffaPairRef("pair2", domainName), "id"), timestamp, "uvsn", "dvsn", LiveWindow)
-    verifyAll
-  }
-
-  // TODO This test appears to be wrong
-  @Test
-  def shouldHandleExpiryOfAnEventThatIsNotCurrentlyPending {
+  def shouldNotGenerateUnmatchedEventWhenANonPendingEventExpires {
     // This will frequently occur when a repair action occurs. A miscellaneous downstream will be seen, which the
     // correlation store will immediately match, but the EventMatcher will see as expiring.
 
@@ -212,10 +189,24 @@ class DefaultSessionManagerTest {
 
     expectDifferenceForPair(pair1, pair2)
 
-    manager.start(SessionScope.forPairs("pair"), listener1)
     manager.onDownstreamExpired(VersionID(DiffaPairRef("pair",domainName), "unknownid"), "dvsn")
   }
 
-  private def replayAll = replay(listener1, listener2)
-  private def verifyAll = verify(listener1, listener2)
+  @Test
+  def shouldHandleExpiryOfAnEventThatIsPending {
+    val id = VersionID(pair2.asRef, "id1")
+    val now = new DateTime
+
+    expect(matcher.isVersionIDActive(id)).andReturn(true).once()
+    listener.onMismatch(id, now, "u", "d", LiveWindow, MatcherFiltered); expectLastCall().once()
+    replayAll
+
+    expectDifferenceForPair(pair1, pair2)
+
+    manager.onMismatch(id, now, "u", "d", LiveWindow, Unfiltered)
+    manager.onDownstreamExpired(id, "d")
+  }
+
+  private def replayAll = replay(listener, matcher)
+  private def verifyAll = verify(listener, matcher)
 }

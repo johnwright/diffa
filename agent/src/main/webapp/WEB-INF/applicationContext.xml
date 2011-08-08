@@ -48,7 +48,7 @@
         <value>same</value>
         <bean class="net.lshift.diffa.kernel.differencing.SameVersionPolicy">
             <constructor-arg ref="versionCorrelationStoreFactory" />
-            <constructor-arg ref="sessionManager" />
+            <constructor-arg ref="differencesManager" />
             <constructor-arg ref="systemConfigStore" />
             <constructor-arg ref="diagnosticsManager" />
           </bean>
@@ -64,7 +64,7 @@
         <value>correlated</value>
         <bean class="net.lshift.diffa.kernel.differencing.CorrelatedVersionPolicy">
           <constructor-arg ref="versionCorrelationStoreFactory" />
-          <constructor-arg ref="sessionManager" />
+          <constructor-arg ref="differencesManager" />
           <constructor-arg ref="systemConfigStore" />
           <constructor-arg ref="diagnosticsManager" />
         </bean>
@@ -97,15 +97,17 @@
       Sessions
     ============
   -->
-  <bean id="sessionManager" class="net.lshift.diffa.kernel.differencing.DefaultSessionManager">
+  <bean id="differencesManager" class="net.lshift.diffa.kernel.differencing.DefaultDifferencesManager">
     <constructor-arg ref="systemConfigStore" />
-    <constructor-arg ref="sessionCacheProvider" />
+    <constructor-arg ref="domainConfigStore" />
+    <constructor-arg ref="domainCacheProvider" />
     <constructor-arg ref="matchingManager" />
     <constructor-arg ref="versionPolicyManager" />
     <constructor-arg ref="pairActorSupervisor" />
     <constructor-arg ref="participantFactory" />
+    <constructor-arg ref="notificationCentre" />
   </bean>
-  <bean id="sessionCacheProvider" class="net.lshift.diffa.kernel.differencing.LocalSessionCacheProvider" />
+  <bean id="domainCacheProvider" class="net.lshift.diffa.kernel.differencing.LocalDomainCacheProvider" />
 
   <!--
     ============
@@ -124,8 +126,8 @@
     ============
   -->
 
-  <bean id="notifier" class="net.lshift.diffa.kernel.notifications.EventNotifier" destroy-method="destroy">
-    <constructor-arg ref="sessionManager" />
+  <bean id="notifier" class="net.lshift.diffa.kernel.notifications.EventNotifier">
+    <constructor-arg ref="differencesManager" />
     <constructor-arg ref="domainConfigStore" />
     <constructor-arg>
       <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
@@ -265,13 +267,14 @@
     <constructor-arg ref="matchingManager"/>
     <constructor-arg ref="versionCorrelationStoreFactory"/>
     <constructor-arg ref="pairActorSupervisor"/>
-    <constructor-arg ref="sessionManager"/>
+    <constructor-arg ref="differencesManager"/>
     <constructor-arg ref="inboundEndpointManager" />
     <constructor-arg ref="scanScheduler" />
     <constructor-arg ref="diagnosticsManager" />
   </bean>
   <bean id="systemConfigurationFrontend" class="net.lshift.diffa.kernel.frontend.SystemConfiguration">
     <constructor-arg ref="systemConfigStore"/>
+    <constructor-arg ref="differencesManager" />
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
     <constructor-arg ref="domainConfigStore"/>

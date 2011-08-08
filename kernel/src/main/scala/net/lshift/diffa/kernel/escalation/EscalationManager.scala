@@ -22,8 +22,8 @@ import net.lshift.diffa.kernel.config.DomainConfigStore
 import net.lshift.diffa.kernel.config.EscalationEvent._
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.differencing._
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
+import net.lshift.diffa.kernel.differencing._
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -52,7 +52,7 @@ class EscalationManager(val config:DomainConfigStore,
    * Since escalations are currently only driven off mismatches, matches can be safely ignored.
    */
   override def onAgentInstantiationCompleted(nc: NotificationCentre) {
-    nc.registerForDifferenceEvents(this)
+    nc.registerForDifferenceEvents(this, MatcherFiltered)
   }
 
   def onMatch(id: VersionID, vsn: String, origin: MatchOrigin) = ()
@@ -61,9 +61,9 @@ class EscalationManager(val config:DomainConfigStore,
    * Escalate matches that occur as part of a scan.
    */
   def onMismatch(id: VersionID, lastUpdated: DateTime, upstreamVsn: String, downstreamVsn: String,
-                 origin: MatchOrigin) = origin match {
+                 origin: MatchOrigin, level:DifferenceFilterLevel) = origin match {
     case TriggeredByScan => {
-      differenceType(upstreamVsn, downstreamVsn) match {
+      DifferenceUtils.differenceType(upstreamVsn, downstreamVsn) match {
         case UpstreamMissing     => escalateByEventType(id, UPSTREAM_MISSING)
         case DownstreamMissing   => escalateByEventType(id, DOWNSTREAM_MISSING)
         case ConflictingVersions => escalateByEventType(id, MISMATCH)

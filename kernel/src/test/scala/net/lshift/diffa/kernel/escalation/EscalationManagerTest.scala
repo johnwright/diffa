@@ -23,12 +23,12 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import org.junit.runner.RunWith
-import net.lshift.diffa.kernel.differencing.{MatchOrigin, LiveWindow, TriggeredByScan}
 import net.lshift.diffa.kernel.escalation.EscalationManagerTest.Scenario
 import net.lshift.diffa.kernel.config._
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theories, Theory}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.EscalationDef
+import net.lshift.diffa.kernel.differencing.{MatcherFiltered, MatchOrigin, LiveWindow, TriggeredByScan}
 
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
@@ -63,7 +63,7 @@ class EscalationManagerTest {
     expectConfigStore(scenario.event)
     expectActionsClient(scenario.invocations)
 
-    escalationManager.onMismatch(VersionID(pair.asRef, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin)
+    escalationManager.onMismatch(VersionID(pair.asRef, "id"), new DateTime(), scenario.uvsn, scenario.dvsn, scenario.matchOrigin, MatcherFiltered)
 
     verify(configStore, actionsClient)
   }

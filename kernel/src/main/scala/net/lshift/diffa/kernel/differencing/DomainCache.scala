@@ -23,16 +23,11 @@ import org.joda.time.{Interval, DateTime}
  * The session cache provides facilities for storing difference events that occur, and managing the states of these
  * events. A session cache instance should exist for each session that has been opened with the system.
  */
-trait SessionCache {
+trait DomainCache {
   /**
-   * Retrieves the identifier of this cache.
+   * Retrieves the domain of this cache.
    */
-  def sessionId:String
-
-  /**
-   * The scope assigned to this session.
-   */
-  def scope:SessionScope
+  def domain:String
 
   /**
    * Retrieves the current version of the cache
@@ -40,14 +35,8 @@ trait SessionCache {
   def currentVersion:String
 
   /**
-   * Queries whether the session cache's scope includes the given version identifier.
-   */
-  def isInScope(id:VersionID):Boolean
-
-  /**
    * Adds a pending event for the given version id into the cache.
    */
-  // TODO the default session manager implementation should then keep track of the listeners
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String)
 
   /**
@@ -106,21 +95,20 @@ trait SessionCache {
 }
 
 /**
- * Provider that manages a series of session cache instances.
+ * Provider that manages a series of domain cache instances.
  */
-trait SessionCacheProvider {
+trait DomainCacheProvider {
   /**
    * Retrieves a cache for the given session. If no cache has been allocated, then this method will return None. This
    * method should be used for query operations that are not intended to result in a new cache being created.
    */
-  def retrieveCache(sessionID:String):Option[SessionCache]
+  def retrieveCache(domain:String):Option[DomainCache]
 
   /**
-   * Retrieves or allocates a new cache for the given session identifier. If a cache has previously been allocated for
-   * the given session ID, then that cache will be returned. If no cache has been allocated, then a new cache will be
+   * Retrieves or allocates a new cache for the given domain. If a cache has previously been allocated for
+   * the given domain, then that cache will be returned. If no cache has been allocated, then a new cache will be
    * initialised.
-   * @param sessionID the id of the session requested;
-   * @param scope the scope to be applied to the session 
+   * @param domain the domain of the cache requested;
    */
-  def retrieveOrAllocateCache(sessionID:String, scope:SessionScope):SessionCache
+  def retrieveOrAllocateCache(domain:String):DomainCache
 }

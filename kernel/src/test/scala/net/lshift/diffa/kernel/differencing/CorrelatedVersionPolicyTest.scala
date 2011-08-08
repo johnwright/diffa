@@ -172,7 +172,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(dsMock.generateVersion("content3a")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3a", downstreamVersionFor("vsn3a")))
 
     // We should see a replayStoredDifferences being generated
-    listener.onMismatch(VersionID(pair.asRef, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan); expectLastCall
+    listener.onMismatch(VersionID(pair.asRef, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan, Unfiltered); expectLastCall
 
     // We should still see an unmatched version check
     expect(stores(pair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())

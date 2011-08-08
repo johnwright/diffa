@@ -21,52 +21,26 @@ import com.sun.jersey.core.util.MultivaluedMapImpl
 import com.sun.jersey.api.client.{WebResource, ClientResponse}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import javax.ws.rs.core.{Response, MediaType}
-import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope, SessionEvent}
 import scala.collection.JavaConversions._
 import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.messaging.json.NotFoundException
 import org.codehaus.jackson.map.ObjectMapper
 import org.codehaus.jackson.node.ObjectNode
+import net.lshift.diffa.kernel.differencing.{InvalidSequenceNumberException, PairScanState, SessionEvent}
 
 /**
  * A RESTful client to start a matching session and poll for events from it.
  */
 class DifferencesRestClient(serverRootUrl:String, domain:String)
-    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/diffs/") {
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/diffs") {
 
   val supportsStreaming = false
   val supportsPolling = true
 
   val formatter = ISODateTimeFormat.basicDateTimeNoMillis
 
-
-  def subscribe(scope:SessionScope) : String = subscribe(scope, null, null)
-  /**
-   * Creates a differencing session that can be polled for match events.
-   * @return The id of the session containing the events
-   */
-  def subscribe(scope:SessionScope, start:DateTime, end:DateTime) : String = {
-    val params = new MultivaluedMapImpl()
-    params.add("start", f(start) )
-    params.add("end", f(end) )
-    params.add("pairs", scope.includedPairs.foldLeft("") {
-      case ("", p)  => p.key
-      case (acc, p) => acc + "," + p
-    })
-
-    val path = resource.path("sessions").queryParams(params)
-    val response = path.post(classOf[ClientResponse])
-
-    val status = response.getClientResponseStatus
-
-    status.getStatusCode match {
-      case 201     => response.getLocation.toString.split("/").last
-      case x:Int   => handleHTTPError(x, path, status)
-    }
-  }
-
-  def getZoomedView(sessionId:String, from:DateTime, until:DateTime, bucketing:Int)  = {
-    val path = resource.path("sessions").path(sessionId).path("zoom")
+  def getZoomedView(from:DateTime, until:DateTime, bucketing:Int)  = {
+    val path = resource.path("zoom")
                         .queryParam("range-start", formatter.print(from))
                         .queryParam("range-end", formatter.print(until))
                         .queryParam("bucketing", bucketing.toString)
@@ -80,9 +54,8 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
 
   }
 
-  def getEvents(sessionId:String, pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
-    val path = resource.path("sessions/" + sessionId)
-                       .queryParam("pairKey", pairKey)
+  def getEvents(pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
+    val path = resource.queryParam("pairKey", pairKey)
                        .queryParam("range-start", formatter.print(from))
                        .queryParam("range-end", formatter.print(until))
                        .queryParam("offset", offset.toString)
@@ -102,14 +75,14 @@ class DifferencesRestClient(serverRootUrl:String, domain:String)
     }
   }
 
-  def eventDetail(sessionId:String, evtSeqId:String, t:ParticipantType.ParticipantType) : String = {
-    val path = resource.path("events/" + sessionId + "/" + evtSeqId + "/" + t.toString )
+  def eventDetail(evtSeqId:String, t:ParticipantType.ParticipantType) : String = {
+    val path = resource.path("events/" + evtSeqId + "/" + t.toString )
     val media = path.accept(MediaType.TEXT_PLAIN_TYPE)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 200    => response.getEntity(classOf[String])
-      case 404    => throw new NotFoundException(sessionId)
+      case 400    => throw new InvalidSequenceNumberException(evtSeqId)
       case x:Int  => handleHTTPError(x, path, status)
     }
   }

@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.frontend
 import org.slf4j.{Logger, LoggerFactory}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.matching.MatchingManager
-import net.lshift.diffa.kernel.differencing.{SessionManager, VersionCorrelationStoreFactory}
+import net.lshift.diffa.kernel.differencing.{DifferencesManager, VersionCorrelationStoreFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.actors.{ActivePairManager}
 import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
@@ -33,7 +33,7 @@ class Configuration(val configStore: DomainConfigStore,
                     val matchingManager: MatchingManager,
                     val versionCorrelationStoreFactory: VersionCorrelationStoreFactory,
                     val supervisor:ActivePairManager,
-                    val sessionManager: SessionManager,
+                    val sessionManager: DifferencesManager,
                     val endpointListener: EndpointLifecycleListener,
                     val scanScheduler: ScanScheduler,
                     val diagnostics: DiagnosticsManager) {
@@ -147,7 +147,7 @@ class Configuration(val configStore: DomainConfigStore,
     withCurrentPair(domain, pairDef.key, (p:DiffaPair) => {
       supervisor.startActor(p)
       matchingManager.onUpdatePair(p)
-      sessionManager.onUpdatePair(p)
+      sessionManager.onUpdatePair(p.asRef)
       scanScheduler.onUpdatePair(p)
     })
   }
@@ -159,6 +159,7 @@ class Configuration(val configStore: DomainConfigStore,
       matchingManager.onDeletePair(p)
       versionCorrelationStoreFactory.remove(p)
       scanScheduler.onDeletePair(p)
+      sessionManager.onDeletePair(p.asRef)
       diagnostics.onDeletePair(p)
     })
     configStore.deletePair(domain, key)

@@ -20,14 +20,14 @@ import net.lshift.diffa.kernel.events.VersionID
 import org.slf4j.{Logger, LoggerFactory}
 import org.joda.time.{Period, DateTime}
 import collection.mutable.ListBuffer
-import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
-import net.lshift.diffa.kernel.differencing.{MatchOrigin, SessionScope, DifferencingListener, SessionManager}
 import net.lshift.diffa.kernel.config.DomainConfigStore
+import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
+import net.lshift.diffa.kernel.differencing._
 
 /**
  * This fires mismatch events out to each registered NotificationProvider.
  */
-class EventNotifier(val sessionManager:SessionManager,
+class EventNotifier(val sessionManager:DifferencesManager,
                     val domainConfigStore:DomainConfigStore,
                     val quietTime:Period)
     extends DifferencingListener
@@ -41,12 +41,8 @@ class EventNotifier(val sessionManager:SessionManager,
   private val providers = new ListBuffer[NotificationProvider]()
   private var nextRun = new DateTime()
 
-  def destroy() = {
-    // TODO call sessionManager.end() when it is implemented correctly
-  }
-
-  override def onAgentConfigurationActivated {
-    sessionManager.start(SessionScope.all, this)
+  override def onAgentInstantiationCompleted(nc: NotificationCentre) {
+    nc.registerForDifferenceEvents(this, MatcherFiltered)
   }
 
   def registerProvider(p:NotificationProvider) = providers += p
@@ -56,7 +52,7 @@ class EventNotifier(val sessionManager:SessionManager,
    */
   def onMatch(id:VersionID, vsn:String, origin:MatchOrigin) = null
 
-  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin) = {
+  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin, level:DifferenceFilterLevel) {
     val now = new DateTime()
     if (now.isAfter(nextRun)) {
       log.trace("About to notify users, the received event was " + id + " at " + lastUpdated)

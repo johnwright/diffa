@@ -22,7 +22,7 @@ import org.quartz.listeners.TriggerListenerSupport
 import java.lang.IllegalStateException
 import net.lshift.diffa.kernel.util.AlertCodes
 import org.slf4j.{LoggerFactory, Logger}
-import net.lshift.diffa.kernel.differencing.SessionManager
+import net.lshift.diffa.kernel.differencing.DifferencesManager
 import org.quartz.simpl.{RAMJobStore, SimpleThreadPool}
 import org.quartz._
 import org.quartz.JobKey.jobKey

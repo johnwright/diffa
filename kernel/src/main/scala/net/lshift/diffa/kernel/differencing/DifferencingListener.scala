@@ -27,7 +27,7 @@ trait DifferencingListener {
    * Raised when an upstream and downstream version disagree (either by the values being different, or one being
    * missing).
    */
-  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin)
+  def onMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin, level:DifferenceFilterLevel)
   
   /**
    * Raised when an upstream and downstream have entered a matched version state. This callback will only be
@@ -41,7 +41,12 @@ trait DifferencingListener {
    *
    */
   def onMatch(id:VersionID, vsn:String, origin:MatchOrigin)
+}
 
+/**
+ * Utilities for understanding differences.
+ */
+object DifferenceUtils {
   /**
    * Utility function to establish whether a mismatch is due to either
    * <li>
@@ -82,6 +87,22 @@ case object DownstreamMissing extends DifferenceType
  * Occurs when the versions for the upstream and downstream for an entity are different.
  */
 case object ConflictingVersions extends DifferenceType
+
+
+/**
+ * Describes what level of filtering has been applied to the difference.
+ */
+abstract class DifferenceFilterLevel
+
+/**
+ * This difference is unfiltered, and has been emitted as the direct result of a system action.
+ */
+case object Unfiltered extends DifferenceFilterLevel
+
+/**
+ * This difference has been filtered by the event matcher, and should be considered of high quality.
+ */
+case object MatcherFiltered extends DifferenceFilterLevel
 
 
 /**

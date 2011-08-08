@@ -24,11 +24,11 @@ import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
-import net.lshift.diffa.kernel.differencing.{SessionScope, SessionManager, SessionEvent}
+import net.lshift.diffa.kernel.differencing.{DifferencesManager, SessionEvent}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 
-class DifferencesResource(val sessionManager: SessionManager,
+class DifferencesResource(val sessionManager: DifferencesManager,
                           val domain:String,
                           val uriInfo:UriInfo) {
 
@@ -37,44 +37,17 @@ class DifferencesResource(val sessionManager: SessionManager,
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
   val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
 
-  @POST
-  @Path("/sessions")
-  @Description("Returns the URL of an endpoint that can be polled to receive outstanding differences. " +
-    "If a requested pair does not exist, a 404 will be returned.")
-  @OptionalParams(Array(
-    new OptionalParam(name = "pairs", datatype = "string", description = "Comma-separated list of pair IDs"),
-    new OptionalParam(name = "start", datatype = "date", description = "This is the lower bound of the date range for analysis"),
-    new OptionalParam(name = "end", datatype = "date", description = "This is the upper bound of the date range for analysis")
-  ))
-  def subscribe(@QueryParam("pairs") pairs: String,
-                @QueryParam("start") start: String,
-                @QueryParam("end") end: String) = {
-    val scope = pairs match {
-      case null => SessionScope.all
-      case _ => SessionScope.forPairs(domain, pairs.split(","): _*)
-    }
-    if (log.isTraceEnabled) {
-      log.debug("Creating a subscription for this scope: " + scope)
-    }
-    val sessionId = sessionManager.start(scope)
-    val uri = uriInfo.getBaseUriBuilder.path("diffs/sessions/" + sessionId).build()
-    Response.created(uri).`type`("text/plain").build()
-  }
-
   @GET
-  @Path("/sessions/{sessionId}")
   @Produces(Array("application/json"))
-  @Description("Returns a list of outstanding differences in the current session in a paged format.")
+  @Description("Returns a list of outstanding differences for the domain in a paged format.")
   @MandatoryParams(Array(
-    new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID"),
     new MandatoryParam(name = "pairKey", datatype = "string", description = "Pair Key")))
   @OptionalParams(Array(
     new OptionalParam(name = "range-start", datatype = "date", description = "The lower bound of the items to be paged."),
     new OptionalParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
     new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
     new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
-  def getSessionEvents(@PathParam("sessionId") sessionId: String,
-                       @QueryParam("pairKey") pairKey:String,
+  def getSessionEvents(@QueryParam("pairKey") pairKey:String,
                        @QueryParam("range-start") from_param:String,
                        @QueryParam("range-end") until_param:String,
                        @QueryParam("offset") offset_param:String,
@@ -88,46 +61,45 @@ class DifferencesResource(val sessionManager: SessionManager,
     val length = defaultInt(length_param, 100)
 
     try {
-      val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
+      val domainVsn = new EntityTag(sessionManager.retrieveDomainVersion(domain))
 
-      request.evaluatePreconditions(sessionVsn) match {
+      request.evaluatePreconditions(domainVsn) match {
         case null => // We'll continue with the request
         case r => throw new WebApplicationException(r.build)
       }
 
       val interval = new Interval(from,until)
-      val diffs = sessionManager.retrievePagedEvents(sessionId, pairKey, interval, offset, length)
+      val diffs = sessionManager.retrievePagedEvents(domain, pairKey, interval, offset, length)
 
       val responseObj = Map(
-        "seqId" -> sessionVsn.getValue,
+        "seqId" -> domainVsn.getValue,
         "diffs" -> diffs.toArray,
-        "total" -> sessionManager.countEvents(sessionId, pairKey, interval)
+        "total" -> sessionManager.countEvents(domain, pairKey, interval)
       )
-      Response.ok(mapAsJavaMap(responseObj)).tag(sessionVsn).build
+      Response.ok(mapAsJavaMap(responseObj)).tag(domainVsn).build
     }
     catch {
       case e:NoSuchElementException =>
-        log.error("Unsucessful query on sessionId = " + sessionId, e)
+        log.error("Unsucessful query on domain = " + domain, e)
         throw new WebApplicationException(404)
     }
   }
   
   @GET
-  @Path("/sessions/{sessionId}/zoom")
+  @Path("/zoom")
   @Produces(Array("application/json"))
   @MandatoryParams(Array(
       new MandatoryParam(name = "range-start", datatype = "date", description = "The starting time for any differences"),
       new MandatoryParam(name = "range-end", datatype = "date", description = "The ending time for any differences"),
       new MandatoryParam(name = "bucketing", datatype = "int", description = "The size in elements in the zoomed view")))
   @Description("Returns a zoomed view of the data within a specific time range")
-  def getZoomedView(@PathParam("sessionId") sessionId: String,
-                    @QueryParam("range-start") rangeStart: String,
+  def getZoomedView(@QueryParam("range-start") rangeStart: String,
                     @QueryParam("range-end") rangeEnd:String,
                     @QueryParam("bucketing") width:Int,
                     @Context request: Request): Response = {
     try {
       // Evaluate whether the version of the session has changed
-      val sessionVsn = new EntityTag(sessionManager.retrieveSessionVersion(sessionId))
+      val sessionVsn = new EntityTag(sessionManager.retrieveDomainVersion(domain))
       request.evaluatePreconditions(sessionVsn) match {
         case null => // We'll continue with the request
         case r => throw new WebApplicationException(r.build)
@@ -148,7 +120,7 @@ class DifferencesResource(val sessionManager: SessionManager,
       }
 
       // Calculate the zoomed view
-      val interestingEvents = sessionManager.retrieveAllEventsInInterval(sessionId, new Interval(rangeStartDate, rangeEndDate))
+      val interestingEvents = sessionManager.retrieveAllEventsInInterval(domain, new Interval(rangeStartDate, rangeEndDate))
 
       // Bucket the events
       val pairs = scala.collection.mutable.Map[String, ZoomPair]()
@@ -164,7 +136,7 @@ class DifferencesResource(val sessionManager: SessionManager,
     }
     catch {
       case e: NoSuchElementException => {
-        log.error("Unsucessful query on sessionId = " + sessionId)
+        log.error("Unsucessful query on domain = " + domain)
         throw new WebApplicationException(404)
       }
     }
@@ -188,18 +160,16 @@ class DifferencesResource(val sessionManager: SessionManager,
   }
 
   @GET
-  @Path("/events/{sessionId}/{evtSeqId}/{participant}")
+  @Path("/events/{evtSeqId}/{participant}")
   @Produces(Array("text/plain"))
   @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
   @MandatoryParams(Array(
-    new MandatoryParam(name = "sessionId", datatype = "string", description = "Session ID"),
     new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID"),
     new MandatoryParam(name = "participant", datatype = "string", description = "Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
   ))
-  def getDetail(@PathParam("sessionId") sessionId:String,
-                @PathParam("evtSeqId") evtSeqId:String,
+  def getDetail(@PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String =
-    sessionManager.retrieveEventDetail(sessionId, evtSeqId, ParticipantType.withName(participant))
+    sessionManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
 
   def defaultDateTime(input:String, default:DateTime) = input match {
     case "" | null => default

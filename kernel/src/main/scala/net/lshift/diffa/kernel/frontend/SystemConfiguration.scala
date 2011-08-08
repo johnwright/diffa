@@ -19,12 +19,13 @@ package net.lshift.diffa.kernel.frontend
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
+import net.lshift.diffa.kernel.differencing.DifferencesManager
 
 
 /**
  * Frontend component that wraps all of the events that surround system configuration changes.
  */
-class SystemConfiguration(val systemConfigStore: SystemConfigStore) {
+class SystemConfiguration(val systemConfigStore: SystemConfigStore, differencesManager:DifferencesManager) {
 
   val log = LoggerFactory.getLogger(getClass)
 
@@ -32,11 +33,13 @@ class SystemConfiguration(val systemConfigStore: SystemConfigStore) {
     log.debug("Processing domain declare/update request: %s".format(domain))
     domain.validate()
     systemConfigStore.createOrUpdateDomain(fromDomainDef(domain))
+    differencesManager.onUpdateDomain(domain.name)
   }
 
   def deleteDomain(domain: String) = {
     log.debug("Processing endpoint delete request: %s".format(domain))
     systemConfigStore.deleteDomain(domain)
+    differencesManager.onDeleteDomain(domain)
   }
 
   def getUser(username: String) : UserDef = toUserDef(systemConfigStore.getUser(username))

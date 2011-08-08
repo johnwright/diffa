@@ -25,19 +25,12 @@ import net.lshift.diffa.kernel.config.DiffaPairRef
 /**
  * Test cases for the local session cache.
  */
-class LocalSessionCacheTest {
-  val cache = new LocalSessionCache("sessionID1234", SessionScope.forPairs( "domain", "pair1", "pair2"))
+class LocalDomainCacheTest {
+  val cache = new LocalDomainCache("domain1234")
 
   @Test
-  def shouldMakeSessionIDAvailable {
-    assertEquals("sessionID1234", cache.sessionId)
-  }
-
-  @Test
-  def shouldDeferToScopeForInclusionChoice {
-    assertEquals(true, cache.isInScope(VersionID(DiffaPairRef("pair1", "domain"), "aaa")))
-    assertEquals(true, cache.isInScope(VersionID(DiffaPairRef("pair2", "domain"), "aaa")))
-    assertEquals(false, cache.isInScope(VersionID(DiffaPairRef("pair3", "domain"), "aaa")))
+  def shouldMakeDomainAvailable {
+    assertEquals("domain1234", cache.domain)
   }
 
   @Test

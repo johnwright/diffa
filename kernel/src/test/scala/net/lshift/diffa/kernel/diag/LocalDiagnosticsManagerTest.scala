@@ -6,7 +6,7 @@ import org.hamcrest.CoreMatchers._
 import org.joda.time.DateTime
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.util.HamcrestDateTimeHelpers._
-import net.lshift.diffa.kernel.differencing.{PairScanState, SessionScope}
+import net.lshift.diffa.kernel.differencing.{PairScanState}
 import net.lshift.diffa.kernel.frontend.FrontendConversions
 import net.lshift.diffa.kernel.config.Endpoint._
 import net.lshift.diffa.kernel.config.{Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}

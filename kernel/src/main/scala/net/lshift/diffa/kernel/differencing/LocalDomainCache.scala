@@ -27,7 +27,7 @@ import org.joda.time.{Interval, DateTime}
  *
  * TODO: Expire matched events and overridden unmatched events.
  */
-class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends SessionCache {
+class LocalDomainCache(val domain:String) extends DomainCache {
   private val pending = new HashMap[VersionID, SessionEvent]
   private val events = new LinkedHashMap[String,SessionEvent]
   private val seqGenerator = new AtomicInteger(1)
@@ -39,8 +39,6 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
       session.seqId
     }
   }
-
-  def isInScope(id: VersionID) = scope.includes(id.pair)
 
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) {
     pending(id) = SessionEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
@@ -116,17 +114,17 @@ class LocalSessionCache(val sessionId:String, val scope:SessionScope) extends Se
   private def nextSequenceId = seqGenerator.getAndIncrement
 }
 
-class LocalSessionCacheProvider extends SessionCacheProvider {
-  private val sessions = new HashMap[String, LocalSessionCache]
+class LocalDomainCacheProvider extends DomainCacheProvider {
+  private val domains = new HashMap[String, LocalDomainCache]
 
-  def retrieveCache(sessionID: String) = sessions.synchronized { sessions.get(sessionID) }
-  def retrieveOrAllocateCache(sessionID: String, scope:SessionScope) = sessions.synchronized {
-    sessions.get(sessionID) match {
+  def retrieveCache(domain: String) = domains.synchronized { domains.get(domain) }
+  def retrieveOrAllocateCache(domain: String) = domains.synchronized {
+    domains.get(domain) match {
       case Some(s) => s
       case None => {
-        val session = new LocalSessionCache(sessionID, scope)
-        sessions(sessionID) = session
-        session
+        val domainCache = new LocalDomainCache(domain)
+        domains(domain) = domainCache
+        domainCache
       }
     }
   }
