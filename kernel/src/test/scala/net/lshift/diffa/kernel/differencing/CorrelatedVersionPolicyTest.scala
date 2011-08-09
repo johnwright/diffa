@@ -111,19 +111,19 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     expect(usMock.retrieveContent("id3")).andReturn("content3")
     expect(dsMock.generateVersion("content3")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3", downstreamVersionFor("vsn3")))
     expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn3", downstreamVersionFor("vsn3"))).
-      andReturn(new Correlation(null, pair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
+      andReturn(new Correlation(null, pair.asRef, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn3", "vsn3", downstreamVersionFor("vsn3"), false))
     expect(writer.clearDownstreamVersion(VersionID(pair.asRef, "id4"))).
-      andReturn(Correlation.asDeleted(pair, "id4", new DateTime))
+      andReturn(Correlation.asDeleted(pair.asRef, "id4", new DateTime))
     expect(usMock.retrieveContent("id5")).andReturn("content5")
     expect(dsMock.generateVersion("content5")).andReturn(new ProcessingResponse("id5", testData.values(1), "vsn5a", downstreamVersionFor("vsn5a")))
     expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id5"), testData.downstreamAttributes(1), JUL_8_2010_1, "vsn5a", downstreamVersionFor("vsn5a"))).
-        andReturn(new Correlation(null, pair, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
+        andReturn(new Correlation(null, pair.asRef, "id3", null, toStrMap(testData.downstreamAttributes(1)), JUL_8_2010_1, timestamp, "vsn5a", "vsn5a", downstreamVersionFor("vsn5a"), false))
 
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
     listener.onMatch(VersionID(pair.asRef, "id4"), null, TriggeredByScan); expectLastCall
 
     // We should still see an unmatched version check
-    expect(stores(pair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(stores(pair.asRef).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.scanUpstream(pair, writer, usMock, nullListener, feedbackHandle)
@@ -175,7 +175,7 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     listener.onMismatch(VersionID(pair.asRef, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan, Unfiltered); expectLastCall
 
     // We should still see an unmatched version check
-    expect(stores(pair).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
+    expect(stores(pair.asRef).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.scanUpstream(pair, writer, usMock, listener, feedbackHandle)

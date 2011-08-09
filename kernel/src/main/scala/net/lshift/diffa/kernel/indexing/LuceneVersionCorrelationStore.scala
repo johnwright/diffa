@@ -33,16 +33,16 @@ import org.apache.lucene.document._
 import org.apache.lucene.index.{IndexReader, Term, IndexWriter}
 import net.lshift.diffa.participant.scanning._
 import org.joda.time.{DateTime, LocalDate, DateTimeZone}
-import net.lshift.diffa.kernel.config.{Domain, DomainConfigStore, Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.AlertCodes
 import net.lshift.diffa.kernel.config.system.{InvalidSystemConfigurationException, SystemConfigStore}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, DomainConfigStore, Pair => DiffaPair}
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
  * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
  * of pair attributes.
  */
-class LuceneVersionCorrelationStore(val pair: DiffaPair, index:Directory, configStore:SystemConfigStore)
+class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, configStore:SystemConfigStore)
     extends VersionCorrelationStore
     with Closeable {
 
@@ -216,7 +216,7 @@ object LuceneVersionCorrelationStore {
     }
   }
 
-  def docToCorrelation(doc:Document, pair:DiffaPair) : Correlation = docToCorrelation(doc,pair.key,pair.domain.name)
+  def docToCorrelation(doc:Document, pair:DiffaPairRef) : Correlation = docToCorrelation(doc,pair.key,pair.domain)
   def docToCorrelation(doc:Document, id:VersionID) : Correlation = docToCorrelation(doc,id.pair.key,id.pair.domain)
 
   def docToCorrelation(doc:Document, pairKey:String, domain:String) = {

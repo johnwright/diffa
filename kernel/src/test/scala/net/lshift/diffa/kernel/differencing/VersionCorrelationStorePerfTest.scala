@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 import ch.qos.logback.classic.Level
 import net.lshift.diffa.participant.scanning.TimeRangeConstraint
-import net.lshift.diffa.kernel.config.{Domain, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Pair => DiffaPair}
 
 /**
  * Performance test for the version correlation store.
@@ -51,7 +51,7 @@ class VersionCorrelationStorePerfTest {
   }
 
   private val stores = LuceneVersionCorrelationStoreTest.stores
-  private val pair = DiffaPair(key="ab",domain=Domain(name="domain"))
+  private val pair = DiffaPairRef(key="ab",domain="domain")
 
   @Test
   def canQueryWithLargeNumbersOfMatchingCorrelations() {
@@ -60,7 +60,7 @@ class VersionCorrelationStorePerfTest {
     withTiming("load upstream versions") {
       val writer = stores(pair).openWriter()
       for (i <- 0 until vsnCount) {
-        writer.storeUpstreamVersion(VersionID(pair.asRef, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
+        writer.storeUpstreamVersion(VersionID(pair, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i)
       }
       writer.flush()
     }
@@ -74,7 +74,7 @@ class VersionCorrelationStorePerfTest {
     withTiming("load downstream versions") {
       val writer = stores(pair).openWriter()
       for (i <- 0 until vsnCount) {
-        writer.storeDownstreamVersion(VersionID(pair.asRef, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
+        writer.storeDownstreamVersion(VersionID(pair, "id" + i), attributes(i), JUL_1_2010_1, "vsn" + i, "dvsn" + i)
       }
       writer.flush()
     }

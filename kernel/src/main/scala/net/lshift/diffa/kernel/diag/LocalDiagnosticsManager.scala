@@ -18,13 +18,13 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
   private val pairs = HashMap[DiffaPairRef, PairDiagnostics]()
   private val maxEventsPerPair = 100
 
-  def logPairEvent(level: DiagnosticLevel, pair: DiffaPair, msg: String) {
-    val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair.asRef, new PairDiagnostics) }
+  def logPairEvent(level: DiagnosticLevel, pair: DiffaPairRef, msg: String) {
+    val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair, new PairDiagnostics) }
     pairDiag.logPairEvent(PairEvent(new DateTime(), level, msg))
   }
 
-  def queryEvents(pair:DiffaPair, maxEvents: Int) = {
-    pairs.synchronized { pairs.get(pair.asRef) } match {
+  def queryEvents(pair:DiffaPairRef, maxEvents: Int) = {
+    pairs.synchronized { pairs.get(pair) } match {
       case None           => Seq()
       case Some(pairDiag) => pairDiag.queryEvents(maxEvents)
     }
@@ -49,9 +49,8 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
   /**
    * When pairs are deleted, we stop tracking their status in the pair scan map.
    */
-  // TODO This could potentially take a DiffaPairRef at some stage
-  def onDeletePair(pair:DiffaPair) {
-    pairs.synchronized { pairs.remove(pair.asRef) }
+  def onDeletePair(pair:DiffaPairRef) {
+    pairs.synchronized { pairs.remove(pair) }
   }
 
   

@@ -84,14 +84,14 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
                    listener:DifferencingListener, handle:FeedbackHandle) = {
     val upstreamConstraints = pair.upstream.groupedConstraints
     constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy)
-      .scanParticipant(pair, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
+      .scanParticipant(pair.asRef, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
   }
 
   def scanDownstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
                      ds:DownstreamParticipant, listener:DifferencingListener, handle:FeedbackHandle) = {
     val downstreamConstraints = pair.downstream.groupedConstraints
     constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds)
-      .scanParticipant(pair, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
+      .scanParticipant(pair.asRef, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
   }
 
   private def constraintsOrEmpty(grouped:Seq[Seq[ScanConstraint]]):Seq[Seq[ScanConstraint]] =
@@ -102,7 +102,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
   private def generateDifferenceEvents(pair:DiffaPair, l:DifferencingListener, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
-    stores(pair).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
+    stores(pair.asRef).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
       corr => l.onMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin, Unfiltered))
   }
 
@@ -118,7 +118,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
     val log = LoggerFactory.getLogger(getClass)
 
-    def scanParticipant(pair:DiffaPair,
+    def scanParticipant(pair:DiffaPairRef,
                         writer:LimitedVersionCorrelationWriter,
                         endpoint:Endpoint,
                         bucketing:Seq[CategoryFunction],
@@ -134,7 +134,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
     }
 
-    def scanAggregates(pair:DiffaPair,
+    def scanAggregates(pair:DiffaPairRef,
                        writer:LimitedVersionCorrelationWriter,
                        endpoint:Endpoint,
                        bucketing:Seq[CategoryFunction],
@@ -164,7 +164,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
     }
 
-    def scanEntities(pair:DiffaPair,
+    def scanEntities(pair:DiffaPairRef,
                      writer:LimitedVersionCorrelationWriter,
                      endpoint:Endpoint,
                      constraints:Seq[ScanConstraint],
@@ -186,7 +186,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
         .foreach(handleMismatch(pair, writer, _, listener))
     }
 
-    def checkForCancellation(handle:FeedbackHandle, pair:DiffaPair) = {
+    def checkForCancellation(handle:FeedbackHandle, pair:DiffaPairRef) = {
       if (handle.isCancelled) {
         throw new ScanCancelledException(pair)
       }
@@ -204,32 +204,32 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
     }
 
-    def getAggregates(pair:DiffaPair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
-    def getEntities(pair:DiffaPair, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
-    def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
+    def getEntities(pair:DiffaPairRef, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
+    def handleMismatch(pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
 
   protected class UpstreamScanStrategy extends ScanStrategy {
 
-    def getAggregates(pair:DiffaPair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
       stores(pair).queryUpstreams(constraints, aggregator.collectUpstream)
       aggregator.digests
     }
 
-    def getEntities(pair:DiffaPair, constraints:Seq[ScanConstraint]) = {
+    def getEntities(pair:DiffaPairRef, constraints:Seq[ScanConstraint]) = {
       stores(pair).queryUpstreams(constraints).map(x => {
         ScanResultEntry.forEntity(x.id, x.upstreamVsn, x.lastUpdate, mapAsJavaMap(x.upstreamAttributes))
       })
     }
 
-    def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pair.asRef, id), attributes, lastUpdate, usVsn))
+            handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pair, id), attributes, lastUpdate, usVsn))
           } else {
-            handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pair.asRef, id)))
+            handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pair, id)))
           }
       }
     }

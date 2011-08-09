@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -91,4 +91,4 @@ trait FeedbackHandle {
 /**
  * Thrown when a scan has been cancelled.
  */
-class ScanCancelledException(pair:DiffaPair) extends Exception(pair.identifier)
+class ScanCancelledException(pair:DiffaPairRef) extends Exception(pair.identifier)

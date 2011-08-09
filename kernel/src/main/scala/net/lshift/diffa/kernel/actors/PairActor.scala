@@ -50,6 +50,8 @@ case class PairActor(pair:DiffaPair,
 
   self.id_=(pair.identifier)
 
+  private val pairRef = pair.asRef
+
   private var lastEventTime: Long = 0
   private var scheduledFlushes: ScheduledFuture[_] = _
 
@@ -148,7 +150,7 @@ case class PairActor(pair:DiffaPair,
     def call(command:(LimitedVersionCorrelationWriter => Correlation)) = {
       val message = VersionCorrelationWriterCommand(scanUuid, command)
       (self !!(message, 1000L * timeout)) match {
-        case Some(CancelMessage)  => throw new ScanCancelledException(pair)
+        case Some(CancelMessage)  => throw new ScanCancelledException(pairRef)
         case Some(result)         => result.asInstanceOf[Correlation]
         case None                 =>
           logger.error("%s: Writer proxy timed out after %s seconds processing command: %s "
@@ -303,9 +305,9 @@ case class PairActor(pair:DiffaPair,
     }
 
     state match {
-      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Scan failed")
-      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Scan cancelled")
-      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Scan completed")
+      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Scan failed")
+      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan cancelled")
+      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan completed")
       case _                        => // Ignore - not a state that we'll see
     }
 
@@ -359,8 +361,8 @@ case class PairActor(pair:DiffaPair,
       policy.replayUnmatchedDifferences(pair, differencingListener, TriggeredByBoot)
     } catch {
       case ex => {
-        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Failed to Difference Pair: " + ex.getMessage)
-        logger.error("Failed to difference pair " + pair.identifier, ex)
+        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to Difference Pair: " + ex.getMessage)
+        logger.error("Failed to difference pair " + pairRef.identifier, ex)
       }
     }
   }
@@ -399,8 +401,8 @@ case class PairActor(pair:DiffaPair,
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Cancellation)
           }
           case e:Exception => {
-            logger.error("Upstream scan failed: " + pair.identifier, e)
-            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Upstream scan failed: " + e.getMessage)
+            logger.error("Upstream scan failed: " + pairRef.identifier, e)
+            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Upstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Failure)
           }
         }
@@ -417,8 +419,8 @@ case class PairActor(pair:DiffaPair,
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Cancellation)
           }
           case e:Exception => {
-            logger.error("Downstream scan failed: " + pair.identifier, e)
-            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Downstream scan failed: " + e.getMessage)
+            logger.error("Downstream scan failed: " + pairRef.identifier, e)
+            diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Downstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Failure)
           }
         }
@@ -434,8 +436,8 @@ case class PairActor(pair:DiffaPair,
 
     } catch {
       case x: Exception => {
-        logger.error("Failed to initiate scan for pair: " + pair.identifier, x)
-        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Failed to initiate scan for pair: " + x.getMessage)
+        logger.error("Failed to initiate scan for pair: " + pairRef.identifier, x)
+        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to initiate scan for pair: " + x.getMessage)
         processBacklog(PairScanState.FAILED)
         false
       }
