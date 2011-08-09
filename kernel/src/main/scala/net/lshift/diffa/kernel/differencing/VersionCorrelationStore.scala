@@ -36,7 +36,7 @@ trait VersionCorrelationStore extends Closeable {
   /**
    * The unique key for the upstream and downstream participant pair
    */
-  val pair: DiffaPair
+  val pair: DiffaPairRef
 
   /**
    * Opens a new writer, giving access to write operations on the store.
@@ -152,9 +152,9 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
  */
 trait VersionCorrelationStoreFactory extends Closeable {
 
-  def apply(pair: DiffaPair): VersionCorrelationStore
+  def apply(pair: DiffaPairRef): VersionCorrelationStore
 
-  def remove(pair: DiffaPair): Unit
+  def remove(pair: DiffaPairRef): Unit
 }
 
 abstract class TypedAttribute { def value:String }

@@ -21,7 +21,7 @@ import org.apache.lucene.store.FSDirectory
 import net.lshift.diffa.kernel.differencing.VersionCorrelationStoreFactory
 import scala.collection.mutable.HashMap
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Factory that creates LuceneVersionCorrelationStore instances.
@@ -32,16 +32,16 @@ class LuceneVersionCorrelationStoreFactory[T <: FSDirectory](
   configStore: SystemConfigStore
 ) extends VersionCorrelationStoreFactory {
 
-  private val stores = HashMap[DiffaPair, LuceneVersionCorrelationStore]()
+  private val stores = HashMap[DiffaPairRef, LuceneVersionCorrelationStore]()
   
-  def apply(pair: DiffaPair) =
+  def apply(pair: DiffaPairRef) =
     stores.getOrElseUpdate(pair,
       new LuceneVersionCorrelationStore(pair, directory(pair), configStore))
 
-  private def directory(pair: DiffaPair) =
+  private def directory(pair: DiffaPairRef) =
     directoryClass.getConstructor(classOf[File]).newInstance(new File(baseDir, pair.identifier))
 
-  def remove(pair: DiffaPair) = if (stores.contains(pair)) {
+  def remove(pair: DiffaPairRef) = if (stores.contains(pair)) {
     stores(pair).close()
     stores.remove(pair)
   }

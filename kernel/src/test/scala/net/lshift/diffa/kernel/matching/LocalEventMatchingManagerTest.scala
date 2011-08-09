@@ -47,12 +47,12 @@ class LocalEventMatchingManagerTest {
 
   @Test
   def shouldNotReturnAMatcherForAnInvalidKey {
-    assertEquals(None, matchingManager.getMatcher(invalid))
+    assertEquals(None, matchingManager.getMatcher(invalid.asRef))
   }
 
   @Test
   def shouldReturnAMatcherForAPairKeyThatWasKnownAtStartup {
-    assertFalse(None.equals(matchingManager.getMatcher(pair1)))
+    assertFalse(None.equals(matchingManager.getMatcher(pair1.asRef)))
   }
 
   @Test
@@ -62,7 +62,7 @@ class LocalEventMatchingManagerTest {
     replay(systemConfigStore)
 
     matchingManager.onUpdatePair(pair3)
-    assertFalse(None.equals(matchingManager.getMatcher(pair3)))
+    assertFalse(None.equals(matchingManager.getMatcher(pair3.asRef)))
   }
 
   @Test
@@ -74,7 +74,7 @@ class LocalEventMatchingManagerTest {
     matchingManager.onUpdatePair(pair3)
     matchingManager.onDeletePair(pair3)
 
-    assertEquals(None, matchingManager.getMatcher(pair3))
+    assertEquals(None, matchingManager.getMatcher(pair3.asRef))
   }
 
   @Test
@@ -82,8 +82,8 @@ class LocalEventMatchingManagerTest {
     val l1 = createStrictMock(classOf[MatchingStatusListener])
     matchingManager.addListener(l1)
 
-    assertTrue(matchingManager.getMatcher(pair1).get.listeners.contains(l1))
-    assertTrue(matchingManager.getMatcher(pair2).get.listeners.contains(l1))
+    assertTrue(matchingManager.getMatcher(pair1.asRef).get.listeners.contains(l1))
+    assertTrue(matchingManager.getMatcher(pair2.asRef).get.listeners.contains(l1))
   }
 
   @Test
@@ -96,6 +96,6 @@ class LocalEventMatchingManagerTest {
     matchingManager.addListener(l1)
 
     matchingManager.onUpdatePair(pair3)
-    assertTrue(matchingManager.getMatcher(pair3).get.listeners.contains(l1))
+    assertTrue(matchingManager.getMatcher(pair3.asRef).get.listeners.contains(l1))
   }
 }

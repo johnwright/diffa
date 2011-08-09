@@ -186,9 +186,7 @@ class DefaultDifferencesManager(
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin, level:DifferenceFilterLevel) = {
     log.trace("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
 
-    val pair = systemConfig.getPair(id.pair.domain, id.pair.key)
-
-    matching.getMatcher(pair) match {
+    matching.getMatcher(id.pair) match {
       case Some(matcher) => {
         matcher.isVersionIDActive(id) match {
           case true  => reportPending(id, lastUpdate, upstreamVsn, downstreamVsn, origin)

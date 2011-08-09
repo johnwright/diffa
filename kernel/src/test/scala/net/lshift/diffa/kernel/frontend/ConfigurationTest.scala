@@ -212,8 +212,8 @@ class ConfigurationTest {
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(scanScheduler.onDeletePair(ac)).once
     expect(differencesManager.onDeletePair(ac.asRef)).once
-    expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(diagnostics.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
+    expect(versionCorrelationStoreFactory.remove(DiffaPairRef(key = "ac", domain = "domain"))).once
+    expect(diagnostics.onDeletePair(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(pairManager.startActor(pairInstance("ad"))).once
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
     expect(scanScheduler.onUpdatePair(ad)).once
@@ -248,10 +248,10 @@ class ConfigurationTest {
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(scanScheduler.onDeletePair(ab)).once
     expect(scanScheduler.onDeletePair(ac)).once
-    expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
-    expect(versionCorrelationStoreFactory.remove(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
-    expect(diagnostics.onDeletePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
-    expect(diagnostics.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
+    expect(versionCorrelationStoreFactory.remove(DiffaPairRef(key = "ab", domain = "domain"))).once
+    expect(versionCorrelationStoreFactory.remove(DiffaPairRef(key = "ac", domain = "domain"))).once
+    expect(diagnostics.onDeletePair(DiffaPairRef(key = "ab", domain = "domain"))).once
+    expect(diagnostics.onDeletePair(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(differencesManager.onDeletePair(DiffaPairRef(key = "ab", domain = "domain"))).once
     expect(differencesManager.onDeletePair(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(endpointListener.onEndpointRemoved("upstream1")).once

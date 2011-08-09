@@ -27,9 +27,9 @@ class LocalDiagnosticsManagerTest {
 
   @Test
   def shouldAcceptAndStoreLogEventForPair() {
-    diagnostics.logPairEvent(DiagnosticLevel.INFO, pair1, "Some msg")
+    diagnostics.logPairEvent(DiagnosticLevel.INFO, pair1.asRef, "Some msg")
 
-    val events = diagnostics.queryEvents(pair1, 100)
+    val events = diagnostics.queryEvents(pair1.asRef, 100)
     assertEquals(1, events.length)
     assertThat(events(0).timestamp,
       is(allOf(after((new DateTime).minusSeconds(5)), before((new DateTime).plusSeconds(1)))))
@@ -40,9 +40,9 @@ class LocalDiagnosticsManagerTest {
   @Test
   def shouldLimitNumberOfStoredLogEvents() {
     for (i <- 1 until 1000)
-      diagnostics.logPairEvent(DiagnosticLevel.INFO, pair1, "Some msg")
+      diagnostics.logPairEvent(DiagnosticLevel.INFO, pair1.asRef, "Some msg")
 
-    assertEquals(100, diagnostics.queryEvents(pair1, 1000).length)
+    assertEquals(100, diagnostics.queryEvents(pair1.asRef, 1000).length)
   }
 
   @Test
@@ -88,7 +88,7 @@ class LocalDiagnosticsManagerTest {
     expect(domainConfigStore.listPairs(domainName)).
         andStubReturn(Seq(FrontendConversions.toPairDef(pair2)))
     replayAll()
-    diagnostics.onDeletePair(pair1)
+    diagnostics.onDeletePair(pair1.asRef)
     assertEquals(Map("pair2" -> PairScanState.UNKNOWN), diagnostics.retrievePairScanStatesForDomain(domainName))
   }
 

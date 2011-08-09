@@ -157,10 +157,10 @@ class Configuration(val configStore: DomainConfigStore,
     withCurrentPair(domain, key, (p:DiffaPair) => {
       supervisor.stopActor(p.asRef)
       matchingManager.onDeletePair(p)
-      versionCorrelationStoreFactory.remove(p)
+      versionCorrelationStoreFactory.remove(p.asRef)
       scanScheduler.onDeletePair(p)
       differencesManager.onDeletePair(p.asRef)
-      diagnostics.onDeletePair(p)
+      diagnostics.onDeletePair(p.asRef)
     })
     configStore.deletePair(domain, key)
   }

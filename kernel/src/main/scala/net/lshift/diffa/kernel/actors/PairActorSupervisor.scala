@@ -57,7 +57,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
             val us = participantFactory.createUpstreamParticipant(pair.upstream)
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
             val pairActor = Actor.actorOf(
-              new PairActor(pair, us, ds, p, stores(pair),
+              new PairActor(pair, us, ds, p, stores(pair.asRef),
                             differencingMulticaster, pairScanListener,
                             diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
             )

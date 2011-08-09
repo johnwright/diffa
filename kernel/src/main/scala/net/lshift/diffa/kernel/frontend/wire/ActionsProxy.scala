@@ -46,6 +46,7 @@ class ActionsProxy(val config:DomainConfigStore,
 
   def invoke(request: ActionableRequest): InvocationResult =
     withValidPair(request.domain, request.pairKey) { pair =>
+      val pairRef = pair.asRef
       val client = new DefaultHttpClient
       val repairAction = config.getRepairActionDef(request.domain, request.actionId, request.pairKey)
       val url = repairAction.scope match {
@@ -56,7 +57,7 @@ class ActionsProxy(val config:DomainConfigStore,
         case RepairAction.ENTITY_SCOPE => "entity " + request.entityId + " of pair " + request.pairKey
         case RepairAction.PAIR_SCOPE => "pair " + request.pairKey
       })
-      diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Initiating action " + actionDescription)
+      diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Initiating action " + actionDescription)
 
       try {
         val httpResponse = client.execute(new HttpPost(url))
@@ -64,15 +65,15 @@ class ActionsProxy(val config:DomainConfigStore,
         val httpEntity = Source.fromInputStream(httpResponse.getEntity.getContent).mkString
 
         if (httpCode >= 200 && httpCode < 300) {
-          diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Action " + actionDescription + " succeeded: " + httpEntity)
+          diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Action " + actionDescription + " succeeded: " + httpEntity)
         } else {
-          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Action " + actionDescription + " failed: " + httpEntity)
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Action " + actionDescription + " failed: " + httpEntity)
         }
         InvocationResult.received(httpCode, httpEntity)
       }
       catch {
         case e =>
-          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Action " + actionDescription + " failed: " + e.getMessage)
+          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Action " + actionDescription + " failed: " + e.getMessage)
           InvocationResult.failure(e)
       }
     }

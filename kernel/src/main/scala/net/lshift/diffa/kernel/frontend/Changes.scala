@@ -49,7 +49,7 @@ class Changes(val domainConfig:DomainConfigStore,
       //    that the DifferencesManager doesn't emit spurious events.
 
       // If there is a matcher available, notify it first
-      mm.getMatcher(pair) match {
+      mm.getMatcher(pair.asRef) match {
         case None =>
         case Some(matcher) => matcher.onChange(pairEvt, () => {})
       }

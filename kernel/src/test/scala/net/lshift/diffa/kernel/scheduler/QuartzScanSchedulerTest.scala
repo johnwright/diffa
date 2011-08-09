@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.util.{Concurrent, ConcurrentJunitRunner}
 import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
-import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Pair => DiffaPair}
 
 /**
  * Test cases for the QuartzScanScheduler.

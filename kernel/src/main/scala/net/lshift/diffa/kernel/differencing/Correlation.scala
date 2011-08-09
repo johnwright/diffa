@@ -42,13 +42,13 @@ case class Correlation(
   @BeanProperty var isMatched:java.lang.Boolean = null
 ) {
   def this() = this(oid= null)
-  def this(oid:java.lang.Integer,pair:DiffaPair,
+  def this(oid:java.lang.Integer,pair:DiffaPairRef,
            id:String,
            up:Map[String,String],
            down:Map[String,String],
            lastUpdate:DateTime, timestamp:DateTime,
            uvsn:String, duvsn:String, ddvsn:String,
-           isMatched:java.lang.Boolean) = this(oid,pair.key,pair.domain.name,id,up,down,lastUpdate,timestamp,uvsn,duvsn,ddvsn,isMatched)
+           isMatched:java.lang.Boolean) = this(oid,pair.key,pair.domain,id,up,down,lastUpdate,timestamp,uvsn,duvsn,ddvsn,isMatched)
 
   // Allocate these in the constructor because of NPE when Hibernate starts mapping this stuff 
   if (upstreamAttributes == null) upstreamAttributes = new HashMap[String,String]
@@ -79,8 +79,8 @@ case class Correlation(
 }
 
 object Correlation {
-  def asDeleted(pair:DiffaPair, id:String, lastUpdate:DateTime) =
-    Correlation(null, pair.key, pair.domain.name, id, null, null, lastUpdate, new DateTime, null, null, null, true)
+  def asDeleted(pair:DiffaPairRef, id:String, lastUpdate:DateTime) =
+    Correlation(null, pair.key, pair.domain, id, null, null, lastUpdate, new DateTime, null, null, null, true)
   def asDeleted(id:VersionID, lastUpdate:DateTime) =
     Correlation(null, id.pair.key, id.pair.domain, id.id, null, null, lastUpdate, new DateTime, null, null, null, true)
 }

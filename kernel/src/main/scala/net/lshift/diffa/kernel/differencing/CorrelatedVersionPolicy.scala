@@ -21,8 +21,8 @@ import net.lshift.diffa.kernel.participants._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 
 /**
@@ -42,32 +42,32 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
   protected class DownstreamCorrelatingScanStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
       extends ScanStrategy {
     
-    def getAggregates(pair:DiffaPair, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
       stores(pair).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
 
-    def getEntities(pair:DiffaPair, constraints:Seq[ScanConstraint]) = {
+    def getEntities(pair:DiffaPairRef, constraints:Seq[ScanConstraint]) = {
       stores(pair).queryDownstreams(constraints).map(x => {
         ScanResultEntry.forEntity(x.id, x.downstreamDVsn, x.lastUpdate, mapAsJavaMap(x.downstreamAttributes))
       })
     }
 
-    def handleMismatch(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, categories, _, null, storedVsn) =>
-          handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pair.asRef, id)))
+          handleUpdatedCorrelation(writer.clearDownstreamVersion(VersionID(pair, id)))
         case VersionMismatch(id, categories, lastUpdated, partVsn, _) =>
           val content = us.retrieveContent(id)
           val response = ds.generateVersion(content)
 
           if (response.getDvsn == partVsn) {
             // This is the same destination object, so we're safe to store the correlation
-            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pair.asRef, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
+            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pair, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
           } else {
             // We can't update our datastore, so we just have to generate a mismatch
-            listener.onMismatch(VersionID(pair.asRef, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan, Unfiltered)
+            listener.onMismatch(VersionID(pair, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan, Unfiltered)
           }
       }
     }
