@@ -124,7 +124,8 @@ class HibernatePreparationTest {
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
         setProperty("hibernate.connection.url", "jdbc:derby:target/configStore-" + startVersion.startName + ";create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
+        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory")
     val sf = config.buildSessionFactory
     val dialect = Dialect.getDialect(config.getProperties)
 

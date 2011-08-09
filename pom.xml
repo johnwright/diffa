@@ -46,6 +46,7 @@
     <logback.version>0.9.28</logback.version>
     <akka.version>1.1.2</akka.version>
     <quartz.version>2.0.2</quartz.version>
+    <ehcache.version>2.4.3</ehcache.version>
   </properties>
 
   <scm>
@@ -123,6 +124,11 @@
       <!-- Hibernate imports 1.5.2 of slf4j, which is incompatible with the version
            of logback that we're using. Force an upgrade.
       -->
+    <dependency>
+      <groupId>net.sf.ehcache</groupId>
+      <artifactId>ehcache-core</artifactId>
+      <version>${ehcache.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
