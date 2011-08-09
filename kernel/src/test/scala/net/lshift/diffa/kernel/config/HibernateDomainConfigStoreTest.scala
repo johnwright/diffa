@@ -488,6 +488,7 @@ object HibernateDomainConfigStoreTest {
         setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
         setProperty("hibernate.connection.url", "jdbc:derby:target/domainConfigStore;create=true").
         setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
                                                                // otherwise the preparation step will not get committed
 

@@ -23,6 +23,7 @@
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
 
   <class name="CategoryDescriptor" table="category_descriptor" abstract="true">
+    <cache usage="read-write"/>
     <id name="id" type="int" column="category_id">
       <generator class="native"/>
     </id>
@@ -55,6 +56,7 @@
   </class>
 
   <class name="Endpoint" table="endpoint" abstract="false">
+    <cache usage="read-write"/>
     <id name="name" type="string"/>
     <many-to-one name="domain" class="Domain" not-null="true" lazy="false" fetch="join"/>
     <property name="scanUrl" column="scan_url" type="string" not-null="false" unique="false"/>
@@ -71,6 +73,7 @@
   </class>
 
   <class name="Pair" table="pair" abstract="false">
+    <cache usage="read-write"/>
     <id name="key" type="string" column="pair_key"/>
     <many-to-one name="upstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
     <many-to-one name="downstream" class="Endpoint" not-null="true" lazy="false" fetch="join"/>
@@ -81,15 +84,18 @@
   </class>
 
   <class name="Domain" table="domains" abstract="false">
+    <cache usage="read-write"/>
     <id name="name" type="string" column="name"/>
   </class>
 
   <class name="User" table="users" abstract="false">
+    <cache usage="read-write"/>
     <id name="name" type="string" column="name"/>
     <property name="email" type="string" />
   </class>
 
   <class name="Member" table="members" abstract="false">
+    <cache usage="read-write"/>
     <composite-id mapped="true">
       <key-many-to-one name="domain" class="Domain" column="domain_name" lazy="false"/>
       <key-many-to-one name="user" class="User" column="user_name" lazy="false"/>
@@ -97,19 +103,22 @@
   </class>
 
   <class name="ConfigOption" table="config_options" abstract="false">
+    <cache usage="read-write"/>
     <composite-id mapped="true" class="net.lshift.diffa.kernel.config.DomainScopedKey">
       <key-property name="key" type="string" column="opt_key" />
-      <key-many-to-one name="domain" class="Domain" column="domain" />
+      <key-many-to-one name="domain" class="Domain" column="domain" lazy="false" />
     </composite-id>
     <property name="value" type="string" column="opt_val" />
   </class>
 
   <class name="SystemConfigOption" table="system_config_options" abstract="false">
+    <cache usage="read-write"/>
     <id name="key" type="string" column="opt_key" />
     <property name="value" type="string" column="opt_val" />
   </class>
 
   <class name="RepairAction" table="repair_actions" abstract="false">
+    <cache usage="read-write"/>
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
       <key-many-to-one name="pair" class="Pair" column="pair_key" lazy="false" />
@@ -119,6 +128,7 @@
   </class>
 
   <class name="Escalation" table="escalations" abstract="false">
+    <cache usage="read-write"/>
     <composite-id mapped="true">
       <key-property name="name" type="string" column="name" />
       <key-many-to-one name="pair" class="Pair" column="pair_key" lazy="false"/>

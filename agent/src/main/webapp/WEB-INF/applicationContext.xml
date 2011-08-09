@@ -309,6 +309,7 @@
             <property name="jndiName" value="java:comp/env/diffaHibernateDialect"/>
           </bean>
         </constructor-arg>
+        <constructor-arg value="net.sf.ehcache.hibernate.EhCacheRegionFactory"/>
       </bean>
     </property>
     <property name="mappingResources">
