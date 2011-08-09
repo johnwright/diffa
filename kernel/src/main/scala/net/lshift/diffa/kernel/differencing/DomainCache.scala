@@ -53,6 +53,11 @@ trait DomainCache {
   def upgradePendingUnmatchedEvent(id:VersionID):DifferenceEvent
 
   /**
+   * Indicates that a given pending event is no longer valid - we've received a match, so we won't be upgrading it.
+   */
+  def cancelPendingUnmatchedEvent(id:VersionID, vsn:String):DifferenceEvent
+
+  /**
    * Adds a matched event to the cache. This will result in the removal of any earlier unmatched event for the same id.
    * The matched event will also be marked for expiry at some interval defined by the cache implementation, ensuring
    * that matched events do not result in the cache becoming full.

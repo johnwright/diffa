@@ -29,13 +29,14 @@ import org.joda.time.{Interval, DateTime}
  */
 class LocalDomainCache(val domain:String) extends DomainCache {
   private val pending = new HashMap[VersionID, DifferenceEvent]
-  private val events = new LinkedHashMap[String,DifferenceEvent]
+  private val seqIdsByVersionId = new HashMap[VersionID, String]
+  private val eventsBySeqId = new LinkedHashMap[String,DifferenceEvent]
   private val seqGenerator = new AtomicInteger(1)
 
-  def currentSequenceId = events.size match {
+  def currentSequenceId = eventsBySeqId.size match {
     case 0 => "0"
     case _ => {
-      val (_, event) = events.last
+      val (_, event) = eventsBySeqId.last
       event.seqId
     }
   }
@@ -45,8 +46,31 @@ class LocalDomainCache(val domain:String) extends DomainCache {
   }
 
   def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) = {
-    filter(id)
-    nextSequence(id, lastUpdate, upstreamVsn, downstreamVsn, MatchState.UNMATCHED)    
+    def report() = nextSequence(id, lastUpdate, upstreamVsn, downstreamVsn, MatchState.UNMATCHED)
+    def remove(existingSeqId:String) = { seqIdsByVersionId.remove(id); eventsBySeqId.remove(existingSeqId) }
+
+    seqIdsByVersionId.get(id) match  {
+      case Some(existingSeqId) =>
+        val existing = eventsBySeqId(existingSeqId)
+        existing.state match {
+          case MatchState.UNMATCHED =>
+            // We've already got an unmatched event. See if it matches all the criteria.
+            if (existing.upstreamVsn == upstreamVsn && existing.downstreamVsn == downstreamVsn) {
+              existing
+            } else {
+              remove(existingSeqId)
+              report()
+            }
+
+          case MatchState.MATCHED =>
+              // The difference has re-occurred. Remove the match, and add a difference.
+            remove(existingSeqId)
+            report()
+        }
+
+      case None =>
+        report()
+    }
   }
 
   def upgradePendingUnmatchedEvent(id:VersionID) = {
@@ -57,37 +81,47 @@ class LocalDomainCache(val domain:String) extends DomainCache {
     }
   }
 
-  /**
-   * This filter is implemented in a separate function to improve the factoring and because
-   * the tuple syntax in Scala (i.e. {_1,_2}) is close to unreadable to the naked eye
-   */
-  def filter(id:VersionID) = {
-    events.find( p => (p._2.objId == id && p._2.state == MatchState.UNMATCHED) ) match {
-      case None    => false
-      case Some(x) => {
-        events -= x._1
-        true
-      }
+  def cancelPendingUnmatchedEvent(id:VersionID, vsn:String) = {
+    pending.get(id) match {
+      case Some(event) =>
+        if (event.upstreamVsn == vsn) {
+          pending.remove(id).get
+        } else {
+          null
+        }
+      case None => null
     }
   }
 
   def addMatchedEvent(id:VersionID, vsn:String) = {
     // Ensure there is an unmatched event to override
-    filter(id) match {
-      case true  => nextSequence(id, new DateTime, vsn, vsn, MatchState.MATCHED)
-      case false => null
+    seqIdsByVersionId.get(id) match {
+      case Some(existingSeqId) =>
+        val existing = eventsBySeqId(existingSeqId)
+        existing.state match {
+          case MatchState.MATCHED => // Ignore. We've already got an event for what we want.
+            existing
+          case MatchState.UNMATCHED =>
+            // A difference has gone away. Remove the difference, and add in a match
+            seqIdsByVersionId.remove(id)
+            eventsBySeqId.remove(existingSeqId)
+            nextSequence(id, new DateTime, vsn, vsn, MatchState.MATCHED)
+        }
+      case None =>
+        null
     }
   }
 
   def nextSequence(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, state:MatchState) = {
     val sequence = nextSequenceId.toString
     val event = new DifferenceEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn)
-    events(sequence)= event
+    eventsBySeqId(sequence) = event
+    seqIdsByVersionId(id) = sequence
     event
   }
 
   def retrieveUnmatchedEvents(interval:Interval) =
-    events.filter(p => p._2.state == MatchState.UNMATCHED && interval.contains(p._2.detectedAt)).values.toSeq
+    eventsBySeqId.filter(p => p._2.state == MatchState.UNMATCHED && interval.contains(p._2.detectedAt)).values.toSeq
 
   def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) =
     retrieveUnmatchedEvents(interval).filter(_.objId.pair.key == pairKey).slice(offset, offset + length)
@@ -98,14 +132,14 @@ class LocalDomainCache(val domain:String) extends DomainCache {
   def retrieveEventsSince(evtSeqId:String):Seq[DifferenceEvent] = {
     val seqIdNum = Integer.parseInt(evtSeqId)
 
-    events.dropWhile(p => {
+    eventsBySeqId.dropWhile(p => {
       val curSeqIdNum = Integer.parseInt(p._1)
       curSeqIdNum <= seqIdNum
     }).values.toSeq
   }
 
   def getEvent(evtSeqId:String) : DifferenceEvent = {    
-    events.get(evtSeqId) match {
+    eventsBySeqId.get(evtSeqId) match {
       case None    => throw new InvalidSequenceNumberException(evtSeqId)
       case Some(e) => e
     }

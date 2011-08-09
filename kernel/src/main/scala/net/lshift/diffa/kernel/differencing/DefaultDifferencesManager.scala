@@ -222,7 +222,7 @@ class DefaultDifferencesManager(
   /**
    * This event is unimportant from the perspective of maintaining the domain, hence just drop it
    */
-  def onPaired(id: VersionID, vsn: String) = ()
+  def onPaired(id: VersionID, vsn: String) = cancelPending(id, vsn)
 
 
   //
@@ -295,6 +295,14 @@ class DefaultDifferencesManager(
         differenceListener.onMismatch(id, evt.detectedAt, evt.upstreamVsn, evt.downstreamVsn, LiveWindow, MatcherFiltered)
       } else {
         log.debug("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
+      }
+    })
+  }
+  def cancelPending(id:VersionID, vsn:String) {
+    quietWithDomainCache(id.pair.domain).foreach(c => {
+      val evt = c.cancelPendingUnmatchedEvent(id, vsn)
+      if (evt != null) {
+        log.debug("Cancelling pending event for " + id)
       }
     })
   }
