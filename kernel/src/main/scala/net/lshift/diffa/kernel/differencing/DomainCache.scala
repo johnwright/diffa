@@ -35,15 +35,21 @@ trait DomainCache {
   def currentSequenceId:String
 
   /**
+   * Queries whether a given difference already exists for the given upstream/downstream vsn pairing for the given
+   * id.
+   */
+  def isUnmatched(id:VersionID, upstreamVsn:String, downstreamVsn:String):Boolean
+
+  /**
    * Adds a pending event for the given version id into the cache.
    */
-  def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String)
+  def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, seen:DateTime)
 
   /**
    * Adds a reportable unmatched event for the given version id into the cache. Returns the detail of the event
    * (including a sequence id). Any previous matched event for the same id will be removed.
    */
-  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String):DifferenceEvent
+  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, seen:DateTime):DifferenceEvent
 
   /**
    * Upgrades the given pending event to a reportable event. Returns the detail of the event (including a sequence id).
@@ -63,6 +69,12 @@ trait DomainCache {
    * that matched events do not result in the cache becoming full.
    */
   def addMatchedEvent(id:VersionID, vsn:String):DifferenceEvent
+
+  /**
+   * Indicates that all differences in the cache older than the given date should be marked as matched. This is generally
+   * invoked upon a scan being completed, and allows for events that have disappeared to be removed.
+   */
+  def matchEventsOlderThan(dateTime: DateTime)
 
   /**
    * Retrieves all unmatched events that have been added to the cache where their detection timestamp

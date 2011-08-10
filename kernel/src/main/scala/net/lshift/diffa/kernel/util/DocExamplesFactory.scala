@@ -65,7 +65,7 @@ class DocExamplesFactory {
 
   val event = DifferenceEvent("6f72b9",VersionID(DiffaPairRef("pairKey", "mydomain"), "4f8a99"),
                            new DateTime(),
-                           MatchState.UNMATCHED, "upstreamV", "downstreamV")
+                           MatchState.UNMATCHED, "upstreamV", "downstreamV", new DateTime)
 
   def getExamples: java.util.Map[Class[_], Object] = {
     val map = new java.util.HashMap[Class[_], Object]

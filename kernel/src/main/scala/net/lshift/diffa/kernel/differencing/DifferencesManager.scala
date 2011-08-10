@@ -31,7 +31,7 @@ trait DifferencesManager {
    * Creates a writer for recording differences. The writer can be optionally opened in overwrite mode. If this is done,
    * then when the writer is closed, any difference not seen within the scope of the writer will be marked as matched.
    */
-  def createDifferenceWriter(overwrite:Boolean):DifferenceWriter
+  def createDifferenceWriter(domain:String, overwrite:Boolean):DifferenceWriter
 
   /**
    * Retrieves a version for the given domain.
@@ -115,14 +115,15 @@ class InvalidSequenceNumberException(val id:String) extends Exception(id)
 class SequenceOutOfDateException extends Exception
 
 case class DifferenceEvent(
-  @BeanProperty var seqId:String,
-  @BeanProperty var objId:VersionID,
-  @BeanProperty var detectedAt:DateTime,
-  @BeanProperty var state:MatchState,
-  @BeanProperty var upstreamVsn:String,
-  @BeanProperty var downstreamVsn:String) {
+  @BeanProperty var seqId:String = null,
+  @BeanProperty var objId:VersionID = null,
+  @BeanProperty var detectedAt:DateTime = null,
+  @BeanProperty var state:MatchState = null,
+  @BeanProperty var upstreamVsn:String = null,
+  @BeanProperty var downstreamVsn:String = null,
+  @BeanProperty var lastSeen:DateTime = null) {
 
- def this() = this(null, null, null, MatchState.UNMATCHED, null, null)
+ def this() = this(seqId = null)
     
 }
 

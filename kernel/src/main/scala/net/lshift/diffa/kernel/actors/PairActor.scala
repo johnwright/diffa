@@ -62,12 +62,6 @@ case class PairActor(pair:DiffaPair,
   @ThreadSafe
   private var feedbackHandle:FeedbackHandle = null
 
-  /**
-   * Thread safe buffer of match events that will be accessed directly by different sub actors
-   */
-  @ThreadSafe
-  private val bufferedMatchEvents = new SynchronizedQueue[MatchEvent]
-
   lazy val writer = store.openWriter()
 
   /**
@@ -168,8 +162,7 @@ case class PairActor(pair:DiffaPair,
     /**
      * Buffer up the match event because these won't be replayed by a subsequent replayUnmatchedDifferences operation.
      */
-    def onMatch(id:VersionID, vsn:String, origin:MatchOrigin)
-    = bufferedMatchEvents.enqueue(MatchEvent(id, _.onMatch(id, vsn, LiveWindow)))
+    def onMatch(id:VersionID, vsn:String, origin:MatchOrigin) = ()
 
     /**
      * Drop the mismatch, since we will be doing a full replayUnmatchedDifferences and the end of the scan process.
@@ -281,12 +274,9 @@ case class PairActor(pair:DiffaPair,
     if (activeScan.isCompleted) {
       logger.trace("Finished scan %s".format(activeScan.uuid))
 
-      // Feed all of the match events out to the interested parties
-      flushBufferedEvents
-
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
-      val diffWriter = differencesManager.createDifferenceWriter(overwrite = true)
+      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, overwrite = true)
       try {
         diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences")
         policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan)
@@ -301,8 +291,6 @@ case class PairActor(pair:DiffaPair,
       leaveScanState(PairScanState.UP_TO_DATE)
     }
   }
-
-  def flushBufferedEvents = bufferedMatchEvents.dequeueAll(e => {e.command(differencingListener); true})
 
   /**
    * Ensures that the scan state is left cleanly
@@ -326,9 +314,6 @@ case class PairActor(pair:DiffaPair,
 
     // Re-queue all buffered commands
     processBacklog(state)
-
-    // Make sure that the event queue is empty for the next scan
-    bufferedMatchEvents.clear()
 
     // Make sure that this flag is zeroed out
     feedbackHandle = null
@@ -369,7 +354,7 @@ case class PairActor(pair:DiffaPair,
     try {
       writer.flush()
 
-      val diffWriter = differencesManager.createDifferenceWriter(overwrite = true)
+      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, overwrite = true)
       try {
         policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot)
         diffWriter.close()
@@ -395,12 +380,6 @@ case class PairActor(pair:DiffaPair,
 
     // allocate a writer proxy
     val writerProxy = createWriterProxy(createdScan.uuid)
-
-    // Make sure that the event buffer is empty for this scan
-    if (bufferedMatchEvents.size > 0) {
-      logger.warn("Found %s match events in the buffer, possible bug".format(bufferedMatchEvents.size))
-      bufferedMatchEvents.clear()
-    }
 
     pairScanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING)
 

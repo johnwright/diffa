@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import java.lang.String
 import java.util.concurrent.atomic.AtomicInteger
 import collection.mutable.{LinkedHashMap, HashMap}
-import org.joda.time.{Interval, DateTime}
+import org.joda.time.{DateTime, Interval}
 
 /**
  * Local implementation of the domain cache trait. In no way clustered or crash tolerant.
@@ -41,12 +41,12 @@ class LocalDomainCache(val domain:String) extends DomainCache {
     }
   }
 
-  def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) {
-    pending(id) = DifferenceEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn)
+  def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, seen:DateTime) {
+    pending(id) = DifferenceEvent(null, id, lastUpdate, MatchState.UNMATCHED, upstreamVsn, downstreamVsn, seen)
   }
 
-  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String) = {
-    def report() = nextSequence(id, lastUpdate, upstreamVsn, downstreamVsn, MatchState.UNMATCHED)
+  def addReportableUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, seen:DateTime) = {
+    def report() = nextSequence(id, lastUpdate, upstreamVsn, downstreamVsn, MatchState.UNMATCHED, seen)
     def remove(existingSeqId:String) = { seqIdsByVersionId.remove(id); eventsBySeqId.remove(existingSeqId) }
 
     seqIdsByVersionId.get(id) match  {
@@ -56,6 +56,9 @@ class LocalDomainCache(val domain:String) extends DomainCache {
           case MatchState.UNMATCHED =>
             // We've already got an unmatched event. See if it matches all the criteria.
             if (existing.upstreamVsn == upstreamVsn && existing.downstreamVsn == downstreamVsn) {
+              // Update the last time it was seen
+              existing.lastSeen = seen
+
               existing
             } else {
               remove(existingSeqId)
@@ -75,8 +78,8 @@ class LocalDomainCache(val domain:String) extends DomainCache {
 
   def upgradePendingUnmatchedEvent(id:VersionID) = {
     pending.remove(id) match {
-      case Some(DifferenceEvent(_, _, lastUpdate, _, upstreamVsn, downstreamVsn)) =>
-        addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
+      case Some(DifferenceEvent(_, _, lastUpdate, _, upstreamVsn, downstreamVsn, seen)) =>
+        addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, seen)
       case None => null
     }
   }
@@ -105,16 +108,35 @@ class LocalDomainCache(val domain:String) extends DomainCache {
             // A difference has gone away. Remove the difference, and add in a match
             seqIdsByVersionId.remove(id)
             eventsBySeqId.remove(existingSeqId)
-            nextSequence(id, new DateTime, vsn, vsn, MatchState.MATCHED)
+            nextSequence(id, new DateTime, vsn, vsn, MatchState.MATCHED, new DateTime)
         }
       case None =>
         null
     }
   }
 
-  def nextSequence(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, state:MatchState) = {
+  def matchEventsOlderThan(cutoff: DateTime) {
+    eventsBySeqId.values.filter(e => e.state == MatchState.UNMATCHED && e.lastSeen.isBefore(cutoff)).foreach(e => {
+      // We've found an event that needs to be closed down
+      seqIdsByVersionId.remove(e.objId)
+      eventsBySeqId.remove(e.seqId)
+      nextSequence(e.objId, new DateTime, e.upstreamVsn, e.upstreamVsn, MatchState.MATCHED, new DateTime)
+    })
+  }
+
+  def isUnmatched(id:VersionID, upstreamVsn:String, downstreamVsn:String) = {
+    seqIdsByVersionId.get(id) match {
+      case Some(existingSeqId) =>
+        val event = eventsBySeqId(existingSeqId)
+        event.state == MatchState.UNMATCHED && event.upstreamVsn == upstreamVsn && event.downstreamVsn == downstreamVsn
+      case None =>
+        false
+    }
+  }
+
+  def nextSequence(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, state:MatchState, seen:DateTime) = {
     val sequence = nextSequenceId.toString
-    val event = new DifferenceEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn)
+    val event = new DifferenceEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn, seen)
     eventsBySeqId(sequence) = event
     seqIdsByVersionId(id) = sequence
     event

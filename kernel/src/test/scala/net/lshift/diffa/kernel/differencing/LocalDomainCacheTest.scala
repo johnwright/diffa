@@ -36,7 +36,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldNotPublishPendingUnmatchedEventInAllUnmatchedList {
     val now = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), now, "uV", "dV")
+    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), now, "uV", "dV", now)
     val interval = new Interval(now.minusDays(1), now.plusDays(1))
     assertEquals(0, cache.retrieveUnmatchedEvents(interval).length)
   }
@@ -44,7 +44,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldPublishUpgradedUnmatchedEventInAllUnmatchedList {
     val timestamp = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV")
+    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
     cache.upgradePendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"))
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
@@ -66,7 +66,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldIgnoreUpgradeRequestWhenPendingEventHasBeenUpgradedAlready {
     val timestamp = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV")
+    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
     cache.upgradePendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"))
     cache.upgradePendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"))
 
@@ -77,7 +77,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldIgnoreUpgradeRequestWhenPendingEventHasBeenCancelled {
     val timestamp = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV")
+    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
     cache.cancelPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), "uV")
     cache.upgradePendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"))
 
@@ -88,7 +88,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldNotCancelPendingEventWhenProvidedVersionIsDifferent {
     val timestamp = new DateTime()
-    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV")
+    cache.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
     cache.cancelPendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), "uV-different")
     cache.upgradePendingUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"))
 
@@ -99,7 +99,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldPublishAnAddedReportableUnmatchedEvent {
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV")
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
@@ -140,7 +140,7 @@ class LocalDomainCacheTest {
   def addUnmatchedEvents(start:DateTime, size:Int, frontFence:Int, rearFence:Int) : Interval = {
     for (i <- 1 to size) {
       val timestamp = start.plusMinutes(i)
-      cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id" + i), timestamp, "uV", "dV")
+      cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id" + i), timestamp, "uV", "dV", timestamp)
     }
     new Interval(start.plusMinutes(frontFence), start.plusMinutes(size - rearFence))
   }
@@ -174,7 +174,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldAddMatchedEventThatOverridesUnmatchedEventWhenAskingForSequenceUpdate {
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV")
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
@@ -195,7 +195,7 @@ class LocalDomainCacheTest {
   @Test
   def shouldRemoveUnmatchedEventFromAllUnmatchedWhenAMatchHasBeenAdded {
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV")
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
     cache.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uuV")
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val updates = cache.retrieveUnmatchedEvents(interval)
@@ -207,7 +207,7 @@ class LocalDomainCacheTest {
   def shouldIgnoreMatchedEventWhenNoOverridableUnmatchedEventIsStored {
     val timestamp = new DateTime()
     // Get an initial event and a sequence number
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV")
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
     val lastSeq = unmatched.last.seqId
@@ -222,8 +222,9 @@ class LocalDomainCacheTest {
   def shouldOverrideOlderUnmatchedEventsWhenNewMismatchesOccurWithDifferentDetails {
     // Add two events for the same object, and then ensure the old list only includes the most recent one
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV")
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV2", "dV2")
+    val seen = new DateTime().plusSeconds(5)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV2", "dV2", seen)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
@@ -231,14 +232,16 @@ class LocalDomainCacheTest {
     assertEquals(VersionID(DiffaPairRef("pair2","domain"), "id2"), unmatched(0).objId)
     assertEquals("uV2", unmatched(0).upstreamVsn)
     assertEquals("dV2", unmatched(0).downstreamVsn)
+    assertEquals(seen, unmatched(0).lastSeen)
   }
 
   @Test
-  def shouldRetainOlderUnmatchedEventsWhenNewEventsAreAddedWithSameDetails {
+  def shouldRetainOlderUnmatchedEventsWhenNewEventsAreAddedWithSameDetailsButUpdateTheSeenTime {
     // Add two events for the same object with all the same details, and ensure that we don't modify the event
     val timestamp = new DateTime()
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV")
-    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp.plusSeconds(15), "uV", "dV")
+    val seen = new DateTime().plusSeconds(5)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp.plusSeconds(15), "uV", "dV", seen)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
@@ -247,5 +250,62 @@ class LocalDomainCacheTest {
     assertEquals("uV", unmatched(0).upstreamVsn)
     assertEquals("dV", unmatched(0).downstreamVsn)
     assertEquals(timestamp, unmatched(0).detectedAt)
+    assertEquals(seen, unmatched(0).lastSeen)
+  }
+
+  @Test
+  def shouldRemoveEventsNotSeenBeforeTheGivenCutoff {
+    val timestamp = new DateTime()
+    val seen1 = timestamp.plusSeconds(5)
+    val seen2 = timestamp.plusSeconds(8)
+    val cutoff = timestamp.plusSeconds(9)
+    val seen3 = timestamp.plusSeconds(10)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV", seen2)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id3"), timestamp, "uV", "dV", seen3)
+    cache.matchEventsOlderThan(cutoff)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
+    assertEquals(1, unmatched.length)
+    assertEquals(VersionID(DiffaPairRef("pair2","domain"), "id3"), unmatched(0).objId)
+    assertEquals("uV", unmatched(0).upstreamVsn)
+    assertEquals("dV", unmatched(0).downstreamVsn)
+    assertEquals(timestamp, unmatched(0).detectedAt)
+  }
+
+  @Test
+  def shouldAddMatchEventsForThoseRemovedByACutoff {
+    val now = new DateTime
+    val timestamp = now .minusSeconds(10)
+    val seen1 = now .plusSeconds(5)
+    val seen2 = now .plusSeconds(8)
+    val cutoff = now .plusSeconds(9)
+    val seen3 = now .plusSeconds(10)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV", seen2)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id3"), timestamp, "uV", "dV", seen3)
+    cache.matchEventsOlderThan(cutoff)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveEventsSince("0")
+    assertEquals(3, unmatched.length)
+
+    assertEquals(VersionID(DiffaPairRef("pair2","domain"), "id3"), unmatched(0).objId)
+    assertEquals("uV", unmatched(0).upstreamVsn)
+    assertEquals("dV", unmatched(0).downstreamVsn)
+    assertEquals(timestamp, unmatched(0).detectedAt)
+
+    assertEquals(VersionID(DiffaPairRef("pair2","domain"), "id1"), unmatched(1).objId)
+    assertEquals("uV", unmatched(1).upstreamVsn)
+    assertEquals("uV", unmatched(1).downstreamVsn)
+    assertTrue(!unmatched(1).detectedAt.isBefore(now))      // Detection should be some time at or after now
+    assertTrue(!unmatched(1).lastSeen.isBefore(now))        // Last seen should be some time at or after now
+
+    assertEquals(VersionID(DiffaPairRef("pair2","domain"), "id2"), unmatched(2).objId)
+    assertEquals("uV", unmatched(2).upstreamVsn)
+    assertEquals("uV", unmatched(2).downstreamVsn)
+    assertTrue(!unmatched(2).detectedAt.isBefore(now))      // Detection should be some time at or after now
+    assertTrue(!unmatched(2).lastSeen.isBefore(now))        // Last seen should be some time at or after now
   }
 }
