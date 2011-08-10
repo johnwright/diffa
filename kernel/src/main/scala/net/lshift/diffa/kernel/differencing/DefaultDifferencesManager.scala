@@ -47,8 +47,6 @@ class DefaultDifferencesManager(
         val domainConfig:DomainConfigStore,
         val cacheProvider:DomainCacheProvider,
         val matching:MatchingManager,
-        val vpm:VersionPolicyManager,
-        val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory,
         val differenceListener:DifferencingListener)
     extends DifferencesManager
@@ -95,6 +93,8 @@ class DefaultDifferencesManager(
         None
     }
   }
+
+  def createDifferenceWriter(overwrite: Boolean) = null
 
   def retrieveDomainSequenceNum(id:String) = safeGetDomain(id).currentSequenceId
 
@@ -164,14 +164,6 @@ class DefaultDifferencesManager(
     nc.registerForDifferenceEvents(this, Unfiltered)
   }
 
-  override def onAgentConfigurationActivated {
-    // Once the configuration is activated, fill our domain caches up with differences again. When persistent
-    // differences (#294) come about, this won't be needed.
-    systemConfig.listDomains.foreach(d => {
-      domainConfig.listPairs(d.name).foreach(p => pairPolicyClient.difference(DiffaPairRef(domain = d.name, key = p.key)))
-    })
-  }
-
   //
   // Differencing Input
   //
@@ -237,7 +229,6 @@ class DefaultDifferencesManager(
    * When pairs are updated, perform a differencing run to scan with their status.
    */
   def onUpdatePair(pairRef: DiffaPairRef) {
-    pairPolicyClient.difference(pairRef)
   }
 
   def onDeletePair(pair: DiffaPairRef) {

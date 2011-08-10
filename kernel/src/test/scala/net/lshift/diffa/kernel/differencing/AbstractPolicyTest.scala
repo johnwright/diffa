@@ -53,6 +53,7 @@ abstract class AbstractPolicyTest {
   val usMock = createStrictMock("us", classOf[UpstreamParticipant])
   val dsMock = createStrictMock("ds", classOf[DownstreamParticipant])
   val nullListener = new NullDifferencingListener
+  val nullDiffWriter = createMock(classOf[DifferenceWriter])
   val diagnostics = createStrictMock("diagnostics", classOf[DiagnosticsManager])
 
   val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
@@ -67,6 +68,7 @@ abstract class AbstractPolicyTest {
   val feedbackHandle = new NonCancellingFeedbackHandle
 
   val listener = createStrictMock("listener", classOf[DifferencingListener])
+  val diffWriter = createStrictMock("diffWriter", classOf[DifferenceWriter])
 
   val systemConfigStore = createStrictMock("configStore", classOf[SystemConfigStore])
   val domainName = "domain"
@@ -84,8 +86,8 @@ abstract class AbstractPolicyTest {
   expect(systemConfigStore.getPair(domainName,pairKey)).andReturn(pair).anyTimes
   replay(systemConfigStore)
 
-  protected def replayAll = replay(usMock, dsMock, store, writer, listener)
-  protected def verifyAll = verify(usMock, dsMock, store, writer, listener, systemConfigStore)
+  protected def replayAll = replay(usMock, dsMock, store, writer, listener, diffWriter)
+  protected def verifyAll = verify(usMock, dsMock, store, writer, listener, systemConfigStore, diffWriter)
 
   // Make declaring of sequences of specific types clearer
   def DigestsFromParticipant[T](vals:T*) = Seq[T](vals:_*)
@@ -223,36 +225,18 @@ abstract class AbstractPolicyTest {
       downstreamAttributes = Map("someInt" -> IntegerAttribute(1234)))
 
   protected def shouldReportMismatchesReportedByUnderlyingStore(testData: PolicyTestData) {
-    pair.upstream.categories = testData.upstreamCategories
-    pair.downstream.categories = testData.downstreamCategories
     val timestamp = new DateTime
-    // Expect only a top-level scan between the pairs
-    expectUpstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
-      DigestsFromParticipant(
-        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn1"), testData.attributes(0)),
-        ScanResultEntry.forAggregate(DigestUtils.md5Hex("vsn2"), testData.attributes(1))),
-      VersionsFromStore(
-        Up("id1", testData.values(0), "vsn1"),
-        Up("id2", testData.values(1), "vsn2")))
-    expectDownstreamAggregateScan(testData.bucketing(0), testData.constraints(0),
-      DigestsFromParticipant(
-        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn1a")), testData.attributes(0)),
-        ScanResultEntry.forAggregate(DigestUtils.md5Hex(downstreamVersionFor("vsn2a")), testData.attributes(1))),
-      VersionsFromStore(Down("id1", testData.values(0), "vsn1a", downstreamVersionFor("vsn1a")),
-                        Down("id2", testData.values(1), "vsn2a", downstreamVersionFor("vsn2a"))))
 
     // If the version check returns mismatches, we should see differences generated
     expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
       new Correlation(null, pair.asRef, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
       new Correlation(null, pair.asRef, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
-    listener.onMismatch(VersionID(pair.asRef, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan, Unfiltered); expectLastCall
-    listener.onMismatch(VersionID(pair.asRef, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", TriggeredByScan, Unfiltered); expectLastCall
+    diffWriter.writeMismatch(VersionID(pair.asRef, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan); expectLastCall
+    diffWriter.writeMismatch(VersionID(pair.asRef, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", TriggeredByScan); expectLastCall
 
     replayAll
 
-    policy.scanUpstream(pair, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(pair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(pair, listener)
+    policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan)
 
     verifyAll
   }

@@ -72,6 +72,9 @@ abstract class AbstractDataDrivenPolicyTest {
   val listener = createStrictMock("listener", classOf[DifferencingListener])
   EasyMock.checkOrder(listener, false)   // Not all participant operations are going to be strictly ordered
 
+  val diffWriter = createStrictMock("diffWriter", classOf[DifferenceWriter])
+  EasyMock.checkOrder(diffWriter, false)  // Not all match write operations are going to be strictly ordered
+
   val systemConfigStore = createStrictMock("configStore", classOf[SystemConfigStore])
 
   protected def replayAll = replay(systemConfigStore, usMock, dsMock, store, writer, listener)
@@ -90,13 +93,10 @@ abstract class AbstractDataDrivenPolicyTest {
       expectDownstreamAggregateScan(scenario.pair.asRef, tx.bucketing, tx.constraints, tx.respBuckets, tx.respBuckets)
     }
 
-    expectUnmatchedVersionCheck(scenario)
-
     replayAll
 
     policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair, listener)
 
     verifyAll
   }
@@ -124,13 +124,10 @@ abstract class AbstractDataDrivenPolicyTest {
       })
     }
 
-    expectUnmatchedVersionCheck(scenario)
-
     replayAll
 
     policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair, listener)
 
     verifyAll
   }
@@ -167,15 +164,10 @@ abstract class AbstractDataDrivenPolicyTest {
       }
     }
 
-    expectUnmatchedVersionCheck(scenario)
-
     replayAll
 
     policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair, listener)
-
-
 
     verifyAll
   }
@@ -212,13 +204,29 @@ abstract class AbstractDataDrivenPolicyTest {
       listener.onMatch(VersionID(scenario.pair.asRef, updated.firstVsn.id), updated.firstVsn.vsn, TriggeredByScan)
     }
 
-    expectUnmatchedVersionCheck(scenario)
-
     replayAll
 
     policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(scenario.pair, listener)
+
+    verifyAll
+  }
+
+  /**
+   * Scenario for replaying unmatched differences at the completion of a scan.
+   */
+  @Theory
+  def shouldWriteMismatchEventsBasedOnResultsOfStore(scenario:Scenario) {
+    setupStubs(scenario)
+
+    // TODO: Actually generate some mismatched version data?
+    val us = scenario.pair.upstream.defaultConstraints
+    val ds = scenario.pair.downstream.defaultConstraints
+    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
+
+    replayAll
+
+    policy.replayUnmatchedDifferences(scenario.pair, diffWriter, TriggeredByScan)
 
     verifyAll
   }
@@ -230,12 +238,6 @@ abstract class AbstractDataDrivenPolicyTest {
 
   protected def setupStubs(scenario:Scenario) {
     expect(systemConfigStore.getPair(scenario.pair.domain.name, scenario.pair.key)).andReturn(scenario.pair).anyTimes
-  }
-
-  protected def expectUnmatchedVersionCheck(scenario:Scenario) = {
-    val us = scenario.pair.upstream.defaultConstraints
-    val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
   }
 
   protected def expectUpstreamAggregateScan(pair:DiffaPairRef, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint],

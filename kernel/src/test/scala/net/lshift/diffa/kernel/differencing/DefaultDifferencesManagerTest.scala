@@ -96,7 +96,7 @@ class DefaultDifferencesManagerTest {
 
   val manager = new DefaultDifferencesManager(
     systemConfigStore, domainConfigStore, cacheProvider, matchingManager,
-    versionPolicyManager, pairPolicyClient, participantFactory, listener)
+    participantFactory, listener)
 
   // The matching manager and config stores will have been called on difference manager startup. Reset them so they
   // can be re-used

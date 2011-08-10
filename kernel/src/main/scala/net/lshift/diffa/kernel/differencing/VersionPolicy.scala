@@ -39,18 +39,11 @@ trait VersionPolicy {
   def onChange(writer: LimitedVersionCorrelationWriter, evt:PairChangeEvent) : Unit
 
   /**
-   * Invokes the underlying <code>replayUnmatchedDifferences</code> call,
-   * defaulting the origin to <code>TriggeredByScan</code>.
-   */
-  def replayUnmatchedDifferences(pair:DiffaPair, listener:DifferencingListener) : Unit =
-    replayUnmatchedDifferences(pair, listener, TriggeredByScan)
-
-  /**
    * Requests that the policy generate a series of events describing the differences between the endpoints
    * within the given pair. This does not perform any endpoint scanning, it operates entirely from
    * local data stores.
    */
-  def replayUnmatchedDifferences(pair:DiffaPair, listener:DifferencingListener, origin:MatchOrigin) : Unit
+  def replayUnmatchedDifferences(pair:DiffaPair, writer:DifferenceWriter, origin:MatchOrigin) : Unit
 
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are

@@ -28,6 +28,12 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
  */
 trait DifferencesManager {
   /**
+   * Creates a writer for recording differences. The writer can be optionally opened in overwrite mode. If this is done,
+   * then when the writer is closed, any difference not seen within the scope of the writer will be marked as matched.
+   */
+  def createDifferenceWriter(overwrite:Boolean):DifferenceWriter
+
+  /**
    * Retrieves a version for the given domain.
    */
   def retrieveDomainSequenceNum(domain:String):String
@@ -80,6 +86,29 @@ trait DifferencesManager {
    * Informs the difference manager that a domain has been deleted.
    */
   def onDeleteDomain(domain: String)
+}
+
+/**
+ * A Difference writer provides a stateful batch mechanism for ingesting a series of differences.
+ */
+trait DifferenceWriter {
+  /**
+   * Records a mismatch.
+   */
+  def writeMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin)
+
+  /**
+   * Aborts this difference writer. Any locks held by this writer will be released (as per the close method), but no
+   * overwrite behaviour will be performed. This allows a consumer that had opened a write session to handle an exception
+   * case where it is no longer able to generate differences.
+   */
+  def abort()
+
+  /**
+   * Closes the writer. If the writer was opened in overwrite mode, then any difference within the owning manager that
+   * hasn't been seen during the scope of this writer will be marked as matched.
+   */
+  def close()
 }
 
 class InvalidSequenceNumberException(val id:String) extends Exception(id)
