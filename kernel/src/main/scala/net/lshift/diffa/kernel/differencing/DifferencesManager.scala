@@ -36,6 +36,7 @@ trait DifferencesManager {
    *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */
+  // TODO [#294] This call should be deprecated because this abstraction should not allow all events to get materialized into memory
   def retrieveAllEventsInInterval(domain:String, interval:Interval) : Seq[DifferenceEvent]
 
   /**
