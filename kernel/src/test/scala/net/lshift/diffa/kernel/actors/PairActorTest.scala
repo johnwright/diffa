@@ -93,7 +93,6 @@ class PairActorTest {
   expect(stores.apply(pairRef)).andReturn(store)
   replay(stores)
 
-  val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
   val scanListener = createStrictMock("scanListener", classOf[PairScanListener])
 
   val differencesManager = createStrictMock(classOf[DifferencesManager])
@@ -101,7 +100,7 @@ class PairActorTest {
   expect(differencesManager.createDifferenceWriter(domainName, overwrite = true)).andStubReturn(diffWriter)
   replay(differencesManager)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, diffListener, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
     // TODO: We don't call the configuration activation method, since this triggers the very difficult to test
     //       behaviour of differencing each pair. Since this is going to go away with persistent differences, we'll

@@ -225,7 +225,6 @@
     <constructor-arg ref="systemConfigStore"/>
     <constructor-arg ref="domainConfigStore"/>
     <constructor-arg ref="notificationCentre" />
-    <constructor-arg ref="notificationCentre" />
     <constructor-arg ref="differencesManager" />
     <constructor-arg ref="participantFactory"/>
     <constructor-arg ref="versionCorrelationStoreFactory"/>

@@ -35,12 +35,6 @@ trait DomainCache {
   def currentSequenceId:String
 
   /**
-   * Queries whether a given difference already exists for the given upstream/downstream vsn pairing for the given
-   * id.
-   */
-  def isUnmatched(id:VersionID, upstreamVsn:String, downstreamVsn:String):Boolean
-
-  /**
    * Adds a pending event for the given version id into the cache.
    */
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, seen:DateTime)

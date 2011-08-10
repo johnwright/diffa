@@ -30,7 +30,6 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, Pair => 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
                                domainConfig:DomainConfigStore,
-                               differencingMulticaster:DifferencingListener,
                                differencesManager:DifferencesManager,
                                pairScanListener:PairScanListener,
                                participantFactory:ParticipantFactory,
@@ -68,7 +67,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
             val ds = participantFactory.createDownstreamParticipant(pair.downstream)
             val pairActor = Actor.actorOf(
               new PairActor(pair, us, ds, p, stores(pair.asRef),
-                            differencingMulticaster, differencesManager, pairScanListener,
+                            differencesManager, pairScanListener,
                             diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
             )
             pairActor.start

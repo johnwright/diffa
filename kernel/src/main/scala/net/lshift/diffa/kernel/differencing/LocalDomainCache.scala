@@ -124,16 +124,6 @@ class LocalDomainCache(val domain:String) extends DomainCache {
     })
   }
 
-  def isUnmatched(id:VersionID, upstreamVsn:String, downstreamVsn:String) = {
-    seqIdsByVersionId.get(id) match {
-      case Some(existingSeqId) =>
-        val event = eventsBySeqId(existingSeqId)
-        event.state == MatchState.UNMATCHED && event.upstreamVsn == upstreamVsn && event.downstreamVsn == downstreamVsn
-      case None =>
-        false
-    }
-  }
-
   def nextSequence(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, state:MatchState, seen:DateTime) = {
     val sequence = nextSequenceId.toString
     val event = new DifferenceEvent(sequence, id, lastUpdate, state, upstreamVsn, downstreamVsn, seen)
