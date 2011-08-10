@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.frontend
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.matching.MatchingManager
 import net.lshift.diffa.kernel.scheduler.ScanScheduler
-import net.lshift.diffa.kernel.actors.ActivePairManager
 import net.lshift.diffa.kernel.differencing.{DifferencesManager, VersionCorrelationStoreFactory}
 import org.junit.{Test, Before}
 import org.junit.Assert._
@@ -34,6 +33,7 @@ import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
 
 /**
  * Test cases for the Configuration frontend.
@@ -46,6 +46,7 @@ class ConfigurationTest {
   private val endpointListener = createMock("endpointListener", classOf[EndpointLifecycleListener])
   private val scanScheduler = createMock("scanScheduler", classOf[ScanScheduler])
   private val diagnostics = createMock("diagnostics", classOf[DiagnosticsManager])
+  private val pairPolicyClient = createMock(classOf[PairPolicyClient])
 
   // TODO This is a strange mixture of mock and real objects
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
@@ -60,7 +61,8 @@ class ConfigurationTest {
                                                 differencesManager,
                                                 endpointListener,
                                                 scanScheduler,
-                                                diagnostics)
+                                                diagnostics,
+                                                pairPolicyClient)
 
   val domainName = "domain"
   val domain = Domain(name = domainName)
@@ -148,10 +150,12 @@ class ConfigurationTest {
     expect(matchingManager.onUpdatePair(ab)).once
     expect(scanScheduler.onUpdatePair(ab)).once
     expect(differencesManager.onUpdatePair(ab.asRef)).once
+    expect(pairPolicyClient.difference(ab.asRef)).once
     expect(pairManager.startActor(pairInstance("ac"))).once
     expect(matchingManager.onUpdatePair(ac)).once
     expect(scanScheduler.onUpdatePair(ac)).once
     expect(differencesManager.onUpdatePair(ac.asRef)).once
+    expect(pairPolicyClient.difference(ac.asRef)).once
     replayAll
 
     configuration.applyConfiguration("domain", config)
@@ -208,6 +212,7 @@ class ConfigurationTest {
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ab", domain = Domain(name="domain")))).once
     expect(scanScheduler.onUpdatePair(ab)).once
     expect(differencesManager.onUpdatePair(DiffaPairRef(key = "ab", domain = "domain"))).once
+    expect(pairPolicyClient.difference(DiffaPairRef(key = "ab", domain = "domain"))).once
     expect(pairManager.stopActor(DiffaPairRef(key = "ac", domain = "domain"))).once
     expect(matchingManager.onDeletePair(DiffaPair(key = "ac", domain = Domain(name="domain")))).once
     expect(scanScheduler.onDeletePair(ac)).once
@@ -218,6 +223,7 @@ class ConfigurationTest {
     expect(matchingManager.onUpdatePair(DiffaPair(key = "ad", domain = Domain(name="domain")))).once
     expect(scanScheduler.onUpdatePair(ad)).once
     expect(differencesManager.onUpdatePair(DiffaPairRef(key = "ad", domain = "domain"))).once
+    expect(pairPolicyClient.difference(DiffaPairRef(key = "ad", domain = "domain"))).once
 
     expect(endpointListener.onEndpointRemoved("downstream1")).once
     expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep1))).once

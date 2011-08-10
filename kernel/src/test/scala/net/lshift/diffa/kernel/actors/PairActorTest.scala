@@ -34,7 +34,8 @@ import akka.actor._
 import concurrent.{SyncVar, TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
-import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Domain, Endpoint, Pair => DiffaPair}
+import net.lshift.diffa.kernel.frontend.FrontendConversions
 
 class PairActorTest {
 
@@ -74,8 +75,13 @@ class PairActorTest {
 
   expect(systemConfigStore.getPair(domainName, pairKey)).andStubReturn(pair)
   expect(systemConfigStore.getPair(DiffaPairRef(pairKey, domainName))).andStubReturn(pair)
+  expect(systemConfigStore.listDomains).andStubReturn(Seq(Domain(name = domainName)))
   expect(systemConfigStore.listPairs).andReturn(Array(pair))
   replay(systemConfigStore)
+
+  val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
+  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(FrontendConversions.toPairDef(pair)))
+  replay(domainConfigStore)
 
   val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
 
@@ -87,13 +93,20 @@ class PairActorTest {
   expect(stores.apply(pairRef)).andReturn(store)
   replay(stores)
 
-  val diffListener = createStrictMock("differencingListener", classOf[DifferencingListener])
   val scanListener = createStrictMock("scanListener", classOf[PairScanListener])
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, diffListener, scanListener, participantFactory, stores, diagnostics, 50, 100)
-  supervisor.onAgentAssemblyCompleted
-  supervisor.onAgentConfigurationActivated
+  val differencesManager = createStrictMock(classOf[DifferencesManager])
+  val diffWriter = createStrictMock("differenceWriter", classOf[DifferenceWriter])
+  expect(differencesManager.createDifferenceWriter(domainName, overwrite = true)).andStubReturn(diffWriter)
+  replay(differencesManager)
 
+  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100)
+  supervisor.onAgentAssemblyCompleted
+    // TODO: We don't call the configuration activation method, since this triggers the very difficult to test
+    //       behaviour of differencing each pair. Since this is going to go away with persistent differences, we'll
+    //       just leave it disabled for now.
+  //supervisor.onAgentConfigurationActivated
+  
   @After
   def stop = supervisor.stopActor(pair.asRef)
 
@@ -133,7 +146,8 @@ class PairActorTest {
   }
 
   def expectDifferencesReplay() = {
-    expect(versionPolicy.replayUnmatchedDifferences(pair, diffListener))
+    diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences"); expectLastCall
+    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan))
   }
 
   def expectWriterRollback() {
@@ -145,7 +159,7 @@ class PairActorTest {
   @Test
   def runDifference = {
     val monitor = new Object
-    expect(versionPolicy.replayUnmatchedDifferences(pair, diffListener, TriggeredByBoot)).andAnswer(new IAnswer[Unit] {
+    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot)).andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
 

@@ -21,12 +21,12 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.matching.MatchingManager
 import net.lshift.diffa.kernel.differencing.{DifferencesManager, VersionCorrelationStoreFactory}
 import net.lshift.diffa.kernel.util.MissingObjectException
-import net.lshift.diffa.kernel.actors.{ActivePairManager}
 import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
 import net.lshift.diffa.kernel.scheduler.ScanScheduler
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import system.SystemConfigStore
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
 
 class Configuration(val configStore: DomainConfigStore,
                     val systemConfigStore: SystemConfigStore,
@@ -36,7 +36,8 @@ class Configuration(val configStore: DomainConfigStore,
                     val differencesManager: DifferencesManager,
                     val endpointListener: EndpointLifecycleListener,
                     val scanScheduler: ScanScheduler,
-                    val diagnostics: DiagnosticsManager) {
+                    val diagnostics: DiagnosticsManager,
+                    val pairPolicyClient: PairPolicyClient) {
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
@@ -149,6 +150,7 @@ class Configuration(val configStore: DomainConfigStore,
       matchingManager.onUpdatePair(p)
       differencesManager.onUpdatePair(p.asRef)
       scanScheduler.onUpdatePair(p)
+      pairPolicyClient.difference(p.asRef)
     })
   }
 

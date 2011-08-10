@@ -22,11 +22,11 @@ import net.lshift.diffa.kernel.matching.{MatchingManager, MatchingStatusListener
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.events.VersionID
-import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore, Pair => DiffaPair}
+import org.joda.time.{DateTime, Interval}
 
 /**
  * Standard implementation of the DifferencesManager.
@@ -47,8 +47,6 @@ class DefaultDifferencesManager(
         val domainConfig:DomainConfigStore,
         val cacheProvider:DomainCacheProvider,
         val matching:MatchingManager,
-        val vpm:VersionPolicyManager,
-        val pairPolicyClient:PairPolicyClient,
         val participantFactory:ParticipantFactory,
         val differenceListener:DifferencingListener)
     extends DifferencesManager
@@ -93,6 +91,23 @@ class DefaultDifferencesManager(
       case None    =>
         log.error("Received event for unknown domain: %s".format(domain))
         None
+    }
+  }
+
+  def createDifferenceWriter(domain:String, overwrite: Boolean) = new DifferenceWriter {
+    // Record when we started the write so all differences can be tagged
+    val writerStart = new DateTime
+
+    def writeMismatch(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
+      onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, origin, Unfiltered)
+    }
+
+    def abort() {
+      // Nothing to do
+    }
+
+    def close() {
+      safeGetDomain(domain).matchEventsOlderThan(writerStart)
     }
   }
 
@@ -164,14 +179,6 @@ class DefaultDifferencesManager(
     nc.registerForDifferenceEvents(this, Unfiltered)
   }
 
-  override def onAgentConfigurationActivated {
-    // Once the configuration is activated, fill our domain caches up with differences again. When persistent
-    // differences (#294) come about, this won't be needed.
-    systemConfig.listDomains.foreach(d => {
-      domainConfig.listPairs(d.name).foreach(p => pairPolicyClient.difference(DiffaPairRef(domain = d.name, key = p.key)))
-    })
-  }
-
   //
   // Differencing Input
   //
@@ -185,7 +192,6 @@ class DefaultDifferencesManager(
    */
   def onMismatch(id: VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin:MatchOrigin, level:DifferenceFilterLevel) = {
     log.trace("Processing mismatch for " + id + " with upstreamVsn '" + upstreamVsn + "' and downstreamVsn '" + downstreamVsn + "'")
-
     matching.getMatcher(id.pair) match {
       case Some(matcher) => {
         matcher.isVersionIDActive(id) match {
@@ -237,7 +243,6 @@ class DefaultDifferencesManager(
    * When pairs are updated, perform a differencing run to scan with their status.
    */
   def onUpdatePair(pairRef: DiffaPairRef) {
-    pairPolicyClient.difference(pairRef)
   }
 
   def onDeletePair(pair: DiffaPairRef) {
@@ -265,7 +270,7 @@ class DefaultDifferencesManager(
   def reportPending(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
     quietWithDomainCache(id.pair.domain).foreach(c => {
       // TODO: Record origin as well
-      c.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
+      c.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
     })
 
     // TODO: Generate external event for pending difference?
@@ -274,7 +279,7 @@ class DefaultDifferencesManager(
 
   def reportUnmatched(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
     quietWithDomainCache(id.pair.domain).foreach(c => {
-      c.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn)
+      c.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
     })
 
     differenceListener.onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, origin, MatcherFiltered)

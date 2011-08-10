@@ -76,8 +76,10 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
-  def replayUnmatchedDifferences(pair:DiffaPair, l:DifferencingListener, origin:MatchOrigin) {
-    generateDifferenceEvents(pair, l, origin)
+  def replayUnmatchedDifferences(pair:DiffaPair, w:DifferenceWriter, origin:MatchOrigin) {
+    // Run a query for mismatched versions, and report each one
+    stores(pair.asRef).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
+      corr => w.writeMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
   }
 
   def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
@@ -99,12 +101,6 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       grouped
     else
       Seq(Seq())
-
-  private def generateDifferenceEvents(pair:DiffaPair, l:DifferencingListener, origin:MatchOrigin) {
-    // Run a query for mismatched versions, and report each one
-    stores(pair.asRef).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
-      corr => l.onMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin, Unfiltered))
-  }
 
   /**
    * Allows an implementing policy to define what kind of downstream scanning policy it requires

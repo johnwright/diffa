@@ -66,8 +66,9 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
             // This is the same destination object, so we're safe to store the correlation
             handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pair, id), categories, lastUpdated, response.getUvsn, response.getDvsn))
           } else {
-            // We can't update our datastore, so we just have to generate a mismatch
-            listener.onMismatch(VersionID(pair, id), lastUpdated, response.getDvsn, partVsn, TriggeredByScan, Unfiltered)
+            // We don't know of an upstream version, so we'll put in a proxy dummy value.
+              // TODO: Is this an appropriate behaviour?
+            handleUpdatedCorrelation(writer.storeDownstreamVersion(VersionID(pair, id), categories, lastUpdated, "UNKNOWN", partVsn))
           }
       }
     }

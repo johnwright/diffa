@@ -122,13 +122,10 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
     // We should see events indicating that id4 to enter a matched state (since the deletion made the sides line up)
     listener.onMatch(VersionID(pair.asRef, "id4"), null, TriggeredByScan); expectLastCall
 
-    // We should still see an unmatched version check
-    expect(stores(pair.asRef).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.scanUpstream(pair, writer, usMock, nullListener, feedbackHandle)
     policy.scanDownstream(pair, writer, usMock, dsMock, nullListener, feedbackHandle)
-    policy.replayUnmatchedDifferences(pair, nullListener)
 
     verifyAll
   }
@@ -167,20 +164,19 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
       VersionsFromStore(
         Down("id2", testData.values(1), "vsn2", downstreamVersionFor("vsn2"))))
 
-    // We should see id3 re-run through the system, but not be stored since the version on the downstream is different
+    // We should see id3 re-run through the system, and have an unknown upstream version stored since we don't know the version of
+    // the upstream
     expect(usMock.retrieveContent("id3")).andReturn("content3a")
     expect(dsMock.generateVersion("content3a")).andReturn(new ProcessingResponse("id3", testData.values(1), "vsn3a", downstreamVersionFor("vsn3a")))
 
     // We should see a replayStoredDifferences being generated
-    listener.onMismatch(VersionID(pair.asRef, "id3"), JUL_8_2010_1, downstreamVersionFor("vsn3a"), downstreamVersionFor("vsn3"), TriggeredByScan, Unfiltered); expectLastCall
+    expect(writer.storeDownstreamVersion(VersionID(pair.asRef, "id3"), testData.downstreamAttributes(1), JUL_8_2010_1, "UNKNOWN", downstreamVersionFor("vsn3"))).
+        andReturn(Correlation(isMatched = false))
 
-    // We should still see an unmatched version check
-    expect(stores(pair.asRef).unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq())
     replayAll
 
     policy.scanUpstream(pair, writer, usMock, listener, feedbackHandle)
     policy.scanDownstream(pair, writer, usMock, dsMock, listener, feedbackHandle)
-    policy.replayUnmatchedDifferences(pair, nullListener)
 
     verifyAll
   }
