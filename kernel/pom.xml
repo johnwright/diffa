@@ -139,7 +139,6 @@
     <dependency>
       <groupId>net.lshift</groupId>
       <artifactId>hibernate-migrations</artifactId>
-      <version>0.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
 

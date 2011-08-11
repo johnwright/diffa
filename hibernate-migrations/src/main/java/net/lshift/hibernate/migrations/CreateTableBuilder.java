@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static net.lshift.hibernate.migrations.SQLStringHelpers.generateColumnString;
+import static net.lshift.hibernate.migrations.SQLStringHelpers.generateIdentityColumnString;
 
 /**
  * Describes a table that is to be created.
@@ -38,6 +39,7 @@ public class CreateTableBuilder extends SingleStatementMigrationElement {
   private final String name;
   private final List<String> primaryKeys;
   private final List<Column> columns;
+  private boolean identityCol = false;
 
   public CreateTableBuilder(Dialect dialect, String name, String... primaryKeys) {
     this.dialect = dialect;
@@ -49,6 +51,11 @@ public class CreateTableBuilder extends SingleStatementMigrationElement {
   //
   // Builder Methods
   //
+
+  public CreateTableBuilder withIdentityCol() {
+    identityCol = true;
+    return this;
+  }
 
   public CreateTableBuilder pk(String...names) {
     primaryKeys.addAll(Arrays.asList(names));
@@ -85,7 +92,11 @@ public class CreateTableBuilder extends SingleStatementMigrationElement {
         new StringBuffer(dialect.getCreateTableString()).append(' ').append(dialect.quote(name)).append(" (");
 
     for (Column col : columns) {
-      buffer.append(generateColumnString(dialect, col, true));
+      if (identityCol && primaryKeys.contains(col.getName())) {
+        buffer.append(generateIdentityColumnString(dialect, col));
+      } else {
+        buffer.append(generateColumnString(dialect, col, true));
+      }
       buffer.append(", ");
     }
     buffer.append(getPrimaryKey().sqlConstraintString(dialect));

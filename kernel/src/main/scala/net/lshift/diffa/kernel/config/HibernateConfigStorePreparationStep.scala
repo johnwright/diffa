@@ -42,7 +42,8 @@ class HibernateConfigStorePreparationStep
   val migrationSteps:Seq[HibernateMigrationStep] = Seq(
     RemoveGroupsMigrationStep,
     AddSchemaVersionMigrationStep,
-    AddDomainsMigrationStep
+    AddDomainsMigrationStep,
+    AddPersistentDiffsMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -270,6 +271,41 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
       addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "name")
     
     migration.apply(connection)
+  }
+}
+object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
+  def versionId = 4
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
 
+    migration.createTable("diffs").
+      column("seq_id", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("is_match", Types.SMALLINT, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      pk("seq_id").
+      withIdentityCol()
+    migration.createTable("pending_diffs").
+      column("oid", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      pk("oid").
+      withIdentityCol()
+
+    migration.createIndex("rdiff_is_matched", "diffs", "is_match")
+    migration.createIndex("rdiff_domain_idx", "diffs", "domain")
+    migration.createIndex("pdiff_domain_idx", "pending_diffs", "domain")
+
+    migration.apply(connection)
   }
 }

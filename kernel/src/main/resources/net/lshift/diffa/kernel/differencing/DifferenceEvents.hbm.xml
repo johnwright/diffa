@@ -39,7 +39,7 @@
   </class>
 
   <class name="ReportedDifferenceEvent" table="diffs">
-    <id name="seqId">
+    <id name="seqId" column="seq_id">
       <generator class="native" />
     </id>
     <component name="objId">
@@ -49,7 +49,7 @@
         <property name="key" type="string" column="pair" />
       </component>
     </component>
-    <property name="isMatch" type="boolean" index="rdiff_ismatched" />
+    <property name="isMatch" type="boolean" column="is_match" index="rdiff_ismatched" />
     <property name="detectedAt" type="org.jadira.usertype.dateandtime.joda.PersistentDateTime" column="detected_at" not-null="true" />
     <property name="lastSeen" type="org.jadira.usertype.dateandtime.joda.PersistentDateTime" column="last_seen" not-null="true" />
     <property name="upstreamVsn" type="string" column="upstream_vsn" />

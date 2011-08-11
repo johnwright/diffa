@@ -27,12 +27,27 @@ import java.sql.Types;
  * Helpers for various string manipulation operations.
  */
 public class SQLStringHelpers {
-  
+
+  public static String generateIdentityColumnString(Dialect dialect, Column col) {
+    StringBuilder buffer = new StringBuilder();
+
+    buffer.append(col.getQuotedName(dialect)).append(" ");
+
+    // to support dialects that have their own identity data type
+    if (dialect.hasDataTypeInIdentityColumn()) {
+      buffer.append(dialect.getTypeName(col.getSqlTypeCode(), col.getLength(), col.getPrecision(), col.getScale()));
+    }
+    buffer.append(' ').append(dialect.getIdentityColumnString(col.getSqlTypeCode()));
+
+    return buffer.toString();
+  }
+
   public static String generateColumnString(Dialect dialect, Column col, boolean newTable) {
     StringBuilder buffer = new StringBuilder();
 
-    buffer.append(col.getName()).append(" ");
+    buffer.append(col.getQuotedName(dialect)).append(" ");
     buffer.append(dialect.getTypeName(col.getSqlTypeCode(), col.getLength(), col.getPrecision(), col.getScale()));
+
     if (!col.isNullable()) {
       buffer.append(" not null");
     }

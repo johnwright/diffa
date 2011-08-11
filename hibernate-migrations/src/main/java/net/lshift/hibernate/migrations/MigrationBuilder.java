@@ -59,6 +59,10 @@ public class MigrationBuilder {
     return register(new DropTableBuilder(config, dialect, table));
   }
 
+  public CreateIndexBuilder createIndex(String name, String table, String...columns) {
+    return register(new CreateIndexBuilder(name, table, columns));
+  }
+
   public RawSqlBuilder sql(String sql) {
     return register(new RawSqlBuilder(sql));
   }
