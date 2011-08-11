@@ -88,11 +88,11 @@ class LocalDomainCache(val domain:String) extends DomainCache {
     pending.get(id) match {
       case Some(event) =>
         if (event.upstreamVsn == vsn) {
-          pending.remove(id).get
+          pending.remove(id).isDefined
         } else {
-          null
+          false
         }
-      case None => null
+      case None => false
     }
   }
 

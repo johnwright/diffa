@@ -305,8 +305,8 @@ class DefaultDifferencesManager(
   }
   def cancelPending(id:VersionID, vsn:String) {
     quietWithDomainCache(id.pair.domain).foreach(c => {
-      val evt = c.cancelPendingUnmatchedEvent(id, vsn)
-      if (evt != null) {
+      val wasDeleted = c.cancelPendingUnmatchedEvent(id, vsn)
+      if (wasDeleted) {
         log.debug("Cancelling pending event for " + id)
       }
     })

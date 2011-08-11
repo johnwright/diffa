@@ -211,9 +211,9 @@
       <version>${jodatime.version}</version>
     </dependency>    
     <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time-hibernate</artifactId>
-      <version>1.2</version>
+      <groupId>org.jadira.usertype</groupId>
+      <artifactId>usertype.jodatime</artifactId>
+      <version>1.9</version>
       <exclusions>
         <exclusion>
           <groupId>org.hibernate</groupId>
