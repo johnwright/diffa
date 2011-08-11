@@ -58,56 +58,6 @@ class HibernatePreparationTest {
     )
   )
 
-  @Test
-  def shouldGenerateDropColumn = {
-    val instruction = HibernatePreparationUtils.generateDropColumnSQL(genericConfig, "foo", "bar" )
-    assertEquals("alter table foo drop column \"BAR\"", instruction)
-  }
-
-  @Test(expected = classOf[IllegalArgumentException])
-  def shouldHandleNullabilityConflict = {
-    val column = new Column("bar"){
-      setSqlTypeCode(Types.VARCHAR)
-      setNullable(false)
-    }
-    HibernatePreparationUtils.generateAddColumnSQL(genericConfig, "foo", column )
-    fail("Should have thrown an IllegalArgumentException")
-  }
-
-  @Test
-  def shouldGenerateAddColumn = {
-    val column = new Column("bar"){
-      setSqlTypeCode(Types.VARCHAR)
-      setLength(255)
-      setNullable(false)
-      setDefaultValue("baz")
-    }
-    val instruction = HibernatePreparationUtils.generateAddColumnSQL(genericConfig, "foo", column )
-    assertEquals("alter table foo add column bar varchar(255) not null default 'baz'", instruction)
-  }
-
-
-  @Test
-  def shouldGenerateForeignKeyConstraint = {
-    val fk = new ForeignKey() {
-      setName("FK80C74EA1C3C204DC")
-      addColumn(new Column("bar"))
-      setTable(new Table("foo") )
-      setReferencedTable(new Table("baz"){
-        setPrimaryKey(new PrimaryKey(){
-          addColumn(new Column("name"))
-        })
-      })
-    }
-    val instruction = HibernatePreparationUtils.generateForeignKeySQL(genericConfig, fk )
-    assertEquals("alter table foo add constraint FK80C74EA1C3C204DC foreign key (bar) references baz", instruction)
-  }
-
-  @Theory
-  def shouldGenerateWellFormedSQL(spec:TableSpecification) {
-    assertEquals(spec.sql, HibernatePreparationUtils.generateCreateSQL(spec.dialect, spec.descriptor))
-  }
-
   @Theory
   def shouldBeAbleToPrepareDatabaseVersion(startVersion:StartingDatabaseVersion) {
 
@@ -220,27 +170,6 @@ object HibernatePreparationTest {
   @DataPoint def v1 = StartingDatabaseVersion("v1")
   @DataPoint def v2 = StartingDatabaseVersion("v2")
   @DataPoint def v3 = StartingDatabaseVersion("v3")
-
-  @DataPoint def defaultColumnSize = TableSpecification(
-      new DerbyDialect(),
-      new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false),
-      "create table foo (bar integer not null, primary key (bar))"
-  )
-
-  @DataPoint def explicitColumnSize = TableSpecification(
-      new DerbyDialect(),
-      new TableDescriptor(name="foo", pk="bar").addColumn("bar", Types.INTEGER, false)
-                                               .addColumn("baz", Types.VARCHAR, 4096, true),
-      "create table foo (bar integer not null, baz varchar(4096), primary key (bar))"
-  )
-  @DataPoint def compoundPrimaryKey = TableSpecification(
-      new DerbyDialect(),
-      new TableDescriptor(name="foo", pk="bar","baz").addColumn("bar", Types.INTEGER, false)
-                                                     .addColumn("baz", Types.VARCHAR, 4096, false),
-      "create table foo (bar integer not null, baz varchar(4096) not null, primary key (bar, baz))"
-  )
-
 }
 
 case class StartingDatabaseVersion(startName:String)
-case class TableSpecification(dialect:Dialect,descriptor:TableDescriptor,sql:String)
