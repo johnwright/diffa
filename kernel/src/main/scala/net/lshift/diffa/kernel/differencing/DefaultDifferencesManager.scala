@@ -94,7 +94,7 @@ class DefaultDifferencesManager(
     }
   }
 
-  def createDifferenceWriter(domain:String, overwrite: Boolean) = new DifferenceWriter {
+  def createDifferenceWriter(domain:String, pair:String, overwrite: Boolean) = new DifferenceWriter {
     // Record when we started the write so all differences can be tagged
     val writerStart = new DateTime
 
@@ -107,7 +107,7 @@ class DefaultDifferencesManager(
     }
 
     def close() {
-      safeGetDomain(domain).matchEventsOlderThan(writerStart)
+      safeGetDomain(domain).matchEventsOlderThan(pair, writerStart)
     }
   }
 

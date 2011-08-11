@@ -256,7 +256,7 @@ class LocalDomainCacheTest {
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)   // Before the cutoff, will be removed
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV", seen2)   // Before the cutoff, will be removed
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id3"), timestamp, "uV", "dV", seen3)
-    cache.matchEventsOlderThan(cutoff)
+    cache.matchEventsOlderThan("pair2", cutoff)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
@@ -264,11 +264,23 @@ class LocalDomainCacheTest {
   }
 
   @Test
+  def shouldNotRemoveEventsFromADifferentPair {
+    val timestamp = new DateTime()
+    val seen1 = timestamp.plusSeconds(5)
+    cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)
+    cache.matchEventsOlderThan("pair1", seen1)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = cache.retrieveUnmatchedEvents(interval)
+    validateUnmatchedEvent(unmatched(0), VersionID(DiffaPairRef("pair2","domain"), "id1"), "uV", "dV", timestamp, seen1)
+  }
+
+  @Test
   def shouldNotRemoveEventsSeenExactlyAtTheGivenCutoff {
     val timestamp = new DateTime()
     val seen1 = timestamp.plusSeconds(5)
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)
-    cache.matchEventsOlderThan(seen1)
+    cache.matchEventsOlderThan("pair2", seen1)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = cache.retrieveUnmatchedEvents(interval)
@@ -286,7 +298,7 @@ class LocalDomainCacheTest {
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)   // Before the cutoff, will be removed
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV", seen2)   // Before the cutoff, will be removed
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id3"), timestamp, "uV", "dV", seen3)
-    cache.matchEventsOlderThan(cutoff)
+    cache.matchEventsOlderThan("pair2", cutoff)
 
     val events = cache.retrieveEventsSince("0")
     assertEquals(3, events.length)
@@ -302,7 +314,7 @@ class LocalDomainCacheTest {
     val cutoff = timestamp.plusSeconds(20)
     cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)
     cache.addMatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), "uV")
-    cache.matchEventsOlderThan(cutoff)
+    cache.matchEventsOlderThan("pair2", cutoff)
 
     val events = cache.retrieveEventsSince("0")
     assertEquals(1, events.length)

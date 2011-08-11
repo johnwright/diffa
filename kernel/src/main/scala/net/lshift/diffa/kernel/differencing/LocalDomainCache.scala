@@ -115,8 +115,8 @@ class LocalDomainCache(val domain:String) extends DomainCache {
     }
   }
 
-  def matchEventsOlderThan(cutoff: DateTime) {
-    eventsBySeqId.values.filter(e => e.state == MatchState.UNMATCHED && e.lastSeen.isBefore(cutoff)).foreach(e => {
+  def matchEventsOlderThan(pair:String, cutoff: DateTime) {
+    eventsBySeqId.values.filter(e => e.state == MatchState.UNMATCHED && e.lastSeen.isBefore(cutoff) && e.objId.pair.key == pair).foreach(e => {
       // We've found an event that needs to be closed down
       seqIdsByVersionId.remove(e.objId)
       eventsBySeqId.remove(e.seqId)

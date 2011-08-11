@@ -31,7 +31,7 @@ trait DifferencesManager {
    * Creates a writer for recording differences. The writer can be optionally opened in overwrite mode. If this is done,
    * then when the writer is closed, any difference not seen within the scope of the writer will be marked as matched.
    */
-  def createDifferenceWriter(domain:String, overwrite:Boolean):DifferenceWriter
+  def createDifferenceWriter(domain:String, pair:String, overwrite:Boolean):DifferenceWriter
 
   /**
    * Retrieves a version for the given domain.

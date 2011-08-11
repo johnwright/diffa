@@ -68,7 +68,7 @@ trait DomainCache {
    * Indicates that all differences in the cache older than the given date should be marked as matched. This is generally
    * invoked upon a scan being completed, and allows for events that have disappeared to be removed.
    */
-  def matchEventsOlderThan(dateTime: DateTime)
+  def matchEventsOlderThan(pair:String, cutoff: DateTime)
 
   /**
    * Retrieves all unmatched events that have been added to the cache where their detection timestamp

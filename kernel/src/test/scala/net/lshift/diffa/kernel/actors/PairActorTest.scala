@@ -97,7 +97,7 @@ class PairActorTest {
 
   val differencesManager = createStrictMock(classOf[DifferencesManager])
   val diffWriter = createStrictMock("differenceWriter", classOf[DifferenceWriter])
-  expect(differencesManager.createDifferenceWriter(domainName, overwrite = true)).andStubReturn(diffWriter)
+  expect(differencesManager.createDifferenceWriter(domainName, pairKey, overwrite = true)).andStubReturn(diffWriter)
   replay(differencesManager)
 
   val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100)

@@ -275,7 +275,7 @@ case class PairActor(pair:DiffaPair,
 
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
-      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, overwrite = true)
+      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
       try {
         diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences")
         policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan)
@@ -353,7 +353,7 @@ case class PairActor(pair:DiffaPair,
     try {
       writer.flush()
 
-      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, overwrite = true)
+      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
       try {
         policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot)
         diffWriter.close()
