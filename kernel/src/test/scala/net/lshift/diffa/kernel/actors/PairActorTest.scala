@@ -102,10 +102,7 @@ class PairActorTest {
 
   val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100)
   supervisor.onAgentAssemblyCompleted
-    // TODO: We don't call the configuration activation method, since this triggers the very difficult to test
-    //       behaviour of differencing each pair. Since this is going to go away with persistent differences, we'll
-    //       just leave it disabled for now.
-  //supervisor.onAgentConfigurationActivated
+  supervisor.onAgentConfigurationActivated
   
   @After
   def stop = supervisor.stopActor(pair.asRef)

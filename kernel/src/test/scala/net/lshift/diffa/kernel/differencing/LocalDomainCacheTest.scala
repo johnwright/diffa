@@ -339,6 +339,39 @@ class LocalDomainCacheTest {
     validateMatchedEvent(events(0), VersionID(DiffaPairRef("pair2","domain"), "id1"), "uV", timestamp)
   }
 
+  @Test
+  def shouldAllowRetrievalOfReportedEvent() {
+    val timestamp = new DateTime()
+    val evt = cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+
+    val retrieved = cache.getEvent(evt.seqId)
+    validateUnmatchedEvent(retrieved, evt.objId, evt.upstreamVsn, evt.downstreamVsn, evt.detectedAt, evt.lastSeen)
+  }
+
+  @Test
+  def shouldThrowExceptionWhenRetrievingNonExistentSeqNumber() {
+    try {
+      cache.getEvent("55")    // Cache should be empty, so any seqId should be invalid
+      fail("Should have thrown InvalidSequenceNumberException")
+    } catch {
+      case e:InvalidSequenceNumberException => assertEquals("55", e.id)
+    }
+  }
+
+  @Test
+  def shouldThrowExceptionWhenRetrievingEventBySequenceNumberOfRemovedEvent() {
+    try {
+      val timestamp = new DateTime()
+      val unmatchedEvt = cache.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+      cache.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
+
+      cache.getEvent(unmatchedEvt.seqId)    // Unmatched event should have been removed when matched event was added
+      fail("Should have thrown InvalidSequenceNumberException")
+    } catch {
+      case e:InvalidSequenceNumberException =>
+    }
+  }
+
 
   //
   // Helpers

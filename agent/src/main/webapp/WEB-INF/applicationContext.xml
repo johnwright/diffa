@@ -105,7 +105,9 @@
     <constructor-arg ref="participantFactory" />
     <constructor-arg ref="notificationCentre" />
   </bean>
-  <bean id="domainCacheProvider" class="net.lshift.diffa.kernel.differencing.LocalDomainCacheProvider" />
+  <bean id="domainCacheProvider" class="net.lshift.diffa.kernel.differencing.HibernateDomainCacheProvider">
+    <constructor-arg ref="diffaSessionFactory" />
+  </bean>
 
   <!--
     ============
@@ -314,7 +316,7 @@
     </property>
     <property name="mappingResources">
       <list>
-          <value>net/lshift/diffa/kernel/differencing/Correlations.hbm.xml</value>
+          <value>net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml</value>
           <value>net/lshift/diffa/kernel/config/Config.hbm.xml</value>
       </list>
     </property>

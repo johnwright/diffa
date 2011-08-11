@@ -127,8 +127,11 @@ class HibernateDomainCacheProvider(val sessionFactory:SessionFactory)
   })
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
-    singleQuery[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
-      Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId)), "ReportedDifferenceEvent").asDifferenceEvent
+    singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
+        Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))) match {
+      case None       => throw new InvalidSequenceNumberException(evtSeqId)
+      case Some(evt)  => evt.asDifferenceEvent
+    }
   })
 
   def clearAllDifferences = sessionFactory.withSession(s => {

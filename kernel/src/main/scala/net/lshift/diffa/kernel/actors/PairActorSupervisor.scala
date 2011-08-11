@@ -49,14 +49,6 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     systemConfig.listPairs.foreach(p => startActor(p))
   }
 
-  override def onAgentConfigurationActivated {
-    // Once the configuration is activated, run differences through the system again. When persistent
-    // differences (#294) come about, this won't be needed.
-    systemConfig.listDomains.foreach(d => {
-      domainConfig.listPairs(d.name).foreach(p => difference(DiffaPairRef(domain = d.name, key = p.key)))
-    })
-  }
-
   def startActor(pair:DiffaPair) = {
     val actors = Actor.registry.actorsFor(pair.identifier)
     actors.length match {

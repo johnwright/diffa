@@ -19,7 +19,6 @@ package net.lshift.diffa.agent.itest.config
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.agent.client.DifferencesRestClient
 import net.lshift.diffa.kernel.participants.ParticipantType
-import com.eaio.uuid.UUID
 import org.junit.Test
 import net.lshift.diffa.messaging.json.NotFoundException
 import net.lshift.diffa.kernel.differencing.InvalidSequenceNumberException
@@ -28,18 +27,20 @@ import net.lshift.diffa.kernel.differencing.InvalidSequenceNumberException
  * A bunch of smoke tests for the differences reporting of a known agent
  */
 class DifferenceReportingTest {
+    // Assume that the id given is sufficiently large that it won't be hit in test cases
+  val invalidSeqId = "4112315"
 
   @Test(expected = classOf[NotFoundException])
   def nonExistentDomainShouldGenerateNotFoundError() {
     val client = new DifferencesRestClient(agentURL, "invalid-domain")
 
-    client.eventDetail(new UUID().toString, ParticipantType.UPSTREAM)
+    client.eventDetail(invalidSeqId, ParticipantType.UPSTREAM)
   }
 
   @Test(expected = classOf[InvalidSequenceNumberException])
   def nonExistentSequenceNumberShouldGenerateNotSequenceError() {
-    val client = new DifferencesRestClient(agentURL, domain)
+    val client = new DifferencesRestClient(agentURL, defaultDomain)
 
-    client.eventDetail(new UUID().toString, ParticipantType.UPSTREAM)
+    client.eventDetail(invalidSeqId, ParticipantType.UPSTREAM)
   }
 }
