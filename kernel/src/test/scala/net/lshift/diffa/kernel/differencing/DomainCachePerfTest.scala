@@ -1,6 +1,7 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.junit.Assume._
+import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
 import org.junit.Test
 import net.lshift.diffa.kernel.events.VersionID
@@ -20,7 +21,7 @@ class DomainCachePerfTest {
   def differenceInsertionShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest("insert", 3) { case (count, cache) =>
+    runPerformanceTest("insert", 4) { case (count, cache) =>
       for (j <- 0L until count) {
         cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
       }
@@ -31,7 +32,7 @@ class DomainCachePerfTest {
   def differenceUpgradingShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest("upgrade", 3) { case (count, cache) =>
+    runPerformanceTest("upgrade", 4) { case (count, cache) =>
       for (j <- 0L until count) {
         cache.addPendingUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
       }
@@ -41,24 +42,54 @@ class DomainCachePerfTest {
     }
   }
 
+  @Test
+  def matchInsertionShouldBeConstantTime() {
+    val pair = DiffaPairRef(key = "pair", domain = "domain")
+
+    runPerformanceTest("matching", 4) { case (count, cache) =>
+      for (j <- 0L until count) {
+        cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
+      }
+      for (j <- 0L until count) {
+        cache.addMatchedEvent(VersionID(pair, "id" + j), "uV")
+      }
+    }
+  }
+
   //
   // Support Methods
   //
 
   def runPerformanceTest(name:String, growth:Int)(f:(Long, DomainCache) => Unit) {
-    val caches = (1 until growth).map(i => i -> createCache(name + "-" + i))
+    val caches = (1 until (growth+1)).map(i => i -> createCache(name + "-" + i))
 
+    // Run the tests, and record the cost per operation at each growth rate
     println("Events,Total,Per Event")
-    caches.foreach { case(i, cache) =>
+    val costs = caches.map { case(i, cache) =>
       val insertCount = scala.math.pow(10.0, i.asInstanceOf[Double]).asInstanceOf[Long]
 
       val startTime = System.currentTimeMillis()
       f(insertCount, cache)
       val endTime = System.currentTimeMillis()
       val duration = endTime - startTime
+      val costPerOp = duration.asInstanceOf[Double] / insertCount
 
-      println(insertCount + "," + duration + "," + duration.asInstanceOf[Double] / insertCount)
+      println(insertCount + "," + duration + "," + costPerOp)
+      i -> costPerOp
     }
+
+    // Ensure that no operation cost exceeds the cost for any smaller run by more than 20%
+    (2 until (growth+1)).foreach(i => {
+      val (currentIdx, currentCost) = costs(i - 1)
+
+      costs.slice(0, i).foreach { case (testIdx, cost) =>
+        assertFalse(
+          "Cost %s at index %s exceeded previous cost %s at index %s by more than 20%%".format(
+            currentCost, currentIdx, cost, testIdx
+          ),
+          currentCost > (cost*1.2))
+      }
+    })
   }
 
   def createCache(domain:String) = createPersistentCache(domain)

@@ -34,6 +34,12 @@
   <logger name="org.hibernate.event.def.AbstractFlushingEventListener" level="OFF" />
   <logger name="org.hibernate.util.JDBCExceptionReporter" level="OFF" />
 
+  <!--
+    EHCache produces a lot of warnings on boot, and we create a lot of session factories in the various
+    perf test cases.
+  -->
+  <logger name="net.sf.ehcache" level="ERROR" />
+
   <root level="debug">
     <appender-ref ref="STDOUT" />
   </root>
