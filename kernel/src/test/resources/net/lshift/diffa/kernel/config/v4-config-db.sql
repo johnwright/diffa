@@ -17,8 +17,10 @@ create table system_config_options (opt_key varchar(255) not null, opt_val varch
 create table users (name varchar(255) not null, email varchar(255), primary key (name));
 create table schema_version (version integer not null, primary key (version));
 alter table config_options add constraint FK80C74EA1C3C204DC foreign key (domain) references domains;
+create index diff_last_seen on diffs (last_seen);
+create index diff_detection on diffs (detected_at);
 create index rdiff_ismatched on diffs (is_match);
-create index rdiff_domain_idx on diffs (domain);
+create index rdiff_domain_idx on diffs (entity_id, domain, pair);
 alter table endpoint add constraint FK67C71D95C3C204DC foreign key (domain) references domains;
 alter table endpoint_categories add constraint FKEE1F9F06BC780104 foreign key (id) references endpoint;
 alter table endpoint_categories add constraint FKEE1F9F06B6D4F2CB foreign key (category_descriptor_id) references category_descriptor;
@@ -28,7 +30,7 @@ alter table members add constraint FK388EC9195A11FA9E foreign key (user_name) re
 alter table pair add constraint FK3462DA25F0B1C4 foreign key (upstream) references endpoint;
 alter table pair add constraint FK3462DAC3C204DC foreign key (domain) references domains;
 alter table pair add constraint FK3462DA4242E68B foreign key (downstream) references endpoint;
-create index pdiff_domain_idx on pending_diffs (domain);
+create index pdiff_domain_idx on pending_diffs (entity_id, domain, pair);
 alter table prefix_category_descriptor add constraint FK46474423466530AE foreign key (id) references category_descriptor;
 alter table range_category_descriptor add constraint FKDC53C74E7A220B71 foreign key (id) references category_descriptor;
 alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;

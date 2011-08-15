@@ -302,9 +302,11 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
       pk("oid").
       withIdentityCol()
 
+    migration.createIndex("diff_last_seen", "diffs", "last_seen")
+    migration.createIndex("diff_detection", "diffs", "detected_at")
     migration.createIndex("rdiff_is_matched", "diffs", "is_match")
-    migration.createIndex("rdiff_domain_idx", "diffs", "domain")
-    migration.createIndex("pdiff_domain_idx", "pending_diffs", "domain")
+    migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
+    migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
 
     migration.apply(connection)
   }
