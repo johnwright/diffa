@@ -45,7 +45,7 @@ import org.joda.time.{DateTime, Interval}
 class DefaultDifferencesManager(
         val systemConfig:SystemConfigStore,
         val domainConfig:DomainConfigStore,
-        val cacheProvider:DomainCacheProvider,
+        val domainDifferenceStore:DomainDifferenceStore,
         val matching:MatchingManager,
         val participantFactory:ParticipantFactory,
         val differenceListener:DifferencingListener)
@@ -57,42 +57,16 @@ class DefaultDifferencesManager(
   /**
    * This is a map of every active domain (keyed on domain id) to the cache holding the differences
    */
-  private val cachesByDomain = new HashMap[String, DomainCache]
+  private val cachesByDomain = new HashMap[String, DomainDifferenceStore]
 
   private val participants = new HashMap[Endpoint, Participant]
 
   // Subscribe to events from the matching manager
   matching.addListener(this)
 
-  initCaches()
-
   //
   // DifferencesManager Implementation
   //
-
-  /**
-   * If the domain does not exist, throw a MissingObjectException which will be handled in a higher layer
-   */
-  def safeGetDomain(id:String) = {
-    cachesByDomain.get(id) match {
-      case Some(s) => s
-      case None    => {
-        if (log.isTraceEnabled) {
-          log.trace("Request for non-existent domain: %s".format(id))
-        }
-        throw new MissingObjectException(id)
-      }
-    }
-  }
-
-  def quietWithDomainCache(domain:String):Option[DomainCache] = {
-    cachesByDomain.get(domain) match {
-      case Some(s) => Some(s)
-      case None    =>
-        log.error("Received event for unknown domain: %s".format(domain))
-        None
-    }
-  }
 
   def createDifferenceWriter(domain:String, pair:String, overwrite: Boolean) = new DifferenceWriter {
     // Record when we started the write so all differences can be tagged
@@ -107,20 +81,20 @@ class DefaultDifferencesManager(
     }
 
     def close() {
-      safeGetDomain(domain).matchEventsOlderThan(pair, writerStart)
+      domainDifferenceStore.matchEventsOlderThan(DiffaPairRef(domain = domain, key = pair), writerStart)
     }
   }
 
-  def retrieveDomainSequenceNum(id:String) = safeGetDomain(id).currentSequenceId
+  def retrieveDomainSequenceNum(id:String) = domainDifferenceStore.currentSequenceId(id)
 
   def retrieveAllEventsInInterval(domain:String, interval:Interval) =
-    safeGetDomain(domain).retrieveUnmatchedEvents(interval)
+    domainDifferenceStore.retrieveUnmatchedEvents(domain, interval)
 
   def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
-    safeGetDomain(domain).retrievePagedEvents(pairKey, interval, offset, length)
+    domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length)
 
   def countEvents(domain: String, pairKey: String, interval: Interval) =
-    safeGetDomain(domain).countEvents(pairKey, interval)
+    domainDifferenceStore.countEvents(DiffaPairRef(key = pairKey, domain = domain), interval)
 
   def retrieveEventDetail(domain:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.trace("Requested a detail query for domain (" + domain + ") and seq (" + evtSeqId + ") and type (" + t + ")")
@@ -146,7 +120,7 @@ class DefaultDifferencesManager(
                      check:Function1[DifferenceEvent,Boolean],
                      resolve:(net.lshift.diffa.kernel.config.Pair) => Endpoint,
                      p:(Endpoint) => Participant): String = {
-    val event = safeGetDomain(domain).getEvent(evtSeqId)
+    val event = domainDifferenceStore.getEvent(domain, evtSeqId)
     check(event) match {
       case true  => {
        val id = event.objId
@@ -166,14 +140,6 @@ class DefaultDifferencesManager(
   //
   // Lifecycle Management
   //
-
-  def initCaches() {
-    // Init the caches as soon as we're constructed. We'll defer filling them till the agent is completely constructed
-    // though.
-    systemConfig.listDomains.foreach(d => {
-      cachesByDomain(d.name) = cacheProvider.retrieveOrAllocateCache(d.name)
-    })
-  }
 
   override def onAgentInstantiationCompleted(nc: NotificationCentre) {
     nc.registerForDifferenceEvents(this, Unfiltered)
@@ -251,15 +217,10 @@ class DefaultDifferencesManager(
 
 
   def onUpdateDomain(domain: String) {
-    cachesByDomain.synchronized {
-      cachesByDomain(domain) = cacheProvider.retrieveOrAllocateCache(domain)
-    }
   }
 
   def onDeleteDomain(domain: String) {
-    cachesByDomain.synchronized {
-      cachesByDomain.remove(domain)
-    }
+    domainDifferenceStore.removeDomain(domain)
   }
 
 
@@ -268,47 +229,37 @@ class DefaultDifferencesManager(
   //
 
   def reportPending(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
-    quietWithDomainCache(id.pair.domain).foreach(c => {
-      // TODO: Record origin as well
-      c.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
-    })
+    // TODO: Record origin as well
+    domainDifferenceStore.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
 
     // TODO: Generate external event for pending difference?
   }
 
 
   def reportUnmatched(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
-    quietWithDomainCache(id.pair.domain).foreach(c => {
-      c.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
-    })
+    domainDifferenceStore.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
 
     differenceListener.onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, origin, MatcherFiltered)
   }
 
   def addMatched(id:VersionID, vsn:String) {
-    quietWithDomainCache(id.pair.domain).foreach(c => {
-      c.addMatchedEvent(id, vsn)
-    })
+    domainDifferenceStore.addMatchedEvent(id, vsn)
 
     // TODO: Generate external event for matched? (Interested parties will already have seen the raw event)
   }
   def upgradePending(id:VersionID) {
-    quietWithDomainCache(id.pair.domain).foreach(c => {
-      val evt = c.upgradePendingUnmatchedEvent(id)
-      if (evt != null) {
-        log.debug("Processing upgrade from pending to unmatched for " + id)
-        differenceListener.onMismatch(id, evt.detectedAt, evt.upstreamVsn, evt.downstreamVsn, LiveWindow, MatcherFiltered)
-      } else {
-        log.debug("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
-      }
-    })
+    val evt = domainDifferenceStore.upgradePendingUnmatchedEvent(id)
+    if (evt != null) {
+      log.debug("Processing upgrade from pending to unmatched for " + id)
+      differenceListener.onMismatch(id, evt.detectedAt, evt.upstreamVsn, evt.downstreamVsn, LiveWindow, MatcherFiltered)
+    } else {
+      log.debug("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
+    }
   }
   def cancelPending(id:VersionID, vsn:String) {
-    quietWithDomainCache(id.pair.domain).foreach(c => {
-      val evt = c.cancelPendingUnmatchedEvent(id, vsn)
-      if (evt != null) {
-        log.debug("Cancelling pending event for " + id)
-      }
-    })
+    val wasDeleted = domainDifferenceStore.cancelPendingUnmatchedEvent(id, vsn)
+    if (wasDeleted) {
+      log.debug("Cancelling pending event for " + id)
+    }
   }
 }

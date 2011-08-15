@@ -45,8 +45,6 @@ class StubParticipantProtocolFactory
 }
 
 class DefaultDifferencesManagerTest {
-  val cacheProvider = new LocalDomainCacheProvider
-
   val listener = createStrictMock("listener1", classOf[DifferencingListener])
 
   val matcher = createStrictMock("matcher", classOf[EventMatcher])
@@ -93,9 +91,10 @@ class DefaultDifferencesManagerTest {
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
   EasyMock.checkOrder(pairPolicyClient, false)
 
+  val domainDifferenceStore = createStrictMock(classOf[DomainDifferenceStore])
 
   val manager = new DefaultDifferencesManager(
-    systemConfigStore, domainConfigStore, cacheProvider, matchingManager,
+    systemConfigStore, domainConfigStore, domainDifferenceStore, matchingManager,
     participantFactory, listener)
 
   // The matching manager and config stores will have been called on difference manager startup. Reset them so they

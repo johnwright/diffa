@@ -24,9 +24,10 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.mapping.{Column, Table, PrimaryKey, ForeignKey}
 import org.hibernate.tool.hbm2ddl.{DatabaseMetadata, SchemaExport}
 import org.hibernate.cfg.{Environment, Configuration}
-import collection.mutable.ListBuffer
 import java.sql.{Types, Connection}
 import net.lshift.diffa.kernel.differencing.VersionCorrelationStore
+import net.lshift.hibernate.migrations.MigrationBuilder
+import scala.collection.JavaConversions._
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -41,7 +42,8 @@ class HibernateConfigStorePreparationStep
   val migrationSteps:Seq[HibernateMigrationStep] = Seq(
     RemoveGroupsMigrationStep,
     AddSchemaVersionMigrationStep,
-    AddDomainsMigrationStep
+    AddDomainsMigrationStep,
+    AddPersistentDiffsMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -51,11 +53,11 @@ class HibernateConfigStorePreparationStep
         (new SchemaExport(config)).create(false, true)
 
         // Since we are creating a fresh schema, we need to populate the schema version as well as inserting the default domain
-
-        val createStmt = AddSchemaVersionMigrationStep.schemaVersionCreateStatement(Dialect.getDialect(config.getProperties))
-        val insertSchemaVersion = HibernatePreparationUtils.schemaVersionInsertStatement(migrationSteps.last.versionId)
-        val insertDefaultDomain = HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN)
-        val insertCorrelationSchemaVersion = HibernatePreparationUtils.correlationStoreVersionInsertStatement
+        val freshMigration = new MigrationBuilder(config)
+        freshMigration.insert("domains").
+          values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
+        freshMigration.insert("system_config_options").
+          values(Map("opt_key" -> HibernatePreparationUtils.correlationStoreSchemaKey, "opt_val" -> HibernatePreparationUtils.correlationStoreVersion))
 
         sf.withSession(s => {
           s.doWork(new Work() {
@@ -63,12 +65,11 @@ class HibernateConfigStorePreparationStep
               val stmt = connection.createStatement()
 
               try {
-                stmt.execute(createStmt)
-                // Make sure that the DB has a version and that the default domain is in the DB
-                stmt.execute(insertSchemaVersion)
-                stmt.execute(insertDefaultDomain)
-                // Make sure that we have the correct version for the correlation store
-                stmt.execute(insertCorrelationSchemaVersion)
+                // Run the schema version migration step to get our schema version in place
+                AddSchemaVersionMigrationStep.migrate(config, connection, migrationSteps.last.versionId)
+
+                // Run our other first start migration steps
+                freshMigration.apply(connection)
               } catch {
                 case ex =>
                   println("Failed to prepare the schema_version table")
@@ -161,110 +162,6 @@ object HibernatePreparationUtils {
   val correlationStoreSchemaKey = VersionCorrelationStore.schemaVersionKey
 
   /**
-   * Generates a CREATE TABLE statement based on the descriptor and dialect
-   */
-  def generateCreateSQL(dialect:Dialect, descriptor:TableDescriptor) : String = {
-    val buffer = new StringBuffer(dialect.getCreateTableString())
-        .append(' ').append(dialect.quote(descriptor.name)).append(" (")
-
-    descriptor.columns.foreach(col => {
-      generateColumnString(dialect, buffer, col, true)
-      buffer.append(", ")
-    })
-
-    buffer.append(descriptor.primaryKey.sqlConstraintString(dialect))
-
-    buffer.append(")")
-    buffer.toString
-  }
-
-  def generateColumnString(dialect:Dialect, buffer:StringBuffer, col:Column, newTable:Boolean) = {
-    buffer.append(col.getName).append(" ")
-    buffer.append(dialect.getTypeName(col.getSqlTypeCode, col.getLength, col.getPrecision, col.getScale))
-    if (!col.isNullable) {
-      buffer.append(" not null")
-    }
-    if (!newTable && col.getDefaultValue == null && !col.isNullable) {
-      throw new IllegalArgumentException("Cannot have a null default value for a non-nullable column when altering a table: " + col)
-    }
-    if (col.getDefaultValue != null) {
-      buffer.append(" default ")
-      val defaultQuote = col.getSqlTypeCode.intValue() match {
-        case Types.VARCHAR => "'"
-        case _             => ""
-      }
-      buffer.append(defaultQuote)
-      buffer.append(col.getDefaultValue)
-      buffer.append(defaultQuote)
-    }
-  }
-
-  /**
-   * Generates a DROP COLUMN statement based on the descriptor and dialect
-   */
-  def generateDropColumnSQL(config:Configuration, tableName:String, columnName:String) : String = {
-    val dialect = Dialect.getDialect(config.getProperties)
-    val buffer = new StringBuffer("alter table ").append(qualifyName(config, tableName))
-                                                 .append(" drop column ")
-                                                 .append(dialect.openQuote())
-                                                 .append(columnName.toUpperCase)
-                                                 .append(dialect.openQuote())
-    buffer.toString
-  }
-
-  /**
-   * Generates an ADD COLUMN statement based on the descriptor and dialect
-   */
-  def generateAddColumnSQL(config:Configuration, tableName:String, col:Column) : String = {
-    val dialect = Dialect.getDialect(config.getProperties)
-    val buffer = new StringBuffer("alter table ").append(tableName)
-                                                 .append(" add column ")
-
-    generateColumnString(dialect, buffer, col, false)
-    buffer.toString
-  }
-
-  /**
-   * Generates an FK constraint based on the descriptor and dialect
-   */
-  def generateForeignKeySQL(config:Configuration, fk:ForeignKey) : String = {
-    val dialect = Dialect.getDialect(config.getProperties)
-    val defaultCatalog = config.getProperties.getProperty(Environment.DEFAULT_CATALOG)
-    val defaultSchema = config.getProperties.getProperty(Environment.DEFAULT_SCHEMA)
-    val buffer = new StringBuffer("alter table ").append(fk.getTable.getQualifiedName(dialect, defaultCatalog, defaultSchema))
-    buffer.append(fk.sqlConstraintString(dialect, fk.getName, defaultCatalog, defaultSchema))
-    buffer.toString
-  }
-
-  def qualifyName(config:Configuration, tableName:String) : String = {
-    val dialect = Dialect.getDialect(config.getProperties)
-    val defaultCatalog = config.getProperties.getProperty(Environment.DEFAULT_CATALOG)
-    val defaultSchema = config.getProperties.getProperty(Environment.DEFAULT_SCHEMA)
-    new Table(tableName).getQualifiedName(dialect,defaultCatalog, defaultSchema)
-  }
-
-  /**
-   * Generates a statement to insert into the domains table
-   */
-  def domainInsertStatement(domain:Domain) =  "insert into domains(name) values('%s')".format(domain.name)
-
-  /**
-   * Generates a statement to insert a fresh schema version
-   */
-  def schemaVersionInsertStatement(version:Int) =  "insert into schema_version(version) values(%s)".format(version)
-
-  /**
-   * Generates a statement to insert a fresh schema version for the correlation store
-   */
-
-  def correlationStoreVersionInsertStatement = rootOptionInsertStatement(correlationStoreSchemaKey, correlationStoreVersion)
-  /**
-   * Generates a statement to insert a key/value pair into the root domain
-   */
-  def rootOptionInsertStatement(key:String, value:String) =
-    "insert into system_config_options (opt_key, opt_val) values ('%s', '%s')".format(key,value)
-
-  /**
    * Generates a statement to update the schema version for the correlation store
    */
   def correlationSchemaVersionUpdateStatement(version:String) =
@@ -274,31 +171,6 @@ object HibernatePreparationUtils {
    * Generates a statement to update the schema_version table
    */
   def schemaVersionUpdateStatement(version:Int) =  "update schema_version set version = %s".format(version)
-}
-
-/**
- * Metadata that describes the attributes of a table
- */
-case class TableDescriptor(name:String,
-                           pk:String*) {
-
-  val columns = new ListBuffer[Column]
-
-  def primaryKey = {
-    val key = new PrimaryKey()
-    pk.foreach(k => key.addColumn(new Column(k)))
-    key
-  }
-
-  def addColumn(columnName:String, sqlType:Int, nullable:Boolean) : TableDescriptor
-    = addColumn(columnName, sqlType, Column.DEFAULT_LENGTH, nullable)
-
-  def addColumn(columnName:String, sqlType:Int, length:Int, nullable:Boolean) = {
-    columns += new Column(columnName){setNullable(nullable);
-                                      setSqlTypeCode(sqlType);
-                                      setLength(length)}
-    this
-  }
 }
 
 abstract class HibernateMigrationStep {
@@ -317,154 +189,125 @@ abstract class HibernateMigrationStep {
 object RemoveGroupsMigrationStep extends HibernateMigrationStep {
   def versionId = 1
   def migrate(config: Configuration, connection: Connection) {
-    val stmt = connection.createStatement()
-    stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "pair", "NAME" ))
-    stmt.execute("drop table pair_group")
+    val migration = new MigrationBuilder(config)
+    migration.alterTable("pair").
+      dropColumn("NAME")
+    migration.dropTable("pair_group")
+
+    migration.apply(connection)
   }
 }
 
 object AddSchemaVersionMigrationStep extends HibernateMigrationStep {
-
-  def schemaVersionCreateStatement(dialect:Dialect) = {
-    val schemaVersion = new TableDescriptor("schema_version", "version")
-    schemaVersion.addColumn("version", Types.INTEGER, false)
-    HibernatePreparationUtils.generateCreateSQL(dialect, schemaVersion)
-  }
-
   def versionId = 2
   def migrate(config: Configuration, connection: Connection) {
-    val dialect = Dialect.getDialect(config.getProperties)
-    val stmt = connection.createStatement()
-    stmt.execute(schemaVersionCreateStatement(dialect))
-    stmt.execute(HibernatePreparationUtils.schemaVersionInsertStatement(versionId))
+    migrate(config, connection, versionId)
+  }
+  def migrate(config: Configuration, connection: Connection, targetVersionId:Int) {
+    val migration = new MigrationBuilder(config)
+    migration.createTable("schema_version").
+        column("version", Types.INTEGER, false).
+        pk("version")
+    migration.insert("schema_version").
+        values(Map("version" -> new java.lang.Integer(targetVersionId)))
+    
+    migration.apply(connection)
+  }
+
+  def migration(config:Configuration) = {
+
   }
 }
 object AddDomainsMigrationStep extends HibernateMigrationStep {
   def versionId = 3
   def migrate(config: Configuration, connection: Connection) {
-    val dialect = Dialect.getDialect(config.getProperties)
-    val stmt = connection.createStatement()
+    val migration = new MigrationBuilder(config)
 
-    //create table domains (name varchar(255) not null, primary key (name));
-    val domainTable = new TableDescriptor("domains", "name")
-    domainTable.addColumn("name", Types.VARCHAR, 255, false)
-    stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, domainTable))
+    // Add our new tables (domains and system config options)
+    migration.createTable("domains").
+      column("name", Types.VARCHAR, 255, false).
+      pk("name")
+    migration.createTable("system_config_options").
+      column("opt_key", Types.VARCHAR, 255, false).
+      column("opt_val", Types.VARCHAR, 255, false).
+      pk("opt_key")
 
-    //create table system_config_options (opt_key varchar(255) not null, opt_val varchar(255), primary key (opt_key));
-    val systemConfigOptionsTable = new TableDescriptor("system_config_options", "opt_key")
-    systemConfigOptionsTable.addColumn("opt_key", Types.VARCHAR, 255, false)
-    systemConfigOptionsTable.addColumn("opt_val", Types.VARCHAR, 255, false)
-    stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, systemConfigOptionsTable))
-
-    // Make sure the default is in the DB
-    stmt.execute(HibernatePreparationUtils.domainInsertStatement(Domain.DEFAULT_DOMAIN))
+    // Make sure the default domain is in the DB
+    migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
 
     // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));
-    val membersTable = new TableDescriptor("members", "user_name", "domain_name")
-    membersTable.addColumn("domain_name", Types.VARCHAR, 255, false)
-    membersTable.addColumn("user_name", Types.VARCHAR, 255, false)
-    stmt.execute(HibernatePreparationUtils.generateCreateSQL(dialect, membersTable))
+    migration.createTable("members").
+      column("domain_name", Types.VARCHAR, 255, false).
+      column("user_name", Types.VARCHAR, 255, false).
+      pk("user_name", "domain_name")
+    migration.alterTable("members").
+      addForeignKey("FK388EC9191902E93E", "domain_name", "domains", "name").
+      addForeignKey("FK388EC9195A11FA9E", "user_name", "users", "name")
 
     // alter table config_options drop column is_internal
-    stmt.execute(HibernatePreparationUtils.generateDropColumnSQL(config, "config_options", "is_internal" ))
+    migration.alterTable("config_options").
+        dropColumn("is_internal")
 
     // Add domain column to config_option, endpoint and pair
-    val domainColumn = new Column("domain"){
-      setSqlTypeCode(Types.VARCHAR)
-      setNullable(false)
-      setLength(255)
-      setDefaultValue(Domain.DEFAULT_DOMAIN.name)
-    }
-
-    // alter table config_options add column domain varchar(255) not null
-    stmt.execute(HibernatePreparationUtils.generateAddColumnSQL(config, "config_options", domainColumn))
-    // alter table endpoint add column domain varchar(255) not null
-    stmt.execute(HibernatePreparationUtils.generateAddColumnSQL(config, "endpoint", domainColumn))
-    // alter table pair add column domain varchar(255) not null
-    stmt.execute(HibernatePreparationUtils.generateAddColumnSQL(config, "pair", domainColumn))
+    migration.alterTable("config_options").
+      addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
+      addForeignKey("FK80C74EA1C3C204DC", "domain", "domains", "name")
+    migration.alterTable("endpoint").
+      addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
+      addForeignKey("FK67C71D95C3C204DC", "domain", "domains", "name")
+    migration.alterTable("pair").
+      addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
+      addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name")
 
     // Upgrade the schema version for the correlation store
-    stmt.execute(HibernatePreparationUtils.correlationSchemaVersionUpdateStatement("1"))
+    migration.sql(HibernatePreparationUtils.correlationSchemaVersionUpdateStatement("1"))
 
-    Seq(
-      // alter table config_options add constraint FK80C74EA1C3C204DC foreign key (domain) references domains;
-      new ForeignKey() {
-        setName("FK80C74EA1C3C204DC")
-        addColumn(new Column("domain"))
-        setTable(new Table("config_options") )
-        setReferencedTable(new Table("domains"){
-          setPrimaryKey(new PrimaryKey(){
-            addColumn(new Column("name"))
-          })
-        })
-      },
-      // alter table members add constraint FK388EC9191902E93E foreign key (domain_name) references domains;
-      new ForeignKey() {
-        setName("FK388EC9191902E93E")
-        addColumn(new Column("domain_name"))
-        setTable(new Table("members") )
-        setReferencedTable(new Table("domains"){
-          setPrimaryKey(new PrimaryKey(){
-            addColumn(new Column("name"))
-          })
-        })
-      },
-      // alter table members add constraint FK388EC9195A11FA9E foreign key (user_name) references users;
-      new ForeignKey() {
-        setName("FK388EC9195A11FA9E")
-        addColumn(new Column("user_name"))
-        setTable(new Table("members") )
-        setReferencedTable(new Table("users"){
-          setPrimaryKey(new PrimaryKey(){
-            addColumn(new Column("name"))
-          })
-        })
-      },
-      //alter table endpoint add constraint FK67C71D95C3C204DC foreign key (domain) references domains;
-      new ForeignKey() {
-        setName("FK67C71D95C3C204DC")
-        addColumn(new Column("domain"))
-        setTable(new Table("endpoint") )
-        setReferencedTable(new Table("domains"){
-          setPrimaryKey(new PrimaryKey(){
-            addColumn(new Column("name"))
-          })
-        })
-      },
-      //alter table escalations add constraint FK2B3C687E7D35B6A8 foreign key (pair_key) references pair;
-      new ForeignKey() {
-        setName("FK2B3C687E7D35B6A8")
-        addColumn(new Column("pair_key"))
-        setTable(new Table("escalations") )
-        setReferencedTable(new Table("pair"){
-          setPrimaryKey(new PrimaryKey(){
-            addColumn(new Column("name"))
-          })
-        })
-      },
-      //alter table pair add constraint FK3462DAC3C204DC foreign key (domain) references domains;
-      new ForeignKey() {
-        setName("FK3462DAC3C204DC")
-        addColumn(new Column("domain"))
-        setTable(new Table("pair") )
-        setReferencedTable(new Table("domains"){
-          setPrimaryKey(new PrimaryKey(){
-            addColumn(new Column("name"))
-          })
-        })
-      },
-      //alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;
-      new ForeignKey() {
-        setName("FKF6BE324B7D35B6A8")
-        addColumn(new Column("pair_key"))
-        setTable(new Table("repair_actions") )
-        setReferencedTable(new Table("pair"){
-          setPrimaryKey(new PrimaryKey(){
-            addColumn(new Column("name"))
-          })
-        })
-      }
-    ).foreach(fk => stmt.execute(HibernatePreparationUtils.generateForeignKeySQL(config,fk)))
+    //alter table escalations add constraint FK2B3C687E7D35B6A8 foreign key (pair_key) references pair;
+    migration.alterTable("escalations").
+      addForeignKey("FK2B3C687E7D35B6A8", "pair_key", "pair", "name")
 
+    //alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;
+    migration.alterTable("repair_actions").
+      addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "name")
+    
+    migration.apply(connection)
+  }
+}
+object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
+  def versionId = 4
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.createTable("diffs").
+      column("seq_id", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("is_match", Types.SMALLINT, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      pk("seq_id").
+      withIdentityCol()
+    migration.createTable("pending_diffs").
+      column("oid", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      pk("oid").
+      withIdentityCol()
+
+    migration.createIndex("diff_last_seen", "diffs", "last_seen")
+    migration.createIndex("diff_detection", "diffs", "detected_at")
+    migration.createIndex("rdiff_is_matched", "diffs", "is_match")
+    migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
+    migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
+
+    migration.apply(connection)
   }
 }

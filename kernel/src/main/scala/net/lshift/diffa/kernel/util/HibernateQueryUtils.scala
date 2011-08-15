@@ -36,10 +36,12 @@ trait HibernateQueryUtils {
    * Executes a list query in the given session, forcing the result type into a typed list of the given
    * return type.
    */
-  def listQuery[ReturnType](s: Session, queryName: String, params: Map[String, Any]): Seq[ReturnType] = {
+  def listQuery[ReturnType](s: Session, queryName: String, params: Map[String, Any], firstResult:Option[Int] = None, maxResults:Option[Int] = None): Seq[ReturnType] = {
     sessionFactory.withSession(s => {
       val query: Query = s.getNamedQuery(queryName)
       params foreach {case (param, value) => query.setParameter(param, value)}
+      firstResult.map(f => query.setFirstResult(f))
+      maxResults.map(m => query.setMaxResults(m))
       query.list map (item => item.asInstanceOf[ReturnType])
     })
   }
@@ -77,6 +79,12 @@ trait HibernateQueryUtils {
         None
       }
     }
+  }
+
+  def executeUpdate(s:Session, queryName: String, params: Map[String, Any]) = {
+    val query: Query = s.getNamedQuery(queryName)
+    params foreach {case (param, value) => query.setParameter(param, value)}
+    query.executeUpdate()
   }
 
   /**

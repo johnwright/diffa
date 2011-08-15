@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.hibernate.migrations;
 
-package net.lshift.diffa.agent.itest.support
-
-import org.joda.time.DateTime
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- * Useful constants for use in test cases.
+ * Describes an element that can be executed within a migration.
  */
-object TestConstants {
-  val today = new DateTime
-  val yesterday = (new DateTime).minusDays(1)
-  val yearAgo = today.minusYears(1)
-  val nextYear = today.plusYears(1)
-  val agentURL = "http://localhost:19093/diffa-agent"
-  val domain = "domain"
-  val defaultDomain = "diffa"
+public interface MigrationElement {
+  /**
+   * Applies the migration element against the given connection.
+   * @param conn the connection to use to execute the element.
+   */
+  void apply(Connection conn) throws SQLException;
 }

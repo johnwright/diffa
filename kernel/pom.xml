@@ -72,8 +72,8 @@
       <artifactId>javassist</artifactId>
     </dependency>
     <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time-hibernate</artifactId>
+      <groupId>org.jadira.usertype</groupId>
+      <artifactId>usertype.jodatime</artifactId>
     </dependency>
     <dependency>
       <groupId>org.quartz-scheduler</groupId>
@@ -136,6 +136,10 @@
       <version>4.1.1</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>net.lshift</groupId>
+      <artifactId>hibernate-migrations</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -181,5 +185,32 @@
       </plugin>
     </plugins>
   </reporting>
+
+  <profiles>
+    <profile>
+      <!--
+        Fixed profile for running the performance tests. Currently disables all other tests, but it isn't mandatory
+        to do this. The main reason currently is that they take quite a long time to run, and therefore it is expected
+        a different TeamCity build will be used.
+      -->
+
+      <id>performance</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/*PerfTest.class</include>
+              </includes>
+              <systemPropertyVariables>
+                <diffa.perftest>1</diffa.perftest>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
 
