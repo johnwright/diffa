@@ -154,13 +154,17 @@ class CastorSerializableEndpoint {
     )
 }
 
-class CastorSerializableRangeCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var dataType:String,
-                                          @BeanProperty var lower:String, @BeanProperty var upper:String) {
+class CastorSerializableRangeCategoryDescriptor(
+    @BeanProperty var name:String,
+    @BeanProperty var dataType:String,
+    @BeanProperty var lower:String,
+    @BeanProperty var upper:String,
+    @BeanProperty var maxGranularity:String) {
 
-  def this() = this(null, null, null, null)
-  def this(name:String, rcd:RangeCategoryDescriptor) = this(name, rcd.dataType, rcd.lower, rcd.upper)
+  def this() = this(null,null,null,null,null)
+  def this(name:String, rcd:RangeCategoryDescriptor) = this(name, rcd.dataType, rcd.lower, rcd.upper, rcd.maxGranularity)
 
-  def toRangeCategoryDescriptor = new RangeCategoryDescriptor(dataType, lower, upper)
+  def toRangeCategoryDescriptor = new RangeCategoryDescriptor(dataType, lower, upper, maxGranularity)
 }
 class CastorSerializablePrefixCategoryDescriptor(@BeanProperty var name:String, @BeanProperty var prefixLength:Int,
                                            @BeanProperty var maxLength:Int, @BeanProperty var step:Int) {

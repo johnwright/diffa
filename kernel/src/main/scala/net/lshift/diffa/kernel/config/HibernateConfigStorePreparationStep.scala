@@ -41,7 +41,8 @@ class HibernateConfigStorePreparationStep
   val migrationSteps:Seq[HibernateMigrationStep] = Seq(
     RemoveGroupsMigrationStep,
     AddSchemaVersionMigrationStep,
-    AddDomainsMigrationStep
+    AddDomainsMigrationStep,
+    AddMaxGranularityMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -466,5 +467,22 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
       }
     ).foreach(fk => stmt.execute(HibernatePreparationUtils.generateForeignKeySQL(config,fk)))
 
+  }
+}
+
+// This step is going to conflict with the persistent-diffs branch
+object AddMaxGranularityMigrationStep extends HibernateMigrationStep {
+  def versionId = 4
+  def migrate(config: Configuration, connection: Connection) {
+    val stmt = connection.createStatement()
+    // Add domain column to config_option, endpoint and pair
+    val maxGranularityColumn = new Column("max_granularity"){
+      setSqlTypeCode(Types.VARCHAR)
+      setNullable(true)
+      setLength(255)
+    }
+
+    // alter table range_category_descriptor add column max_granularity varchar(255)
+    stmt.execute(HibernatePreparationUtils.generateAddColumnSQL(config, "range_category_descriptor", maxGranularityColumn))
   }
 }

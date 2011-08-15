@@ -29,9 +29,16 @@ object RangeTypeRegistry {
   /**
    * Resolve the default category function for any given data type name
    */
-  def defaultCategoryFunction(attrName:String, dataType:String):CategoryFunction = dataType match {
-    case "date"     => YearlyCategoryFunction(attrName, DateDataType)
-    case "datetime" => YearlyCategoryFunction(attrName, TimeDataType)
-    case "int"      => IntegerCategoryFunction(attrName, 1000, 10)
+  def defaultCategoryFunction(attrName:String, desc:RangeCategoryDescriptor) : Option[CategoryFunction] = desc.dataType match {
+    case "date"     => defaultOrMaxGranularity(attrName, desc, DateDataType)
+    case "datetime" => defaultOrMaxGranularity(attrName, desc, TimeDataType)
+    case "int"      => Some(IntegerCategoryFunction(attrName, 1000, 10))
+  }
+
+  def defaultOrMaxGranularity(attrName:String, desc:RangeCategoryDescriptor, t:DateCategoryDataType) = desc.maxGranularity match {
+    case "yearly" | "" | null => Some(YearlyCategoryFunction(attrName, t))
+    case "monthly"            => Some(MonthlyCategoryFunction(attrName, t))
+    case "daily"              => Some(DailyCategoryFunction(attrName, t))
+    case "individual"         => None
   }
 }
