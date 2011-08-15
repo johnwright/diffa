@@ -12,13 +12,17 @@ import org.hibernate.Session
 /**
  * Hibernate backed Domain Cache provider.
  */
-class HibernateDomainCacheProvider(val sessionFactory:SessionFactory)
-    extends DomainCacheProvider
+class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
+    extends DomainDifferenceStore
     with HibernateQueryUtils {
 
-  def retrieveCache(domain: String) = Some(new HibernateDomainCache(domain, this))
-  def retrieveOrAllocateCache(domain: String) = new HibernateDomainCache(domain, this)
-
+  def removeDomain(domain:String) {
+    sessionFactory.withSession(s => {
+      executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
+      executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
+    })
+  }
+  
   def currentSequenceId(domain:String) = sessionFactory.withSession(s => {
     singleQueryOpt[java.lang.Integer](s, "maxSeqIdByDomain", Map("domain" -> domain)).getOrElse(0).toString
   })
@@ -94,9 +98,9 @@ class HibernateDomainCacheProvider(val sessionFactory:SessionFactory)
     })
   }
 
-  def matchEventsOlderThan(domain:String, pair:String, cutoff: DateTime) = sessionFactory.withSession(s => {
+  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = sessionFactory.withSession(s => {
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsOlderThanCutoffByDomainAndPair",
-      Map("domain" -> domain, "pair" -> pair, "cutoff" -> cutoff)).map(old => {
+      Map("domain" -> pair.domain, "pair" -> pair.key, "cutoff" -> cutoff)).map(old => {
         s.delete(old)
         saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, new DateTime))
       })
@@ -177,30 +181,6 @@ class HibernateDomainCacheProvider(val sessionFactory:SessionFactory)
     evt.seqId = seqId
     evt.asDifferenceEvent
   }
-}
-
-class HibernateDomainCache(val domain:String, val provider:HibernateDomainCacheProvider) extends DomainCache {
-  def currentSequenceId = provider.currentSequenceId(domain)
-  def addPendingUnmatchedEvent(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, seen: DateTime) {
-    provider.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, seen)
-  }
-  def addReportableUnmatchedEvent(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, seen: DateTime) =
-    provider.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, seen)
-  def upgradePendingUnmatchedEvent(id: VersionID) = provider.upgradePendingUnmatchedEvent(id)
-  def cancelPendingUnmatchedEvent(id: VersionID, vsn: String) = provider.cancelPendingUnmatchedEvent(id, vsn)
-  def addMatchedEvent(id: VersionID, vsn: String) = provider.addMatchedEvent(id, vsn)
-  def matchEventsOlderThan(pair:String, cutoff: DateTime) {
-    provider.matchEventsOlderThan(domain, pair, cutoff)
-  }
-  def retrieveUnmatchedEvents(interval: Interval) = provider.retrieveUnmatchedEvents(domain, interval)
-  def retrievePagedEvents(pairKey: String, interval: Interval, offset: Int, length: Int) =
-    provider.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length)
-  def countEvents(pairKey: String, interval: Interval) =
-    provider.countEvents(DiffaPairRef(key = pairKey, domain = domain), interval)
-  def retrieveEventsSince(evtSeqId: String) =
-    provider.retrieveEventsSince(domain, evtSeqId)
-  def getEvent(evtSeqId: String) =
-    provider.getEvent(domain, evtSeqId)
 }
 
 case class PendingDifferenceEvent(

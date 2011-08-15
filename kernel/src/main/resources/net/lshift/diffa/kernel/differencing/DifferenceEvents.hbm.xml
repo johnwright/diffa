@@ -56,6 +56,13 @@
     <property name="downstreamVsn" type="string" column="downstream_vsn" />
   </class>
 
+  <query name="removeDomainDiffs">
+    delete from ReportedDifferenceEvent where objId.pair.domain = :domain
+  </query>
+  <query name="removeDomainPendingDiffs">
+    delete from PendingDifferenceEvent where objId.pair.domain = :domain
+  </query>
+
   <query name="pendingByDomainIdAndVersionID">
     select e from PendingDifferenceEvent e where e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.objId.id = :objId
   </query>
@@ -72,16 +79,16 @@
   <query name="maxSeqIdByDomain">
     select max(e.seqId) from ReportedDifferenceEvent e where e.objId.pair.domain = :domain
   </query>
-  <query name="unmatchedEventsInIntervalByDomain">
-    select e from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.detectedAt >= :start and e.detectedAt &lt; :end and e.isMatch = false
-  </query>
-  <query name="unmatchedEventsInIntervalByDomainAndPair">
-    select e from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.detectedAt >= :start and e.detectedAt &lt; :end and e.isMatch = false
-  </query>
-  <query name="countEventsInIntervalByDomainAndPair">
-    select count(e) from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.detectedAt >= :start and e.detectedAt &lt; :end
-  </query>
-  <query name="unmatchedEventsOlderThanCutoffByDomainAndPair">
-    select e from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.lastSeen &lt; :cutoff
-  </query>
+  <query name="unmatchedEventsInIntervalByDomain"><![CDATA[
+    select e from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.detectedAt >= :start and e.detectedAt < :end and e.isMatch = false
+  ]]></query>
+  <query name="unmatchedEventsInIntervalByDomainAndPair"><![CDATA[
+    select e from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.detectedAt >= :start and e.detectedAt < :end and e.isMatch = false
+  ]]></query>
+  <query name="countEventsInIntervalByDomainAndPair"><![CDATA[
+    select count(e) from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.detectedAt >= :start and e.detectedAt < :end
+  ]]></query>
+  <query name="unmatchedEventsOlderThanCutoffByDomainAndPair"><![CDATA[
+    select e from ReportedDifferenceEvent e where e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.lastSeen < :cutoff
+  ]]></query>
 </hibernate-mapping>

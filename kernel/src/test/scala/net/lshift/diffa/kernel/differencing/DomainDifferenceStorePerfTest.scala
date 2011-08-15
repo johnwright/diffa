@@ -14,19 +14,19 @@ import org.junit.{Ignore, Test}
 /**
  * Performance test for the domain cache.
  */
-class DomainCachePerfTest {
+class DomainDifferenceStorePerfTest {
   assumeThat(System.getProperty("diffa.perftest"), is(equalTo("1")))
 
-  import DomainCachePerfTest._
+  import DomainDifferenceStorePerfTest._
 
   @Test
   def differenceInsertionShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest(4) { case (count, cache) =>
+    runPerformanceTest(4) { count =>
       linearCost(count)(() => {
         for (j <- 0L until count) {
-          cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
+          diffStore.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
         }
       })
     }
@@ -36,13 +36,13 @@ class DomainCachePerfTest {
   def differenceUpgradingShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest(4) { case (count, cache) =>
+    runPerformanceTest(4) { count =>
       linearCost(count)(() => {
         for (j <- 0L until count) {
-          cache.addPendingUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
+          diffStore.addPendingUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
         }
         for (j <- 0L until count) {
-          cache.upgradePendingUnmatchedEvent(VersionID(pair, "id" + j))
+          diffStore.upgradePendingUnmatchedEvent(VersionID(pair, "id" + j))
         }
       })
     }
@@ -52,13 +52,13 @@ class DomainCachePerfTest {
   def matchInsertionShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest(4) { case (count, cache) =>
+    runPerformanceTest(4) { count =>
       for (j <- 0L until count) {
-        cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
       }
       linearCost(count)(() => {
         for (j <- 0L until count) {
-          cache.addMatchedEvent(VersionID(pair, "id" + j), "uV")
+          diffStore.addMatchedEvent(VersionID(pair, "id" + j), "uV")
         }
       })
     }
@@ -69,13 +69,13 @@ class DomainCachePerfTest {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
     val pair2 = DiffaPairRef(key = "pair2", domain = "domain")
 
-    runPerformanceTest(4) { case (count, cache) =>
+    runPerformanceTest(4) { count =>
       for (j <- 0L until count) {
-        cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
-        cache.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), new DateTime, "uV", "dV", new DateTime)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), new DateTime, "uV", "dV", new DateTime)
       }
       linearCost(count)(() => {
-        cache.retrievePagedEvents(pair.key, new Interval(new DateTime().minusHours(2), new DateTime().plusHours(2)),
+        diffStore.retrievePagedEvents(pair, new Interval(new DateTime().minusHours(2), new DateTime().plusHours(2)),
           0, count.asInstanceOf[Int])
       })
     }
@@ -87,7 +87,7 @@ class DomainCachePerfTest {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
     val pair2 = DiffaPairRef(key = "pair2", domain = "domain")
 
-    runPerformanceTest(4, offset = 3) { case (count, cache) =>
+    runPerformanceTest(4, offset = 3) { count =>
       val now = new DateTime()
       val before = now.minusSeconds(10)
       val after = now.plusSeconds(10)
@@ -95,17 +95,17 @@ class DomainCachePerfTest {
 
       // Add count number of "noise entries"
       for (j <- 0L until count) {
-        cache.addReportableUnmatchedEvent(VersionID(pair, "idB" + j), before, "uV", "dV", before)
-        cache.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), now, "uV", "dV", now)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair, "idB" + j), before, "uV", "dV", before)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), now, "uV", "dV", now)
       }
 
       // Add entries that we actually want to retrieve
       for (j <- 0L until 10) {
-        cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), after, "uV", "dV", after)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair, "id" + j), after, "uV", "dV", after)
       }
 
       constantCost(() => {
-        cache.retrievePagedEvents(pair.key, new Interval(now, lotsAfter), 0, 10)
+        diffStore.retrievePagedEvents(pair, new Interval(now, lotsAfter), 0, 10)
       })
     }
   }
@@ -115,25 +115,25 @@ class DomainCachePerfTest {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
     val pair2 = DiffaPairRef(key = "pair2", domain = "domain")
 
-    runPerformanceTest(4) { case (count, cache) =>
+    runPerformanceTest(4) { count =>
       val now = new DateTime()
       val before = now.minusSeconds(10)
       val after = now.plusSeconds(10)
 
       // Add count number of "noise entries"
       for (j <- 0L until count) {
-        cache.addReportableUnmatchedEvent(VersionID(pair, "idB" + j), new DateTime, "uV", "dV", after)
-        cache.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), new DateTime, "uV", "dV", new DateTime)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair, "idB" + j), new DateTime, "uV", "dV", after)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), new DateTime, "uV", "dV", new DateTime)
       }
       
       // Add a constant number of entries to be expired
       for (j <- 0L until 10) {
-        cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", before)
+        diffStore.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", before)
       }
               
       // Time the expiry
       constantCost(() => {
-        cache.matchEventsOlderThan(pair.key, now)
+        diffStore.matchEventsOlderThan(pair, now)
       })
     }
   }
@@ -142,15 +142,15 @@ class DomainCachePerfTest {
   // Support Methods
   //
 
-  def runPerformanceTest(growth:Int, offset:Int = 1)(f:(Long, DomainCache) => (Long, Double)) {
+  def runPerformanceTest(growth:Int, offset:Int = 1)(f:(Long) => (Long, Double)) {
     // Run the tests, and record the cost per operation at each growth rate
     println("Events,Total,Per Event")
     val costs = (offset until (growth+1)).map { i =>
       // Clear differences before each test run
-      domainCacheProvider.clearAllDifferences
+      diffStore.clearAllDifferences
 
       val insertCount = scala.math.pow(10.0, i.asInstanceOf[Double]).asInstanceOf[Long]
-      val (duration, cost) = f(insertCount, cache1)
+      val (duration, cost) = f(insertCount)
 
       println(insertCount + "," + duration + "," + cost)
 
@@ -190,7 +190,7 @@ class DomainCachePerfTest {
   }
 }
 
-object DomainCachePerfTest {
+object DomainDifferenceStorePerfTest {
   FileUtils.deleteDirectory(new File("target/domain-cache-perf"))
 
   lazy val config =
@@ -211,7 +211,5 @@ object DomainCachePerfTest {
     sf
   }
 
-  lazy val domainCacheProvider = new HibernateDomainCacheProvider(sessionFactory)
-  lazy val cache1 = domainCacheProvider.retrieveOrAllocateCache("domain")
-  lazy val cache2 = domainCacheProvider.retrieveOrAllocateCache("domain2")
+  lazy val diffStore = new HibernateDomainDifferenceStore(sessionFactory)
 }

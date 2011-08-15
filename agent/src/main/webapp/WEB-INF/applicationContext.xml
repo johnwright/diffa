@@ -100,12 +100,12 @@
   <bean id="differencesManager" class="net.lshift.diffa.kernel.differencing.DefaultDifferencesManager">
     <constructor-arg ref="systemConfigStore" />
     <constructor-arg ref="domainConfigStore" />
-    <constructor-arg ref="domainCacheProvider" />
+    <constructor-arg ref="domainDifferenceStore" />
     <constructor-arg ref="matchingManager" />
     <constructor-arg ref="participantFactory" />
     <constructor-arg ref="notificationCentre" />
   </bean>
-  <bean id="domainCacheProvider" class="net.lshift.diffa.kernel.differencing.HibernateDomainCacheProvider">
+  <bean id="domainDifferenceStore" class="net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStore">
     <constructor-arg ref="diffaSessionFactory" />
   </bean>
 

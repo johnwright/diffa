@@ -81,6 +81,12 @@ trait HibernateQueryUtils {
     }
   }
 
+  def executeUpdate(s:Session, queryName: String, params: Map[String, Any]) = {
+    val query: Query = s.getNamedQuery(queryName)
+    params foreach {case (param, value) => query.setParameter(param, value)}
+    query.executeUpdate()
+  }
+
   /**
    * Returns a domain by its name
    */
