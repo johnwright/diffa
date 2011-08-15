@@ -39,6 +39,8 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     extends VersionPolicy {
   protected val alerter = Alerter.forClass(getClass)
 
+  val logger = LoggerFactory.getLogger(getClass)
+
   /**
    * Handles a participant change. Due to the need to later correlate data, event information is cached to the
    * version correlation store.
@@ -76,6 +78,14 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
+  def benchmark[T](pair:DiffaPair, label:String, f:() => T) {
+    val start = System.currentTimeMillis()
+    val result = f()
+    val stop = System.currentTimeMillis()
+    logger.debug("[%s]: Benchmarking operation %s: %s ms".format(pair.identifier, label, (stop - start) ) )
+    result
+  }
+
   def replayUnmatchedDifferences(pair:DiffaPair, w:DifferenceWriter, origin:MatchOrigin) {
     // Run a query for mismatched versions, and report each one
     stores(pair.asRef).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints).foreach(
@@ -84,16 +94,20 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
   def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
                    listener:DifferencingListener, handle:FeedbackHandle) = {
-    val upstreamConstraints = pair.upstream.groupedConstraints
-    constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy)
-      .scanParticipant(pair.asRef, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
+    benchmark(pair, "upstream scan", () => {
+      val upstreamConstraints = pair.upstream.groupedConstraints
+      constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy)
+        .scanParticipant(pair.asRef, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
+    })
   }
 
   def scanDownstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
                      ds:DownstreamParticipant, listener:DifferencingListener, handle:FeedbackHandle) = {
-    val downstreamConstraints = pair.downstream.groupedConstraints
-    constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds)
-      .scanParticipant(pair.asRef, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
+    benchmark(pair, "downstream scan", () => {
+      val downstreamConstraints = pair.downstream.groupedConstraints
+      constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds)
+        .scanParticipant(pair.asRef, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
+    })
   }
 
   private def constraintsOrEmpty(grouped:Seq[Seq[ScanConstraint]]):Seq[Seq[ScanConstraint]] =

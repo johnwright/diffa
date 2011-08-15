@@ -27,6 +27,12 @@
 
   <logger name="org.hibernate" level="WARN" />
 
+   <!--
+    EHCache produces a lot of warnings on boot, and we create a lot of session factories in the various
+    perf test cases.
+   -->
+  <logger name="net.sf.ehcache" level="ERROR" />
+
   <!--
     Test cases that valid rejection cause way too much log noise since Hibernate logs and rethrows.
     Suppress the hibernate internal logging.
