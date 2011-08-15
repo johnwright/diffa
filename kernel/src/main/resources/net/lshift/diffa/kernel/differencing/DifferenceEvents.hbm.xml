@@ -50,8 +50,8 @@
       </component>
     </component>
     <property name="isMatch" type="boolean" column="is_match" index="rdiff_ismatched" />
-    <property name="detectedAt" type="org.jadira.usertype.dateandtime.joda.PersistentDateTime" column="detected_at" not-null="true" />
-    <property name="lastSeen" type="org.jadira.usertype.dateandtime.joda.PersistentDateTime" column="last_seen" not-null="true" />
+    <property name="detectedAt" type="org.jadira.usertype.dateandtime.joda.PersistentDateTime" column="detected_at" not-null="true" index="diff_detection" />
+    <property name="lastSeen" type="org.jadira.usertype.dateandtime.joda.PersistentDateTime" column="last_seen" not-null="true" index="diff_last_seen" />
     <property name="upstreamVsn" type="string" column="upstream_vsn" />
     <property name="downstreamVsn" type="string" column="downstream_vsn" />
   </class>

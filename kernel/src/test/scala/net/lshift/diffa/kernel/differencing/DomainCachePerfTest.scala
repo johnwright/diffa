@@ -3,13 +3,13 @@ package net.lshift.diffa.kernel.differencing
 import org.junit.Assume._
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
-import org.junit.Test
 import net.lshift.diffa.kernel.events.VersionID
 import org.hibernate.cfg.Configuration
 import net.lshift.diffa.kernel.config.{HibernateConfigStorePreparationStep, DiffaPairRef}
 import org.apache.commons.io.FileUtils
 import java.io.File
 import org.joda.time.{Interval, DateTime}
+import org.junit.{Ignore, Test}
 
 /**
  * Performance test for the domain cache.
@@ -17,12 +17,14 @@ import org.joda.time.{Interval, DateTime}
 class DomainCachePerfTest {
   assumeThat(System.getProperty("diffa.perftest"), is(equalTo("1")))
 
+  import DomainCachePerfTest._
+
   @Test
   def differenceInsertionShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest("insert", 4) { case (count, cache) =>
-      timed(() => {
+    runPerformanceTest(4) { case (count, cache) =>
+      linearCost(count)(() => {
         for (j <- 0L until count) {
           cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
         }
@@ -34,8 +36,8 @@ class DomainCachePerfTest {
   def differenceUpgradingShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest("upgrade", 4) { case (count, cache) =>
-      timed(() => {
+    runPerformanceTest(4) { case (count, cache) =>
+      linearCost(count)(() => {
         for (j <- 0L until count) {
           cache.addPendingUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
         }
@@ -50,11 +52,11 @@ class DomainCachePerfTest {
   def matchInsertionShouldBeConstantTime() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
 
-    runPerformanceTest("matching", 4) { case (count, cache) =>
+    runPerformanceTest(4) { case (count, cache) =>
       for (j <- 0L until count) {
         cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
       }
-      timed(() => {
+      linearCost(count)(() => {
         for (j <- 0L until count) {
           cache.addMatchedEvent(VersionID(pair, "id" + j), "uV")
         }
@@ -63,18 +65,75 @@ class DomainCachePerfTest {
   }
 
   @Test
-  def differenceQueryShouldGrowLinearly() {
+  def differenceQueryShouldGrowLinearlyAsDifferencesIncrease() {
     val pair = DiffaPairRef(key = "pair", domain = "domain")
     val pair2 = DiffaPairRef(key = "pair2", domain = "domain")
 
-    runPerformanceTest("difference-query", 4) { case (count, cache) =>
+    runPerformanceTest(4) { case (count, cache) =>
       for (j <- 0L until count) {
         cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", new DateTime)
         cache.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), new DateTime, "uV", "dV", new DateTime)
       }
-      timed(() => {
+      linearCost(count)(() => {
         cache.retrievePagedEvents(pair.key, new Interval(new DateTime().minusHours(2), new DateTime().plusHours(2)),
           0, count.asInstanceOf[Int])
+      })
+    }
+  }
+
+  @Test
+  @Ignore("detectedAt index doesn't appear to be correcting this")
+  def differenceQueryShouldRemainConstantForSameNumberOfDifferences() {
+    val pair = DiffaPairRef(key = "pair", domain = "domain")
+    val pair2 = DiffaPairRef(key = "pair2", domain = "domain")
+
+    runPerformanceTest(4, offset = 3) { case (count, cache) =>
+      val now = new DateTime()
+      val before = now.minusSeconds(10)
+      val after = now.plusSeconds(10)
+      val lotsAfter = now.plusHours(2)
+
+      // Add count number of "noise entries"
+      for (j <- 0L until count) {
+        cache.addReportableUnmatchedEvent(VersionID(pair, "idB" + j), before, "uV", "dV", before)
+        cache.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), now, "uV", "dV", now)
+      }
+
+      // Add entries that we actually want to retrieve
+      for (j <- 0L until 10) {
+        cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), after, "uV", "dV", after)
+      }
+
+      constantCost(() => {
+        cache.retrievePagedEvents(pair.key, new Interval(now, lotsAfter), 0, 10)
+      })
+    }
+  }
+
+  @Test
+  def oldMismatchesShouldBeAbleToBeExpiredInConstantTime() {
+    val pair = DiffaPairRef(key = "pair", domain = "domain")
+    val pair2 = DiffaPairRef(key = "pair2", domain = "domain")
+
+    runPerformanceTest(4) { case (count, cache) =>
+      val now = new DateTime()
+      val before = now.minusSeconds(10)
+      val after = now.plusSeconds(10)
+
+      // Add count number of "noise entries"
+      for (j <- 0L until count) {
+        cache.addReportableUnmatchedEvent(VersionID(pair, "idB" + j), new DateTime, "uV", "dV", after)
+        cache.addReportableUnmatchedEvent(VersionID(pair2, "id" + j), new DateTime, "uV", "dV", new DateTime)
+      }
+      
+      // Add a constant number of entries to be expired
+      for (j <- 0L until 10) {
+        cache.addReportableUnmatchedEvent(VersionID(pair, "id" + j), new DateTime, "uV", "dV", before)
+      }
+              
+      // Time the expiry
+      constantCost(() => {
+        cache.matchEventsOlderThan(pair.key, now)
       })
     }
   }
@@ -83,23 +142,23 @@ class DomainCachePerfTest {
   // Support Methods
   //
 
-  def runPerformanceTest(name:String, growth:Int)(f:(Long, DomainCache) => Long) {
-    val caches = (1 until (growth+1)).map(i => i -> createCache(name + "-" + i))
-
+  def runPerformanceTest(growth:Int, offset:Int = 1)(f:(Long, DomainCache) => (Long, Double)) {
     // Run the tests, and record the cost per operation at each growth rate
     println("Events,Total,Per Event")
-    val costs = caches.map { case(i, cache) =>
+    val costs = (offset until (growth+1)).map { i =>
+      // Clear differences before each test run
+      domainCacheProvider.clearAllDifferences
+
       val insertCount = scala.math.pow(10.0, i.asInstanceOf[Double]).asInstanceOf[Long]
+      val (duration, cost) = f(insertCount, cache1)
 
-      val duration = f(insertCount, cache)
-      val costPerOp = duration.asInstanceOf[Double] / insertCount
+      println(insertCount + "," + duration + "," + cost)
 
-      println(insertCount + "," + duration + "," + costPerOp)
-      i -> costPerOp
+      i -> cost
     }
 
     // Ensure that no operation cost exceeds the cost for any smaller run by more than 20%
-    (2 until (growth+1)).foreach(i => {
+    ((offset + 1) until (growth+1)).foreach(i => {
       val (currentIdx, currentCost) = costs(i - 1)
 
       costs.slice(0, i).foreach { case (testIdx, cost) =>
@@ -112,36 +171,47 @@ class DomainCachePerfTest {
     })
   }
 
-  def timed(f:() => Unit) = {
+  def linearCost(opCount:Long)(f:() => Unit) = {
     val startTime = System.currentTimeMillis()
     f()
     val endTime = System.currentTimeMillis()
-    endTime - startTime
+    val duration = endTime - startTime
+
+    (duration, duration.asInstanceOf[Double] / opCount)
   }
 
-  def createCache(domain:String) = createPersistentCache(domain)
-  def createLocalCache(domain:String) = new LocalDomainCache(domain)
-  def createPersistentCache(domain:String) = {
-    FileUtils.deleteDirectory(new File("target/domain-" + domain))
+  def constantCost(f:() => Unit) = {
+    val startTime = System.currentTimeMillis()
+    f()
+    val endTime = System.currentTimeMillis()
+    val duration = endTime - startTime
 
-    val config =
-      new Configuration().
-        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-        setProperty("hibernate.connection.url", "jdbc:derby:target/domain-" + domain + ";create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
-        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                               // otherwise the preparation step will not get committed
-
-    val sessionFactory = {
-      val sf = config.buildSessionFactory
-      (new HibernateConfigStorePreparationStep).prepare(sf, config)
-      sf
-    }
-
-    val domainCacheProvider = new HibernateDomainCacheProvider(sessionFactory)
-    domainCacheProvider.retrieveOrAllocateCache(domain)
+    (duration, duration.asInstanceOf[Double])
   }
+}
+
+object DomainCachePerfTest {
+  FileUtils.deleteDirectory(new File("target/domain-cache-perf"))
+
+  lazy val config =
+    new Configuration().
+      addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+      addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
+      setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
+      setProperty("hibernate.connection.url", "jdbc:derby:target/domain-cache-perf;create=true").
+      setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+      setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+      setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+                                                             // otherwise the preparation step will not get committed
+
+  lazy val sessionFactory = {
+    val sf = config.buildSessionFactory
+    (new HibernateConfigStorePreparationStep).prepare(sf, config)
+
+    sf
+  }
+
+  lazy val domainCacheProvider = new HibernateDomainCacheProvider(sessionFactory)
+  lazy val cache1 = domainCacheProvider.retrieveOrAllocateCache("domain")
+  lazy val cache2 = domainCacheProvider.retrieveOrAllocateCache("domain2")
 }
