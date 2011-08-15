@@ -30,5 +30,5 @@ alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_k
 alter table set_category_descriptor add constraint FKA51D45F39810CA56 foreign key (id) references category_descriptor;
 alter table set_constraint_values add constraint FK96C7B32744035BE4 foreign key (value_id) references category_descriptor;
 insert into domains(name) values('diffa');
-insert into schema_version(version) values(3);
+insert into schema_version(version) values(4);
 insert into system_config_options (opt_key, opt_val) values ('correlationStore.schemaVersion', '1');
