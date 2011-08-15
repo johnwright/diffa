@@ -177,6 +177,25 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
+  def shouldAllowMaxGranularityOverride = {
+    // declare the domain
+    systemConfigStore.createOrUpdateDomain(domain)
+
+    val categories =
+      Map(dateCategoryName ->  new RangeCategoryDescriptor("datetime", dateCategoryLower, dateCategoryUpper, "individual"))
+
+    val endpoint = new EndpointDef(name = "ENDPOINT_WITH_OVERIDE", scanUrl = "testScanUrlOverride",
+                                   contentRetrievalUrl = "contentRetrieveUrlOverride", contentType = "application/json",
+                                   categories = categories)
+    domainConfigStore.createOrUpdateEndpoint(domainName, endpoint)
+    exists(endpoint, 1)
+    val retrEndpoint = domainConfigStore.getEndpointDef(domainName, endpoint.name)
+    val descriptor = retrEndpoint.categories(dateCategoryName).asInstanceOf[RangeCategoryDescriptor]
+    assertEquals("individual", descriptor.maxGranularity)
+
+  }
+
+  @Test
   def testPairsAreValidatedBeforeUpdate() {
     // declare the domain
     systemConfigStore.createOrUpdateDomain(domain)
