@@ -43,6 +43,7 @@ class HibernateConfigStorePreparationStep
     RemoveGroupsMigrationStep,
     AddSchemaVersionMigrationStep,
     AddDomainsMigrationStep,
+    AddMaxGranularityMigrationStep,
     AddPersistentDiffsMigrationStep
   )
 
@@ -273,8 +274,19 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     migration.apply(connection)
   }
 }
-object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
+object AddMaxGranularityMigrationStep extends HibernateMigrationStep {
   def versionId = 4
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.alterTable("range_category_descriptor").
+      addColumn("max_granularity", Types.VARCHAR, 255, true, null)
+
+    migration.apply(connection)
+  }
+}
+object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
+  def versionId = 5
   def migrate(config: Configuration, connection: Connection) {
     val migration = new MigrationBuilder(config)
 
