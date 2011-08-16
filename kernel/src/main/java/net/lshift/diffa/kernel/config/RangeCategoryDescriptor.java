@@ -35,6 +35,11 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
     this.upper = upper;
   }
 
+  public RangeCategoryDescriptor(String dataType, String lower, String upper, String maxGranularity) {
+    this(dataType, lower, upper);
+    this.maxGranularity = maxGranularity;
+  }
+
   /**
    * The name of the type for attributes of this category.
    */
@@ -49,6 +54,20 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
    * @param The initial upper bound which will be used for top level queries.
    */
   public String upper;
+
+  /**
+   * The coarsest granularity that should be applied to a top level query.
+   */
+  public String maxGranularity;
+
+
+  public String getMaxGranularity() {
+    return maxGranularity;
+  }
+
+  public void setMaxGranularity(String maxGranularity) {
+    this.maxGranularity = maxGranularity;
+  }
 
   public String getDataType() {
     return dataType;

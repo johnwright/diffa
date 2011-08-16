@@ -59,7 +59,7 @@ case class EndpointDef (
   def this() = this(name = null)
 
   def validate(path:String = null) {
-    // TODO: Add validation of endpoint parameters
+    // TODO [#344] : Add validation of endpoint parameters
   }
 }
 

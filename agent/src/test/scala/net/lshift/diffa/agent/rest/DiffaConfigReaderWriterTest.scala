@@ -39,7 +39,8 @@ class DiffaConfigReaderWriterTest {
           scanUrl = "http://localhost:1234/scan", contentRetrievalUrl = "http://localhost:1234/content",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
-            "b" -> new SetCategoryDescriptor(Set("a", "b", "c")))),
+            "b" -> new SetCategoryDescriptor(Set("a", "b", "c")),
+            "c" -> new RangeCategoryDescriptor("date", "1888", "1889", "individual"))),
         EndpointDef(name = "downstream1", contentType = "application/json",
           scanUrl = "http://localhost:5432/scan", versionGenerationUrl = "http://localhost:5432/generate-version",
           categories = Map(
@@ -78,6 +79,7 @@ class DiffaConfigReaderWriterTest {
             <value>b</value>
             <value>c</value>
           </set-category>
+          <range-category name="c" data-type="date" lower="1888" upper="1889" max-granularity="individual"/>
         </endpoint>
         <endpoint name="downstream1" content-type="application/json"
                   scan-url="http://localhost:5432/scan" version-url="http://localhost:5432/generate-version">

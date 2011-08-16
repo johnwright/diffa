@@ -34,6 +34,7 @@
         <property name="dataType" column="data_type" type="string"/>
         <property name="upper" column="upper_bound" type="string" not-null="false"/>
         <property name="lower" column="lower_bound" type="string" not-null="false"/>
+        <property name="maxGranularity" column="max_granularity" type="string" not-null="false"/>
       </join>
     </subclass>
     <subclass name="SetCategoryDescriptor" discriminator-value="set">

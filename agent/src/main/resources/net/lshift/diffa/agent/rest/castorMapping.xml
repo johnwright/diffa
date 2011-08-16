@@ -38,6 +38,9 @@
     <field name="upper" type="string">
       <bind-xml name="upper" node="attribute" />
     </field>
+    <field name="maxGranularity" type="string">
+      <bind-xml name="max-granularity" node="attribute" />
+    </field>
   </class>
   <class name="net.lshift.diffa.agent.rest.CastorSerializablePrefixCategoryDescriptor">
     <field name="name" type="string" required="true">
