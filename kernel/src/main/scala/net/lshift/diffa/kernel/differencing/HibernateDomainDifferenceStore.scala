@@ -130,6 +130,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
 
+  def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
+    Map()
+  }
+
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
         Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))) match {

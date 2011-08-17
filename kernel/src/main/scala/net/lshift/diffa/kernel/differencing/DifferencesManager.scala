@@ -21,6 +21,7 @@ import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.ParticipantType
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
+import java.util.HashMap
 
 /**
  * A DifferencesManager provides a stateful view of the differencing of pairs, and provides mechanisms for polling
@@ -39,11 +40,10 @@ trait DifferencesManager {
   def retrieveDomainSequenceNum(domain:String):String
 
   /**
-   *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
+   *  Retrieves all events known to this domain in the as tiles according to the given zoom level. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */
-  // TODO [#294] This call should be deprecated because this abstraction should not allow all events to get materialized into memory
-  def retrieveAllEventsInInterval(domain:String, interval:Interval) : Seq[DifferenceEvent]
+  def retrieveTiledEvents(domain:String, zoomLevel:Int) : Map[String,TileSet]
 
   /**
    *
@@ -87,6 +87,19 @@ trait DifferencesManager {
    * Informs the difference manager that a domain has been deleted.
    */
   def onDeleteDomain(domain: String)
+}
+
+case class TileSet(
+  // This is the tile's index along the x-axis
+  @BeanProperty var tiles: java.util.Map[Int,Tile] = new HashMap[Int, Tile]
+) {
+  def this() = this(tiles = null)
+}
+
+case class Tile(
+  @BeanProperty var aggregates: java.util.Map[Int,Int] = new HashMap[Int, Int]
+) {
+  def this() = this(aggregates = null)
 }
 
 /**

@@ -120,7 +120,9 @@ class DifferencesResource(val differencesManager: DifferencesManager,
       }
 
       // Calculate the zoomed view
-      val interestingEvents = differencesManager.retrieveAllEventsInInterval(domain, new Interval(rangeStartDate, rangeEndDate))
+      // Bend this call for now, this will get moved into the diff manager
+      val interestingEvents = Seq[DifferenceEvent]()
+      //val interestingEvents = differencesManager.retrievePagedEvents(domain, "", new Interval(rangeStartDate, rangeEndDate), 0, 100)
 
       // Bucket the events
       val pairs = scala.collection.mutable.Map[String, ZoomPair]()

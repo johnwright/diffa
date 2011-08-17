@@ -103,4 +103,6 @@ trait DomainDifferenceStore {
    * @throws InvalidSequenceNumberException if the requested sequence id does not exist or has expired.
    */
   def getEvent(domain:String, evtSeqId:String) : DifferenceEvent
+
+  def retrieveTiledEvents(domain:String, zoomLevel:Int) : Map[String,TileSet]
 }

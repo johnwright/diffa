@@ -87,8 +87,7 @@ class DefaultDifferencesManager(
 
   def retrieveDomainSequenceNum(id:String) = domainDifferenceStore.currentSequenceId(id)
 
-  def retrieveAllEventsInInterval(domain:String, interval:Interval) =
-    domainDifferenceStore.retrieveUnmatchedEvents(domain, interval)
+  def retrieveTiledEvents(domain:String, zoomLevel:Int) = domainDifferenceStore.retrieveTiledEvents(domain,zoomLevel)
 
   def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
     domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length)
