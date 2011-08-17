@@ -66,7 +66,7 @@ class InboundEndpointManager(configStore:SystemConfigStore) extends EndpointLife
    * Indicates to the endpoint manager that it should request factories to create endpoints for all registered
    * endpoints that reference an inbound address.
    */
-  override def onAgentAssemblyCompleted {
+  override def onAgentConfigurationActivated {
     configStore.listEndpoints.foreach(onEndpointAvailable(_))
   }
 }
