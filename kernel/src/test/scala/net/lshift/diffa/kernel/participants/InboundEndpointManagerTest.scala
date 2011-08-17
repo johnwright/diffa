@@ -72,7 +72,7 @@ class InboundEndpointManagerTest {
     expect(configStore.listEndpoints).andReturn(Seq(Endpoint(name = "e", scanUrl = "http://localhost/1234/scan", contentType = "application/json", inboundUrl = "amqp:queue.name", inboundContentType = "application/foo+json")))
     replay(configStore)
 
-    manager.onAgentAssemblyCompleted
+    manager.onAgentConfigurationActivated
     assertNotNull(jsonFactory.lastEp)
     assertEquals("e", jsonFactory.lastEp.name)
   }
