@@ -5,33 +5,40 @@ import collection.mutable.{HashMap,HashSet}
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import org.joda.time.{DateTime, Interval, Minutes}
 
+// TODO Think of making this cache global accross all pairs so that LRU
+// can be used accross the entire system
 class ZoomCache(pair:DiffaPairRef, diffStore:DomainDifferenceStore) {
 
   import ZoomCache._
 
-  val levels = DAILY.until(QUARTER_HOURLY)
+  /**
+   * A bit set of flags to mark each tile as dirty on a per-tile basis
+   */
+  private val dirtyTilesByLevel = new HashMap[Int, HashSet[Int]]
 
-  val dirtyTilesByLevel = new HashMap[Int, HashSet[Int]]
+  /**
+   * Cache of indexed tiles for each requested level
+   * // TODO We probably want to evict this kind of cache
+   */
+  private val tileCachesByLevel = new HashMap[Int, HashMap[Int,Int]]
+
+  private val levels = DAILY.until(QUARTER_HOURLY)
+
   levels.foreach(dirtyTilesByLevel(_) = new HashSet[Int])
 
-  val tileCachesByLevel = new HashMap[Int, HashMap[Int,Int]]
-  //levels.foreach(tileCachesByLevel(_) = new HashMap[Int,Int])
-
-  def onStore(id: VersionID, seen: DateTime) = {
+  /**
+   * Marks the tile (on each cached level) that corresponds to this version as dirty
+   */
+  def onStore(id: VersionID, lastSeen: DateTime) = {
     val observationDate = nearestObservationDate(new DateTime())
-
-//      levels.foreach(level => {
-//        val index = indexOf(observationDate, lastUpdated, level)
-//        levelCaches(level).remove()
-//      })
-
+    tileCachesByLevel.keysIterator.foreach(level => {
+      val index = indexOf(observationDate, lastSeen, level)
+      dirtyTilesByLevel(level) += index
+    })
   }
 
-  def onMatch(id: VersionID, vsn: String, origin: MatchOrigin) = {
-    null
-  }
+  def retrieveTilesForZoomLevel(level:Int) : Map[Int,Int] = {
 
-  def getTiles(level:Int) : Map[Int,Int] = {
     validateLevel(level)
 
     val tileCache = tileCachesByLevel.get(level) match {
@@ -39,14 +46,32 @@ class ZoomCache(pair:DiffaPairRef, diffStore:DomainDifferenceStore) {
       case None         =>
         val cache = new HashMap[Int,Int]
         tileCachesByLevel(level) = cache
+
+        // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
+        // driven fashion
+
+        val observationDate = nearestObservationDate(new DateTime())
+        var previous = diffStore.previousChronologicalEvent(pair, observationDate)
+
+        // Iterate through the diff store to generate aggregate sums of the events in tile
+        // aligned buckets
+
+        while(previous.isDefined) {
+          val event = previous.get
+          val index = indexOf(observationDate, event.lastSeen, level)
+          val interval = intervalFromIndex(index, level, event.lastSeen)
+          val events = diffStore.countEvents(pair, interval)
+          cache(index) = events
+          previous = diffStore.previousChronologicalEvent(pair, interval.getStart)
+        }
+
         cache
     }
 
     // Invalidate the cached tiles that are dirty
-    dirtyTilesByLevel(level).map(tile => {
-      val lower = new DateTime()
-      val upper = new DateTime()
-      val events = diffStore.countEvents(pair, new Interval(lower,upper))
+    dirtyTilesByLevel(level).map(index => {
+      val interval = intervalFromIndex(index, level, new DateTime())
+      val events = diffStore.countEvents(pair, interval)
       tileCache(level) = events
     })
 
@@ -56,9 +81,6 @@ class ZoomCache(pair:DiffaPairRef, diffStore:DomainDifferenceStore) {
     tileCache.toMap
   }
 
-//  private def updateTileCache() : Map[] = {
-//
-//  }
 }
 
 object ZoomCache {

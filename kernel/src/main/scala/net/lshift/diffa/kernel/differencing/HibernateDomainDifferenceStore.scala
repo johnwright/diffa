@@ -125,6 +125,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
     count.getOrElse(new java.lang.Long(0L)).intValue
   })
 
+  // TODO Test this
+  def previousChronologicalEvent(pair: DiffaPairRef, timestamp:DateTime) = {
+    // TODO Implement
+    None
+  }
+
   def retrieveEventsSince(domain: String, evtSeqId: String) = sessionFactory.withSession(s => {
     listQuery[ReportedDifferenceEvent](s, "eventsSinceByDomain",
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)

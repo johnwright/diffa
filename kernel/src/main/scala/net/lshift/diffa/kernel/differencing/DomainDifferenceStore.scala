@@ -89,6 +89,8 @@ trait DomainDifferenceStore {
    */
   def countEvents(pair: DiffaPairRef, interval:Interval) : Int
 
+  def previousChronologicalEvent(pair: DiffaPairRef, timestamp:DateTime) : Option[DifferenceEvent]
+
   /**
    * Retrieves all events that have occurred within a domain since the provided sequence id.
    * @param evtSeqId the last known sequence id. All events occurring after (not including) this event will be returned.
