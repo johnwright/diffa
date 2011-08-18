@@ -1,21 +1,44 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.hibernate.cfg.Configuration
-import org.junit.{Test, Before}
 import org.joda.time.{Interval, DateTime}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config.{DiffaPairRef, HibernateConfigStorePreparationStep}
+import org.junit.{After, Test, Before}
+import org.hibernate.SessionFactory
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
  */
 class HibernateDomainDifferenceStoreTest {
-  val diffStore:DomainDifferenceStore = HibernateDomainDifferenceStoreTest.differenceStore
+  //val diffStore:DomainDifferenceStore = HibernateDomainDifferenceStoreTest.differenceStore
+
+  private val config =
+      new Configuration().
+        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
+        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
+        setProperty("hibernate.connection.url", "jdbc:derby:target/domainCache;create=true").
+        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+                                                               // otherwise the preparation step will not get committed
+
+  var diffStore:HibernateDomainDifferenceStore = null
+  var sf:SessionFactory = null
 
   @Before
   def clear() {
-    HibernateDomainDifferenceStoreTest.clearAll()
+    sf = config.buildSessionFactory
+    (new HibernateConfigStorePreparationStep).prepare(sf, config)
+    diffStore = new HibernateDomainDifferenceStore(sf)
+    diffStore.clearAllDifferences
+  }
+
+  @After
+  def close() {
+    sf.close()
   }
 
   @Test
