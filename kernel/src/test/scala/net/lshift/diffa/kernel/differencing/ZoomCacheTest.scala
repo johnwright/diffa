@@ -5,16 +5,17 @@ import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoints, Theories, Theory}
 import ZoomCache._
-import org.joda.time.{DateTime, Period}
 import net.lshift.diffa.kernel.differencing.ZoomCacheTest.IndexScenario
 import net.lshift.diffa.kernel.differencing.ObservationDateTest.ObservationScenario
+import org.joda.time.{Interval, DateTime, Period}
+import net.lshift.diffa.kernel.differencing.QueryIntervalTest.QueryScenario
 
 @RunWith(classOf[Theories])
 class ZoomCacheTest {
 
   @Test
   def foo = {
-    val cache = new ZoomCache(null)
+    val cache = new ZoomCache(null, null)
 
     assertTrue(true)
   }
@@ -86,4 +87,24 @@ object ObservationDateTest {
   )
 
   case class ObservationScenario(pointInTime:DateTime, nearestObservationDate:DateTime)
+}
+
+@RunWith(classOf[Theories])
+class QueryIntervalTest {
+
+  @Theory
+  def observationDateShouldAlign(s:QueryScenario) = {
+    assertEquals(s.interval, ZoomCache.intervalFromIndex(s.index, s.level, s.pointInTime) )
+  }
+
+}
+
+object QueryIntervalTest {
+
+  @DataPoints def expectedQueries = Array(
+    QueryScenario(new DateTime(2078,11,3,18,19,34,882), 4, QUARTER_HOURLY,
+      new Interval(new DateTime(2078,11,3,17,15,0,0), new DateTime(2078,11,3,17,30,0,0)))
+  )
+
+  case class QueryScenario(pointInTime:DateTime, index:Int, level:Int, interval:Interval)
 }

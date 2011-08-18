@@ -72,7 +72,7 @@ trait DomainDifferenceStore {
   def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime)
 
   /**
-   * Retrieves all unmatched events that have been added to the cache where their detection timestamp
+   * Retrieves all unmatched events in the domain that have been added to the cache where their detection timestamp
    * falls within the specified period
    */
   def retrieveUnmatchedEvents(domain:String, interval:Interval) : Seq[DifferenceEvent]

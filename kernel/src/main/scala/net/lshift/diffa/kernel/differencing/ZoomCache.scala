@@ -1,19 +1,21 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
-import collection.mutable.HashMap
+import collection.mutable.{HashMap,HashSet}
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import org.joda.time.{DateTime, Minutes}
+import org.joda.time.{DateTime, Interval, Minutes}
 
-class ZoomCache {
+class ZoomCache(pair:DiffaPairRef, diffStore:DomainDifferenceStore) {
 
   import ZoomCache._
 
   val levels = DAILY.until(QUARTER_HOURLY)
 
-  val dirtyCaches = new HashMap[Int, HashMap[Int,Int]]
+  val dirtyTilesByLevel = new HashMap[Int, HashSet[Int]]
+  levels.foreach(dirtyTilesByLevel(_) = new HashSet[Int])
 
-  //levels.foreach(levelCaches(_) = new HashMap[Int,Int])
+  val tileCachesByLevel = new HashMap[Int, HashMap[Int,Int]]
+  //levels.foreach(tileCachesByLevel(_) = new HashMap[Int,Int])
 
   def onStore(id: VersionID, seen: DateTime) = {
     val observationDate = nearestObservationDate(new DateTime())
@@ -29,12 +31,34 @@ class ZoomCache {
     null
   }
 
-  def getTiles(level:Int) = {
-//    dirtyCaches.get(level) match {
-//
-//    }
+  def getTiles(level:Int) : Map[Int,Int] = {
+    validateLevel(level)
 
+    val tileCache = tileCachesByLevel.get(level) match {
+      case Some(cached) => cached
+      case None         =>
+        val cache = new HashMap[Int,Int]
+        tileCachesByLevel(level) = cache
+        cache
+    }
+
+    // Invalidate the cached tiles that are dirty
+    dirtyTilesByLevel(level).map(tile => {
+      val lower = new DateTime()
+      val upper = new DateTime()
+      val events = diffStore.countEvents(pair, new Interval(lower,upper))
+      tileCache(level) = events
+    })
+
+    // Reset the dirty flags
+    dirtyTilesByLevel(level).clear()
+
+    tileCache.toMap
   }
+
+//  private def updateTileCache() : Map[] = {
+//
+//  }
 }
 
 object ZoomCache {
@@ -61,6 +85,13 @@ object ZoomCache {
     val bottomOfHour = timestamp.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
     val increments = timestamp.getMinuteOfHour / 15
     bottomOfHour.plusMinutes( (increments + 1) * 15 )
+  }
+
+  def intervalFromIndex(index:Int, level:Int, timestamp:DateTime) = {
+    val minutes = zoom(level) * index
+    val observationDate = nearestObservationDate(timestamp)
+    val rangeEnd = observationDate.minusMinutes(minutes)
+    new Interval(rangeEnd.minusMinutes(zoom(level)), rangeEnd)
   }
 
   def indexOf(observation:DateTime, event:DateTime, level:Int) : Int = {
