@@ -1,18 +1,21 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.hibernate.cfg.Configuration
+import org.hibernate.exception.ConstraintViolationException
 import org.joda.time.{Interval, DateTime}
 import org.junit.Assert._
+import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.config.{DiffaPairRef, HibernateConfigStorePreparationStep}
-import org.junit.{After, Test, Before}
+import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
+import org.junit._
 import org.hibernate.SessionFactory
+import system.HibernateSystemConfigStore
+
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
  */
 class HibernateDomainDifferenceStoreTest {
-  //val diffStore:DomainDifferenceStore = HibernateDomainDifferenceStoreTest.differenceStore
 
   private val config =
       new Configuration().
@@ -34,6 +37,24 @@ class HibernateDomainDifferenceStoreTest {
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
     diffStore = new HibernateDomainDifferenceStore(sf)
     diffStore.clearAllDifferences
+
+    val configStore = new HibernateDomainConfigStore(sf)
+    val systemConfigStore = new HibernateSystemConfigStore(sf)
+
+    val domain = Domain("domain")
+    systemConfigStore.createOrUpdateDomain(domain)
+    val us = EndpointDef(name = "upstream", contentType = "application/json")
+    val ds = EndpointDef(name = "downstream", contentType = "application/json")
+    configStore.createOrUpdateEndpoint(domain.name, us)
+    configStore.createOrUpdateEndpoint(domain.name, ds)
+
+    val pairTemplate = PairDef(upstreamName = us.name, downstreamName = ds.name)
+    val pair1 = pairTemplate.copy(key = "pair1")
+    val pair2 = pairTemplate.copy(key = "pair2")
+
+    configStore.listPairs(domain.name).foreach(p => configStore.deletePair(domain.name, p.key))
+    configStore.createOrUpdatePair(domain.name, pair1)
+    configStore.createOrUpdatePair(domain.name, pair2)
   }
 
   @After
@@ -366,18 +387,13 @@ class HibernateDomainDifferenceStoreTest {
     }
   }
 
-  @Test
+  @Test(expected = classOf[InvalidSequenceNumberException])
   def shouldThrowExceptionWhenRetrievingEventBySequenceNumberOfRemovedEvent() {
-    try {
-      val timestamp = new DateTime()
-      val unmatchedEvt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
-      diffStore.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
+    val timestamp = new DateTime()
+    val unmatchedEvt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
 
-      diffStore.getEvent("domain", unmatchedEvt.seqId)    // Unmatched event should have been removed when matched event was added
-      fail("Should have thrown InvalidSequenceNumberException")
-    } catch {
-      case e:InvalidSequenceNumberException =>
-    }
+    diffStore.getEvent("domain", unmatchedEvt.seqId)    // Unmatched event should have been removed when matched event was added
   }
 
   @Test
@@ -409,6 +425,50 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(0, unmatched.length)
   }
 
+  @Test
+  def shouldRemoveEventsWhenPairIsRemoved() {
+    val timestamp = new DateTime()
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id3"), timestamp, "uV", "dV", timestamp)
+
+    diffStore.removePair("pair2")
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
+    assertEquals(0, unmatched.length)
+  }
+
+  @Test
+  def shouldRemovePendingEventsWhenPairIsRemoved() {
+    val timestamp = new DateTime()
+    diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+
+    diffStore.removePair("pair2")
+
+    // Upgrade the pending difference we previously created. We shouldn't see any differences, because we should
+    // have just submitted an upgrade for a pending event that doesn't exist.
+    diffStore.upgradePendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"))
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
+    assertEquals(0, unmatched.length)
+  }
+
+  @Test(expected = classOf[ConstraintViolationException])
+  def shouldFailToAddReportableEventForNonExistentPair() {
+    val lastUpdate = new DateTime()
+    val seen = lastUpdate.plusSeconds(5)
+
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+  }
+
+  @Test(expected = classOf[ConstraintViolationException])
+  def shouldFailToAddPendingEventForNonExistentPair() {
+    val lastUpdate = new DateTime()
+    val seen = lastUpdate.plusSeconds(5)
+
+    diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+  }
 
   //
   // Helpers
@@ -430,30 +490,5 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(vsn, event.downstreamVsn)
     assertTrue(!event.detectedAt.isBefore(now))      // Detection should be some time at or after now
     assertTrue(!event.lastSeen.isBefore(now))        // Last seen should be some time at or after now
-  }
-}
-
-object HibernateDomainDifferenceStoreTest {
-  private val config =
-      new Configuration().
-        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-        setProperty("hibernate.connection.url", "jdbc:derby:target/domainCache;create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
-        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                               // otherwise the preparation step will not get committed
-
-  val sessionFactory = {
-    val sf = config.buildSessionFactory
-    (new HibernateConfigStorePreparationStep).prepare(sf, config)
-    sf
-  }
-
-  val differenceStore = new HibernateDomainDifferenceStore(sessionFactory)
-
-  def clearAll() {
-    differenceStore.clearAllDifferences
   }
 }

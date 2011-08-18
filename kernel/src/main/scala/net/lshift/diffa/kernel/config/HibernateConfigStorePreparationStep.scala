@@ -60,6 +60,9 @@ class HibernateConfigStorePreparationStep
         freshMigration.insert("system_config_options").
           values(Map("opt_key" -> HibernatePreparationUtils.correlationStoreSchemaKey, "opt_val" -> HibernatePreparationUtils.correlationStoreVersion))
 
+        // Also need to add foreign key constraint from diffs.pair to pair.pair_key
+        AddPersistentDiffsMigrationStep.addForeignKeyConstraintForPairColumnOnDiffsTables(freshMigration)
+
         sf.withSession(s => {
           s.doWork(new Work() {
             def execute(connection: Connection) {
@@ -302,6 +305,7 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
       column("downstream_vsn", Types.VARCHAR, 255, true).
       pk("seq_id").
       withIdentityCol()
+
     migration.createTable("pending_diffs").
       column("oid", Types.INTEGER, false).
       column("domain", Types.VARCHAR, 255, false).
@@ -314,6 +318,8 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
       pk("oid").
       withIdentityCol()
 
+    addForeignKeyConstraintForPairColumnOnDiffsTables(migration)
+
     migration.createIndex("diff_last_seen", "diffs", "last_seen")
     migration.createIndex("diff_detection", "diffs", "detected_at")
     migration.createIndex("rdiff_is_matched", "diffs", "is_match")
@@ -321,5 +327,14 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
     migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
 
     migration.apply(connection)
+  }
+
+  def addForeignKeyConstraintForPairColumnOnDiffsTables(migration: MigrationBuilder) {
+    // alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair) references pair (pair_key);
+    migration.alterTable("diffs")
+      .addForeignKey("FK5AA9592F53F69C16", "pair", "pair", "pair_key")
+
+    migration.alterTable("pending_diffs")
+      .addForeignKey("FK75E457E44AD37D84", "pair", "pair", "pair_key")
   }
 }
