@@ -390,6 +390,35 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def shouldRemoveEventsWhenPairIsRemoved() {
+    val timestamp = new DateTime()
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id3"), timestamp, "uV", "dV", timestamp)
+
+    diffStore.removePair("pair2")
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
+    assertEquals(0, unmatched.length)
+  }
+
+  @Test
+  def shouldRemovePendingEventsWhenPairIsRemoved() {
+    val timestamp = new DateTime()
+    diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+
+    diffStore.removePair("pair2")
+
+    // Upgrade the pending difference we previously created. We shouldn't see any differences, because we should
+    // have just submitted an upgrade for a pending event that doesn't exist.
+    diffStore.upgradePendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"))
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
+    assertEquals(0, unmatched.length)
+  }
+
+  @Test
   def shouldFailToAddReportableEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
