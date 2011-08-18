@@ -1,11 +1,14 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.hibernate.cfg.Configuration
-import org.junit.{Test, Before}
+import org.hibernate.exception.ConstraintViolationException
 import org.joda.time.{Interval, DateTime}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.config.{DiffaPairRef, HibernateConfigStorePreparationStep}
+import net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore
+import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
+import org.junit.{Ignore, Test, Before}
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -15,7 +18,7 @@ class HibernateDomainDifferenceStoreTest {
 
   @Before
   def clear() {
-    HibernateDomainDifferenceStoreTest.clearAll()
+    HibernateDomainDifferenceStoreTest.init()
   }
 
   @Test
@@ -386,6 +389,29 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(0, unmatched.length)
   }
 
+  @Test
+  def shouldFailToAddReportableEventForNonExistentPair() {
+    val lastUpdate = new DateTime()
+    val seen = lastUpdate.plusSeconds(5)
+    try {
+      diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+      fail("Should have thrown ConstraintViolationException")
+    } catch {
+      case e: ConstraintViolationException =>
+    }
+  }
+
+  @Test
+  def shouldFailToAddPendingEventForNonExistentPair() {
+    val lastUpdate = new DateTime()
+    val seen = lastUpdate.plusSeconds(5)
+    try {
+      diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+      fail("Should have thrown ConstraintViolationException")
+    } catch {
+      case e: ConstraintViolationException =>
+    }
+  }
 
   //
   // Helpers
@@ -411,7 +437,7 @@ class HibernateDomainDifferenceStoreTest {
 }
 
 object HibernateDomainDifferenceStoreTest {
-  private val config =
+  private lazy val config =
       new Configuration().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
@@ -422,15 +448,33 @@ object HibernateDomainDifferenceStoreTest {
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
                                                                // otherwise the preparation step will not get committed
 
-  val sessionFactory = {
+  lazy val sessionFactory = {
     val sf = config.buildSessionFactory
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
     sf
   }
 
-  val differenceStore = new HibernateDomainDifferenceStore(sessionFactory)
+  lazy val differenceStore = new HibernateDomainDifferenceStore(sessionFactory)
 
-  def clearAll() {
+  def init() {
     differenceStore.clearAllDifferences
+
+    val configStore = new HibernateDomainConfigStore(sessionFactory)
+    val systemConfigStore = new HibernateSystemConfigStore(sessionFactory)
+
+    val domain = Domain("domain")
+    systemConfigStore.createOrUpdateDomain(domain)
+    val us = EndpointDef(name = "upstream", contentType = "application/json")
+    val ds = EndpointDef(name = "downstream", contentType = "application/json")
+    configStore.createOrUpdateEndpoint(domain.name, us)
+    configStore.createOrUpdateEndpoint(domain.name, ds)
+
+    val pairTemplate = PairDef(upstreamName = us.name, downstreamName = ds.name)
+    val pair1 = pairTemplate.copy(key = "pair1")
+    val pair2 = pairTemplate.copy(key = "pair2")
+
+    configStore.listPairs(domain.name).foreach(p => configStore.deletePair(domain.name, p.key))
+    configStore.createOrUpdatePair(domain.name, pair1)
+    configStore.createOrUpdatePair(domain.name, pair2)
   }
 }

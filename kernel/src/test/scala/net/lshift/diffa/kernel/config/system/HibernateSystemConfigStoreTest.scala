@@ -25,10 +25,12 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.config.{User, Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor}
 import collection.mutable.HashSet
 import net.lshift.diffa.kernel.util.MissingObjectException
+import javax.persistence.criteria.CriteriaBuilder.Case
 
 class HibernateSystemConfigStoreTest {
 
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
+
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
   private val systemConfigStore:SystemConfigStore = new HibernateSystemConfigStore(sf)
 
@@ -44,11 +46,11 @@ class HibernateSystemConfigStoreTest {
   val categories = Map("cat" ->  new RangeCategoryDescriptor("datetime", bound, bound))
 
   val upstream1 = new EndpointDef(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1",
-                               inboundUrl = "http://foo.com",
-                               contentType = "application/json", categories = categories)
+    inboundUrl = "http://foo.com",
+    contentType = "application/json", categories = categories)
   val downstream1 = new EndpointDef(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3",
-                                 inboundUrl = "http://bar.com",
-                                 contentType = "application/json", categories = categories)
+    inboundUrl = "http://bar.com",
+    contentType = "application/json", categories = categories)
 
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
@@ -62,7 +64,7 @@ class HibernateSystemConfigStoreTest {
     }
     catch {
       case e:MissingObjectException => // ignore any missing domains, since the objective of the call was to
-                                       // delete one if it exists
+      // delete one if it exists
     }
 
     systemConfigStore.createOrUpdateDomain(domain)
