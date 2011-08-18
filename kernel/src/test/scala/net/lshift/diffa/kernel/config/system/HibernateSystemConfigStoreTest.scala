@@ -25,7 +25,6 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.config.{User, Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor}
 import collection.mutable.HashSet
 import net.lshift.diffa.kernel.util.MissingObjectException
-import javax.persistence.criteria.CriteriaBuilder.Case
 
 class HibernateSystemConfigStoreTest {
 
@@ -64,7 +63,7 @@ class HibernateSystemConfigStoreTest {
     }
     catch {
       case e:MissingObjectException => // ignore any missing domains, since the objective of the call was to
-      // delete one if it exists
+                                       // delete one if it exists
     }
 
     systemConfigStore.createOrUpdateDomain(domain)

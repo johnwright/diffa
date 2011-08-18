@@ -387,18 +387,13 @@ class HibernateDomainDifferenceStoreTest {
     }
   }
 
-  @Test
+  @Test(expected = classOf[InvalidSequenceNumberException])
   def shouldThrowExceptionWhenRetrievingEventBySequenceNumberOfRemovedEvent() {
-    try {
-      val timestamp = new DateTime()
-      val unmatchedEvt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
-      diffStore.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
+    val timestamp = new DateTime()
+    val unmatchedEvt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
 
-      diffStore.getEvent("domain", unmatchedEvt.seqId)    // Unmatched event should have been removed when matched event was added
-      fail("Should have thrown InvalidSequenceNumberException")
-    } catch {
-      case e:InvalidSequenceNumberException =>
-    }
+    diffStore.getEvent("domain", unmatchedEvt.seqId)    // Unmatched event should have been removed when matched event was added
   }
 
   @Test
@@ -459,28 +454,20 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(0, unmatched.length)
   }
 
-  @Test
+  @Test(expected = classOf[ConstraintViolationException])
   def shouldFailToAddReportableEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
-    try {
-      diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
-      fail("Should have thrown ConstraintViolationException")
-    } catch {
-      case e: ConstraintViolationException =>
-    }
+
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
   }
 
-  @Test
+  @Test(expected = classOf[ConstraintViolationException])
   def shouldFailToAddPendingEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
-    try {
-      diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
-      fail("Should have thrown ConstraintViolationException")
-    } catch {
-      case e: ConstraintViolationException =>
-    }
+
+    diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
   }
 
   //

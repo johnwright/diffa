@@ -41,6 +41,3 @@ insert into schema_version(version) values(5);
 insert into system_config_options (opt_key, opt_val) values ('correlationStore.schemaVersion', '1');
 alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair) references pair (pair_key);
 alter table pending_diffs add constraint FK75E457E44AD37D84 foreign key (pair) references pair (pair_key);
-
-
-
