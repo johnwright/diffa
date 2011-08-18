@@ -57,7 +57,7 @@ class DefaultDifferencesManager(
   /**
    * This is a map of every active domain (keyed on domain id) to the cache holding the differences
    */
-  private val cachesByDomain = new HashMap[String, DomainDifferenceStore]
+  private val zoomedEventsByDomain = new HashMap[String, Map[Int,Map[String,TileSet]]]
 
   private val participants = new HashMap[Endpoint, Participant]
 
@@ -87,7 +87,16 @@ class DefaultDifferencesManager(
 
   def retrieveDomainSequenceNum(id:String) = domainDifferenceStore.currentSequenceId(id)
 
-  def retrieveTiledEvents(domain:String, zoomLevel:Int) = domainDifferenceStore.retrieveTiledEvents(domain,zoomLevel)
+  def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
+    //domainDifferenceStore.retrieveTiledEvents(domain,zoomLevel)
+    zoomedEventsByDomain.get(domain) match {
+      case None             => Map()
+      case Some(levels) => levels.get(zoomLevel) match {
+        case None => Map()
+        case Some(tilesets) => Map()
+      }
+    }
+  }
 
   def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
     domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length)

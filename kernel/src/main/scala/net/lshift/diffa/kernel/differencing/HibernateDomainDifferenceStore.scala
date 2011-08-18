@@ -131,6 +131,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
   })
 
   def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
+
     Map()
   }
 

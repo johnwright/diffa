@@ -90,16 +90,11 @@ trait DifferencesManager {
 }
 
 case class TileSet(
-  // This is the tile's index along the x-axis
-  @BeanProperty var tiles: java.util.Map[Int,Tile] = new HashMap[Int, Tile]
+  // The key is the tile's index along the x-axis
+  // The value is the aggregate number of events in the tile
+  @BeanProperty var tiles: java.util.Map[Int,Int] = new HashMap[Int, Int]
 ) {
   def this() = this(tiles = null)
-}
-
-case class Tile(
-  @BeanProperty var aggregates: java.util.Map[Int,Int] = new HashMap[Int, Int]
-) {
-  def this() = this(aggregates = null)
 }
 
 /**

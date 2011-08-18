@@ -23,6 +23,7 @@ import org.joda.time.DateTime
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import org.junit.Assert._
+import scala.collection.JavaConversions._
 
 @RunWith(classOf[Theories])
 class EventTilingTest {
@@ -34,21 +35,33 @@ class EventTilingTest {
   @Theory
   def shouldTileEvents(scenario:TileScenario) = {    
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))
-    val tiles = diffStore.retrieveTiledEvents("domain1", scenario.zoomLevel)
-    assertEquals(scenario.tiles, tiles)
+    scenario.zoomLevels.foreach{ case (zoom, expected) => {
+      val tiles = diffStore.retrieveTiledEvents("domain1", zoom)
+      assertEquals(tiles, expected)
+    }}
   }
   
 }
 
 object EventTilingTest {
 
-  val d1 = "d1"
-  
-  val rawEvents = Seq(
-    ReportableEvent(id = VersionID(DiffaPairRef("pair2", d1), "id2"), timestamp = new DateTime())
+
+  @DataPoint def level0 = TileScenario("domain",
+      Seq(
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id1"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id2"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id3"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id4"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id5"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id6"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id7"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id8"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id9"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id10"), timestamp = new DateTime())
+      ),
+      Map(0 -> Map("pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 4 -> 4))
+    ))
   )
-  
-  @DataPoint def level0 = TileScenario(d1, 0, rawEvents, Map())
 
   case class ReportableEvent(
     id:VersionID,
@@ -57,9 +70,8 @@ object EventTilingTest {
   
   case class TileScenario(
     domain:String,
-    zoomLevel:Int,
     events:Seq[ReportableEvent],
-    tiles:Map[String,TileSet]
+    zoomLevels:Map[Int,Map[String,TileSet]]
   )
   
 }

@@ -104,5 +104,6 @@ trait DomainDifferenceStore {
    */
   def getEvent(domain:String, evtSeqId:String) : DifferenceEvent
 
+  // TODO document
   def retrieveTiledEvents(domain:String, zoomLevel:Int) : Map[String,TileSet]
 }
