@@ -113,4 +113,5 @@ trait DomainDifferenceStore {
 
   // TODO document
   def retrieveTiledEvents(domain:String, zoomLevel:Int) : Map[String,TileSet]
+  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int) : TileSet
 }

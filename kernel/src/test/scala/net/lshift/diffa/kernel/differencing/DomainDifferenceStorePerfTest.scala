@@ -10,6 +10,7 @@ import org.apache.commons.io.FileUtils
 import java.io.File
 import org.joda.time.{Interval, DateTime}
 import org.junit.{Ignore, Test}
+import net.sf.ehcache.CacheManager
 
 /**
  * Performance test for the domain cache.
@@ -211,5 +212,7 @@ object DomainDifferenceStorePerfTest {
     sf
   }
 
-  lazy val diffStore = new HibernateDomainDifferenceStore(sessionFactory)
+  lazy val cacheManager = new CacheManager()
+
+  lazy val diffStore = new HibernateDomainDifferenceStore(sessionFactory, cacheManager)
 }

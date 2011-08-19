@@ -4,40 +4,55 @@ import net.lshift.diffa.kernel.events.VersionID
 import collection.mutable.{HashMap,HashSet}
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import org.joda.time.{DateTime, Interval, Minutes}
+import scala.collection.JavaConversions._
+import net.sf.ehcache.{Element, CacheManager}
+import java.io.Closeable
+
+trait ZoomCache extends Closeable {
+  def onStoreUpdate(id: VersionID, lastSeen: DateTime)
+  def retrieveTilesForZoomLevel(level:Int) : TileSet
+}
 
 // TODO Think of making this cache global accross all pairs so that LRU
 // can be used accross the entire system
-class ZoomCache(pair:DiffaPairRef, diffStore:DomainDifferenceStore) {
+class ZoomCacheProvider(pair:DiffaPairRef,
+                        diffStore:DomainDifferenceStore,
+                        cacheManager:CacheManager) extends ZoomCache {
 
   import ZoomCache._
 
   /**
    * A bit set of flags to mark each tile as dirty on a per-tile basis
    */
-  private val dirtyTilesByLevel = new HashMap[Int, HashSet[Int]]
+  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[Int]]("dirty", pair,cacheManager) //new HashMap[Int, HashSet[Int]]
 
   /**
    * Cache of indexed tiles for each requested level
    * // TODO We probably want to evict this kind of cache
    */
-  private val tileCachesByLevel = new HashMap[Int, HashMap[Int,Int]]
+  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]]("tiles", pair,cacheManager) //new HashMap[Int, HashMap[Int,Int]]
 
   private val levels = DAILY.until(QUARTER_HOURLY)
 
-  levels.foreach(dirtyTilesByLevel(_) = new HashSet[Int])
+  levels.foreach( dirtyTilesByLevel.put(_, new HashSet[Int]) )
+
+  def close() = {
+    dirtyTilesByLevel.close()
+    tileCachesByLevel.close()
+  }
 
   /**
    * Marks the tile (on each cached level) that corresponds to this version as dirty
    */
-  def onStore(id: VersionID, lastSeen: DateTime) = {
+  def onStoreUpdate(id: VersionID, lastSeen: DateTime) = {
     val observationDate = nearestObservationDate(new DateTime())
-    tileCachesByLevel.keysIterator.foreach(level => {
+    tileCachesByLevel.keys.foreach(level => {
       val index = indexOf(observationDate, lastSeen, level)
-      dirtyTilesByLevel(level) += index
+      dirtyTilesByLevel.get(level).get += index
     })
   }
 
-  def retrieveTilesForZoomLevel(level:Int) : Map[Int,Int] = {
+  def retrieveTilesForZoomLevel(level:Int) : TileSet = {
 
     validateLevel(level)
 
@@ -45,7 +60,7 @@ class ZoomCache(pair:DiffaPairRef, diffStore:DomainDifferenceStore) {
       case Some(cached) => cached
       case None         =>
         val cache = new HashMap[Int,Int]
-        tileCachesByLevel(level) = cache
+        tileCachesByLevel.put(level, cache)
 
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
@@ -68,17 +83,28 @@ class ZoomCache(pair:DiffaPairRef, diffStore:DomainDifferenceStore) {
         cache
     }
 
-    // Invalidate the cached tiles that are dirty
-    dirtyTilesByLevel(level).map(index => {
-      val interval = intervalFromIndex(index, level, new DateTime())
-      val events = diffStore.countEvents(pair, interval)
-      tileCache(level) = events
-    })
+    dirtyTilesByLevel.get(level) match {
+      case None        => // The tile cache does not need to be preened
+      case Some(flags) =>
+        flags.map(index => {
+          val interval = intervalFromIndex(index, level, new DateTime())
+          val events = diffStore.countEvents(pair, interval)
+          tileCache(level) = events
+        })
+        flags.clear()
+     }
 
-    // Reset the dirty flags
-    dirtyTilesByLevel(level).clear()
+//    // Invalidate the cached tiles that are dirty
+//    dirtyTilesByLevel(level).map(index => {
+//      val interval = intervalFromIndex(index, level, new DateTime())
+//      val events = diffStore.countEvents(pair, interval)
+//      tileCache(level) = events
+//    })
+//
+//    // Reset the dirty flags
+//    dirtyTilesByLevel(level).clear()
 
-    tileCache.toMap
+    new TileSet(tileCache)
   }
 
 }
@@ -136,3 +162,33 @@ class InvalidZoomLevelException(level:Int) extends Exception("Zoom level: " + le
 
 class InvalidObservationDateException(observation:DateTime, event:DateTime)
   extends Exception("ObservationDate %s is before event date %s ".format(observation, event))
+
+class CacheWrapper[A, B](cacheType:String, pair:DiffaPairRef, manager:CacheManager) extends Closeable {
+
+  val cacheName = cacheType + ":" + pair.identifier
+
+  if (manager.cacheExists(cacheName)) {
+    manager.removeCache(cacheName)
+  }
+
+  manager.addCache(cacheName)
+
+  val cache = manager.getEhcache(cacheName)
+
+  def close() = manager.removeCache(cacheName)
+
+  def get(key:A) : Option[B] = {
+    val element = cache.get(key)
+    if (element != null) {
+      Some(element.getValue.asInstanceOf[B])
+    }
+    else {
+      None
+    }
+  }
+
+  def put(key:A, value:B) = cache.put(new Element(key,value))
+
+  def keys = cache.getKeys.toList.map(_.asInstanceOf[A])
+
+}

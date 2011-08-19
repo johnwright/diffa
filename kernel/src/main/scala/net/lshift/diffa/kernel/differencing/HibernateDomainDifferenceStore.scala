@@ -8,15 +8,22 @@ import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.Session
+import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.sf.ehcache.CacheManager
+import collection.mutable.HashMap
 
 /**
  * Hibernate backed Domain Cache provider.
  */
-class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
+class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cacheManager:CacheManager)
     extends DomainDifferenceStore
     with HibernateQueryUtils {
 
+  // TODO Should this map be backed by ehcache?
+  val zoomCaches = new HashMap[DiffaPairRef, ZoomCache]
+
   def removeDomain(domain:String) {
+    // TODO deleteZoomCache()
     sessionFactory.withSession(s => {
       executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
       executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
@@ -28,6 +35,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       executeUpdate(s, "removePairDiffs", Map("pairKey" -> pairKey))
       executeUpdate(s, "removePairPendingDiffs", Map("pairKey" -> pairKey))
     }
+    // TODO deleteZoomCache()
   }
   
   def currentSequenceId(domain:String) = sessionFactory.withSession(s => {
@@ -144,9 +152,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
   })
 
   def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
-
-    Map()
+    sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)).map(p => {
+      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel)
+    }).toMap)
   }
+
+  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int) = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel)
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
@@ -177,7 +188,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-
+              updateZoomCache(existing.objId, existing.lastSeen)
               existing.asDifferenceEvent
             } else {
               s.delete(existing)
@@ -197,7 +208,26 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
     evt.seqId = seqId
+    updateZoomCache(evt.objId, evt.lastSeen)
     evt.asDifferenceEvent
+  }
+
+  private def updateZoomCache(id:VersionID, lastSeen:DateTime) = {
+    getZoomCache(id.pair).onStoreUpdate(id, lastSeen)
+  }
+
+  private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {
+    case None        => //
+    case Some(cache) => cache.close()
+  }
+
+  // TODO Consider making this an EhCache ....
+  private def getZoomCache(pair:DiffaPairRef) = zoomCaches.get(pair) match {
+    case None =>
+      val cache = new ZoomCacheProvider(pair, this, cacheManager)
+      zoomCaches(pair) = cache
+      cache
+    case Some(x) => x
   }
 }
 

@@ -1,6 +1,5 @@
 package net.lshift.diffa.kernel.differencing
 
-import org.junit.Test
 import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoints, Theories, Theory}
@@ -8,32 +7,23 @@ import ZoomCache._
 import net.lshift.diffa.kernel.differencing.ZoomCacheTest.IndexScenario
 import net.lshift.diffa.kernel.differencing.ObservationDateTest.ObservationScenario
 import org.joda.time.{Interval, DateTime, Period}
+import org.junit.{After, Before, Test}
 import net.lshift.diffa.kernel.differencing.QueryIntervalTest.QueryScenario
+
 
 @RunWith(classOf[Theories])
 class ZoomCacheTest {
 
-  @Test
-  def foo = {
-    val cache = new ZoomCache(null, null)
-
-    assertTrue(true)
-  }
+  @Test(expected = classOf[InvalidZoomLevelException])
+  def shouldRejectZoomLevelThatIsTooFine { index(QUARTER_HOURLY + 1) }
 
   @Test(expected = classOf[InvalidZoomLevelException])
-  def shouldRejectZoomLevelThatIsTooFine = index(QUARTER_HOURLY + 1)
-
-  @Test(expected = classOf[InvalidZoomLevelException])
-  def shouldRejectZoomLevelThatIsTooCoarse = index(DAILY - 1)
+  def shouldRejectZoomLevelThatIsTooCoarse { index(DAILY - 1) }
 
   @Test(expected = classOf[InvalidObservationDateException])
-  def shouldRejectInvalidObservationDate = {
+  def shouldRejectInvalidObservationDate {
     val timestamp = new DateTime()
-    val ignore = ZoomCache.indexOf(timestamp, timestamp.plusSeconds(1), QUARTER_HOURLY)
-  }
-
-  def index(level:Int) = {
-    val ignore = ZoomCache.indexOf(new DateTime(), new DateTime(), level)
+    ZoomCache.indexOf(timestamp, timestamp.plusSeconds(1), QUARTER_HOURLY)
   }
 
   @Theory
@@ -44,6 +34,7 @@ class ZoomCacheTest {
   }
 
 
+  private def index(level:Int) = ZoomCache.indexOf(new DateTime(), new DateTime(), level)
 }
 
 object ZoomCacheTest {
