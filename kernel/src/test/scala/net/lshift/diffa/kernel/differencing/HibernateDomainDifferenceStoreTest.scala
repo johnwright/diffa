@@ -496,6 +496,24 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
   }
 
+  @Test
+  def previousEventShouldBeAccessible() {
+    val timestamp = new DateTime()
+    val event1 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
+    val event2 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp.plusSeconds(10), "uV", "dV", timestamp.plusSeconds(10))
+    val event3 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp.plusSeconds(15), "uV", "dV", timestamp.plusSeconds(15))
+
+    val prev1 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(11)).get
+    validateUnmatchedEvent(event2, prev1.objId, prev1.upstreamVsn, prev1.downstreamVsn, prev1.detectedAt, prev1.lastSeen)
+
+    val prev2 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(5)).get
+    validateUnmatchedEvent(event1, prev2.objId, prev2.upstreamVsn, prev2.downstreamVsn, prev2.detectedAt, prev2.lastSeen)
+
+    val prev3 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(16)).get
+    validateUnmatchedEvent(event3, prev3.objId, prev3.upstreamVsn, prev3.downstreamVsn, prev3.detectedAt, prev3.lastSeen)
+
+  }
+
   @Theory
   def shouldTileEvents(scenario:TileScenario) = {
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))

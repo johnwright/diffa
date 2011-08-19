@@ -65,6 +65,9 @@ trait HibernateQueryUtils {
 
     val query: Query = s.getNamedQuery(queryName)
     params foreach {case (param, value) => query.setParameter(param, value)}
+
+    query.setMaxResults(1)
+
     try {
       query.uniqueResult match {
         case null => None
