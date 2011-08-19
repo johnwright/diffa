@@ -500,8 +500,8 @@ class HibernateDomainDifferenceStoreTest {
   def shouldTileEvents(scenario:TileScenario) = {
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))
     scenario.zoomLevels.foreach{ case (zoom, expected) => {
-      val tiles = diffStore.retrieveTiledEvents("domain1", zoom)
-      assertEquals(tiles, expected)
+      val tiles = diffStore.retrieveTiledEvents(scenario.domain, zoom)
+      assertEquals(expected, tiles)
     }}
   }
 
@@ -533,18 +533,20 @@ object HibernateDomainDifferenceStoreTest {
 
   @DataPoint def level0 = TileScenario("domain",
       Seq(
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id1"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id2"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id3"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id4"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id5"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id6"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id7"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id8"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id9"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain1"), "id10"), timestamp = new DateTime())
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id4"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id5"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id6"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id7"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id8"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id9"), timestamp = new DateTime()),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id10"), timestamp = new DateTime())
       ),
-      Map(0 -> Map("pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 4 -> 4))
+      Map(0 -> Map(
+        "pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 4 -> 4)),
+        "pair2" -> TileSet()
     ))
   )
 
