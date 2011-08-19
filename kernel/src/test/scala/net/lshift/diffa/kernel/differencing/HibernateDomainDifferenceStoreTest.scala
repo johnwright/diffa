@@ -24,8 +24,9 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 import org.junit._
-import experimental.theories.{DataPoint, Theory}
+import experimental.theories.{Theories, DataPoint, Theory}
 import org.hibernate.SessionFactory
+import runner.RunWith
 import system.HibernateSystemConfigStore
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
@@ -35,6 +36,7 @@ import scala.collection.JavaConversions._
 /**
  * Test cases for the HibernateDomainDifferenceStore.
  */
+@RunWith(classOf[Theories])
 class HibernateDomainDifferenceStoreTest {
 
   val cacheManager = new CacheManager()
