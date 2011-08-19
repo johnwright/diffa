@@ -20,7 +20,6 @@ import org.junit.runner.RunWith
 import org.junit.Assert._
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.slf4j.LoggerFactory
-import java.sql.{Types, Connection}
 import org.hibernate.dialect.{DerbyDialect, Dialect}
 import org.hibernate.mapping.{ForeignKey, Column, Table, PrimaryKey}
 import org.hibernate.cfg.{Configuration, Environment}
@@ -31,6 +30,8 @@ import org.hibernate.tool.hbm2ddl.{SchemaExport, DatabaseMetadata}
 import java.io.{File, InputStream}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theory, Theories}
+import java.sql._
+import net.lshift.diffa.kernel.util.DerbyHelper
 
 /**
  * Test cases for ensuring that preparation steps apply to database schemas at various levels, and allow us to upgrade
@@ -115,6 +116,9 @@ class HibernatePreparationTest {
 
     // Ensure we can run the upgrade again cleanly
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
+
+    // Shut down the database
+    DerbyHelper.shutdown(dbDir)
   }
 
   /**
