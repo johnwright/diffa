@@ -31,6 +31,11 @@ trait DomainDifferenceStore {
   def removeDomain(domain: String)
 
   /**
+   * Indicates that the given pair has been removed, and that any differences stored against it should be removed.
+   */
+  def removePair(pairKey: String)
+
+  /**
    * Retrieves the current sequence id of the cache
    */
   def currentSequenceId(domain:String):String

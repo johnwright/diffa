@@ -22,6 +22,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
     })
   }
+
+  def removePair(pairKey: String) {
+    sessionFactory.withSession { s =>
+      executeUpdate(s, "removePairDiffs", Map("pairKey" -> pairKey))
+      executeUpdate(s, "removePairPendingDiffs", Map("pairKey" -> pairKey))
+    }
+  }
   
   def currentSequenceId(domain:String) = sessionFactory.withSession(s => {
     singleQueryOpt[java.lang.Integer](s, "maxSeqIdByDomain", Map("domain" -> domain)).getOrElse(0).toString

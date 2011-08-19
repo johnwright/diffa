@@ -220,7 +220,7 @@ class DefaultDifferencesManager(
   }
 
   def onDeletePair(pair: DiffaPairRef) {
-    // TODO: Release differences stored for pair
+    domainDifferenceStore.removePair(pair.key)
   }
 
 
