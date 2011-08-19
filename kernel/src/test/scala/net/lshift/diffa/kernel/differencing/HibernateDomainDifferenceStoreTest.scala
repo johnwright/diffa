@@ -10,7 +10,7 @@ import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 import org.junit._
 import org.hibernate.SessionFactory
 import system.HibernateSystemConfigStore
-
+import net.lshift.diffa.kernel.util.DerbyHelper
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -60,6 +60,7 @@ class HibernateDomainDifferenceStoreTest {
   @After
   def close() {
     sf.close()
+    DerbyHelper.shutdown("target/domainCache")
   }
 
   @Test
