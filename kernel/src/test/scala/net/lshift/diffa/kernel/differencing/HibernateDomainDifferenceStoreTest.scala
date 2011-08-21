@@ -31,7 +31,7 @@ import system.HibernateSystemConfigStore
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
 import scala.collection.JavaConversions._
-
+import net.lshift.diffa.kernel.util.DerbyHelper
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -84,6 +84,7 @@ class HibernateDomainDifferenceStoreTest {
   @After
   def close() {
     sf.close()
+    DerbyHelper.shutdown("target/domainCache")
   }
 
   @Test
