@@ -103,4 +103,9 @@ trait DomainDifferenceStore {
    * @throws InvalidSequenceNumberException if the requested sequence id does not exist or has expired.
    */
   def getEvent(domain:String, evtSeqId:String) : DifferenceEvent
+
+  /**
+   * Indicates that matches older than the given cutoff (based on their seen timestamp) should be removed.
+   */
+  def expireMatches(cutoff:DateTime)
 }

@@ -386,6 +386,24 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(0, unmatched.length)
   }
 
+  @Test
+  def shouldRemoveMatches() {
+    val timestamp = new DateTime()
+    val seen1 = timestamp.plusSeconds(5)
+    val seen2 = timestamp.plusSeconds(8)
+    val cutoff = timestamp.plusSeconds(9)
+    val seen3 = timestamp.plusSeconds(10)
+    val afterAll = timestamp.plusSeconds(20)
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", "dV", seen1)   // Before the cutoff, will be removed
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), timestamp, "uV", "dV", seen2)   // Before the cutoff, will be removed
+    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id3"), timestamp, "uV", "dV", seen3)
+    diffStore.matchEventsOlderThan(DiffaPairRef("pair2","domain"), afterAll)     // Convert all the events to matches
+    diffStore.expireMatches(cutoff)
+
+    val events = diffStore.retrieveEventsSince("domain", "0")
+    assertEquals(0, events.length)
+  }
+
 
   //
   // Helpers

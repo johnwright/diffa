@@ -108,6 +108,10 @@
   <bean id="domainDifferenceStore" class="net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStore">
     <constructor-arg ref="diffaSessionFactory" />
   </bean>
+  <bean id="sweeper" class="net.lshift.diffa.kernel.util.Sweeper" init-method="start" destroy-method="shutdown">
+    <constructor-arg value="5" />
+    <constructor-arg ref="domainDifferenceStore" />
+  </bean>
 
   <!--
     ============

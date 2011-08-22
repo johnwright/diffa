@@ -62,6 +62,9 @@
   <query name="removeDomainPendingDiffs">
     delete from PendingDifferenceEvent where objId.pair.domain = :domain
   </query>
+  <query name="expireMatches"><![CDATA[
+    delete from ReportedDifferenceEvent where lastSeen < :cutoff and isMatch = true
+  ]]></query>
 
   <query name="pendingByDomainIdAndVersionID">
     select e from PendingDifferenceEvent e where
