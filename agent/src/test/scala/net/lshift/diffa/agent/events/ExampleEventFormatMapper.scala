@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import org.joda.time.format.ISODateTimeFormat.{date, dateTime}
+import org.joda.time.DateTimeZone
 
 /**
  * Content mapper for an example data type.
@@ -39,10 +40,10 @@ class ExampleEventFormatMapper extends EventFormatMapper {
 
     val in = objectMapper.readTree(content)
 
-    val effectiveDate = date.parseDateTime(in.path("effective-date").getValueAsText)
+    val effectiveDate = date.withZone(DateTimeZone.UTC).parseDateTime(in.path("effective-date").getValueAsText)
     val value = in.path("value").getValueAsText
     val id = in.path("id").getValueAsText
-    val lastUpdate = date.parseDateTime(in.path("record-date").getValueAsText)
+    val lastUpdate = date.withZone(DateTimeZone.UTC).parseDateTime(in.path("record-date").getValueAsText)
     val vsn = in.path("version").getValueAsText
 
     Seq(WireEvent(eventType = WireEvent.UPSTREAM_EVENT,

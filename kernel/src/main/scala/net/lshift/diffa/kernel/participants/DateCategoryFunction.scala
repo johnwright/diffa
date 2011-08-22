@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.participants
 import org.joda.time.format.{DateTimeFormatter, DateTimeFormat}
 import net.lshift.diffa.participant.scanning._
 import java.lang.IllegalArgumentException
-import org.joda.time.{DateTime, LocalDate}
+import org.joda.time.{DateTimeZone, DateTime, LocalDate}
 
 /**
  * Extension of the DateCategoryFunction to support internal functions.
@@ -64,12 +64,12 @@ abstract class DateCategoryFunction(attrName:String, dataType:DateCategoryDataTy
   /**
    * Convert to a DateTime using zero o'clock, i.e. the start of the day
    */
-  def sod(d:LocalDate) = d.toDateTimeAtStartOfDay
+  def sod(d:LocalDate) = d.toDateTimeAtStartOfDay(DateTimeZone.UTC)
 
   /**
    * Convert to a DateTime using a millisecond before the next day, i.e. the end of the day
    */
-  def eod(d:LocalDate) = d.toDateTimeAtStartOfDay.plusDays(1).minusMillis(1)
+  def eod(d:LocalDate) = d.toDateTimeAtStartOfDay(DateTimeZone.UTC).plusDays(1).minusMillis(1)
 
   /**
    * Select the later of the two dates, since we don't want to widen a lower bound.
