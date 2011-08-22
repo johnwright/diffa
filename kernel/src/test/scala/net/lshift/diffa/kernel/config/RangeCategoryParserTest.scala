@@ -18,24 +18,24 @@ package net.lshift.diffa.kernel.config
 
 import org.junit.Test
 import org.junit.Assert._
-import org.joda.time.DateTime
 import net.lshift.diffa.participant.scanning.TimeRangeConstraint
+import org.joda.time.{DateTimeZone, DateTime}
 
 class RangeCategoryParserTest {
 
   @Test
   def localDatesShouldWiden = {
     val descriptor = new RangeCategoryDescriptor("datetime", "2004-06-01", "2004-06-30")
-    val lower = new DateTime(2004,6,1,0,0,0,0)
-    val upper = new DateTime(2004,6,30,23,59,59,999)
+    val lower = new DateTime(2004,6,1,0,0,0,0, DateTimeZone.UTC)
+    val upper = new DateTime(2004,6,30,23,59,59,999, DateTimeZone.UTC)
     compare(descriptor, lower, upper)
   }
 
   @Test
   def dateTimesShouldNotWiden = {
-    val descriptor = new RangeCategoryDescriptor("datetime", "1982-03-27T15:19:23.283Z", "1982-04-11T09:47:11.519+01:00")
-    val lower = new DateTime(1982,3,27,15,19,23,283)
-    val upper = new DateTime(1982,4,11,9,47,11,519)
+    val descriptor = new RangeCategoryDescriptor("datetime", "1982-03-27T15:19:23.283Z", "1982-04-11T09:47:11.519Z")
+    val lower = new DateTime(1982,3,27,15,19,23,283, DateTimeZone.UTC)
+    val upper = new DateTime(1982,4,11,9,47,11,519, DateTimeZone.UTC)
     compare(descriptor, lower, upper)
   }
 
