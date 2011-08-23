@@ -112,8 +112,8 @@ trait DomainDifferenceStore {
   def getEvent(domain:String, evtSeqId:String) : DifferenceEvent
 
   // TODO document
-  def retrieveTiledEvents(domain:String, zoomLevel:Int) : Map[String,TileSet]
-  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int) : TileSet
+  def retrieveTiledEvents(domain:String, zoomLevel:Int, timestamp:DateTime) : Map[String,TileSet]
+  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) : TileSet
 
   /**
    * Indicates that matches older than the given cutoff (based on their seen timestamp) should be removed.

@@ -3,14 +3,14 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import collection.mutable.{HashMap,HashSet}
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import org.joda.time.{DateTime, Interval, Minutes}
 import scala.collection.JavaConversions._
 import net.sf.ehcache.{Element, CacheManager}
 import java.io.Closeable
+import org.joda.time.{DateTime, Interval, Minutes}
 
 trait ZoomCache extends Closeable {
   def onStoreUpdate(id: VersionID, lastSeen: DateTime)
-  def retrieveTilesForZoomLevel(level:Int) : TileSet
+  def retrieveTilesForZoomLevel(level:Int, timestamp:DateTime) : TileSet
 }
 
 // TODO Think of making this cache global accross all pairs so that LRU
@@ -52,7 +52,7 @@ class ZoomCacheProvider(pair:DiffaPairRef,
     })
   }
 
-  def retrieveTilesForZoomLevel(level:Int) : TileSet = {
+  def retrieveTilesForZoomLevel(level:Int, timestamp:DateTime) : TileSet = {
 
     validateLevel(level)
 
@@ -65,7 +65,7 @@ class ZoomCacheProvider(pair:DiffaPairRef,
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
 
-        val observationDate = nearestObservationDate(new DateTime())
+        val observationDate = nearestObservationDate(timestamp)
         var previous = diffStore.previousChronologicalEvent(pair, observationDate)
 
         // Iterate through the diff store to generate aggregate sums of the events in tile
@@ -74,7 +74,7 @@ class ZoomCacheProvider(pair:DiffaPairRef,
         while(previous.isDefined) {
           val event = previous.get
           val index = indexOf(observationDate, event.lastSeen, level)
-          val interval = intervalFromIndex(index, level, event.lastSeen)
+          val interval = intervalFromIndex(0, level, event.lastSeen)
           val events = diffStore.countEvents(pair, interval)
           cache(index) = events
           previous = diffStore.previousChronologicalEvent(pair, interval.getStart)
@@ -87,22 +87,12 @@ class ZoomCacheProvider(pair:DiffaPairRef,
       case None        => // The tile cache does not need to be preened
       case Some(flags) =>
         flags.map(index => {
-          val interval = intervalFromIndex(index, level, new DateTime())
+          val interval = intervalFromIndex(index, level, timestamp)
           val events = diffStore.countEvents(pair, interval)
           tileCache(level) = events
         })
         flags.clear()
      }
-
-//    // Invalidate the cached tiles that are dirty
-//    dirtyTilesByLevel(level).map(index => {
-//      val interval = intervalFromIndex(index, level, new DateTime())
-//      val events = diffStore.countEvents(pair, interval)
-//      tileCache(level) = events
-//    })
-//
-//    // Reset the dirty flags
-//    dirtyTilesByLevel(level).clear()
 
     new TileSet(tileCache)
   }

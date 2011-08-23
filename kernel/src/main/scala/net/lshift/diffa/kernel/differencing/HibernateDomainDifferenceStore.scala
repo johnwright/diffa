@@ -156,13 +156,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
 
-  def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
+  def retrieveTiledEvents(domain:String, zoomLevel:Int, timestamp:DateTime) = {
     sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)).map(p => {
-      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel)
+      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel, timestamp)
     }).toMap)
   }
 
-  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int) = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel)
+  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel, timestamp)
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
