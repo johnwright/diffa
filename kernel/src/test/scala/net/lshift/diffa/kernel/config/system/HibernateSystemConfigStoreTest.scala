@@ -29,6 +29,7 @@ import net.lshift.diffa.kernel.util.MissingObjectException
 class HibernateSystemConfigStoreTest {
 
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
+
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
   private val systemConfigStore:SystemConfigStore = new HibernateSystemConfigStore(sf)
 
@@ -44,11 +45,11 @@ class HibernateSystemConfigStoreTest {
   val categories = Map("cat" ->  new RangeCategoryDescriptor("datetime", bound, bound))
 
   val upstream1 = new EndpointDef(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1",
-                               inboundUrl = "http://foo.com",
-                               contentType = "application/json", categories = categories)
+    inboundUrl = "http://foo.com",
+    contentType = "application/json", categories = categories)
   val downstream1 = new EndpointDef(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3",
-                                 inboundUrl = "http://bar.com",
-                                 contentType = "application/json", categories = categories)
+    inboundUrl = "http://bar.com",
+    contentType = "application/json", categories = categories)
 
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
     downstream1.name)
