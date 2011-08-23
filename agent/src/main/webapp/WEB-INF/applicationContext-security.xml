@@ -33,7 +33,9 @@
     <beans:constructor-arg value="256"/>
   </beans:bean>
 
-  <beans:bean id="userDetailsProvider" class="net.lshift.diffa.agent.auth.UserDetailsAdapter" />
+  <beans:bean id="userDetailsProvider" class="net.lshift.diffa.agent.auth.UserDetailsAdapter">
+    <beans:constructor-arg ref="systemConfigStore" />
+  </beans:bean>
 
   <authentication-manager>
     <authentication-provider user-service-ref="userDetailsProvider">

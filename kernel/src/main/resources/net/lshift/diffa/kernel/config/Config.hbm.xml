@@ -182,6 +182,12 @@
     select o from ConfigOption o
   </query>
 
+  <!-- Queries by user -->
+  <query name="membersByUser">
+    select m from Member m where m.user.name = :user_name
+  </query>
+
+
   <!-- Queries by endpoint -->
   <query name="pairsByEndpoint">
     select p from Pair p

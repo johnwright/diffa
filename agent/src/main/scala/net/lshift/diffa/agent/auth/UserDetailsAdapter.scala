@@ -21,16 +21,32 @@ import org.springframework.security.core.authority.GrantedAuthorityImpl
 import org.springframework.security.access.PermissionEvaluator
 import java.io.Serializable
 import org.springframework.security.core.{GrantedAuthority, Authentication}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 /**
  * Adapter for providing UserDetailsService on top of the underlying Diffa user store.
  */
-class UserDetailsAdapter extends UserDetailsService with PermissionEvaluator {
+class UserDetailsAdapter(val systemConfigStore:SystemConfigStore)
+    extends UserDetailsService
+    with PermissionEvaluator {
   def loadUserByUsername(username: String) = {
-    if (username != "guest") throw new UsernameNotFoundException(username)
+    val user = try {
+      systemConfigStore.getUser(username)
+    } catch {
+      case _:MissingObjectException => throw new UsernameNotFoundException(username)
+    }
+
+    val isRoot = true   // TODO: Record on the user
+    val memberships = systemConfigStore.listDomainMemberships(username)
+    val domainAuthorities = memberships.map(m => DomainAuthority(m.domain.name, "user"))
+    val authorities = domainAuthorities ++ Seq(new GrantedAuthorityImpl("user")) ++ (isRoot match {
+      case true   => Seq(new GrantedAuthorityImpl("root"))
+      case false  => Seq()
+    })
 
     new UserDetails() {
-      def getAuthorities = List(new GrantedAuthorityImpl("user"), new GrantedAuthorityImpl("root"), new DomainAuthority("diffa", "user"), new DomainAuthority("domain", "user"))
+      def getAuthorities = authorities.toList
       def getPassword = "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec"    // guest
       def getUsername = username
       def isAccountNonExpired = true

@@ -66,6 +66,8 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory)
   def getUser(name: String) : User = sessionFactory.withSession(getUser(_,name))
 
   def listUsers : Seq[User] = sessionFactory.withSession(s => listQuery[User](s, "allUsers", Map()))
+  def listDomainMemberships(username: String) : Seq[Member] =
+    sessionFactory.withSession(s => listQuery[Member](s, "membersByUser", Map("user_name" -> username)))
 
   // TODO Add a unit test for this
   def maybeSystemConfigOption(key: String) = {
