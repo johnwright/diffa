@@ -16,26 +16,10 @@ import net.lshift.diffa.kernel.util.DerbyHelper
  * Test cases for the HibernateDomainDifferenceStore.
  */
 class HibernateDomainDifferenceStoreTest {
-
-  private val config =
-      new Configuration().
-        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-        setProperty("hibernate.connection.url", "jdbc:derby:target/domainCache;create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
-        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                               // otherwise the preparation step will not get committed
-
-  var diffStore:HibernateDomainDifferenceStore = null
-  var sf:SessionFactory = null
+  import HibernateDomainDifferenceStoreTest._
 
   @Before
   def clear() {
-    sf = config.buildSessionFactory
-    (new HibernateConfigStorePreparationStep).prepare(sf, config)
-    diffStore = new HibernateDomainDifferenceStore(sf)
     diffStore.clearAllDifferences
 
     val configStore = new HibernateDomainConfigStore(sf)
@@ -55,12 +39,6 @@ class HibernateDomainDifferenceStoreTest {
     configStore.listPairs(domain.name).foreach(p => configStore.deletePair(domain.name, p.key))
     configStore.createOrUpdatePair(domain.name, pair1)
     configStore.createOrUpdatePair(domain.name, pair2)
-  }
-
-  @After
-  def close() {
-    sf.close()
-    DerbyHelper.shutdown("target/domainCache")
   }
 
   @Test
@@ -509,5 +487,29 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(vsn, event.downstreamVsn)
     assertTrue(!event.detectedAt.isBefore(now))      // Detection should be some time at or after now
     assertTrue(!event.lastSeen.isBefore(now))        // Last seen should be some time at or after now
+  }
+}
+
+object HibernateDomainDifferenceStoreTest {
+  private val config =
+      new Configuration().
+        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
+        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
+        setProperty("hibernate.connection.url", "jdbc:derby:target/domainCache;create=true").
+        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+                                                               // otherwise the preparation step will not get committed
+
+  val sf:SessionFactory = config.buildSessionFactory
+  (new HibernateConfigStorePreparationStep).prepare(sf, config)
+  val diffStore = new HibernateDomainDifferenceStore(sf)
+
+
+  @AfterClass
+  def close() {
+    sf.close()
+    DerbyHelper.shutdown("target/domainCache")
   }
 }
