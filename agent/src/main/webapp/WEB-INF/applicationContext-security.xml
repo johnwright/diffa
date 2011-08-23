@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+    Copyright (C) 2011 LShift Ltd.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+    xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.0.xsd">
+
+  <http use-expressions="true" >
+    <http-basic />
+
+    <!-- All operations within the interface require a user role -->
+    <intercept-url pattern="/**" access="hasRole('user')" />
+  </http>
+
+  <beans:bean id="encoder" class="org.springframework.security.authentication.encoding.ShaPasswordEncoder">
+    <beans:constructor-arg value="256"/>
+  </beans:bean>
+
+  <beans:bean id="userDetailsProvider" class="net.lshift.diffa.agent.auth.UserDetailsAdapter" />
+
+  <authentication-manager>
+    <authentication-provider user-service-ref="userDetailsProvider">
+      <password-encoder ref="encoder"/>
+    </authentication-provider>
+  </authentication-manager>
+
+  <global-method-security pre-post-annotations="enabled">
+    <expression-handler ref="expressionHandler"/>
+  </global-method-security>
+
+   <beans:bean id="expressionHandler"
+      class="org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler">
+        <beans:property name="permissionEvaluator" ref="userDetailsProvider"/>
+  </beans:bean>
+</beans:beans>
