@@ -254,7 +254,7 @@ object LuceneVersionCorrelationStore {
 
   def parseDate(ds:String) = {
     if (ds != null) {
-      ISODateTimeFormat.dateTimeParser.parseDateTime(ds)
+      ISODateTimeFormat.dateTimeParser.parseDateTime(ds).withZone(DateTimeZone.UTC)
     } else {
       null
     }
@@ -435,7 +435,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     updateField(doc, boolField("isMatched", isMatched))
 
     // Update the timestamp
-    updateField(doc, dateTimeField("timestamp", new DateTime, indexed = false))
+    updateField(doc, dateTimeField("timestamp", new DateTime().withZone(DateTimeZone.UTC), indexed = false))
 
     prepareUpdate(id, doc)
 

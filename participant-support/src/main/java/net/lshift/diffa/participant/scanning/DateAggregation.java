@@ -16,6 +16,7 @@
 package net.lshift.diffa.participant.scanning;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.*;
 
 /**
@@ -48,7 +49,7 @@ public class DateAggregation extends AbstractScanAggregation {
   public String bucket(String attributeVal) {
     DateTime date = null;
     try {
-      date = formatter.parseDateTime(attributeVal);
+      date = formatter.withZone(DateTimeZone.UTC).parseDateTime(attributeVal);
     }
     catch(IllegalArgumentException e) {
       throw new InvalidAttributeValueException("Value is not a date: " + attributeVal);
