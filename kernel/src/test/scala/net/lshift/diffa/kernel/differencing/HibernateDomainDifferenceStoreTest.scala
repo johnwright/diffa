@@ -32,6 +32,7 @@ import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.DerbyHelper
+import net.lshift.diffa.kernel.differencing.ZoomCache._
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -552,18 +553,18 @@ object HibernateDomainDifferenceStoreTest {
 
   @DataPoint def level0 = TileScenario("domain",
       Seq(
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id4"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id5"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id6"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id7"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id8"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id9"), timestamp = new DateTime()),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id10"), timestamp = new DateTime())
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp = new DateTime(2002,10,5,13,23,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp = new DateTime(2002,10,5,13,33,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp = new DateTime(2002,10,5,13,34,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id4"), timestamp = new DateTime(2002,10,5,13,46,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id5"), timestamp = new DateTime(2002,10,5,13,47,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id6"), timestamp = new DateTime(2002,10,5,13,48,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id7"), timestamp = new DateTime(2002,10,5,14,1,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id8"), timestamp = new DateTime(2002,10,5,14,2,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id9"), timestamp = new DateTime(2002,10,5,14,3,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id10"), timestamp = new DateTime(2002,10,5,14,4,0,0))
       ),
-      Map(0 -> Map(
+      Map(QUARTER_HOURLY -> Map(
         "pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 4 -> 4)),
         "pair2" -> TileSet()
     ))
