@@ -474,8 +474,7 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(0, unmatched.length)
   }
 
-  // TODO Put back in
-  //@Test(expected = classOf[ConstraintViolationException])
+  @Test(expected = classOf[ConstraintViolationException])
   def shouldFailToAddReportableEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
@@ -483,8 +482,7 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
   }
 
-  // TODO Put back in
-  //@Test(expected = classOf[ConstraintViolationException])
+  @Test(expected = classOf[ConstraintViolationException])
   def shouldFailToAddPendingEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
