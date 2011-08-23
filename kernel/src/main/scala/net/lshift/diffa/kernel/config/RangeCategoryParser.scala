@@ -20,6 +20,7 @@ import org.joda.time.format.{DateTimeFormatterBuilder, ISODateTimeFormat}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.differencing.{DateAttribute, StringAttribute, DateTimeAttribute, IntegerAttribute}
 import net.lshift.diffa.participant.scanning.{IntegerRangeConstraint, TimeRangeConstraint, DateRangeConstraint}
+import org.joda.time.DateTimeZone
 
 /**
  * This is a simple registry that can hydrate category values based on a descriptor
@@ -29,9 +30,9 @@ object RangeCategoryParser {
   val log = LoggerFactory.getLogger(getClass)
 
   val dateParsers = Array(ISODateTimeFormat.date().getParser)
-  protected val dateFormatter = new DateTimeFormatterBuilder().append( null, dateParsers ).toFormatter
+  protected val dateFormatter = new DateTimeFormatterBuilder().append( null, dateParsers ).toFormatter.withZone(DateTimeZone.UTC)
 
-  def parseDateTime(s:String) = ISODateTimeFormat.dateTimeParser.parseDateTime(s) // TODO: Force Timezone
+  def parseDateTime(s:String) = ISODateTimeFormat.dateTimeParser.withZone(DateTimeZone.UTC).parseDateTime(s)
   def parseDate(s:String) = parseDateTime(s).toLocalDate
   def parseInt(s:String) = Integer.valueOf(s).intValue
 
