@@ -172,6 +172,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     }
   })
 
+  def expireMatches(cutoff:DateTime) {
+    sessionFactory.withSession(s => {
+      executeUpdate(s, "expireMatches", Map("cutoff" -> cutoff))
+    })
+  }
+
   def clearAllDifferences = sessionFactory.withSession(s => {
     s.createQuery("delete from ReportedDifferenceEvent").executeUpdate()
     s.createQuery("delete from PendingDifferenceEvent").executeUpdate()

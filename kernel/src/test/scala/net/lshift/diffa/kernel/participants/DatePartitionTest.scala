@@ -19,14 +19,14 @@ package net.lshift.diffa.kernel.participants
 import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.kernel.config.{DateTimeTypeDescriptor, DateTypeDescriptor}
-import org.joda.time.{LocalDate, DateTime}
 import net.lshift.diffa.participant.scanning.{InvalidAttributeValueException, DateRangeConstraint, TimeRangeConstraint}
+import org.joda.time.{DateTimeZone, LocalDate, DateTime}
 
 class DatePartitionTest {
 
   @Test
   def dailyPartition = {
-    val date = new DateTime(2012, 5, 5 ,8, 4, 2, 0)
+    val date = new DateTime(2012, 5, 5 ,8, 4, 2, 0, DateTimeZone.UTC)
     val function = DailyCategoryFunction("bizDate", DateDataType)
     val partition = function.bucket(date.toString)
     assertEquals("2012-05-05", partition)
@@ -34,7 +34,7 @@ class DatePartitionTest {
 
   @Test
   def monthlyPartition = {
-    val date = new DateTime(2017, 9, 17 , 9, 9, 6, 0)
+    val date = new DateTime(2017, 9, 17 , 9, 9, 6, 0, DateTimeZone.UTC)
     val function = MonthlyCategoryFunction("bizDate", DateDataType)
     val partition = function.bucket(date.toString)
     assertEquals("2017-09", partition)
@@ -42,7 +42,7 @@ class DatePartitionTest {
   
   @Test
   def yearlyPartition = {
-    val date = new DateTime(1998, 11, 21 , 15, 49, 55, 0)
+    val date = new DateTime(1998, 11, 21 , 15, 49, 55, 0, DateTimeZone.UTC)
     val function = YearlyCategoryFunction("bizDate", DateDataType)
     val partition = function.bucket(date.toString)
     assertEquals("1998", partition)
@@ -101,8 +101,8 @@ class DatePartitionTest {
 
   @Test
   def descendFromYearlyCategoryFunction {
-    val expectedStart = new DateTime(1986, 01, 01, 0, 0, 0, 0)
-    val expectedEnd = new DateTime(1987, 01, 01, 0, 0, 0, 0).minusMillis(1)
+    val expectedStart = new DateTime(1986, 01, 01, 0, 0, 0, 0, DateTimeZone.UTC)
+    val expectedEnd = new DateTime(1987, 01, 01, 0, 0, 0, 0, DateTimeZone.UTC).minusMillis(1)
     assertEquals(Some(MonthlyCategoryFunction("bizDate", TimeDataType)), YearlyCategoryFunction("bizDate", TimeDataType).descend)
     assertEquals(new TimeRangeConstraint("bizDate", expectedStart, expectedEnd),
       YearlyCategoryFunction("bizDate", TimeDataType).constrain(None, "1986"))
