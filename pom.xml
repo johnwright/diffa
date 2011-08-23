@@ -21,6 +21,7 @@
     <module>participants-web</module>
     <module>docgen-maven-plugin</module>
     <module>dist</module>
+    <module>hibernate-migrations</module>
   </modules>
 
   <properties>
@@ -337,6 +338,12 @@
       <artifactId>servlet-api</artifactId>
       <version>2.5</version>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.lshift</groupId>
+      <artifactId>hibernate-migrations</artifactId>
+      <version>0.1-SNAPSHOT</version>
     </dependency>
 
     <dependency>
