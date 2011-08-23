@@ -20,8 +20,8 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 /**
  * Superclass that is aware of the domain to execute requests for.
  */
-abstract class DomainAwareRestClient(val root:String, val domain:String, val resourcePattern:String)
-    extends AbstractRestClient(root, "") {
+abstract class DomainAwareRestClient(val root:String, val domain:String, val resourcePattern:String, username:String, password:String)
+    extends AbstractRestClient(root, "", username, password) {
 
   override val resourcePath = resourcePattern.replace("{domain}", domain)
 

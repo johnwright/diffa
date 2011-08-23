@@ -30,7 +30,7 @@ class UserDetailsAdapter extends UserDetailsService with PermissionEvaluator {
     if (username != "guest") throw new UsernameNotFoundException(username)
 
     new UserDetails() {
-      def getAuthorities = List(new GrantedAuthorityImpl("user"), new DomainAuthority("diffa"))
+      def getAuthorities = List(new GrantedAuthorityImpl("user"), new GrantedAuthorityImpl("root"), new DomainAuthority("diffa", "user"), new DomainAuthority("domain", "user"))
       def getPassword = "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec"    // guest
       def getUsername = username
       def isAccountNonExpired = true
@@ -43,15 +43,10 @@ class UserDetailsAdapter extends UserDetailsService with PermissionEvaluator {
   def hasPermission(auth: Authentication, targetDomainObject: AnyRef, permission: AnyRef) = {
     permission match {
         // If we're asking for a domain-user, then return true if the provided authentication
-        // has a DomainAuthority for the given domain
+        // has a DomainAuthority for the given domain (or is a root user)
       case "domain-user" =>
         val domain = targetDomainObject.asInstanceOf[String]
-        auth.getAuthorities.find {
-          case DomainAuthority(grantedDomain) =>
-            domain == grantedDomain
-          case _ =>
-            false
-        }.isDefined
+        isRoot(auth) || hasDomainRole(auth, domain, "user")
 
         // Unknown permission request type
       case _ =>
@@ -60,8 +55,16 @@ class UserDetailsAdapter extends UserDetailsService with PermissionEvaluator {
   }
 
   def hasPermission(auth: Authentication, targetId: Serializable, targetType: String, permission: AnyRef) = false
+
+  def isRoot(auth: Authentication) = auth.getAuthorities.find(_.getAuthority == "root").isDefined
+  def hasDomainRole(auth: Authentication, domain:String, role:String) = auth.getAuthorities.find {
+      case DomainAuthority(grantedDomain, grantedRole) =>
+        domain == grantedDomain && role == grantedRole
+      case _ =>
+        false
+    }.isDefined
 }
 
-case class DomainAuthority(domain:String) extends GrantedAuthority {
-  def getAuthority = "domain-user-" + domain
+case class DomainAuthority(domain:String, domainRole:String) extends GrantedAuthority {
+  def getAuthority = domainRole + "@" + domain
 }

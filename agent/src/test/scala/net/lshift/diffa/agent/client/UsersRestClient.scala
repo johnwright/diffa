@@ -20,7 +20,8 @@ import net.lshift.diffa.messaging.json.AbstractRestClient
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend.UserDef
 
-class UsersRestClient(u:String) extends AbstractRestClient(u, "rest/security/") {
+class UsersRestClient(u:String, username:String = "guest", password:String = "guest")
+  extends AbstractRestClient(u, "rest/security/", username, password) {
 
   def declareUser(name: String, email:String) : UserDef = {
     val user = UserDef(name, email)

@@ -19,7 +19,8 @@ package net.lshift.diffa.agent.client
 import net.lshift.diffa.messaging.json.AbstractRestClient
 import net.lshift.diffa.kernel.frontend.DomainDef
 
-class SystemConfigRestClient(rootUrl:String) extends AbstractRestClient(rootUrl, "rest/root/") {
+class SystemConfigRestClient(rootUrl:String, username:String = "guest", password:String = "guest")
+    extends AbstractRestClient(rootUrl, "rest/root/", username, password) {
 
   def declareDomain(domain:DomainDef) = create("domains", domain)
 

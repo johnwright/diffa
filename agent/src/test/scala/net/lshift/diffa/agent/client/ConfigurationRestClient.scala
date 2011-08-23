@@ -22,8 +22,8 @@ import net.lshift.diffa.kernel.frontend._
 import javax.ws.rs.core.MediaType
 import org.eclipse.jetty.io.EndPoint
 
-class ConfigurationRestClient(serverRootUrl:String, domain:String)
-    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/config/") {
+class ConfigurationRestClient(serverRootUrl:String, domain:String, username:String = "guest", password:String = "guest")
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/config/", username, password) {
 
   def declareEndpoint(e:EndpointDef) = {
     create("endpoints", e)

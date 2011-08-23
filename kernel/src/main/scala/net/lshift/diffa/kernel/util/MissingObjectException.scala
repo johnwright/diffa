@@ -20,4 +20,4 @@ package net.lshift.diffa.kernel.util
  * Exception used to indicate that an object of the given type isn't available.
  */
 class MissingObjectException(val objName:String)
-    extends Exception("Requested " + objName + " does not exist")
+    extends RuntimeException("Requested " + objName + " does not exist")
