@@ -107,6 +107,7 @@
   </bean>
   <bean id="domainDifferenceStore" class="net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStore">
     <constructor-arg ref="diffaSessionFactory" />
+    <constructor-arg ref="zoomCacheManager"/>
   </bean>
   <bean id="sweeper" class="net.lshift.diffa.kernel.util.Sweeper" init-method="start" destroy-method="shutdown">
     <constructor-arg value="5" />
@@ -329,6 +330,15 @@
         <bean class="net.lshift.diffa.kernel.config.HibernateConfigStorePreparationStep" />
       </list>
     </property>
+  </bean>
+
+  <!--
+    ===========
+      Caching
+    ===========
+  -->
+  <bean id="zoomCacheManager" class="net.sf.ehcache.CacheManager">
+    <constructor-arg type="java.net.URL" value="classpath:ehcache-zooming.xml"/>
   </bean>
 
   <!--
