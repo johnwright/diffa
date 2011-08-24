@@ -517,6 +517,35 @@ class HibernateDomainDifferenceStoreTest {
     }}
   }
 
+  @Test
+  def eventsShouldUpdateZoomCache = {
+    val observationTime = new DateTime()
+    val timestamp1 = observationTime.minusMinutes(35)
+    val timestamp2 = observationTime.minusMinutes(36)
+
+    val id1 = VersionID(DiffaPairRef("pair1", "domain"), "7a")
+    val id2 = VersionID(DiffaPairRef("pair1", "domain"), "7b")
+
+    diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", timestamp1)
+
+    val t1 = diffStore.retrieveTiledEvents("domain", QUARTER_HOURLY, observationTime)
+    val inRange1 = TileSet(Map(2 -> 1)) == t1("pair1") || TileSet(Map(3 -> 1)) == t1("pair1")
+    assertTrue("Tileset was %s".format(t1("pair1")), inRange1)
+
+    diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", timestamp2)
+
+    val t2 = diffStore.retrieveTiledEvents("domain", QUARTER_HOURLY, observationTime)
+    val inRange2 = TileSet(Map(2 -> 2)) == t2("pair1") || TileSet(Map(3 -> 2)) == t2("pair1")
+    assertTrue("Tileset was %s".format(t1("pair1")), inRange2)
+
+    diffStore.addMatchedEvent(id2, "")
+
+    val t3 = diffStore.retrieveTiledEvents("domain", QUARTER_HOURLY, observationTime)
+
+    ()
+
+  }
+
   //
   // Helpers
   //

@@ -24,15 +24,14 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * A bit set of flags to mark each tile as dirty on a per-tile basis
    */
-  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[Int]]("dirty", pair,cacheManager) //new HashMap[Int, HashSet[Int]]
+  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[Int]]("dirty", pair,cacheManager)
 
   /**
    * Cache of indexed tiles for each requested level
-   * // TODO We probably want to evict this kind of cache
    */
-  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]]("tiles", pair,cacheManager) //new HashMap[Int, HashMap[Int,Int]]
+  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]]("tiles", pair,cacheManager)
 
-  private val levels = DAILY.until(QUARTER_HOURLY)
+  private val levels = DAILY.to(QUARTER_HOURLY)
 
   levels.foreach( dirtyTilesByLevel.put(_, new HashSet[Int]) )
 
@@ -46,7 +45,7 @@ class ZoomCacheProvider(pair:DiffaPairRef,
    */
   def onStoreUpdate(id: VersionID, lastSeen: DateTime) = {
     val observationDate = nearestObservationDate(new DateTime())
-    tileCachesByLevel.keys.foreach(level => {
+    dirtyTilesByLevel.keys.foreach(level => {
       val index = indexOf(observationDate, lastSeen, level)
       dirtyTilesByLevel.get(level).get += index
     })
@@ -89,7 +88,7 @@ class ZoomCacheProvider(pair:DiffaPairRef,
         flags.map(index => {
           val interval = intervalFromIndex(index, level, timestamp)
           val events = diffStore.countEvents(pair, interval)
-          tileCache(level) = events
+          tileCache(index) = events
         })
         flags.clear()
      }
