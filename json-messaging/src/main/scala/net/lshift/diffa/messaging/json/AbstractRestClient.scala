@@ -91,11 +91,10 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
     }
     catch {
       case x:UniformInterfaceException => {
-        if (x.getResponse.getStatus == 404) {
-          throw new NotFoundException(path)
-        }
-        else {
-          throw x
+        x.getResponse.getStatus match {
+          case 403 => throw new AccessDeniedException(path)
+          case 404 => throw new NotFoundException(path)
+          case _   => throw x
         }
       }
     }
@@ -155,3 +154,8 @@ class NotFoundException(resource:String) extends RuntimeException(resource)
  * Denotes an invalid request
  */
 class BadRequestException(resource: String) extends RuntimeException(resource)
+
+/**
+ * Denotes access being denied to a resource.
+ */
+class AccessDeniedException(resource: String) extends RuntimeException(resource)
