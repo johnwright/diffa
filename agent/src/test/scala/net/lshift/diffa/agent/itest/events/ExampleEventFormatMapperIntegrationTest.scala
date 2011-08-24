@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory
 import org.junit.{Before, Test}
 import org.apache.http.entity.FileEntity
 import org.apache.http.client.methods.HttpPost
-import org.apache.http.impl.client.DefaultHttpClient
 import net.lshift.diffa.kernel.differencing.MatchState.UNMATCHED
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.format.ISODateTimeFormat
@@ -36,6 +35,12 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.frontend.DomainDef
 import net.lshift.diffa.agent.client.{SystemConfigRestClient, DifferencesRestClient}
 import net.lshift.diffa.kernel.config.DiffaPairRef
+import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
+import org.apache.http.impl.auth.BasicScheme
+import org.apache.http.HttpHost
+import org.apache.http.protocol.BasicHttpContext
+import org.apache.http.client.protocol.ClientContext
+import org.apache.http.impl.client.{BasicAuthCache, DefaultHttpClient}
 
 /**
  * Integration test for change events over AMQP in an example JSON format.
@@ -45,8 +50,17 @@ class ExampleEventFormatMapperIntegrationTest {
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
 
   private val log = LoggerFactory.getLogger(getClass)
-
+  val targetHost = new HttpHost("localhost", 19093)
   val httpClient = new DefaultHttpClient()
+  httpClient.getCredentialsProvider().setCredentials(
+    new AuthScope(targetHost.getHostName, targetHost.getPort),
+    new UsernamePasswordCredentials("guest", "guest"))
+
+  val authCache = new BasicAuthCache()
+  authCache.put(targetHost, new BasicScheme)
+  val localContext = new BasicHttpContext()
+  localContext.setAttribute(ClientContext.AUTH_CACHE, authCache);
+
   val serverRoot = "http://localhost:19093/diffa-agent"
   val systemConfig = new SystemConfigRestClient(serverRoot)
 
@@ -61,8 +75,8 @@ class ExampleEventFormatMapperIntegrationTest {
     val post = new HttpPost(serverRoot + "/rest/" + domain.name + "/config/xml")
     post.setEntity(entity)
 
-    val response = httpClient.execute(post)
-    assertEquals(response.getStatusLine.getStatusCode, 204)
+    val response = httpClient.execute(post, localContext)
+    assertEquals(204, response.getStatusLine.getStatusCode)
   }
 
   @Test
