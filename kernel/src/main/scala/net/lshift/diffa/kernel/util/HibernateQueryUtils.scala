@@ -32,6 +32,13 @@ trait HibernateQueryUtils {
 
   protected val log:Logger = LoggerFactory.getLogger(getClass)
 
+  def getOrFail[ReturnType](s: Session, c:Class[ReturnType], id:Serializable, entityName:String):ReturnType = {
+    s.get(c, id) match {
+      case null => throw new MissingObjectException(entityName)
+      case e    => e.asInstanceOf[ReturnType]
+    }
+  }
+
   /**
    * Executes a list query in the given session, forcing the result type into a typed list of the given
    * return type.
@@ -124,11 +131,11 @@ trait HibernateQueryUtils {
     }
   })
 
-  def getEndpoint(s: Session, domain:String, name: String) = singleQuery[Endpoint](s, "endpointByName", Map("name" -> name), "endpoint %s".format(name))
+  def getEndpoint(s: Session, domain:String, name: String) = getOrFail(s, classOf[Endpoint], DomainScopedName(name, Domain(name = domain)), "endpoint")
 
   def getUser(s: Session, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
 
-  def getPair(s: Session, domain:String, key: String) = singleQuery[DiffaPair](s, "pairByKey", Map("key" -> key), "pair %s".format(key))
+  def getPair(s: Session, domain:String, key: String) = getOrFail(s, classOf[Pair], DomainScopedKey(key, Domain(name = domain)), "pair")
 
   def getRepairAction(s: Session, domain:String, name: String, pairKey: String) =
     singleQuery[RepairAction](s, "repairActionsByNameAndPair",

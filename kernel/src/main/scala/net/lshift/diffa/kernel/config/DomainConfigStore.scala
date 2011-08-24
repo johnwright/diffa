@@ -349,3 +349,12 @@ case class DomainScopedKey(@BeanProperty var key:String = null,
 {
   def this() = this(key = null)
 }
+
+/**
+ * Provides a Domain Scoped name for an entity.
+ */
+case class DomainScopedName(@BeanProperty var name:String = null,
+                            @BeanProperty var domain:Domain = null) extends java.io.Serializable
+{
+  def this() = this(name = null)
+}
