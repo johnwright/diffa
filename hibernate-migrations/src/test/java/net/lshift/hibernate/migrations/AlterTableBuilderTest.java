@@ -73,4 +73,46 @@ public class AlterTableBuilderTest {
     mb.apply(conn);
     verify(conn);
   }
+
+  @Test
+  public void shouldGenerateDropConstraint() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.alterTable("foo").dropConstraint("FK80C74EA1C3C204DC");
+
+    Connection conn = createStrictMock(Connection.class);
+    expect(conn.prepareStatement("alter table foo drop constraint FK80C74EA1C3C204DC")).
+        andReturn(mockExecutablePreparedStatement());
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
+
+  @Test
+  public void shouldGenerateDropPrimaryKey() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.alterTable("foo").dropPrimaryKey();
+
+    Connection conn = createStrictMock(Connection.class);
+    expect(conn.prepareStatement("alter table foo drop primary key")).
+        andReturn(mockExecutablePreparedStatement());
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
+
+  @Test
+  public void shouldGenerateAddPrimaryKey() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.alterTable("foo").addPrimaryKey("bar", "baz");
+
+    Connection conn = createStrictMock(Connection.class);
+    expect(conn.prepareStatement("alter table foo add primary key (bar, baz)")).
+        andReturn(mockExecutablePreparedStatement());
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
 }
