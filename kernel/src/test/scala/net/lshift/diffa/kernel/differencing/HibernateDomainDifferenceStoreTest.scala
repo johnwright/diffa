@@ -513,7 +513,7 @@ class HibernateDomainDifferenceStoreTest {
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))
     scenario.zoomLevels.foreach{ case (zoom, expected) => {
       val tiles = diffStore.retrieveTiledEvents(scenario.domain, zoom, scenario.observationPoint)
-      assertEquals(expected, tiles)
+      assertEquals("Failure @ zoom level %s".format(zoom), expected, tiles)
     }}
   }
 
@@ -569,13 +569,39 @@ object HibernateDomainDifferenceStoreTest {
         ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1p"), timestamp = new DateTime(2002,10,5,13,48,0,0)),
         // no offset
         ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1q"), timestamp = new DateTime(2002,10,5,14,4,0,0)),
+        // 2nd pair
         ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2a"), timestamp = new DateTime(2002,10,5,14,5,0,0)),
         ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2b"), timestamp = new DateTime(2002,10,5,14,5,30,0))
       ),
       Map(QUARTER_HOURLY -> Map(
-        "pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 3 -> 4, 4 -> 1, 8 -> 1, 16 -> 1, 32 -> 1, 96 -> 2)),
-        "pair2" -> TileSet(Map(0 -> 2))
-    ))
+           "pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 3 -> 4, 4 -> 1, 8 -> 1, 16 -> 1, 32 -> 1, 96 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         ),
+          HALF_HOURLY -> Map(
+           "pair1" -> TileSet(Map(0 -> 3, 1 -> 7, 2 -> 1, 4 -> 1, 8 -> 1, 16 -> 1, 48 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         ),
+          HOURLY -> Map(
+           "pair1" -> TileSet(Map(0 -> 10, 1 -> 1, 2 -> 1, 4 -> 1, 8 -> 1, 24 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         ),
+          TWO_HOURLY -> Map(
+           "pair1" -> TileSet(Map(0 -> 11, 1 -> 1, 2-> 1, 4 -> 1, 12 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         ),
+          FOUR_HOURLY -> Map(
+           "pair1" -> TileSet(Map(0 -> 12, 1 -> 1, 2-> 1, 6 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         ),
+          EIGHT_HOURLY -> Map(
+           "pair1" -> TileSet(Map(0 -> 13, 1 -> 1, 3 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         ),
+          DAILY -> Map(
+           "pair1" -> TileSet(Map(0 -> 14, 1 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         )
+      )
   )
 
   case class ReportableEvent(
