@@ -87,6 +87,25 @@ public class AlterTableBuilder implements MigrationElement {
     return this;
   }
 
+  public AlterTableBuilder dropConstraint(String name) {
+    alterFragments.add("drop constraint " + name);
+    return this;
+  }
+
+  public AlterTableBuilder dropPrimaryKey() {
+    alterFragments.add("drop primary key");
+    return this;
+  }
+
+  public AlterTableBuilder addPrimaryKey(String...cols) {
+    PrimaryKey pk = new PrimaryKey();
+    for (String col : cols) {
+      pk.addColumn(new Column(col));
+    }
+    alterFragments.add("add " + pk.sqlConstraintString(dialect));
+    return this;
+  }
+
   @Override
   public void apply(Connection conn) throws SQLException {
     for (String fragment : alterFragments) {

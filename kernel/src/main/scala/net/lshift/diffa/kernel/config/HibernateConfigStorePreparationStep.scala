@@ -44,6 +44,7 @@ class HibernateConfigStorePreparationStep
     AddSchemaVersionMigrationStep,
     AddDomainsMigrationStep,
     AddMaxGranularityMigrationStep,
+    ExpandPrimaryKeysMigrationStep,
     AddSuperuserAndDefaultUsersMigrationStep
   )
 
@@ -287,11 +288,55 @@ object AddMaxGranularityMigrationStep extends HibernateMigrationStep {
     migration.apply(connection)
   }
 }
-object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
+object ExpandPrimaryKeysMigrationStep extends HibernateMigrationStep {
   def versionId = 5
   def migrate(config: Configuration, connection: Connection) {
     val migration = new MigrationBuilder(config)
 
+    migration.alterTable("endpoint_categories").
+      dropConstraint("FKEE1F9F06BC780104")
+    migration.alterTable("pair").
+      dropConstraint("FK3462DA25F0B1C4").
+      dropConstraint("FK3462DA4242E68B")
+    migration.alterTable("escalations").
+      dropConstraint("FK2B3C687E7D35B6A8")
+    migration.alterTable("repair_actions").
+      dropConstraint("FKF6BE324B7D35B6A8")
+
+    migration.alterTable("endpoint").
+      dropPrimaryKey().
+      addPrimaryKey("name", "domain")
+    migration.alterTable("pair").
+      dropPrimaryKey().
+      addPrimaryKey("pair_key", "domain")
+
+    migration.alterTable("endpoint_categories").
+      addColumn("domain", Types.VARCHAR, 255, false, "diffa").
+      addForeignKey("FKEE1F9F066D6BD5C8", Array("id", "domain"), "endpoint", Array("name", "domain"))
+    migration.alterTable("escalations").
+      addColumn("domain", Types.VARCHAR, 255, false, "diffa").
+      addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+    migration.alterTable("pair").
+      addColumn("uep_domain", Types.VARCHAR, 255, true, null).
+      addColumn("dep_domain", Types.VARCHAR, 255, true, null).
+      addForeignKey("FK3462DAF2DA557F", Array("downstream, dep_domain"), "endpoint", Array("name", "domain")).
+      addForeignKey("FK3462DAF68A3C7", Array("upstream, uep_domain"), "endpoint", Array("name", "domain"))
+    migration.alterTable("repair_actions").
+      addColumn("domain", Types.VARCHAR, 255, false, "diffa").
+      addForeignKey("FKF6BE324B2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+
+    // Where we currently have an upstream or downstream domain, bring in the current pair domain
+    migration.sql("update pair set uep_domain=domain where upstream is not null")
+    migration.sql("update pair set dep_domain=domain where downstream is not null")
+
+    migration.apply(connection)
+  }
+}
+
+object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
+  def versionId = 6
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
     migration.alterTable("users").
       addColumn("password_enc", Types.VARCHAR, 255, false, "LOCKED").
       addColumn("superuser", Types.SMALLINT, 1, false, 0)
