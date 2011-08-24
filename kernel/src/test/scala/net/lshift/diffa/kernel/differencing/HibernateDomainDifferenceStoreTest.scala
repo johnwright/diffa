@@ -542,21 +542,36 @@ class HibernateDomainDifferenceStoreTest {
 
 object HibernateDomainDifferenceStoreTest {
 
-  @DataPoint def level0 = TileScenario("domain", new DateTime(2002,10,5,14,10,0,0),
+  @DataPoint def tiles = TileScenario("domain", new DateTime(2002,10,5,14,10,0,0),
       Seq(
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp = new DateTime(2002,10,5,13,21,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp = new DateTime(2002,10,5,13,22,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp = new DateTime(2002,10,5,13,23,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id4"), timestamp = new DateTime(2002,10,5,13,24,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id5"), timestamp = new DateTime(2002,10,5,13,32,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id6"), timestamp = new DateTime(2002,10,5,13,33,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id7"), timestamp = new DateTime(2002,10,5,13,34,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id8"), timestamp = new DateTime(2002,10,5,13,47,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id9"), timestamp = new DateTime(2002,10,5,13,48,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id10"), timestamp = new DateTime(2002,10,5,14,4,0,0))
+        // - 1 day
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id0"), timestamp = new DateTime(2002,10,4,14,2,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp = new DateTime(2002,10,4,14,3,0,0)),
+        // - 8 hours
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp = new DateTime(2002,10,5,6,7,0,0)),
+        // - 4 hours
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp = new DateTime(2002,10,5,10,9,0,0)),
+        // - 2 hours
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id4"), timestamp = new DateTime(2002,10,5,12,2,0,0)),
+        // - 1 hour
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id5"), timestamp = new DateTime(2002,10,5,13,11,0,0)),
+        // - 45 minutes
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id6"), timestamp = new DateTime(2002,10,5,13,21,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id7"), timestamp = new DateTime(2002,10,5,13,22,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id8"), timestamp = new DateTime(2002,10,5,13,23,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id9"), timestamp = new DateTime(2002,10,5,13,24,0,0)),
+        // - 30 minutes
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id10"), timestamp = new DateTime(2002,10,5,13,32,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id11"), timestamp = new DateTime(2002,10,5,13,33,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id12"), timestamp = new DateTime(2002,10,5,13,34,0,0)),
+        // - 15 minutes
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id13"), timestamp = new DateTime(2002,10,5,13,47,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id14"), timestamp = new DateTime(2002,10,5,13,48,0,0)),
+        // no offset
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "id15"), timestamp = new DateTime(2002,10,5,14,4,0,0))
       ),
       Map(QUARTER_HOURLY -> Map(
-        "pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 3 -> 4)),
+        "pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 3 -> 4, 4 -> 1, 8 -> 1, 16 -> 1, 32 -> 1, 96 -> 2)),
         "pair2" -> TileSet()
     ))
   )
