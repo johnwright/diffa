@@ -86,7 +86,11 @@ object FrontendConversions {
 
   def fromDomainDef(d:DomainDef) = Domain(name=d.name)
 
-  def fromUserDef(u:UserDef) = User(name = u.name, email = u.email)
+  def fromUserDef(u:UserDef) = User(name = u.name, email = u.email, passwordEnc = u.passwordEnc, superuser = u.superuser)
 
-  def toUserDef(u:User) = UserDef(name = u.name, email = u.email)
+  def toUserDef(u:User) = {
+    val ud = UserDef(name = u.name, email = u.email, superuser = u.superuser)
+    ud.passwordEnc = u.passwordEnc    // Not an actual field, so setter needs to be invoked manually
+    ud
+  }
 }

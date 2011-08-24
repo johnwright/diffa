@@ -45,7 +45,7 @@ class MembershipTest {
       assertEquals(expectation, isMember)
     }
     systemConfigClient.declareDomain(domain)
-    usersClient.declareUser(username,email)
+    usersClient.declareUser(UserDef(username,email,false,"foo"))
 
     configClient.makeDomainMember(username)
 

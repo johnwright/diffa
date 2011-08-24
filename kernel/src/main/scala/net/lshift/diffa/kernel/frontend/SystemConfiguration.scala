@@ -43,7 +43,10 @@ class SystemConfiguration(val systemConfigStore: SystemConfigStore, differencesM
   }
 
   def getUser(username: String) : UserDef = toUserDef(systemConfigStore.getUser(username))
-  def createOrUpdateUser(user:UserDef) : Unit = systemConfigStore.createOrUpdateUser(fromUserDef(user))
+  def createOrUpdateUser(user:UserDef) {
+    user.validate()
+    systemConfigStore.createOrUpdateUser(fromUserDef(user))
+  }
   def deleteUser(username: String) = systemConfigStore.deleteUser(username)
   def listUsers : Seq[UserDef] = systemConfigStore.listUsers.map(toUserDef(_))
 }

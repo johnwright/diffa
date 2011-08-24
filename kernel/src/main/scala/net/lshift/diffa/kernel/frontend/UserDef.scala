@@ -17,15 +17,46 @@
 package net.lshift.diffa.kernel.frontend
 
 import reflect.BeanProperty
+import java.security.MessageDigest
+import org.apache.commons.codec.binary.Hex
+import net.lshift.diffa.kernel.config.ValidationUtil
 
 
 /**
- * Serializable representation of a domain within the context of a domain.
+ * Serializable representation of a user within the context of a domain.
  */
 case class UserDef(@BeanProperty var name: String = null,
-                   @BeanProperty var email: String = null) {
+                   @BeanProperty var email: String = null,
+                   @BeanProperty var superuser: Boolean = false,
+                   @BeanProperty var password: String = null) {
+
+  private val encodedPasswordPrefix = "sha256:"
 
   def this() = this(name = null)
 
-  def validate(path:String = null) {}
+  def validate(path:String = null) {
+    val userPath = ValidationUtil.buildPath(path, "user", Map("name" -> name))
+
+    ValidationUtil.requiredAndNotEmpty(userPath, "name", name)
+    ValidationUtil.requiredAndNotEmpty(userPath, "email", email)
+    ValidationUtil.requiredAndNotEmpty(userPath, "password", password)
+  }
+
+  /**
+   * Returns the encoded password. If the password field starts with a prefix indicating that it is already encoded,
+   * then we just strip the prefix. If the prefix isn't present, then we'll SHA-256 encode the password.
+   */
+  def passwordEnc:String = if (password.startsWith(encodedPasswordPrefix)) {
+    password.substring(encodedPasswordPrefix.length())
+  } else {
+    sha256Encode(password)
+  }
+  def passwordEnc_=(s:String) {
+    password = encodedPasswordPrefix + s
+  }
+
+  private def sha256Encode(s:String) = {
+    val md = MessageDigest.getInstance("SHA-256")
+    new String(Hex.encodeHex(md.digest(s.getBytes("UTF-8")), true))
+  }
 }

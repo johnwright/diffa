@@ -93,6 +93,8 @@
     <cache usage="read-write"/>
     <id name="name" type="string" column="name"/>
     <property name="email" type="string" />
+    <property name="passwordEnc" type="string" column="password_enc" />
+    <property name="superuser" type="boolean" />
   </class>
 
   <class name="Member" table="members" abstract="false">

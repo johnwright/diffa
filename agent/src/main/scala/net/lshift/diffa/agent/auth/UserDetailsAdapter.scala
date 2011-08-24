@@ -37,7 +37,7 @@ class UserDetailsAdapter(val systemConfigStore:SystemConfigStore)
       case _:MissingObjectException => throw new UsernameNotFoundException(username)
     }
 
-    val isRoot = true   // TODO: Record on the user
+    val isRoot = user.superuser
     val memberships = systemConfigStore.listDomainMemberships(username)
     val domainAuthorities = memberships.map(m => DomainAuthority(m.domain.name, "user"))
     val authorities = domainAuthorities ++ Seq(new GrantedAuthorityImpl("user")) ++ (isRoot match {
@@ -47,7 +47,7 @@ class UserDetailsAdapter(val systemConfigStore:SystemConfigStore)
 
     new UserDetails() {
       def getAuthorities = authorities.toList
-      def getPassword = "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec"    // guest
+      def getPassword = user.passwordEnc
       def getUsername = username
       def isAccountNonExpired = true
       def isAccountNonLocked = true
