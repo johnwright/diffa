@@ -32,7 +32,6 @@ import org.springframework.beans.factory.config.BeanDefinition
 
 @Path("/{domain}")
 @Component
-@Scope(BeanDefinition.SCOPE_PROTOTYPE)
 @PreAuthorize("hasPermission(#domain, 'domain-user')")
 class DomainResource {
 
