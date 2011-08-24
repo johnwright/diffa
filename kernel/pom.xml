@@ -136,6 +136,10 @@
       <version>4.1.1</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>net.lshift</groupId>
+      <artifactId>hibernate-migrations</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
