@@ -214,7 +214,9 @@ class DefaultDifferencesManager(
    * If we don't know about this id (no mismatches for this id reported), just ignore.
    */
   def onMatch(id: VersionID, vsn: String, origin:MatchOrigin) {
-    log.debug("Processing match for " + id + " with vsn '" + vsn + "'")
+    if (log.isTraceEnabled) {
+      log.trace("Processing match for " + id + " with vsn '" + vsn + "'")
+    }
     addMatched(id, vsn)
   }
   
