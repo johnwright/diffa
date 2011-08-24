@@ -31,8 +31,8 @@ import net.lshift.diffa.kernel.differencing.{InvalidSequenceNumberException, Pai
 /**
  * A RESTful client to poll for difference events on a domain.
  */
-class DifferencesRestClient(serverRootUrl:String, domain:String)
-    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/diffs") {
+class DifferencesRestClient(serverRootUrl:String, domain:String, username:String = "guest", password:String = "guest")
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/diffs", username, password) {
 
   val supportsStreaming = false
   val supportsPolling = true

@@ -106,6 +106,8 @@
     <cache usage="read-write"/>
     <id name="name" type="string" column="name"/>
     <property name="email" type="string" />
+    <property name="passwordEnc" type="string" column="password_enc" />
+    <property name="superuser" type="boolean" />
   </class>
 
   <class name="Member" table="members" abstract="false">
@@ -192,6 +194,12 @@
   <query name="allConfigs">
     select o from ConfigOption o
   </query>
+
+  <!-- Queries by user -->
+  <query name="membersByUser">
+    select m from Member m where m.user.name = :user_name
+  </query>
+
 
   <!-- Queries by endpoint -->
   <query name="pairsByEndpoint">

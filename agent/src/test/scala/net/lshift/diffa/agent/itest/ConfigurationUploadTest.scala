@@ -26,6 +26,7 @@ import com.sun.jersey.api.client.config.{ClientConfig, DefaultClientConfig}
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider
 import net.lshift.diffa.agent.client.SystemConfigRestClient
 import net.lshift.diffa.kernel.frontend.DomainDef
+import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter
 
 /**
  * Tests for bulk configuration upload over the rest interface.
@@ -85,6 +86,7 @@ class ConfigurationUploadTest {
   config.getProperties().put(ClientConfig.PROPERTY_FOLLOW_REDIRECTS, true.asInstanceOf[AnyRef]);
   config.getClasses().add(classOf[JacksonJsonProvider]);
   val client = Client.create(config)
+  client.addFilter(new HTTPBasicAuthFilter("guest", "guest"))
   val serverRootResource = client.resource(rootURL)
   val resource = serverRootResource.path("rest/" + domain.name + "/config/xml").`type`(MediaType.APPLICATION_XML_TYPE)
 

@@ -308,7 +308,9 @@ object EscalationActionType {
 }
 
 case class User(@BeanProperty var name: String = null,
-                @BeanProperty var email: String = null) {
+                @BeanProperty var email: String = null,
+                @BeanProperty var passwordEnc: String = null,
+                @BeanProperty var superuser: Boolean = false) {
   def this() = this(name = null)
 
   override def equals(that:Any) = that match {

@@ -1,7 +1,7 @@
 package net.lshift.diffa.kernel.config.system
 
-import net.lshift.diffa.kernel.config.{DiffaPairRef, User, Endpoint, Domain, Pair => DiffaPair}
 import reflect.BeanProperty
+import net.lshift.diffa.kernel.config.{Member, DiffaPairRef, User, Endpoint, Domain, Pair => DiffaPair}
 
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
@@ -65,6 +65,7 @@ trait SystemConfigStore {
   def createOrUpdateUser(user: User) : Unit
   def deleteUser(name: String): Unit
   def listUsers : Seq[User]
+  def listDomainMemberships(username: String) : Seq[Member]
   def getUser(name: String) : User
 
 }

@@ -34,26 +34,16 @@
     </property>
   </bean>
 
-  <bean id="httpClient" class="org.apache.http.impl.client.DefaultHttpClient"/>
-
-  <bean id="httpPost" class="org.apache.http.client.methods.HttpPost">
+  <bean id="configUploader" lazy-init="true" class="net.lshift.diffa.util.ConfigUploader">
     <constructor-arg value="${demo.agentUrl}/rest/${demo.domain}/config/xml"/>
-    <property name="entity">
+    <constructor-arg value="${demo.agentUser}"/>
+    <constructor-arg value="${demo.agentPassword}"/>
+    <constructor-arg>
       <bean class="org.apache.http.entity.FileEntity">
         <constructor-arg value="classpath:diffa-config.xml"/>
         <constructor-arg value="application/xml"/>
       </bean>
-    </property>
-  </bean>
-
-  <bean id="postConfig" lazy-init="true" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="httpClient"/>
-    <property name="targetMethod" value="execute"/>
-    <property name="arguments">
-      <list>
-        <ref bean="httpPost"/>
-      </list>
-    </property>
+    </constructor-arg>
   </bean>
 
   <bean id="upstreamPart" class="net.lshift.diffa.participants.UpstreamWebParticipant">

@@ -40,4 +40,12 @@ object ValidationUtil {
     buildPath(parent, child + "[" + childAttrStr + "]")
   }
 
+  /**
+   * Validates a field that is required to be present and not empty.
+   */
+  def requiredAndNotEmpty(path:String, name:String, value:String) {
+    if (value == null || value.isEmpty) {
+      throw new ConfigValidationException(path, name + " cannot be null or empty")
+    }
+  }
 }

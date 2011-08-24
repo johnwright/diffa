@@ -22,6 +22,7 @@ import net.lshift.diffa.agent.itest.support.TestConstants._
 import com.eaio.uuid.UUID
 import net.lshift.diffa.agent.client.{ConfigurationRestClient, UsersRestClient, SystemConfigRestClient}
 import net.lshift.diffa.kernel.frontend.{UserDef, DomainDef}
+import net.lshift.diffa.messaging.json.AccessDeniedException
 
 /**
  * Tests whether domain membership admin is accessible via the REST API
@@ -31,10 +32,12 @@ class MembershipTest {
   val username = new UUID().toString
   val email = username + "@test.diffa.io"
   val domain = DomainDef(name = new UUID().toString)
+  val password = "foo"
 
   val systemConfigClient = new SystemConfigRestClient(agentURL)
   val usersClient = new UsersRestClient(agentURL)
   val configClient = new ConfigurationRestClient(agentURL, domain.name)
+  val userConfigClient = new ConfigurationRestClient(agentURL, domain.name, username = username, password = password)
 
   @Test
   def shouldBeAbleToManageDomainMembership = {
@@ -45,7 +48,7 @@ class MembershipTest {
       assertEquals(expectation, isMember)
     }
     systemConfigClient.declareDomain(domain)
-    usersClient.declareUser(username,email)
+    usersClient.declareUser(UserDef(username,email,false,password))
 
     configClient.makeDomainMember(username)
 
@@ -55,4 +58,19 @@ class MembershipTest {
     assertIsDomainMember(username, false)
   }
 
+  @Test(expected = classOf[AccessDeniedException])
+  def shouldNotBeAbleToAccessDomainConfigurationWhenNotADomainMember() {
+    systemConfigClient.declareDomain(domain)
+    usersClient.declareUser(UserDef(username,email,false,password))
+    configClient.removeDomainMembership(username)   // Ensure the user isn't a domain member
+    userConfigClient.listDomainMembers
+  }
+
+  @Test
+  def shouldBeAbleToAccessDomainConfigurationWhenDomainMember() {
+    systemConfigClient.declareDomain(domain)
+    usersClient.declareUser(UserDef(username,email,false,password))
+    configClient.makeDomainMember(username)
+    userConfigClient.listDomainMembers
+  }
 }
