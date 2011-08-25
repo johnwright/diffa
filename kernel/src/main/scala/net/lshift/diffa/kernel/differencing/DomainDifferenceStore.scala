@@ -35,6 +35,9 @@ trait DomainDifferenceStore {
    */
   def removePair(pairKey: String)
 
+  // TODO Not quite sure why the pair removal is not qualified by the domain
+  def removePair(pairKey: DiffaPairRef)
+
   /**
    * Retrieves the current sequence id of the cache
    */

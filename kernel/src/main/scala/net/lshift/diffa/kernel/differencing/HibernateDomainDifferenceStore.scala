@@ -23,19 +23,28 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   val zoomCaches = new HashMap[DiffaPairRef, ZoomCache]
 
   def removeDomain(domain:String) {
-    // TODO deleteZoomCache()
     sessionFactory.withSession(s => {
+      deleteZoomCachesInDomain(domain)
       executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
       executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
     })
   }
 
+  // TODO clarify usage with removePair(DiffaPairRef) and whether zoon caches should be deleted
   def removePair(pairKey: String) {
     sessionFactory.withSession { s =>
       executeUpdate(s, "removePairDiffs", Map("pairKey" -> pairKey))
       executeUpdate(s, "removePairPendingDiffs", Map("pairKey" -> pairKey))
     }
-    // TODO deleteZoomCache()
+  }
+
+  def removePair(pair: DiffaPairRef) = {
+    sessionFactory.withSession { s =>
+      // TODO questionable as to whether this should be inside the session or not
+      deleteZoomCache(pair)
+      executeUpdate(s, "removeDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      executeUpdate(s, "removePendingDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+    }
   }
   
   def currentSequenceId(domain:String) = sessionFactory.withSession(s => {
@@ -157,9 +166,9 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def retrieveTiledEvents(domain:String, zoomLevel:Int, timestamp:DateTime) = {
-    sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)).map(p => {
+    listPairsInDomain(domain).map(p => {
       p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel, timestamp)
-    }).toMap)
+    }).toMap
   }
 
   def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel, timestamp)
@@ -233,6 +242,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     case None        => //
     case Some(cache) => cache.close()
   }
+
+  private def deleteZoomCachesInDomain(domain:String) = listPairsInDomain(domain).foreach(p => deleteZoomCache(p.asRef))
 
   private def deleteAllZoomCaches = {
     zoomCaches.valuesIterator.foreach(_.close())
