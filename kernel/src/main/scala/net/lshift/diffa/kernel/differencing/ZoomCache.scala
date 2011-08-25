@@ -69,9 +69,6 @@ class ZoomCacheProvider(pair:DiffaPairRef,
    */
   private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]]("tiles", pair,cacheManager)
 
-  // TODO consider initializing these lazily rather than eagerly
-  levels.foreach( dirtyTilesByLevel.put(_, new HashSet[Int]) )
-
   def close() = {
     dirtyTilesByLevel.close()
     tileCachesByLevel.close()
@@ -115,6 +112,9 @@ class ZoomCacheProvider(pair:DiffaPairRef,
           cache(index) = events
           previous = diffStore.previousChronologicalEvent(pair, interval.getStart)
         }
+
+        // Initialize a dirty flag set for this cache
+        dirtyTilesByLevel.put(level, new HashSet[Int])
 
         cache
     }
