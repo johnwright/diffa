@@ -43,7 +43,7 @@ class ParticipantUIController(upstream:UpstreamWebParticipant, downstream:Downst
 
   def initialize() : Boolean = {
     log.debug("About to initialize the remote resources for the participant demo app ...")
-    ctx.getBean("postConfig")
+    ctx.getBean("configUploader")
     log.debug("Initialized all remote resources for the participant demo app")
     true
   }

@@ -467,6 +467,10 @@ class HibernateDomainConfigStoreTest {
       val members = domainConfigStore.listDomainMembers(domain.name)
       val isMember = members.contains(member)
       assertEquals(expectation, isMember)
+
+      val userMembers = systemConfigStore.listDomainMemberships(user.name)
+      val hasDomainMember = userMembers.contains(member)
+      assertEquals(expectation, hasDomainMember)
     }
 
     systemConfigStore.createOrUpdateDomain(domain)

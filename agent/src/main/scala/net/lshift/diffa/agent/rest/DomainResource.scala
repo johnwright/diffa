@@ -26,9 +26,13 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.config.DomainConfigStore
 import net.lshift.diffa.kernel.frontend.{Changes, Configuration}
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.context.annotation.Scope
+import org.springframework.beans.factory.config.BeanDefinition
 
 @Path("/{domain}")
 @Component
+@PreAuthorize("hasPermission(#domain, 'domain-user')")
 class DomainResource {
 
   @Context var uriInfo:UriInfo = null
