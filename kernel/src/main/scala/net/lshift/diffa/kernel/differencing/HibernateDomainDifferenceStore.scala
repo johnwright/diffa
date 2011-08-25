@@ -210,7 +210,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-              updateZoomCache(existing, previousDetectionTime)
+              updateZoomCache(existing.objId.pair, previousDetectionTime)
               existing.asDifferenceEvent
             } else {
               s.delete(existing)
@@ -230,12 +230,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
     evt.seqId = seqId
-    updateZoomCache(evt, previousDetectionTime)
+    updateZoomCache(evt.objId.pair, previousDetectionTime)
     evt.asDifferenceEvent
   }
 
-  private def updateZoomCache(evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
-    getZoomCache(evt.objId.pair).onStoreUpdate(evt.asDifferenceEvent, previousDetectionTime)
+  private def updateZoomCache(pair:DiffaPairRef, previousDetectionTime:DateTime) = {
+    getZoomCache(pair).onStoreUpdate(previousDetectionTime)
   }
 
   private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {
