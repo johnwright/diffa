@@ -33,6 +33,7 @@ import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.T
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.DerbyHelper
 import net.lshift.diffa.kernel.differencing.ZoomCache._
+import scala.collection.mutable.HashMap
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -523,26 +524,48 @@ class HibernateDomainDifferenceStoreTest {
     val timestamp1 = observationTime.minusMinutes(35)
     val timestamp2 = observationTime.minusMinutes(36)
 
-    val id1 = VersionID(DiffaPairRef("pair1", "domain"), "7a")
-    val id2 = VersionID(DiffaPairRef("pair1", "domain"), "7b")
+    val pair = DiffaPairRef("pair1", "domain")
+
+    val id1 = VersionID(pair, "7a")
+    val id2 = VersionID(pair, "7b")
 
     diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", timestamp1)
-
-    val t1 = diffStore.retrieveTiledEvents("domain", QUARTER_HOURLY, observationTime)
-    val inRange1 = TileSet(Map(2 -> 1)) == t1("pair1") || TileSet(Map(3 -> 1)) == t1("pair1")
-    assertTrue("Tileset was %s".format(t1("pair1")), inRange1)
+    validateZoomRange(observationTime, pair, QUARTER_HOURLY, timestamp1)
 
     diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", timestamp2)
-
-    val t2 = diffStore.retrieveTiledEvents("domain", QUARTER_HOURLY, observationTime)
-    val inRange2 = TileSet(Map(2 -> 2)) == t2("pair1") || TileSet(Map(3 -> 2)) == t2("pair1")
-    assertTrue("Tileset was %s".format(t1("pair1")), inRange2)
+    validateZoomRange(observationTime, pair, QUARTER_HOURLY, timestamp1, timestamp2)
 
     diffStore.addMatchedEvent(id2, "")
+    diffStore.retrieveTiledEvents(pair.domain, QUARTER_HOURLY, observationTime)
+    validateZoomRange(observationTime, pair, QUARTER_HOURLY, timestamp1)
 
-    val t3 = diffStore.retrieveTiledEvents("domain", QUARTER_HOURLY, observationTime)
+    diffStore.addMatchedEvent(id1, "")
+
+    val t4 = diffStore.retrieveTiledEvents(pair.domain, QUARTER_HOURLY, observationTime)
+
+    //println(t4)
 
     ()
+
+  }
+
+  def validateZoomRange(observationTime:DateTime, pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
+
+    val expectedTiles = new scala.collection.mutable.HashMap[Int,Int]
+    eventTimes.foreach(time => {
+      val index = ZoomCache.indexOf(observationTime, time, zoomLevel)
+      expectedTiles.get(index) match {
+        case None    => expectedTiles(index) = 1
+        case Some(x) => expectedTiles(index) = x + 1
+      }
+    })
+
+    val tileSet = diffStore.retrieveTiledEvents(pair.domain, zoomLevel, observationTime)
+    val tiles = tileSet(pair.key)
+    if (! ( TileSet(expectedTiles) == tiles ) ) {
+      val shifted = TileSet( expectedTiles.map{ case (k,v) =>  k + 1 -> v  } )
+      assertEquals("Expected tileset not in range: expected %s ;actual %s".format(TileSet(expectedTiles), tiles), shifted, tiles)
+    }
 
   }
 

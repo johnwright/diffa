@@ -107,7 +107,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
             case MatchState.UNMATCHED =>
               // A difference has gone away. Remove the difference, and add in a match
               s.delete(existing)
-              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime))
+              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), existing.detectedAt)
           }
       }
     })
@@ -117,7 +117,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsOlderThanCutoffByDomainAndPair",
       Map("domain" -> pair.domain, "pair" -> pair.key, "cutoff" -> cutoff)).map(old => {
         s.delete(old)
-        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, new DateTime))
+        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, new DateTime), old.detectedAt )
       })
   })
 
@@ -192,6 +192,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   private def addReportableMismatch(s:Session, reportableUnmatched:ReportedDifferenceEvent) = {
     getEventById(s, reportableUnmatched.objId) match  {
       case Some(existing) =>
+        val previousDetectionTime = existing.detectedAt
         existing.state match {
           case MatchState.UNMATCHED =>
             // We've already got an unmatched event. See if it matches all the criteria.
@@ -199,32 +200,32 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-              updateZoomCache(existing.objId, existing.lastSeen)
+              updateZoomCache(existing, previousDetectionTime)
               existing.asDifferenceEvent
             } else {
               s.delete(existing)
-              saveAndConvertEvent(s, reportableUnmatched)
+              saveAndConvertEvent(s, reportableUnmatched, previousDetectionTime)
             }
 
           case MatchState.MATCHED =>
               // The difference has re-occurred. Remove the match, and add a difference.
             s.delete(existing)
-            saveAndConvertEvent(s, reportableUnmatched)
+            saveAndConvertEvent(s, reportableUnmatched, previousDetectionTime)
         }
 
       case None =>
-        saveAndConvertEvent(s, reportableUnmatched)
+        saveAndConvertEvent(s, reportableUnmatched, reportableUnmatched.detectedAt)
     }
   }
-  private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
+  private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
     evt.seqId = seqId
-    updateZoomCache(evt.objId, evt.lastSeen)
+    updateZoomCache(evt, previousDetectionTime)
     evt.asDifferenceEvent
   }
 
-  private def updateZoomCache(id:VersionID, lastSeen:DateTime) = {
-    getZoomCache(id.pair).onStoreUpdate(id, lastSeen)
+  private def updateZoomCache(evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
+    getZoomCache(evt.objId.pair).onStoreUpdate(evt.asDifferenceEvent, previousDetectionTime)
   }
 
   private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {

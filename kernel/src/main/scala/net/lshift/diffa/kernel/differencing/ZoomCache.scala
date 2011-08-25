@@ -9,7 +9,7 @@ import java.io.Closeable
 import org.joda.time.{DateTime, Interval, Minutes}
 
 trait ZoomCache extends Closeable {
-  def onStoreUpdate(id: VersionID, lastSeen: DateTime)
+  def onStoreUpdate(event: DifferenceEvent, previousDetectionTime:DateTime)
   def retrieveTilesForZoomLevel(level:Int, timestamp:DateTime) : TileSet
 }
 
@@ -43,10 +43,10 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * Marks the tile (on each cached level) that corresponds to this version as dirty
    */
-  def onStoreUpdate(id: VersionID, lastSeen: DateTime) = {
+  def onStoreUpdate(event: DifferenceEvent, previousDetectionTime:DateTime) = {
     val observationDate = nearestObservationDate(new DateTime())
     dirtyTilesByLevel.keys.foreach(level => {
-      val index = indexOf(observationDate, lastSeen, level)
+      val index = indexOf(observationDate, previousDetectionTime, level)
       dirtyTilesByLevel.get(level).get += index
     })
   }
