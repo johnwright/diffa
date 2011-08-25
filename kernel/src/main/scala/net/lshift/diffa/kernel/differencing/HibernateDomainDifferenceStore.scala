@@ -179,6 +179,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   }
 
   def clearAllDifferences = sessionFactory.withSession(s => {
+    deleteAllZoomCaches
     s.createQuery("delete from ReportedDifferenceEvent").executeUpdate()
     s.createQuery("delete from PendingDifferenceEvent").executeUpdate()
   })
@@ -231,6 +232,11 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {
     case None        => //
     case Some(cache) => cache.close()
+  }
+
+  private def deleteAllZoomCaches = {
+    zoomCaches.valuesIterator.foreach(_.close())
+    zoomCaches.clear()
   }
 
   // TODO Consider making this an EhCache ....

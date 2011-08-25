@@ -647,11 +647,11 @@ object HibernateDomainDifferenceStoreTest {
           EIGHT_HOURLY -> Map(
            "pair1" -> TileSet(Map(0 -> 13, 1 -> 1, 3 -> 2)),
            "pair2" -> TileSet(Map(0 -> 2))
-         )//,
-//          DAILY -> Map(
-//           "pair1" -> TileSet(Map(0 -> 14, 1 -> 2)),
-//           "pair2" -> TileSet(Map(0 -> 2))
-//         )
+         ),
+          DAILY -> Map(
+           "pair1" -> TileSet(Map(0 -> 14, 1 -> 2)),
+           "pair2" -> TileSet(Map(0 -> 2))
+         )
       )
   )
 
