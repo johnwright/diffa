@@ -519,37 +519,36 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def eventsShouldUpdateZoomCache = {
+  def eventsShouldUpdateZoomCache = ZoomCache.levels.foreach(playThroughEventsAtZoomLevel(_))
+
+  private def playThroughEventsAtZoomLevel(zoomLevel:Int) = {
+
     val observationTime = new DateTime()
-    val timestamp1 = observationTime.minusMinutes(35)
-    val timestamp2 = observationTime.minusMinutes(36)
+    val timestamp1 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 1)
+    val timestamp2 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 2)
 
     val pair = DiffaPairRef("pair1", "domain")
 
     val id1 = VersionID(pair, "7a")
     val id2 = VersionID(pair, "7b")
 
+    diffStore.clearAllDifferences
+
     diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", timestamp1)
-    validateZoomRange(observationTime, pair, QUARTER_HOURLY, timestamp1)
+    validateZoomRange(observationTime, pair, zoomLevel, timestamp1)
 
     diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", timestamp2)
-    validateZoomRange(observationTime, pair, QUARTER_HOURLY, timestamp1, timestamp2)
+    validateZoomRange(observationTime, pair, zoomLevel, timestamp1, timestamp2)
 
     diffStore.addMatchedEvent(id2, "")
-    diffStore.retrieveTiledEvents(pair.domain, QUARTER_HOURLY, observationTime)
-    validateZoomRange(observationTime, pair, QUARTER_HOURLY, timestamp1)
+    validateZoomRange(observationTime, pair, zoomLevel, timestamp1)
 
     diffStore.addMatchedEvent(id1, "")
-
-    val t4 = diffStore.retrieveTiledEvents(pair.domain, QUARTER_HOURLY, observationTime)
-
-    //println(t4)
-
-    ()
-
+    val tiles = diffStore.retrieveTiledEvents(pair.domain, zoomLevel, observationTime)
+    assertTrue(tiles(pair.key).tiles.isEmpty)
   }
 
-  def validateZoomRange(observationTime:DateTime, pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
+  private def validateZoomRange(observationTime:DateTime, pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
 
     val expectedTiles = new scala.collection.mutable.HashMap[Int,Int]
     eventTimes.foreach(time => {
@@ -564,7 +563,7 @@ class HibernateDomainDifferenceStoreTest {
     val tiles = tileSet(pair.key)
     if (! ( TileSet(expectedTiles) == tiles ) ) {
       val shifted = TileSet( expectedTiles.map{ case (k,v) =>  k + 1 -> v  } )
-      assertEquals("Expected tileset not in range: expected %s ;actual %s".format(TileSet(expectedTiles), tiles), shifted, tiles)
+      assertEquals("Expected tile set not in range at zoom level %s".format(zoomLevel), shifted, tiles)
     }
 
   }

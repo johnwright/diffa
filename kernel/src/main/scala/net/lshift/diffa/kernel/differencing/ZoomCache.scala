@@ -31,8 +31,6 @@ class ZoomCacheProvider(pair:DiffaPairRef,
    */
   private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]]("tiles", pair,cacheManager)
 
-  private val levels = DAILY.to(QUARTER_HOURLY)
-
   levels.foreach( dirtyTilesByLevel.put(_, new HashSet[Int]) )
 
   def close() = {
@@ -87,8 +85,10 @@ class ZoomCacheProvider(pair:DiffaPairRef,
       case Some(flags) =>
         flags.map(index => {
           val interval = intervalFromIndex(index, level, timestamp)
-          val events = diffStore.countEvents(pair, interval)
-          tileCache(index) = events
+          diffStore.countEvents(pair, interval) match {
+            case 0 => tileCache -= index  // Remove the cache entry if there are no events
+            case n => tileCache(index) = n
+          }
         })
         flags.clear()
      }
@@ -107,6 +107,8 @@ object ZoomCache {
   val FOUR_HOURLY = 2
   val EIGHT_HOURLY = 1
   val DAILY = 0
+
+  val levels = DAILY.to(QUARTER_HOURLY)
 
   val zoom = Map(
     DAILY -> 60 * 24,
