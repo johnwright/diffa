@@ -239,7 +239,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   }
 
   private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {
-    case None        => //
+    case None        => // ignore
     case Some(cache) => cache.close()
   }
 
