@@ -33,7 +33,7 @@ import collection.mutable.HashMap
 import net.lshift.diffa.agent.client._
 import java.util.List
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
-import net.lshift.diffa.kernel.frontend.{EndpointDef, DomainDef, PairDef}
+import net.lshift.diffa.kernel.frontend.{UserDef, EndpointDef, DomainDef, PairDef}
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
@@ -152,7 +152,7 @@ class TestEnvironment(val pairKey: String,
   
   val username = "foo"
   val mail = "foo@bar.com"
-  usersClient.declareUser(username,mail)
+  usersClient.declareUser(UserDef(name = username,email = mail,superuser=false,password="bar"))
   // Add a user to the domain so that at least 1 mail will be sent
   configurationClient.makeDomainMember(username)
 

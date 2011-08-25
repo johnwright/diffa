@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.rest.exceptions
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,16 +15,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.messaging.json.AbstractRestClient
+import javax.ws.rs.ext.{Provider, ExceptionMapper}
+import javax.ws.rs.core.Response
+import org.springframework.security.access.AccessDeniedException
 
 /**
- * Superclass that is aware of the domain to execute requests for.
+ * Convert access denied exceptions into 403's.
  */
-abstract class DomainAwareRestClient(val root:String, val domain:String, val resourcePattern:String, username:String, password:String)
-    extends AbstractRestClient(root, "", username, password) {
-
-  override val resourcePath = resourcePattern.replace("{domain}", domain)
-
+@Provider
+class AccessDeniedExceptionMapper extends ExceptionMapper[AccessDeniedException] {
+  def toResponse(x: AccessDeniedException) = {
+    Response.status(Response.Status.FORBIDDEN).entity("Access denied").`type`("text/plain").build()
+  }
 }

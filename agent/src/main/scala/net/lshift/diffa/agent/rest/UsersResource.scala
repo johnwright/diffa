@@ -26,12 +26,14 @@ import core.{Context, UriInfo}
 import net.lshift.diffa.agent.rest.ResponseUtils._
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.frontend.{SystemConfiguration, UserDef}
+import org.springframework.security.access.prepost.PreAuthorize
 
 /**
  * This handles all of the user specific admin
  */
 @Path("/security")
 @Component
+@PreAuthorize("hasRole('root')")
 class UsersResource {
 
   @Autowired var systemConfig:SystemConfiguration = null

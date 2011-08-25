@@ -24,8 +24,8 @@ import scala.collection.JavaConversions._
 /**
  * A RESTful client to manage participant scanning.
  */
-class ScanningRestClient(serverRootUrl:String, domain:String)
-    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/scanning/") {
+class ScanningRestClient(serverRootUrl:String, domain:String, username:String = "guest", password:String = "guest")
+    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/scanning/", username, password) {
 
   def startScan(pairKey: String) = {
     val p = resource.path("pairs").path(pairKey).path("scan")

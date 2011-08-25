@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.alerting.Alerter
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
@@ -28,6 +27,7 @@ import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, Sca
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, Pair => DiffaPair}
+import org.joda.time.{Interval, DateTime}
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -79,10 +79,12 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   }
 
   def benchmark[T](pair:DiffaPair, label:String, f:() => T) {
-    val start = System.currentTimeMillis()
+    val start = new DateTime()
     val result = f()
-    val stop = System.currentTimeMillis()
-    logger.debug("[%s]: Benchmarking operation %s: %s ms".format(pair.identifier, label, (stop - start) ) )
+    val stop = new DateTime()
+    val interval = new Interval(start,stop)
+    val period = interval.toPeriod
+    logger.debug("[%s]: Benchmarking operation %s: %s -> %s".format(pair.identifier, label, period , interval ) )
     result
   }
 

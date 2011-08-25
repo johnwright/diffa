@@ -45,6 +45,7 @@ class HibernateConfigStorePreparationStep
     AddDomainsMigrationStep,
     AddMaxGranularityMigrationStep,
     ExpandPrimaryKeysMigrationStep,
+    AddSuperuserAndDefaultUsersMigrationStep,
     AddPersistentDiffsMigrationStep
   )
 
@@ -54,12 +55,13 @@ class HibernateConfigStorePreparationStep
       case None          => {
         (new SchemaExport(config)).create(false, true)
 
-        // Since we are creating a fresh schema, we need to populate the schema version as well as inserting the default domain
+        // Create a migration for fresh databases, since there are steps that we need to apply on top of hibernate
+        // doing the export
         val freshMigration = new MigrationBuilder(config)
-        freshMigration.insert("domains").
-          values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
         freshMigration.insert("system_config_options").
           values(Map("opt_key" -> HibernatePreparationUtils.correlationStoreSchemaKey, "opt_val" -> HibernatePreparationUtils.correlationStoreVersion))
+        AddDomainsMigrationStep.applyReferenceData(freshMigration)
+        AddSuperuserAndDefaultUsersMigrationStep.applyReferenceData(freshMigration)
 
         // Also need to add foreign key constraint from diffs.pair to pair.pair_key
         AddPersistentDiffsMigrationStep.addForeignKeyConstraintForPairColumnOnDiffsTables(freshMigration)
@@ -218,10 +220,6 @@ object AddSchemaVersionMigrationStep extends HibernateMigrationStep {
     
     migration.apply(connection)
   }
-
-  def migration(config:Configuration) = {
-
-  }
 }
 object AddDomainsMigrationStep extends HibernateMigrationStep {
   def versionId = 3
@@ -237,8 +235,8 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
       column("opt_val", Types.VARCHAR, 255, false).
       pk("opt_key")
 
-    // Make sure the default domain is in the DB
-    migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
+    // Add standard reference data
+    applyReferenceData(migration)
 
     // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));
     migration.createTable("members").
@@ -274,8 +272,13 @@ object AddDomainsMigrationStep extends HibernateMigrationStep {
     //alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;
     migration.alterTable("repair_actions").
       addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "name")
-    
+
     migration.apply(connection)
+  }
+
+  def applyReferenceData(migration:MigrationBuilder) {
+    // Make sure the default domain is in the DB
+    migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
   }
 }
 object AddMaxGranularityMigrationStep extends HibernateMigrationStep {
@@ -332,8 +335,27 @@ object ExpandPrimaryKeysMigrationStep extends HibernateMigrationStep {
     migration.apply(connection)
   }
 }
-object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
+object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
   def versionId = 6
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+    migration.alterTable("users").
+      addColumn("password_enc", Types.VARCHAR, 255, false, "LOCKED").
+      addColumn("superuser", Types.SMALLINT, 1, false, 0)
+    applyReferenceData(migration)
+
+    migration.apply(connection)
+  }
+  def applyReferenceData(migration:MigrationBuilder) {
+    migration.insert("users").
+      values(Map(
+        "name" -> "guest", "email" -> "guest@diffa.io",
+        "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+        "superuser" -> new java.lang.Integer(1)))
+  }
+}
+object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
+  def versionId = 7
   def migrate(config: Configuration, connection: Connection) {
     val migration = new MigrationBuilder(config)
 

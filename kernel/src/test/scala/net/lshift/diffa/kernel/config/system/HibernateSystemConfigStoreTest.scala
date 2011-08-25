@@ -19,16 +19,11 @@ package net.lshift.diffa.kernel.config.system
 import org.junit.Assert._
 import collection.JavaConversions._
 import net.lshift.diffa.kernel.util.SessionHelper._
-import org.joda.time.DateTime
-import net.lshift.diffa.kernel.frontend.{PairDef, EndpointDef}
 import org.junit.{Before, Test}
-import net.lshift.diffa.kernel.config.{User, Domain, HibernateDomainConfigStoreTest, DomainConfigStore, Pair => DiffaPair, RangeCategoryDescriptor}
-import collection.mutable.HashSet
+import net.lshift.diffa.kernel.config.{User, Domain, HibernateDomainConfigStoreTest}
 import net.lshift.diffa.kernel.util.MissingObjectException
 
 class HibernateSystemConfigStoreTest {
-
-  private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
 
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
   private val systemConfigStore:SystemConfigStore = new HibernateSystemConfigStore(sf)
@@ -36,28 +31,11 @@ class HibernateSystemConfigStoreTest {
   val domainName = "domain"
   val domain = Domain(name=domainName)
 
-  val versionPolicyName1 = "TEST_VPNAME"
-  val matchingTimeout = 120
-  val versionPolicyName2 = "TEST_VPNAME_ALT"
-  val pairKey = "TEST_PAIR"
-
-  val bound = new DateTime().toString()
-  val categories = Map("cat" ->  new RangeCategoryDescriptor("datetime", bound, bound))
-
-  val upstream1 = new EndpointDef(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1",
-    inboundUrl = "http://foo.com",
-    contentType = "application/json", categories = categories)
-  val downstream1 = new EndpointDef(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3",
-    inboundUrl = "http://bar.com",
-    contentType = "application/json", categories = categories)
-
-  val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
-    downstream1.name)
-
-  val TEST_USER = User("foo","foo@bar.com")
+  val TEST_USER = User(name = "foo", email = "foo@bar.com", passwordEnc = "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec", superuser = false)
+  val TEST_SUPERUSER = User(name = "fooroot", email = "root@bar.com", passwordEnc = "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9", superuser = true)
 
   @Before
-  def setup = {
+  def setup() {
     try {
       systemConfigStore.deleteDomain(domainName)
     }
@@ -67,33 +45,68 @@ class HibernateSystemConfigStoreTest {
     }
 
     systemConfigStore.createOrUpdateDomain(domain)
+
+    // Deleting every user isn't something that the API exposes
+    sf.withSession( s => s.createCriteria(classOf[User]).list.foreach(s.delete(_)))
   }
 
   @Test
-  def shouldBeAbleToSetSystemProperty = {
+  def shouldBeAbleToSetSystemProperty() {
     systemConfigStore.setSystemConfigOption("foo", "bar")
     assertEquals("bar", systemConfigStore.maybeSystemConfigOption("foo").get)
   }
 
+  @Test(expected = classOf[MissingObjectException])
+  def shouldGetExceptionWhenRetrievingMissingUser() {
+    systemConfigStore.getUser("unknownuser")
+  }
+
   @Test
-  def testUserCRUD = {
+  def shouldBeAbleToAddUserAndSeeItByGet() {
+    systemConfigStore.createOrUpdateUser(TEST_USER)
+    val user = systemConfigStore.getUser(TEST_USER.name)
+    assertUserEquals(TEST_USER, user)
+  }
 
-    // Deleting every user isn't something that the API exposes
-    sf.withSession( s => s.createCriteria(classOf[User]).list.foreach(s.delete(_)))
-
+  @Test
+  def shouldBeAbleToAddUserAndSeeItInList() {
     systemConfigStore.createOrUpdateUser(TEST_USER)
     val result = systemConfigStore.listUsers
     assertEquals(1, result.length)
-    // Hibernate doesn't seem to able to hydrate the many-to-many eagerly,
-    // so let's just verify that the user object is fine for now
-    assertEquals(TEST_USER.name, result(0).name)
-    val updated = User(TEST_USER.name, "somethingelse@bar.com")
-    systemConfigStore.createOrUpdateUser(updated)
-    val user = systemConfigStore.getUser(TEST_USER.name)
-    // See note above about lazy fetching
-    assertEquals(updated.name, user.name)
+    assertUserEquals(TEST_USER, result(0))
+  }
+
+  @Test(expected = classOf[MissingObjectException])
+  def shouldGetExceptionWhenRetrievingDeletedUser() {
+    systemConfigStore.createOrUpdateUser(TEST_USER)
     systemConfigStore.deleteUser(TEST_USER.name)
-    val users = systemConfigStore.listUsers
-    assertEquals(0, users.length)
+    systemConfigStore.getUser(TEST_USER.name)
+  }
+
+  @Test
+  def shouldNotSeeDeletedUsersInList() {
+    systemConfigStore.createOrUpdateUser(TEST_USER)
+    systemConfigStore.deleteUser(TEST_USER.name)
+    val result = systemConfigStore.listUsers
+    assertEquals(0, result.length)
+  }
+
+  @Test
+  def shouldBeAbleToUpdateUser() {
+    val updatedUser = User(name = TEST_USER.name, email = "somethingelse@bar.com",
+      passwordEnc = TEST_SUPERUSER.passwordEnc, superuser = true)
+
+    systemConfigStore.createOrUpdateUser(TEST_USER)
+    systemConfigStore.createOrUpdateUser(updatedUser)
+
+    val user = systemConfigStore.getUser(TEST_USER.name)
+    assertUserEquals(updatedUser, user)
+  }
+
+  def assertUserEquals(expected:User, actual:User) {
+    assertEquals(expected.name, actual.name)
+    assertEquals(expected.email, actual.email)
+    assertEquals(expected.passwordEnc, actual.passwordEnc)
+    assertEquals(expected.superuser, actual.superuser)
   }
 }

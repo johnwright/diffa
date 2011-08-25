@@ -24,9 +24,11 @@ import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import javax.ws.rs._
 import net.lshift.diffa.kernel.frontend.{SystemConfiguration, DomainDef}
+import org.springframework.security.access.prepost.PreAuthorize
 
 @Path("/root")
 @Component
+@PreAuthorize("hasRole('root')")
 class SystemConfigResource {
 
   @Autowired var systemConfig:SystemConfiguration = null
