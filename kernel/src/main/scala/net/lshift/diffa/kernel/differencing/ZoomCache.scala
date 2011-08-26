@@ -22,6 +22,7 @@ import scala.collection.JavaConversions._
 import net.sf.ehcache.{Element, CacheManager}
 import java.io.Closeable
 import org.joda.time.{DateTime, Interval, Minutes}
+import net.lshift.diffa.kernel.util.CacheWrapper
 
 /**
  * This provides a cache of difference events that have been summarized into a tile shaped structure according
@@ -62,12 +63,14 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * A bit set of flags to mark each tile as dirty on a per-tile basis
    */
-  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[Int]]("dirty", pair,cacheManager)
+  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[Int]](cacheName("dirty", pair), cacheManager)
 
   /**
    * Cache of indexed tiles for each requested level
    */
-  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]]("tiles", pair,cacheManager)
+  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]](cacheName("tiles", pair), cacheManager)
+
+  private def cacheName(cacheType:String, pair:DiffaPairRef) = cacheType + ":" + pair.identifier
 
   def close() = {
     dirtyTilesByLevel.close()
@@ -215,36 +218,3 @@ class InvalidZoomLevelException(level:Int) extends Exception("Zoom level: " + le
 
 class InvalidObservationDateException(observation:DateTime, event:DateTime)
   extends Exception("ObservationDate %s is before event date %s ".format(observation, event))
-
-/**
- * Simple wrapper around the underlying EhCache to make its usage less verbose.
- */
-class CacheWrapper[A, B](cacheType:String, pair:DiffaPairRef, manager:CacheManager) extends Closeable {
-
-  val cacheName = cacheType + ":" + pair.identifier
-
-  if (manager.cacheExists(cacheName)) {
-    manager.removeCache(cacheName)
-  }
-
-  manager.addCache(cacheName)
-
-  val cache = manager.getEhcache(cacheName)
-
-  def close() = manager.removeCache(cacheName)
-
-  def get(key:A) : Option[B] = {
-    val element = cache.get(key)
-    if (element != null) {
-      Some(element.getValue.asInstanceOf[B])
-    }
-    else {
-      None
-    }
-  }
-
-  def put(key:A, value:B) = cache.put(new Element(key,value))
-
-  def keys = cache.getKeys.toList.map(_.asInstanceOf[A])
-
-}
