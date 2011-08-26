@@ -171,6 +171,19 @@ class DifferencesResource(val differencesManager: DifferencesManager,
                 @PathParam("participant") participant:String) : String =
     differencesManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
 
+  @DELETE
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("text/plain"))
+  @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def ignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    differencesManager.ignoreDifference(domain, evtSeqId)
+
+    Response.ok("Ignored").build
+  }
+
   def defaultDateTime(input:String, default:DateTime) = input match {
     case "" | null => default
     case x         => isoDateTime.parseDateTime(x)

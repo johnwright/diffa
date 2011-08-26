@@ -88,6 +88,10 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
     }
   }
 
+  def ignore(seqId: String) {
+    delete("events/" + seqId)
+  }
+
   def f (d:DateTime) = {
     d match {
       case null => ""

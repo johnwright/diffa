@@ -39,6 +39,11 @@ trait DifferencesManager {
   def retrieveDomainSequenceNum(domain:String):String
 
   /**
+   * Ignores the given difference.
+   */
+  def ignoreDifference(domain:String, seqId:String)
+
+  /**
    *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */

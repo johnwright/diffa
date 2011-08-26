@@ -138,17 +138,17 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test(expected = classOf[IllegalArgumentException])
-  def shouldNotBeAbleToIgnoreDifferenceViaWrongPair() {
+  def shouldNotBeAbleToIgnoreDifferenceViaWrongDomain() {
     val timestamp = new DateTime()
     val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
-    diffStore.ignoreEvent(DiffaPairRef("pair3", "domain"), evt.seqId)
+    diffStore.ignoreEvent("domain2", evt.seqId)
   }
 
   @Test
   def shouldNotPublishAnIgnoredReportableUnmatchedEventInRetrieveUnmatchedEventsQuery() {
     val timestamp = new DateTime()
     val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
-    diffStore.ignoreEvent(DiffaPairRef("pair2", "domain"), evt.seqId)
+    diffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
@@ -186,7 +186,7 @@ class HibernateDomainDifferenceStoreTest {
     val timestamp = new DateTime
 
     val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
-    diffStore.ignoreEvent(DiffaPairRef("pair2", "domain"), evt.seqId)
+    diffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatchedCount = diffStore.countEvents(DiffaPairRef("pair2", "domain"), interval)
@@ -231,7 +231,7 @@ class HibernateDomainDifferenceStoreTest {
   def shouldNotPublishAnIgnoredReportableUnmatchedEventInPagedEventQuery() {
     val timestamp = new DateTime()
     val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
-    diffStore.ignoreEvent(DiffaPairRef("pair2", "domain"), evt.seqId)
+    diffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val containedPage = diffStore.retrievePagedEvents(DiffaPairRef("pair2", "domain"), interval, 0, 100)

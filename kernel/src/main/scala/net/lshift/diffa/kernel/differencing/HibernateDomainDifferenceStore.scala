@@ -113,11 +113,11 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       })
   })
 
-  def ignoreEvent(pair:DiffaPairRef, seqId:String) {
+  def ignoreEvent(domain:String, seqId:String) {
     sessionFactory.withSession(s => {
       val evt = getOrFail[ReportedDifferenceEvent](s, classOf[ReportedDifferenceEvent], new java.lang.Integer(seqId), "ReportedDifferenceEvent")
-      if (evt.objId.pair != pair) {
-        throw new IllegalArgumentException("Invalid pair %s for sequence id %s (expected %s)".format(pair, seqId, evt.objId.pair))
+      if (evt.objId.pair.domain != domain) {
+        throw new IllegalArgumentException("Invalid domain %s for sequence id %s (expected %s)".format(domain, seqId, evt.objId.pair.domain))
       }
 
       evt.ignored = true

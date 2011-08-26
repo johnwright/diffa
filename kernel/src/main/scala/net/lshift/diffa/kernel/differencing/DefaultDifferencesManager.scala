@@ -87,6 +87,10 @@ class DefaultDifferencesManager(
 
   def retrieveDomainSequenceNum(id:String) = domainDifferenceStore.currentSequenceId(id)
 
+  def ignoreDifference(domain:String, seqId:String) {
+    domainDifferenceStore.ignoreEvent(domain, seqId)
+  }
+
   def retrieveAllEventsInInterval(domain:String, interval:Interval) =
     domainDifferenceStore.retrieveUnmatchedEvents(domain, interval)
 
