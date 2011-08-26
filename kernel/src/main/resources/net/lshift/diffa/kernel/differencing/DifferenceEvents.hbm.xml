@@ -66,13 +66,6 @@
     delete from ReportedDifferenceEvent where lastSeen < :cutoff and isMatch = true
   ]]></query>
 
-  <!-- TODO Not quite sure why the pair removal is not qualified by the domain -->
-  <query name="removePairDiffs">
-    delete from ReportedDifferenceEvent where objId.pair.key = :pairKey
-  </query>
-  <query name="removePairPendingDiffs">
-    delete from PendingDifferenceEvent where objId.pair.key = :pairKey
-  </query>
   <query name="removeDiffsByPairAndDomain">
     delete from ReportedDifferenceEvent where objId.pair.key = :pairKey and objId.pair.domain = :domain
   </query>

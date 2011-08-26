@@ -30,14 +30,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     })
   }
 
-  // TODO clarify usage with removePair(DiffaPairRef) and whether zoon caches should be deleted
-  def removePair(pairKey: String) {
-    sessionFactory.withSession { s =>
-      executeUpdate(s, "removePairDiffs", Map("pairKey" -> pairKey))
-      executeUpdate(s, "removePairPendingDiffs", Map("pairKey" -> pairKey))
-    }
-  }
-
   def removePair(pair: DiffaPairRef) = {
     sessionFactory.withSession { s =>
       // TODO questionable as to whether this should be inside the session or not

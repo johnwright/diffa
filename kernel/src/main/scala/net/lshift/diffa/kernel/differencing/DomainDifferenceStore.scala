@@ -33,10 +33,7 @@ trait DomainDifferenceStore {
   /**
    * Indicates that the given pair has been removed, and that any differences stored against it should be removed.
    */
-  def removePair(pairKey: String)
-
-  // TODO Not quite sure why the pair removal is not qualified by the domain
-  def removePair(pairKey: DiffaPairRef)
+  def removePair(pair: DiffaPairRef)
 
   /**
    * Retrieves the current sequence id of the cache
