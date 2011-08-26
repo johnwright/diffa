@@ -77,6 +77,11 @@ trait DomainDifferenceStore {
   def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime)
 
   /**
+   * Indicates that the given event should be ignored, and not returned in any query.
+   */
+  def ignoreEvent(pair:DiffaPairRef, seqId:String)
+
+  /**
    * Retrieves all unmatched events that have been added to the cache where their detection timestamp
    * falls within the specified period
    */

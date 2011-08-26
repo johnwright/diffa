@@ -113,6 +113,18 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       })
   })
 
+  def ignoreEvent(pair:DiffaPairRef, seqId:String) {
+    sessionFactory.withSession(s => {
+      val evt = getOrFail[ReportedDifferenceEvent](s, classOf[ReportedDifferenceEvent], new java.lang.Integer(seqId), "ReportedDifferenceEvent")
+      if (evt.objId.pair != pair) {
+        throw new IllegalArgumentException("Invalid pair %s for sequence id %s (expected %s)".format(pair, seqId, evt.objId.pair))
+      }
+
+      evt.ignored = true
+      s.update(evt)
+    })
+  }
+
   def retrieveUnmatchedEvents(domain:String, interval: Interval) = sessionFactory.withSession(s => {
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomain",
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
@@ -217,7 +229,8 @@ case class ReportedDifferenceEvent(
   @BeanProperty var isMatch:Boolean = false,
   @BeanProperty var upstreamVsn:String = null,
   @BeanProperty var downstreamVsn:String = null,
-  @BeanProperty var lastSeen:DateTime = null
+  @BeanProperty var lastSeen:DateTime = null,
+  @BeanProperty var ignored:Boolean = false
 ) {
   
   def this() = this(seqId = null)

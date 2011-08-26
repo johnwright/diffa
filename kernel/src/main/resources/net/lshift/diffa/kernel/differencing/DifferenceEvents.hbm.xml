@@ -54,6 +54,7 @@
     <property name="lastSeen" type="org.jadira.usertype.dateandtime.joda.PersistentDateTime" column="last_seen" not-null="true" index="diff_last_seen" />
     <property name="upstreamVsn" type="string" column="upstream_vsn" />
     <property name="downstreamVsn" type="string" column="downstream_vsn" />
+    <property name="ignored" type="boolean" column="ignored" />
   </class>
 
   <query name="removeDomainDiffs">
@@ -97,18 +98,21 @@
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and
       e.detectedAt >= :start and e.detectedAt < :end and
-      e.isMatch = false
+      e.isMatch = false and
+      e.ignored = false
   ]]></query>
   <query name="unmatchedEventsInIntervalByDomainAndPair"><![CDATA[
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
       e.detectedAt >= :start and e.detectedAt < :end and
-      e.isMatch = false
+      e.isMatch = false and
+      e.ignored = false
   ]]></query>
   <query name="countEventsInIntervalByDomainAndPair"><![CDATA[
     select count(e) from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
-      e.detectedAt >= :start and e.detectedAt < :end
+      e.detectedAt >= :start and e.detectedAt < :end and
+      e.ignored = false
   ]]></query>
   <query name="unmatchedEventsOlderThanCutoffByDomainAndPair"><![CDATA[
     select e from ReportedDifferenceEvent e where
