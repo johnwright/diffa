@@ -428,7 +428,7 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id3"), timestamp, "uV", "dV", timestamp)
 
-    diffStore.removePair("pair2")
+    diffStore.removePair(DiffaPairRef("pair2", "domain"))
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
@@ -440,7 +440,7 @@ class HibernateDomainDifferenceStoreTest {
     val timestamp = new DateTime()
     diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
 
-    diffStore.removePair("pair2")
+    diffStore.removePair(DiffaPairRef("pair2", "domain"))
 
     // Upgrade the pending difference we previously created. We shouldn't see any differences, because we should
     // have just submitted an upgrade for a pending event that doesn't exist.

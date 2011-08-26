@@ -23,10 +23,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
     })
   }
 
-  def removePair(pairKey: String) {
+  def removePair(pair: DiffaPairRef) {
     sessionFactory.withSession { s =>
-      executeUpdate(s, "removePairDiffs", Map("pairKey" -> pairKey))
-      executeUpdate(s, "removePairPendingDiffs", Map("pairKey" -> pairKey))
+      executeUpdate(s, "removePairDiffs", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      executeUpdate(s, "removePairPendingDiffs", Map("pairKey" -> pair.key, "domain" -> pair.domain))
     }
   }
   
