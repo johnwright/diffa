@@ -514,7 +514,7 @@ class HibernateDomainDifferenceStoreTest {
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))
     scenario.zoomLevels.foreach{ case (zoom, expected) => {
       val tiles = diffStore.retrieveTiledEvents(scenario.domain, zoom, scenario.observationPoint)
-      assertEquals("Failure @ zoom level %s".format(zoom), expected, tiles)
+      assertEquals("Failure @ zoom level %s; ".format(zoom), expected, tiles)
     }}
   }
 
@@ -534,10 +534,10 @@ class HibernateDomainDifferenceStoreTest {
 
     diffStore.clearAllDifferences
 
-    diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", timestamp1)
+    diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", observationTime)
     validateZoomRange(observationTime, pair, zoomLevel, timestamp1)
 
-    diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", timestamp2)
+    diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", observationTime)
     validateZoomRange(observationTime, pair, zoomLevel, timestamp1, timestamp2)
 
     diffStore.addMatchedEvent(id2, "")
@@ -563,7 +563,7 @@ class HibernateDomainDifferenceStoreTest {
     val tiles = tileSet(pair.key)
     if (! ( TileSet(expectedTiles) == tiles ) ) {
       val shifted = TileSet( expectedTiles.map{ case (k,v) =>  k + 1 -> v  } )
-      assertEquals("Expected tile set not in range at zoom level %s".format(zoomLevel), shifted, tiles)
+      assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), shifted, tiles)
     }
 
   }

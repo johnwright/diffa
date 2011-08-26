@@ -126,7 +126,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsOlderThanCutoffByDomainAndPair",
       Map("domain" -> pair.domain, "pair" -> pair.key, "cutoff" -> cutoff)).map(old => {
         s.delete(old)
-        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, new DateTime), old.detectedAt )
+        val lastSeen = new DateTime
+        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen), old.detectedAt )
       })
   })
 
@@ -150,7 +151,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def previousChronologicalEvent(pair: DiffaPairRef, timestamp:DateTime) = sessionFactory.withSession(s => {
-    singleQueryOpt[ReportedDifferenceEvent](s, "previousChronologicalEventsByDomainAndPair",
+    singleQueryOpt[ReportedDifferenceEvent](s, "previousUnmatchedChronologicalEventsByDetectionTime",
         Map("domain" -> pair.domain,
             "pair"   -> pair.key,
             "cutoff" -> timestamp)) match {
@@ -210,7 +211,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-              updateZoomCache(existing.objId.pair, previousDetectionTime)
+              updateZoomCache(existing.objId.pair, previousDetectionTime, reportableUnmatched.lastSeen)
               existing.asDifferenceEvent
             } else {
               s.delete(existing)
@@ -230,12 +231,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
     evt.seqId = seqId
-    updateZoomCache(evt.objId.pair, previousDetectionTime)
+    updateZoomCache(evt.objId.pair, previousDetectionTime, evt.lastSeen)
     evt.asDifferenceEvent
   }
 
-  private def updateZoomCache(pair:DiffaPairRef, previousDetectionTime:DateTime) = {
-    getZoomCache(pair).onStoreUpdate(previousDetectionTime)
+  private def updateZoomCache(pair:DiffaPairRef, previousDetectionTime:DateTime, observationTime:DateTime) = {
+    getZoomCache(pair).onStoreUpdate(previousDetectionTime, observationTime)
   }
 
   private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {

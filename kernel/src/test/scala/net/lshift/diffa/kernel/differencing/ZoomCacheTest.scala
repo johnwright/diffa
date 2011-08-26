@@ -79,7 +79,7 @@ class ObservationDateTest {
 
   @Theory
   def observationDateShouldAlign(s:ObservationScenario) = {
-    assertEquals(s.nearestObservationDate, ZoomCache.nearestObservationDate(s.pointInTime))
+    assertEquals(s.tileStartTime, ZoomCache.nearestAlignedTileStart(s.pointInTime))
   }
 
 }
@@ -93,7 +93,7 @@ object ObservationDateTest {
     ObservationScenario(new DateTime(1982,4,19,10,53,0,0), new DateTime(1982,4,19,11,0,0,0))
   )
 
-  case class ObservationScenario(pointInTime:DateTime, nearestObservationDate:DateTime)
+  case class ObservationScenario(pointInTime:DateTime, tileStartTime:DateTime)
 }
 
 @RunWith(classOf[Theories])

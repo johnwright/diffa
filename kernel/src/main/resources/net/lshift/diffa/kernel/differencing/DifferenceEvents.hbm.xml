@@ -113,12 +113,12 @@
       e.detectedAt >= :start and e.detectedAt < :end and
       e.isMatch = false
   ]]></query>
-  <query name="previousChronologicalEventsByDomainAndPair"><![CDATA[
+  <query name="previousUnmatchedChronologicalEventsByDetectionTime"><![CDATA[
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
-      e.lastSeen < :cutoff and
+      e.detectedAt < :cutoff and
       e.isMatch = false
-      order by e.lastSeen desc
+      order by e.detectedAt desc
   ]]></query>
   <query name="countEventsInIntervalByDomainAndPair"><![CDATA[
     select count(e) from ReportedDifferenceEvent e where

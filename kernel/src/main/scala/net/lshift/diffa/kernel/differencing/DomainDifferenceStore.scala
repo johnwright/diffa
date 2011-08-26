@@ -97,6 +97,7 @@ trait DomainDifferenceStore {
    */
   def countEvents(pair: DiffaPairRef, interval:Interval) : Int
 
+  // TODO document
   def previousChronologicalEvent(pair: DiffaPairRef, timestamp:DateTime) : Option[DifferenceEvent]
 
   /**

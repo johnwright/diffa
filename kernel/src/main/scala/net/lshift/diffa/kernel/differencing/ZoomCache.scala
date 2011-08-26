@@ -36,12 +36,15 @@ trait ZoomCache extends Closeable {
 
   /**
    * Callback to notify the cache that it should synchronize a particular time span with the underlying difference store.
+   *
    * @param previousDetectionTime Cached time spans that contain this point in time should be invalidated.
+   * @param observationTime The point in time used to calibrate the index of the previousDetectionTime
    */
-  def onStoreUpdate(previousDetectionTime:DateTime)
+  def onStoreUpdate(previousDetectionTime:DateTime, observationTime:DateTime)
 
   /**
    * Retrieves a set of tiles for the current pair.
+   *
    * @param level The request level of zoom
    * @param timestamp The point in time from which the zooming should start. In general, this will be the current
    *                  system time, but this parameter is explicitly passed in to make testing easier.
@@ -80,10 +83,10 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * Marks the tile (on each cached level) that corresponds to this version as dirty
    */
-  def onStoreUpdate(previousDetectionTime:DateTime) = {
-    val observationDate = nearestObservationDate(new DateTime())
+  def onStoreUpdate(previousDetectionTime:DateTime, observationTime:DateTime) = {
+    val tileStartTime = nearestAlignedTileStart(observationTime)
     dirtyTilesByLevel.keys.foreach(level => {
-      val index = indexOf(observationDate, previousDetectionTime, level)
+      val index = indexOf(tileStartTime, previousDetectionTime, level)
       dirtyTilesByLevel.get(level).get += index
     })
   }
@@ -101,19 +104,19 @@ class ZoomCacheProvider(pair:DiffaPairRef,
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
 
-        val observationDate = nearestObservationDate(timestamp)
-        var previous = diffStore.previousChronologicalEvent(pair, observationDate)
+        val tileStartTime = nearestAlignedTileStart(timestamp)
+        var previous = diffStore.previousChronologicalEvent(pair, tileStartTime)
 
         // Iterate through the diff store to generate aggregate sums of the events in tile
         // aligned buckets
 
         while(previous.isDefined) {
           val event = previous.get
-          val index = indexOf(observationDate, event.lastSeen, level)
-          val interval = intervalFromIndex(0, level, event.lastSeen)
+          val index = indexOf(tileStartTime, event.detectedAt, level)
+          val interval = intervalFromIndex(0, level, event.detectedAt)
           val events = diffStore.countEvents(pair, interval)
           cache(index) = events
-          previous = diffStore.previousChronologicalEvent(pair, interval.getStart)
+          previous = diffStore.previousChronologicalEvent(pair,interval.getStart)
         }
 
         // Initialize a dirty flag set for this cache
@@ -172,11 +175,15 @@ object ZoomCache {
   )
 
   /**
-   *  Given a particular point in time, this returns the nearest tile aligned observation point.
+   *  Given a particular point in time, this returns the nearest tile aligned start point.
+   *
+   *  All tiles, regardless of their zoom level, will have a starting tile that is rounded off to the nearest
+   *  15 minutes.
+   *
    *  This is used for example to work out what time the right hand side of the heatmap should be aligned to
    *  at any given point in time.
    */
-  def nearestObservationDate(timestamp:DateTime) = {
+  def nearestAlignedTileStart(timestamp:DateTime) = {
     val bottomOfHour = timestamp.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
     val increments = timestamp.getMinuteOfHour / 15
     bottomOfHour.plusMinutes( (increments + 1) * 15 )
@@ -189,8 +196,8 @@ object ZoomCache {
    */
   def intervalFromIndex(index:Int, zoomLevel:Int, timestamp:DateTime) = {
     val minutes = zoom(zoomLevel) * index
-    val observationDate = nearestObservationDate(timestamp)
-    val rangeEnd = observationDate.minusMinutes(minutes)
+    val tileStartTime = nearestAlignedTileStart(timestamp)
+    val rangeEnd = tileStartTime.minusMinutes(minutes)
     new Interval(rangeEnd.minusMinutes(zoom(zoomLevel)), rangeEnd)
   }
 
