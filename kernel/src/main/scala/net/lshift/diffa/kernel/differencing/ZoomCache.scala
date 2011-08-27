@@ -85,7 +85,8 @@ class ZoomCacheProvider(pair:DiffaPairRef,
    */
   def onStoreUpdate(tileStart:DateTime) = {
     dirtyTilesByLevel.keys.foreach(level => {
-      dirtyTilesByLevel.get(level).get += tileStart
+      val interval = containingInterval(tileStart, level)
+      dirtyTilesByLevel.get(level).get += interval.getStart
     })
   }
 

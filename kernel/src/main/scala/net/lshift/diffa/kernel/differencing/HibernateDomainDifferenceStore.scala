@@ -108,7 +108,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
             case MatchState.UNMATCHED =>
               // A difference has gone away. Remove the difference, and add in a match
               s.delete(existing)
-              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime))
+              val previousDetectionTime = existing.detectedAt
+              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), previousDetectionTime)
           }
       }
     })
@@ -240,10 +241,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         saveAndConvertEvent(s, reportableUnmatched)
     }
   }
+
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
+    updateZoomCache(evt.objId.pair, evt.detectedAt)
+    persistAndConvertEventInternal(s, evt)
+  }
+
+  private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
+    updateZoomCache(evt.objId.pair, previousDetectionTime)
+    persistAndConvertEventInternal(s, evt)
+  }
+
+  private def persistAndConvertEventInternal(s:Session, evt:ReportedDifferenceEvent) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
     evt.seqId = seqId
-    updateZoomCache(evt.objId.pair, evt.detectedAt)
     evt.asDifferenceEvent
   }
 

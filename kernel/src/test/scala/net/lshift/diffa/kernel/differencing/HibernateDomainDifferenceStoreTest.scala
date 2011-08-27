@@ -535,32 +535,38 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.clearAllDifferences
 
     diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", observationTime)
-    validateZoomRange(observationTime, pair, zoomLevel, timestamp1)
+    validateZoomRange(pair, zoomLevel, timestamp1)
 
     diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", observationTime)
-    validateZoomRange(observationTime, pair, zoomLevel, timestamp1, timestamp2)
+    validateZoomRange(pair, zoomLevel, timestamp1, timestamp2)
 
     diffStore.addMatchedEvent(id2, "")
-    validateZoomRange(observationTime, pair, zoomLevel, timestamp1)
+    validateZoomRange(pair, zoomLevel, timestamp1)
 
     diffStore.addMatchedEvent(id1, "")
     val tiles = diffStore.retrieveTiledEvents(pair.domain, zoomLevel)
-    //assertTrue(tiles(pair.key).tiles.isEmpty)
+    assertTrue(tiles(pair.key).tiles.isEmpty)
   }
 
-  private def validateZoomRange(observationTime:DateTime, pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
+  private def validateZoomRange(pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
 
-    val expectedTiles = new scala.collection.mutable.HashMap[Int,Int]
+    val expectedTiles = new scala.collection.mutable.HashMap[DateTime,Int]
     eventTimes.foreach(time => {
-      val index = ZoomCache.indexOf(observationTime, time, zoomLevel)
-      expectedTiles.get(index) match {
-        case None    => expectedTiles(index) = 1
-        case Some(x) => expectedTiles(index) = x + 1
+      //val index = ZoomCache.indexOf(observationTime, time, zoomLevel)
+
+      val interval = ZoomCache.containingInterval(time, zoomLevel)
+      val startTime = interval.getStart
+
+      expectedTiles.get(startTime) match {
+        case None    => expectedTiles(startTime) = 1
+        case Some(x) => expectedTiles(startTime) = x + 1
       }
     })
 
     val tileSet = diffStore.retrieveTiledEvents(pair.domain, zoomLevel)
     val tiles = tileSet(pair.key)
+    assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), TileSet(expectedTiles), tiles)
+
 //    if (! ( TileSet(expectedTiles) == tiles ) ) {
 //      val shifted = TileSet( expectedTiles.map{ case (k,v) =>  k + 1 -> v  } )
 //      assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), shifted, tiles)
