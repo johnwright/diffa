@@ -108,7 +108,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
             case MatchState.UNMATCHED =>
               // A difference has gone away. Remove the difference, and add in a match
               s.delete(existing)
-              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), existing.detectedAt)
+              val previousDetectionTime = existing.detectedAt
+              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), previousDetectionTime)
           }
       }
     })
@@ -119,7 +120,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> pair.domain, "pair" -> pair.key, "cutoff" -> cutoff)).map(old => {
         s.delete(old)
         val lastSeen = new DateTime
-        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen), old.detectedAt )
+        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen) )
       })
   })
 
@@ -142,11 +143,21 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     count.getOrElse(new java.lang.Long(0L)).intValue
   })
 
-  def previousChronologicalEvent(pair: DiffaPairRef, timestamp:DateTime) = sessionFactory.withSession(s => {
-    singleQueryOpt[ReportedDifferenceEvent](s, "previousUnmatchedChronologicalEventsByDetectionTime",
+  def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int) = sessionFactory.withSession(s => {
+    singleQueryOpt[ReportedDifferenceEvent](s, "nextChronologicalUnmatchedEventByDomainAndPair",
         Map("domain" -> pair.domain,
             "pair"   -> pair.key,
-            "cutoff" -> timestamp)) match {
+            "seqId"  -> evtSeqId)) match {
+      case None       => None
+      case Some(evt)  =>
+        Some(evt.asDifferenceEvent)
+    }
+  })
+
+  def oldestUnmatchedEvent(pair: DiffaPairRef) = sessionFactory.withSession(s => {
+    singleQueryOpt[ReportedDifferenceEvent](s, "oldestUnmatchedEventByDomainAndPair",
+        Map("domain" -> pair.domain,
+            "pair"   -> pair.key)) match {
       case None       => None
       case Some(evt)  =>
         Some(evt.asDifferenceEvent)
@@ -158,13 +169,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
 
-  def retrieveTiledEvents(domain:String, zoomLevel:Int, timestamp:DateTime) = {
+  def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
     listPairsInDomain(domain).map(p => {
-      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel, timestamp)
+      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel)
     }).toMap
   }
 
-  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel, timestamp)
+  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int) = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel)
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
@@ -195,7 +206,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   private def addReportableMismatch(s:Session, reportableUnmatched:ReportedDifferenceEvent) = {
     getEventById(s, reportableUnmatched.objId) match  {
       case Some(existing) =>
-        val previousDetectionTime = existing.detectedAt
         existing.state match {
           case MatchState.UNMATCHED =>
             // We've already got an unmatched event. See if it matches all the criteria.
@@ -203,32 +213,42 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-              updateZoomCache(existing.objId.pair, previousDetectionTime, reportableUnmatched.lastSeen)
+              updateZoomCache(existing.objId.pair, reportableUnmatched.detectedAt)
               existing.asDifferenceEvent
             } else {
               s.delete(existing)
-              saveAndConvertEvent(s, reportableUnmatched, previousDetectionTime)
+              saveAndConvertEvent(s, reportableUnmatched)
             }
 
           case MatchState.MATCHED =>
               // The difference has re-occurred. Remove the match, and add a difference.
             s.delete(existing)
-            saveAndConvertEvent(s, reportableUnmatched, previousDetectionTime)
+            saveAndConvertEvent(s, reportableUnmatched)
         }
 
       case None =>
-        saveAndConvertEvent(s, reportableUnmatched, reportableUnmatched.detectedAt)
+        saveAndConvertEvent(s, reportableUnmatched)
     }
   }
+
+  private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
+    updateZoomCache(evt.objId.pair, evt.detectedAt)
+    persistAndConvertEventInternal(s, evt)
+  }
+
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
+    updateZoomCache(evt.objId.pair, previousDetectionTime)
+    persistAndConvertEventInternal(s, evt)
+  }
+
+  private def persistAndConvertEventInternal(s:Session, evt:ReportedDifferenceEvent) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
     evt.seqId = seqId
-    updateZoomCache(evt.objId.pair, previousDetectionTime, evt.lastSeen)
     evt.asDifferenceEvent
   }
 
-  private def updateZoomCache(pair:DiffaPairRef, previousDetectionTime:DateTime, observationTime:DateTime) = {
-    getZoomCache(pair).onStoreUpdate(previousDetectionTime, observationTime)
+  private def updateZoomCache(pair:DiffaPairRef, detectedAt:DateTime) = {
+    getZoomCache(pair).onStoreUpdate(detectedAt)
   }
 
   private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {

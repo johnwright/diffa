@@ -19,10 +19,10 @@ package net.lshift.diffa.kernel.differencing
 import collection.mutable.{HashMap,HashSet}
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import scala.collection.JavaConversions._
-import net.sf.ehcache.{Element, CacheManager}
+import net.sf.ehcache.CacheManager
 import java.io.Closeable
-import org.joda.time.{DateTime, Interval, Minutes}
 import net.lshift.diffa.kernel.util.CacheWrapper
+import org.joda.time.{Interval, DateTime}
 
 /**
  * This provides a cache of difference events that have been summarized into a tile shaped structure according
@@ -37,19 +37,16 @@ trait ZoomCache extends Closeable {
   /**
    * Callback to notify the cache that it should synchronize a particular time span with the underlying difference store.
    *
-   * @param previousDetectionTime Cached time spans that contain this point in time should be invalidated.
-   * @param observationTime The point in time used to calibrate the index of the previousDetectionTime
+   * @param detectionTime The detection time of the event that is causing the cache to invalidate itself
    */
-  def onStoreUpdate(previousDetectionTime:DateTime, observationTime:DateTime)
+  def onStoreUpdate(detectionTime:DateTime)
 
   /**
    * Retrieves a set of tiles for the current pair.
    *
    * @param level The request level of zoom
-   * @param timestamp The point in time from which the zooming should start. In general, this will be the current
-   *                  system time, but this parameter is explicitly passed in to make testing easier.
    */
-  def retrieveTilesForZoomLevel(level:Int, timestamp:DateTime) : TileSet
+  def retrieveTilesForZoomLevel(level:Int) : TileSet
 }
 
 /**
@@ -66,12 +63,12 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * A bit set of flags to mark each tile as dirty on a per-tile basis
    */
-  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[Int]](cacheName("dirty", pair), cacheManager)
+  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[DateTime]](cacheName("dirty", pair), cacheManager)
 
   /**
    * Cache of indexed tiles for each requested level
    */
-  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[Int,Int]](cacheName("tiles", pair), cacheManager)
+  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[DateTime,Int]](cacheName("tiles", pair), cacheManager)
 
   private def cacheName(cacheType:String, pair:DiffaPairRef) = cacheType + ":" + pair.identifier
 
@@ -83,44 +80,41 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * Marks the tile (on each cached level) that corresponds to this version as dirty
    */
-  def onStoreUpdate(previousDetectionTime:DateTime, observationTime:DateTime) = {
-    val tileStartTime = nearestAlignedTileStart(observationTime)
+  def onStoreUpdate(detectionTime:DateTime) = {
     dirtyTilesByLevel.keys.foreach(level => {
-      val index = indexOf(tileStartTime, previousDetectionTime, level)
-      dirtyTilesByLevel.get(level).get += index
+      val interval = containingInterval(detectionTime, level)
+      dirtyTilesByLevel.get(level).get += interval.getStart
     })
   }
 
-  def retrieveTilesForZoomLevel(level:Int, timestamp:DateTime) : TileSet = {
+  def retrieveTilesForZoomLevel(level:Int) : TileSet = {
 
     validateLevel(level)
 
     val tileCache = tileCachesByLevel.get(level) match {
       case Some(cached) => cached
       case None         =>
-        val cache = new HashMap[Int,Int]
+        val cache = new HashMap[DateTime,Int]
         tileCachesByLevel.put(level, cache)
 
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
 
-        val tileStartTime = nearestAlignedTileStart(timestamp)
-        var previous = diffStore.previousChronologicalEvent(pair, tileStartTime)
+        var currentEvent = diffStore.oldestUnmatchedEvent(pair)
 
         // Iterate through the diff store to generate aggregate sums of the events in tile
         // aligned buckets
 
-        while(previous.isDefined) {
-          val event = previous.get
-          val index = indexOf(tileStartTime, event.detectedAt, level)
-          val interval = intervalFromIndex(0, level, event.detectedAt)
+        while(currentEvent.isDefined) {
+          val event = currentEvent.get
+          val interval = containingInterval(event.detectedAt, level)
           val events = diffStore.countEvents(pair, interval)
-          cache(index) = events
-          previous = diffStore.previousChronologicalEvent(pair,interval.getStart)
+          cache(interval.getStart) = events
+          currentEvent = diffStore.nextChronologicalUnmatchedEvent(pair, event.sequenceId)
         }
 
         // Initialize a dirty flag set for this cache
-        dirtyTilesByLevel.put(level, new HashSet[Int])
+        dirtyTilesByLevel.put(level, new HashSet[DateTime])
 
         cache
     }
@@ -128,11 +122,11 @@ class ZoomCacheProvider(pair:DiffaPairRef,
     dirtyTilesByLevel.get(level) match {
       case None        => // The tile cache does not need to be preened
       case Some(flags) =>
-        flags.map(index => {
-          val interval = intervalFromIndex(index, level, timestamp)
+        flags.map(startTime => {
+          val interval = intervalFromStartTime(startTime, level)
           diffStore.countEvents(pair, interval) match {
-            case 0 => tileCache -= index  // Remove the cache entry if there are no events
-            case n => tileCache(index) = n
+            case 0 => tileCache -= startTime  // Remove the cache entry if there are no events
+            case n => tileCache(startTime) = n
           }
         })
         flags.clear()
@@ -175,53 +169,47 @@ object ZoomCache {
   )
 
   /**
-   *  Given a particular point in time, this returns the nearest tile aligned start point.
-   *
-   *  All tiles, regardless of their zoom level, will have a starting tile that is rounded off to the nearest
-   *  15 minutes.
-   *
-   *  This is used for example to work out what time the right hand side of the heatmap should be aligned to
-   *  at any given point in time.
+   * Calculates what the tile aligned interval conatins the given timestamp at the given level of zoom
    */
-  def nearestAlignedTileStart(timestamp:DateTime) = {
+  def containingInterval(timestamp:DateTime, zoomLevel:Int) = zoomLevel match {
+    case DAILY => {
+      val start = timestamp.withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+      new Interval(start, start.plusDays(1))
+    }
+    case EIGHT_HOURLY => multipleHourlyStart(timestamp, 8)
+    case FOUR_HOURLY => multipleHourlyStart(timestamp, 4)
+    case TWO_HOURLY => multipleHourlyStart(timestamp, 2)
+    case HOURLY => multipleHourlyStart(timestamp, 1)
+    case HALF_HOURLY => subHourly(timestamp, 30)
+    case QUARTER_HOURLY => subHourly(timestamp, 15)
+  }
+
+  private def subHourly(timestamp:DateTime, minutes:Int) = {
     val bottomOfHour = timestamp.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
-    val increments = timestamp.getMinuteOfHour / 15
-    bottomOfHour.plusMinutes( (increments + 1) * 15 )
+    val increments = timestamp.getMinuteOfHour / minutes
+    val start = bottomOfHour.plusMinutes( increments * minutes )
+    new Interval(start, start.plusMinutes(minutes))
+  }
+
+  private def multipleHourlyStart(timestamp:DateTime, multiple:Int) = {
+    val hourOfDay = timestamp.getHourOfDay
+    val startHour = hourOfDay - (hourOfDay % multiple)
+    val start = timestamp.withHourOfDay(startHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+    new Interval(start, start.plusHours(multiple))
   }
 
   /**
-   * Given a particular index offset at particular level, return the time interval of the tile in question.
-   * To establish the absolute tile interval, this query needs to have a observation point in time passed
-   * into it so that the resulting time span can be calibrated.
+   * Calculates what the tile aligned interval is having the specified starting timestamp and the given level of zoom
    */
-  def intervalFromIndex(index:Int, zoomLevel:Int, timestamp:DateTime) = {
-    val minutes = zoom(zoomLevel) * index
-    val tileStartTime = nearestAlignedTileStart(timestamp)
-    val rangeEnd = tileStartTime.minusMinutes(minutes)
-    new Interval(rangeEnd.minusMinutes(zoom(zoomLevel)), rangeEnd)
-  }
-
-  /**
-   * From the stand point of a particular observation date, this will establish what tile a particular timestamp
-   * would fall into at a given level of zoom
-   */
-  def indexOf(observation:DateTime, event:DateTime, zoomLevel:Int) : Int = {
-    validateLevel(zoomLevel)
-    validateTime(observation, event)
-    val minutes = Minutes.minutesBetween(event,observation).getMinutes
-    minutes / zoom(zoomLevel)
+  def intervalFromStartTime(start:DateTime, zoomLevel:Int) = {
+    val end = start.plusMinutes(zoom(zoomLevel))
+    new Interval(start,end)
   }
 
   def validateLevel(level:Int) = if (level < DAILY || level > QUARTER_HOURLY) {
     throw new InvalidZoomLevelException(level)
   }
 
-  def validateTime(observation:DateTime, event:DateTime) = if (observation.isBefore(event)) {
-    throw new InvalidObservationDateException(observation, event)
-  }
 }
 
 class InvalidZoomLevelException(level:Int) extends Exception("Zoom level: " + level)
-
-class InvalidObservationDateException(observation:DateTime, event:DateTime)
-  extends Exception("ObservationDate %s is before event date %s ".format(observation, event))

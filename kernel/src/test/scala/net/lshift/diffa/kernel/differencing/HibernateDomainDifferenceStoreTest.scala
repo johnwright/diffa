@@ -492,20 +492,20 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def previousEventShouldBeAccessible() {
+  def nextEventShouldBeAccessible() {
     val timestamp = new DateTime()
     val event1 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
     val event2 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp.plusSeconds(10), "uV", "dV", timestamp.plusSeconds(10))
     val event3 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp.plusSeconds(15), "uV", "dV", timestamp.plusSeconds(15))
 
-    val prev1 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(11)).get
-    validateUnmatchedEvent(event2, prev1.objId, prev1.upstreamVsn, prev1.downstreamVsn, prev1.detectedAt, prev1.lastSeen)
+    val oldest = diffStore.oldestUnmatchedEvent(DiffaPairRef("pair1", "domain")).get
+    validateUnmatchedEvent(event1, oldest.objId, oldest.upstreamVsn, oldest.downstreamVsn, oldest.detectedAt, oldest.lastSeen)
 
-    val prev2 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(5)).get
-    validateUnmatchedEvent(event1, prev2.objId, prev2.upstreamVsn, prev2.downstreamVsn, prev2.detectedAt, prev2.lastSeen)
+    val middle = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), oldest.sequenceId).get
+    validateUnmatchedEvent(event2, middle.objId, middle.upstreamVsn, middle.downstreamVsn, middle.detectedAt, middle.lastSeen)
 
-    val prev3 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(16)).get
-    validateUnmatchedEvent(event3, prev3.objId, prev3.upstreamVsn, prev3.downstreamVsn, prev3.detectedAt, prev3.lastSeen)
+    val last = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), middle.sequenceId).get
+    validateUnmatchedEvent(event3, last.objId, last.upstreamVsn, last.downstreamVsn, last.detectedAt, last.lastSeen)
 
   }
 
@@ -513,7 +513,7 @@ class HibernateDomainDifferenceStoreTest {
   def shouldTileEvents(scenario:TileScenario) = {
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))
     scenario.zoomLevels.foreach{ case (zoom, expected) => {
-      val tiles = diffStore.retrieveTiledEvents(scenario.domain, zoom, scenario.observationPoint)
+      val tiles = diffStore.retrieveTiledEvents(scenario.domain, zoom)
       assertEquals("Failure @ zoom level %s; ".format(zoom), expected, tiles)
     }}
   }
@@ -535,37 +535,36 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.clearAllDifferences
 
     diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", observationTime)
-    validateZoomRange(observationTime, pair, zoomLevel, timestamp1)
+    validateZoomRange(pair, zoomLevel, timestamp1)
 
     diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", observationTime)
-    validateZoomRange(observationTime, pair, zoomLevel, timestamp1, timestamp2)
+    validateZoomRange(pair, zoomLevel, timestamp1, timestamp2)
 
     diffStore.addMatchedEvent(id2, "")
-    validateZoomRange(observationTime, pair, zoomLevel, timestamp1)
+    validateZoomRange(pair, zoomLevel, timestamp1)
 
     diffStore.addMatchedEvent(id1, "")
-    val tiles = diffStore.retrieveTiledEvents(pair.domain, zoomLevel, observationTime)
+    val tiles = diffStore.retrieveTiledEvents(pair.domain, zoomLevel)
     assertTrue(tiles(pair.key).tiles.isEmpty)
   }
 
-  private def validateZoomRange(observationTime:DateTime, pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
+  private def validateZoomRange(pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
 
-    val expectedTiles = new scala.collection.mutable.HashMap[Int,Int]
+    val expectedTiles = new scala.collection.mutable.HashMap[DateTime,Int]
     eventTimes.foreach(time => {
-      val index = ZoomCache.indexOf(observationTime, time, zoomLevel)
-      expectedTiles.get(index) match {
-        case None    => expectedTiles(index) = 1
-        case Some(x) => expectedTiles(index) = x + 1
+
+      val interval = ZoomCache.containingInterval(time, zoomLevel)
+      val startTime = interval.getStart
+
+      expectedTiles.get(startTime) match {
+        case None    => expectedTiles(startTime) = 1
+        case Some(x) => expectedTiles(startTime) = x + 1
       }
     })
 
-    val tileSet = diffStore.retrieveTiledEvents(pair.domain, zoomLevel, observationTime)
+    val tileSet = diffStore.retrieveTiledEvents(pair.domain, zoomLevel)
     val tiles = tileSet(pair.key)
-    if (! ( TileSet(expectedTiles) == tiles ) ) {
-      val shifted = TileSet( expectedTiles.map{ case (k,v) =>  k + 1 -> v  } )
-      assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), shifted, tiles)
-    }
-
+    assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), TileSet(expectedTiles), tiles)
   }
 
   //
@@ -593,7 +592,7 @@ class HibernateDomainDifferenceStoreTest {
 
 object HibernateDomainDifferenceStoreTest {
 
-  @DataPoint def tiles = TileScenario("domain", new DateTime(2002,10,5,14,10,0,0),
+  @DataPoint def tiles = TileScenario("domain",
       Seq(
         // - 1 day
         ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1a"), timestamp = new DateTime(2002,10,4,14,2,0,0)),
@@ -625,32 +624,61 @@ object HibernateDomainDifferenceStoreTest {
         ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2b"), timestamp = new DateTime(2002,10,5,14,5,30,0))
       ),
       Map(QUARTER_HOURLY -> Map(
-           "pair1" -> TileSet(Map(0 -> 1, 1 -> 2, 2 -> 3, 3 -> 4, 4 -> 1, 8 -> 1, 16 -> 1, 32 -> 1, 96 -> 2)),
-           "pair2" -> TileSet(Map(0 -> 2))
+           "pair1" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,13,45,0,0) -> 2,
+                                  new DateTime(2002,10,5,13,30,0,0) -> 3,
+                                  new DateTime(2002,10,5,13,15,0,0) -> 4,
+                                  new DateTime(2002,10,5,13,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,12,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,10,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,6,0,0,0)   -> 1,
+                                  new DateTime(2002,10,4,14,0,0,0)  -> 2)),
+           "pair2" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0)  -> 2))
          ),
           HALF_HOURLY -> Map(
-           "pair1" -> TileSet(Map(0 -> 3, 1 -> 7, 2 -> 1, 4 -> 1, 8 -> 1, 16 -> 1, 48 -> 2)),
-           "pair2" -> TileSet(Map(0 -> 2))
+           "pair1" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,13,30,0,0) -> 5,
+                                  new DateTime(2002,10,5,13,0,0,0)  -> 5,
+                                  new DateTime(2002,10,5,12,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,10,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,6,0,0,0)   -> 1,
+                                  new DateTime(2002,10,4,14,0,0,0)  -> 2)),
+           "pair2" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0)  -> 2))
          ),
           HOURLY -> Map(
-           "pair1" -> TileSet(Map(0 -> 10, 1 -> 1, 2 -> 1, 4 -> 1, 8 -> 1, 24 -> 2)),
-           "pair2" -> TileSet(Map(0 -> 2))
+           "pair1" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0) -> 1,
+                                  new DateTime(2002,10,5,13,0,0,0) -> 10,
+                                  new DateTime(2002,10,5,12,0,0,0) -> 1,
+                                  new DateTime(2002,10,5,10,0,0,0) -> 1,
+                                  new DateTime(2002,10,5,6,0,0,0)  -> 1,
+                                  new DateTime(2002,10,4,14,0,0,0) -> 2)),
+           "pair2" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0) -> 2))
          ),
           TWO_HOURLY -> Map(
-           "pair1" -> TileSet(Map(0 -> 11, 1 -> 1, 2-> 1, 4 -> 1, 12 -> 2)),
-           "pair2" -> TileSet(Map(0 -> 2))
+           "pair1" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0) -> 1,
+                                  new DateTime(2002,10,5,12,0,0,0) -> 11,
+                                  new DateTime(2002,10,5,10,0,0,0) -> 1,
+                                  new DateTime(2002,10,5,6,0,0,0)  -> 1,
+                                  new DateTime(2002,10,4,14,0,0,0) -> 2)),
+           "pair2" -> TileSet(Map(new DateTime(2002,10,5,14,0,0,0) -> 2))
          ),
           FOUR_HOURLY -> Map(
-           "pair1" -> TileSet(Map(0 -> 12, 1 -> 1, 2-> 1, 6 -> 2)),
-           "pair2" -> TileSet(Map(0 -> 2))
+           "pair1" -> TileSet(Map(new DateTime(2002,10,5,12,0,0,0) -> 12,
+                                  new DateTime(2002,10,5,8,0,0,0)  -> 1,
+                                  new DateTime(2002,10,5,4,0,0,0)  -> 1,
+                                  new DateTime(2002,10,4,12,0,0,0) -> 2)),
+           "pair2" -> TileSet(Map(new DateTime(2002,10,5,12,0,0,0) -> 2))
          ),
           EIGHT_HOURLY -> Map(
-           "pair1" -> TileSet(Map(0 -> 13, 1 -> 1, 3 -> 2)),
-           "pair2" -> TileSet(Map(0 -> 2))
+           "pair1" -> TileSet(Map(new DateTime(2002,10,5,8,0,0,0)  -> 13,
+                                  new DateTime(2002,10,5,0,0,0,0)  -> 1,
+                                  new DateTime(2002,10,4,8,0,0,0)  -> 2)),
+           "pair2" -> TileSet(Map(new DateTime(2002,10,5,8,0,0,0)  -> 2))
          ),
           DAILY -> Map(
-           "pair1" -> TileSet(Map(0 -> 14, 1 -> 2)),
-           "pair2" -> TileSet(Map(0 -> 2))
+           "pair1" -> TileSet(Map(new DateTime(2002,10,5,0,0,0,0) -> 14,
+                                  new DateTime(2002,10,4,0,0,0,0) -> 2)),
+           "pair2" -> TileSet(Map(new DateTime(2002,10,5,0,0,0,0) -> 2))
          )
       )
   )
@@ -662,7 +690,6 @@ object HibernateDomainDifferenceStoreTest {
 
   case class TileScenario(
     domain:String,
-    observationPoint:DateTime,
     events:Seq[ReportableEvent],
     zoomLevels:Map[Int,Map[String,TileSet]]
   )
