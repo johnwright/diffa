@@ -37,9 +37,9 @@ trait ZoomCache extends Closeable {
   /**
    * Callback to notify the cache that it should synchronize a particular time span with the underlying difference store.
    *
-   * @param tileStart The earliest (or left most) point in time of the tile to be invalidated
+   * @param detectionTime The detection time of the event that is causing the cache to invalidate itself
    */
-  def onStoreUpdate(tileStart:DateTime)
+  def onStoreUpdate(detectionTime:DateTime)
 
   /**
    * Retrieves a set of tiles for the current pair.
@@ -80,9 +80,9 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * Marks the tile (on each cached level) that corresponds to this version as dirty
    */
-  def onStoreUpdate(tileStart:DateTime) = {
+  def onStoreUpdate(detectionTime:DateTime) = {
     dirtyTilesByLevel.keys.foreach(level => {
-      val interval = containingInterval(tileStart, level)
+      val interval = containingInterval(detectionTime, level)
       dirtyTilesByLevel.get(level).get += interval.getStart
     })
   }
