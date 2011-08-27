@@ -552,7 +552,6 @@ class HibernateDomainDifferenceStoreTest {
 
     val expectedTiles = new scala.collection.mutable.HashMap[DateTime,Int]
     eventTimes.foreach(time => {
-      //val index = ZoomCache.indexOf(observationTime, time, zoomLevel)
 
       val interval = ZoomCache.containingInterval(time, zoomLevel)
       val startTime = interval.getStart
@@ -566,12 +565,6 @@ class HibernateDomainDifferenceStoreTest {
     val tileSet = diffStore.retrieveTiledEvents(pair.domain, zoomLevel)
     val tiles = tileSet(pair.key)
     assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), TileSet(expectedTiles), tiles)
-
-//    if (! ( TileSet(expectedTiles) == tiles ) ) {
-//      val shifted = TileSet( expectedTiles.map{ case (k,v) =>  k + 1 -> v  } )
-//      assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), shifted, tiles)
-//    }
-
   }
 
   //
