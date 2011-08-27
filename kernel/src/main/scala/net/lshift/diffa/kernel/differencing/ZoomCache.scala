@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.sf.ehcache.CacheManager
 import java.io.Closeable
 import net.lshift.diffa.kernel.util.CacheWrapper
-import org.joda.time.{Interval, DateTime, Minutes}
+import org.joda.time.{Interval, DateTime}
 
 /**
  * This provides a cache of difference events that have been summarized into a tile shaped structure according
@@ -168,6 +168,9 @@ object ZoomCache {
     QUARTER_HOURLY -> 15
   )
 
+  /**
+   * Calculates what the tile aligned interval conatins the given timestamp at the given level of zoom
+   */
   def containingInterval(timestamp:DateTime, zoomLevel:Int) = zoomLevel match {
     case DAILY => {
       val start = timestamp.withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
@@ -181,21 +184,23 @@ object ZoomCache {
     case QUARTER_HOURLY => subHourly(timestamp, 15)
   }
 
-  def subHourly(timestamp:DateTime, minutes:Int) = {
+  private def subHourly(timestamp:DateTime, minutes:Int) = {
     val bottomOfHour = timestamp.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
     val increments = timestamp.getMinuteOfHour / minutes
     val start = bottomOfHour.plusMinutes( increments * minutes )
     new Interval(start, start.plusMinutes(minutes))
   }
 
-  def multipleHourlyStart(timestamp:DateTime, multiple:Int) = {
+  private def multipleHourlyStart(timestamp:DateTime, multiple:Int) = {
     val hourOfDay = timestamp.getHourOfDay
     val startHour = hourOfDay - (hourOfDay % multiple)
     val start = timestamp.withHourOfDay(startHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
     new Interval(start, start.plusHours(multiple))
   }
 
-
+  /**
+   * Calculates what the tile aligned interval is having the specified starting timestamp and the given level of zoom
+   */
   def intervalFromStartTime(start:DateTime, zoomLevel:Int) = {
     val end = start.plusMinutes(zoom(zoomLevel))
     new Interval(start,end)
