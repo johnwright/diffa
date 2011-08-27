@@ -492,20 +492,20 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def previousEventShouldBeAccessible() {
+  def nextEventShouldBeAccessible() {
     val timestamp = new DateTime()
     val event1 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
     val event2 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp.plusSeconds(10), "uV", "dV", timestamp.plusSeconds(10))
     val event3 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp.plusSeconds(15), "uV", "dV", timestamp.plusSeconds(15))
 
-    val prev1 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(11)).get
-    validateUnmatchedEvent(event2, prev1.objId, prev1.upstreamVsn, prev1.downstreamVsn, prev1.detectedAt, prev1.lastSeen)
+    val oldest = diffStore.oldestUnmatchedEvent(DiffaPairRef("pair1", "domain")).get
+    validateUnmatchedEvent(event1, oldest.objId, oldest.upstreamVsn, oldest.downstreamVsn, oldest.detectedAt, oldest.lastSeen)
 
-    val prev2 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(5)).get
-    validateUnmatchedEvent(event1, prev2.objId, prev2.upstreamVsn, prev2.downstreamVsn, prev2.detectedAt, prev2.lastSeen)
+    val middle = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), oldest.sequenceId).get
+    validateUnmatchedEvent(event2, middle.objId, middle.upstreamVsn, middle.downstreamVsn, middle.detectedAt, middle.lastSeen)
 
-    val prev3 = diffStore.previousChronologicalEvent(DiffaPairRef("pair1", "domain"), timestamp.plusSeconds(16)).get
-    validateUnmatchedEvent(event3, prev3.objId, prev3.upstreamVsn, prev3.downstreamVsn, prev3.detectedAt, prev3.lastSeen)
+    val last = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), middle.sequenceId).get
+    validateUnmatchedEvent(event3, last.objId, last.upstreamVsn, last.downstreamVsn, last.detectedAt, last.lastSeen)
 
   }
 

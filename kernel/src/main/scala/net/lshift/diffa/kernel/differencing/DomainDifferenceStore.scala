@@ -95,7 +95,6 @@ trait DomainDifferenceStore {
   def countEvents(pair: DiffaPairRef, interval:Interval) : Int
 
   // TODO document
-  def previousChronologicalEvent(pair: DiffaPairRef, timestamp:DateTime) : Option[DifferenceEvent]
   def oldestUnmatchedEvent(pair: DiffaPairRef) : Option[DifferenceEvent]
   def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int) : Option[DifferenceEvent]
 
