@@ -96,6 +96,8 @@ trait DomainDifferenceStore {
 
   // TODO document
   def previousChronologicalEvent(pair: DiffaPairRef, timestamp:DateTime) : Option[DifferenceEvent]
+  def oldestUnmatchedEvent(pair: DiffaPairRef) : Option[DifferenceEvent]
+  def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int) : Option[DifferenceEvent]
 
   /**
    * Retrieves all events that have occurred within a domain since the provided sequence id.
@@ -113,8 +115,8 @@ trait DomainDifferenceStore {
   def getEvent(domain:String, evtSeqId:String) : DifferenceEvent
 
   // TODO document
-  def retrieveTiledEvents(domain:String, zoomLevel:Int, timestamp:DateTime) : Map[String,TileSet]
-  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) : TileSet
+  def retrieveTiledEvents(domain:String, zoomLevel:Int) : Map[String,TileSet]
+  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int) : TileSet
 
   /**
    * Indicates that matches older than the given cutoff (based on their seen timestamp) should be removed.

@@ -92,7 +92,7 @@ trait DifferencesManager {
 case class TileSet(
   // The key is the tile's index along the x-axis
   // The value is the aggregate number of events in the tile
-  @BeanProperty var tiles: java.util.Map[Int,Int] = new HashMap[Int, Int]
+  @BeanProperty var tiles: java.util.Map[DateTime,Int] = new HashMap[DateTime, Int]
 ) {
   def this() = this(tiles = null)
 }
@@ -132,7 +132,9 @@ case class DifferenceEvent(
   @BeanProperty var downstreamVsn:String = null,
   @BeanProperty var lastSeen:DateTime = null) {
 
- def this() = this(seqId = null)
+  def this() = this(seqId = null)
+
+  def sequenceId = Integer.parseInt(seqId)
     
 }
 
