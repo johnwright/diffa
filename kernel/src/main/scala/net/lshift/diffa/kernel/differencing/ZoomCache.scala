@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import collection.mutable.{HashMap,HashSet}
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import scala.collection.JavaConversions._
-import net.sf.ehcache.{Element, CacheManager}
+import net.sf.ehcache.CacheManager
 import java.io.Closeable
 import net.lshift.diffa.kernel.util.CacheWrapper
 import org.joda.time.{Interval, DateTime, Minutes}
@@ -37,8 +37,7 @@ trait ZoomCache extends Closeable {
   /**
    * Callback to notify the cache that it should synchronize a particular time span with the underlying difference store.
    *
-   * @param previousDetectionTime Cached time spans that contain this point in time should be invalidated.
-   * @param observationTime The point in time used to calibrate the index of the previousDetectionTime
+   * @param tileStart The earliest (or left most) point in time of the tile to be invalidated
    */
   def onStoreUpdate(tileStart:DateTime)
 
@@ -46,8 +45,6 @@ trait ZoomCache extends Closeable {
    * Retrieves a set of tiles for the current pair.
    *
    * @param level The request level of zoom
-   * @param timestamp The point in time from which the zooming should start. In general, this will be the current
-   *                  system time, but this parameter is explicitly passed in to make testing easier.
    */
   def retrieveTilesForZoomLevel(level:Int) : TileSet
 }
@@ -171,33 +168,6 @@ object ZoomCache {
     QUARTER_HOURLY -> 15
   )
 
-  /**
-   *  Given a particular point in time, this returns the nearest tile aligned start point.
-   *
-   *  All tiles, regardless of their zoom level, will have a starting tile that is rounded off to the nearest
-   *  15 minutes.
-   *
-   *  This is used for example to work out what time the right hand side of the heatmap should be aligned to
-   *  at any given point in time.
-   */
-  def nearestAlignedTileStart(timestamp:DateTime) = {
-    val bottomOfHour = timestamp.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
-    val increments = timestamp.getMinuteOfHour / 15
-    bottomOfHour.plusMinutes( (increments + 1) * 15 )
-  }
-
-  /**
-   * Given a particular index offset at particular level, return the time interval of the tile in question.
-   * To establish the absolute tile interval, this query needs to have a observation point in time passed
-   * into it so that the resulting time span can be calibrated.
-   */
-  def intervalFromIndex(index:Int, zoomLevel:Int, timestamp:DateTime) = {
-    val minutes = zoom(zoomLevel) * index
-    val tileStartTime = nearestAlignedTileStart(timestamp)
-    val rangeEnd = tileStartTime.minusMinutes(minutes)
-    new Interval(rangeEnd.minusMinutes(zoom(zoomLevel)), rangeEnd)
-  }
-
   def containingInterval(timestamp:DateTime, zoomLevel:Int) = zoomLevel match {
     case DAILY => {
       val start = timestamp.withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
@@ -231,27 +201,10 @@ object ZoomCache {
     new Interval(start,end)
   }
 
-  /**
-   * From the stand point of a particular observation date, this will establish what tile a particular timestamp
-   * would fall into at a given level of zoom
-   */
-  def indexOf(observation:DateTime, event:DateTime, zoomLevel:Int) : Int = {
-    validateLevel(zoomLevel)
-    validateTime(observation, event)
-    val minutes = Minutes.minutesBetween(event,observation).getMinutes
-    minutes / zoom(zoomLevel)
-  }
-
   def validateLevel(level:Int) = if (level < DAILY || level > QUARTER_HOURLY) {
     throw new InvalidZoomLevelException(level)
   }
 
-  def validateTime(observation:DateTime, event:DateTime) = if (observation.isBefore(event)) {
-    throw new InvalidObservationDateException(observation, event)
-  }
 }
 
 class InvalidZoomLevelException(level:Int) extends Exception("Zoom level: " + level)
-
-class InvalidObservationDateException(observation:DateTime, event:DateTime)
-  extends Exception("ObservationDate %s is before event date %s ".format(observation, event))
