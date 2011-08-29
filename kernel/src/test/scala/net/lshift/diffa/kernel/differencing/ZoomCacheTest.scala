@@ -21,7 +21,7 @@ import org.junit.Test
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import org.easymock.EasyMock._
-
+import org.joda.time.{DateTime, Interval}
 
 class ZoomCacheTest {
 
@@ -29,12 +29,13 @@ class ZoomCacheTest {
   val pair = DiffaPairRef("pair", "domain")
   val diffStore = createStrictMock("diffStore", classOf[DomainDifferenceStore])
   val zoomCache = new ZoomCacheProvider(pair, diffStore, cacheManager)
+  val interval = new Interval(new DateTime, new DateTime)
 
   @Test(expected = classOf[InvalidZoomLevelException])
-  def shouldRejectZoomLevelThatIsTooFine { zoomCache.retrieveTilesForZoomLevel(QUARTER_HOURLY + 1) }
+  def shouldRejectZoomLevelThatIsTooFine { zoomCache.retrieveTilesForZoomLevel(QUARTER_HOURLY + 1, interval) }
 
   @Test(expected = classOf[InvalidZoomLevelException])
-  def shouldRejectZoomLevelThatIsTooCoarse { zoomCache.retrieveTilesForZoomLevel(DAILY - 1) }
+  def shouldRejectZoomLevelThatIsTooCoarse { zoomCache.retrieveTilesForZoomLevel(DAILY - 1, interval) }
 
 
 }

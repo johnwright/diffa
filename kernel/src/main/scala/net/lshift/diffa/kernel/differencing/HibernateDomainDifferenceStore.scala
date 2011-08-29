@@ -143,21 +143,25 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     count.getOrElse(new java.lang.Long(0L)).intValue
   })
 
-  def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int) = sessionFactory.withSession(s => {
+  def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int, timespan:Interval) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "nextChronologicalUnmatchedEventByDomainAndPair",
         Map("domain" -> pair.domain,
             "pair"   -> pair.key,
-            "seqId"  -> evtSeqId)) match {
+            "seqId"  -> evtSeqId,
+            "upper"  -> timespan.getEnd,
+            "lower"  -> timespan.getStart)) match {
       case None       => None
       case Some(evt)  =>
         Some(evt.asDifferenceEvent)
     }
   })
 
-  def oldestUnmatchedEvent(pair: DiffaPairRef) = sessionFactory.withSession(s => {
+  def oldestUnmatchedEvent(pair: DiffaPairRef, timespan:Interval) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "oldestUnmatchedEventByDomainAndPair",
         Map("domain" -> pair.domain,
-            "pair"   -> pair.key)) match {
+            "pair"   -> pair.key,
+            "upper"  -> timespan.getEnd,
+            "lower"  -> timespan.getStart)) match {
       case None       => None
       case Some(evt)  =>
         Some(evt.asDifferenceEvent)
@@ -169,13 +173,14 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
 
-  def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
+  def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) = {
     listPairsInDomain(domain).map(p => {
-      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel)
+      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel, timespan)
     }).toMap
   }
 
-  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int) = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel)
+  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval)
+    = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel, timespan)
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",

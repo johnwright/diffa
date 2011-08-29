@@ -42,11 +42,12 @@ trait ZoomCache extends Closeable {
   def onStoreUpdate(detectionTime:DateTime)
 
   /**
-   * Retrieves a set of tiles for the current pair.
+   * Retrieves a set of tiles for the current pair with a given time frame.
    *
    * @param level The request level of zoom
+   * @param timespan The time range to retrieve tiles for
    */
-  def retrieveTilesForZoomLevel(level:Int) : TileSet
+  def retrieveTilesForZoomLevel(level:Int, timespan:Interval) : TileSet
 }
 
 /**
@@ -87,7 +88,7 @@ class ZoomCacheProvider(pair:DiffaPairRef,
     })
   }
 
-  def retrieveTilesForZoomLevel(level:Int) : TileSet = {
+  def retrieveTilesForZoomLevel(level:Int, timespan:Interval) : TileSet = {
 
     validateLevel(level)
 
@@ -100,7 +101,12 @@ class ZoomCacheProvider(pair:DiffaPairRef,
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
 
-        var currentEvent = diffStore.oldestUnmatchedEvent(pair)
+        val alignedStart = containingInterval(timespan.getStart, level).getStart
+        val alignedEnd = containingInterval(timespan.getEnd, level).getEnd
+
+        val alignedTimespan = new Interval(alignedStart,alignedEnd)
+
+        var currentEvent = diffStore.oldestUnmatchedEvent(pair, alignedTimespan)
 
         // Iterate through the diff store to generate aggregate sums of the events in tile
         // aligned buckets
@@ -110,7 +116,7 @@ class ZoomCacheProvider(pair:DiffaPairRef,
           val interval = containingInterval(event.detectedAt, level)
           val events = diffStore.countEvents(pair, interval)
           cache(interval.getStart) = events
-          currentEvent = diffStore.nextChronologicalUnmatchedEvent(pair, event.sequenceId)
+          currentEvent = diffStore.nextChronologicalUnmatchedEvent(pair, event.sequenceId, timespan)
         }
 
         // Initialize a dirty flag set for this cache

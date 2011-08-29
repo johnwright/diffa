@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.differencing
 
 import org.hibernate.cfg.Configuration
 import org.hibernate.exception.ConstraintViolationException
-import org.joda.time.{Interval, DateTime}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.events.VersionID
@@ -34,6 +33,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.DerbyHelper
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
+import org.joda.time.{Interval, DateTime}
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -494,17 +494,19 @@ class HibernateDomainDifferenceStoreTest {
   @Test
   def nextEventShouldBeAccessible() {
     val timestamp = new DateTime()
+    val timespan = new Interval(timestamp.minusMinutes(1), timestamp.plusMinutes(20))
+
     val event1 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id1"), timestamp, "uV", "dV", timestamp)
     val event2 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp.plusSeconds(10), "uV", "dV", timestamp.plusSeconds(10))
     val event3 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp.plusSeconds(15), "uV", "dV", timestamp.plusSeconds(15))
 
-    val oldest = diffStore.oldestUnmatchedEvent(DiffaPairRef("pair1", "domain")).get
+    val oldest = diffStore.oldestUnmatchedEvent(DiffaPairRef("pair1", "domain"), timespan ).get
     validateUnmatchedEvent(event1, oldest.objId, oldest.upstreamVsn, oldest.downstreamVsn, oldest.detectedAt, oldest.lastSeen)
 
-    val middle = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), oldest.sequenceId).get
+    val middle = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), oldest.sequenceId, timespan).get
     validateUnmatchedEvent(event2, middle.objId, middle.upstreamVsn, middle.downstreamVsn, middle.detectedAt, middle.lastSeen)
 
-    val last = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), middle.sequenceId).get
+    val last = diffStore.nextChronologicalUnmatchedEvent(DiffaPairRef("pair1", "domain"), middle.sequenceId, timespan).get
     validateUnmatchedEvent(event3, last.objId, last.upstreamVsn, last.downstreamVsn, last.detectedAt, last.lastSeen)
 
   }
@@ -513,9 +515,32 @@ class HibernateDomainDifferenceStoreTest {
   def shouldTileEvents(scenario:TileScenario) = {
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))
     scenario.zoomLevels.foreach{ case (zoom, expected) => {
-      val tiles = diffStore.retrieveTiledEvents(scenario.domain, zoom)
+      val tiles = diffStore.retrieveTiledEvents(scenario.domain, zoom, scenario.timespan)
       assertEquals("Failure @ zoom level %s; ".format(zoom), expected, tiles)
     }}
+  }
+
+  @Test
+  def tilesShouldBeWithinTimeSpan = {
+    val observationTime = new DateTime(2008,9,7,16,30,0,0)
+
+    val timespan = new Interval(observationTime.minusMinutes(75),observationTime.minusMinutes(45))
+
+    val pair = DiffaPairRef("pair1", "domain")
+
+    diffStore.clearAllDifferences
+
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10a"), observationTime.minusMinutes(29), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10b"), observationTime.minusMinutes(31), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10c"), observationTime.minusMinutes(74), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10d"), observationTime.minusMinutes(91), "", "", observationTime)
+
+    val tiles = diffStore.retrieveTiledEvents(pair.domain, QUARTER_HOURLY, timespan)
+    assertEquals(
+      TileSet(
+        Map(observationTime.minusMinutes(75) -> 1, observationTime.minusMinutes(45) -> 1)
+      ),
+      tiles(pair.key))
   }
 
   @Test
@@ -526,6 +551,7 @@ class HibernateDomainDifferenceStoreTest {
     val observationTime = new DateTime()
     val timestamp1 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 1)
     val timestamp2 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 2)
+    val timespan = new Interval(timestamp2,timestamp1)
 
     val pair = DiffaPairRef("pair1", "domain")
 
@@ -535,20 +561,20 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.clearAllDifferences
 
     diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", observationTime)
-    validateZoomRange(pair, zoomLevel, timestamp1)
+    validateZoomRange(timespan, pair, zoomLevel, timestamp1)
 
     diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", observationTime)
-    validateZoomRange(pair, zoomLevel, timestamp1, timestamp2)
+    validateZoomRange(timespan, pair, zoomLevel, timestamp1, timestamp2)
 
     diffStore.addMatchedEvent(id2, "")
-    validateZoomRange(pair, zoomLevel, timestamp1)
+    validateZoomRange(timespan, pair, zoomLevel, timestamp1)
 
     diffStore.addMatchedEvent(id1, "")
-    val tiles = diffStore.retrieveTiledEvents(pair.domain, zoomLevel)
+    val tiles = diffStore.retrieveTiledEvents(pair.domain, zoomLevel, timespan)
     assertTrue(tiles(pair.key).tiles.isEmpty)
   }
 
-  private def validateZoomRange(pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
+  private def validateZoomRange(timespan:Interval, pair:DiffaPairRef, zoomLevel:Int, eventTimes:DateTime*) = {
 
     val expectedTiles = new scala.collection.mutable.HashMap[DateTime,Int]
     eventTimes.foreach(time => {
@@ -562,7 +588,7 @@ class HibernateDomainDifferenceStoreTest {
       }
     })
 
-    val tileSet = diffStore.retrieveTiledEvents(pair.domain, zoomLevel)
+    val tileSet = diffStore.retrieveTiledEvents(pair.domain, zoomLevel, timespan)
     val tiles = tileSet(pair.key)
     assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), TileSet(expectedTiles), tiles)
   }
@@ -592,7 +618,7 @@ class HibernateDomainDifferenceStoreTest {
 
 object HibernateDomainDifferenceStoreTest {
 
-  @DataPoint def tiles = TileScenario("domain",
+  @DataPoint def tiles = TileScenario("domain", new Interval(new DateTime(2002,10,4,14,2,0,0),new DateTime(2002,10,5,14,5,30,0)),
       Seq(
         // - 1 day
         ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1a"), timestamp = new DateTime(2002,10,4,14,2,0,0)),
@@ -690,6 +716,7 @@ object HibernateDomainDifferenceStoreTest {
 
   case class TileScenario(
     domain:String,
+    timespan:Interval,
     events:Seq[ReportableEvent],
     zoomLevels:Map[Int,Map[String,TileSet]]
   )
