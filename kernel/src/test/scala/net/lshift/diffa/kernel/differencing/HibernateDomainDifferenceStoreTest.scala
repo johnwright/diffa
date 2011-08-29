@@ -521,24 +521,29 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def tilesShouldBeWithinTimeSpan = {
-    val observationTime = new DateTime(2008,9,7,16,30,0,0)
+  def tilesShouldBeWithinTimeSpan = ZoomCache.levels.foreach(tilesShouldBeWithinTimeSpanAtZoomLevel(_))
 
-    val timespan = new Interval(observationTime.minusMinutes(75),observationTime.minusMinutes(45))
+  private def tilesShouldBeWithinTimeSpanAtZoomLevel(zoomLevel:Int) {
+
+    val observationTime = new DateTime(2008,9,7,0,0,0,0)
+
+    val zoomFactor = ZoomCache.zoom(zoomLevel)
+
+    val timespan = new Interval(observationTime.minusMinutes(zoomFactor * 5),observationTime.minusMinutes(zoomFactor * 3))
 
     val pair = DiffaPairRef("pair1", "domain")
 
     diffStore.clearAllDifferences
 
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10a"), observationTime.minusMinutes(29), "", "", observationTime)
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10b"), observationTime.minusMinutes(31), "", "", observationTime)
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10c"), observationTime.minusMinutes(74), "", "", observationTime)
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10d"), observationTime.minusMinutes(91), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10a"), observationTime.minusMinutes(zoomFactor * 2 - 1), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10b"), observationTime.minusMinutes(zoomFactor * 2 + 1), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10c"), observationTime.minusMinutes(zoomFactor * 5 - 1), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10d"), observationTime.minusMinutes(zoomFactor * 6 + 1), "", "", observationTime)
 
-    val tiles = diffStore.retrieveTiledEvents(pair.domain, QUARTER_HOURLY, timespan)
-    assertEquals(
+    val tiles = diffStore.retrieveTiledEvents(pair.domain, zoomLevel, timespan)
+    assertEquals("Zoom level %s;".format(zoomLevel),
       TileSet(
-        Map(observationTime.minusMinutes(75) -> 1, observationTime.minusMinutes(45) -> 1)
+        Map(observationTime.minusMinutes(zoomFactor * 5) -> 1, observationTime.minusMinutes(zoomFactor * 3) -> 1)
       ),
       tiles(pair.key))
   }
