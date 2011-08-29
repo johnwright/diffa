@@ -68,12 +68,25 @@ trait HibernateQueryUtils {
    * Executes a query that may return a single result in the current session. Returns either None or Some(x) for the
    * object.
    */
-  def singleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] = {
+  def singleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] =
+    singleQueryOptBuilder(s,queryName, params, (_) => ())
+
+  /**
+   * Executes a query that may return a single result in the current session. Returns either None or Some(x) for the
+   * object.
+   *
+   * The difference to singleQueryOpt/3 is that the underlying SQL query may, from the DB's perspective return
+   * more than one result, so to counter this, the max result set size is limited to one to guarantee only one result.
+   */
+  def limitedSingleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] =
+    singleQueryOptBuilder(s,queryName, params, (q:Query) => q.setMaxResults(1))
+
+  private def singleQueryOptBuilder[ReturnType](s:Session, queryName: String, params: Map[String, Any], f:Query => Unit): Option[ReturnType] = {
 
     val query: Query = s.getNamedQuery(queryName)
     params foreach {case (param, value) => query.setParameter(param, value)}
 
-    query.setMaxResults(1)
+    f(query)
 
     try {
       query.uniqueResult match {

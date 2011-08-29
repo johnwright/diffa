@@ -144,7 +144,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int, timespan:Interval) = sessionFactory.withSession(s => {
-    singleQueryOpt[ReportedDifferenceEvent](s, "nextChronologicalUnmatchedEventByDomainAndPair",
+    limitedSingleQueryOpt[ReportedDifferenceEvent](s, "nextChronologicalUnmatchedEventByDomainAndPair",
         Map("domain" -> pair.domain,
             "pair"   -> pair.key,
             "seqId"  -> evtSeqId,
@@ -157,7 +157,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def oldestUnmatchedEvent(pair: DiffaPairRef, timespan:Interval) = sessionFactory.withSession(s => {
-    singleQueryOpt[ReportedDifferenceEvent](s, "oldestUnmatchedEventByDomainAndPair",
+    limitedSingleQueryOpt[ReportedDifferenceEvent](s, "oldestUnmatchedEventByDomainAndPair",
         Map("domain" -> pair.domain,
             "pair"   -> pair.key,
             "upper"  -> timespan.getEnd,
