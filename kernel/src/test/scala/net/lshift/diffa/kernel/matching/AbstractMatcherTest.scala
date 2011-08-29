@@ -17,13 +17,12 @@
 package net.lshift.diffa.kernel.matching
 
 import org.junit.{Test, After, Before}
-import concurrent.{TIMEOUT, MailBox}
 import net.lshift.diffa.kernel.events.{DownstreamPairChangeEvent, UpstreamPairChangeEvent, VersionID}
 import org.joda.time.DateTime
 import org.junit.Assert._
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import collection.mutable.HashMap
+import java.util.concurrent.atomic.{AtomicInteger}
 import net.lshift.diffa.kernel.config.DiffaPairRef
+import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 
 /**
  * Standard tests for a matcher.
@@ -31,14 +30,14 @@ import net.lshift.diffa.kernel.config.DiffaPairRef
 abstract class AbstractMatcherTest {
   var analyser:EventMatcher = null
   var slowAnalyser:EventMatcher = null
-  val ackCallbackAListener = new MailBox
-  val ackCallbackBListener = new MailBox
+  val ackCallbackAListener = new LinkedBlockingQueue[Object]
+  val ackCallbackBListener = new LinkedBlockingQueue[Object]
 
   val pairId = "pair" + AbstractMatcherTest.nextPairId
   val domain = "domain"
 
-  val ackCallbackA = () => ackCallbackAListener.send(new Object)
-  val ackCallbackB = () => ackCallbackBListener.send(new Object)
+  val ackCallbackA:Function0[Unit] = () => ackCallbackAListener.add(new Object)
+  val ackCallbackB:Function0[Unit] = () => ackCallbackBListener.add(new Object)
 
   val id1 = VersionID(DiffaPairRef(pairId,domain), "aaaa1")
   val id2 = VersionID(DiffaPairRef(pairId,domain), "aaaa2")
@@ -52,54 +51,54 @@ abstract class AbstractMatcherTest {
   def createMatcher(id:String, timeout:Int):EventMatcher
 
   @Before
-  def createAnalyser {
+  def createAnalyser() {
     analyser = createMatcher(pairId, 1)
     slowAnalyser = createMatcher(pairId + "-Slow", 3)
   }
 
   @After
-  def disposeAnalyser {
+  def disposeAnalyser() {
     analyser.dispose
     slowAnalyser.dispose
   }
 
   @Test
-  def addingBalancedPairShouldResultInPairedMessageAndAcksBeingTriggered {
-    val mb = new MailBox
+  def addingBalancedPairShouldResultInPairedMessageAndAcksBeingTriggered() {
+    val mb = new LinkedBlockingQueue[Object]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id:VersionID, vsn:String) = null
+      def onUpstreamExpired(id:VersionID, vsn:String) {}
       def onPaired(id: VersionID, vsn:String) {
-        mb.send(new Object)
+        mb.add(new Object)
       }
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
 
     analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
-    mb.receiveWithin(1000) {
-      case TIMEOUT => fail("Failed to recieve a matched pair event")
+    mb.poll(1, TimeUnit.SECONDS) match {
+      case null => fail("Failed to recieve a matched pair event")
       case _ =>
     }
-    ackCallbackAListener.receiveWithin(100) {
-      case TIMEOUT => fail("Ack Callback for upstream not triggered")
+    ackCallbackAListener.poll(100, TimeUnit.MILLISECONDS) match {
+      case null => fail("Ack Callback for upstream not triggered")
       case _       =>
     }
-    ackCallbackBListener.receiveWithin(100) {
-      case TIMEOUT => fail("Ack Callback for downstream not triggered")
+    ackCallbackBListener.poll(100, TimeUnit.MILLISECONDS) match {
+      case null => fail("Ack Callback for downstream not triggered")
       case _       =>
     }
   }
 
   @Test
-  def addingSeriesOfBalancedPairsShouldResultInPairedMessages {
-    val mb = new MailBox
+  def addingSeriesOfBalancedPairsShouldResultInPairedMessages() {
+    val mb = new LinkedBlockingQueue[VersionID]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = null
+      def onUpstreamExpired(id: VersionID, vsn:String) {}
       def onPaired(id: VersionID, vsn:String) {
-        mb.send(id)
+        mb.add(id)
       }
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
 
     analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
@@ -107,120 +106,120 @@ abstract class AbstractMatcherTest {
     analyser.onChange(new UpstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAB"), ackCallbackA)
     analyser.onChange(new DownstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAB"), ackCallbackB)
 
-    mb.receiveWithin(1000) {
-      case TIMEOUT => fail("Failed to recieve first matched pair event")
+    mb.poll(1, TimeUnit.SECONDS) match {
+      case null => fail("Failed to recieve first matched pair event")
       case id => assertEquals(id1, id)
     }
-    mb.receiveWithin(10) {
-      case TIMEOUT => fail("Failed to recieve second matched pair event")
+    mb.poll(10, TimeUnit.MILLISECONDS) match {
+      case null => fail("Failed to recieve second matched pair event")
       case id => assertEquals(id2, id)
     }
   }
 
   @Test
-  def addingUnbalancedUpstreamShouldResultInUpstreamExpiredMessageAndUpstreamAckCalled {
-    val mb = new MailBox
+  def addingUnbalancedUpstreamShouldResultInUpstreamExpiredMessageAndUpstreamAckCalled() {
+    val mb = new LinkedBlockingQueue[VersionID]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = {
-        mb.send(id)
+      def onUpstreamExpired(id: VersionID, vsn:String) {
+        mb.add(id)
       }
-      def onPaired(id: VersionID, vsn:String) = null
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onPaired(id: VersionID, vsn:String) {}
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
 
     analyser.onChange(new UpstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
-    mb.receiveWithin(10000) {
-      case TIMEOUT => fail("Failed to recieve a expired upstream event")
+    mb.poll(10, TimeUnit.SECONDS) match {
+      case null         => fail("Failed to recieve a expired upstream event")
       case id:VersionID => assertEquals(id2, id)
     }
-    ackCallbackAListener.receiveWithin(100) {
-      case TIMEOUT => fail("Ack Callback for upstream not triggered")
+    ackCallbackAListener.poll(100, TimeUnit.MILLISECONDS) match {
+      case null    => fail("Ack Callback for upstream not triggered")
       case _       =>
     }
   }
 
   @Test
-  def addingSeriesOfUnbalancedUpstreamsShouldResultInUpstreamExpiredMessages {
-    val mb = new MailBox
+  def addingSeriesOfUnbalancedUpstreamsShouldResultInUpstreamExpiredMessages() {
+    val mb = new LinkedBlockingQueue[VersionID]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = {
-        mb.send(id)
+      def onUpstreamExpired(id: VersionID, vsn:String) {
+        mb.add(id)
       }
-      def onPaired(id: VersionID, vsn:String) = null
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onPaired(id: VersionID, vsn:String) {}
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
 
     analyser.onChange(new UpstreamPairChangeEvent(id2, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     analyser.onChange(new UpstreamPairChangeEvent(id3, Seq(), new DateTime, "vsnAAAB"), ackCallbackA)
     analyser.onChange(new UpstreamPairChangeEvent(id4, Seq(), new DateTime, "vsnAAAC"), ackCallbackA)
 
-    mb.receiveWithin(10000) {
-      case TIMEOUT => fail("Failed to recieve first expired upstream event")
-      case id => assertEquals(id2, id)
+    mb.poll(10, TimeUnit.SECONDS) match {
+      case null => fail("Failed to recieve first expired upstream event")
+      case id   => assertEquals(id2, id)
     }
-    mb.receiveWithin(1000) {
-      case TIMEOUT => fail("Failed to recieve second expired upstream event")
-      case id => assertEquals(id3, id)
+    mb.poll(1, TimeUnit.SECONDS) match {
+      case null => fail("Failed to recieve second expired upstream event")
+      case id   => assertEquals(id3, id)
     }
-    mb.receiveWithin(1000) {
-      case TIMEOUT => fail("Failed to recieve third expired upstream event")
-      case id => assertEquals(id4, id)
+    mb.poll(1, TimeUnit.SECONDS) match {
+      case null => fail("Failed to recieve third expired upstream event")
+      case id   => assertEquals(id4, id)
     }
   }
 
   @Test
-  def addingUnbalancedDownstreamShouldResultInDownstreamExpiredMessageAndDownstreamAckCalled {
-    val mb = new MailBox
+  def addingUnbalancedDownstreamShouldResultInDownstreamExpiredMessageAndDownstreamAckCalled() {
+    val mb = new LinkedBlockingQueue[VersionID]
     analyser.addListener(new MatchingStatusListener {
       def onUpstreamExpired(id: VersionID, vsn:String) {}
       def onPaired(id: VersionID, vsn:String) {}
-      def onDownstreamExpired(id: VersionID, vsn:String) = {
-        mb.send(id)
+      def onDownstreamExpired(id: VersionID, vsn:String) {
+        mb.add(id)
       }
     })
 
     analyser.onChange(new DownstreamPairChangeEvent(id3, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
-    mb.receiveWithin(2000) {
-      case TIMEOUT => fail("Failed to recieve a expired downstream event")
+    mb.poll(2, TimeUnit.SECONDS) match {
+      case null         => fail("Failed to recieve a expired downstream event")
       case id:VersionID => assertEquals(id3, id)
     }
-    ackCallbackBListener.receiveWithin(100) {
-      case TIMEOUT => fail("Ack Callback for downstream not triggered")
+    ackCallbackBListener.poll(100, TimeUnit.MILLISECONDS) match {
+      case null    => fail("Ack Callback for downstream not triggered")
       case _       =>
     }
   }
 
   @Test
-  def addingBalancedPairShouldNotResultInUpstreamExpiredMessage {
-    val mb = new MailBox
+  def addingBalancedPairShouldNotResultInUpstreamExpiredMessage() {
+    val mb = new LinkedBlockingQueue[Object]
     slowAnalyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = {
-        mb.send(new Object)
+      def onUpstreamExpired(id: VersionID, vsn:String) {
+        mb.add(new Object)
       }
-      def onPaired(id: VersionID, vsn:String) = null
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onPaired(id: VersionID, vsn:String) {}
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
 
     slowAnalyser.onChange(new DownstreamPairChangeEvent(id4, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
     Thread.sleep(1000)
     slowAnalyser.onChange(new UpstreamPairChangeEvent(id4, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
-    mb.receiveWithin(5000) {
-      case TIMEOUT =>
-      case _ => fail("Should not have received an expired upstream event")
+    mb.poll(5, TimeUnit.SECONDS) match {
+      case null =>
+      case _    => fail("Should not have received an expired upstream event")
     }
   }
 
   @Test
-  def addingBalancedPairShouldNotResultInDownstreamExpiredMessage {
-    val mb = new MailBox
+  def addingBalancedPairShouldNotResultInDownstreamExpiredMessage() {
+    val mb = new LinkedBlockingQueue[Object]
     slowAnalyser.addListener(new MatchingStatusListener {
       def onUpstreamExpired(id: VersionID, vsn:String) {}
-      def onPaired(id: VersionID, vsn:String) = null
-      def onDownstreamExpired(id: VersionID, vsn:String) = {
-        mb.send(new Object)
+      def onPaired(id: VersionID, vsn:String) {}
+      def onDownstreamExpired(id: VersionID, vsn:String) {
+        mb.add(new Object)
       }
     })
 
@@ -228,60 +227,60 @@ abstract class AbstractMatcherTest {
     Thread.sleep(1000)
     slowAnalyser.onChange(new DownstreamPairChangeEvent(id5, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
-    mb.receiveWithin(5000) {
-      case TIMEOUT =>
+    mb.poll(5, TimeUnit.SECONDS) match {
+      case null =>
       case _ => fail("Should not have received an expired downstream event")
     }
   }
 
   @Test
-  def addingPairWithDifferentIdsShouldNotResultInPairedMessage {
-    val mb = new MailBox
+  def addingPairWithDifferentIdsShouldNotResultInPairedMessage() {
+    val mb = new LinkedBlockingQueue[Object]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = null
+      def onUpstreamExpired(id: VersionID, vsn:String) {}
       def onPaired(id: VersionID, vsn:String) {
-        mb.send(new Object)
+        mb.add(new Object)
       }
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
 
     analyser.onChange(new UpstreamPairChangeEvent(id6, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     analyser.onChange(new DownstreamPairChangeEvent(idB6, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
 
-    mb.receiveWithin(2000) {
-      case TIMEOUT =>
-      case _ => fail("Should not receive paired event")
+    mb.poll(2, TimeUnit.SECONDS) match {
+      case null =>
+      case _    => fail("Should not receive paired event")
     }
   }
 
   @Test
-  def addingPairWithDifferentVersionsShouldNotResultInPairedMessage {
-    val mb = new MailBox
+  def addingPairWithDifferentVersionsShouldNotResultInPairedMessage() {
+    val mb = new LinkedBlockingQueue[Object]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = null
+      def onUpstreamExpired(id: VersionID, vsn:String) {}
       def onPaired(id: VersionID, vsn:String) {
-        mb.send(new Object)
+        mb.add(new Object)
       }
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
 
     analyser.onChange(new UpstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     analyser.onChange(new DownstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnBBBB"), ackCallbackB)
 
-    mb.receiveWithin(2000) {
-      case TIMEOUT =>
-      case _ => fail("Should not receive paired event")
+    mb.poll(2, TimeUnit.SECONDS) match {
+      case null =>
+      case _    => fail("Should not receive paired event")
     }
   }
 
   @Test
-  def addedUpstreamObjectsShouldBeMarkedAsInProgressIfTheyArentMatchedOrExpired {
+  def addedUpstreamObjectsShouldBeMarkedAsInProgressIfTheyArentMatchedOrExpired() {
     analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime,"vsnAAAA"), ackCallbackA)
     assertTrue(analyser.isVersionIDActive(id1))
   }
 
   @Test
-  def multipleAddedUpstreamObjectsShouldBeMarkedAsInProgressIfOnlySomeAreMatchedOrExpired {
+  def multipleAddedUpstreamObjectsShouldBeMarkedAsInProgressIfOnlySomeAreMatchedOrExpired() {
     analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAB"), ackCallbackA)
     analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
@@ -290,49 +289,49 @@ abstract class AbstractMatcherTest {
 
 
   @Test
-  def addedDownstreamObjectsShouldBeMarkedAsInProgressIfTheyArentMatchedOrExpired {
+  def addedDownstreamObjectsShouldBeMarkedAsInProgressIfTheyArentMatchedOrExpired() {
     analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     assertTrue(analyser.isVersionIDActive(id1))
   }
 
   @Test
-  def addedObjectsShouldNotBeMarkedAsInProgressIfTheyAreMatched {
+  def addedObjectsShouldNotBeMarkedAsInProgressIfTheyAreMatched() {
     analyser.onChange(new UpstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
     analyser.onChange(new DownstreamPairChangeEvent(id1, Seq(), new DateTime, "vsnAAAA"), ackCallbackB)
     assertFalse(analyser.isVersionIDActive(id1))
   }
 
   @Test
-  def addedUpstreamObjectsShouldNotBeMarkedAsInProgressIfTheyHaveExpired {
-    val mb = new MailBox
+  def addedUpstreamObjectsShouldNotBeMarkedAsInProgressIfTheyHaveExpired() {
+    val mb = new LinkedBlockingQueue[Object]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = mb.send(new Object)
-      def onPaired(id: VersionID, vsn:String) = null
-      def onDownstreamExpired(id: VersionID, vsn:String) = null
+      def onUpstreamExpired(id: VersionID, vsn:String) { mb.add(new Object) }
+      def onPaired(id: VersionID, vsn:String) {}
+      def onDownstreamExpired(id: VersionID, vsn:String) {}
     })
     analyser.onChange(new UpstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
-    mb.receiveWithin(5000) {
-      case TIMEOUT => fail("Should have received expiry event")
-      case _ =>
+    mb.poll(5, TimeUnit.SECONDS) match {
+      case null => fail("Should have received expiry event")
+      case _    =>
     }
     assertFalse(analyser.isVersionIDActive(id7))
   }
 
   @Test
-  def addedDownstreamObjectsShouldNotBeMarkedAsInProgressIfTheyHaveExpired {
-    val mb = new MailBox
+  def addedDownstreamObjectsShouldNotBeMarkedAsInProgressIfTheyHaveExpired() {
+    val mb = new LinkedBlockingQueue[Object]
     analyser.addListener(new MatchingStatusListener {
-      def onUpstreamExpired(id: VersionID, vsn:String) = null
-      def onPaired(id: VersionID, vsn:String) = null
-      def onDownstreamExpired(id: VersionID, vsn:String) = mb.send(new Object)
+      def onUpstreamExpired(id: VersionID, vsn:String) {}
+      def onPaired(id: VersionID, vsn:String) {}
+      def onDownstreamExpired(id: VersionID, vsn:String) { mb.add(new Object) }
     })
 
     analyser.onChange(new DownstreamPairChangeEvent(id7, Seq(), new DateTime, "vsnAAAA"), ackCallbackA)
 
-    mb.receiveWithin(2000) {
-      case TIMEOUT => fail("Should have received expiry event")
-      case _ =>
+    mb.poll(2, TimeUnit.SECONDS) match {
+      case null => fail("Should have received expiry event")
+      case _    =>
     }
     assertFalse(analyser.isVersionIDActive(id7))
   }
