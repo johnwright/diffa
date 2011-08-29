@@ -87,16 +87,8 @@ class DefaultDifferencesManager(
 
   def retrieveDomainSequenceNum(id:String) = domainDifferenceStore.currentSequenceId(id)
 
-  def retrieveTiledEvents(domain:String, zoomLevel:Int) = {
-    //domainDifferenceStore.retrieveTiledEvents(domain,zoomLevel)
-    zoomedEventsByDomain.get(domain) match {
-      case None             => Map()
-      case Some(levels) => levels.get(zoomLevel) match {
-        case None => Map()
-        case Some(tilesets) => Map()
-      }
-    }
-  }
+  def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) =
+    domainDifferenceStore.retrieveTiledEvents(domain,zoomLevel, timespan)
 
   def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
     domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length)
