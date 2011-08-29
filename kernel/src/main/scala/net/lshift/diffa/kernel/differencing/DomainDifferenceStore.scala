@@ -77,9 +77,17 @@ trait DomainDifferenceStore {
   def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime)
 
   /**
-   * Indicates that the given event should be ignored, and not returned in any query.
+   * Indicates that the given event should be ignored, and not returned in any query. Returns the regenerated object
+   * that is marked as ignored.
    */
-  def ignoreEvent(domain:String, seqId:String)
+  def ignoreEvent(domain:String, seqId:String): DifferenceEvent
+
+  /**
+   * Indicates that the given event should no longer be ignored. The event with the given sequence id will be removed,
+   * and a new event with the same details generated - this ensures that consumers that are monitoring for updates will
+   * see a new sequence id appear.
+   */
+  def unignoreEvent(domain:String, seqId:String): DifferenceEvent
 
   /**
    * Retrieves all unmatched events that have been added to the cache where their detection timestamp

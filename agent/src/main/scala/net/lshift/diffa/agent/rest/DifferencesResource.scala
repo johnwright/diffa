@@ -177,15 +177,28 @@ class DifferencesResource(val differencesManager: DifferencesManager,
 
   @DELETE
   @Path("/events/{evtSeqId}")
-  @Produces(Array("text/plain"))
-  @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
+  @Produces(Array("application/json"))
+  @Description("Ignores the difference with the given sequence id")
   @MandatoryParams(Array(
     new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
   ))
   def ignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
-    differencesManager.ignoreDifference(domain, evtSeqId)
+    val ignored = differencesManager.ignoreDifference(domain, evtSeqId)
 
-    Response.ok("Ignored").build
+    Response.ok(ignored).build
+  }
+
+  @PUT
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("application/json"))
+  @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def unignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    val restored = differencesManager.unignoreDifference(domain, evtSeqId)
+
+    Response.ok(restored).build
   }
 
   def defaultDateTime(input:String, default:DateTime) = input match {

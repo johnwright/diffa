@@ -113,21 +113,46 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       })
   })
 
-  def ignoreEvent(domain:String, seqId:String) {
+  def ignoreEvent(domain:String, seqId:String) = {
     sessionFactory.withSession(s => {
       val evt = getOrFail[ReportedDifferenceEvent](s, classOf[ReportedDifferenceEvent], new java.lang.Integer(seqId), "ReportedDifferenceEvent")
       if (evt.objId.pair.domain != domain) {
         throw new IllegalArgumentException("Invalid domain %s for sequence id %s (expected %s)".format(domain, seqId, evt.objId.pair.domain))
       }
 
-      evt.ignored = true
-      s.update(evt)
+      if (evt.isMatch) {
+        throw new IllegalArgumentException("Cannot ignore a match for %s (in domain %s)".format(seqId, domain))
+      }
+      if (!evt.ignored) {
+        // Remove this event, and replace it with a new event. We do this to ensure that consumers watching the updates
+        // (or even just monitoring sequence ids) see a noticable change.
+        s.delete(evt)
+        saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, evt.detectedAt, false,
+          evt.upstreamVsn, evt.downstreamVsn, evt.lastSeen, ignored = true))
+      } else {
+        evt.asDifferenceEvent
+      }
+    })
+  }
 
-      // Add in a match to remove the ignored events from other views. Note that this match has a few oddities compared to
-      // normal match events - it has mismatched versions, and it actually exists within the same stream as a corresponding mismatch.
-      // We also mark it as ignored - this means that if we want to retrieve ignored mismatches, we can filter out their corresponding
-      // matches by removing ignored matches.
-      saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, new DateTime, true, evt.upstreamVsn, evt.downstreamVsn, new DateTime, ignored = true))
+  def unignoreEvent(domain:String, seqId:String) = {
+    sessionFactory.withSession(s => {
+      val evt = getOrFail[ReportedDifferenceEvent](s, classOf[ReportedDifferenceEvent], new java.lang.Integer(seqId), "ReportedDifferenceEvent")
+      if (evt.objId.pair.domain != domain) {
+        throw new IllegalArgumentException("Invalid domain %s for sequence id %s (expected %s)".format(domain, seqId, evt.objId.pair.domain))
+      }
+      if (evt.isMatch) {
+        throw new IllegalArgumentException("Cannot unignore a match for %s (in domain %s)".format(seqId, domain))
+      }
+      if (!evt.ignored) {
+        throw new IllegalArgumentException("Cannot unignore an event that isn't ignored - %s (in domain %s)".format(seqId, domain))
+      }
+
+      // Generate a new event with the same details but the ignored flag cleared. This will ensure consumers
+      // that are monitoring for changes will see one.
+      s.delete(evt)
+      saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, evt.detectedAt,
+        false, evt.upstreamVsn, evt.downstreamVsn, new DateTime))
     })
   }
 
@@ -249,12 +274,13 @@ case class ReportedDifferenceEvent(
 
   def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
   def state = if (isMatch) {
+      MatchState.MATCHED
+    } else {
       if (ignored) {
         MatchState.IGNORED
       } else {
-        MatchState.MATCHED
+        MatchState.UNMATCHED
       }
-    } else {
-      MatchState.UNMATCHED
+
     }
 }

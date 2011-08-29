@@ -41,7 +41,12 @@ trait DifferencesManager {
   /**
    * Ignores the given difference.
    */
-  def ignoreDifference(domain:String, seqId:String)
+  def ignoreDifference(domain:String, seqId:String):DifferenceEvent
+
+  /**
+   * Unignores the given difference.
+   */
+  def unignoreDifference(domain:String, seqId:String):DifferenceEvent
 
   /**
    *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
