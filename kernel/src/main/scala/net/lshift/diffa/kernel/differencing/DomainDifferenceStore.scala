@@ -83,6 +83,11 @@ trait DomainDifferenceStore {
   def retrieveUnmatchedEvents(domain:String, interval:Interval) : Seq[DifferenceEvent]
 
   /**
+   * Applies a closure to all unmatched events for the given pair whose detection timestamp falls into the supplied time bound
+   */
+  def retrieveUnmatchedEvents(domain:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit)
+
+  /**
    * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.
@@ -93,10 +98,6 @@ trait DomainDifferenceStore {
    * Count the number of events for the given pair within the given interval.
    */
   def countEvents(pair: DiffaPairRef, interval:Interval) : Int
-
-  // TODO document
-  def oldestUnmatchedEvent(pair: DiffaPairRef, timespan:Interval) : Option[DifferenceEvent]
-  def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int, timespan:Interval) : Option[DifferenceEvent]
 
   /**
    * Retrieves all events that have occurred within a domain since the provided sequence id.

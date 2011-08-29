@@ -106,18 +106,16 @@ class ZoomCacheProvider(pair:DiffaPairRef,
 
         val alignedTimespan = new Interval(alignedStart,alignedEnd)
 
-        var currentEvent = diffStore.oldestUnmatchedEvent(pair, alignedTimespan)
-
         // Iterate through the diff store to generate aggregate sums of the events in tile
         // aligned buckets
 
-        while(currentEvent.isDefined) {
-          val event = currentEvent.get
-          val interval = containingInterval(event.detectedAt, level)
-          val events = diffStore.countEvents(pair, interval)
-          cache(interval.getStart) = events
-          currentEvent = diffStore.nextChronologicalUnmatchedEvent(pair, event.sequenceId, timespan)
-        }
+        diffStore.retrieveUnmatchedEvents(pair, alignedTimespan, (event:ReportedDifferenceEvent) => {
+          val intervalStart = containingInterval(event.detectedAt, level).getStart
+          cache.get(intervalStart) match {
+            case Some(n) => cache(intervalStart) += 1
+            case None    => cache(intervalStart)  = 1
+          }
+        })
 
         // Initialize a dirty flag set for this cache
         dirtyTilesByLevel.put(level, new HashSet[DateTime])

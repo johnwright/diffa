@@ -19,10 +19,10 @@ package net.lshift.diffa.kernel.util
 import net.lshift.diffa.kernel.util.SessionHelper._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-import org.hibernate.{NonUniqueResultException, Query, Session, SessionFactory}
 import org.slf4j.{LoggerFactory, Logger}
 import scala.collection.JavaConversions._
 import scala.collection.Map
+import org.hibernate._
 
 /**
  * Mixin providing a bunch of useful query utilities for stores.
@@ -51,6 +51,21 @@ trait HibernateQueryUtils {
       maxResults.map(m => query.setMaxResults(m))
       query.list map (item => item.asInstanceOf[ReturnType])
     })
+  }
+
+  /**
+   * Returns a handle to a scrollable cursor. Note that this requires the caller to manage the session for themselves.
+   */
+  def scrollableQuery[T](s: Session, queryName: String, params: Map[String, Any]) : Cursor[T] = {
+    val query: Query = s.getNamedQuery(queryName)
+    params foreach {case (param, value) => query.setParameter(param, value)}
+
+    val underlying = query.scroll()
+
+    new Cursor[T] {
+      def next = underlying.next
+      def get = underlying.get(0).asInstanceOf[T]
+    }
   }
 
   /**
@@ -165,4 +180,20 @@ trait HibernateQueryUtils {
 
   def listPairsInDomain(domain:String) = sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)))
 
+}
+
+/**
+ * A simple wrapper around a DB cursor
+ */
+trait Cursor[T] {
+
+  /**
+   * Returns the bound value of the current cursor point.
+   */
+  def get : T
+
+  /**
+   * Moves the cursor along and if the end of the result has not been reached
+   */
+  def next : Boolean
 }

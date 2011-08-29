@@ -129,6 +129,32 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
+  def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
+    val session = sessionFactory.openSession
+    try {
+      val cursor = scrollableQuery[ReportedDifferenceEvent](session, "unmatchedEventsInIntervalByDomainAndPair",
+        Map("domain" -> pair.domain,
+            "pair"   -> pair.key,
+            "start"  -> interval.getStart,
+            "end"    -> interval.getEnd))
+
+      var count = 0
+      while(cursor.next) {
+        f(cursor.get)
+
+        count += 1
+        if ( count % 100 == 0 ) {
+          // Periodically tell hibernate to let go of any objects it may still be referencing
+          session.clear()
+        }
+      }
+    }
+    finally {
+      session.close()
+    }
+
+  }
+
   def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int) = sessionFactory.withSession(s => {
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomainAndPair",
         Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd),
@@ -141,31 +167,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd))
 
     count.getOrElse(new java.lang.Long(0L)).intValue
-  })
-
-  def nextChronologicalUnmatchedEvent(pair: DiffaPairRef, evtSeqId: Int, timespan:Interval) = sessionFactory.withSession(s => {
-    limitedSingleQueryOpt[ReportedDifferenceEvent](s, "nextChronologicalUnmatchedEventByDomainAndPair",
-        Map("domain" -> pair.domain,
-            "pair"   -> pair.key,
-            "seqId"  -> evtSeqId,
-            "upper"  -> timespan.getEnd,
-            "lower"  -> timespan.getStart)) match {
-      case None       => None
-      case Some(evt)  =>
-        Some(evt.asDifferenceEvent)
-    }
-  })
-
-  def oldestUnmatchedEvent(pair: DiffaPairRef, timespan:Interval) = sessionFactory.withSession(s => {
-    limitedSingleQueryOpt[ReportedDifferenceEvent](s, "oldestUnmatchedEventByDomainAndPair",
-        Map("domain" -> pair.domain,
-            "pair"   -> pair.key,
-            "upper"  -> timespan.getEnd,
-            "lower"  -> timespan.getStart)) match {
-      case None       => None
-      case Some(evt)  =>
-        Some(evt.asDifferenceEvent)
-    }
   })
 
   def retrieveEventsSince(domain: String, evtSeqId: String) = sessionFactory.withSession(s => {
