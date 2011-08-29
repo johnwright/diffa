@@ -178,7 +178,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @DELETE
   @Path("/events/{evtSeqId}")
   @Produces(Array("application/json"))
-  @Description("Ignores the difference with the given sequence id")
+  @Description("Ignores the difference with the given sequence id.")
   @MandatoryParams(Array(
     new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
   ))
@@ -191,7 +191,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @PUT
   @Path("/events/{evtSeqId}")
   @Produces(Array("application/json"))
-  @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
+  @Description("Unignores a difference with the given sequence id.")
   @MandatoryParams(Array(
     new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
   ))
