@@ -28,10 +28,12 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
-import java.util.{UUID, Properties}
-import net.lshift.diffa.kernel.differencing.{PairScanState, DifferenceEvent}
-import org.joda.time.DateTime
 import net.lshift.diffa.agent.client.DifferencesRestClient
+import net.lshift.diffa.kernel.differencing.{ZoomCache, PairScanState, DifferenceEvent}
+import scala.collection.JavaConversions._
+import java.util.{UUID, Properties}
+import org.joda.time.DateTime
+
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -94,6 +96,20 @@ trait CommonDifferenceTests {
     // but unfortuneately, this requires the config to be dynamically updateable.
     //assertEquals(1, fileList.size)
     //testForLink(fileList(0))
+  }
+
+  @Test
+  def differencesShouldTile = {
+    val diffs = getVerifiedDiffs()
+    assertNotNull(diffs)
+
+    val zoomLevel = ZoomCache.QUARTER_HOURLY
+    val tiles = env.diffClient.getZoomedTiles(yesterday, tomorrow, zoomLevel)
+    assertNotNull(tiles)
+
+    val tileStart = ZoomCache.containingInterval(yesterday, zoomLevel).getStart
+
+    assertEquals( Map(tileStart -> 1), tiles(env.pairKey) )
   }
 
   @Test
