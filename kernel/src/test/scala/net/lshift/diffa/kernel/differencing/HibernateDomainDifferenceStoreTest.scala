@@ -239,7 +239,7 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def shouldPublishAIgnoredReportableUnmatchedEventInPagedEventQueryWhenIgnoredEntitiesAreRequested() {
+  def shouldPublishAnIgnoredReportableUnmatchedEventInPagedEventQueryWhenIgnoredEntitiesAreRequested() {
     val timestamp = new DateTime()
     val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     diffStore.ignoreEvent("domain", evt.seqId)
@@ -266,7 +266,7 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def shouldAddMatchedEventThatOverridesUnmatchedEventWhenAskingForSequenceUpdate() {
+  def shouldAddIgnoredEventThatOverridesUnmatchedEventWhenAskingForSequenceUpdate() {
     val timestamp = new DateTime()
     diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
 
