@@ -90,7 +90,7 @@ trait DifferencesManager {
 }
 
 case class TileSet(
-  // The key is the tile's index along the x-axis
+  // The key is the tile's left (or lower bound) timestamp on an absolute time scale
   // The value is the aggregate number of events in the tile
   @BeanProperty var tiles: java.util.Map[DateTime,Int] = new HashMap[DateTime, Int]
 ) {
