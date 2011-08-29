@@ -122,6 +122,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
 
       evt.ignored = true
       s.update(evt)
+
+      // Add in a match to remove the ignored events from other views. Note that this match has a few oddities compared to
+      // normal match events - it has mismatched versions, and it actually exists within the same stream as a corresponding mismatch.
+      // We also mark it as ignored - this means that if we want to retrieve ignored mismatches, we can filter out their corresponding
+      // matches by removing ignored matches.
+      saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, new DateTime, true, evt.upstreamVsn, evt.downstreamVsn, new DateTime, ignored = true))
     })
   }
 
@@ -130,8 +136,14 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
-  def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int) = sessionFactory.withSession(s => {
-    listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomainAndPair",
+  def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int, options:EventOptions = EventOptions()) = sessionFactory.withSession(s => {
+    val queryName = if (options.includeIgnored) {
+      "unmatchedEventsInIntervalByDomainAndPairWithIgnored"
+    } else {
+      "unmatchedEventsInIntervalByDomainAndPair"
+    }
+
+    listQuery[ReportedDifferenceEvent](s, queryName,
         Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd),
         Some(offset), Some(length)).
       map(_.asDifferenceEvent)
@@ -236,5 +248,13 @@ case class ReportedDifferenceEvent(
   def this() = this(seqId = null)
 
   def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
-  def state = if (isMatch) MatchState.MATCHED else MatchState.UNMATCHED
+  def state = if (isMatch) {
+      if (ignored) {
+        MatchState.IGNORED
+      } else {
+        MatchState.MATCHED
+      }
+    } else {
+      MatchState.UNMATCHED
+    }
 }

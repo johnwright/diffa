@@ -206,7 +206,8 @@ Diffa.Models.Diff = Backbone.Model.extend({
       url: "rest/" + Diffa.currentDomain + "/diffs/events/" + this.id,
       type: 'DELETE',
       success: function(data) {
-        // TODO:
+        Diffa.BlobsModel.sync();
+        Diffa.DiffsCollection.sync();
       },
       error: function(xhr, status, ex) {
         // TODO: 

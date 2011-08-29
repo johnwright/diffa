@@ -92,7 +92,7 @@ trait DomainDifferenceStore {
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.
    */
-  def retrievePagedEvents(pair: DiffaPairRef, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
+  def retrievePagedEvents(pair: DiffaPairRef, interval:Interval, offset:Int, length:Int, options:EventOptions = EventOptions()) : Seq[DifferenceEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.
@@ -119,3 +119,7 @@ trait DomainDifferenceStore {
    */
   def expireMatches(cutoff:DateTime)
 }
+
+case class EventOptions(
+  includeIgnored:Boolean = false    // Whether ignored events should be included in the response
+)

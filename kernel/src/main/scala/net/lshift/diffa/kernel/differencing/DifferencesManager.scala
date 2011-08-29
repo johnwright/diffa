@@ -57,7 +57,7 @@ trait DifferencesManager {
    * and returns a subset of the underlying data set that corresponds to the offset and length specified.
    * @throws MissingObjectException if the requested domain does not exist
    */
-  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
+  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int, options:EventOptions) : Seq[DifferenceEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.

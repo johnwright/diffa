@@ -94,8 +94,8 @@ class DefaultDifferencesManager(
   def retrieveAllEventsInInterval(domain:String, interval:Interval) =
     domainDifferenceStore.retrieveUnmatchedEvents(domain, interval)
 
-  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) =
-    domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length)
+  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int, options:EventOptions) =
+    domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length, options)
 
   def countEvents(domain: String, pairKey: String, interval: Interval) =
     domainDifferenceStore.countEvents(DiffaPairRef(key = pairKey, domain = domain), interval)
