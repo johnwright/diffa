@@ -53,7 +53,11 @@ trait DifferencesManager {
    *  Retrieves all events known to this domain in the as tiles according to the given zoom level. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */
+  @Deprecated
   def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) : Map[String,TileSet]
+
+  def retrieveEventTiles(domain:String, zoomLevel:Int, timespan:Interval) : Map[String,Array[Int]]
+
 
   /**
    *

@@ -90,6 +90,18 @@ class DefaultDifferencesManager(
   def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) =
     domainDifferenceStore.retrieveTiledEvents(domain,zoomLevel, timespan)
 
+  def retrieveEventTiles(domain:String, zoomLevel:Int, timespan:Interval) = {
+    domainConfig.listPairs(domain).map(p => {
+      p.key -> retrieveEventTiles(DiffaPairRef(p.key,domain), zoomLevel, timespan)
+    }).toMap
+  }
+
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval) : Array[Int] = {
+    // TODO implement
+    domainDifferenceStore.retrieveTiledEvents(pair,zoomLevel,)
+    Array()
+  }
+
   def ignoreDifference(domain:String, seqId:String) = {
     domainDifferenceStore.ignoreEvent(domain, seqId)
   }

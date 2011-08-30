@@ -20,7 +20,6 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Before, Test}
 import org.junit.Assert._
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
@@ -29,6 +28,7 @@ import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.FrontendConversions
+import org.joda.time.{Interval, DateTime}
 
 /**
  * Test cases for the participant protocol factory.
@@ -204,6 +204,30 @@ class DefaultDifferencesManagerTest {
 
     manager.onMismatch(id, now, "u", "d", LiveWindow, Unfiltered)
     manager.onDownstreamExpired(id, "d")
+  }
+
+  @Test
+  def shouldRetrieveTiles {
+    val start = new DateTime(1976,10,14,6,0,0,0)
+    val end = start.plusMinutes(24 * 15) // Heatmap width?
+    val interval = new Interval(start, end)
+
+    val tiles = manager.retrieveEventTiles(pair2.domain.name, ZoomCache.QUARTER_HOURLY, interval)
+
+    assertNotNull(tiles)
+  }
+
+  @Test
+  def shouldMergeGroupedTiles {
+    // Deliberately span tile groups
+    val start = new DateTime(1877,3,29,1,26,54,0)
+    val end = start.plusMinutes(24 * 15) // Heatmap width?
+    val interval = new Interval(start, end)
+
+    val tiles = manager.retrieveEventTiles(pair2.domain.name, ZoomCache.QUARTER_HOURLY, interval)
+
+    assertNotNull(tiles)
+    //assertEquals(Map( pair2 -> Array(1,0,0,1) ), tiles)
   }
 
   private def replayAll = replay(listener, matcher)
