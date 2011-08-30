@@ -151,7 +151,7 @@ Diffa.Models.Diff = Backbone.Model.extend({
   pendingDownstreamRequest: null,
 
   initialize: function() {
-    _.bindAll(this, "retrieveDetails");
+    _.bindAll(this, "retrieveDetails", "ignore");
   },
 
   /**
@@ -196,6 +196,23 @@ Diffa.Models.Diff = Backbone.Model.extend({
 
     this.pendingUpstreamRequest = getContent("upstreamContent", "upstream", this.pendingUpstreamRequest);
     this.pendingDownstreamRequest = getContent("downstreamContent", "downstream", this.pendingDownstreamRequest);
+  },
+
+  /**
+   * Instructs the agent to ignore this difference.
+   */
+  ignore: function() {
+    $.ajax({
+      url: "rest/" + Diffa.currentDomain + "/diffs/events/" + this.id,
+      type: 'DELETE',
+      success: function(data) {
+        Diffa.BlobsModel.sync();
+        Diffa.DiffsCollection.sync();
+      },
+      error: function(xhr, status, ex) {
+        // TODO: 
+      }
+    });
   }
 });
 
@@ -952,6 +969,8 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
     _.bindAll(this, "render", "updateSelected");
 
     this.model.bind("change:selectedEvent", this.updateSelected);
+
+    this.render();
   },
 
   updateSelected: function(newSelected) {
@@ -983,6 +1002,7 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
       this.$('#item1 pre').text('');
       this.$('#item2 pre').text('');
 
+      $("#controllist").hide();
       $("#actionlist").empty();
       return;
     }
@@ -1002,6 +1022,13 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
 
     $('#item2 .downstreamLabel').text(downstreamLabel);
     $('#item2 .diff-hash').text(downstreamVersion);
+
+    var ignoreButton = $('<button class="repair">Ignore</button>');
+    $('#controllist').empty().append(ignoreButton).show();
+    ignoreButton.click(function() {
+      event.ignore();
+    });
+
 
     function waitForOrDisplayContent(selector, content) {
       var busy = $(selector).prev();

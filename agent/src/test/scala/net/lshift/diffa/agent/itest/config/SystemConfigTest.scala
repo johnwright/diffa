@@ -28,13 +28,15 @@ class SystemConfigTest {
   val client = new SystemConfigRestClient(agentURL)
 
   @Test
-  def shouldDeclareAndDeleteDomain = {
+  def shouldDeclareAndDeleteDomain {
     val domain = DomainDef(name = new UUID().toString)
     client.declareDomain(domain)
     client.removeDomain(domain.name)
   }
 
   @Test(expected = classOf[NotFoundException])
-  def nonExistentDomainShouldRaiseError = client.removeDomain(new UUID().toString)
+  def nonExistentDomainShouldRaiseError {
+    client.removeDomain(new UUID().toString)
+  }
 
 }

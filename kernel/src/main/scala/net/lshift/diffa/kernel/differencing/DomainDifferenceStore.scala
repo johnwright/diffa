@@ -77,6 +77,19 @@ trait DomainDifferenceStore {
   def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime)
 
   /**
+   * Indicates that the given event should be ignored, and not returned in any query. Returns the regenerated object
+   * that is marked as ignored.
+   */
+  def ignoreEvent(domain:String, seqId:String): DifferenceEvent
+
+  /**
+   * Indicates that the given event should no longer be ignored. The event with the given sequence id will be removed,
+   * and a new event with the same details generated - this ensures that consumers that are monitoring for updates will
+   * see a new sequence id appear.
+   */
+  def unignoreEvent(domain:String, seqId:String): DifferenceEvent
+
+  /**
    * Retrieves all unmatched events in the domain that have been added to the cache where their detection timestamp
    * falls within the specified period
    */
@@ -92,7 +105,7 @@ trait DomainDifferenceStore {
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.
    */
-  def retrievePagedEvents(pair: DiffaPairRef, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
+  def retrievePagedEvents(pair: DiffaPairRef, interval:Interval, offset:Int, length:Int, options:EventOptions = EventOptions()) : Seq[DifferenceEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.
@@ -124,3 +137,7 @@ trait DomainDifferenceStore {
   def expireMatches(cutoff:DateTime)
 
 }
+
+case class EventOptions(
+  includeIgnored:Boolean = false    // Whether ignored events should be included in the response
+)

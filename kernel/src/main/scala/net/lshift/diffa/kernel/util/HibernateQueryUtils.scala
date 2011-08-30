@@ -32,7 +32,7 @@ trait HibernateQueryUtils {
 
   protected val log:Logger = LoggerFactory.getLogger(getClass)
 
-  def getOrFail[ReturnType](s: Session, c:Class[ReturnType], id:Serializable, entityName:String):ReturnType = {
+  def getOrFail[ReturnType](s: Session, c:Class[ReturnType], id:java.io.Serializable, entityName:String):ReturnType = {
     s.get(c, id) match {
       case null => throw new MissingObjectException(entityName)
       case e    => e.asInstanceOf[ReturnType]

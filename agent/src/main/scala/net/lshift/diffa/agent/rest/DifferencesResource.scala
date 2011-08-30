@@ -26,7 +26,7 @@ import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
-import net.lshift.diffa.kernel.differencing.{TileSet, InvalidZoomLevelException, DifferencesManager, DifferenceEvent}
+import net.lshift.diffa.kernel.differencing.{EventOptions, TileSet, InvalidZoomLevelException, DifferencesManager, DifferenceEvent}
 
 class DifferencesResource(val differencesManager: DifferencesManager,
                           val domain:String,
@@ -46,12 +46,14 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     new OptionalParam(name = "range-start", datatype = "date", description = "The lower bound of the items to be paged."),
     new OptionalParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
     new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
-    new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
+    new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page."),
+    new OptionalParam(name = "include-ignored", datatype = "bool", description = "Whether to include ignored differences (defaults to false).")))
   def getDifferenceEvents(@QueryParam("pairKey") pairKey:String,
                           @QueryParam("range-start") from_param:String,
                           @QueryParam("range-end") until_param:String,
                           @QueryParam("offset") offset_param:String,
                           @QueryParam("length") length_param:String,
+                          @QueryParam("include-ignored") includeIgnored:java.lang.Boolean,
                           @Context request: Request) = {
 
     val now = new DateTime()
@@ -59,6 +61,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     val until = defaultDateTime(until_param, now)
     val offset = defaultInt(offset_param, 0)
     val length = defaultInt(length_param, 100)
+    val reallyIncludeIgnored = if (includeIgnored != null) { includeIgnored.booleanValue() } else { false }
 
     try {
       val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain))
@@ -69,7 +72,8 @@ class DifferencesResource(val differencesManager: DifferencesManager,
       }
 
       val interval = new Interval(from,until)
-      val diffs = differencesManager.retrievePagedEvents(domain, pairKey, interval, offset, length)
+      val diffs = differencesManager.retrievePagedEvents(domain, pairKey, interval, offset, length,
+        EventOptions(includeIgnored = reallyIncludeIgnored))
 
       val responseObj = Map(
         "seqId" -> domainVsn.getValue,
@@ -136,6 +140,32 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   def getDetail(@PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String =
     differencesManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
+
+  @DELETE
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("application/json"))
+  @Description("Ignores the difference with the given sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def ignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    val ignored = differencesManager.ignoreDifference(domain, evtSeqId)
+
+    Response.ok(ignored).build
+  }
+
+  @PUT
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("application/json"))
+  @Description("Unignores a difference with the given sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def unignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    val restored = differencesManager.unignoreDifference(domain, evtSeqId)
+
+    Response.ok(restored).build
+  }
 
   def defaultDateTime(input:String, default:DateTime) = input match {
     case "" | null => default
