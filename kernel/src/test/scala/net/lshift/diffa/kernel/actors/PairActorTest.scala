@@ -31,11 +31,12 @@ import ch.qos.logback.core.AppenderBase
 import ch.qos.logback.classic.spi.ILoggingEvent
 import java.lang.RuntimeException
 import akka.actor._
-import concurrent.{SyncVar, TIMEOUT, MailBox}
+import concurrent.{SyncVar}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Domain, Endpoint, Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.FrontendConversions
+import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 
 class PairActorTest {
 
@@ -489,19 +490,19 @@ class PairActorTest {
 
   @Test
   def scheduledFlush {
-    val mailbox = new MailBox
+    val mailbox = new LinkedBlockingQueue[Object]
     
     expect(writer.flush()).andStubAnswer(new IAnswer[Unit] {
       def answer = {
-        mailbox.send(new Object)
+        mailbox.add(new Object)
         null
       }
     })
     replay(writer)
 
     supervisor.startActor(pair)
-    mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
-    mailbox.receiveWithin(1000) { case TIMEOUT => fail("Flush not called"); case _ => () }
+    mailbox.poll(1, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
+    mailbox.poll(1, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
   }
 
   def expectFailingScan(downstreamHandler:IAnswer[Unit], failStateHandler:IAnswer[Unit] = EasyMockScalaUtils.emptyAnswer) {
