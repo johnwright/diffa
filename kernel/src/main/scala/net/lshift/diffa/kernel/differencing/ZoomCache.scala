@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.sf.ehcache.CacheManager
 import java.io.Closeable
 import net.lshift.diffa.kernel.util.CacheWrapper
-import org.joda.time.{Interval, DateTime}
+import org.joda.time.{Duration, Interval, DateTime}
 
 /**
  * This provides a cache of difference events that have been summarized into a tile shaped structure according
@@ -171,6 +171,18 @@ object ZoomCache {
     HALF_HOURLY -> 30,
     QUARTER_HOURLY -> 15
   )
+
+  /**
+   * Returns a sequence of the start times for the groups of tiles required to build a projection
+   * for the given interval at the specified level of zoom.
+   */
+  def containingTileGroupEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] = {
+    val startTile = containingInterval(interval.getStart, zoomLevel).getStart
+    val endTile = containingInterval(interval.getEnd, zoomLevel).getStart
+    val minutes = new Duration(startTile, endTile).getStandardMinutes.intValue()
+    val divisions = minutes / zoom(zoomLevel)
+    0.to(divisions).map(d => startTile.plusMinutes(d * zoom(zoomLevel)))
+  }
 
   /**
    * Calculates what the tile aligned interval conatins the given timestamp at the given level of zoom

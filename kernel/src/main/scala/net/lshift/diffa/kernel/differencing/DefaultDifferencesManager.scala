@@ -98,7 +98,8 @@ class DefaultDifferencesManager(
 
   def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval) : Array[Int] = {
     // TODO implement
-    domainDifferenceStore.retrieveTiledEvents(pair,zoomLevel,)
+    val groupStartTimes = ZoomCache.containingTileGroupEdges(timespan, zoomLevel)
+    //domainDifferenceStore.retrieveEventTiles(pair,zoomLevel,timespan)
     Array()
   }
 

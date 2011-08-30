@@ -131,7 +131,7 @@ trait DomainDifferenceStore {
   @Deprecated def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) : Map[String,TileSet]
   @Deprecated def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval) : TileSet
 
-  //def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) : TileGroup
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) : TileGroup
 
   /**
    * Indicates that matches older than the given cutoff (based on their seen timestamp) should be removed.
@@ -140,7 +140,7 @@ trait DomainDifferenceStore {
 
 }
 
-case class TileGroup()
+case class TileGroup(lowerBound:DateTime)
 
 case class EventOptions(
   includeIgnored:Boolean = false    // Whether ignored events should be included in the response
