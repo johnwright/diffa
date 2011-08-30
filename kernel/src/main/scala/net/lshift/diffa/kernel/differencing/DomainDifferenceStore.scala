@@ -140,7 +140,10 @@ trait DomainDifferenceStore {
 
 }
 
-case class TileGroup(lowerBound:DateTime)
+case class TileGroup(
+  lowerBound:DateTime,
+  tiles:Map[DateTime,Int]
+)
 
 case class EventOptions(
   includeIgnored:Boolean = false    // Whether ignored events should be included in the response

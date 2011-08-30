@@ -99,7 +99,9 @@ class DefaultDifferencesManager(
   def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval) : Array[Int] = {
     // TODO implement
     val groupStartTimes = ZoomCache.containingTileGroupEdges(timespan, zoomLevel)
-    //domainDifferenceStore.retrieveEventTiles(pair,zoomLevel,timespan)
+    val tilegroups = groupStartTimes.map(t => domainDifferenceStore.retrieveEventTiles(pair, zoomLevel, t))
+    val filtered = tilegroups.flatMap(g => g.tiles).filter{case (d, i) => timespan.contains(d)}
+
     Array()
   }
 

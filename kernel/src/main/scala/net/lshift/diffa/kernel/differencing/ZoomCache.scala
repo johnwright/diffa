@@ -179,9 +179,19 @@ object ZoomCache {
   def containingTileGroupEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] = {
     val startTile = containingInterval(interval.getStart, zoomLevel).getStart
     val endTile = containingInterval(interval.getEnd, zoomLevel).getStart
-    val minutes = new Duration(startTile, endTile).getStandardMinutes.intValue()
+    slice(new Duration(startTile, endTile), startTile, zoomLevel)
+  }
+
+  /**
+   * Returns a flat list of the tile starting times in the given interval at the specified zoom level
+   */
+  def individualTileEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] =
+    slice(interval.toDuration, interval.getStart, zoomLevel)
+
+  private def slice(d:Duration, startTime:DateTime, zoomLevel:Int) : Seq[DateTime] = {
+    val minutes = d.getStandardMinutes.intValue()
     val divisions = minutes / zoom(zoomLevel)
-    0.to(divisions).map(d => startTile.plusMinutes(d * zoom(zoomLevel)))
+    0.to(divisions).map(d => startTime.plusMinutes(d * zoom(zoomLevel)))
   }
 
   /**
