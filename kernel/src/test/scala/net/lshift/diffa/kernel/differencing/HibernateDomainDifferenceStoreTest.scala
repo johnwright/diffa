@@ -137,6 +137,24 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals("dV", unmatched.head.downstreamVsn)
   }
 
+  @Test(expected = classOf[IllegalArgumentException])
+  def shouldNotBeAbleToIgnoreDifferenceViaWrongDomain() {
+    val timestamp = new DateTime()
+    val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.ignoreEvent("domain2", evt.seqId)
+  }
+
+  @Test
+  def shouldNotPublishAnIgnoredReportableUnmatchedEventInRetrieveUnmatchedEventsQuery() {
+    val timestamp = new DateTime()
+    val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.ignoreEvent("domain", evt.seqId)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
+    assertEquals(0, unmatched.length)
+  }
+
   @Test
   def shouldReportUnmatchedEventWithinInterval() {
     val start = new DateTime(2004, 11, 6, 3, 5, 15, 0)
@@ -161,6 +179,18 @@ class HibernateDomainDifferenceStoreTest {
 
     val unmatchedCount = diffStore.countEvents(DiffaPairRef("pair2", "domain"), interval)
     assertEquals(size - frontFence - rearFence, unmatchedCount)
+  }
+
+  @Test
+  def shouldNotCountIgnoredEvents() {
+    val timestamp = new DateTime
+
+    val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.ignoreEvent("domain", evt.seqId)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatchedCount = diffStore.countEvents(DiffaPairRef("pair2", "domain"), interval)
+    assertEquals(0, unmatchedCount)
   }
 
   def addUnmatchedEvents(start:DateTime, size:Int, frontFence:Int, rearFence:Int) : Interval = {
@@ -198,7 +228,45 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def shouldAddMatchedEventThatOverridesUnmatchedEventWhenAskingForSequenceUpdate() {
+  def shouldNotPublishAnIgnoredReportableUnmatchedEventInPagedEventQuery() {
+    val timestamp = new DateTime()
+    val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.ignoreEvent("domain", evt.seqId)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val containedPage = diffStore.retrievePagedEvents(DiffaPairRef("pair2", "domain"), interval, 0, 100)
+    assertEquals(0, containedPage.length)
+  }
+
+  @Test
+  def shouldPublishAnIgnoredReportableUnmatchedEventInPagedEventQueryWhenIgnoredEntitiesAreRequested() {
+    val timestamp = new DateTime()
+    val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.ignoreEvent("domain", evt.seqId)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val containedPage = diffStore.retrievePagedEvents(DiffaPairRef("pair2", "domain"), interval, 0, 100, EventOptions(includeIgnored = true))
+
+    assertEquals(1, containedPage.length)
+    assertEquals(VersionID(DiffaPairRef("pair2", "domain"), "id2"), containedPage(0).objId)
+  }
+
+  @Test
+  def shouldPublishAnEventThatHasBeenUnignored() {
+    val timestamp = new DateTime()
+    val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val ignored = diffStore.ignoreEvent("domain", evt.seqId)
+    diffStore.unignoreEvent("domain", ignored.seqId)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val containedPage = diffStore.retrievePagedEvents(DiffaPairRef("pair2", "domain"), interval, 0, 100)
+
+    assertEquals(1, containedPage.length)
+    assertEquals(VersionID(DiffaPairRef("pair2", "domain"), "id2"), containedPage(0).objId)
+  }
+
+  @Test
+  def shouldAddIgnoredEventThatOverridesUnmatchedEventWhenAskingForSequenceUpdate() {
     val timestamp = new DateTime()
     diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
 
@@ -211,6 +279,27 @@ class HibernateDomainDifferenceStoreTest {
 
     assertEquals(1, updates.length)
     assertEquals(MatchState.MATCHED, updates.head.state)
+    // We don't know deterministically when the updated timestamp will be because this
+    // is timestamped on the fly from within the implementation of the cache
+    // but we do want to assert that it is not before the reporting timestamp
+    assertFalse(timestamp.isAfter(updates.head.detectedAt))
+    assertEquals(VersionID(DiffaPairRef("pair2", "domain"), "id2"), updates.head.objId)
+  }
+
+  @Test
+  def shouldAddMatchedEventThatOverridesIgnoredEventWhenAskingForSequenceUpdate() {
+    val timestamp = new DateTime()
+    val newUnmatched = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
+    val lastSeq = unmatched.last.seqId
+
+    diffStore.ignoreEvent("domain", newUnmatched.seqId)
+    val updates = diffStore.retrieveEventsSince("domain", lastSeq)
+
+    assertEquals(1, updates.length)
+    assertEquals(MatchState.IGNORED, updates.head.state)  // Match events for ignored differences have a state IGNORED
     // We don't know deterministically when the updated timestamp will be because this
     // is timestamped on the fly from within the implementation of the cache
     // but we do want to assert that it is not before the reporting timestamp

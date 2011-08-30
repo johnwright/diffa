@@ -113,13 +113,62 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       })
   })
 
+  def ignoreEvent(domain:String, seqId:String) = {
+    sessionFactory.withSession(s => {
+      val evt = getOrFail[ReportedDifferenceEvent](s, classOf[ReportedDifferenceEvent], new java.lang.Integer(seqId), "ReportedDifferenceEvent")
+      if (evt.objId.pair.domain != domain) {
+        throw new IllegalArgumentException("Invalid domain %s for sequence id %s (expected %s)".format(domain, seqId, evt.objId.pair.domain))
+      }
+
+      if (evt.isMatch) {
+        throw new IllegalArgumentException("Cannot ignore a match for %s (in domain %s)".format(seqId, domain))
+      }
+      if (!evt.ignored) {
+        // Remove this event, and replace it with a new event. We do this to ensure that consumers watching the updates
+        // (or even just monitoring sequence ids) see a noticable change.
+        s.delete(evt)
+        saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, evt.detectedAt, false,
+          evt.upstreamVsn, evt.downstreamVsn, evt.lastSeen, ignored = true))
+      } else {
+        evt.asDifferenceEvent
+      }
+    })
+  }
+
+  def unignoreEvent(domain:String, seqId:String) = {
+    sessionFactory.withSession(s => {
+      val evt = getOrFail[ReportedDifferenceEvent](s, classOf[ReportedDifferenceEvent], new java.lang.Integer(seqId), "ReportedDifferenceEvent")
+      if (evt.objId.pair.domain != domain) {
+        throw new IllegalArgumentException("Invalid domain %s for sequence id %s (expected %s)".format(domain, seqId, evt.objId.pair.domain))
+      }
+      if (evt.isMatch) {
+        throw new IllegalArgumentException("Cannot unignore a match for %s (in domain %s)".format(seqId, domain))
+      }
+      if (!evt.ignored) {
+        throw new IllegalArgumentException("Cannot unignore an event that isn't ignored - %s (in domain %s)".format(seqId, domain))
+      }
+
+      // Generate a new event with the same details but the ignored flag cleared. This will ensure consumers
+      // that are monitoring for changes will see one.
+      s.delete(evt)
+      saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, evt.detectedAt,
+        false, evt.upstreamVsn, evt.downstreamVsn, new DateTime))
+    })
+  }
+
   def retrieveUnmatchedEvents(domain:String, interval: Interval) = sessionFactory.withSession(s => {
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomain",
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
-  def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int) = sessionFactory.withSession(s => {
-    listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomainAndPair",
+  def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int, options:EventOptions = EventOptions()) = sessionFactory.withSession(s => {
+    val queryName = if (options.includeIgnored) {
+      "unmatchedEventsInIntervalByDomainAndPairWithIgnored"
+    } else {
+      "unmatchedEventsInIntervalByDomainAndPair"
+    }
+
+    listQuery[ReportedDifferenceEvent](s, queryName,
         Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd),
         Some(offset), Some(length)).
       map(_.asDifferenceEvent)
@@ -217,11 +266,21 @@ case class ReportedDifferenceEvent(
   @BeanProperty var isMatch:Boolean = false,
   @BeanProperty var upstreamVsn:String = null,
   @BeanProperty var downstreamVsn:String = null,
-  @BeanProperty var lastSeen:DateTime = null
+  @BeanProperty var lastSeen:DateTime = null,
+  @BeanProperty var ignored:Boolean = false
 ) {
   
   def this() = this(seqId = null)
 
   def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
-  def state = if (isMatch) MatchState.MATCHED else MatchState.UNMATCHED
+  def state = if (isMatch) {
+      MatchState.MATCHED
+    } else {
+      if (ignored) {
+        MatchState.IGNORED
+      } else {
+        MatchState.UNMATCHED
+      }
+
+    }
 }

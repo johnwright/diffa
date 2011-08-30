@@ -39,6 +39,16 @@ trait DifferencesManager {
   def retrieveDomainSequenceNum(domain:String):String
 
   /**
+   * Ignores the given difference.
+   */
+  def ignoreDifference(domain:String, seqId:String):DifferenceEvent
+
+  /**
+   * Unignores the given difference.
+   */
+  def unignoreDifference(domain:String, seqId:String):DifferenceEvent
+
+  /**
    *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */
@@ -52,7 +62,7 @@ trait DifferencesManager {
    * and returns a subset of the underlying data set that corresponds to the offset and length specified.
    * @throws MissingObjectException if the requested domain does not exist
    */
-  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
+  def retrievePagedEvents(domain:String, pairKey:String, interval:Interval, offset:Int, length:Int, options:EventOptions) : Seq[DifferenceEvent]
 
   /**
    * Count the number of events for the given pair within the given interval.

@@ -369,6 +369,7 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
       column("last_seen", Types.TIMESTAMP, false).
       column("upstream_vsn", Types.VARCHAR, 255, true).
       column("downstream_vsn", Types.VARCHAR, 255, true).
+      column("ignored", Types.SMALLINT, false).
       pk("seq_id").
       withIdentityCol()
 

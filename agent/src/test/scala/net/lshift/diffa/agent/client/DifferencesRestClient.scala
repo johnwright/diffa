@@ -88,6 +88,25 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
     }
   }
 
+  def ignore(seqId: String) = {
+    val response = delete("events/" + seqId)
+
+    response.getEntity(classOf[DifferenceEvent])
+  }
+
+  def unignore(seqId: String) = {
+    val path = resource.path("events/" + seqId)
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.put(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 200    => response.getEntity(classOf[DifferenceEvent])
+      case 400    => throw new InvalidSequenceNumberException(seqId)
+      case 404    => throw new NotFoundException(domain)
+      case x:Int  => handleHTTPError(x, path, status)
+    }
+  }
+
   def f (d:DateTime) = {
     d match {
       case null => ""

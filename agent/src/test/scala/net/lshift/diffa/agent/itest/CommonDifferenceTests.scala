@@ -97,6 +97,29 @@ trait CommonDifferenceTests {
   }
 
   @Test
+  def shouldBeAbleToIgnoreDifference() {
+    val diffs = getVerifiedDiffs()
+    assertFalse(diffs.isEmpty)
+
+    env.diffClient.ignore(diffs(0).seqId)
+
+    val events = env.diffClient.getEvents(env.pairKey, yearAgo, today, 0, 100)
+    assertTrue(events.isEmpty)
+  }
+
+  @Test
+  def shouldBeAbleToUnignoreDifference() {
+    val diffs = getVerifiedDiffs()
+    assertFalse(diffs.isEmpty)
+
+    val ignored = env.diffClient.ignore(diffs(0).seqId)
+    env.diffClient.unignore(ignored.seqId)
+
+    val events = env.diffClient.getEvents(env.pairKey, yearAgo, today, 0, 100)
+    assertEquals(1, events.length)
+  }
+
+  @Test
   def shouldFindDifferencesInParticipantsThatBecomeDifferent {
     runScanAndWaitForCompletion(yearAgo, today)
     env.addAndNotifyUpstream("abc", "abcdef", someDate = yesterday, someString = "ss")
