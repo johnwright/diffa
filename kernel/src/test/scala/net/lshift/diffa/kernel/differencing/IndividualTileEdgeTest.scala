@@ -34,6 +34,8 @@ class IndividualTileEdgeTest {
 
 object IndividualTileEdgeTest {
 
+  // Aligned data points
+
   @DataPoint def daily = Scenario(DAILY,
                                   new Interval(new DateTime(2004,3,6,0,0,0,0),new DateTime(2004,3,8,0,0,0,0)),
                                   new DateTime(2004,3,6,0,0,0,0),new DateTime(2004,3,7,0,0,0,0),new DateTime(2004,3,8,0,0,0,0))
@@ -60,6 +62,16 @@ object IndividualTileEdgeTest {
 
   @DataPoint def quarterHourly = Scenario(QUARTER_HOURLY,
                                           new Interval(new DateTime(2007,8,18,23,45,0,0),new DateTime(2007,8,19,0,0,0,0)),
+                                          new DateTime(2007,8,18,23,45,0,0), new DateTime(2007,8,19,0,0,0,0))
+
+  // Unaligned data points
+
+  @DataPoint def unalignedHalfHourly = Scenario(HALF_HOURLY,
+                                       new Interval(new DateTime(1999,11,30,9,30,13,0),new DateTime(1999,11,30,10,30,0,667)),
+                                       new DateTime(1999,11,30,9,30,0,0), new DateTime(1999,11,30,10,0,0,0), new DateTime(1999,11,30,10,30,0,0))
+
+  @DataPoint def unalignedQuarterHourly = Scenario(QUARTER_HOURLY,
+                                          new Interval(new DateTime(2007,8,18,23,46,0,0),new DateTime(2007,8,19,0,2,0,0)),
                                           new DateTime(2007,8,18,23,45,0,0), new DateTime(2007,8,19,0,0,0,0))
 
   case class Scenario (zoomLevel:Int, interval:Interval, timestamps:DateTime*)

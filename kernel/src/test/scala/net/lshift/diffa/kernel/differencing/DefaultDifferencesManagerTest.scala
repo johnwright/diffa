@@ -237,11 +237,9 @@ class DefaultDifferencesManagerTest {
     val pair1Tiles = domainTiles(pair1.key)
     val pair2Tiles = domainTiles(pair2.key)
 
-    val blobArraySize = divisions(scenario.interval.toDuration) + 1
+    assertArrayEquals(Array.fill(scenario.arraySize)(0), pair2Tiles)
 
-    assertArrayEquals(Array.fill(blobArraySize)(0), pair2Tiles)
-
-    val blobs = Array.fill(blobArraySize)(0)
+    val blobs = Array.fill(scenario.arraySize)(0)
     val offset = divisions(new Duration(scenario.interval.getStart, scenario.eventTime))
     blobs(offset) = scenario.blobSize
 
@@ -254,11 +252,27 @@ class DefaultDifferencesManagerTest {
 
 object DefaultDifferencesManagerTest {
 
-  @DataPoint def quarterHourly = Scenario(ZoomCache.QUARTER_HOURLY, 10,
-                                          new DateTime(1976,10,14,8,23,0,0),
-                                          new DateTime(1976,10,14,0,0,0,0),
-                                          new Interval(new DateTime(1976,10,14,8,0,0,0), new DateTime(1976,10,14,15,45,0,0)) // heatmap width ???
-                                          )
+  /**
+   * Tiles at 15 minute zoom level should be grouped into 8 hour aligned slots, which gives 32 tiles.
+   */
+  @DataPoint def alignedQuarterHourly = Scenario(
+                                          zoomLevel = ZoomCache.QUARTER_HOURLY,
+                                          blobSize = 10, arraySize = 32,
+                                          eventTime = new DateTime(1976,10,14,8,23,0,0),
+                                          tileGroupStart = new DateTime(1976,10,14,0,0,0,0),
+                                          interval = new Interval(new DateTime(1976,10,14,8,0,0,0), new DateTime(1976,10,14,15,45,0,0))
+                                        )
+  /**
+   * Show that 15 minute zoom level can span 8 hour hour aligned slots.
+   */
 
-  case class Scenario(zoomLevel:Int, blobSize:Int, eventTime:DateTime, tileGroupStart:DateTime, interval:Interval)
+  @DataPoint def spanningQuarterHourly = Scenario(
+                                          zoomLevel = ZoomCache.QUARTER_HOURLY,
+                                          blobSize = 10, arraySize = 4,
+                                          eventTime = new DateTime(1922,1,11,7,57,34,345),
+                                          tileGroupStart = new DateTime(1922,1,11,0,0,0,0),
+                                          interval = new Interval(new DateTime(1922,1,11,7,31,0,0), new DateTime(1922,1,11,8,29,0,0))
+                                        )
+
+  case class Scenario(zoomLevel:Int, blobSize:Int, arraySize:Int, eventTime:DateTime, tileGroupStart:DateTime, interval:Interval)
 }
