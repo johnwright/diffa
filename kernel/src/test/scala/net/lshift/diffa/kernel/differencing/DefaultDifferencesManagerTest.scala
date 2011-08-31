@@ -28,10 +28,10 @@ import net.lshift.diffa.participant.scanning.ScanConstraint
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
-import org.joda.time.{Duration, Interval, DateTime}
 import net.lshift.diffa.kernel.differencing.DefaultDifferencesManagerTest.Scenario
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
+import org.joda.time.{DateTime, Duration, Interval}
 
 /**
  * Test cases for the participant protocol factory.
@@ -221,18 +221,27 @@ class DefaultDifferencesManagerTest {
 
     scenario.events.foreach{ case(tileGroupStart, events) => {
 
-      events.foreach{ case(timestamp, blobSize) => {
-
-        val eventTileStart = ZoomCache.containingInterval(timestamp, scenario.zoomLevel).getStart
-
+      if (events.isEmpty) {
         expect(domainDifferenceStore.retrieveEventTiles(
-          EasyMock.eq(pair1.asRef),
-          EasyMock.eq(scenario.zoomLevel),
-          EasyMock.eq(tileGroupStart))
-        ).andStubReturn(Some(TileGroup(tileGroupStart, Map(eventTileStart -> blobSize))))
+            EasyMock.eq(pair1.asRef),
+            EasyMock.eq(scenario.zoomLevel),
+            EasyMock.eq(tileGroupStart))
+        ).andStubReturn(Some(TileGroup(tileGroupStart, Map())))
+      }
+      else {
+        events.foreach{ case(timestamp, blobSize) => {
 
-        val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
-        blobs(offset) = blobSize
+          val eventTileStart = ZoomCache.containingInterval(timestamp, scenario.zoomLevel).getStart
+
+          expect(domainDifferenceStore.retrieveEventTiles(
+            EasyMock.eq(pair1.asRef),
+            EasyMock.eq(scenario.zoomLevel),
+            EasyMock.eq(tileGroupStart))
+          ).andStubReturn(Some(TileGroup(tileGroupStart, Map(eventTileStart -> blobSize))))
+
+          val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
+          blobs(offset) = blobSize
+        }
       }
      }
 
@@ -294,6 +303,26 @@ object DefaultDifferencesManagerTest {
                                             new DateTime(1993,3,3,12,0,0,0) -> Map(new DateTime(1993,3,3,12,23,0,0) -> 76)
                                           ),
                                           interval = new Interval(new DateTime(1993,3,3,12,0,0,0), new DateTime(1993,3,3,23,30,0,0))
+                                        )
+
+  @DataPoint def alignedDaily = Scenario(
+                                          zoomLevel = ZoomCache.DAILY,
+                                          arraySize = 13,
+                                          events = Map(
+                                            new DateTime(2009,8,14,0,0,0,0) -> Map(new DateTime(2009,8,14,12,15,17,445) -> 88),
+                                            new DateTime(2009,8,15,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,16,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,17,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,18,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,19,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,20,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,21,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,22,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,23,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,24,0,0,0,0) -> Map(),
+                                            new DateTime(2009,8,25,0,0,0,0) -> Map(new DateTime(2009,8,25,1,49,33,745)  -> 81)
+                                          ),
+                                          interval = new Interval(new DateTime(2009,8,14,0,0,0,0), new DateTime(2009,8,26,0,0,0,0))
                                         )
 
   // SPANNING QUERIES
