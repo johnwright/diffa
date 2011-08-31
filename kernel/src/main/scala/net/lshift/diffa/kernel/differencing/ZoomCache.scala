@@ -212,13 +212,6 @@ object ZoomCache {
     times.toSeq
   }
 
-  // TODO Copy and paste with subhourly function
-  private def subDayAlignedTimestamp(timestamp:DateTime, multiple:Int) = {
-    val hourOfDay = timestamp.getHourOfDay
-    val alignedHour = hourOfDay - (hourOfDay % multiple)
-    timestamp.withHourOfDay(alignedHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
-  }
-
   private def alignToDayBoundary(interval:Interval) = {
     val startTile = interval.getStart.withTimeAtStartOfDay()
     val endTile = interval.getEnd.dayOfYear().roundCeilingCopy()
@@ -271,10 +264,14 @@ object ZoomCache {
   }
 
   private def multipleHourlyStart(timestamp:DateTime, multiple:Int) = {
-    val hourOfDay = timestamp.getHourOfDay
-    val startHour = hourOfDay - (hourOfDay % multiple)
-    val start = timestamp.withHourOfDay(startHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+    val start = subDayAlignedTimestamp(timestamp, multiple)
     new Interval(start, start.plusHours(multiple))
+  }
+
+  private def subDayAlignedTimestamp(timestamp:DateTime, multiple:Int) = {
+    val hourOfDay = timestamp.getHourOfDay
+    val alignedHour = hourOfDay - (hourOfDay % multiple)
+    timestamp.withHourOfDay(alignedHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
   }
 
   /**
