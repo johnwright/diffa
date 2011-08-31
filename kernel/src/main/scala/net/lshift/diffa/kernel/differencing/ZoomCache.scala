@@ -177,9 +177,11 @@ object ZoomCache {
    * for the given interval at the specified level of zoom.
    */
   def containingTileGroupEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] = {
-    val startTile = containingInterval(interval.getStart, zoomLevel).getStart
-    val endTile = containingInterval(interval.getEnd, zoomLevel).getStart
-    slice(new Duration(startTile, endTile), startTile, zoomLevel)
+    // Align everything to days for now, consider a weekly alignment for days or eight hours in due course
+    val startTile = interval.getStart.withTimeAtStartOfDay()
+    val endTile = interval.getEnd.dayOfYear().roundCeilingCopy()
+    val days = new Duration(startTile,endTile).getStandardDays.intValue()
+    0.until(days).map(d => startTile.plusDays(d))
   }
 
   /**

@@ -232,7 +232,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval)
     = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel, timespan)
 
-  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = TileGroup(null)
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = None
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",

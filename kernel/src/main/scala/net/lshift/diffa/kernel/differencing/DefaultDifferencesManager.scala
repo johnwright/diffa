@@ -98,12 +98,12 @@ class DefaultDifferencesManager(
 
   def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval) : Array[Int] = {
     val groupStartTimes = ZoomCache.containingTileGroupEdges(timespan, zoomLevel)
-    val tilegroups = groupStartTimes.map(t => domainDifferenceStore.retrieveEventTiles(pair, zoomLevel, t))
-    val filtered = tilegroups.flatMap(g => g.tiles).filter{case (d, i) => timespan.contains(d)}
-    val timeSlices = ZoomCache.containingTileGroupEdges(timespan, zoomLevel)
-
-    //timeSlices.map(s => filtered(s))
-    Array()
+    // There must be a better way to do this map filter ......
+    val tileGroups = groupStartTimes.map(t => domainDifferenceStore.retrieveEventTiles(pair, zoomLevel, t)).filter(_.isDefined).map(_.get)
+    val unfiltered = tileGroups.flatMap(g => g.tiles).map{case (k,v) => k -> v }
+    val filtered = unfiltered.filter{case (d, i) => timespan.contains(d)}.toMap
+    val tileEdges = ZoomCache.individualTileEdges(timespan, zoomLevel)
+    tileEdges.map(s => filtered.getOrElse(s, 0)).toArray
   }
 
   def ignoreDifference(domain:String, seqId:String) = {

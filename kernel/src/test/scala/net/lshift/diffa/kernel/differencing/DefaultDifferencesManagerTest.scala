@@ -24,11 +24,14 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
-import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
-import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
-import net.lshift.diffa.kernel.frontend.FrontendConversions
-import org.joda.time.{Interval, DateTime}
+import net.lshift.diffa.kernel.config.{HibernateDomainConfigStore, DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.{HibernateSystemConfigStore, SystemConfigStore}
+import net.lshift.diffa.kernel.frontend.EndpointDef._
+import net.lshift.diffa.kernel.frontend.PairDef._
+import net.lshift.diffa.kernel.frontend.{PairDef, EndpointDef}
+import net.lshift.diffa.kernel.frontend.FrontendConversions._
+import org.joda.time.{Duration, Interval, DateTime}
 
 /**
  * Test cases for the participant protocol factory.
@@ -66,7 +69,7 @@ class DefaultDifferencesManagerTest {
   replay(systemConfigStore)
 
   val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
-  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(FrontendConversions.toPairDef(pair1), FrontendConversions.toPairDef(pair2)))
+  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(toPairDef(pair1), toPairDef(pair2)))
   replay(domainConfigStore)
 
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
@@ -122,7 +125,9 @@ class DefaultDifferencesManagerTest {
     expect(matcher.isVersionIDActive(VersionID(pair2.asRef, "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(VersionID(pair1.asRef, "id2"))).andStubReturn(false)
 
-    replay(systemConfigStore, matchingManager)
+    expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(toPairDef(pair1), toPairDef(pair2)))
+
+    replay(systemConfigStore, matchingManager, domainConfigStore)
   }
 
   def expectDifferenceForPair(pairs:DiffaPair*)  = {
@@ -208,16 +213,46 @@ class DefaultDifferencesManagerTest {
 
   @Test
   def shouldRetrieveTiles {
-    val start = new DateTime(1976,10,14,6,0,0,0)
-    val end = start.plusMinutes(24 * 15) // Heatmap width?
+
+    val zoomLevel = ZoomCache.QUARTER_HOURLY
+    val start = new DateTime(1976,10,14,8,0,0,0)
+    val end = new DateTime(1976,10,14,15,45,0,0) // Heatmap width?
     val interval = new Interval(start, end)
 
-    val tiles = manager.retrieveEventTiles(pair2.domain.name, ZoomCache.QUARTER_HOURLY, interval)
+    val eventTime = new DateTime(1976,10,14,8,23,0,0)
+    val eventTileStart = ZoomCache.containingInterval(eventTime, zoomLevel).getStart
+    val tileGroupStart = new DateTime(1976,10,14,0,0,0,0)
 
-    assertNotNull(tiles)
+    val blobSize = 10
+
+    expect(domainDifferenceStore.retrieveEventTiles(
+      EasyMock.eq(pair1.asRef),
+      EasyMock.eq(zoomLevel),
+      EasyMock.eq(tileGroupStart))
+    ).andStubReturn(Some(TileGroup(start, Map(eventTileStart -> blobSize))))
+
+    expect(domainDifferenceStore.retrieveEventTiles(
+      EasyMock.eq(pair2.asRef),
+      EasyMock.anyObject(),
+      EasyMock.anyObject())
+    ).andStubReturn(None)
+
+    replay(domainDifferenceStore)
+
+    val domainTiles = manager.retrieveEventTiles(pair1.domain.name, zoomLevel, interval)
+    val pair1Tiles = domainTiles(pair1.key)
+    val pair2Tiles = domainTiles(pair2.key)
+
+    assertArrayEquals(Array.fill(32)(0), pair2Tiles)
+
+    val blobs = Array.fill(32)(0)
+    val offset = new Duration(start, eventTime).getStandardMinutes.intValue() / ZoomCache.zoom(zoomLevel)
+    blobs(offset) = blobSize
+
+    assertArrayEquals(blobs, pair1Tiles)
   }
 
-  @Test
+  //@Test
   def shouldMergeGroupedTiles {
     // Deliberately span tile groups
     val start = new DateTime(1877,3,29,1,26,54,0)
