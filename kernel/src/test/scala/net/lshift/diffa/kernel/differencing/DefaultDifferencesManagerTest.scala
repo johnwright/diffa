@@ -219,18 +219,23 @@ class DefaultDifferencesManagerTest {
 
     def divisions(d:Duration) = d.getStandardMinutes.intValue() / ZoomCache.zoom(scenario.zoomLevel)
 
-    scenario.events.foreach{ case(timestamp, blobSize) => {
+    scenario.events.foreach{ case(tileGroupStart, events) => {
 
-      val eventTileStart = ZoomCache.containingInterval(timestamp, scenario.zoomLevel).getStart
+      events.foreach{ case(timestamp, blobSize) => {
 
-      expect(domainDifferenceStore.retrieveEventTiles(
-        EasyMock.eq(pair1.asRef),
-        EasyMock.eq(scenario.zoomLevel),
-        EasyMock.eq(scenario.tileGroupStart))
-      ).andStubReturn(Some(TileGroup(scenario.interval.getStart, Map(eventTileStart -> blobSize))))
+        val eventTileStart = ZoomCache.containingInterval(timestamp, scenario.zoomLevel).getStart
 
-      val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
-      blobs(offset) = blobSize
+        expect(domainDifferenceStore.retrieveEventTiles(
+          EasyMock.eq(pair1.asRef),
+          EasyMock.eq(scenario.zoomLevel),
+          EasyMock.eq(tileGroupStart))
+        ).andStubReturn(Some(TileGroup(scenario.interval.getStart, Map(eventTileStart -> blobSize))))
+
+        val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
+        blobs(offset) = blobSize
+      }
+     }
+
     }}
 
     expect(domainDifferenceStore.retrieveEventTiles(
@@ -274,9 +279,8 @@ object DefaultDifferencesManagerTest {
                                           zoomLevel = ZoomCache.QUARTER_HOURLY,
                                           arraySize = 32,
                                           events = Map(
-                                            new DateTime(1976,10,14,8,23,0,0) -> 12
+                                            new DateTime(1976,10,14,8,0,0,0) -> Map(new DateTime(1976,10,14,8,23,0,0) -> 12)
                                           ),
-                                          tileGroupStart = new DateTime(1976,10,14,8,0,0,0),
                                           interval = new Interval(new DateTime(1976,10,14,8,0,0,0), new DateTime(1976,10,14,15,45,0,0))
                                         )
 
@@ -287,9 +291,8 @@ object DefaultDifferencesManagerTest {
                                           zoomLevel = ZoomCache.HALF_HOURLY,
                                           arraySize = 24,
                                           events = Map(
-                                            new DateTime(1993,3,3,12,23,0,0) -> 76
+                                            new DateTime(1993,3,3,12,0,0,0) -> Map(new DateTime(1993,3,3,12,23,0,0) -> 76)
                                           ),
-                                          tileGroupStart = new DateTime(1993,3,3,12,0,0,0),
                                           interval = new Interval(new DateTime(1993,3,3,12,0,0,0), new DateTime(1993,3,3,23,30,0,0))
                                         )
 
@@ -298,17 +301,16 @@ object DefaultDifferencesManagerTest {
   /**
    * Show that 15 minute zoom level can span 8 hour hour aligned slots.
    */
-  /*
+
   @DataPoint def spanningQuarterHourly = Scenario(
                                           zoomLevel = ZoomCache.QUARTER_HOURLY,
                                           arraySize = 4,
                                           events = Map(
-                                            new DateTime(1922,1,11,7,57,34,345) -> 17,
-                                            new DateTime(1922,1,11,8,1,19,883)  -> 29
+                                            new DateTime(1922,1,11,0,0,0,0) -> Map(new DateTime(1922,1,11,7,57,34,345) -> 17),
+                                            new DateTime(1922,1,11,8,0,0,0) -> Map(new DateTime(1922,1,11,8,1,19,883)  -> 29)
                                           ),
-                                          tileGroupStart = new DateTime(1922,1,11,0,0,0,0),
                                           interval = new Interval(new DateTime(1922,1,11,7,31,0,0), new DateTime(1922,1,11,8,29,0,0))
                                         )
-  */
-  case class Scenario(zoomLevel:Int, arraySize:Int, events:Map[DateTime,Int], tileGroupStart:DateTime, interval:Interval)
+
+  case class Scenario(zoomLevel:Int, arraySize:Int, events:Map[DateTime, Map[DateTime,Int]], interval:Interval)
 }
