@@ -229,7 +229,7 @@ class DefaultDifferencesManagerTest {
           EasyMock.eq(pair1.asRef),
           EasyMock.eq(scenario.zoomLevel),
           EasyMock.eq(tileGroupStart))
-        ).andStubReturn(Some(TileGroup(scenario.interval.getStart, Map(eventTileStart -> blobSize))))
+        ).andStubReturn(Some(TileGroup(tileGroupStart, Map(eventTileStart -> blobSize))))
 
         val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
         blobs(offset) = blobSize
@@ -310,6 +310,19 @@ object DefaultDifferencesManagerTest {
                                             new DateTime(1922,1,11,8,0,0,0) -> Map(new DateTime(1922,1,11,8,1,19,883)  -> 29)
                                           ),
                                           interval = new Interval(new DateTime(1922,1,11,7,31,0,0), new DateTime(1922,1,11,8,29,0,0))
+                                        )
+
+  /**
+   * Show that 15 minute zoom level can span 8 hour hour aligned slots.
+   */
+  @DataPoint def spanningHalfHourly = Scenario(
+                                          zoomLevel = ZoomCache.HALF_HOURLY,
+                                          arraySize = 9,
+                                          events = Map(
+                                            new DateTime(1968,5,6,0,0,0,0)  -> Map(new DateTime(1968,5,6,10,19,33,745) -> 53),
+                                            new DateTime(1968,5,6,12,0,0,0) -> Map(new DateTime(1968,5,6,14,17,10,983) -> 102)
+                                          ),
+                                          interval = new Interval(new DateTime(1968,5,6,10,2,0,0), new DateTime(1968,5,6,14,3,0,0))
                                         )
 
   case class Scenario(zoomLevel:Int, arraySize:Int, events:Map[DateTime, Map[DateTime,Int]], interval:Interval)

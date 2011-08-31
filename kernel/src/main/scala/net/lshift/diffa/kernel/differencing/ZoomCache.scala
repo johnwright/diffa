@@ -230,10 +230,15 @@ object ZoomCache {
    * Returns a flat list of the tile starting times in the given interval at the specified zoom level
    */
   def individualTileEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] = {
+    val alignedInterval = alignInterval(interval, zoomLevel)
+    slice(alignedInterval.toDuration, alignedInterval.getStart, zoomLevel)
+  }
+
+  // TODO document
+  def alignInterval(interval:Interval, zoomLevel:Int) = {
     val alignedStart = containingInterval(interval.getStart, zoomLevel)
     val alignedEnd = containingInterval(interval.getEnd, zoomLevel)
-    val alignedInterval = new Interval(alignedStart.getStart, alignedEnd.getStart)
-    slice(alignedInterval.toDuration, alignedInterval.getStart, zoomLevel)
+    new Interval(alignedStart.getStart, alignedEnd.getStart)
   }
 
   private def slice(d:Duration, startTime:DateTime, zoomLevel:Int) : Seq[DateTime] = {

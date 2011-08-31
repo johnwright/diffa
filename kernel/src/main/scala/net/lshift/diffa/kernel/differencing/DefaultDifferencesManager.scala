@@ -101,7 +101,9 @@ class DefaultDifferencesManager(
     // There must be a better way to do this map filter ......
     val tileGroups = groupStartTimes.map(t => domainDifferenceStore.retrieveEventTiles(pair, zoomLevel, t)).filter(_.isDefined).map(_.get)
     val unfiltered = tileGroups.flatMap(g => g.tiles).map{case (k,v) => k -> v }
-    val filtered = unfiltered.filter{case (d, i) => timespan.contains(d)}.toMap
+    val alignedInterval = ZoomCache.alignInterval(timespan, zoomLevel)
+    // Note the half open semantics of the contains method
+    val filtered = unfiltered.filter{case (d, i) => alignedInterval.contains(d) || alignedInterval.getEnd == d}.toMap
     val tileEdges = ZoomCache.individualTileEdges(timespan, zoomLevel)
     tileEdges.map(s => filtered.getOrElse(s, 0)).toArray
   }
