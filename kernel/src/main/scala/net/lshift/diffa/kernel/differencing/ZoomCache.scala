@@ -177,7 +177,49 @@ object ZoomCache {
    * for the given interval at the specified level of zoom.
    */
   def containingTileGroupEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] = {
-    // Align everything to days for now, consider a weekly alignment for days or eight hours in due course
+    val minutes = interval.toDuration.getStandardMinutes
+    val startDay = interval.getStart.getDayOfYear
+    val endDay = interval.getEnd.getDayOfYear
+    if (minutes >= (24 * 60) || endDay > startDay) { // TODO Corner case between NYE and NYD is not tested
+      // Align everything else to days for now, consider a weekly alignment for days or eight hours in due course
+      alignToDayBoundary(interval)
+    }
+    else {
+      zoomLevel match {
+        case QUARTER_HOURLY | HALF_HOURLY => alignToSubDayBoundary(interval, zoomLevel)
+        case _                            => alignToDayBoundary(interval)
+      }
+    }
+  }
+
+  private def alignToSubDayBoundary(interval:Interval, zoomLevel:Int) = {
+    val multiple = zoomLevel match {
+      case QUARTER_HOURLY => 8
+      case HALF_HOURLY    => 12
+    }
+    val start = subDayAlignedTimestamp(interval.getStart, multiple)
+    val end = subDayAlignedTimestamp(interval.getEnd, multiple)
+    val times = if (zoomLevel == QUARTER_HOURLY) {
+      if ( start.getHourOfDay == 0 && end.getHourOfDay == 16) {
+        Set(start, start.withHourOfDay(8), end)
+      }
+      else {
+        Set(start, end)
+      }
+    } else {
+      Set(start, end)
+    }
+    times.toSeq
+  }
+
+  // TODO Copy and paste with subhourly function
+  private def subDayAlignedTimestamp(timestamp:DateTime, multiple:Int) = {
+    val hourOfDay = timestamp.getHourOfDay
+    val alignedHour = hourOfDay - (hourOfDay % multiple)
+    timestamp.withHourOfDay(alignedHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+  }
+
+  private def alignToDayBoundary(interval:Interval) = {
     val startTile = interval.getStart.withTimeAtStartOfDay()
     val endTile = interval.getEnd.dayOfYear().roundCeilingCopy()
     val days = new Duration(startTile,endTile).getStandardDays.intValue()

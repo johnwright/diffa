@@ -32,7 +32,15 @@ class SpanningTileGroupTest {
   }
 }
 
+/**
+ * This is divided into queries that
+ *
+ * - Span day boundaries
+ * - Sub-hourly zoom level queries that span boundaries within the day but not across midnight boundaries
+ */
 object SpanningTileGroupTest {
+
+  // Interday spanning queries
 
   @DataPoint def daily = Scenario(DAILY,
                                   new Interval(new DateTime(2004,3,6,17,16,58,888),new DateTime(2004,3,8,9,10,11,222)),
@@ -61,6 +69,16 @@ object SpanningTileGroupTest {
   @DataPoint def quarterHourly = Scenario(QUARTER_HOURLY,
                                           new Interval(new DateTime(2007,8,18,23,46,7,463),new DateTime(2007,8,20,13,14,44,732)),
                                           new DateTime(2007,8,18,0,0,0,0), new DateTime(2007,8,19,0,0,0,0), new DateTime(2007,8,20,0,0,0,0))
+
+  // Intraday spanning queries, currently only relevant for sub-hourly queries
+
+  @DataPoint def intradayQuarterHourly = Scenario(QUARTER_HOURLY,
+                                          new Interval(new DateTime(2007,8,18,7,46,7,463),new DateTime(2007,8,18,8,14,44,732)),
+                                          new DateTime(2007,8,18,0,0,0,0), new DateTime(2007,8,18,8,0,0,0))
+
+  @DataPoint def intradayHalfHourly = Scenario(HALF_HOURLY,
+                                       new Interval(new DateTime(1999,11,29,11,59,45,123),new DateTime(1999,11,29,19,33,45,997)),
+                                       new DateTime(1999,11,29,0,0,0,0), new DateTime(1999,11,29,12,0,0,0))
 
   case class Scenario (zoomLevel:Int, interval:Interval, timestamps:DateTime*)
 
