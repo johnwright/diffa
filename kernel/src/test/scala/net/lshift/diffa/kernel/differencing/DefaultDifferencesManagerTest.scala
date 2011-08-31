@@ -25,13 +25,13 @@ import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, M
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
 import net.lshift.diffa.participant.scanning.ScanConstraint
-import net.lshift.diffa.kernel.config.{HibernateDomainConfigStore, DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
-import net.lshift.diffa.kernel.config.system.{HibernateSystemConfigStore, SystemConfigStore}
-import net.lshift.diffa.kernel.frontend.EndpointDef._
-import net.lshift.diffa.kernel.frontend.PairDef._
-import net.lshift.diffa.kernel.frontend.{PairDef, EndpointDef}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import org.joda.time.{Duration, Interval, DateTime}
+import net.lshift.diffa.kernel.differencing.DefaultDifferencesManagerTest.Scenario
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 
 /**
  * Test cases for the participant protocol factory.
@@ -47,6 +47,7 @@ class StubParticipantProtocolFactory
   }
 }
 
+@RunWith(classOf[Theories])
 class DefaultDifferencesManagerTest {
   val listener = createStrictMock("listener1", classOf[DifferencingListener])
 
@@ -211,25 +212,18 @@ class DefaultDifferencesManagerTest {
     manager.onDownstreamExpired(id, "d")
   }
 
-  @Test
-  def shouldRetrieveTiles {
+  @Theory
+  def shouldRetrieveTiles(scenario:Scenario) {
 
-    val zoomLevel = ZoomCache.QUARTER_HOURLY
-    val start = new DateTime(1976,10,14,8,0,0,0)
-    val end = new DateTime(1976,10,14,15,45,0,0) // Heatmap width?
-    val interval = new Interval(start, end)
+    def divisions(d:Duration) = d.getStandardMinutes.intValue() / ZoomCache.zoom(scenario.zoomLevel)
 
-    val eventTime = new DateTime(1976,10,14,8,23,0,0)
-    val eventTileStart = ZoomCache.containingInterval(eventTime, zoomLevel).getStart
-    val tileGroupStart = new DateTime(1976,10,14,0,0,0,0)
-
-    val blobSize = 10
+    val eventTileStart = ZoomCache.containingInterval(scenario.eventTime, scenario.zoomLevel).getStart
 
     expect(domainDifferenceStore.retrieveEventTiles(
       EasyMock.eq(pair1.asRef),
-      EasyMock.eq(zoomLevel),
-      EasyMock.eq(tileGroupStart))
-    ).andStubReturn(Some(TileGroup(start, Map(eventTileStart -> blobSize))))
+      EasyMock.eq(scenario.zoomLevel),
+      EasyMock.eq(scenario.tileGroupStart))
+    ).andStubReturn(Some(TileGroup(scenario.interval.getStart, Map(eventTileStart -> scenario.blobSize))))
 
     expect(domainDifferenceStore.retrieveEventTiles(
       EasyMock.eq(pair2.asRef),
@@ -239,32 +233,32 @@ class DefaultDifferencesManagerTest {
 
     replay(domainDifferenceStore)
 
-    val domainTiles = manager.retrieveEventTiles(pair1.domain.name, zoomLevel, interval)
+    val domainTiles = manager.retrieveEventTiles(pair1.domain.name, scenario.zoomLevel, scenario.interval)
     val pair1Tiles = domainTiles(pair1.key)
     val pair2Tiles = domainTiles(pair2.key)
 
-    assertArrayEquals(Array.fill(32)(0), pair2Tiles)
+    val blobArraySize = divisions(scenario.interval.toDuration) + 1
 
-    val blobs = Array.fill(32)(0)
-    val offset = new Duration(start, eventTime).getStandardMinutes.intValue() / ZoomCache.zoom(zoomLevel)
-    blobs(offset) = blobSize
+    assertArrayEquals(Array.fill(blobArraySize)(0), pair2Tiles)
+
+    val blobs = Array.fill(blobArraySize)(0)
+    val offset = divisions(new Duration(scenario.interval.getStart, scenario.eventTime))
+    blobs(offset) = scenario.blobSize
 
     assertArrayEquals(blobs, pair1Tiles)
   }
 
-  //@Test
-  def shouldMergeGroupedTiles {
-    // Deliberately span tile groups
-    val start = new DateTime(1877,3,29,1,26,54,0)
-    val end = start.plusMinutes(24 * 15) // Heatmap width?
-    val interval = new Interval(start, end)
-
-    val tiles = manager.retrieveEventTiles(pair2.domain.name, ZoomCache.QUARTER_HOURLY, interval)
-
-    assertNotNull(tiles)
-    //assertEquals(Map( pair2 -> Array(1,0,0,1) ), tiles)
-  }
-
   private def replayAll = replay(listener, matcher)
   private def verifyAll = verify(listener, matcher)
+}
+
+object DefaultDifferencesManagerTest {
+
+  @DataPoint def quarterHourly = Scenario(ZoomCache.QUARTER_HOURLY, 10,
+                                          new DateTime(1976,10,14,8,23,0,0),
+                                          new DateTime(1976,10,14,0,0,0,0),
+                                          new Interval(new DateTime(1976,10,14,8,0,0,0), new DateTime(1976,10,14,15,45,0,0)) // heatmap width ???
+                                          )
+
+  case class Scenario(zoomLevel:Int, blobSize:Int, eventTime:DateTime, tileGroupStart:DateTime, interval:Interval)
 }
