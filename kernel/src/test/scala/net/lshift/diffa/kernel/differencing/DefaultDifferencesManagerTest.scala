@@ -215,15 +215,23 @@ class DefaultDifferencesManagerTest {
   @Theory
   def shouldRetrieveTiles(scenario:Scenario) {
 
+    val blobs = Array.fill(scenario.arraySize)(0)
+
     def divisions(d:Duration) = d.getStandardMinutes.intValue() / ZoomCache.zoom(scenario.zoomLevel)
 
-    val eventTileStart = ZoomCache.containingInterval(scenario.eventTime, scenario.zoomLevel).getStart
+    scenario.events.foreach{ case(timestamp, blobSize) => {
 
-    expect(domainDifferenceStore.retrieveEventTiles(
-      EasyMock.eq(pair1.asRef),
-      EasyMock.eq(scenario.zoomLevel),
-      EasyMock.eq(scenario.tileGroupStart))
-    ).andStubReturn(Some(TileGroup(scenario.interval.getStart, Map(eventTileStart -> scenario.blobSize))))
+      val eventTileStart = ZoomCache.containingInterval(timestamp, scenario.zoomLevel).getStart
+
+      expect(domainDifferenceStore.retrieveEventTiles(
+        EasyMock.eq(pair1.asRef),
+        EasyMock.eq(scenario.zoomLevel),
+        EasyMock.eq(scenario.tileGroupStart))
+      ).andStubReturn(Some(TileGroup(scenario.interval.getStart, Map(eventTileStart -> blobSize))))
+
+      val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
+      blobs(offset) = blobSize
+    }}
 
     expect(domainDifferenceStore.retrieveEventTiles(
       EasyMock.eq(pair2.asRef),
@@ -238,10 +246,6 @@ class DefaultDifferencesManagerTest {
     val pair2Tiles = domainTiles(pair2.key)
 
     assertArrayEquals(Array.fill(scenario.arraySize)(0), pair2Tiles)
-
-    val blobs = Array.fill(scenario.arraySize)(0)
-    val offset = divisions(new Duration(scenario.interval.getStart, scenario.eventTime))
-    blobs(offset) = scenario.blobSize
 
     assertArrayEquals(blobs, pair1Tiles)
   }
@@ -268,21 +272,25 @@ object DefaultDifferencesManagerTest {
    */
   @DataPoint def alignedQuarterHourly = Scenario(
                                           zoomLevel = ZoomCache.QUARTER_HOURLY,
-                                          blobSize = 10, arraySize = 32,
-                                          eventTime = new DateTime(1976,10,14,8,23,0,0),
-                                          tileGroupStart = new DateTime(1976,10,14,0,0,0,0),
+                                          arraySize = 32,
+                                          events = Map(
+                                            new DateTime(1976,10,14,8,23,0,0) -> 12
+                                          ),
+                                          tileGroupStart = new DateTime(1976,10,14,8,0,0,0),
                                           interval = new Interval(new DateTime(1976,10,14,8,0,0,0), new DateTime(1976,10,14,15,45,0,0))
                                         )
 
   /**
-   * Tiles at 15 minute zoom level should be grouped into 8 hour aligned slots, which gives 32 tiles.
+   * Tiles at 30 minute zoom level should be grouped into 12 hour aligned slots, which gives 24 tiles.
    */
   @DataPoint def alignedHalfHourly = Scenario(
                                           zoomLevel = ZoomCache.HALF_HOURLY,
-                                          blobSize = 16, arraySize = 32,
-                                          eventTime = new DateTime(1993,3,3,11,23,0,0),
-                                          tileGroupStart = new DateTime(1993,3,3,0,0,0,0),
-                                          interval = new Interval(new DateTime(1993,3,3,0,0,0,0), new DateTime(1993,3,3,15,30,0,0))
+                                          arraySize = 24,
+                                          events = Map(
+                                            new DateTime(1993,3,3,12,23,0,0) -> 76
+                                          ),
+                                          tileGroupStart = new DateTime(1993,3,3,12,0,0,0),
+                                          interval = new Interval(new DateTime(1993,3,3,12,0,0,0), new DateTime(1993,3,3,23,30,0,0))
                                         )
 
   // SPANNING QUERIES
@@ -290,14 +298,17 @@ object DefaultDifferencesManagerTest {
   /**
    * Show that 15 minute zoom level can span 8 hour hour aligned slots.
    */
-
+  /*
   @DataPoint def spanningQuarterHourly = Scenario(
                                           zoomLevel = ZoomCache.QUARTER_HOURLY,
-                                          blobSize = 10, arraySize = 4,
-                                          eventTime = new DateTime(1922,1,11,7,57,34,345),
+                                          arraySize = 4,
+                                          events = Map(
+                                            new DateTime(1922,1,11,7,57,34,345) -> 17,
+                                            new DateTime(1922,1,11,8,1,19,883)  -> 29
+                                          ),
                                           tileGroupStart = new DateTime(1922,1,11,0,0,0,0),
                                           interval = new Interval(new DateTime(1922,1,11,7,31,0,0), new DateTime(1922,1,11,8,29,0,0))
                                         )
-
-  case class Scenario(zoomLevel:Int, blobSize:Int, arraySize:Int, eventTime:DateTime, tileGroupStart:DateTime, interval:Interval)
+  */
+  case class Scenario(zoomLevel:Int, arraySize:Int, events:Map[DateTime,Int], tileGroupStart:DateTime, interval:Interval)
 }
