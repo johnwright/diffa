@@ -250,7 +250,18 @@ class DefaultDifferencesManagerTest {
   private def verifyAll = verify(listener, matcher)
 }
 
+/**
+ * The data sets are divided into two groups:
+ *
+ * - Queries that should yield 32-column aligned results, seeing as these are easier to read
+ * - Queries that span tile group aligned boundaries, to verify that the merging is working properly
+ *
+ * This should make the data points more comprehensive and easier to troubleshoot.
+ *
+ */
 object DefaultDifferencesManagerTest {
+
+  // ALIGNED QUERIES
 
   /**
    * Tiles at 15 minute zoom level should be grouped into 8 hour aligned slots, which gives 32 tiles.
@@ -262,6 +273,20 @@ object DefaultDifferencesManagerTest {
                                           tileGroupStart = new DateTime(1976,10,14,0,0,0,0),
                                           interval = new Interval(new DateTime(1976,10,14,8,0,0,0), new DateTime(1976,10,14,15,45,0,0))
                                         )
+
+  /**
+   * Tiles at 15 minute zoom level should be grouped into 8 hour aligned slots, which gives 32 tiles.
+   */
+  @DataPoint def alignedHalfHourly = Scenario(
+                                          zoomLevel = ZoomCache.HALF_HOURLY,
+                                          blobSize = 16, arraySize = 32,
+                                          eventTime = new DateTime(1993,3,3,11,23,0,0),
+                                          tileGroupStart = new DateTime(1993,3,3,0,0,0,0),
+                                          interval = new Interval(new DateTime(1993,3,3,0,0,0,0), new DateTime(1993,3,3,15,30,0,0))
+                                        )
+
+  // SPANNING QUERIES
+
   /**
    * Show that 15 minute zoom level can span 8 hour hour aligned slots.
    */
