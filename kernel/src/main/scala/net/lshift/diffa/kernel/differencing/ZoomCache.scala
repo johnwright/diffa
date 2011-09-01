@@ -96,7 +96,9 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
       val tileGroupInterval = containingTileGroupInterval(detectionTime, key.zoomLevel)
       val cacheKey = TileGroupKey(pair, key.zoomLevel, tileGroupInterval.getStart)
       val individualTileInterval = containingInterval(detectionTime, key.zoomLevel)
-      dirtyTilesByLevel.get(key).get += individualTileInterval.getStart
+      if ( dirtyTilesByLevel.contains(cacheKey) ) {
+        dirtyTilesByLevel.get(cacheKey).get += individualTileInterval.getStart
+      }
     })
   }
 

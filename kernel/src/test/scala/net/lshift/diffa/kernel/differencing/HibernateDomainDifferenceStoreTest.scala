@@ -631,6 +631,36 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def dirtyTilesShouldNotAffectOtherTimeRanges = ZoomCache.levels.foreach(outOfRangeTilesShouldNotBeMarkerDirty(_))
+
+  private def outOfRangeTilesShouldNotBeMarkerDirty(zoomLevel:Int) {
+    val observationTime = new DateTime(1977,4,4,0,0,0,0)
+    val firstEventTime = observationTime.minusMinutes(1)
+    val secondEventTime = observationTime.minusMinutes(1).minusDays(1)
+
+    val alignedTileStart = ZoomCache.containingInterval(firstEventTime, zoomLevel).getStart
+    val alignedTileGroupStart = ZoomCache.containingTileGroupInterval(firstEventTime, zoomLevel).getStart
+
+    val pair = DiffaPairRef("pair1", "domain")
+
+    // Add an event to the store and verify that the correct tile cache is built for that event
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "17a"), firstEventTime, "", "", observationTime)
+
+    def verifyTilesOfFirstGroup() = {
+      val tiles = diffStore.retrieveEventTiles(pair, zoomLevel, firstEventTime)
+      assertEquals("Zoom level %s;".format(zoomLevel), TileGroup(alignedTileGroupStart, Map(alignedTileStart -> 1) ), tiles.get)
+    }
+
+    verifyTilesOfFirstGroup()
+
+    // Add a second event to the store for a different time frame and verify that the cache of the first event is not affected
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "17b"), secondEventTime, "", "", observationTime)
+
+    verifyTilesOfFirstGroup()
+
+  }
+
+  @Test
   def eventsShouldUpdateZoomCache = ZoomCache.levels.foreach(playThroughEventsAtZoomLevel(_))
 
   private def playThroughEventsAtZoomLevel(zoomLevel:Int) = {

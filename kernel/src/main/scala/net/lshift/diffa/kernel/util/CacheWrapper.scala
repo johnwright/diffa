@@ -39,7 +39,15 @@ class CacheWrapper[A, B](cacheName:String, manager:CacheManager) extends Closeab
   def close() = manager.removeCache(cacheName)
 
 
+  /**
+   * Removes all values from this cache
+   */
   def clear() = cache.removeAll()
+
+  /**
+   * Removes the element stored under this key from the cache
+   */
+  def contains(key:A) = cache.isKeyInCache(key)
 
   /**
    * Retrieve a value from the value by its key
