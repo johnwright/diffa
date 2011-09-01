@@ -770,35 +770,39 @@ object HibernateDomainDifferenceStoreTest {
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0), Map(new DateTime(2002,10,5,14,0,0,0) -> 2)))
          ),
           TWO_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0),
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
                                       Map(new DateTime(2002,10,5,14,0,0,0) -> 1,
                                           new DateTime(2002,10,5,12,0,0,0) -> 11,
                                           new DateTime(2002,10,5,10,0,0,0) -> 1,
-                                          new DateTime(2002,10,5,6,0,0,0)  -> 1,
-                                          new DateTime(2002,10,4,14,0,0,0) -> 2))),
+                                          new DateTime(2002,10,5,6,0,0,0)  -> 1)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
+                                      Map(new DateTime(2002,10,4,14,0,0,0) -> 2))),
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0),Map(new DateTime(2002,10,5,14,0,0,0) -> 2)))
-         )/*,
+         ),
           FOUR_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0),
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
                                       Map(new DateTime(2002,10,5,12,0,0,0) -> 12,
                                           new DateTime(2002,10,5,8,0,0,0)  -> 1,
-                                          new DateTime(2002,10,5,4,0,0,0)  -> 1,
-                                          new DateTime(2002,10,4,12,0,0,0) -> 2))),
+                                          new DateTime(2002,10,5,4,0,0,0)  -> 1)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
+                                      Map(new DateTime(2002,10,4,12,0,0,0) -> 2))),
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0), Map(new DateTime(2002,10,5,12,0,0,0) -> 2)))
          ),
           EIGHT_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0),
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
                                       Map(new DateTime(2002,10,5,8,0,0,0)  -> 13,
-                                          new DateTime(2002,10,5,0,0,0,0)  -> 1,
-                                          new DateTime(2002,10,4,8,0,0,0)  -> 2))),
+                                          new DateTime(2002,10,5,0,0,0,0)  -> 1)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
+                                      Map(new DateTime(2002,10,4,8,0,0,0)  -> 2))),
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0),Map(new DateTime(2002,10,5,8,0,0,0)  -> 2)))
          ),
           DAILY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                      Map(new DateTime(2002,10,5,0,0,0,0) -> 14,
-                                          new DateTime(2002,10,4,0,0,0,0) -> 2))),
+                                      Map(new DateTime(2002,10,5,0,0,0,0) -> 14)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
+                                      Map(new DateTime(2002,10,4,0,0,0,0) -> 2))),
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0), Map(new DateTime(2002,10,5,0,0,0,0) -> 2)))
-         )*/
+         )
       )
   )
 
