@@ -28,6 +28,7 @@ import java.sql.{Types, Connection}
 import net.lshift.diffa.kernel.differencing.VersionCorrelationStore
 import net.lshift.hibernate.migrations.MigrationBuilder
 import scala.collection.JavaConversions._
+import org.hibernate.`type`.IntegerType
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -145,7 +146,9 @@ class HibernateConfigStorePreparationStep
   def detectVersion(sf: SessionFactory, config:Configuration) : Option[Int] = {
     // Attempt to read the schema_version table, if it exists
     if (tableExists(sf, config, "schema_version") ) {
-      Some(sf.withSession(_.createSQLQuery("select max(version) from schema_version").uniqueResult().asInstanceOf[Int]))
+      Some(sf.withSession(_.createSQLQuery("select max(version) as max_version from schema_version")
+                           .addScalar("max_version", IntegerType.INSTANCE)
+                           .uniqueResult().asInstanceOf[Int]))
     }
     // The schema_version table doesn't exist, so look at the config_options table
     else if (tableExists(sf, config, "config_options") ) {
