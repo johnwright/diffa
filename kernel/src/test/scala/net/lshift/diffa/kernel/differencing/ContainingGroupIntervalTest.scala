@@ -32,24 +32,22 @@ class ContainingGroupIntervalTest {
   }
 }
 
-// TODO Complete data points
 object ContainingGroupIntervalTest {
-  /*
+
   @DataPoint def daily = Scenario(new DateTime(2004,3,6,17,16,58,888), DAILY,
                                   new Interval(new DateTime(2004,3,6,0,0,0,0),new DateTime(2004,3,7,0,0,0,0)))
 
   @DataPoint def eightHourly = Scenario(new DateTime(1996,10,5,4,14,18,745), EIGHT_HOURLY,
-                                  new Interval(new DateTime(1996,10,5,0,0,0,0),new DateTime(1996,10,5,8,0,0,0)))
+                                  new Interval(new DateTime(1996,10,5,0,0,0,0),new DateTime(1996,10,6,0,0,0,0)))
 
   @DataPoint def fourHourly = Scenario(new DateTime(1987,1,24,21,23,34,632), FOUR_HOURLY,
-                                  new Interval(new DateTime(1987,1,24,20,0,0,0),new DateTime(1987,1,25,0,0,0,0)))
+                                  new Interval(new DateTime(1987,1,24,0,0,0,0),new DateTime(1987,1,25,0,0,0,0)))
 
   @DataPoint def twoHourly = Scenario(new DateTime(2033,12,12,2,19,45,125), TWO_HOURLY,
-                                  new Interval(new DateTime(2033,12,12,2,0,0,0),new DateTime(2033,12,12,4,0,0,0)))
+                                  new Interval(new DateTime(2033,12,12,0,0,0,0),new DateTime(2033,12,13,0,0,0,0)))
 
   @DataPoint def hourly = Scenario(new DateTime(2008,2,28,19,7,6,198), HOURLY,
-                                  new Interval(new DateTime(2008,2,28,19,0,0,0),new DateTime(2008,2,28,20,0,0,0)))
-  */
+                                  new Interval(new DateTime(2008,2,28,0,0,0,0),new DateTime(2008,2,29,0,0,0,0)))
 
   @DataPoint def halfHourlyAfter12pm = Scenario(new DateTime(1999,11,30,19,51,52,392), HALF_HOURLY,
                                     new Interval(new DateTime(1999,11,30,12,0,0,0),new DateTime(1999,12,1,0,0,0,0)))
