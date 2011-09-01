@@ -49,15 +49,7 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
-      case 200    =>
-        // TODO Is the date formatting correct?
-//        val decoded = response.getEntity(classOf[java.util.Map[String, java.util.Map[DateTime, Int]]])
-//        decoded.map{case (pair,tileset) =>
-//          pair -> tileset.map{case (d,i) => formatter.parseDateTime(d.asInstanceOf[String]) -> i}.toMap[DateTime,Int]
-//        }.toMap[String,Map[DateTime,Int]]
-        val r = response.getEntity(classOf[Map[String,Array[Int]]])
-        r
-
+      case 200    => response.getEntity(classOf[java.util.Map[String,Array[Int]]]).toMap[String,Array[Int]]
       case x:Int  => handleHTTPError(x, path, status)
     }
 

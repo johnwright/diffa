@@ -106,13 +106,10 @@ trait CommonDifferenceTests {
     val zoomLevel = ZoomCache.QUARTER_HOURLY
     val tiles = env.diffClient.getZoomedTiles(yesterday, tomorrow, zoomLevel)
     assertNotNull(tiles)
+    assertNotNull(tiles(env.pairKey))
+  }
 
-    val tileStart = ZoomCache.containingInterval(yesterday, zoomLevel).getStart
-
-    assertEquals( Map(tileStart -> 1), tiles(env.pairKey) )
-	}
-	
-	@Test
+  @Test
   def shouldBeAbleToIgnoreDifference() {
     val diffs = getVerifiedDiffs()
     assertFalse(diffs.isEmpty)
