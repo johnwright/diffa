@@ -31,6 +31,6 @@ class InvalidZoomLevelExceptionMapper extends ExceptionMapper[InvalidZoomLevelEx
 
   def toResponse(x: InvalidZoomLevelException) = {
     log.debug("Attempt to request an invalid zoom level: %s".format(x.level))
-    Response.status(Response.Status.NOT_FOUND).entity(x.level).`type`("text/plain").build()
+    Response.status(Response.Status.NOT_FOUND).entity(x.level.toString).`type`("text/plain").build()
   }
 }
