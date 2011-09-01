@@ -235,7 +235,7 @@ object ZoomCache {
         }
       case _  =>
         val start = timestamp.withTimeAtStartOfDay()
-        val end = timestamp.dayOfYear().roundCeilingCopy()
+        val end = start.plusDays(1)
         new Interval(start, end)
     }
   }
