@@ -115,7 +115,7 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
 
-        val alignedTimespan = containingTileGroup(groupStart, zoomLevel)
+        val alignedTimespan = containingTileGroupInterval(groupStart, zoomLevel)
 
         // Iterate through the diff store to generate aggregate sums of the events in tile
         // aligned buckets
@@ -205,7 +205,7 @@ object ZoomCache {
 
   // TODO Unit test
   // TODO Refactor, make neater
-  def containingTileGroup(timestamp:DateTime, zoomLevel:Int) : Interval = {
+  def containingTileGroupInterval(timestamp:DateTime, zoomLevel:Int) : Interval = {
     zoomLevel match {
       case QUARTER_HOURLY =>
         val hour = timestamp.getHourOfDay
