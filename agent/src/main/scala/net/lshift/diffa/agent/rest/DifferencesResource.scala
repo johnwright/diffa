@@ -119,14 +119,10 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     // TODO Consider limiting the zoom range to prevent people requesting ranges going back to the start of time in one go
     // This should probably be relative to the zoom level and is effectively geared towards delivering enough
     // data to populate the heatmap
-    try {
-      val tileSet = differencesManager.retrieveEventTiles(domain, zoomLevel, new Interval(rangeStartDate, rangeEndDate))
-      val respObj = mapAsJavaMap(tileSet.keys.map(pair => pair -> tileSet(pair).toArray).toMap[String, Array[Int]])
-      Response.ok(respObj).tag(domainVsn).build()
 
-    } catch {
-      case e:InvalidZoomLevelException => throw new WebApplicationException(404)
-    }
+    val tileSet = differencesManager.retrieveEventTiles(domain, zoomLevel, new Interval(rangeStartDate, rangeEndDate))
+    val respObj = mapAsJavaMap(tileSet.keys.map(pair => pair -> tileSet(pair).toArray).toMap[String, Array[Int]])
+    Response.ok(respObj).tag(domainVsn).build()
   }
 
   @GET

@@ -336,4 +336,4 @@ object ZoomCache {
 
 }
 
-class InvalidZoomLevelException(level:Int) extends Exception("Zoom level: " + level)
+class InvalidZoomLevelException(val level:Int) extends Exception("Zoom level: " + level)
