@@ -593,33 +593,41 @@ class HibernateDomainDifferenceStoreTest {
     }}
   }
 
-  //@Test
+  @Test
   def tilesShouldBeWithinTimeSpan = ZoomCache.levels.foreach(tilesShouldBeWithinTimeSpanAtZoomLevel(_))
 
   private def tilesShouldBeWithinTimeSpanAtZoomLevel(zoomLevel:Int) {
 
     val observationTime = new DateTime(2008,9,7,0,0,0,0)
-
-    val zoomFactor = ZoomCache.zoom(zoomLevel)
-
-    //val timespan = new Interval(observationTime.minusMinutes(zoomFactor * 5),observationTime.minusMinutes(zoomFactor * 3))
-    val timestamp = observationTime.minusMinutes(zoomFactor * 5)
+    val backOneWeek = observationTime.minusWeeks(1)
+    val tileGroupInterval = ZoomCache.containingTileGroupInterval(backOneWeek.minusMinutes(1), zoomLevel)
+    val queryTime = tileGroupInterval.getStart
 
     val pair = DiffaPairRef("pair1", "domain")
 
     diffStore.clearAllDifferences
 
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10a"), observationTime.minusMinutes(zoomFactor * 2 - 1), "", "", observationTime)
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10b"), observationTime.minusMinutes(zoomFactor * 2 + 1), "", "", observationTime)
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10c"), observationTime.minusMinutes(zoomFactor * 5 - 1), "", "", observationTime)
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10d"), observationTime.minusMinutes(zoomFactor * 6 + 1), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10a"), tileGroupInterval.getEnd.plusMinutes(1), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10b"), tileGroupInterval.getEnd.minusMinutes(1), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10c"), tileGroupInterval.getStart.plusMinutes(1), "", "", observationTime)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "10d"), tileGroupInterval.getStart.minusMinutes(1), "", "", observationTime)
 
-    val tiles = diffStore.retrieveEventTiles(pair, zoomLevel, timestamp)
-    assertEquals("Zoom level %s;".format(zoomLevel),
-      TileGroup(timestamp,
-        Map(observationTime.minusMinutes(zoomFactor * 5) -> 1, observationTime.minusMinutes(zoomFactor * 3) -> 1)
-      ),
-      tiles.get.tiles(timestamp))
+    // Deliberately allow passing a potentially unaligned timestamp
+    val tiles = diffStore.retrieveEventTiles(pair, zoomLevel, queryTime)
+
+    val firstIntervalStart = ZoomCache.containingInterval(tileGroupInterval.getEnd.minusMinutes(1), zoomLevel).getStart
+    val secondIntervalStart = ZoomCache.containingInterval(tileGroupInterval.getStart.plusMinutes(1), zoomLevel).getStart
+
+    // Special case for daily granularity - a daily zoom level will result in only one tile group,
+    // hence the aggregate will contain both events
+    val expectedAggregates = if (firstIntervalStart == secondIntervalStart) {
+      Map(firstIntervalStart -> 2)
+    }
+    else {
+      Map(firstIntervalStart -> 1, secondIntervalStart -> 1)
+    }
+
+    assertEquals("Zoom level %s;".format(zoomLevel), TileGroup(queryTime, expectedAggregates), tiles.get)
   }
 
   @Test
