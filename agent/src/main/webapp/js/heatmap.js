@@ -58,12 +58,14 @@ Diffa.Routers.Blobs = Backbone.Router.extend({
 Diffa.Models.Blobs = Backbone.Model.extend({
   maxColumns: 96,           // Maybe make variable?
   defaultBucketSize: 3600,
+  defaultZoomLevel:4,       // HOURLY
   defaultMaxRows: 10,       // Will change as more pairs arrive
 
   initialize: function() {
     _.bindAll(this, "sync", "periodicSync", "stopPolling", "startPolling");
 
     this.set({
+      zoomLevel: this.defaultZoomLevel,
       bucketSize: this.defaultBucketSize,
       swimlaneLabels: [],
       buckets: [],
@@ -84,7 +86,7 @@ Diffa.Models.Blobs = Backbone.Model.extend({
     startTime = endTime.add({seconds: -1 * self.get('bucketSize') * self.maxColumns});
     var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
-    $.getJSON("rest/" + Diffa.currentDomain + "/diffs/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + self.get('bucketSize'), function(data) {
+    $.getJSON("rest/" + Diffa.currentDomain + "/diffs/tiles/" + self.get('zoomLevel') + "?range-start=" + dayBeforeNow + "&range-end=" + now, function(data) {
       var swimlaneLabels = self.get('swimlaneLabels').slice(0);     // Retrieve a cloned copy of the swimlane labels
       var buckets = [];
       var maxRows = self.get('maxRows');
@@ -137,11 +139,11 @@ Diffa.Models.Blobs = Backbone.Model.extend({
   },
 
   zoomOut: function() {
-    this.set({bucketSize: this.get('bucketSize') * 2});
+    this.set({ zoomLevel: this.get('zoomLevel') - 1 });
     this.sync();
   },
   zoomIn: function() {
-    this.set({bucketSize: Math.round(this.get('bucketSize') / 2)});
+    this.set({ zoomLevel: this.get('zoomLevel') + 1 });
     this.sync();
   }
 });
@@ -362,6 +364,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     $(document).mouseup(this.mouseUp);
     $(document).mousemove(this.mouseMove);
 
+    this.model.bind('change:zoomLevel',       this.update);
     this.model.bind('change:buckets',         this.update);
     this.model.bind('change:maxRows',         this.update);
     this.model.bind('change:polling',         this.update);
@@ -514,6 +517,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     // draw scale
     var startTime = this.model.get('startTime');
     var bucketSize = this.model.get('bucketSize');
+    var zoomLevel = this.model.get('zoomLevel');
     this.scaleContext.font = "9px sans-serif";
     for (var sc = 0; sc < this.model.maxColumns; sc++) {
       if (sc % 3 == 0) {
@@ -807,7 +811,7 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
 
     _.bindAll(this, "render");
 
-    this.model.bind("changed:bucketSize", "render");
+    this.model.bind("changed:zoomLevel", "render");
 
     $(document).keypress(function(e) {
       if (e.charCode == '+'.charCodeAt()) {
@@ -837,10 +841,10 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
   },
 
   shouldAllowMoreZoomIn: function() {
-    return this.model.get('bucketSize') > 1;      // Buckets can't be smaller than 1s
+    return this.model.get('zoomLevel') < 6;   // Maximum zoom level is 6 - corresponds to a 15 minute granularity
   },
   shouldAllowMoreZoomOut: function() {
-    return this.model.get('bucketSize') < 180*24*3600;  // Buckets can't be wider than 6-months
+    return this.model.get('zoomLevel') > 0;  // Minimal zoom level is 0 - corresponds to a daily granularity
   },
 
   zoomOut: function() { this.model.zoomOut(); },
