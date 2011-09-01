@@ -104,7 +104,9 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
 
     validateLevel(zoomLevel)
 
-    val cacheKey = TileGroupKey(pair, zoomLevel, groupStart)
+    val alignedTimespan = containingTileGroupInterval(groupStart, zoomLevel)
+    val alignedGroupStart = alignedTimespan.getStart
+    val cacheKey = TileGroupKey(pair, zoomLevel, alignedGroupStart)
 
     val tileCache = tileCachesByLevel.get(cacheKey) match {
       case Some(cached) => cached
@@ -113,11 +115,7 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
         tileCachesByLevel.put(cacheKey, cache)
 
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
-        // driven fashion
-
-        val alignedTimespan = containingTileGroupInterval(groupStart, zoomLevel)
-
-        // Iterate through the diff store to generate aggregate sums of the events in tile
+        // driven fashion. Iterate through the diff store to generate aggregate sums of the events in tile
         // aligned buckets
 
         diffStore.retrieveUnmatchedEvents(pair, alignedTimespan, (event:ReportedDifferenceEvent) => {
@@ -147,7 +145,7 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
         flags.clear()
      }
 
-    Some(TileGroup(groupStart, tileCache.toMap))
+    Some(TileGroup(alignedGroupStart, tileCache.toMap))
   }
 
 }

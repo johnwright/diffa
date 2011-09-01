@@ -622,7 +622,7 @@ class HibernateDomainDifferenceStoreTest {
       tiles.get.tiles(timestamp))
   }
 
-  //@Test
+  @Test
   def eventsShouldUpdateZoomCache = ZoomCache.levels.foreach(playThroughEventsAtZoomLevel(_))
 
   private def playThroughEventsAtZoomLevel(zoomLevel:Int) = {
@@ -630,9 +630,6 @@ class HibernateDomainDifferenceStoreTest {
     val observationTime = new DateTime()
     val timestamp1 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 1)
     val timestamp2 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 2)
-    val timespan = new Interval(timestamp2,timestamp1)
-
-    val timestamp = observationTime // TODO
 
     val pair = DiffaPairRef("pair1", "domain")
 
@@ -642,16 +639,16 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.clearAllDifferences
 
     diffStore.addReportableUnmatchedEvent(id1, timestamp1, "", "", observationTime)
-    validateZoomRange(timestamp, pair, zoomLevel, timestamp1)
+    validateZoomRange(timestamp1, pair, zoomLevel, timestamp1)
 
     diffStore.addReportableUnmatchedEvent(id2, timestamp2, "", "", observationTime)
-    validateZoomRange(timestamp, pair, zoomLevel, timestamp1, timestamp2)
+    validateZoomRange(timestamp2, pair, zoomLevel, timestamp1, timestamp2)
 
     diffStore.addMatchedEvent(id2, "")
-    validateZoomRange(timestamp, pair, zoomLevel, timestamp1)
+    validateZoomRange(timestamp2, pair, zoomLevel, timestamp1)
 
     diffStore.addMatchedEvent(id1, "")
-    val tileGroup = diffStore.retrieveEventTiles(pair, zoomLevel, timestamp)
+    val tileGroup = diffStore.retrieveEventTiles(pair, zoomLevel, timestamp1)
     assertTrue(tileGroup.get.tiles.isEmpty)
   }
 
@@ -669,9 +666,11 @@ class HibernateDomainDifferenceStoreTest {
       }
     })
 
+    // Deliberately allow passing a potentially unaligned timestamp
+
     val tileGroup = diffStore.retrieveEventTiles(pair, zoomLevel, timestamp)
-    val tiles = tileGroup.get.tiles(timestamp)
-    assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), expectedTiles, tiles)
+
+    assertEquals("Expected tile set not in range at zoom level %s;".format(zoomLevel), expectedTiles, tileGroup.get.tiles)
   }
 
   //
