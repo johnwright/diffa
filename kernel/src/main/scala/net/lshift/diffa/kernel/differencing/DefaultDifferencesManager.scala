@@ -54,11 +54,6 @@ class DefaultDifferencesManager(
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
-  /**
-   * This is a map of every active domain (keyed on domain id) to the cache holding the differences
-   */
-  private val zoomedEventsByDomain = new HashMap[String, Map[Int,Map[String,TileSet]]]
-
   private val participants = new HashMap[Endpoint, Participant]
 
   // Subscribe to events from the matching manager
@@ -86,9 +81,6 @@ class DefaultDifferencesManager(
   }
 
   def retrieveDomainSequenceNum(id:String) = domainDifferenceStore.currentSequenceId(id)
-
-  def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) =
-    domainDifferenceStore.retrieveTiledEvents(domain,zoomLevel, timespan)
 
   def retrieveEventTiles(domain:String, zoomLevel:Int, timespan:Interval) = {
     domainConfig.listPairs(domain).map(p => {

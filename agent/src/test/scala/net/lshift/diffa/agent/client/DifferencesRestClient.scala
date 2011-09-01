@@ -26,7 +26,7 @@ import org.joda.time.format.ISODateTimeFormat
 import net.lshift.diffa.messaging.json.NotFoundException
 import org.codehaus.jackson.map.ObjectMapper
 import org.codehaus.jackson.node.ObjectNode
-import net.lshift.diffa.kernel.differencing.{TileSet, InvalidSequenceNumberException, PairScanState, DifferenceEvent}
+import net.lshift.diffa.kernel.differencing.{InvalidSequenceNumberException, PairScanState, DifferenceEvent}
 
 /**
  * A RESTful client to poll for difference events on a domain.
@@ -40,7 +40,7 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
   val noMillisFormatter = ISODateTimeFormat.basicDateTimeNoMillis
   val formatter = ISODateTimeFormat.dateTime()
 
-  def getZoomedTiles(from:DateTime, until:DateTime, zoomLevel:Int) : Map[String,Map[DateTime,Int]]  = {
+  def getZoomedTiles(from:DateTime, until:DateTime, zoomLevel:Int) : Map[String,Array[Int]]  = {
     val path = resource.path("tiles/" + zoomLevel)
                        .queryParam("range-start", noMillisFormatter.print(from))
                        .queryParam("range-end", noMillisFormatter.print(until))
@@ -51,10 +51,12 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
     status.getStatusCode match {
       case 200    =>
         // TODO Is the date formatting correct?
-        val decoded = response.getEntity(classOf[java.util.Map[String, java.util.Map[DateTime, Int]]])
-        decoded.map{case (pair,tileset) =>
-          pair -> tileset.map{case (d,i) => formatter.parseDateTime(d.asInstanceOf[String]) -> i}.toMap[DateTime,Int]
-        }.toMap[String,Map[DateTime,Int]]
+//        val decoded = response.getEntity(classOf[java.util.Map[String, java.util.Map[DateTime, Int]]])
+//        decoded.map{case (pair,tileset) =>
+//          pair -> tileset.map{case (d,i) => formatter.parseDateTime(d.asInstanceOf[String]) -> i}.toMap[DateTime,Int]
+//        }.toMap[String,Map[DateTime,Int]]
+        val r = response.getEntity(classOf[Map[String,Array[Int]]])
+        r
 
       case x:Int  => handleHTTPError(x, path, status)
     }

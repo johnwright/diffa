@@ -28,14 +28,14 @@ class ZoomCacheTest {
   val cacheManager = new CacheManager()
   val pair = DiffaPairRef("pair", "domain")
   val diffStore = createStrictMock("diffStore", classOf[DomainDifferenceStore])
-  val zoomCache = new ZoomCacheProvider(pair, diffStore, cacheManager)
-  val interval = new Interval(new DateTime, new DateTime)
+  val zoomCache = new ZoomCacheProvider(diffStore, cacheManager)
+  val timestamp = new DateTime
 
   @Test(expected = classOf[InvalidZoomLevelException])
-  def shouldRejectZoomLevelThatIsTooFine { zoomCache.retrieveTilesForZoomLevel(QUARTER_HOURLY + 1, interval) }
+  def shouldRejectZoomLevelThatIsTooFine { zoomCache.retrieveTilesForZoomLevel(pair, QUARTER_HOURLY + 1, timestamp) }
 
   @Test(expected = classOf[InvalidZoomLevelException])
-  def shouldRejectZoomLevelThatIsTooCoarse { zoomCache.retrieveTilesForZoomLevel(DAILY - 1, interval) }
+  def shouldRejectZoomLevelThatIsTooCoarse { zoomCache.retrieveTilesForZoomLevel(pair, DAILY - 1, timestamp) }
 
 
 }

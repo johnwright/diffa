@@ -38,6 +38,9 @@ class CacheWrapper[A, B](cacheName:String, manager:CacheManager) extends Closeab
    */
   def close() = manager.removeCache(cacheName)
 
+
+  def clear() = cache.removeAll()
+
   /**
    * Retrieve a value from the value by its key
    */

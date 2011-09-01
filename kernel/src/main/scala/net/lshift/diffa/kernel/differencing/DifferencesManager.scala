@@ -53,11 +53,7 @@ trait DifferencesManager {
    *  Retrieves all events known to this domain in the as tiles according to the given zoom level. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */
-  @Deprecated
-  def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) : Map[String,TileSet]
-
   def retrieveEventTiles(domain:String, zoomLevel:Int, timespan:Interval) : Map[String,Array[Int]]
-
 
   /**
    *
@@ -101,14 +97,6 @@ trait DifferencesManager {
    * Informs the difference manager that a domain has been deleted.
    */
   def onDeleteDomain(domain: String)
-}
-
-case class TileSet(
-  // The key is the tile's left (or lower bound) timestamp on an absolute time scale
-  // The value is the aggregate number of events in the tile
-  @BeanProperty var tiles: java.util.Map[DateTime,Int] = new HashMap[DateTime, Int]
-) {
-  def this() = this(tiles = null)
 }
 
 /**

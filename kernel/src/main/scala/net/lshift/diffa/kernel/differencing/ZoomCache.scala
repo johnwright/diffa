@@ -39,15 +39,20 @@ trait ZoomCache extends Closeable {
    *
    * @param detectionTime The detection time of the event that is causing the cache to invalidate itself
    */
-  def onStoreUpdate(detectionTime:DateTime)
+  def onStoreUpdate(pair:DiffaPairRef, detectionTime:DateTime)
 
   /**
    * Retrieves a set of tiles for the current pair with a given time frame.
    *
-   * @param level The request level of zoom
+   * @param zoomLevel The requested level of zoom
    * @param timespan The time range to retrieve tiles for
    */
-  def retrieveTilesForZoomLevel(level:Int, timespan:Interval) : TileSet
+  def retrieveTilesForZoomLevel(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) : Option[TileGroup]
+
+  /**
+   * Removes all elements from this cache
+   */
+  def clear
 }
 
 /**
@@ -55,8 +60,7 @@ trait ZoomCache extends Closeable {
  * ability to evict cached entries based on heap usage, access patterns and the number of elements cached across
  * the entire system.
  */
-class ZoomCacheProvider(pair:DiffaPairRef,
-                        diffStore:DomainDifferenceStore,
+class ZoomCacheProvider(diffStore:DomainDifferenceStore,
                         cacheManager:CacheManager) extends ZoomCache {
 
   import ZoomCache._
@@ -64,53 +68,60 @@ class ZoomCacheProvider(pair:DiffaPairRef,
   /**
    * A bit set of flags to mark each tile as dirty on a per-tile basis
    */
-  private val dirtyTilesByLevel = new CacheWrapper[Int, HashSet[DateTime]](cacheName("dirty", pair), cacheManager)
+  private val dirtyTilesByLevel = new CacheWrapper[DirtyKey, HashSet[DateTime]]("dirtytiles", cacheManager)
 
   /**
    * Cache of indexed tiles for each requested level
    */
-  private val tileCachesByLevel = new CacheWrapper[Int, HashMap[DateTime,Int]](cacheName("tiles", pair), cacheManager)
+  private val tileCachesByLevel = new CacheWrapper[TileGroupKey, HashMap[DateTime,Int]]("tilegroups", cacheManager)
 
-  private def cacheName(cacheType:String, pair:DiffaPairRef) = cacheType + ":" + pair.identifier
+  def clear = {
+    dirtyTilesByLevel.clear()
+    tileCachesByLevel.clear()
+  }
 
   def close() = {
     dirtyTilesByLevel.close()
     tileCachesByLevel.close()
   }
 
+  case class DirtyKey(pair:DiffaPairRef, zoomLevel:Int)
+  case class TileGroupKey(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime)
+
   /**
    * Marks the tile (on each cached level) that corresponds to this version as dirty
    */
-  def onStoreUpdate(detectionTime:DateTime) = {
-    dirtyTilesByLevel.keys.foreach(level => {
-      val interval = containingInterval(detectionTime, level)
-      dirtyTilesByLevel.get(level).get += interval.getStart
+  def onStoreUpdate(pair:DiffaPairRef, detectionTime:DateTime) = {
+    // TODO have a look to see if this traversal is expensive at some stage
+    dirtyTilesByLevel.keys.filter(_.pair == pair).foreach(key => {
+      val interval = containingInterval(detectionTime, key.zoomLevel)
+      dirtyTilesByLevel.get(key).get += interval.getStart
     })
   }
 
-  def retrieveTilesForZoomLevel(level:Int, timespan:Interval) : TileSet = {
+  def retrieveTilesForZoomLevel(pair:DiffaPairRef, zoomLevel:Int, groupStart:DateTime) : Option[TileGroup] = {
 
-    validateLevel(level)
+    validateLevel(zoomLevel)
 
-    val tileCache = tileCachesByLevel.get(level) match {
+    val dirtyKey = DirtyKey(pair, zoomLevel)
+    val tileKey = TileGroupKey(pair, zoomLevel, groupStart)
+
+    val tileCache = tileCachesByLevel.get(tileKey) match {
       case Some(cached) => cached
       case None         =>
         val cache = new HashMap[DateTime,Int]
-        tileCachesByLevel.put(level, cache)
+        tileCachesByLevel.put(tileKey, cache)
 
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
 
-        val alignedStart = containingInterval(timespan.getStart, level).getStart
-        val alignedEnd = containingInterval(timespan.getEnd, level).getEnd
-
-        val alignedTimespan = new Interval(alignedStart,alignedEnd)
+        val alignedTimespan = containingTileGroup(groupStart, zoomLevel)
 
         // Iterate through the diff store to generate aggregate sums of the events in tile
         // aligned buckets
 
         diffStore.retrieveUnmatchedEvents(pair, alignedTimespan, (event:ReportedDifferenceEvent) => {
-          val intervalStart = containingInterval(event.detectedAt, level).getStart
+          val intervalStart = containingInterval(event.detectedAt, zoomLevel).getStart
           cache.get(intervalStart) match {
             case Some(n) => cache(intervalStart) += 1
             case None    => cache(intervalStart)  = 1
@@ -118,25 +129,25 @@ class ZoomCacheProvider(pair:DiffaPairRef,
         })
 
         // Initialize a dirty flag set for this cache
-        dirtyTilesByLevel.put(level, new HashSet[DateTime])
+        dirtyTilesByLevel.put(dirtyKey, new HashSet[DateTime])
 
         cache
     }
 
-    dirtyTilesByLevel.get(level) match {
+    dirtyTilesByLevel.get(dirtyKey) match {
       case None        => // The tile cache does not need to be preened
       case Some(flags) =>
         flags.map(startTime => {
-          val interval = intervalFromStartTime(startTime, level)
+          val interval = intervalFromStartTime(startTime, zoomLevel)
           diffStore.countEvents(pair, interval) match {
-            case 0 => tileCache -= startTime  // Remove the cache entry if there are no events
+            case 0 => tileCache            -= startTime  // Remove the cache entry if there are no events
             case n => tileCache(startTime) = n
           }
         })
         flags.clear()
      }
 
-    new TileSet(tileCache)
+    Some(TileGroup(groupStart, tileCache.toMap))
   }
 
 }
@@ -189,6 +200,43 @@ object ZoomCache {
         case QUARTER_HOURLY | HALF_HOURLY => alignToSubDayBoundary(interval, zoomLevel)
         case _                            => alignToDayBoundary(interval)
       }
+    }
+  }
+
+  // TODO Unit test
+  // TODO Refactor, make neater
+  def containingTileGroup(timestamp:DateTime, zoomLevel:Int) : Interval = {
+    zoomLevel match {
+      case QUARTER_HOURLY =>
+        val hour = timestamp.getHourOfDay
+        if (hour < 8) {
+          val start = timestamp.withTimeAtStartOfDay()
+          val end = timestamp.withHourOfDay(8).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+          new Interval(start, end)
+        } else if (hour < 16) {
+            val start = timestamp.withHourOfDay(8).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            val end = timestamp.withHourOfDay(16).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            new Interval(start, end)
+        } else {
+            val start = timestamp.withHourOfDay(16).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            val end = timestamp.dayOfYear().roundCeilingCopy()
+            new Interval(start, end)
+        }
+     case HALF_HOURLY =>
+        val hour = timestamp.getHourOfDay
+        if (hour < 12) {
+          val start = timestamp.withTimeAtStartOfDay()
+          val end = timestamp.withHourOfDay(12).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+          new Interval(start, end)
+        } else {
+            val start = timestamp.withHourOfDay(12).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            val end = timestamp.dayOfYear().roundCeilingCopy()
+            new Interval(start, end)
+        }
+      case _  =>
+        val start = timestamp.withTimeAtStartOfDay()
+        val end = timestamp.dayOfYear().roundCeilingCopy()
+        new Interval(start, end)
     }
   }
 

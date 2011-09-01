@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.config.DiffaPairRef
+import reflect.BeanProperty
 
 /**
  * The domain cache provides facilities for storing difference events that occur, and managing the states of these
@@ -127,10 +128,12 @@ trait DomainDifferenceStore {
    */
   def getEvent(domain:String, evtSeqId:String) : DifferenceEvent
 
-  // TODO document
-  @Deprecated def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) : Map[String,TileSet]
-  @Deprecated def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval) : TileSet
-
+  /**
+   * Retrieves pre-set group of tiles that is aligned on the requested timestamp.
+   * @pair The pair to retrieve tiles for
+   * @zoomLevel The level that the tiles should be zoomed into
+   * @timestamp The (aligned) start time of the requested group of tiles
+   */
   def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) : Option[TileGroup]
 
   /**
@@ -148,3 +151,29 @@ case class TileGroup(
 case class EventOptions(
   includeIgnored:Boolean = false    // Whether ignored events should be included in the response
 )
+
+case class ReportedDifferenceEvent(
+  @BeanProperty var seqId:java.lang.Integer = null,
+  @BeanProperty var objId:VersionID = null,
+  @BeanProperty var detectedAt:DateTime = null,
+  @BeanProperty var isMatch:Boolean = false,
+  @BeanProperty var upstreamVsn:String = null,
+  @BeanProperty var downstreamVsn:String = null,
+  @BeanProperty var lastSeen:DateTime = null,
+  @BeanProperty var ignored:Boolean = false
+) {
+
+  def this() = this(seqId = null)
+
+  def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
+  def state = if (isMatch) {
+      MatchState.MATCHED
+    } else {
+      if (ignored) {
+        MatchState.IGNORED
+      } else {
+        MatchState.UNMATCHED
+      }
+
+    }
+}

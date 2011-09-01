@@ -19,12 +19,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     extends DomainDifferenceStore
     with HibernateQueryUtils {
 
-  // TODO Should this map be backed by ehcache?
-  val zoomCaches = new HashMap[DiffaPairRef, ZoomCache]
+  val zoomCache = new ZoomCacheProvider(this, cacheManager)
 
   def removeDomain(domain:String) {
     sessionFactory.withSession(s => {
-      deleteZoomCachesInDomain(domain)
       executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
       executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
     })
@@ -32,8 +30,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
   def removePair(pair: DiffaPairRef) = {
     sessionFactory.withSession { s =>
-      // TODO questionable as to whether this should be inside the session or not
-      deleteZoomCache(pair)
       executeUpdate(s, "removeDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
       executeUpdate(s, "removePendingDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
     }
@@ -222,7 +218,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     listQuery[ReportedDifferenceEvent](s, "eventsSinceByDomain",
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
-
+  /*
   def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) = {
     listPairsInDomain(domain).map(p => {
       p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel, timespan)
@@ -231,8 +227,9 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
   def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval)
     = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel, timespan)
-
-  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = None
+  */
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) =
+    zoomCache.retrieveTilesForZoomLevel(pair, zoomLevel, timestamp)
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
@@ -249,7 +246,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   }
 
   def clearAllDifferences = sessionFactory.withSession(s => {
-    deleteAllZoomCaches
+    zoomCache.clear
     s.createQuery("delete from ReportedDifferenceEvent").executeUpdate()
     s.createQuery("delete from PendingDifferenceEvent").executeUpdate()
   })
@@ -304,30 +301,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     evt.asDifferenceEvent
   }
 
-  private def updateZoomCache(pair:DiffaPairRef, detectedAt:DateTime) = {
-    getZoomCache(pair).onStoreUpdate(detectedAt)
-  }
-
-  private def deleteZoomCache(pair:DiffaPairRef) = zoomCaches.remove(pair) match {
-    case None        => // ignore
-    case Some(cache) => cache.close()
-  }
-
-  private def deleteZoomCachesInDomain(domain:String) = listPairsInDomain(domain).foreach(p => deleteZoomCache(p.asRef))
-
-  private def deleteAllZoomCaches = {
-    zoomCaches.valuesIterator.foreach(_.close())
-    zoomCaches.clear()
-  }
-
-  // TODO Consider making this an EhCache ....
-  private def getZoomCache(pair:DiffaPairRef) = zoomCaches.get(pair) match {
-    case None =>
-      val cache = new ZoomCacheProvider(pair, this, cacheManager)
-      zoomCaches(pair) = cache
-      cache
-    case Some(x) => x
-  }
+  private def updateZoomCache(pair:DiffaPairRef, detectedAt:DateTime) = zoomCache.onStoreUpdate(pair, detectedAt)
 }
 
 case class PendingDifferenceEvent(
@@ -342,30 +316,4 @@ case class PendingDifferenceEvent(
   def this() = this(oid = null)
 
   def convertToUnmatched = ReportedDifferenceEvent(null, objId, detectedAt, false, upstreamVsn, downstreamVsn, lastSeen)
-}
-
-case class ReportedDifferenceEvent(
-  @BeanProperty var seqId:java.lang.Integer = null,
-  @BeanProperty var objId:VersionID = null,
-  @BeanProperty var detectedAt:DateTime = null,
-  @BeanProperty var isMatch:Boolean = false,
-  @BeanProperty var upstreamVsn:String = null,
-  @BeanProperty var downstreamVsn:String = null,
-  @BeanProperty var lastSeen:DateTime = null,
-  @BeanProperty var ignored:Boolean = false
-) {
-  
-  def this() = this(seqId = null)
-
-  def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
-  def state = if (isMatch) {
-      MatchState.MATCHED
-    } else {
-      if (ignored) {
-        MatchState.IGNORED
-      } else {
-        MatchState.UNMATCHED
-      }
-
-    }
 }

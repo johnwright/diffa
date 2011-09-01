@@ -26,7 +26,7 @@ import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
-import net.lshift.diffa.kernel.differencing.{EventOptions, TileSet, InvalidZoomLevelException, DifferencesManager, DifferenceEvent}
+import net.lshift.diffa.kernel.differencing.{EventOptions, InvalidZoomLevelException, DifferencesManager, DifferenceEvent}
 
 class DifferencesResource(val differencesManager: DifferencesManager,
                           val domain:String,
@@ -120,8 +120,8 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     // This should probably be relative to the zoom level and is effectively geared towards delivering enough
     // data to populate the heatmap
     try {
-      val tileSet = differencesManager.retrieveTiledEvents(domain, zoomLevel, new Interval(rangeStartDate, rangeEndDate))
-      val respObj = mapAsJavaMap(tileSet.keys.map(pair => pair -> tileSet(pair).tiles).toMap[String, java.util.Map[DateTime, Int]])
+      val tileSet = differencesManager.retrieveEventTiles(domain, zoomLevel, new Interval(rangeStartDate, rangeEndDate))
+      val respObj = mapAsJavaMap(tileSet.keys.map(pair => pair -> tileSet(pair).toArray).toMap[String, Array[Int]])
       Response.ok(respObj).tag(domainVsn).build()
 
     } catch {
