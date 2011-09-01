@@ -32,6 +32,6 @@ class InvalidSequenceNumberExceptionMapper extends ExceptionMapper[InvalidSequen
 
   def toResponse(x: InvalidSequenceNumberException) = {
     log.debug("Attempt to access an invalid sequence number:" + x.id)
-    Response.status(Response.Status.BAD_REQUEST).entity(x.id).`type`("text/plain").build()
+    Response.status(Response.Status.NOT_FOUND).entity(x.id).`type`("text/plain").build()
   }
 }
