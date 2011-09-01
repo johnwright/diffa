@@ -68,7 +68,7 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
   /**
    * A bit set of flags to mark each tile as dirty on a per-tile basis
    */
-  private val dirtyTilesByLevel = new CacheWrapper[DirtyKey, HashSet[DateTime]]("dirtytiles", cacheManager)
+  private val dirtyTilesByLevel = new CacheWrapper[TileGroupKey, HashSet[DateTime]]("dirtytiles", cacheManager)
 
   /**
    * Cache of indexed tiles for each requested level
@@ -85,7 +85,6 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
     tileCachesByLevel.close()
   }
 
-  case class DirtyKey(pair:DiffaPairRef, zoomLevel:Int)
   case class TileGroupKey(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime)
 
   /**
@@ -94,8 +93,10 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
   def onStoreUpdate(pair:DiffaPairRef, detectionTime:DateTime) = {
     // TODO have a look to see if this traversal is expensive at some stage
     dirtyTilesByLevel.keys.filter(_.pair == pair).foreach(key => {
-      val interval = containingInterval(detectionTime, key.zoomLevel)
-      dirtyTilesByLevel.get(key).get += interval.getStart
+      val tileGroupInterval = containingTileGroupInterval(detectionTime, key.zoomLevel)
+      val cacheKey = TileGroupKey(pair, key.zoomLevel, tileGroupInterval.getStart)
+      val individualTileInterval = containingInterval(detectionTime, key.zoomLevel)
+      dirtyTilesByLevel.get(key).get += individualTileInterval.getStart
     })
   }
 
@@ -103,14 +104,13 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
 
     validateLevel(zoomLevel)
 
-    val dirtyKey = DirtyKey(pair, zoomLevel)
-    val tileKey = TileGroupKey(pair, zoomLevel, groupStart)
+    val cacheKey = TileGroupKey(pair, zoomLevel, groupStart)
 
-    val tileCache = tileCachesByLevel.get(tileKey) match {
+    val tileCache = tileCachesByLevel.get(cacheKey) match {
       case Some(cached) => cached
       case None         =>
         val cache = new HashMap[DateTime,Int]
-        tileCachesByLevel.put(tileKey, cache)
+        tileCachesByLevel.put(cacheKey, cache)
 
         // Build up an initial cache - after the cache has been primed, it with be invalidated in an event
         // driven fashion
@@ -129,12 +129,12 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
         })
 
         // Initialize a dirty flag set for this cache
-        dirtyTilesByLevel.put(dirtyKey, new HashSet[DateTime])
+        dirtyTilesByLevel.put(cacheKey, new HashSet[DateTime])
 
         cache
     }
 
-    dirtyTilesByLevel.get(dirtyKey) match {
+    dirtyTilesByLevel.get(cacheKey) match {
       case None        => // The tile cache does not need to be preened
       case Some(flags) =>
         flags.map(startTime => {
