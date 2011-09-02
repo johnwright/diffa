@@ -83,7 +83,7 @@ Diffa.Models.Blobs = Backbone.Model.extend({
 
     var now = endTime.toString(TIME_FORMAT);
 
-    startTime = endTime.add({seconds: -1 * self.get('bucketSize') * self.maxColumns});
+    startTime = endTime.add({seconds: -1 * self.get('bucketSize') * ( self.maxColumns -1 ) });
     var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
     $.getJSON("rest/" + Diffa.currentDomain + "/diffs/tiles/" + self.get('zoomLevel') + "?range-start=" + dayBeforeNow + "&range-end=" + now, function(data) {
