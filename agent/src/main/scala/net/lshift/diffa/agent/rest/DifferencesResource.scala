@@ -26,7 +26,7 @@ import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
-import net.lshift.diffa.kernel.differencing.{EventOptions, InvalidZoomLevelException, DifferencesManager, DifferenceEvent}
+import net.lshift.diffa.kernel.differencing.{EventOptions, DifferencesManager}
 
 class DifferencesResource(val differencesManager: DifferencesManager,
                           val domain:String,
@@ -35,7 +35,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
-  val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
+  val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis.withZoneUTC()
 
   @GET
   @Produces(Array("application/json"))
@@ -103,7 +103,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
                      @Context request: Request): Response = {
 
     // Evaluate whether the version of the domain has changed
-    val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain))
+    val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain) + "@" + zoomLevel)
     request.evaluatePreconditions(domainVsn) match {
       case null => // We'll continue with the request
       case r => throw new WebApplicationException(r.build)
