@@ -83,6 +83,13 @@ object IndividualTileEdgeTest {
 
   // Unaligned data points
 
+  @DataPoint def unalignedDaily = Scenario(DAILY,
+                                       new Interval(new DateTime(2011,9,1,17,0,0,0, DateTimeZone.UTC),
+                                                    new DateTime(2011,9,3,17,0,0,0, DateTimeZone.UTC)),
+                                       new DateTime(2011,9,1,0,0,0,0, DateTimeZone.UTC),
+                                       new DateTime(2011,9,2,0,0,0,0, DateTimeZone.UTC),
+                                       new DateTime(2011,9,3,0,0,0,0, DateTimeZone.UTC))
+
   @DataPoint def unalignedHalfHourly = Scenario(HALF_HOURLY,
                                        new Interval(new DateTime(1999,11,30,9,30,13,0, DateTimeZone.UTC),
                                                     new DateTime(1999,11,30,10,30,0,667, DateTimeZone.UTC)),
