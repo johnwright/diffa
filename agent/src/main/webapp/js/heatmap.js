@@ -157,12 +157,12 @@ Diffa.Models.Blobs = Backbone.Model.extend({
   calculateBucketSize: function(zoomLevel) {
     switch(zoomLevel) {
       case 0 : return 24 *60 * 60;  // DAILY
-      case 1 : return 8 * 60 * 60;
-      case 2 : return 4 * 60 * 60;
-      case 3 : return 2 * 60 * 60;
+      case 1 : return 8 * 60 * 60;  // EIGHT HOURLY
+      case 2 : return 4 * 60 * 60;  // FOUR HOURLY
+      case 3 : return 2 * 60 * 60;  // TWO HOURLY
       case 4 : return 60 * 60;      // HOURLY
-      case 5 : return 30 * 60;
-      case 6 : return 15 * 60;      // QUARTER_HOURLY
+      case 5 : return 30 * 60;      // HALF HOURLY
+      case 6 : return 15 * 60;      // QUARTER HOURLY
       default: null
     }
   },
