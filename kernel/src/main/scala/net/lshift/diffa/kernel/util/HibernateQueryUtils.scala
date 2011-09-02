@@ -23,6 +23,7 @@ import org.slf4j.{LoggerFactory, Logger}
 import scala.collection.JavaConversions._
 import scala.collection.Map
 import org.hibernate._
+import java.io.Closeable
 
 /**
  * Mixin providing a bunch of useful query utilities for stores.
@@ -65,6 +66,7 @@ trait HibernateQueryUtils {
     new Cursor[T] {
       def next = underlying.next
       def get = underlying.get(0).asInstanceOf[T]
+      def close = underlying.close
     }
   }
 
@@ -185,7 +187,7 @@ trait HibernateQueryUtils {
 /**
  * A simple wrapper around a DB cursor
  */
-trait Cursor[T] {
+trait Cursor[T] extends Closeable {
 
   /**
    * Returns the bound value of the current cursor point.

@@ -4,13 +4,11 @@ import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.Session
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.sf.ehcache.CacheManager
-import collection.mutable.HashMap
+import net.lshift.diffa.kernel.util.{Cursor, HibernateQueryUtils}
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -170,8 +168,9 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
   def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
     val session = sessionFactory.openSession
+    var cursor:Cursor[ReportedDifferenceEvent] = null
     try {
-      val cursor = scrollableQuery[ReportedDifferenceEvent](session, "unmatchedEventsInIntervalByDomainAndPair",
+      cursor = scrollableQuery[ReportedDifferenceEvent](session, "unmatchedEventsInIntervalByDomainAndPair",
         Map("domain" -> pair.domain,
             "pair"   -> pair.key,
             "start"  -> interval.getStart,
@@ -189,7 +188,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       }
     }
     finally {
-      session.close()
+      try {
+        cursor.close
+      } finally {
+        session.close()
+      }
+
     }
 
   }
@@ -218,16 +222,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     listQuery[ReportedDifferenceEvent](s, "eventsSinceByDomain",
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
-  /*
-  def retrieveTiledEvents(domain:String, zoomLevel:Int, timespan:Interval) = {
-    listPairsInDomain(domain).map(p => {
-      p.key -> retrieveTiledEvents(DiffaPairRef(p.key,domain), zoomLevel, timespan)
-    }).toMap
-  }
 
-  def retrieveTiledEvents(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval)
-    = getZoomCache(pair).retrieveTilesForZoomLevel(zoomLevel, timespan)
-  */
   def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) =
     zoomCache.retrieveTilesForZoomLevel(pair, zoomLevel, timestamp)
 
