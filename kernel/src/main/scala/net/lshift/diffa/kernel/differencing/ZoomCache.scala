@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.sf.ehcache.CacheManager
 import java.io.Closeable
 import net.lshift.diffa.kernel.util.CacheWrapper
-import org.joda.time.{DateTimeZone, Duration, Interval, DateTime}
+import org.joda.time._
 
 /**
  * This provides a cache of difference events that have been summarized into a tile shaped structure according
@@ -188,20 +188,9 @@ object ZoomCache {
    * Returns a sequence of the start times for the groups of tiles required to build a projection
    * for the given interval at the specified level of zoom.
    */
-  def containingTileGroupEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] = {
-    val minutes = interval.toDuration.getStandardMinutes
-    val startDay = interval.getStart.getDayOfYear
-    val endDay = interval.getEnd.getDayOfYear
-    if (minutes >= (24 * 60) || endDay > startDay) { // TODO Corner case between NYE and NYD is not tested
-      // Align everything else to days for now, consider a weekly alignment for days or eight hours in due course
-      alignToDayBoundary(interval)
-    }
-    else {
-      zoomLevel match {
-        case QUARTER_HOURLY | HALF_HOURLY => alignToSubDayBoundary(interval, zoomLevel)
-        case _                            => alignToDayBoundary(interval)
-      }
-    }
+  def containingTileGroupEdges(interval:Interval, zoomLevel:Int) : Seq[DateTime] = zoomLevel match {
+    case QUARTER_HOURLY | HALF_HOURLY => alignToSubDayBoundary(interval, zoomLevel)
+    case _                            => alignToDayBoundary(interval)
   }
 
   // TODO Unit test
@@ -249,17 +238,9 @@ object ZoomCache {
     }
     val start = subDayAlignedTimestamp(interval.getStart, multiple).withZone(DateTimeZone.UTC)
     val end = subDayAlignedTimestamp(interval.getEnd, multiple).withZone(DateTimeZone.UTC)
-    val times = if (zoomLevel == QUARTER_HOURLY) {
-      if ( start.getHourOfDay == 0 && end.getHourOfDay == 16) {
-        Set(start, start.withHourOfDay(8), end)
-      }
-      else {
-        Set(start, end)
-      }
-    } else {
-      Set(start, end)
-    }
-    times.toSeq
+    val hours = new Duration(start,end).getStandardHours.intValue()
+    val divisions = (hours / multiple)
+    0.to(divisions).map(d => start.plusHours(d * multiple).withZone(DateTimeZone.UTC))
   }
 
   private def alignToDayBoundary(interval:Interval) = {

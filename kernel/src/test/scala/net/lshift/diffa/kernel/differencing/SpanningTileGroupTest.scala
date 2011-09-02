@@ -78,15 +78,20 @@ object SpanningTileGroupTest {
                                        new Interval(new DateTime(1999,11,29,9,31,45,123, DateTimeZone.UTC),
                                                     new DateTime(1999,12,1,10,33,45,997, DateTimeZone.UTC)),
                                        new DateTime(1999,11,29,0,0,0,0, DateTimeZone.UTC),
+                                       new DateTime(1999,11,29,12,0,0,0, DateTimeZone.UTC),
                                        new DateTime(1999,11,30,0,0,0,0, DateTimeZone.UTC),
+                                       new DateTime(1999,11,30,12,0,0,0, DateTimeZone.UTC),
                                        new DateTime(1999,12,1,0,0,0,0, DateTimeZone.UTC))
 
   @DataPoint def quarterHourly = Scenario(QUARTER_HOURLY,
                                           new Interval(new DateTime(2007,8,18,23,46,7,463, DateTimeZone.UTC),
                                                        new DateTime(2007,8,20,13,14,44,732, DateTimeZone.UTC)),
-                                          new DateTime(2007,8,18,0,0,0,0, DateTimeZone.UTC),
+                                          new DateTime(2007,8,18,16,0,0,0, DateTimeZone.UTC),
                                           new DateTime(2007,8,19,0,0,0,0, DateTimeZone.UTC),
-                                          new DateTime(2007,8,20,0,0,0,0, DateTimeZone.UTC))
+                                          new DateTime(2007,8,19,8,0,0,0, DateTimeZone.UTC),
+                                          new DateTime(2007,8,19,16,0,0,0, DateTimeZone.UTC),
+                                          new DateTime(2007,8,20,0,0,0,0, DateTimeZone.UTC),
+                                          new DateTime(2007,8,20,8,0,0,0, DateTimeZone.UTC))
 
   // Intraday spanning queries, currently only relevant for sub-hourly queries
 
