@@ -31,7 +31,7 @@ import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.differencing.DefaultDifferencesManagerTest.Scenario
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
-import org.joda.time.{DateTime, Duration, Interval}
+import org.joda.time.{DateTimeZone, DateTime, Duration, Interval}
 
 /**
  * Test cases for the participant protocol factory.
@@ -288,9 +288,11 @@ object DefaultDifferencesManagerTest {
                                           zoomLevel = ZoomCache.QUARTER_HOURLY,
                                           arraySize = 32,
                                           events = Map(
-                                            new DateTime(1976,10,14,8,0,0,0) -> Map(new DateTime(1976,10,14,8,23,0,0) -> 12)
+                                            new DateTime(1976,10,14,8,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1976,10,14,8,23,0,0, DateTimeZone.UTC) -> 12)
                                           ),
-                                          interval = new Interval(new DateTime(1976,10,14,8,0,0,0), new DateTime(1976,10,14,15,45,0,0))
+                                          interval = new Interval(new DateTime(1976,10,14,8,0,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1976,10,14,15,45,0,0, DateTimeZone.UTC))
                                         )
 
   /**
@@ -300,29 +302,34 @@ object DefaultDifferencesManagerTest {
                                           zoomLevel = ZoomCache.HALF_HOURLY,
                                           arraySize = 24,
                                           events = Map(
-                                            new DateTime(1993,3,3,12,0,0,0) -> Map(new DateTime(1993,3,3,12,23,0,0) -> 76)
+                                            new DateTime(1993,3,3,12,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1993,3,3,12,23,0,0, DateTimeZone.UTC) -> 76)
                                           ),
-                                          interval = new Interval(new DateTime(1993,3,3,12,0,0,0), new DateTime(1993,3,3,23,30,0,0))
+                                          interval = new Interval(new DateTime(1993,3,3,12,0,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1993,3,3,23,30,0,0, DateTimeZone.UTC))
                                         )
 
   @DataPoint def alignedDaily = Scenario(
                                           zoomLevel = ZoomCache.DAILY,
                                           arraySize = 13,
                                           events = Map(
-                                            new DateTime(2009,8,14,0,0,0,0) -> Map(new DateTime(2009,8,14,12,15,17,445) -> 88),
-                                            new DateTime(2009,8,15,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,16,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,17,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,18,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,19,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,20,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,21,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,22,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,23,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,24,0,0,0,0) -> Map(),
-                                            new DateTime(2009,8,25,0,0,0,0) -> Map(new DateTime(2009,8,25,1,49,33,745)  -> 81)
+                                            new DateTime(2009,8,14,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(2009,8,14,12,15,17,445, DateTimeZone.UTC) -> 88),
+                                            new DateTime(2009,8,15,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,16,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,17,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,18,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,19,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,20,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,21,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,22,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,23,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,24,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,25,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(2009,8,25,1,49,33,745, DateTimeZone.UTC)  -> 81)
                                           ),
-                                          interval = new Interval(new DateTime(2009,8,14,0,0,0,0), new DateTime(2009,8,26,0,0,0,0))
+                                          interval = new Interval(new DateTime(2009,8,14,0,0,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(2009,8,26,0,0,0,0, DateTimeZone.UTC))
                                         )
 
   // SPANNING QUERIES
@@ -335,10 +342,13 @@ object DefaultDifferencesManagerTest {
                                           zoomLevel = ZoomCache.QUARTER_HOURLY,
                                           arraySize = 4,
                                           events = Map(
-                                            new DateTime(1922,1,11,0,0,0,0) -> Map(new DateTime(1922,1,11,7,57,34,345) -> 17),
-                                            new DateTime(1922,1,11,8,0,0,0) -> Map(new DateTime(1922,1,11,8,1,19,883)  -> 29)
+                                            new DateTime(1922,1,11,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1922,1,11,7,57,34,345, DateTimeZone.UTC) -> 17),
+                                            new DateTime(1922,1,11,8,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1922,1,11,8,1,19,883, DateTimeZone.UTC)  -> 29)
                                           ),
-                                          interval = new Interval(new DateTime(1922,1,11,7,31,0,0), new DateTime(1922,1,11,8,29,0,0))
+                                          interval = new Interval(new DateTime(1922,1,11,7,31,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1922,1,11,8,29,0,0, DateTimeZone.UTC))
                                         )
 
   /**
@@ -348,10 +358,13 @@ object DefaultDifferencesManagerTest {
                                           zoomLevel = ZoomCache.HALF_HOURLY,
                                           arraySize = 9,
                                           events = Map(
-                                            new DateTime(1968,5,6,0,0,0,0)  -> Map(new DateTime(1968,5,6,10,19,33,745) -> 53),
-                                            new DateTime(1968,5,6,12,0,0,0) -> Map(new DateTime(1968,5,6,14,17,10,983) -> 102)
+                                            new DateTime(1968,5,6,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1968,5,6,10,19,33,745, DateTimeZone.UTC) -> 53),
+                                            new DateTime(1968,5,6,12,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1968,5,6,14,17,10,983, DateTimeZone.UTC) -> 102)
                                           ),
-                                          interval = new Interval(new DateTime(1968,5,6,10,2,0,0), new DateTime(1968,5,6,14,3,0,0))
+                                          interval = new Interval(new DateTime(1968,5,6,10,2,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1968,5,6,14,3,0,0, DateTimeZone.UTC))
                                         )
 
   case class Scenario(zoomLevel:Int, arraySize:Int, events:Map[DateTime, Map[DateTime,Int]], interval:Interval)

@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.sf.ehcache.CacheManager
 import java.io.Closeable
 import net.lshift.diffa.kernel.util.CacheWrapper
-import org.joda.time.{Duration, Interval, DateTime}
+import org.joda.time.{DateTimeZone, Duration, Interval, DateTime}
 
 /**
  * This provides a cache of difference events that have been summarized into a tile shaped structure according
@@ -96,8 +96,9 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
       val tileGroupInterval = containingTileGroupInterval(detectionTime, key.zoomLevel)
       val cacheKey = TileGroupKey(pair, key.zoomLevel, tileGroupInterval.getStart)
       val individualTileInterval = containingInterval(detectionTime, key.zoomLevel)
-      if ( dirtyTilesByLevel.contains(cacheKey) ) {
-        dirtyTilesByLevel.get(cacheKey).get += individualTileInterval.getStart
+      dirtyTilesByLevel.get(cacheKey) match {
+        case Some(d) => d += individualTileInterval.getStart
+        case None    => // ignore
       }
     })
   }
@@ -206,35 +207,36 @@ object ZoomCache {
   // TODO Unit test
   // TODO Refactor, make neater
   def containingTileGroupInterval(timestamp:DateTime, zoomLevel:Int) : Interval = {
+    val utc = timestamp.withZone(DateTimeZone.UTC)
     zoomLevel match {
       case QUARTER_HOURLY =>
-        val hour = timestamp.getHourOfDay
+        val hour = utc.getHourOfDay
         if (hour < 8) {
-          val start = timestamp.withTimeAtStartOfDay()
-          val end = timestamp.withHourOfDay(8).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+          val start = utc.withTimeAtStartOfDay()
+          val end = utc.withHourOfDay(8).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
           new Interval(start, end)
         } else if (hour < 16) {
-            val start = timestamp.withHourOfDay(8).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
-            val end = timestamp.withHourOfDay(16).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            val start = utc.withHourOfDay(8).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            val end = utc.withHourOfDay(16).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
             new Interval(start, end)
         } else {
-            val start = timestamp.withHourOfDay(16).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
-            val end = timestamp.dayOfYear().roundCeilingCopy()
+            val start = utc.withHourOfDay(16).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            val end = utc.dayOfYear().roundCeilingCopy()
             new Interval(start, end)
         }
      case HALF_HOURLY =>
-        val hour = timestamp.getHourOfDay
+        val hour = utc.getHourOfDay
         if (hour < 12) {
-          val start = timestamp.withTimeAtStartOfDay()
-          val end = timestamp.withHourOfDay(12).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+          val start = utc.withTimeAtStartOfDay()
+          val end = utc.withHourOfDay(12).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
           new Interval(start, end)
         } else {
-            val start = timestamp.withHourOfDay(12).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
-            val end = timestamp.dayOfYear().roundCeilingCopy()
+            val start = utc.withHourOfDay(12).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+            val end = utc.dayOfYear().roundCeilingCopy()
             new Interval(start, end)
         }
       case _  =>
-        val start = timestamp.withTimeAtStartOfDay()
+        val start = utc.withTimeAtStartOfDay()
         val end = start.plusDays(1)
         new Interval(start, end)
     }
@@ -245,8 +247,8 @@ object ZoomCache {
       case QUARTER_HOURLY => 8
       case HALF_HOURLY    => 12
     }
-    val start = subDayAlignedTimestamp(interval.getStart, multiple)
-    val end = subDayAlignedTimestamp(interval.getEnd, multiple)
+    val start = subDayAlignedTimestamp(interval.getStart, multiple).withZone(DateTimeZone.UTC)
+    val end = subDayAlignedTimestamp(interval.getEnd, multiple).withZone(DateTimeZone.UTC)
     val times = if (zoomLevel == QUARTER_HOURLY) {
       if ( start.getHourOfDay == 0 && end.getHourOfDay == 16) {
         Set(start, start.withHourOfDay(8), end)
@@ -264,7 +266,7 @@ object ZoomCache {
     val startTile = interval.getStart.withTimeAtStartOfDay()
     val endTile = interval.getEnd.dayOfYear().roundCeilingCopy()
     val days = new Duration(startTile,endTile).getStandardDays.intValue()
-    0.until(days).map(d => startTile.plusDays(d))
+    0.until(days).map(d => startTile.plusDays(d).withZone(DateTimeZone.UTC))
   }
 
   /**
@@ -291,17 +293,20 @@ object ZoomCache {
   /**
    * Calculates what the tile aligned interval conatins the given timestamp at the given level of zoom
    */
-  def containingInterval(timestamp:DateTime, zoomLevel:Int) = zoomLevel match {
-    case DAILY => {
-      val start = timestamp.withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
-      new Interval(start, start.plusDays(1))
+  def containingInterval(timestamp:DateTime, zoomLevel:Int) = {
+    val utc = timestamp.withZone(DateTimeZone.UTC)
+    zoomLevel match {
+      case DAILY => {
+        val start = utc.withHourOfDay(0).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+        new Interval(start, start.plusDays(1))
+      }
+      case EIGHT_HOURLY => multipleHourlyStart(utc, 8)
+      case FOUR_HOURLY => multipleHourlyStart(utc, 4)
+      case TWO_HOURLY => multipleHourlyStart(utc, 2)
+      case HOURLY => multipleHourlyStart(utc, 1)
+      case HALF_HOURLY => subHourly(utc, 30)
+      case QUARTER_HOURLY => subHourly(utc, 15)
     }
-    case EIGHT_HOURLY => multipleHourlyStart(timestamp, 8)
-    case FOUR_HOURLY => multipleHourlyStart(timestamp, 4)
-    case TWO_HOURLY => multipleHourlyStart(timestamp, 2)
-    case HOURLY => multipleHourlyStart(timestamp, 1)
-    case HALF_HOURLY => subHourly(timestamp, 30)
-    case QUARTER_HOURLY => subHourly(timestamp, 15)
   }
 
   private def subHourly(timestamp:DateTime, minutes:Int) = {
@@ -317,16 +322,17 @@ object ZoomCache {
   }
 
   private def subDayAlignedTimestamp(timestamp:DateTime, multiple:Int) = {
-    val hourOfDay = timestamp.getHourOfDay
+    val utc = timestamp.withZone(DateTimeZone.UTC)
+    val hourOfDay = utc.getHourOfDay
     val alignedHour = hourOfDay - (hourOfDay % multiple)
-    timestamp.withHourOfDay(alignedHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+    utc.withHourOfDay(alignedHour).withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
   }
 
   /**
    * Calculates what the tile aligned interval is having the specified starting timestamp and the given level of zoom
    */
   def intervalFromStartTime(start:DateTime, zoomLevel:Int) = {
-    val end = start.plusMinutes(zoom(zoomLevel))
+    val end = start.withZone(DateTimeZone.UTC).plusMinutes(zoom(zoomLevel))
     new Interval(start,end)
   }
 

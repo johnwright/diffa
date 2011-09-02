@@ -139,13 +139,38 @@ Diffa.Models.Blobs = Backbone.Model.extend({
   },
 
   zoomOut: function() {
-    this.set({ zoomLevel: this.get('zoomLevel') - 1 });
-    this.sync();
+    this.maybeUpdateZoomLevel(-1);
   },
   zoomIn: function() {
-    this.set({ zoomLevel: this.get('zoomLevel') + 1 });
-    this.sync();
+    this.maybeUpdateZoomLevel(1);
+  },
+
+  maybeUpdateZoomLevel: function(factor) {
+    var newZoomLevel = this.get('zoomLevel') + factor;
+    if(this.isZoomLevelValid(newZoomLevel)) {
+      this.set({ zoomLevel: newZoomLevel });
+      this.set({ bucketSize: this.calculateBucketSize(newZoomLevel) });
+      this.sync();
+    }
+  },
+
+  calculateBucketSize: function(zoomLevel) {
+    switch(zoomLevel) {
+      case 0 : return 24 *60 * 60;  // DAILY
+      case 1 : return 8 * 60 * 60;
+      case 2 : return 4 * 60 * 60;
+      case 3 : return 2 * 60 * 60;
+      case 4 : return 60 * 60;      // HOURLY
+      case 5 : return 30 * 60;
+      case 6 : return 15 * 60;      // QUARTER_HOURLY
+      default: null
+    }
+  },
+
+  isZoomLevelValid: function(zoomLevel) {
+    return zoomLevel <= 6 && zoomLevel >= 0;
   }
+
 });
 
 Diffa.Models.Diff = Backbone.Model.extend({
@@ -364,7 +389,6 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     $(document).mouseup(this.mouseUp);
     $(document).mousemove(this.mouseMove);
 
-    this.model.bind('change:zoomLevel',       this.update);
     this.model.bind('change:buckets',         this.update);
     this.model.bind('change:maxRows',         this.update);
     this.model.bind('change:polling',         this.update);
@@ -811,7 +835,7 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
 
     _.bindAll(this, "render");
 
-    this.model.bind("changed:zoomLevel", "render");
+    this.model.bind("changed:bucketSize", "render");
 
     $(document).keypress(function(e) {
       if (e.charCode == '+'.charCodeAt()) {

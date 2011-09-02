@@ -33,7 +33,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.DerbyHelper
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
-import org.joda.time.{Interval, DateTime}
+import org.joda.time.{DateTimeZone, Interval, DateTime}
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -736,109 +736,117 @@ class HibernateDomainDifferenceStoreTest {
 
 object HibernateDomainDifferenceStoreTest {
 
-  @DataPoint def tiles = TileScenario("domain", new Interval(new DateTime(2002,10,4,14,2,0,0),new DateTime(2002,10,5,14,5,30,0)),
+  @DataPoint def tiles = TileScenario("domain", new Interval(new DateTime(2002,10,4,14,2,0,0, DateTimeZone.UTC),
+                                                             new DateTime(2002,10,5,14,5,30,0, DateTimeZone.UTC)),
       Seq(
         // - 1 day
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1a"), timestamp = new DateTime(2002,10,4,14,2,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1b"), timestamp = new DateTime(2002,10,4,14,3,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1a"), timestamp = new DateTime(2002,10,4,14,2,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1b"), timestamp = new DateTime(2002,10,4,14,3,0,0, DateTimeZone.UTC)),
         // - 8 hours
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1c"), timestamp = new DateTime(2002,10,5,6,7,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1c"), timestamp = new DateTime(2002,10,5,6,7,0,0, DateTimeZone.UTC)),
         // - 4 hours
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1d"), timestamp = new DateTime(2002,10,5,10,9,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1d"), timestamp = new DateTime(2002,10,5,10,9,0,0, DateTimeZone.UTC)),
         // - 2 hours
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1e"), timestamp = new DateTime(2002,10,5,12,2,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1e"), timestamp = new DateTime(2002,10,5,12,2,0,0, DateTimeZone.UTC)),
         // - 1 hour
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1f"), timestamp = new DateTime(2002,10,5,13,11,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1f"), timestamp = new DateTime(2002,10,5,13,11,0,0, DateTimeZone.UTC)),
         // - 45 minutes
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1g"), timestamp = new DateTime(2002,10,5,13,21,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1h"), timestamp = new DateTime(2002,10,5,13,22,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1i"), timestamp = new DateTime(2002,10,5,13,23,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1j"), timestamp = new DateTime(2002,10,5,13,24,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1g"), timestamp = new DateTime(2002,10,5,13,21,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1h"), timestamp = new DateTime(2002,10,5,13,22,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1i"), timestamp = new DateTime(2002,10,5,13,23,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1j"), timestamp = new DateTime(2002,10,5,13,24,0,0, DateTimeZone.UTC)),
         // - 30 minutes
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1k"), timestamp = new DateTime(2002,10,5,13,32,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1l"), timestamp = new DateTime(2002,10,5,13,33,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1m"), timestamp = new DateTime(2002,10,5,13,34,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1k"), timestamp = new DateTime(2002,10,5,13,32,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1l"), timestamp = new DateTime(2002,10,5,13,33,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1m"), timestamp = new DateTime(2002,10,5,13,34,0,0, DateTimeZone.UTC)),
         // - 15 minutes
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1n"), timestamp = new DateTime(2002,10,5,13,47,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1p"), timestamp = new DateTime(2002,10,5,13,48,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1n"), timestamp = new DateTime(2002,10,5,13,47,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1p"), timestamp = new DateTime(2002,10,5,13,48,0,0, DateTimeZone.UTC)),
         // no offset
-        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1q"), timestamp = new DateTime(2002,10,5,14,4,0,0)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair1", "domain"), "1q"), timestamp = new DateTime(2002,10,5,14,4,0,0, DateTimeZone.UTC)),
         // 2nd pair
-        ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2a"), timestamp = new DateTime(2002,10,5,14,5,0,0)),
-        ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2b"), timestamp = new DateTime(2002,10,5,14,5,30,0))
+        ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2a"), timestamp = new DateTime(2002,10,5,14,5,0,0, DateTimeZone.UTC)),
+        ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2b"), timestamp = new DateTime(2002,10,5,14,5,30,0, DateTimeZone.UTC))
       ),
       Map(QUARTER_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0),
-                                    Map(new DateTime(2002,10,5,14,0,0,0)  -> 1,
-                                        new DateTime(2002,10,5,13,45,0,0) -> 2,
-                                        new DateTime(2002,10,5,13,30,0,0) -> 3,
-                                        new DateTime(2002,10,5,13,15,0,0) -> 4,
-                                        new DateTime(2002,10,5,13,0,0,0)  -> 1,
-                                        new DateTime(2002,10,5,12,0,0,0)  -> 1,
-                                        new DateTime(2002,10,5,10,0,0,0)  -> 1)),
-                          TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                    Map(new DateTime(2002,10,5,6,0,0,0)   -> 1)),
-                          TileGroup(new DateTime(2002,10,4,8,0,0,0),
-                                    Map(new DateTime(2002,10,4,14,0,0,0)  -> 2))),
-           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0), Map(new DateTime(2002,10,5,14,0,0,0)  -> 2)))
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 1,
+                                        new DateTime(2002,10,5,13,45,0,0, DateTimeZone.UTC) -> 2,
+                                        new DateTime(2002,10,5,13,30,0,0, DateTimeZone.UTC) -> 3,
+                                        new DateTime(2002,10,5,13,15,0,0, DateTimeZone.UTC) -> 4,
+                                        new DateTime(2002,10,5,13,0,0,0, DateTimeZone.UTC)  -> 1,
+                                        new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC)  -> 1,
+                                        new DateTime(2002,10,5,10,0,0,0, DateTimeZone.UTC)  -> 1)),
+                          TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,6,0,0,0, DateTimeZone.UTC)   -> 1)),
+                          TileGroup(new DateTime(2002,10,4,8,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,4,14,0,0,0, DateTimeZone.UTC)  -> 2))),
+           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 2)))
          ),
           HALF_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0),
-                                    Map(new DateTime(2002,10,5,14,0,0,0)  -> 1,
-                                        new DateTime(2002,10,5,13,30,0,0) -> 5,
-                                        new DateTime(2002,10,5,13,0,0,0)  -> 5,
-                                        new DateTime(2002,10,5,12,0,0,0)  -> 1)),
-                          TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                    Map(new DateTime(2002,10,5,10,0,0,0)  -> 1,
-                                        new DateTime(2002,10,5,6,0,0,0)   -> 1)),
-                          TileGroup(new DateTime(2002,10,4,12,0,0,0),
-                                    Map(new DateTime(2002,10,4,14,0,0,0)  -> 2))),
-           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0), Map(new DateTime(2002,10,5,14,0,0,0)  -> 2)))
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 1,
+                                        new DateTime(2002,10,5,13,30,0,0, DateTimeZone.UTC) -> 5,
+                                        new DateTime(2002,10,5,13,0,0,0, DateTimeZone.UTC)  -> 5,
+                                        new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC)  -> 1)),
+                          TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,10,0,0,0, DateTimeZone.UTC)  -> 1,
+                                        new DateTime(2002,10,5,6,0,0,0, DateTimeZone.UTC)   -> 1)),
+                          TileGroup(new DateTime(2002,10,4,12,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,4,14,0,0,0, DateTimeZone.UTC)  -> 2))),
+           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 2)))
          ),
           HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                     Map(new DateTime(2002,10,5,14,0,0,0) -> 1,
-                                         new DateTime(2002,10,5,13,0,0,0) -> 10,
-                                         new DateTime(2002,10,5,12,0,0,0) -> 1,
-                                         new DateTime(2002,10,5,10,0,0,0) -> 1,
-                                         new DateTime(2002,10,5,6,0,0,0)  -> 1)),
-                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
-                                     Map(new DateTime(2002,10,4,14,0,0,0) -> 2))),
-           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0), Map(new DateTime(2002,10,5,14,0,0,0) -> 2)))
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 1,
+                                         new DateTime(2002,10,5,13,0,0,0, DateTimeZone.UTC) -> 10,
+                                         new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC) -> 1,
+                                         new DateTime(2002,10,5,10,0,0,0, DateTimeZone.UTC) -> 1,
+                                         new DateTime(2002,10,5,6,0,0,0, DateTimeZone.UTC)  -> 1)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,4,14,0,0,0, DateTimeZone.UTC) -> 2))),
+           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 2)))
          ),
           TWO_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                      Map(new DateTime(2002,10,5,14,0,0,0) -> 1,
-                                          new DateTime(2002,10,5,12,0,0,0) -> 11,
-                                          new DateTime(2002,10,5,10,0,0,0) -> 1,
-                                          new DateTime(2002,10,5,6,0,0,0)  -> 1)),
-                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
-                                      Map(new DateTime(2002,10,4,14,0,0,0) -> 2))),
-           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0),Map(new DateTime(2002,10,5,14,0,0,0) -> 2)))
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 1,
+                                          new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC) -> 11,
+                                          new DateTime(2002,10,5,10,0,0,0, DateTimeZone.UTC) -> 1,
+                                          new DateTime(2002,10,5,6,0,0,0, DateTimeZone.UTC)  -> 1)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,4,14,0,0,0, DateTimeZone.UTC) -> 2))),
+           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 2)))
          ),
           FOUR_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                      Map(new DateTime(2002,10,5,12,0,0,0) -> 12,
-                                          new DateTime(2002,10,5,8,0,0,0)  -> 1,
-                                          new DateTime(2002,10,5,4,0,0,0)  -> 1)),
-                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
-                                      Map(new DateTime(2002,10,4,12,0,0,0) -> 2))),
-           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0), Map(new DateTime(2002,10,5,12,0,0,0) -> 2)))
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC) -> 12,
+                                          new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC)  -> 1,
+                                          new DateTime(2002,10,5,4,0,0,0, DateTimeZone.UTC)  -> 1)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,4,12,0,0,0, DateTimeZone.UTC) -> 2))),
+           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC) -> 2)))
          ),
           EIGHT_HOURLY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                      Map(new DateTime(2002,10,5,8,0,0,0)  -> 13,
-                                          new DateTime(2002,10,5,0,0,0,0)  -> 1)),
-                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
-                                      Map(new DateTime(2002,10,4,8,0,0,0)  -> 2))),
-           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0),Map(new DateTime(2002,10,5,8,0,0,0)  -> 2)))
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC)  -> 13,
+                                          new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC)  -> 1)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,4,8,0,0,0, DateTimeZone.UTC)  -> 2))),
+           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC)  -> 2)))
          ),
           DAILY -> Map(
-           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0),
-                                      Map(new DateTime(2002,10,5,0,0,0,0) -> 14)),
-                          TileGroup(new DateTime(2002,10,4,0,0,0,0),
-                                      Map(new DateTime(2002,10,4,0,0,0,0) -> 2))),
-           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0), Map(new DateTime(2002,10,5,0,0,0,0) -> 2)))
+           "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC) -> 14)),
+                          TileGroup(new DateTime(2002,10,4,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,4,0,0,0,0, DateTimeZone.UTC) -> 2))),
+           "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
+                                    Map(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC) -> 2)))
          )
       )
   )
