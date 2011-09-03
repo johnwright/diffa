@@ -835,7 +835,7 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
 
     _.bindAll(this, "render");
 
-    this.model.bind("changed:bucketSize", "render");
+    this.model.bind("change:zoomLevel", this.render);
 
     $(document).keypress(function(e) {
       if (e.charCode == '+'.charCodeAt()) {
@@ -849,6 +849,8 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
 
       return true;
     });
+
+    this.render();
   },
 
   render: function() {
