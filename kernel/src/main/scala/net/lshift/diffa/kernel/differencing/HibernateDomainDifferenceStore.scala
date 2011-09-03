@@ -211,7 +211,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       map(_.asDifferenceEvent)
   })
 
-  def countEvents(pair: DiffaPairRef, interval: Interval):Int =  sessionFactory.withSession(s => {
+  def countUnmatchedEvents(pair: DiffaPairRef, interval: Interval):Int =  sessionFactory.withSession(s => {
     val count:Option[java.lang.Long] = singleQueryOpt[java.lang.Long](s, "countEventsInIntervalByDomainAndPair",
       Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd))
 

@@ -109,9 +109,9 @@ trait DomainDifferenceStore {
   def retrievePagedEvents(pair: DiffaPairRef, interval:Interval, offset:Int, length:Int, options:EventOptions = EventOptions()) : Seq[DifferenceEvent]
 
   /**
-   * Count the number of events for the given pair within the given interval.
+   * Count the number of unmatched events for the given pair within the given interval.
    */
-  def countEvents(pair: DiffaPairRef, interval:Interval) : Int
+  def countUnmatchedEvents(pair: DiffaPairRef, interval:Interval) : Int
 
   /**
    * Retrieves all events that have occurred within a domain since the provided sequence id.

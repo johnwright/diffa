@@ -140,7 +140,7 @@ class ZoomCacheProvider(diffStore:DomainDifferenceStore,
       case Some(flags) =>
         flags.map(startTime => {
           val interval = intervalFromStartTime(startTime, zoomLevel)
-          diffStore.countEvents(pair, interval) match {
+          diffStore.countUnmatchedEvents(pair, interval) match {
             case 0 => tileCache            -= startTime  // Remove the cache entry if there are no events
             case n => tileCache(startTime) = n
           }

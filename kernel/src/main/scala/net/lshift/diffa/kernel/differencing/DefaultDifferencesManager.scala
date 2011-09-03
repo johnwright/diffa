@@ -115,7 +115,7 @@ class DefaultDifferencesManager(
     domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length, options)
 
   def countEvents(domain: String, pairKey: String, interval: Interval) =
-    domainDifferenceStore.countEvents(DiffaPairRef(key = pairKey, domain = domain), interval)
+    domainDifferenceStore.countUnmatchedEvents(DiffaPairRef(key = pairKey, domain = domain), interval)
 
   def retrieveEventDetail(domain:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.trace("Requested a detail query for domain (" + domain + ") and seq (" + evtSeqId + ") and type (" + t + ")")

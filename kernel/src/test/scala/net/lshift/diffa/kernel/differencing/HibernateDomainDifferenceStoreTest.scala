@@ -201,8 +201,20 @@ class HibernateDomainDifferenceStoreTest {
 
     val interval = addUnmatchedEvents(start, size, frontFence, rearFence)
 
-    val unmatchedCount = diffStore.countEvents(DiffaPairRef("pair2", "domain"), interval)
+    val unmatchedCount = diffStore.countUnmatchedEvents(DiffaPairRef("pair2", "domain"), interval)
     assertEquals(size - frontFence - rearFence, unmatchedCount)
+  }
+
+  @Test
+  def shouldNotCountMatchedEvents() {
+    val timestamp = new DateTime
+
+    val evt = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    diffStore.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatchedCount = diffStore.countUnmatchedEvents(DiffaPairRef("pair2", "domain"), interval)
+    assertEquals(0, unmatchedCount)
   }
 
   @Test
@@ -213,7 +225,7 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
-    val unmatchedCount = diffStore.countEvents(DiffaPairRef("pair2", "domain"), interval)
+    val unmatchedCount = diffStore.countUnmatchedEvents(DiffaPairRef("pair2", "domain"), interval)
     assertEquals(0, unmatchedCount)
   }
 
