@@ -37,18 +37,19 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
   val supportsStreaming = false
   val supportsPolling = true
 
-  val formatter = ISODateTimeFormat.basicDateTimeNoMillis
+  val noMillisFormatter = ISODateTimeFormat.basicDateTimeNoMillis
+  val formatter = ISODateTimeFormat.dateTime()
 
-  def getZoomedView(from:DateTime, until:DateTime, bucketing:Int)  = {
-    val path = resource.path("zoom")
-                        .queryParam("range-start", formatter.print(from))
-                        .queryParam("range-end", formatter.print(until))
-                        .queryParam("bucketing", bucketing.toString)
+  def getZoomedTiles(from:DateTime, until:DateTime, zoomLevel:Int) : Map[String,Array[Int]]  = {
+    val path = resource.path("tiles/" + zoomLevel)
+                       .queryParam("range-start", noMillisFormatter.print(from))
+                       .queryParam("range-end", noMillisFormatter.print(until))
+                       .queryParam("bucketing", zoomLevel.toString)
     val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
-      case 200    => response.getEntity(classOf[Map[String, Array[Int]]])
+      case 200    => response.getEntity(classOf[java.util.Map[String,Array[Int]]]).toMap[String,Array[Int]]
       case x:Int  => handleHTTPError(x, path, status)
     }
 
@@ -56,8 +57,8 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
 
   def getEvents(pairKey:String, from:DateTime, until:DateTime, offset:Int, length:Int) = {
     val path = resource.queryParam("pairKey", pairKey)
-                       .queryParam("range-start", formatter.print(from))
-                       .queryParam("range-end", formatter.print(until))
+                       .queryParam("range-start", noMillisFormatter.print(from))
+                       .queryParam("range-end", noMillisFormatter.print(until))
                        .queryParam("offset", offset.toString)
                        .queryParam("length", length.toString)
     val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
@@ -83,6 +84,25 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
     status.getStatusCode match {
       case 200    => response.getEntity(classOf[String])
       case 400    => throw new InvalidSequenceNumberException(evtSeqId)
+      case 404    => throw new NotFoundException(domain)
+      case x:Int  => handleHTTPError(x, path, status)
+    }
+  }
+
+  def ignore(seqId: String) = {
+    val response = delete("events/" + seqId)
+
+    response.getEntity(classOf[DifferenceEvent])
+  }
+
+  def unignore(seqId: String) = {
+    val path = resource.path("events/" + seqId)
+    val media = path.accept(MediaType.APPLICATION_JSON_TYPE)
+    val response = media.put(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 200    => response.getEntity(classOf[DifferenceEvent])
+      case 400    => throw new InvalidSequenceNumberException(seqId)
       case 404    => throw new NotFoundException(domain)
       case x:Int  => handleHTTPError(x, path, status)
     }

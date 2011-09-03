@@ -385,11 +385,14 @@ case class PairActor(pair:DiffaPair,
     try {
       writer.flush()
 
+      // Allocate a feedback handle, and capture it into a local variable. This prevents us having problems
+      // later if one participant fails _really_ fast (ie, before the other has even made the scan* call).
       feedbackHandle = new ScanningFeedbackHandle
+      val currentFeedbackHandle = feedbackHandle
 
       Actor.spawn {
         try {
-          policy.scanUpstream(pair, writerProxy, us, bufferingListener, feedbackHandle)
+          policy.scanUpstream(pair, writerProxy, us, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Up, Success)
         }
         catch {
@@ -407,7 +410,7 @@ case class PairActor(pair:DiffaPair,
 
       Actor.spawn {
         try {
-          policy.scanDownstream(pair, writerProxy, us, ds, bufferingListener, feedbackHandle)
+          policy.scanDownstream(pair, writerProxy, us, ds, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Down, Success)
         }
         catch {

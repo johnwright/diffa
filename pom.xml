@@ -41,13 +41,14 @@
     <jersey.version>1.8</jersey.version>
     <jackson.version>1.7.1</jackson.version>
     <lucene.version>3.0.3</lucene.version>
-    <jodatime.version>1.6</jodatime.version>
+    <jodatime.version>2.0</jodatime.version>
+    <jadira.version>1.9</jadira.version>
     <javamail.file.transport.version>1.0</javamail.file.transport.version>
     <slf4j.version>1.6.1</slf4j.version>
     <logback.version>0.9.28</logback.version>
     <akka.version>1.1.2</akka.version>
     <quartz.version>2.0.2</quartz.version>
-    <ehcache.version>2.4.3</ehcache.version>
+    <ehcache.version>2.4.4</ehcache.version>
   </properties>
 
   <scm>
@@ -235,11 +236,16 @@
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
       <version>${jodatime.version}</version>
-    </dependency>    
+    </dependency>
     <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time-hibernate</artifactId>
-      <version>1.2</version>
+      <groupId>org.joda</groupId>
+      <artifactId>joda-convert</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jadira.usertype</groupId>
+      <artifactId>usertype.jodatime</artifactId>
+      <version>${jadira.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.hibernate</groupId>

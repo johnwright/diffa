@@ -73,6 +73,7 @@ class HibernatePreparationTest {
 
     val config = new Configuration().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
         setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
         setProperty("hibernate.connection.url", "jdbc:derby:target/configStore-" + startVersion.startName + ";create=true").
         setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
@@ -130,6 +131,7 @@ class HibernatePreparationTest {
     if(System.getProperty("doCurrentSchemaExport") != null) {
       val config = new Configuration().
           addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+          addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
           setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
           setProperty("hibernate.connection.url", "jdbc:derby:target/configStore-export;create=true").
           setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
@@ -177,6 +179,7 @@ object HibernatePreparationTest {
   @DataPoint def v4 = StartingDatabaseVersion("v4")
   @DataPoint def v5 = StartingDatabaseVersion("v5")
   @DataPoint def v6 = StartingDatabaseVersion("v6")
+  @DataPoint def v7 = StartingDatabaseVersion("v7")
 }
 
 case class StartingDatabaseVersion(startName:String)

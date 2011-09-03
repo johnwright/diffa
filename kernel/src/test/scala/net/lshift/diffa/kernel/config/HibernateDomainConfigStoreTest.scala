@@ -32,9 +32,9 @@ import net.lshift.diffa.kernel.frontend.{RepairActionDef, PairDef, EndpointDef, 
 
 class HibernateDomainConfigStoreTest {
 
-  private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
-  private val sessionFactory = HibernateDomainConfigStoreTest.sessionFactory
-  private val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(sessionFactory)
+  private lazy val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
+  private lazy val sessionFactory = HibernateDomainConfigStoreTest.sessionFactory
+  private lazy val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(sessionFactory)
 
   val dateCategoryName = "bizDate"
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
@@ -505,9 +505,10 @@ class HibernateDomainConfigStoreTest {
 }
 
 object HibernateDomainConfigStoreTest {
-  private val config =
+  private lazy val config =
       new Configuration().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
         setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
         setProperty("hibernate.connection.url", "jdbc:derby:target/domainConfigStore;create=true").
         setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
@@ -515,14 +516,14 @@ object HibernateDomainConfigStoreTest {
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
                                                                // otherwise the preparation step will not get committed
 
-  val sessionFactory = {
+  lazy val sessionFactory = {
     val sf = config.buildSessionFactory
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
     sf
   }
 
-  val domainConfigStore = new HibernateDomainConfigStore(sessionFactory)
-  val systemConfigStore = new HibernateSystemConfigStore(sessionFactory)
+  lazy val domainConfigStore = new HibernateDomainConfigStore(sessionFactory)
+  lazy val systemConfigStore = new HibernateSystemConfigStore(sessionFactory)
 
   def clearAllConfig = {
     try {

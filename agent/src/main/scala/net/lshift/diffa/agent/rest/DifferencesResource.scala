@@ -24,9 +24,9 @@ import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
-import net.lshift.diffa.kernel.differencing.{DifferencesManager, DifferenceEvent}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
+import net.lshift.diffa.kernel.differencing.{EventOptions, DifferencesManager}
 
 class DifferencesResource(val differencesManager: DifferencesManager,
                           val domain:String,
@@ -35,7 +35,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
-  val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
+  val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis.withZoneUTC()
 
   @GET
   @Produces(Array("application/json"))
@@ -46,12 +46,14 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     new OptionalParam(name = "range-start", datatype = "date", description = "The lower bound of the items to be paged."),
     new OptionalParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
     new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
-    new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page.")))
+    new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page."),
+    new OptionalParam(name = "include-ignored", datatype = "bool", description = "Whether to include ignored differences (defaults to false).")))
   def getDifferenceEvents(@QueryParam("pairKey") pairKey:String,
                           @QueryParam("range-start") from_param:String,
                           @QueryParam("range-end") until_param:String,
                           @QueryParam("offset") offset_param:String,
                           @QueryParam("length") length_param:String,
+                          @QueryParam("include-ignored") includeIgnored:java.lang.Boolean,
                           @Context request: Request) = {
 
     val now = new DateTime()
@@ -59,6 +61,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     val until = defaultDateTime(until_param, now)
     val offset = defaultInt(offset_param, 0)
     val length = defaultInt(length_param, 100)
+    val reallyIncludeIgnored = if (includeIgnored != null) { includeIgnored.booleanValue() } else { false }
 
     try {
       val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain))
@@ -69,7 +72,8 @@ class DifferencesResource(val differencesManager: DifferencesManager,
       }
 
       val interval = new Interval(from,until)
-      val diffs = differencesManager.retrievePagedEvents(domain, pairKey, interval, offset, length)
+      val diffs = differencesManager.retrievePagedEvents(domain, pairKey, interval, offset, length,
+        EventOptions(includeIgnored = reallyIncludeIgnored))
 
       val responseObj = Map(
         "seqId" -> domainVsn.getValue,
@@ -86,77 +90,39 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   }
   
   @GET
-  @Path("/zoom")
+  @Path("tiles/{zoomLevel}")
   @Produces(Array("application/json"))
   @MandatoryParams(Array(
       new MandatoryParam(name = "range-start", datatype = "date", description = "The starting time for any differences"),
       new MandatoryParam(name = "range-end", datatype = "date", description = "The ending time for any differences"),
-      new MandatoryParam(name = "bucketing", datatype = "int", description = "The size in elements in the zoomed view")))
+      new MandatoryParam(name = "zoom-level", datatype = "int", description = "The level of zoom for the requested tiles")))
   @Description("Returns a zoomed view of the data within a specific time range")
-  def getZoomedView(@QueryParam("range-start") rangeStart: String,
-                    @QueryParam("range-end") rangeEnd:String,
-                    @QueryParam("bucketing") width:Int,
-                    @Context request: Request): Response = {
-    try {
-      // Evaluate whether the version of the domain has changed
-      val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain))
-      request.evaluatePreconditions(domainVsn) match {
-        case null => // We'll continue with the request
-        case r => throw new WebApplicationException(r.build)
-      }
+  def getZoomedTiles(@QueryParam("range-start") rangeStart: String,
+                     @QueryParam("range-end") rangeEnd:String,
+                     @PathParam("zoomLevel") zoomLevel:Int,
+                     @Context request: Request): Response = {
 
-      val rangeStartDate = isoDateTime.parseDateTime(rangeStart)
-      val rangeEndDate = isoDateTime.parseDateTime(rangeEnd)
-
-      if (rangeStartDate == null || rangeEndDate == null) {
-        return Response.status(Response.Status.BAD_REQUEST).entity("Invalid start or end date").build
-      }
-
-      // Calculate the maximum number of buckets that will be seen
-      val rangeSecs = (rangeEndDate.getMillis - rangeStartDate.getMillis) / 1000
-      val max = (rangeSecs.asInstanceOf[Double] / width.asInstanceOf[Double]).ceil.asInstanceOf[Int]
-      if (max > 100) {
-        return Response.status(Response.Status.BAD_REQUEST).entity("Time range too big for width. Maximum of 100 blobs can be generated, requesting " + max).build
-      }
-
-      // Calculate the zoomed view
-      val interestingEvents = differencesManager.retrieveAllEventsInInterval(domain, new Interval(rangeStartDate, rangeEndDate))
-
-      // Bucket the events
-      val pairs = scala.collection.mutable.Map[String, ZoomPair]()
-      interestingEvents.foreach(evt => {
-        val pair = pairs.getOrElseUpdate(evt.objId.pair.key, new ZoomPair(evt.objId.pair.key, rangeStartDate, width, max))
-        pair.addEvent(evt)
-      })
-
-      // Convert to an appropriate web response
-      val respObj = mapAsJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
-
-      Response.ok(respObj).tag(domainVsn).build
-    }
-    catch {
-      case e: NoSuchElementException => {
-        log.error("Unsucessful query on domain = " + domain)
-        throw new WebApplicationException(404)
-      }
+    // Evaluate whether the version of the domain has changed
+    val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain) + "@" + zoomLevel)
+    request.evaluatePreconditions(domainVsn) match {
+      case null => // We'll continue with the request
+      case r => throw new WebApplicationException(r.build)
     }
 
+    val rangeStartDate = isoDateTime.parseDateTime(rangeStart)
+    val rangeEndDate = isoDateTime.parseDateTime(rangeEnd)
 
-
-  }
-
-  class ZoomPair(pairKey:String, rangeStart:DateTime, width:Int, max:Int) {
-    private val buckets = new Array[Int](max)
-
-    def addEvent(evt:DifferenceEvent) = {
-      val offset = (evt.detectedAt.getMillis - rangeStart.getMillis) / 1000
-      val bucketNum = (offset / width).asInstanceOf[Int]
-
-      // Add an entry to the bucket
-      buckets(bucketNum) += 1
+    if (rangeStartDate == null || rangeEndDate == null) {
+      return Response.status(Response.Status.BAD_REQUEST).entity("Invalid start or end date").build
     }
 
-    def toArray:Array[Int] = buckets
+    // TODO Consider limiting the zoom range to prevent people requesting ranges going back to the start of time in one go
+    // This should probably be relative to the zoom level and is effectively geared towards delivering enough
+    // data to populate the heatmap
+
+    val tileSet = differencesManager.retrieveEventTiles(domain, zoomLevel, new Interval(rangeStartDate, rangeEndDate))
+    val respObj = mapAsJavaMap(tileSet.keys.map(pair => pair -> tileSet(pair).toArray).toMap[String, Array[Int]])
+    Response.ok(respObj).tag(domainVsn).build()
   }
 
   @GET
@@ -170,6 +136,32 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   def getDetail(@PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String =
     differencesManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
+
+  @DELETE
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("application/json"))
+  @Description("Ignores the difference with the given sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def ignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    val ignored = differencesManager.ignoreDifference(domain, evtSeqId)
+
+    Response.ok(ignored).build
+  }
+
+  @PUT
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("application/json"))
+  @Description("Unignores a difference with the given sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def unignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    val restored = differencesManager.unignoreDifference(domain, evtSeqId)
+
+    Response.ok(restored).build
+  }
 
   def defaultDateTime(input:String, default:DateTime) = input match {
     case "" | null => default

@@ -28,10 +28,12 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.net.URI
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
-import java.util.{UUID, Properties}
-import net.lshift.diffa.kernel.differencing.{PairScanState, DifferenceEvent}
-import org.joda.time.DateTime
 import net.lshift.diffa.agent.client.DifferencesRestClient
+import net.lshift.diffa.kernel.differencing.{ZoomCache, PairScanState, DifferenceEvent}
+import scala.collection.JavaConversions._
+import java.util.{UUID, Properties}
+import org.joda.time.DateTime
+
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -94,6 +96,40 @@ trait CommonDifferenceTests {
     // but unfortuneately, this requires the config to be dynamically updateable.
     //assertEquals(1, fileList.size)
     //testForLink(fileList(0))
+  }
+
+  @Test
+  def differencesShouldTile = {
+    val diffs = getVerifiedDiffs()
+    assertNotNull(diffs)
+
+    val zoomLevel = ZoomCache.QUARTER_HOURLY
+    val tiles = env.diffClient.getZoomedTiles(yesterday, tomorrow, zoomLevel)
+    assertNotNull(tiles)
+    assertNotNull(tiles(env.pairKey))
+  }
+
+  @Test
+  def shouldBeAbleToIgnoreDifference() {
+    val diffs = getVerifiedDiffs()
+    assertFalse(diffs.isEmpty)
+
+    env.diffClient.ignore(diffs(0).seqId)
+
+    val events = env.diffClient.getEvents(env.pairKey, yearAgo, today, 0, 100)
+    assertTrue(events.isEmpty)
+  }
+
+  @Test
+  def shouldBeAbleToUnignoreDifference() {
+    val diffs = getVerifiedDiffs()
+    assertFalse(diffs.isEmpty)
+
+    val ignored = env.diffClient.ignore(diffs(0).seqId)
+    env.diffClient.unignore(ignored.seqId)
+
+    val events = env.diffClient.getEvents(env.pairKey, yearAgo, today, 0, 100)
+    assertEquals(1, events.length)
   }
 
   @Test

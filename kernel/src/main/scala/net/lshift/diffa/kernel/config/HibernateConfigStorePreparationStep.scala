@@ -46,7 +46,8 @@ class HibernateConfigStorePreparationStep
     AddDomainsMigrationStep,
     AddMaxGranularityMigrationStep,
     ExpandPrimaryKeysMigrationStep,
-    AddSuperuserAndDefaultUsersMigrationStep
+    AddSuperuserAndDefaultUsersMigrationStep,
+    AddPersistentDiffsMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -62,6 +63,9 @@ class HibernateConfigStorePreparationStep
           values(Map("opt_key" -> HibernatePreparationUtils.correlationStoreSchemaKey, "opt_val" -> HibernatePreparationUtils.correlationStoreVersion))
         AddDomainsMigrationStep.applyReferenceData(freshMigration)
         AddSuperuserAndDefaultUsersMigrationStep.applyReferenceData(freshMigration)
+
+        // Also need to add foreign key constraint from diffs.pair to pair.pair_key
+        AddPersistentDiffsMigrationStep.addForeignKeyConstraintForPairColumnOnDiffsTables(freshMigration)
 
         sf.withSession(s => {
           s.doWork(new Work() {
@@ -295,7 +299,6 @@ object ExpandPrimaryKeysMigrationStep extends HibernateMigrationStep {
   def versionId = 5
   def migrate(config: Configuration, connection: Connection) {
     val migration = new MigrationBuilder(config)
-
     migration.alterTable("endpoint_categories").
       dropConstraint("FKEE1F9F06BC780104")
     migration.alterTable("pair").
@@ -335,7 +338,6 @@ object ExpandPrimaryKeysMigrationStep extends HibernateMigrationStep {
     migration.apply(connection)
   }
 }
-
 object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
   def versionId = 6
   def migrate(config: Configuration, connection: Connection) {
@@ -353,5 +355,56 @@ object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
         "name" -> "guest", "email" -> "guest@diffa.io",
         "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
         "superuser" -> new java.lang.Integer(1)))
+  }
+}
+object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
+  def versionId = 7
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.createTable("diffs").
+      column("seq_id", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("is_match", Types.SMALLINT, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      column("ignored", Types.SMALLINT, false).
+      pk("seq_id").
+      withIdentityCol()
+
+    migration.createTable("pending_diffs").
+      column("oid", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      pk("oid").
+      withIdentityCol()
+
+    addForeignKeyConstraintForPairColumnOnDiffsTables(migration)
+
+    migration.createIndex("diff_last_seen", "diffs", "last_seen")
+    migration.createIndex("diff_detection", "diffs", "detected_at")
+    migration.createIndex("rdiff_is_matched", "diffs", "is_match")
+    migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
+    migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
+
+    migration.apply(connection)
+  }
+
+  def addForeignKeyConstraintForPairColumnOnDiffsTables(migration: MigrationBuilder) {
+    // alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair, domain) references pair (pair_key, domain);
+    migration.alterTable("diffs")
+      .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+
+    migration.alterTable("pending_diffs")
+      .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
   }
 }

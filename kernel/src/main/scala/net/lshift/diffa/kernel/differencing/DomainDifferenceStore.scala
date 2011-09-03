@@ -18,21 +18,28 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.{Interval, DateTime}
+import net.lshift.diffa.kernel.config.DiffaPairRef
+import reflect.BeanProperty
 
 /**
  * The domain cache provides facilities for storing difference events that occur, and managing the states of these
  * events. A domain cache instance should exist for each domain that has been created in the system.
  */
-trait DomainCache {
+trait DomainDifferenceStore {
   /**
-   * Retrieves the domain of this cache.
+   * Indicates that the given domain has been removed, and that any differences stored against it should be removed.
    */
-  def domain:String
+  def removeDomain(domain: String)
+
+  /**
+   * Indicates that the given pair has been removed, and that any differences stored against it should be removed.
+   */
+  def removePair(pair: DiffaPairRef)
 
   /**
    * Retrieves the current sequence id of the cache
    */
-  def currentSequenceId:String
+  def currentSequenceId(domain:String):String
 
   /**
    * Adds a pending event for the given version id into the cache.
@@ -55,7 +62,7 @@ trait DomainCache {
   /**
    * Indicates that a given pending event is no longer valid - we've received a match, so we won't be upgrading it.
    */
-  def cancelPendingUnmatchedEvent(id:VersionID, vsn:String):DifferenceEvent
+  def cancelPendingUnmatchedEvent(id:VersionID, vsn:String):Boolean
 
   /**
    * Adds a matched event to the cache. This will result in the removal of any earlier unmatched event for the same id.
@@ -68,25 +75,43 @@ trait DomainCache {
    * Indicates that all differences in the cache older than the given date should be marked as matched. This is generally
    * invoked upon a scan being completed, and allows for events that have disappeared to be removed.
    */
-  def matchEventsOlderThan(pair:String, cutoff: DateTime)
+  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime)
 
   /**
-   * Retrieves all unmatched events that have been added to the cache where their detection timestamp
+   * Indicates that the given event should be ignored, and not returned in any query. Returns the regenerated object
+   * that is marked as ignored.
+   */
+  def ignoreEvent(domain:String, seqId:String): DifferenceEvent
+
+  /**
+   * Indicates that the given event should no longer be ignored. The event with the given sequence id will be removed,
+   * and a new event with the same details generated - this ensures that consumers that are monitoring for updates will
+   * see a new sequence id appear.
+   */
+  def unignoreEvent(domain:String, seqId:String): DifferenceEvent
+
+  /**
+   * Retrieves all unmatched events in the domain that have been added to the cache where their detection timestamp
    * falls within the specified period
    */
-  def retrieveUnmatchedEvents(interval:Interval) : Seq[DifferenceEvent]
+  def retrieveUnmatchedEvents(domain:String, interval:Interval) : Seq[DifferenceEvent]
+
+  /**
+   * Applies a closure to all unmatched events for the given pair whose detection timestamp falls into the supplied time bound
+   */
+  def retrieveUnmatchedEvents(domain:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit)
 
   /**
    * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
    * supplied.
    */
-  def retrievePagedEvents(pairKey:String, interval:Interval, offset:Int, length:Int) : Seq[DifferenceEvent]
+  def retrievePagedEvents(pair: DiffaPairRef, interval:Interval, offset:Int, length:Int, options:EventOptions = EventOptions()) : Seq[DifferenceEvent]
 
   /**
-   * Count the number of events for the given pair within the given interval.
+   * Count the number of unmatched events for the given pair within the given interval.
    */
-  def countEvents(pairKey:String, interval:Interval) : Int
+  def countUnmatchedEvents(pair: DiffaPairRef, interval:Interval) : Int
 
   /**
    * Retrieves all events that have occurred within a domain since the provided sequence id.
@@ -94,31 +119,61 @@ trait DomainCache {
    * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary scan information cannot be
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
-  def retrieveEventsSince(evtSeqId:String):Seq[DifferenceEvent]
+  def retrieveEventsSince(domain:String, evtSeqId:String):Seq[DifferenceEvent]
 
   /**
    * Retrieves a single event by its id.
    * @param evtSeqId sequence id of the event to be retrieved.
    * @throws InvalidSequenceNumberException if the requested sequence id does not exist or has expired.
    */
-  def getEvent(evtSeqId:String) : DifferenceEvent
+  def getEvent(domain:String, evtSeqId:String) : DifferenceEvent
+
+  /**
+   * Retrieves pre-set group of tiles that is aligned on the requested timestamp.
+   * @pair The pair to retrieve tiles for
+   * @zoomLevel The level that the tiles should be zoomed into
+   * @timestamp The (aligned) start time of the requested group of tiles
+   */
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) : Option[TileGroup]
+
+  /**
+   * Indicates that matches older than the given cutoff (based on their seen timestamp) should be removed.
+   */
+  def expireMatches(cutoff:DateTime)
+
 }
 
-/**
- * Provider that manages a series of domain cache instances.
- */
-trait DomainCacheProvider {
-  /**
-   * Retrieves a cache for the given domain. If no cache has been allocated, then this method will return None. This
-   * method should be used for query operations that are not intended to result in a new cache being created.
-   */
-  def retrieveCache(domain:String):Option[DomainCache]
+case class TileGroup(
+  lowerBound:DateTime,
+  tiles:Map[DateTime,Int]
+)
 
-  /**
-   * Retrieves or allocates a new cache for the given domain. If a cache has previously been allocated for
-   * the given domain, then that cache will be returned. If no cache has been allocated, then a new cache will be
-   * initialised.
-   * @param domain the domain of the cache requested;
-   */
-  def retrieveOrAllocateCache(domain:String):DomainCache
+case class EventOptions(
+  includeIgnored:Boolean = false    // Whether ignored events should be included in the response
+)
+
+case class ReportedDifferenceEvent(
+  @BeanProperty var seqId:java.lang.Integer = null,
+  @BeanProperty var objId:VersionID = null,
+  @BeanProperty var detectedAt:DateTime = null,
+  @BeanProperty var isMatch:Boolean = false,
+  @BeanProperty var upstreamVsn:String = null,
+  @BeanProperty var downstreamVsn:String = null,
+  @BeanProperty var lastSeen:DateTime = null,
+  @BeanProperty var ignored:Boolean = false
+) {
+
+  def this() = this(seqId = null)
+
+  def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
+  def state = if (isMatch) {
+      MatchState.MATCHED
+    } else {
+      if (ignored) {
+        MatchState.IGNORED
+      } else {
+        MatchState.UNMATCHED
+      }
+
+    }
 }

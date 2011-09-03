@@ -19,10 +19,11 @@ package net.lshift.diffa.kernel.util
 import net.lshift.diffa.kernel.util.SessionHelper._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-import org.hibernate.{NonUniqueResultException, Query, Session, SessionFactory}
 import org.slf4j.{LoggerFactory, Logger}
 import scala.collection.JavaConversions._
 import scala.collection.Map
+import org.hibernate._
+import java.io.Closeable
 
 /**
  * Mixin providing a bunch of useful query utilities for stores.
@@ -32,7 +33,7 @@ trait HibernateQueryUtils {
 
   protected val log:Logger = LoggerFactory.getLogger(getClass)
 
-  def getOrFail[ReturnType](s: Session, c:Class[ReturnType], id:Serializable, entityName:String):ReturnType = {
+  def getOrFail[ReturnType](s: Session, c:Class[ReturnType], id:java.io.Serializable, entityName:String):ReturnType = {
     s.get(c, id) match {
       case null => throw new MissingObjectException(entityName)
       case e    => e.asInstanceOf[ReturnType]
@@ -43,10 +44,30 @@ trait HibernateQueryUtils {
    * Executes a list query in the given session, forcing the result type into a typed list of the given
    * return type.
    */
-  def listQuery[ReturnType](s: Session, queryName: String, params: Map[String, Any]): Seq[ReturnType] = {
+  def listQuery[ReturnType](s: Session, queryName: String, params: Map[String, Any], firstResult:Option[Int] = None, maxResults:Option[Int] = None): Seq[ReturnType] = {
+    sessionFactory.withSession(s => {
+      val query: Query = s.getNamedQuery(queryName)
+      params foreach {case (param, value) => query.setParameter(param, value)}
+      firstResult.map(f => query.setFirstResult(f))
+      maxResults.map(m => query.setMaxResults(m))
+      query.list map (item => item.asInstanceOf[ReturnType])
+    })
+  }
+
+  /**
+   * Returns a handle to a scrollable cursor. Note that this requires the caller to manage the session for themselves.
+   */
+  def scrollableQuery[T](s: Session, queryName: String, params: Map[String, Any]) : Cursor[T] = {
     val query: Query = s.getNamedQuery(queryName)
     params foreach {case (param, value) => query.setParameter(param, value)}
-    query.list map (item => item.asInstanceOf[ReturnType])
+
+    val underlying = query.scroll()
+
+    new Cursor[T] {
+      def next = underlying.next
+      def get = underlying.get(0).asInstanceOf[T]
+      def close = underlying.close
+    }
   }
 
   /**
@@ -64,10 +85,26 @@ trait HibernateQueryUtils {
    * Executes a query that may return a single result in the current session. Returns either None or Some(x) for the
    * object.
    */
-  def singleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] = {
+  def singleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] =
+    singleQueryOptBuilder(s,queryName, params, (_) => ())
+
+  /**
+   * Executes a query that may return a single result in the current session. Returns either None or Some(x) for the
+   * object.
+   *
+   * The difference to singleQueryOpt/3 is that the underlying SQL query may, from the DB's perspective return
+   * more than one result, so to counter this, the max result set size is limited to one to guarantee only one result.
+   */
+  def limitedSingleQueryOpt[ReturnType](s:Session, queryName: String, params: Map[String, Any]): Option[ReturnType] =
+    singleQueryOptBuilder(s,queryName, params, (q:Query) => q.setMaxResults(1))
+
+  private def singleQueryOptBuilder[ReturnType](s:Session, queryName: String, params: Map[String, Any], f:Query => Unit): Option[ReturnType] = {
 
     val query: Query = s.getNamedQuery(queryName)
     params foreach {case (param, value) => query.setParameter(param, value)}
+
+    f(query)
+
     try {
       query.uniqueResult match {
         case null => None
@@ -82,6 +119,12 @@ trait HibernateQueryUtils {
         None
       }
     }
+  }
+
+  def executeUpdate(s:Session, queryName: String, params: Map[String, Any]) = {
+    val query: Query = s.getNamedQuery(queryName)
+    params foreach {case (param, value) => query.setParameter(param, value)}
+    query.executeUpdate()
   }
 
   /**
@@ -137,4 +180,22 @@ trait HibernateQueryUtils {
                             Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
                             "esclation %s for pair %s in domain %s".format(name, pairKey, domain))
 
+  def listPairsInDomain(domain:String) = sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)))
+
+}
+
+/**
+ * A simple wrapper around a DB cursor
+ */
+trait Cursor[T] extends Closeable {
+
+  /**
+   * Returns the bound value of the current cursor point.
+   */
+  def get : T
+
+  /**
+   * Moves the cursor along and if the end of the result has not been reached
+   */
+  def next : Boolean
 }

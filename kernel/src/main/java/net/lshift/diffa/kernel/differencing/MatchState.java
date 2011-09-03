@@ -17,5 +17,5 @@
 package net.lshift.diffa.kernel.differencing;
 
 public enum MatchState {
-    MATCHED,UNMATCHED;
+    MATCHED,UNMATCHED,IGNORED;
 }
