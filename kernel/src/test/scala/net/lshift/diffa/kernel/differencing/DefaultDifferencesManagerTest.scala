@@ -20,15 +20,18 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.events.VersionID
 import org.junit.{Before, Test}
 import org.junit.Assert._
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, EventMatcher, MatchingManager}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.easymock.EasyMock
-import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.scanning.ScanConstraint
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Endpoint, DomainConfigStore, Pair => DiffaPair}
-import net.lshift.diffa.kernel.frontend.FrontendConversions
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.frontend.FrontendConversions._
+import net.lshift.diffa.kernel.differencing.DefaultDifferencesManagerTest.Scenario
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{Theories, Theory, DataPoint}
+import org.joda.time.{DateTimeZone, DateTime, Duration, Interval}
 
 /**
  * Test cases for the participant protocol factory.
@@ -44,6 +47,7 @@ class StubParticipantProtocolFactory
   }
 }
 
+@RunWith(classOf[Theories])
 class DefaultDifferencesManagerTest {
   val listener = createStrictMock("listener1", classOf[DifferencingListener])
 
@@ -66,7 +70,7 @@ class DefaultDifferencesManagerTest {
   replay(systemConfigStore)
 
   val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
-  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(FrontendConversions.toPairDef(pair1), FrontendConversions.toPairDef(pair2)))
+  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(toPairDef(pair1), toPairDef(pair2)))
   replay(domainConfigStore)
 
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
@@ -122,7 +126,9 @@ class DefaultDifferencesManagerTest {
     expect(matcher.isVersionIDActive(VersionID(pair2.asRef, "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(VersionID(pair1.asRef, "id2"))).andStubReturn(false)
 
-    replay(systemConfigStore, matchingManager)
+    expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(toPairDef(pair1), toPairDef(pair2)))
+
+    replay(systemConfigStore, matchingManager, domainConfigStore)
   }
 
   def expectDifferenceForPair(pairs:DiffaPair*)  = {
@@ -206,6 +212,160 @@ class DefaultDifferencesManagerTest {
     manager.onDownstreamExpired(id, "d")
   }
 
+  @Theory
+  def shouldRetrieveTiles(scenario:Scenario) {
+
+    val blobs = Array.fill(scenario.arraySize)(0)
+
+    def divisions(d:Duration) = d.getStandardMinutes.intValue() / ZoomCache.zoom(scenario.zoomLevel)
+
+    scenario.events.foreach{ case(tileGroupStart, events) => {
+
+      if (events.isEmpty) {
+        expect(domainDifferenceStore.retrieveEventTiles(
+            EasyMock.eq(pair1.asRef),
+            EasyMock.eq(scenario.zoomLevel),
+            EasyMock.eq(tileGroupStart))
+        ).andStubReturn(Some(TileGroup(tileGroupStart, Map())))
+      }
+      else {
+        events.foreach{ case(timestamp, blobSize) => {
+
+          val eventTileStart = ZoomCache.containingInterval(timestamp, scenario.zoomLevel).getStart
+
+          expect(domainDifferenceStore.retrieveEventTiles(
+            EasyMock.eq(pair1.asRef),
+            EasyMock.eq(scenario.zoomLevel),
+            EasyMock.eq(tileGroupStart))
+          ).andStubReturn(Some(TileGroup(tileGroupStart, Map(eventTileStart -> blobSize))))
+
+          val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
+          blobs(offset) = blobSize
+        }
+      }
+     }
+
+    }}
+
+    expect(domainDifferenceStore.retrieveEventTiles(
+      EasyMock.eq(pair2.asRef),
+      EasyMock.anyObject(),
+      EasyMock.anyObject())
+    ).andStubReturn(None)
+
+    replay(domainDifferenceStore)
+
+    val domainTiles = manager.retrieveEventTiles(pair1.domain.name, scenario.zoomLevel, scenario.interval)
+    val pair1Tiles = domainTiles(pair1.key)
+    val pair2Tiles = domainTiles(pair2.key)
+
+    assertArrayEquals(Array.fill(scenario.arraySize)(0), pair2Tiles)
+
+    assertArrayEquals(blobs, pair1Tiles)
+  }
+
   private def replayAll = replay(listener, matcher)
   private def verifyAll = verify(listener, matcher)
+}
+
+/**
+ * The data sets are divided into two groups:
+ *
+ * - Queries that should yield 32-column aligned results, seeing as these are easier to read
+ * - Queries that span tile group aligned boundaries, to verify that the merging is working properly
+ *
+ * This should make the data points more comprehensive and easier to troubleshoot.
+ *
+ */
+object DefaultDifferencesManagerTest {
+
+  // ALIGNED QUERIES
+
+  /**
+   * Tiles at 15 minute zoom level should be grouped into 8 hour aligned slots, which gives 32 tiles.
+   */
+  @DataPoint def alignedQuarterHourly = Scenario(
+                                          zoomLevel = ZoomCache.QUARTER_HOURLY,
+                                          arraySize = 32,
+                                          events = Map(
+                                            new DateTime(1976,10,14,8,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1976,10,14,8,23,0,0, DateTimeZone.UTC) -> 12)
+                                          ),
+                                          interval = new Interval(new DateTime(1976,10,14,8,0,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1976,10,14,15,45,0,0, DateTimeZone.UTC))
+                                        )
+
+  /**
+   * Tiles at 30 minute zoom level should be grouped into 12 hour aligned slots, which gives 24 tiles.
+   */
+  @DataPoint def alignedHalfHourly = Scenario(
+                                          zoomLevel = ZoomCache.HALF_HOURLY,
+                                          arraySize = 24,
+                                          events = Map(
+                                            new DateTime(1993,3,3,12,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1993,3,3,12,23,0,0, DateTimeZone.UTC) -> 76)
+                                          ),
+                                          interval = new Interval(new DateTime(1993,3,3,12,0,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1993,3,3,23,30,0,0, DateTimeZone.UTC))
+                                        )
+
+  @DataPoint def alignedDaily = Scenario(
+                                          zoomLevel = ZoomCache.DAILY,
+                                          arraySize = 13,
+                                          events = Map(
+                                            new DateTime(2009,8,14,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(2009,8,14,12,15,17,445, DateTimeZone.UTC) -> 88),
+                                            new DateTime(2009,8,15,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,16,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,17,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,18,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,19,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,20,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,21,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,22,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,23,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,24,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(2009,8,25,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(2009,8,25,1,49,33,745, DateTimeZone.UTC)  -> 81)
+                                          ),
+                                          interval = new Interval(new DateTime(2009,8,14,0,0,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(2009,8,26,0,0,0,0, DateTimeZone.UTC))
+                                        )
+
+  // SPANNING QUERIES
+
+  /**
+   * Show that 15 minute zoom level can span 8 hour hour aligned slots.
+   */
+
+  @DataPoint def spanningQuarterHourly = Scenario(
+                                          zoomLevel = ZoomCache.QUARTER_HOURLY,
+                                          arraySize = 4,
+                                          events = Map(
+                                            new DateTime(1922,1,11,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1922,1,11,7,57,34,345, DateTimeZone.UTC) -> 17),
+                                            new DateTime(1922,1,11,8,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1922,1,11,8,1,19,883, DateTimeZone.UTC)  -> 29)
+                                          ),
+                                          interval = new Interval(new DateTime(1922,1,11,7,31,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1922,1,11,8,29,0,0, DateTimeZone.UTC))
+                                        )
+
+  /**
+   * Show that 15 minute zoom level can span 8 hour hour aligned slots.
+   */
+  @DataPoint def spanningHalfHourly = Scenario(
+                                          zoomLevel = ZoomCache.HALF_HOURLY,
+                                          arraySize = 9,
+                                          events = Map(
+                                            new DateTime(1968,5,6,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1968,5,6,10,19,33,745, DateTimeZone.UTC) -> 53),
+                                            new DateTime(1968,5,6,12,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1968,5,6,14,17,10,983, DateTimeZone.UTC) -> 102)
+                                          ),
+                                          interval = new Interval(new DateTime(1968,5,6,10,2,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1968,5,6,14,3,0,0, DateTimeZone.UTC))
+                                        )
+
+  case class Scenario(zoomLevel:Int, arraySize:Int, events:Map[DateTime, Map[DateTime,Int]], interval:Interval)
 }

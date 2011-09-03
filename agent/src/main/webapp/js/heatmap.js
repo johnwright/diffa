@@ -58,12 +58,14 @@ Diffa.Routers.Blobs = Backbone.Router.extend({
 Diffa.Models.Blobs = Backbone.Model.extend({
   maxColumns: 96,           // Maybe make variable?
   defaultBucketSize: 3600,
+  defaultZoomLevel:4,       // HOURLY
   defaultMaxRows: 10,       // Will change as more pairs arrive
 
   initialize: function() {
     _.bindAll(this, "sync", "periodicSync", "stopPolling", "startPolling");
 
     this.set({
+      zoomLevel: this.defaultZoomLevel,
       bucketSize: this.defaultBucketSize,
       swimlaneLabels: [],
       buckets: [],
@@ -81,10 +83,10 @@ Diffa.Models.Blobs = Backbone.Model.extend({
 
     var now = endTime.toString(TIME_FORMAT);
 
-    startTime = endTime.add({seconds: -1 * self.get('bucketSize') * self.maxColumns});
+    startTime = endTime.add({seconds: -1 * self.get('bucketSize') * ( self.maxColumns -1 ) });
     var dayBeforeNow = startTime.toString(TIME_FORMAT);
 
-    $.getJSON("rest/" + Diffa.currentDomain + "/diffs/zoom?range-start=" + dayBeforeNow + "&range-end=" + now + "&bucketing=" + self.get('bucketSize'), function(data) {
+    $.getJSON("rest/" + Diffa.currentDomain + "/diffs/tiles/" + self.get('zoomLevel') + "?range-start=" + dayBeforeNow + "&range-end=" + now, function(data) {
       var swimlaneLabels = self.get('swimlaneLabels').slice(0);     // Retrieve a cloned copy of the swimlane labels
       var buckets = [];
       var maxRows = self.get('maxRows');
@@ -137,13 +139,38 @@ Diffa.Models.Blobs = Backbone.Model.extend({
   },
 
   zoomOut: function() {
-    this.set({bucketSize: this.get('bucketSize') * 2});
-    this.sync();
+    this.maybeUpdateZoomLevel(-1);
   },
   zoomIn: function() {
-    this.set({bucketSize: Math.round(this.get('bucketSize') / 2)});
-    this.sync();
+    this.maybeUpdateZoomLevel(1);
+  },
+
+  maybeUpdateZoomLevel: function(factor) {
+    var newZoomLevel = this.get('zoomLevel') + factor;
+    if(this.isZoomLevelValid(newZoomLevel)) {
+      this.set({ zoomLevel: newZoomLevel });
+      this.set({ bucketSize: this.calculateBucketSize(newZoomLevel) });
+      this.sync();
+    }
+  },
+
+  calculateBucketSize: function(zoomLevel) {
+    switch(zoomLevel) {
+      case 0 : return 24 *60 * 60;  // DAILY
+      case 1 : return 8 * 60 * 60;  // EIGHT HOURLY
+      case 2 : return 4 * 60 * 60;  // FOUR HOURLY
+      case 3 : return 2 * 60 * 60;  // TWO HOURLY
+      case 4 : return 60 * 60;      // HOURLY
+      case 5 : return 30 * 60;      // HALF HOURLY
+      case 6 : return 15 * 60;      // QUARTER HOURLY
+      default: null
+    }
+  },
+
+  isZoomLevelValid: function(zoomLevel) {
+    return zoomLevel <= 6 && zoomLevel >= 0;
   }
+
 });
 
 Diffa.Models.Diff = Backbone.Model.extend({
@@ -514,6 +541,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     // draw scale
     var startTime = this.model.get('startTime');
     var bucketSize = this.model.get('bucketSize');
+    var zoomLevel = this.model.get('zoomLevel');
     this.scaleContext.font = "9px sans-serif";
     for (var sc = 0; sc < this.model.maxColumns; sc++) {
       if (sc % 3 == 0) {
@@ -807,7 +835,7 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
 
     _.bindAll(this, "render");
 
-    this.model.bind("changed:bucketSize", "render");
+    this.model.bind("change:zoomLevel", this.render);
 
     $(document).keypress(function(e) {
       if (e.charCode == '+'.charCodeAt()) {
@@ -821,6 +849,8 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
 
       return true;
     });
+
+    this.render();
   },
 
   render: function() {
@@ -837,10 +867,10 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
   },
 
   shouldAllowMoreZoomIn: function() {
-    return this.model.get('bucketSize') > 1;      // Buckets can't be smaller than 1s
+    return this.model.get('zoomLevel') < 6;   // Maximum zoom level is 6 - corresponds to a 15 minute granularity
   },
   shouldAllowMoreZoomOut: function() {
-    return this.model.get('bucketSize') < 180*24*3600;  // Buckets can't be wider than 6-months
+    return this.model.get('zoomLevel') > 0;  // Minimal zoom level is 0 - corresponds to a daily granularity
   },
 
   zoomOut: function() { this.model.zoomOut(); },

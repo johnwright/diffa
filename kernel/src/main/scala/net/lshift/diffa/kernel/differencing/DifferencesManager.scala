@@ -21,6 +21,7 @@ import reflect.BeanProperty
 import net.lshift.diffa.kernel.participants.ParticipantType
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
+import java.util.HashMap
 
 /**
  * A DifferencesManager provides a stateful view of the differencing of pairs, and provides mechanisms for polling
@@ -49,11 +50,10 @@ trait DifferencesManager {
   def unignoreDifference(domain:String, seqId:String):DifferenceEvent
 
   /**
-   *  Retrieves all events known to this domain in the given interval. Will only include unmatched events.
+   *  Retrieves all events known to this domain in the as tiles according to the given zoom level. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */
-  // TODO [#294] This call should be deprecated because this abstraction should not allow all events to get materialized into memory
-  def retrieveAllEventsInInterval(domain:String, interval:Interval) : Seq[DifferenceEvent]
+  def retrieveEventTiles(domain:String, zoomLevel:Int, timespan:Interval) : Map[String,Array[Int]]
 
   /**
    *
@@ -134,7 +134,9 @@ case class DifferenceEvent(
   @BeanProperty var downstreamVsn:String = null,
   @BeanProperty var lastSeen:DateTime = null) {
 
- def this() = this(seqId = null)
+  def this() = this(seqId = null)
+
+  def sequenceId = Integer.parseInt(seqId)
     
 }
 

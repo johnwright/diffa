@@ -4,17 +4,20 @@ import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.Session
+import net.sf.ehcache.CacheManager
+import net.lshift.diffa.kernel.util.{Cursor, HibernateQueryUtils}
 
 /**
  * Hibernate backed Domain Cache provider.
  */
-class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
+class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cacheManager:CacheManager)
     extends DomainDifferenceStore
     with HibernateQueryUtils {
+
+  val zoomCache = new ZoomCacheProvider(this, cacheManager)
 
   def removeDomain(domain:String) {
     sessionFactory.withSession(s => {
@@ -23,10 +26,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
     })
   }
 
-  def removePair(pair: DiffaPairRef) {
+  def removePair(pair: DiffaPairRef) = {
     sessionFactory.withSession { s =>
-      executeUpdate(s, "removePairDiffs", Map("pairKey" -> pair.key, "domain" -> pair.domain))
-      executeUpdate(s, "removePairPendingDiffs", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      executeUpdate(s, "removeDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      executeUpdate(s, "removePendingDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
     }
   }
   
@@ -99,7 +102,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
             case MatchState.UNMATCHED =>
               // A difference has gone away. Remove the difference, and add in a match
               s.delete(existing)
-              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime))
+              val previousDetectionTime = existing.detectedAt
+              saveAndConvertEvent(s, ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), previousDetectionTime)
           }
       }
     })
@@ -109,7 +113,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsOlderThanCutoffByDomainAndPair",
       Map("domain" -> pair.domain, "pair" -> pair.key, "cutoff" -> cutoff)).map(old => {
         s.delete(old)
-        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, new DateTime))
+        val lastSeen = new DateTime
+        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen) )
       })
   })
 
@@ -161,6 +166,38 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
+  def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
+    val session = sessionFactory.openSession
+    var cursor:Cursor[ReportedDifferenceEvent] = null
+    try {
+      cursor = scrollableQuery[ReportedDifferenceEvent](session, "unmatchedEventsInIntervalByDomainAndPair",
+        Map("domain" -> pair.domain,
+            "pair"   -> pair.key,
+            "start"  -> interval.getStart,
+            "end"    -> interval.getEnd))
+
+      var count = 0
+      while(cursor.next) {
+        f(cursor.get)
+
+        count += 1
+        if ( count % 100 == 0 ) {
+          // Periodically tell hibernate to let go of any objects it may still be referencing
+          session.clear()
+        }
+      }
+    }
+    finally {
+      try {
+        cursor.close
+      } finally {
+        session.close()
+      }
+
+    }
+
+  }
+
   def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int, options:EventOptions = EventOptions()) = sessionFactory.withSession(s => {
     val queryName = if (options.includeIgnored) {
       "unmatchedEventsInIntervalByDomainAndPairWithIgnored"
@@ -174,7 +211,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
       map(_.asDifferenceEvent)
   })
 
-  def countEvents(pair: DiffaPairRef, interval: Interval):Int =  sessionFactory.withSession(s => {
+  def countUnmatchedEvents(pair: DiffaPairRef, interval: Interval):Int =  sessionFactory.withSession(s => {
     val count:Option[java.lang.Long] = singleQueryOpt[java.lang.Long](s, "countEventsInIntervalByDomainAndPair",
       Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd))
 
@@ -185,6 +222,9 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
     listQuery[ReportedDifferenceEvent](s, "eventsSinceByDomain",
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
+
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) =
+    zoomCache.retrieveTilesForZoomLevel(pair, zoomLevel, timestamp)
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
@@ -201,6 +241,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
   }
 
   def clearAllDifferences = sessionFactory.withSession(s => {
+    zoomCache.clear
     s.createQuery("delete from ReportedDifferenceEvent").executeUpdate()
     s.createQuery("delete from PendingDifferenceEvent").executeUpdate()
   })
@@ -221,7 +262,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-
+              updateZoomCache(existing.objId.pair, reportableUnmatched.detectedAt)
               existing.asDifferenceEvent
             } else {
               s.delete(existing)
@@ -238,11 +279,24 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory)
         saveAndConvertEvent(s, reportableUnmatched)
     }
   }
+
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
+    updateZoomCache(evt.objId.pair, evt.detectedAt)
+    persistAndConvertEventInternal(s, evt)
+  }
+
+  private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
+    updateZoomCache(evt.objId.pair, previousDetectionTime)
+    persistAndConvertEventInternal(s, evt)
+  }
+
+  private def persistAndConvertEventInternal(s:Session, evt:ReportedDifferenceEvent) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
     evt.seqId = seqId
     evt.asDifferenceEvent
   }
+
+  private def updateZoomCache(pair:DiffaPairRef, detectedAt:DateTime) = zoomCache.onStoreUpdate(pair, detectedAt)
 }
 
 case class PendingDifferenceEvent(
@@ -257,30 +311,4 @@ case class PendingDifferenceEvent(
   def this() = this(oid = null)
 
   def convertToUnmatched = ReportedDifferenceEvent(null, objId, detectedAt, false, upstreamVsn, downstreamVsn, lastSeen)
-}
-
-case class ReportedDifferenceEvent(
-  @BeanProperty var seqId:java.lang.Integer = null,
-  @BeanProperty var objId:VersionID = null,
-  @BeanProperty var detectedAt:DateTime = null,
-  @BeanProperty var isMatch:Boolean = false,
-  @BeanProperty var upstreamVsn:String = null,
-  @BeanProperty var downstreamVsn:String = null,
-  @BeanProperty var lastSeen:DateTime = null,
-  @BeanProperty var ignored:Boolean = false
-) {
-  
-  def this() = this(seqId = null)
-
-  def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
-  def state = if (isMatch) {
-      MatchState.MATCHED
-    } else {
-      if (ignored) {
-        MatchState.IGNORED
-      } else {
-        MatchState.UNMATCHED
-      }
-
-    }
 }

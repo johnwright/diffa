@@ -54,11 +54,6 @@ class DefaultDifferencesManager(
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
-  /**
-   * This is a map of every active domain (keyed on domain id) to the cache holding the differences
-   */
-  private val cachesByDomain = new HashMap[String, DomainDifferenceStore]
-
   private val participants = new HashMap[Endpoint, Participant]
 
   // Subscribe to events from the matching manager
@@ -87,6 +82,24 @@ class DefaultDifferencesManager(
 
   def retrieveDomainSequenceNum(id:String) = domainDifferenceStore.currentSequenceId(id)
 
+  def retrieveEventTiles(domain:String, zoomLevel:Int, timespan:Interval) = {
+    domainConfig.listPairs(domain).map(p => {
+      p.key -> retrieveEventTiles(DiffaPairRef(p.key,domain), zoomLevel, timespan)
+    }).toMap
+  }
+
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timespan:Interval) : Array[Int] = {
+    val groupStartTimes = ZoomCache.containingTileGroupEdges(timespan, zoomLevel)
+    // There must be a better way to do this map filter ......
+    val tileGroups = groupStartTimes.map(t => domainDifferenceStore.retrieveEventTiles(pair, zoomLevel, t)).filter(_.isDefined).map(_.get)
+    val unfiltered = tileGroups.flatMap(g => g.tiles).map{case (k,v) => k -> v }
+    val alignedInterval = ZoomCache.alignInterval(timespan, zoomLevel)
+    // Note the half open semantics of the contains method
+    val filtered = unfiltered.filter{case (d, i) => alignedInterval.contains(d) || alignedInterval.getEnd == d}.toMap
+    val tileEdges = ZoomCache.individualTileEdges(timespan, zoomLevel)
+    tileEdges.map(s => filtered.getOrElse(s, 0)).toArray
+  }
+
   def ignoreDifference(domain:String, seqId:String) = {
     domainDifferenceStore.ignoreEvent(domain, seqId)
   }
@@ -102,7 +115,7 @@ class DefaultDifferencesManager(
     domainDifferenceStore.retrievePagedEvents(DiffaPairRef(key = pairKey, domain = domain), interval, offset, length, options)
 
   def countEvents(domain: String, pairKey: String, interval: Interval) =
-    domainDifferenceStore.countEvents(DiffaPairRef(key = pairKey, domain = domain), interval)
+    domainDifferenceStore.countUnmatchedEvents(DiffaPairRef(key = pairKey, domain = domain), interval)
 
   def retrieveEventDetail(domain:String, evtSeqId:String, t: ParticipantType.ParticipantType) = {
     log.trace("Requested a detail query for domain (" + domain + ") and seq (" + evtSeqId + ") and type (" + t + ")")

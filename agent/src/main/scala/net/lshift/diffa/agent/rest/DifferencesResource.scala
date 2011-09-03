@@ -26,7 +26,7 @@ import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
-import net.lshift.diffa.kernel.differencing.{EventOptions, DifferencesManager, DifferenceEvent}
+import net.lshift.diffa.kernel.differencing.{EventOptions, DifferencesManager}
 
 class DifferencesResource(val differencesManager: DifferencesManager,
                           val domain:String,
@@ -35,7 +35,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
   val parser = DateTimeFormat.forPattern("dd/MMM/yyyy:HH:mm:ss Z");
-  val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis
+  val isoDateTime = ISODateTimeFormat.basicDateTimeNoMillis.withZoneUTC()
 
   @GET
   @Produces(Array("application/json"))
@@ -90,77 +90,39 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   }
   
   @GET
-  @Path("/zoom")
+  @Path("tiles/{zoomLevel}")
   @Produces(Array("application/json"))
   @MandatoryParams(Array(
       new MandatoryParam(name = "range-start", datatype = "date", description = "The starting time for any differences"),
       new MandatoryParam(name = "range-end", datatype = "date", description = "The ending time for any differences"),
-      new MandatoryParam(name = "bucketing", datatype = "int", description = "The size in elements in the zoomed view")))
+      new MandatoryParam(name = "zoom-level", datatype = "int", description = "The level of zoom for the requested tiles")))
   @Description("Returns a zoomed view of the data within a specific time range")
-  def getZoomedView(@QueryParam("range-start") rangeStart: String,
-                    @QueryParam("range-end") rangeEnd:String,
-                    @QueryParam("bucketing") width:Int,
-                    @Context request: Request): Response = {
-    try {
-      // Evaluate whether the version of the domain has changed
-      val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain))
-      request.evaluatePreconditions(domainVsn) match {
-        case null => // We'll continue with the request
-        case r => throw new WebApplicationException(r.build)
-      }
+  def getZoomedTiles(@QueryParam("range-start") rangeStart: String,
+                     @QueryParam("range-end") rangeEnd:String,
+                     @PathParam("zoomLevel") zoomLevel:Int,
+                     @Context request: Request): Response = {
 
-      val rangeStartDate = isoDateTime.parseDateTime(rangeStart)
-      val rangeEndDate = isoDateTime.parseDateTime(rangeEnd)
-
-      if (rangeStartDate == null || rangeEndDate == null) {
-        return Response.status(Response.Status.BAD_REQUEST).entity("Invalid start or end date").build
-      }
-
-      // Calculate the maximum number of buckets that will be seen
-      val rangeSecs = (rangeEndDate.getMillis - rangeStartDate.getMillis) / 1000
-      val max = (rangeSecs.asInstanceOf[Double] / width.asInstanceOf[Double]).ceil.asInstanceOf[Int]
-      if (max > 100) {
-        return Response.status(Response.Status.BAD_REQUEST).entity("Time range too big for width. Maximum of 100 blobs can be generated, requesting " + max).build
-      }
-
-      // Calculate the zoomed view
-      val interestingEvents = differencesManager.retrieveAllEventsInInterval(domain, new Interval(rangeStartDate, rangeEndDate))
-
-      // Bucket the events
-      val pairs = scala.collection.mutable.Map[String, ZoomPair]()
-      interestingEvents.foreach(evt => {
-        val pair = pairs.getOrElseUpdate(evt.objId.pair.key, new ZoomPair(evt.objId.pair.key, rangeStartDate, width, max))
-        pair.addEvent(evt)
-      })
-
-      // Convert to an appropriate web response
-      val respObj = mapAsJavaMap(pairs.keys.map(pair => pair -> pairs(pair).toArray).toMap[String, Array[Int]])
-
-      Response.ok(respObj).tag(domainVsn).build
-    }
-    catch {
-      case e: NoSuchElementException => {
-        log.error("Unsucessful query on domain = " + domain)
-        throw new WebApplicationException(404)
-      }
+    // Evaluate whether the version of the domain has changed
+    val domainVsn = new EntityTag(differencesManager.retrieveDomainSequenceNum(domain) + "@" + zoomLevel)
+    request.evaluatePreconditions(domainVsn) match {
+      case null => // We'll continue with the request
+      case r => throw new WebApplicationException(r.build)
     }
 
+    val rangeStartDate = isoDateTime.parseDateTime(rangeStart)
+    val rangeEndDate = isoDateTime.parseDateTime(rangeEnd)
 
-
-  }
-
-  class ZoomPair(pairKey:String, rangeStart:DateTime, width:Int, max:Int) {
-    private val buckets = new Array[Int](max)
-
-    def addEvent(evt:DifferenceEvent) = {
-      val offset = (evt.detectedAt.getMillis - rangeStart.getMillis) / 1000
-      val bucketNum = (offset / width).asInstanceOf[Int]
-
-      // Add an entry to the bucket
-      buckets(bucketNum) += 1
+    if (rangeStartDate == null || rangeEndDate == null) {
+      return Response.status(Response.Status.BAD_REQUEST).entity("Invalid start or end date").build
     }
 
-    def toArray:Array[Int] = buckets
+    // TODO Consider limiting the zoom range to prevent people requesting ranges going back to the start of time in one go
+    // This should probably be relative to the zoom level and is effectively geared towards delivering enough
+    // data to populate the heatmap
+
+    val tileSet = differencesManager.retrieveEventTiles(domain, zoomLevel, new Interval(rangeStartDate, rangeEndDate))
+    val respObj = mapAsJavaMap(tileSet.keys.map(pair => pair -> tileSet(pair).toArray).toMap[String, Array[Int]])
+    Response.ok(respObj).tag(domainVsn).build()
   }
 
   @GET
