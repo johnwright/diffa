@@ -23,7 +23,9 @@
 <hibernate-mapping package="net.lshift.diffa.kernel.differencing">
   <class name="PendingDifferenceEvent" table="pending_diffs">
     <id name="oid">
-      <generator class="native" />
+      <generator class="native">
+        <param name="sequence">pending_diffs_sequence</param>
+      </generator>
     </id>
     <component name="objId">
       <property name="id" type="string" column="entity_id" index="pdiff_domain_idx" />
@@ -40,7 +42,9 @@
 
   <class name="ReportedDifferenceEvent" table="diffs">
     <id name="seqId" column="seq_id">
-      <generator class="native" />
+      <generator class="native">
+        <param name="sequence">diffs_sequence</param>
+      </generator>
     </id>
     <component name="objId">
       <property name="id" type="string" column="entity_id" index="rdiff_domain_idx" />

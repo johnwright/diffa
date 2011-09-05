@@ -28,16 +28,38 @@ import java.sql.Types;
  */
 public class SQLStringHelpers {
 
+  /**
+   * Generates an identity column string
+   * @throws UnsupportedOperationException If the underlying dialect does not support identity columns*
+  */
   public static String generateIdentityColumnString(Dialect dialect, Column col) {
+
+    if (!dialect.supportsIdentityColumns()) {
+      String dialectName = Environment.getProperties().getProperty( Environment.DIALECT );
+      throw new UnsupportedOperationException(dialectName + " does not support identity columns");
+    }
+
     StringBuilder buffer = new StringBuilder();
 
     buffer.append(col.getQuotedName(dialect)).append(" ");
 
     // to support dialects that have their own identity data type
     if (dialect.hasDataTypeInIdentityColumn()) {
-      buffer.append(dialect.getTypeName(col.getSqlTypeCode(), col.getLength(), col.getPrecision(), col.getScale()));
+      buffer.append(getTypeName(dialect, col));
     }
     buffer.append(' ').append(dialect.getIdentityColumnString(col.getSqlTypeCode()));
+
+    return buffer.toString();
+  }
+
+  public static String generateNonIdentityColumnString(Dialect dialect, Column col) {
+
+    StringBuilder buffer = new StringBuilder();
+
+    buffer.append(col.getQuotedName(dialect)).append(" ");
+    buffer.append(getTypeName(dialect, col));
+
+    buffer.append(" not null");
 
     return buffer.toString();
   }
@@ -46,7 +68,7 @@ public class SQLStringHelpers {
     StringBuilder buffer = new StringBuilder();
 
     buffer.append(col.getQuotedName(dialect)).append(" ");
-    buffer.append(dialect.getTypeName(col.getSqlTypeCode(), col.getLength(), col.getPrecision(), col.getScale()));
+    buffer.append(getTypeName(dialect, col));
 
     if (!col.isNullable()) {
       buffer.append(" not null");
@@ -69,6 +91,10 @@ public class SQLStringHelpers {
     }
 
     return buffer.toString();
+  }
+
+  private static String getTypeName(Dialect dialect, Column col) {
+    return dialect.getTypeName(col.getSqlTypeCode(), col.getLength(), col.getPrecision(), col.getScale());
   }
 
   public static String qualifyName(Configuration config, Dialect dialect, String table) {

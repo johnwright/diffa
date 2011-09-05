@@ -374,7 +374,7 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
       column("downstream_vsn", Types.VARCHAR, 255, true).
       column("ignored", Types.SMALLINT, false).
       pk("seq_id").
-      withIdentityCol()
+      withNativeIdentityGenerator()
 
     migration.createTable("pending_diffs").
       column("oid", Types.INTEGER, false).
@@ -386,7 +386,7 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
       column("upstream_vsn", Types.VARCHAR, 255, true).
       column("downstream_vsn", Types.VARCHAR, 255, true).
       pk("oid").
-      withIdentityCol()
+      withNativeIdentityGenerator()
 
     addForeignKeyConstraintForPairColumnOnDiffsTables(migration)
 
