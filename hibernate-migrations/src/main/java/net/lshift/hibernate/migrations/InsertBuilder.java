@@ -63,8 +63,10 @@ public class InsertBuilder extends SingleStatementMigrationElement {
       orderedValues.add(entry.getValue());
     }
 
-    PreparedStatement stmt = conn.prepareStatement(
-        String.format("insert into %s(%s) values(%s)", table, namesBuilder.toString(),  valuesBuilder.toString()));
+    String sql = String.format("insert into %s(%s) values(%s)", table, namesBuilder.toString(), valuesBuilder.toString());
+    logStatement(sql);
+
+    PreparedStatement stmt = conn.prepareStatement(sql);
     for (int i = 0; i < orderedValues.size(); ++i) {
       stmt.setObject(i+1, orderedValues.get(i));
     }

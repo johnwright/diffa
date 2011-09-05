@@ -22,7 +22,7 @@ import java.sql.SQLException;
 /**
  * Migration element that only generates a single statement.
  */
-public abstract class SingleStatementMigrationElement implements MigrationElement {
+public abstract class SingleStatementMigrationElement extends TraceableMigrationElement {
   @Override
   public void apply(Connection conn) throws SQLException {
     PreparedStatement stmt = prepare(conn);

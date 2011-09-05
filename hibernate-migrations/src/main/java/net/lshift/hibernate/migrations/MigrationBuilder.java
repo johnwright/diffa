@@ -32,11 +32,13 @@ public class MigrationBuilder {
   private final Dialect dialect;
   private final List<MigrationElement> elements;
   private final Configuration config;
+  private final List<String> statements;
 
   public MigrationBuilder(Configuration config) {
     this.config = config;
     this.dialect = Dialect.getDialect(config.getProperties());
     this.elements = new ArrayList<MigrationElement>();
+    this.statements = new ArrayList<String>();
   }
 
   //
@@ -79,7 +81,15 @@ public class MigrationBuilder {
 
   public void apply(Connection conn) throws SQLException {
     for (MigrationElement el : elements) {
-      el.apply(conn);
+      try {
+        el.apply(conn);
+      } finally {
+        statements.addAll(el.getStatements());
+      }
     }
+  }
+
+  public List<String> getStatements() {
+    return statements;
   }
 }

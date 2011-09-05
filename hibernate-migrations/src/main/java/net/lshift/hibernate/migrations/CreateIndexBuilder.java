@@ -26,6 +26,8 @@ public class CreateIndexBuilder extends SingleStatementMigrationElement {
       buffer.append(col);
     }
 
-    return conn.prepareStatement(String.format("create index %s on %s(%s)", name, table, buffer.toString()));
+    String sql = String.format("create index %s on %s(%s)", name, table, buffer.toString());
+    logStatement(sql);
+    return conn.prepareStatement(sql);
   }
 }

@@ -54,7 +54,18 @@ class HibernateConfigStorePreparationStep
 
     detectVersion(sf, config) match {
       case None          => {
-        (new SchemaExport(config)).create(false, true)
+
+        val export = new SchemaExport(config)
+
+        export.setHaltOnError(true).create(true, true)
+
+        // Note to debuggers: The schema export tool is very annoying from a diagnostics perspective
+        // because all SQL errors that occur as a result of a DROP statement are silently swallowed, but they
+        // are added to the public list of exceptions that the export tool has seen, but in a completely
+        // undifferentiated fashion. This means that you can't tell from the outside whether something blew up
+        // as a result of a create statement that you should care about, or whether a bunch of irrelevant DROP
+        // exceptions were collected for posterity's sake. In any case, any real exception that you would care about
+        // is swallowed and mixed in with exceptions that you probably don't care about.
 
         // Create a migration for fresh databases, since there are steps that we need to apply on top of hibernate
         // doing the export
@@ -80,7 +91,12 @@ class HibernateConfigStorePreparationStep
                 freshMigration.apply(connection)
               } catch {
                 case ex =>
-                  println("Failed to prepare the schema_version table")
+                  println("Failed to prepare the database - attempted to execute the following statements:")
+                  println("_" * 80)
+                  println()
+                  freshMigration.getStatements.foreach(println(_))
+                  println("_" * 80)
+                  println()
                   throw ex      // Higher level code will log the exception
               }
 

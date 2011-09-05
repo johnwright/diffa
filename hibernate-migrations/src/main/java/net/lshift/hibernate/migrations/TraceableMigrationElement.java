@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package net.lshift.hibernate.migrations;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Describes an element that can be executed within a migration.
- */
-public interface MigrationElement {
-  /**
-   * Applies the migration element against the given connection.
-   * @param conn the connection to use to execute the element.
-   */
-  void apply(Connection conn) throws SQLException;
+abstract public class TraceableMigrationElement implements MigrationElement {
 
-  /**
-   * Returns a list of the SQL statements this element has executed
-   * @return
-   */
-  List<String> getStatements();
+  private List<String> statements = new ArrayList<String>();
+
+  protected void logStatement(String s) {
+    statements.add(s);
+  }
+
+  @Override
+  public List<String> getStatements() {
+    return statements;
+  }
 }

@@ -36,7 +36,7 @@ import static net.lshift.hibernate.migrations.SQLStringHelpers.qualifyName;
 /**
  * Describes a table that is to be created.
  */
-public class CreateTableBuilder implements MigrationElement {
+public class CreateTableBuilder extends TraceableMigrationElement {
   private final Dialect dialect;
   private final String name;
   private final List<String> primaryKeys;
@@ -111,6 +111,7 @@ public class CreateTableBuilder implements MigrationElement {
     for (Column col : columns) {
       if (primaryKeys.contains(col.getName())) {
         for( String sql : dialect.getCreateSequenceStrings(col.getQuotedName()) ) {
+          logStatement(sql);
           PreparedStatement createSequenceStmt = conn.prepareStatement(sql);
           createSequenceStmt.execute();
           createSequenceStmt.close();
@@ -128,7 +129,10 @@ public class CreateTableBuilder implements MigrationElement {
   @Override
   public void apply(Connection conn) throws SQLException {
 
-    PreparedStatement createTableStmt = conn.prepareStatement(createTableSql());
+    String createStmt = createTableSql();
+    logStatement(createStmt);
+
+    PreparedStatement createTableStmt = conn.prepareStatement(createStmt);
     createTableStmt.execute();
     createTableStmt.close();
 
