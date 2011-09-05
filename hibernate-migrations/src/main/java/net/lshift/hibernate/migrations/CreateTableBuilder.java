@@ -111,10 +111,7 @@ public class CreateTableBuilder extends TraceableMigrationElement {
     for (Column col : columns) {
       if (primaryKeys.contains(col.getName())) {
         for( String sql : dialect.getCreateSequenceStrings(col.getQuotedName()) ) {
-          logStatement(sql);
-          PreparedStatement createSequenceStmt = conn.prepareStatement(sql);
-          createSequenceStmt.execute();
-          createSequenceStmt.close();
+          prepareAndLog(conn, sql);
         }
       }
     }
@@ -129,12 +126,7 @@ public class CreateTableBuilder extends TraceableMigrationElement {
   @Override
   public void apply(Connection conn) throws SQLException {
 
-    String createStmt = createTableSql();
-    logStatement(createStmt);
-
-    PreparedStatement createTableStmt = conn.prepareStatement(createStmt);
-    createTableStmt.execute();
-    createTableStmt.close();
+    prepareAndLog(conn, createTableSql());
 
     if (!dialect.supportsIdentityColumns()) {
       createSequences(conn);

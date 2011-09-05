@@ -16,6 +16,9 @@
 
 package net.lshift.hibernate.migrations;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +28,13 @@ abstract public class TraceableMigrationElement implements MigrationElement {
 
   protected void logStatement(String s) {
     statements.add(s);
+  }
+
+  protected void prepareAndLog(Connection conn, String sql) throws SQLException {
+    logStatement(sql);
+    PreparedStatement stmt = conn.prepareStatement(sql);
+    stmt.execute();
+    stmt.close();
   }
 
   @Override

@@ -35,5 +35,15 @@ public abstract class SingleStatementMigrationElement extends TraceableMigration
    * @param conn the connection to use.
    * @return a prepared statement. Note that the caller is responsible for freeing this statement.
    */
-  protected abstract PreparedStatement prepare(Connection conn) throws SQLException;
+  protected PreparedStatement prepare(Connection conn) throws SQLException {
+    String sql = getSQL();
+    logStatement(sql);
+    return conn.prepareStatement(sql);
+  }
+
+  /**
+   * Returns the SQL string of this single statement operation.
+   * @return
+   */
+  protected abstract String getSQL();
 }

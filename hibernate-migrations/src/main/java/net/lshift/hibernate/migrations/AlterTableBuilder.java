@@ -111,10 +111,7 @@ public class AlterTableBuilder extends TraceableMigrationElement {
   public void apply(Connection conn) throws SQLException {
     for (String fragment : alterFragments) {
       String sql = String.format("alter table %s %s", qualifyName(config, dialect, table), fragment);
-      logStatement(sql);
-      PreparedStatement stmt = conn.prepareStatement(sql);
-      stmt.execute();
-      stmt.close();
+      prepareAndLog(conn, sql);
     }
   }
 }

@@ -29,9 +29,9 @@ public class RawSqlBuilder extends SingleStatementMigrationElement {
     this.sql = sql;
   }
 
+
   @Override
-  protected PreparedStatement prepare(Connection conn) throws SQLException {
-    logStatement(sql);
-    return conn.prepareStatement(sql);
+  protected String getSQL() {
+    return sql;
   }
 }

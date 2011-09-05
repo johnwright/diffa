@@ -73,4 +73,9 @@ public class InsertBuilder extends SingleStatementMigrationElement {
 
     return stmt;
   }
+
+  @Override
+  protected String getSQL() {
+    return null;
+  }
 }
