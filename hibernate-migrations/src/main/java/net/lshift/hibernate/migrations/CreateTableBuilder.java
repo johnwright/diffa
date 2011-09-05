@@ -19,11 +19,8 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.PrimaryKey;
 
-import java.lang.reflect.Array;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +28,6 @@ import java.util.List;
 import static net.lshift.hibernate.migrations.SQLStringHelpers.generateColumnString;
 import static net.lshift.hibernate.migrations.SQLStringHelpers.generateIdentityColumnString;
 import static net.lshift.hibernate.migrations.SQLStringHelpers.generateNonIdentityColumnString;
-import static net.lshift.hibernate.migrations.SQLStringHelpers.qualifyName;
 
 /**
  * Describes a table that is to be created.
@@ -111,7 +107,7 @@ public class CreateTableBuilder extends TraceableMigrationElement {
     for (Column col : columns) {
       if (primaryKeys.contains(col.getName())) {
         for( String sql : dialect.getCreateSequenceStrings(col.getQuotedName()) ) {
-          prepareAndLog(conn, sql);
+          prepareAndLogAndExecute(conn, sql);
         }
       }
     }
@@ -126,7 +122,7 @@ public class CreateTableBuilder extends TraceableMigrationElement {
   @Override
   public void apply(Connection conn) throws SQLException {
 
-    prepareAndLog(conn, createTableSql());
+    prepareAndLogAndExecute(conn, createTableSql());
 
     if (!dialect.supportsIdentityColumns()) {
       createSequences(conn);

@@ -24,7 +24,6 @@ import org.hibernate.mapping.PrimaryKey;
 import org.hibernate.mapping.Table;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -111,7 +110,7 @@ public class AlterTableBuilder extends TraceableMigrationElement {
   public void apply(Connection conn) throws SQLException {
     for (String fragment : alterFragments) {
       String sql = String.format("alter table %s %s", qualifyName(config, dialect, table), fragment);
-      prepareAndLog(conn, sql);
+      prepareAndLogAndExecute(conn, sql);
     }
   }
 }

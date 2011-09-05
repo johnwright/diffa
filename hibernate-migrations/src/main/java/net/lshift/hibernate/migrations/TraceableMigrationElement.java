@@ -30,9 +30,13 @@ abstract public class TraceableMigrationElement implements MigrationElement {
     statements.add(s);
   }
 
-  protected void prepareAndLog(Connection conn, String sql) throws SQLException {
+  protected PreparedStatement prepareAndLog(Connection conn, String sql) throws SQLException {
     logStatement(sql);
-    PreparedStatement stmt = conn.prepareStatement(sql);
+    return conn.prepareStatement(sql);
+  }
+
+  protected void prepareAndLogAndExecute(Connection conn, String sql) throws SQLException {
+    PreparedStatement stmt = prepareAndLog(conn, sql);
     stmt.execute();
     stmt.close();
   }
