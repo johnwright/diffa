@@ -90,7 +90,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   }
   
   @GET
-  @Path("tiles/{zoomLevel}")
+  @Path("/tiles/{zoomLevel}")
   @Produces(Array("application/json"))
   @MandatoryParams(Array(
       new MandatoryParam(name = "range-start", datatype = "date", description = "The starting time for any differences"),
