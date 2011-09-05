@@ -66,6 +66,7 @@ class HibernateConfigStorePreparationStep
         // as a result of a create statement that you should care about, or whether a bunch of irrelevant DROP
         // exceptions were collected for posterity's sake. In any case, any real exception that you would care about
         // is swallowed and mixed in with exceptions that you probably don't care about.
+        // @see https://hibernate.onjira.com/browse/HHH-6633
 
         // Create a migration for fresh databases, since there are steps that we need to apply on top of hibernate
         // doing the export
