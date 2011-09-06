@@ -19,13 +19,13 @@ public class CreateIndexBuilder extends SingleStatementMigrationElement {
   }
 
   @Override
-  protected PreparedStatement prepare(Connection conn) throws SQLException {
+  protected String getSQL() {
     StringBuilder buffer = new StringBuilder();
     for (String col : columns) {
       if (buffer.length() > 0) buffer.append(",");
       buffer.append(col);
     }
 
-    return conn.prepareStatement(String.format("create index %s on %s(%s)", name, table, buffer.toString()));
+    return String.format("create index %s on %s(%s)", name, table, buffer.toString());
   }
 }

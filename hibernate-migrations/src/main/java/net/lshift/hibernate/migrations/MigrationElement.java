@@ -18,6 +18,7 @@ package net.lshift.hibernate.migrations;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Describes an element that can be executed within a migration.
@@ -28,4 +29,10 @@ public interface MigrationElement {
    * @param conn the connection to use to execute the element.
    */
   void apply(Connection conn) throws SQLException;
+
+  /**
+   * Returns a list of the SQL statements this element has executed
+   * @return
+   */
+  List<String> getStatements();
 }

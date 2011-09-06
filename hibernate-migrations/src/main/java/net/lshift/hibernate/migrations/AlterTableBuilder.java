@@ -24,7 +24,6 @@ import org.hibernate.mapping.PrimaryKey;
 import org.hibernate.mapping.Table;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,8 @@ import static net.lshift.hibernate.migrations.SQLStringHelpers.qualifyName;
 /**
  * Describes an alter table statement.
  */
-public class AlterTableBuilder implements MigrationElement {
+public class AlterTableBuilder extends TraceableMigrationElement {
+
   private final Configuration config;
   private final Dialect dialect;
   private final String table;
@@ -110,9 +110,7 @@ public class AlterTableBuilder implements MigrationElement {
   public void apply(Connection conn) throws SQLException {
     for (String fragment : alterFragments) {
       String sql = String.format("alter table %s %s", qualifyName(config, dialect, table), fragment);
-      PreparedStatement stmt = conn.prepareStatement(sql);
-      stmt.execute();
-      stmt.close();
+      prepareAndLogAndExecute(conn, sql);
     }
   }
 }

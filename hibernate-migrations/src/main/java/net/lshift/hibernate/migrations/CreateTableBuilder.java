@@ -19,22 +19,20 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.PrimaryKey;
 
-import java.lang.reflect.Array;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static net.lshift.hibernate.migrations.SQLStringHelpers.generateColumnString;
 import static net.lshift.hibernate.migrations.SQLStringHelpers.generateIdentityColumnString;
+import static net.lshift.hibernate.migrations.SQLStringHelpers.generateNonIdentityColumnString;
 
 /**
  * Describes a table that is to be created.
  */
-public class CreateTableBuilder extends SingleStatementMigrationElement {
+public class CreateTableBuilder extends TraceableMigrationElement {
   private final Dialect dialect;
   private final String name;
   private final List<String> primaryKeys;
@@ -52,8 +50,10 @@ public class CreateTableBuilder extends SingleStatementMigrationElement {
   // Builder Methods
   //
 
-  public CreateTableBuilder withIdentityCol() {
-    identityCol = true;
+  public CreateTableBuilder withNativeIdentityGenerator() {
+    if (dialect.supportsIdentityColumns()) {
+      identityCol = true;
+    }
     return this;
   }
 
@@ -81,19 +81,17 @@ public class CreateTableBuilder extends SingleStatementMigrationElement {
   // Output Methods
   //
 
-
-  @Override
-  protected PreparedStatement prepare(Connection conn) throws SQLException {
-    return conn.prepareStatement(toSql());
-  }
-
-  public String toSql() {
+  private String createTableSql() {
     StringBuffer buffer =
         new StringBuffer(dialect.getCreateTableString()).append(' ').append(dialect.quote(name)).append(" (");
 
     for (Column col : columns) {
-      if (identityCol && primaryKeys.contains(col.getName())) {
-        buffer.append(generateIdentityColumnString(dialect, col));
+      if (primaryKeys.contains(col.getName())) {
+        if (identityCol) {
+          buffer.append(generateIdentityColumnString(dialect, col));
+        } else {
+          buffer.append( generateNonIdentityColumnString(dialect, col) );
+        }
       } else {
         buffer.append(generateColumnString(dialect, col, true));
       }
@@ -105,9 +103,29 @@ public class CreateTableBuilder extends SingleStatementMigrationElement {
     return buffer.toString();
   }
 
+  private void createSequences(Connection conn) throws SQLException {
+    for (Column col : columns) {
+      if (primaryKeys.contains(col.getName())) {
+        for( String sql : dialect.getCreateSequenceStrings(col.getQuotedName()) ) {
+          prepareAndLogAndExecute(conn, sql);
+        }
+      }
+    }
+  }
+
   public PrimaryKey getPrimaryKey() {
     PrimaryKey result = new PrimaryKey();
     for (String pk : primaryKeys) result.addColumn(new Column(pk));
     return result;
+  }
+
+  @Override
+  public void apply(Connection conn) throws SQLException {
+
+    prepareAndLogAndExecute(conn, createTableSql());
+
+    if (!dialect.supportsIdentityColumns()) {
+      createSequences(conn);
+    }
   }
 }

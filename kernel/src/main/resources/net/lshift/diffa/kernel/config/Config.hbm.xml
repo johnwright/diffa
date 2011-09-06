@@ -25,7 +25,9 @@
   <class name="CategoryDescriptor" table="category_descriptor" abstract="true">
     <cache usage="read-write"/>
     <id name="id" type="int" column="category_id">
-      <generator class="native"/>
+      <generator class="native">
+        <param name="sequence">category_descriptor_sequence</param>
+      </generator>
     </id>
     <discriminator column="constraint_type" type="string"/>
     <subclass name="RangeCategoryDescriptor" discriminator-value="range">

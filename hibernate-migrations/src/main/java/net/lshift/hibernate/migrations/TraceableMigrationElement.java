@@ -13,35 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package net.lshift.hibernate.migrations;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Migration element that only generates a single statement.
- */
-public abstract class SingleStatementMigrationElement extends TraceableMigrationElement {
-  @Override
-  public void apply(Connection conn) throws SQLException {
-    PreparedStatement stmt = prepare(conn);
+abstract public class TraceableMigrationElement implements MigrationElement {
+
+  private List<String> statements = new ArrayList<String>();
+
+  protected void logStatement(String s) {
+    statements.add(s);
+  }
+
+  protected PreparedStatement prepareAndLog(Connection conn, String sql) throws SQLException {
+    logStatement(sql);
+    return conn.prepareStatement(sql);
+  }
+
+  protected void prepareAndLogAndExecute(Connection conn, String sql) throws SQLException {
+    PreparedStatement stmt = prepareAndLog(conn, sql);
     stmt.execute();
     stmt.close();
   }
 
-  /**
-   * Prepares the element, and returns a prepared statement to execute.
-   * @param conn the connection to use.
-   * @return a prepared statement. Note that the caller is responsible for freeing this statement.
-   */
-  protected PreparedStatement prepare(Connection conn) throws SQLException {
-    return prepareAndLog(conn, getSQL());
+  @Override
+  public List<String> getStatements() {
+    return statements;
   }
-
-  /**
-   * Returns the SQL string of this single statement operation.
-   * @return
-   */
-  protected abstract String getSQL();
 }

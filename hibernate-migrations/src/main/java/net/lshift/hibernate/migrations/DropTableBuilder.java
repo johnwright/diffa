@@ -39,7 +39,7 @@ public class DropTableBuilder extends SingleStatementMigrationElement {
   }
 
   @Override
-  protected PreparedStatement prepare(Connection conn) throws SQLException {
-    return conn.prepareStatement("drop table " + qualifyName(config, dialect, table));
+  protected String getSQL() {
+    return "drop table " + qualifyName(config, dialect, table);
   }
 }
