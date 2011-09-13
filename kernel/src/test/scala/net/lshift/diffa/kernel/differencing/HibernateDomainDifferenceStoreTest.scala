@@ -227,6 +227,24 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def matchedEventShouldCancelPreviouslyIgnoredEvent() {
+    val timestamp = new DateTime
+    val id = VersionID(DiffaPairRef("pair2", "domain"), "id2")
+
+    val event1 = diffStore.addReportableUnmatchedEvent(id, timestamp, "uV", "dV", timestamp)
+    val event2 = diffStore.ignoreEvent("domain", event1.seqId)
+    assertMatchState("domain", event2.seqId, MatchState.IGNORED)
+
+    val event3 = diffStore.addMatchedEvent(id, "vsn")
+    assertMatchState("domain", event3.seqId, MatchState.MATCHED)
+  }
+
+  private def assertMatchState(domain:String, sequenceId:String, state:MatchState) = {
+    val event = diffStore.getEvent(domain, sequenceId)
+    assertEquals(state, event.state)
+  }
+
+  @Test
   def shouldNotCountIgnoredEvents() {
     val timestamp = new DateTime
 
