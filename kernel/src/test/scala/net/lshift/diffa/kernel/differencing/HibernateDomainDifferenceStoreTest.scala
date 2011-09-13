@@ -180,6 +180,15 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def shouldUpdatePreviouslyIgnoredReportableUnmatchedEvent() {
+    val timestamp = new DateTime()
+    val event1 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV1", "dV1", timestamp)
+    diffStore.ignoreEvent("domain", event1.seqId)
+    val event2 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV2", "dV1", timestamp)
+    assertTrue(event1.seqId.toInt < event2.seqId.toInt)
+  }
+
+  @Test
   def shouldReportUnmatchedEventWithinInterval() {
     val start = new DateTime(2004, 11, 6, 3, 5, 15, 0)
     val size = 60
@@ -215,6 +224,24 @@ class HibernateDomainDifferenceStoreTest {
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatchedCount = diffStore.countUnmatchedEvents(DiffaPairRef("pair2", "domain"), interval)
     assertEquals(0, unmatchedCount)
+  }
+
+  @Test
+  def matchedEventShouldCancelPreviouslyIgnoredEvent() {
+    val timestamp = new DateTime
+    val id = VersionID(DiffaPairRef("pair2", "domain"), "id2")
+
+    val event1 = diffStore.addReportableUnmatchedEvent(id, timestamp, "uV", "dV", timestamp)
+    val event2 = diffStore.ignoreEvent("domain", event1.seqId)
+    assertMatchState("domain", event2.seqId, MatchState.IGNORED)
+
+    val event3 = diffStore.addMatchedEvent(id, "vsn")
+    assertMatchState("domain", event3.seqId, MatchState.MATCHED)
+  }
+
+  private def assertMatchState(domain:String, sequenceId:String, state:MatchState) = {
+    val event = diffStore.getEvent(domain, sequenceId)
+    assertEquals(state, event.state)
   }
 
   @Test

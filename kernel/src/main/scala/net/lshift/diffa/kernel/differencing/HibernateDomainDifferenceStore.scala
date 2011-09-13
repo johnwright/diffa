@@ -99,7 +99,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
           existing.state match {
             case MatchState.MATCHED => // Ignore. We've already got an event for what we want.
               existing.asDifferenceEvent
-            case MatchState.UNMATCHED =>
+            case MatchState.UNMATCHED | MatchState.IGNORED =>
               // A difference has gone away. Remove the difference, and add in a match
               s.delete(existing)
               val previousDetectionTime = existing.detectedAt
@@ -256,9 +256,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     getEventById(s, reportableUnmatched.objId) match  {
       case Some(existing) =>
         existing.state match {
+          case MatchState.IGNORED =>
+            if (identicalEventVersions(existing, reportableUnmatched)) {
+              // Update the last time it was seen
+              existing.lastSeen = reportableUnmatched.lastSeen
+              s.update(existing)
+              existing.asDifferenceEvent
+            } else {
+              s.delete(existing)
+              reportableUnmatched.ignored = true
+              saveAndConvertEvent(s, reportableUnmatched)
+            }
           case MatchState.UNMATCHED =>
             // We've already got an unmatched event. See if it matches all the criteria.
-            if (existing.upstreamVsn == reportableUnmatched.upstreamVsn && existing.downstreamVsn == reportableUnmatched.downstreamVsn) {
+            if (identicalEventVersions(existing, reportableUnmatched)) {
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
@@ -279,6 +290,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         saveAndConvertEvent(s, reportableUnmatched)
     }
   }
+
+  private def identicalEventVersions(first:ReportedDifferenceEvent, second:ReportedDifferenceEvent) =
+    first.upstreamVsn == second.upstreamVsn && first.downstreamVsn == second.downstreamVsn
+
 
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
     updateZoomCache(evt.objId.pair, evt.detectedAt)
