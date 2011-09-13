@@ -99,7 +99,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
           existing.state match {
             case MatchState.MATCHED => // Ignore. We've already got an event for what we want.
               existing.asDifferenceEvent
-            case MatchState.UNMATCHED =>
+            case MatchState.UNMATCHED | MatchState.IGNORED =>
               // A difference has gone away. Remove the difference, and add in a match
               s.delete(existing)
               val previousDetectionTime = existing.detectedAt
