@@ -180,6 +180,15 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def shouldUpdatePreviouslyIgnoredReportableUnmatchedEvent() {
+    val timestamp = new DateTime()
+    val event1 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV1", "dV1", timestamp)
+    diffStore.ignoreEvent("domain", event1.seqId)
+    val event2 = diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV2", "dV1", timestamp)
+    assertTrue(event1.seqId.toInt < event2.seqId.toInt)
+  }
+
+  @Test
   def shouldReportUnmatchedEventWithinInterval() {
     val start = new DateTime(2004, 11, 6, 3, 5, 15, 0)
     val size = 60
