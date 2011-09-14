@@ -113,26 +113,24 @@ trait CommonDifferenceTests {
   @Test
   def differencesShouldTileAtEachLevel = {
 
+    val events = ZoomCache.zoom(EIGHT_HOURLY) + 1
+
     val expectedZoomedViews = Map(
-      DAILY -> (100,0)
+      DAILY -> (events,0)
     )
 
     resetPair
     env.clearParticipants
-    val events = 100
+
 
     val rightNow = new DateTime()
-    val upperBound = rightNow.minusMinutes(60 * 24)
+    val upperBound = rightNow//.minusMinutes(5)
     val lowerBound = upperBound.minusMinutes(events)
 
     for (i <- 0 until events) {
       val timestamp = upperBound.minusMinutes(1)
       env.upstream.addEntity("id-" + i, yesterday, "ss", timestamp, "abcdef")
     }
-
-    runScanAndWaitForCompletion(lowerBound, rightNow)
-    val diffs = pollForAllDifferences(lowerBound, rightNow)
-    assertEquals(events, diffs.size)
 
     expectedZoomedViews.foreach{ case (zoomLevel, expectedBlobs) => {
       val tiles = env.diffClient.getZoomedTiles(lowerBound, rightNow, zoomLevel)
