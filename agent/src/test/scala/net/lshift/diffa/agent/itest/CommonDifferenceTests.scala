@@ -30,6 +30,7 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.ParticipantType
 import net.lshift.diffa.agent.client.DifferencesRestClient
 import net.lshift.diffa.kernel.differencing.{ZoomCache, PairScanState, DifferenceEvent}
+import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.JavaConversions._
 import java.util.{UUID, Properties}
 import org.joda.time.DateTime
@@ -107,6 +108,46 @@ trait CommonDifferenceTests {
     val tiles = env.diffClient.getZoomedTiles(yesterday, tomorrow, zoomLevel)
     assertNotNull(tiles)
     assertNotNull(tiles(env.pairKey))
+  }
+
+  @Test
+  def differencesShouldTileAtEachLevel = {
+
+    val expectedZoomedViews = Map(
+      DAILY -> (100,0)
+    )
+
+    resetPair
+    env.clearParticipants
+    val events = 100
+
+    val rightNow = new DateTime()
+    val upperBound = rightNow.minusMinutes(60 * 24)
+    val lowerBound = upperBound.minusMinutes(events)
+
+    for (i <- 0 until events) {
+      val timestamp = upperBound.minusMinutes(1)
+      env.upstream.addEntity("id-" + i, yesterday, "ss", timestamp, "abcdef")
+    }
+
+    runScanAndWaitForCompletion(lowerBound, rightNow)
+    val diffs = pollForAllDifferences(lowerBound, rightNow)
+    assertEquals(events, diffs.size)
+
+    expectedZoomedViews.foreach{ case (zoomLevel, expectedBlobs) => {
+      val tiles = env.diffClient.getZoomedTiles(lowerBound, rightNow, zoomLevel)
+      val expectedBlobs = tiles.get(env.pairKey)
+      assertEquals(expectedBlobs,expectedBlobs)
+    }}
+  }
+
+  private def resetPair = {
+    try {
+      env.deletePair
+    }
+    finally {
+      env.createPair
+    }
   }
 
   @Test
