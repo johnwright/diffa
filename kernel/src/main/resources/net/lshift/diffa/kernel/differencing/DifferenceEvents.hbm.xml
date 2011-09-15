@@ -130,6 +130,7 @@
   <query name="unmatchedEventsOlderThanCutoffByDomainAndPair"><![CDATA[
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
+      e.isMatch = false and
       e.lastSeen < :cutoff
   ]]></query>
 </hibernate-mapping>
