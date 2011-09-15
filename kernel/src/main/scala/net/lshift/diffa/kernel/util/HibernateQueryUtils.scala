@@ -71,6 +71,41 @@ trait HibernateQueryUtils {
   }
 
   /**
+   * Apply the closure to the query result set in a streaming fashion.
+   */
+  def processAsStream[T](queryName:String, params: Map[String, Any], f:(Session, T) => Unit) = {
+
+    val session = sessionFactory.openSession
+    var cursor:Cursor[T] = null
+
+    try {
+      cursor = scrollableQuery[T](session, queryName, params)
+
+      var count = 0
+      while(cursor.next) {
+
+        f(session, cursor.get)
+
+        count += 1
+        if ( count % 100 == 0 ) {
+          // Periodically tell hibernate to let go of any objects it may still be referencing
+          session.flush()
+          session.clear()
+        }
+      }
+    }
+    finally {
+      try {
+        cursor.close
+      } finally {
+        session.flush()
+        session.close()
+      }
+
+    }
+  }
+
+  /**
    * Executes a query that is expected to return a single result in the given session. Throws an exception if the
    * requested object is not available.
    */

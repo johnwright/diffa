@@ -109,14 +109,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     })
   }
 
-  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = sessionFactory.withSession(s => {
-    listQuery[ReportedDifferenceEvent](s, "unmatchedEventsOlderThanCutoffByDomainAndPair",
-      Map("domain" -> pair.domain, "pair" -> pair.key, "cutoff" -> cutoff)).map(old => {
-        s.delete(old)
-        val lastSeen = new DateTime
-        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen) )
-      })
-  })
+  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = {
+
+     def convertOldEvent(s:Session, old:ReportedDifferenceEvent) {
+      s.delete(old)
+      val lastSeen = new DateTime
+      saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen) )
+     }
+
+     val params = Map("domain" -> pair.domain,
+                      "pair"   -> pair.key,
+                      "cutoff" -> cutoff)
+
+     processAsStream[ReportedDifferenceEvent]("unmatchedEventsOlderThanCutoffByDomainAndPair", params, convertOldEvent)
+  }
 
   def ignoreEvent(domain:String, seqId:String) = {
     sessionFactory.withSession(s => {
@@ -167,35 +173,15 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
-    val session = sessionFactory.openSession
-    var cursor:Cursor[ReportedDifferenceEvent] = null
-    try {
-      cursor = scrollableQuery[ReportedDifferenceEvent](session, "unmatchedEventsInIntervalByDomainAndPair",
-        Map("domain" -> pair.domain,
-            "pair"   -> pair.key,
-            "start"  -> interval.getStart,
-            "end"    -> interval.getEnd))
 
-      var count = 0
-      while(cursor.next) {
-        f(cursor.get)
+    def processEvent(s:Session, e:ReportedDifferenceEvent) = f(e)
 
-        count += 1
-        if ( count % 100 == 0 ) {
-          // Periodically tell hibernate to let go of any objects it may still be referencing
-          session.clear()
-        }
-      }
-    }
-    finally {
-      try {
-        cursor.close
-      } finally {
-        session.close()
-      }
+    val params = Map("domain" -> pair.domain,
+                      "pair"  -> pair.key,
+                      "start" -> interval.getStart,
+                      "end"   -> interval.getEnd)
 
-    }
-
+    processAsStream[ReportedDifferenceEvent]("unmatchedEventsInIntervalByDomainAndPair", params, processEvent)
   }
 
   def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int, options:EventOptions = EventOptions()) = sessionFactory.withSession(s => {
