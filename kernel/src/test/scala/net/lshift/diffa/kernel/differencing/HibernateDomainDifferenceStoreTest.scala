@@ -33,7 +33,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.DerbyHelper
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
-import org.joda.time.{DateTimeZone, Interval, DateTime}
+import org.joda.time.{DateTime, DateTimeZone, Interval}
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -422,6 +422,22 @@ class HibernateDomainDifferenceStoreTest {
     val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
     assertEquals(1, unmatched.length)
     validateUnmatchedEvent(unmatched(0), VersionID(DiffaPairRef("pair2","domain"), "id2"), "uV", "dV", timestamp, newSeen)
+  }
+
+  @Test
+  def shouldNotReapMatchedEvents() {
+    val timestamp = new DateTime()
+    val id = VersionID(DiffaPairRef("pair2","domain"), "id1")
+
+    diffStore.addReportableUnmatchedEvent(id, timestamp, "uV", "dV", timestamp)
+
+    // Match a previously unmatched event and then kick off the event reaping process
+    val event = diffStore.addMatchedEvent(id, "vsn")
+    diffStore.matchEventsOlderThan(DiffaPairRef("pair2","domain"), new DateTime())
+
+    // The event reaping process should not have created a new sequence number
+    val eventsSince = diffStore.retrieveEventsSince("domain", event.seqId)
+    assertTrue(eventsSince.isEmpty)
   }
 
   @Test
