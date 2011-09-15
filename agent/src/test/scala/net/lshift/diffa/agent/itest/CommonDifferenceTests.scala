@@ -33,8 +33,7 @@ import net.lshift.diffa.kernel.differencing.{ZoomCache, PairScanState, Differenc
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.JavaConversions._
 import java.util.{UUID, Properties}
-import org.joda.time.DateTime
-
+import org.joda.time.{DateTimeZone, DateTime}
 
 /**
  * Tests that can be applied to an environment to validate that differencing functionality works appropriately.
@@ -113,31 +112,34 @@ trait CommonDifferenceTests {
   @Test
   def differencesShouldTileAtEachLevel = {
 
-    val events = ZoomCache.zoom(EIGHT_HOURLY) + 1
+    val rightNow = new DateTime(2011,7,8,15,0,0,0, DateTimeZone.UTC)
+
+    val events = 480 // 8 hours * 60 minutes, i.e. will get split at 8-hourly level, but fits into a daily column
     val columns = 32
 
     val expectedZoomedViews = Map(
-      DAILY -> List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, events)
+      DAILY        -> List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 480), // 24 hour interval
+      EIGHT_HOURLY -> List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 60, 420) // 0-8h, 8-16h intervals
+      //FOUR_HOURLY -> List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, minsIn8Hours)  // 10 days 16 hours back
     )
 
     resetPair
     env.clearParticipants
 
 
-    val rightNow = new DateTime()
-    val upperBound = rightNow
+    val upperBound = rightNow.plusMinutes(1)
 
-    for (i <- 0 until events) {
-      val timestamp = upperBound.minusMinutes(1)
+    for (i <- 1 to events) {
+      val timestamp = rightNow.minusMinutes(i)
       env.upstream.addEntity("id-" + i, yesterday, "ss", timestamp, "abcdef")
     }
 
-    val fullLowerBound = upperBound.minusMinutes(ZoomCache.zoom(DAILY) * columns)
-    runScanAndWaitForCompletion(fullLowerBound, rightNow, 100, 100)
+    val fullLowerBound = rightNow.minusMinutes(ZoomCache.zoom(DAILY) * columns)
+    runScanAndWaitForCompletion(fullLowerBound, upperBound, 100, 100)
 
     expectedZoomedViews.foreach{ case (zoomLevel, expectedBlobs) => {
       val lowerBound = upperBound.minusMinutes(ZoomCache.zoom(zoomLevel) * columns)
-      val tiles = env.diffClient.getZoomedTiles(lowerBound, rightNow, zoomLevel)
+      val tiles = env.diffClient.getZoomedTiles(lowerBound, upperBound, zoomLevel)
       val retrievedBlobs = tiles(env.pairKey)
       assertEquals("Zoom level %s ".format(zoomLevel), expectedBlobs,retrievedBlobs)
     }}
