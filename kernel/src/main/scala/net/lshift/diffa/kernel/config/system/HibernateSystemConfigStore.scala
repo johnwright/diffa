@@ -29,13 +29,13 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory, val pairCach
   val logger = LoggerFactory.getLogger(getClass)
 
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => {
-    pairCache.remove(d.name)
+    pairCache.invalidate(d.name)
     s.saveOrUpdate(d)
   })
 
   def deleteDomain(domain:String) = sessionFactory.withSession( s => {
 
-    pairCache.remove(domain)
+    pairCache.invalidate(domain)
 
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")

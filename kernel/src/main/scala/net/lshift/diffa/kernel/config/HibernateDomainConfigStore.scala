@@ -30,7 +30,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
 
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = sessionFactory.withSession(s => {
 
-    pairCache.remove(domainName)
+    pairCache.invalidate(domainName)
 
     val domain = getDomain(domainName)
     val endpoint = fromEndpointDef(domain, e)
@@ -40,7 +40,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
 
   def deleteEndpoint(domain:String, name: String): Unit = sessionFactory.withSession(s => {
 
-    pairCache.remove(domain)
+    pairCache.invalidate(domain)
 
     val endpoint = getEndpoint(s, domain, name)
 
@@ -71,7 +71,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   def createOrUpdatePair(domain:String, p: PairDef): Unit = sessionFactory.withSession(s => {
     p.validate()
 
-    pairCache.remove(domain)
+    pairCache.invalidate(domain)
 
     val up = getEndpoint(s, domain, p.upstreamName)
     val down = getEndpoint(s, domain, p.downstreamName)
@@ -82,7 +82,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
 
   def deletePair(domain:String, key: String): Unit = sessionFactory.withSession(s => {
 
-    pairCache.remove(domain)
+    pairCache.invalidate(domain)
 
     val pair = getPair(s, domain, key)
     deletePairInSession(s, domain, pair)
