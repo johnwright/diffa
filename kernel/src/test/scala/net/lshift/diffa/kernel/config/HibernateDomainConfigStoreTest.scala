@@ -29,12 +29,14 @@ import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.SessionHelper._
 import net.lshift.diffa.kernel.frontend.{RepairActionDef, PairDef, EndpointDef, EscalationDef}
+import net.sf.ehcache.CacheManager
 
 class HibernateDomainConfigStoreTest {
 
   private lazy val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
   private lazy val sessionFactory = HibernateDomainConfigStoreTest.sessionFactory
-  private lazy val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(sessionFactory)
+  private lazy val pairCache = HibernateDomainConfigStoreTest.pairCache
+  private lazy val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(sessionFactory,pairCache)
 
   val dateCategoryName = "bizDate"
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
@@ -121,6 +123,35 @@ class HibernateDomainConfigStoreTest {
   }
 
   def exists (e:EndpointDef, count:Int) : Unit = exists(e, count, count - 1)
+
+  @Test
+  def pairsShouldCache = {
+
+    declareAll()
+
+    val initialCount = sessionFactory.getStatistics.getQueryExecutionCount
+
+    // This call should be read through from the DB
+    domainConfigStore.listPairs(domainName)
+    assertEquals("Should have generated cache miss", initialCount + 1, sessionFactory.getStatistics.getQueryExecutionCount)
+
+    // This call should be cached
+    domainConfigStore.listPairs(domainName)
+    assertEquals("Should have generated cache hit", initialCount + 1, sessionFactory.getStatistics.getQueryExecutionCount)
+
+    provokeCacheInvalidation(() => domainConfigStore.createOrUpdateEndpoint(domainName, upstream1))
+    provokeCacheInvalidation(() => domainConfigStore.createOrUpdatePair(domainName, pairDef))
+    provokeCacheInvalidation(() => domainConfigStore.deletePair(domainName, pairKey))
+    provokeCacheInvalidation(() => domainConfigStore.deleteEndpoint(domainName, upstream1.name))
+
+    // This should invalidate the pair cache
+    def provokeCacheInvalidation[T](f:() => T) = {
+      f()
+      val countAfterOperation = sessionFactory.getStatistics.getQueryExecutionCount
+      domainConfigStore.listPairs(domainName)
+      assertEquals("Should have generated cache hit", countAfterOperation + 1, sessionFactory.getStatistics.getQueryExecutionCount)
+    }
+  }
 
   @Test
   def domainShouldBeDeletable = {
@@ -513,6 +544,7 @@ object HibernateDomainConfigStoreTest {
         setProperty("hibernate.connection.url", "jdbc:derby:target/domainConfigStore;create=true").
         setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
         setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+        setProperty("hibernate.generate_statistics", "true").
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
                                                                // otherwise the preparation step will not get committed
 
@@ -522,8 +554,11 @@ object HibernateDomainConfigStoreTest {
     sf
   }
 
-  lazy val domainConfigStore = new HibernateDomainConfigStore(sessionFactory)
-  lazy val systemConfigStore = new HibernateSystemConfigStore(sessionFactory)
+  lazy val pairCache = new PairCache(new CacheManager())
+
+
+  lazy val domainConfigStore = new HibernateDomainConfigStore(sessionFactory, pairCache)
+  lazy val systemConfigStore = new HibernateSystemConfigStore(sessionFactory, pairCache)
 
   def clearAllConfig = {
     try {

@@ -5,14 +5,16 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.differencing.DifferencesManager
 import org.junit.Test
 import org.junit.Assert._
-import net.lshift.diffa.kernel.config.{ConfigValidationException, HibernateDomainConfigStoreTest}
+import net.sf.ehcache.CacheManager
+import net.lshift.diffa.kernel.config.{PairCache, ConfigValidationException, HibernateDomainConfigStoreTest}
 
 /**
  * Test cases for apply System Configuration.
  */
 class SystemConfigurationTest {
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
-  private val systemConfigStore = new HibernateSystemConfigStore(sf)
+  private val pairCache = new PairCache(new CacheManager())
+  private val systemConfigStore = new HibernateSystemConfigStore(sf,pairCache)
 
   private val differencesManager = createMock("differencesManager", classOf[DifferencesManager])
 

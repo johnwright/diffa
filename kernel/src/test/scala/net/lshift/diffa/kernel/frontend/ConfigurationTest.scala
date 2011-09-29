@@ -34,6 +34,7 @@ import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
+import net.sf.ehcache.CacheManager
 
 /**
  * Test cases for the Configuration frontend.
@@ -51,7 +52,8 @@ class ConfigurationTest {
   // TODO This is a strange mixture of mock and real objects
   private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
   private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
-  private val systemConfigStore = new HibernateSystemConfigStore(sf)
+  private val pairCache = new PairCache(new CacheManager())
+  private val systemConfigStore = new HibernateSystemConfigStore(sf, pairCache)
 
   private val configuration = new Configuration(domainConfigStore,
                                                 systemConfigStore,

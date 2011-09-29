@@ -347,12 +347,23 @@
     ===========
   -->
 
+  <!-- TODO Once #366 lands, this cache should be unnecessary -->
+  <bean id="pairCache" class="net.lshift.diffa.kernel.config.PairCache">
+    <constructor-arg>
+      <bean class="net.sf.ehcache.CacheManager">
+        <constructor-arg type="java.net.URL" value="classpath:ehcache-pairs.xml"/>
+      </bean>
+    </constructor-arg>
+  </bean>
+
   <bean id="domainConfigStore" class="net.lshift.diffa.kernel.config.HibernateDomainConfigStore">
     <constructor-arg ref="diffaSessionFactory" />
+    <constructor-arg ref="pairCache" />
   </bean>
 
   <bean id="systemConfigStore" class="net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore">
     <constructor-arg ref="diffaSessionFactory" />
+    <constructor-arg ref="pairCache" />
   </bean>
 
   <!--

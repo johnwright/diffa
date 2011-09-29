@@ -21,16 +21,22 @@ import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException, HibernateQueryUtils}
-import net.lshift.diffa.kernel.config.{SystemConfigOption, Member, DiffaPairRef, User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{PairCache, SystemConfigOption, Member, DiffaPairRef, User, ConfigOption, RepairAction, Escalation, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
 
-class HibernateSystemConfigStore(val sessionFactory:SessionFactory)
+class HibernateSystemConfigStore(val sessionFactory:SessionFactory, val pairCache:PairCache)
     extends SystemConfigStore with HibernateQueryUtils {
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => s.saveOrUpdate(d) )
+  def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => {
+    pairCache.invalidate(d.name)
+    s.saveOrUpdate(d)
+  })
 
   def deleteDomain(domain:String) = sessionFactory.withSession( s => {
+
+    pairCache.invalidate(domain)
+
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
     deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
