@@ -19,11 +19,14 @@ package net.lshift.diffa.kernel.util
 import java.io.Closeable
 import net.sf.ehcache.{Element, CacheManager}
 import scala.collection.JavaConversions._
+import org.slf4j.LoggerFactory
 
 /**
  * Simple wrapper around an underlying EhCache to make its usage less verbose.
  */
 class CacheWrapper[A, B](cacheName:String, manager:CacheManager) extends Closeable {
+
+  val log = LoggerFactory.getLogger(getClass)
 
   if (manager.cacheExists(cacheName)) {
     manager.removeCache(cacheName)
@@ -83,6 +86,7 @@ class CacheWrapper[A, B](cacheName:String, manager:CacheManager) extends Closeab
    * the value is sourced from the underlying store, added to the cache and then returned to the caller.
    */
   def readThrough(key:A, f:() => B ) : B = {
+    log.debug("Cache stats with key %s : %s".format(key, cache.getStatistics))
     if (contains(key)) {
       cache.get(key).getValue.asInstanceOf[B]
     }
