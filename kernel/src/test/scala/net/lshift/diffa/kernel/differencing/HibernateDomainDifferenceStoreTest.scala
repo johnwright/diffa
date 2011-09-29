@@ -27,13 +27,13 @@ import experimental.theories.{Theories, DataPoint, Theory}
 import org.hibernate.SessionFactory
 import runner.RunWith
 import system.HibernateSystemConfigStore
-import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.DerbyHelper
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
 import org.joda.time.{DateTime, DateTimeZone, Interval}
+import net.sf.ehcache.CacheManager
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -46,8 +46,9 @@ class HibernateDomainDifferenceStoreTest {
   def clear() {
     diffStore.clearAllDifferences
 
-    val configStore = new HibernateDomainConfigStore(sf)
-    val systemConfigStore = new HibernateSystemConfigStore(sf)
+    val pairCache = new PairCache(new CacheManager())
+    val configStore = new HibernateDomainConfigStore(sf, pairCache)
+    val systemConfigStore = new HibernateSystemConfigStore(sf, pairCache)
 
     val domain = Domain("domain")
     systemConfigStore.createOrUpdateDomain(domain)

@@ -44,8 +44,14 @@ class CacheWrapper[A, B](cacheName:String, manager:CacheManager) extends Closeab
    */
   def clear() = cache.removeAll()
 
+
   /**
-   * Removes the element stored under this key from the cache
+   * Removes this value from the cache
+   */
+  def remove(key:A) = cache.remove(key)
+
+  /**
+   * Indicates whether this key exists
    */
   def contains(key:A) = cache.isKeyInCache(key)
 
@@ -71,5 +77,20 @@ class CacheWrapper[A, B](cacheName:String, manager:CacheManager) extends Closeab
    * Returns a list of keys associated with this cache
    */
   def keys : Seq[A] = cache.getKeys.toSeq.map(_.asInstanceOf[A])
+
+  /**
+   * Retrieves a value by key from the cache. If that key does not exist in the cache,
+   * the value is sourced from the underlying store, added to the cache and then returned to the caller.
+   */
+  def readThrough(key:A, f:() => B ) : B = {
+    if (contains(key)) {
+      cache.get(key).getValue.asInstanceOf[B]
+    }
+    else {
+      val value = f()
+      put(key,value)
+      value
+    }
+  }
 
 }
