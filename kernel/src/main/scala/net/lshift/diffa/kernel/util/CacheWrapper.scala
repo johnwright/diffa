@@ -86,14 +86,14 @@ class CacheWrapper[A, B](cacheName:String, manager:CacheManager) extends Closeab
    * the value is sourced from the underlying store, added to the cache and then returned to the caller.
    */
   def readThrough(key:A, f:() => B ) : B = {
-    log.debug("Cache stats with key %s : %s".format(key, cache.getStatistics))
-    if (contains(key)) {
-      cache.get(key).getValue.asInstanceOf[B]
-    }
-    else {
+    val cached = cache.get(key)
+    if (null == cached) {
       val value = f()
       put(key,value)
       value
+    }
+    else {
+      cached.getValue.asInstanceOf[B]
     }
   }
 
