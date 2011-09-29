@@ -30,8 +30,9 @@ class PairCache(val cacheManager:CacheManager) {
    */
   private val cachedPairs = new CacheWrapper[String,Seq[PairDef]]("listPairs", cacheManager)
 
-
+  @Deprecated
   def remove(domain:String) = cachedPairs.remove(domain)
 
+  @Deprecated
   def readThrough(domain:String, f:() => Seq[PairDef]) = cachedPairs.readThrough(domain,f)
 }
