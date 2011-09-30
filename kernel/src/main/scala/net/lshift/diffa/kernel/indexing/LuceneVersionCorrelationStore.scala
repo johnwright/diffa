@@ -206,8 +206,12 @@ object LuceneVersionCorrelationStore {
     val presenceIndicator = "hasDownstream"
   }
 
-  def retrieveCurrentDoc(index: Directory, id:VersionID) = {
+  def retrieveCurrentDoc(index: Directory, id:VersionID) : Option[Document] = {
     val searcher = new IndexSearcher(index, false)
+    retrieveCurrentDoc(searcher, id)
+  }
+
+  def retrieveCurrentDoc(searcher: IndexSearcher, id:VersionID) : Option[Document] = {
     val hits = searcher.search(queryForId(id), 1)
     if (hits.scoreDocs.size == 0) {
       None
@@ -395,8 +399,12 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
       val doc =
         if (deletedDocs.contains(id))
           None
-        else
-          retrieveCurrentDoc(index, id)
+        else {
+          val searcher = new IndexSearcher(writer.getReader)
+          val d = retrieveCurrentDoc(searcher, id)
+          searcher.close()
+          d
+        }
 
       doc match {
         case None => {
