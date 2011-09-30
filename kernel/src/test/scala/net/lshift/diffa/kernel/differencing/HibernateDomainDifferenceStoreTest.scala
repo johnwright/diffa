@@ -31,9 +31,9 @@ import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.T
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
-import org.joda.time.{DateTime, DateTimeZone, Interval}
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{DatabaseEnvironment, DerbyHelper}
+import org.joda.time.{DateTime, Interval, DateTimeZone}
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -647,6 +647,17 @@ class HibernateDomainDifferenceStoreTest {
         })
       }}
     }}
+  }
+
+  @Test
+  def unmatchedEventsShouldAggregate = {
+    val pair = DiffaPairRef("pair1", "domain")
+    val start = new DateTime(2029,6,6,14,15,0,0,DateTimeZone.UTC)
+    val end = start.plusDays(1)
+    val interval = new Interval(start, end)
+    val aggregates = diffStore.aggregateUnmatchedEvents(pair, interval, ZoomCache.QUARTER_HOURLY)
+
+    assertNotNull(aggregates)
   }
 
   @Test

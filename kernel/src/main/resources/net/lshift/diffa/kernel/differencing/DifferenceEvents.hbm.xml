@@ -133,4 +133,30 @@
       e.isMatch = false and
       e.lastSeen < :cutoff
   ]]></query>
+
+  <sql-query name="15_minute_aggregation"><![CDATA[
+    select
+      extract(year from d.detected_at) as year,
+      extract(month from d.detected_at) as month,
+      extract(day from d.detected_at) as day,
+      extract(hour from d.detected_at) as hour,
+      floor(extract(minute from d.detected_at)/15) * 15 as minute,
+      count(*) as aggregate
+    from
+      diffs d
+    where
+      d.domain = :domain,
+      and d.pair = :pair,
+      and d.detected_at >= :lower_bound,
+      and d.detected_at <= :upper_bound
+    group by
+      extract(year from d.detected_at),
+      extract(month from d.detected_at),
+      extract(day from d.detected_at),
+      extract(hour from d.detected_at),
+      floor(extract(minute from d.detected_at)/15) * 15
+    order by
+      year,month,day,hour,minute
+  ]]></sql-query>
+
 </hibernate-mapping>

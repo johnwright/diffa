@@ -172,6 +172,17 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
+  def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) = sessionFactory.withSession(s => {
+    val query = s.getNamedQuery("15_minute_aggregation")
+    query.setParameter("domain", pair.domain)
+    query.setParameter("pair", pair.key)
+    query.setParameter("lower_bound", interval.getStart)
+    query.setParameter("upper_bound", interval.getEnd)
+    val result = query.list()
+    println(result)
+    Seq[AggregateEvents]()
+  })
+
   def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
 
     def processEvent(s:Session, e:ReportedDifferenceEvent) = f(e)

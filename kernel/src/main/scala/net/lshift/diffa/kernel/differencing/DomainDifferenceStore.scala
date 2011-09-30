@@ -101,6 +101,8 @@ trait DomainDifferenceStore {
    */
   def retrieveUnmatchedEvents(domain:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit)
 
+  def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) : Seq[AggregateEvents]
+
   /**
    * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
    * interval. The result return a range of the underlying data set that corresponds to the offset and length
@@ -150,6 +152,11 @@ case class TileGroup(
 
 case class EventOptions(
   includeIgnored:Boolean = false    // Whether ignored events should be included in the response
+)
+
+case class AggregateEvents(
+  interval:Interval,
+  count:Int
 )
 
 case class ReportedDifferenceEvent(
