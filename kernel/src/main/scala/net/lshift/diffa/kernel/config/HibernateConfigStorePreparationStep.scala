@@ -371,7 +371,7 @@ object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
       values(Map(
         "name" -> "guest", "email" -> "guest@diffa.io",
         "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
-        "superuser" -> new java.lang.Integer(1)))
+        "superuser" -> Boolean.box(true)))
   }
 }
 object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {

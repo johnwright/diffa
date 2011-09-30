@@ -31,10 +31,12 @@ import collection.mutable.HashSet
 import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
-import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
 import net.sf.ehcache.CacheManager
+import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import org.hibernate.cfg.{Configuration => HibernateConfig}
+import net.lshift.diffa.kernel.util.DatabaseEnvironment
 
 /**
  * Test cases for the Configuration frontend.
@@ -50,10 +52,9 @@ class ConfigurationTest {
   private val pairPolicyClient = createMock(classOf[PairPolicyClient])
 
   // TODO This is a strange mixture of mock and real objects
-  private val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
-  private val sf = HibernateDomainConfigStoreTest.domainConfigStore.sessionFactory
   private val pairCache = new PairCache(new CacheManager())
-  private val systemConfigStore = new HibernateSystemConfigStore(sf, pairCache)
+  private val systemConfigStore = new HibernateSystemConfigStore(ConfigurationTest.sessionFactory, pairCache)
+  private val domainConfigStore = new HibernateDomainConfigStore(ConfigurationTest.sessionFactory, pairCache)
 
   private val configuration = new Configuration(domainConfigStore,
                                                 systemConfigStore,
@@ -280,5 +281,26 @@ class ConfigurationTest {
       def matches(argument: AnyRef) = argument.asInstanceOf[Pair].key == key
     })
     null
+  }
+}
+object ConfigurationTest {
+  private lazy val config =
+      new HibernateConfig().
+        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
+        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("target/configTest")).
+        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
+        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
+        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
+        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+        setProperty("hibernate.generate_statistics", "true").
+        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+                                                               // otherwise the preparation step will not get committed
+
+  lazy val sessionFactory = {
+    val sf = config.buildSessionFactory
+    (new HibernateConfigStorePreparationStep).prepare(sf, config)
+    sf
   }
 }
