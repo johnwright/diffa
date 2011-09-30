@@ -29,11 +29,11 @@ import runner.RunWith
 import system.HibernateSystemConfigStore
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.util.DerbyHelper
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
 import org.joda.time.{DateTime, DateTimeZone, Interval}
 import net.sf.ehcache.CacheManager
+import net.lshift.diffa.kernel.util.{DatabaseEnvironment, DerbyHelper}
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -923,9 +923,11 @@ object HibernateDomainDifferenceStoreTest {
       new Configuration().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-        setProperty("hibernate.connection.url", "jdbc:derby:target/domainCache;create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("target/domainCache")).
+        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
+        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
+        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
         setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
                                                                // otherwise the preparation step will not get committed

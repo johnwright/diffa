@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.config
 
 import org.junit.Assert._
 import org.hibernate.cfg.Configuration
-import net.lshift.diffa.kernel.util.MissingObjectException
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.{Test, Before}
 import scala.collection.Map
@@ -30,6 +29,7 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.SessionHelper._
 import net.lshift.diffa.kernel.frontend.{RepairActionDef, PairDef, EndpointDef, EscalationDef}
 import net.sf.ehcache.CacheManager
+import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
 
 class HibernateDomainConfigStoreTest {
 
@@ -540,9 +540,11 @@ object HibernateDomainConfigStoreTest {
       new Configuration().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-        setProperty("hibernate.connection.url", "jdbc:derby:target/domainConfigStore;create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("target/domainConfigStore")).
+        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
+        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
+        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
         setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
         setProperty("hibernate.generate_statistics", "true").
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,

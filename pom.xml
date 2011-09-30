@@ -33,6 +33,7 @@
     <spring.version>3.0.6.RELEASE</spring.version>
     <hibernate.version>3.6.7.Final</hibernate.version>
     <derby.version>10.8.1.2</derby.version>
+    <postgresql.version>9.1-901.jdbc4</postgresql.version>
     <dbcp.version>1.2.2</dbcp.version>
     <jetty.version>7.3.0.v20110203</jetty.version>
     <rabbitmq.version>1.8.0</rabbitmq.version>
@@ -380,6 +381,11 @@
       <artifactId>derby</artifactId>
       <version>${derby.version}</version>
       <!--<scope>test</scope>-->
+    </dependency>
+    <dependency>
+      <groupId>postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgresql.version}</version>
     </dependency>
   </dependencies>
   </dependencyManagement>
