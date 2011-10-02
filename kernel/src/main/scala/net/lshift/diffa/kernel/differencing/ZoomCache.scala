@@ -272,7 +272,7 @@ object ZoomCache {
   }
 
   /**
-   * Calculates what the tile aligned interval conatins the given timestamp at the given level of zoom
+   * Calculates what the tile aligned interval contains the given timestamp at the given level of zoom
    */
   def containingInterval(timestamp:DateTime, zoomLevel:Int) = {
     val utc = timestamp.withZone(DateTimeZone.UTC)

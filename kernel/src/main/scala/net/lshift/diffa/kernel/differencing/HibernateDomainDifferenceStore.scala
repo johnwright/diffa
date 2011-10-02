@@ -14,6 +14,7 @@ import org.hibernate.transform.ResultTransformer
 import org.joda.time.{DateTimeZone, DateTime, Interval}
 import java.math.BigInteger
 import java.util.List
+import org.jadira.usertype.dateandtime.joda.columnmapper.TimestampColumnDateTimeMapper
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -25,8 +26,16 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   val zoomCache = new ZoomCacheProvider(this, cacheManager)
 
   val zoomQueries = Map(
-    ZoomCache.QUARTER_HOURLY -> "15_minute_aggregation"
+    ZoomCache.QUARTER_HOURLY -> "15_minute_aggregation",
+    ZoomCache.HALF_HOURLY    -> "30_minute_aggregation",
+    ZoomCache.HOURLY         -> "60_minute_aggregation",
+    ZoomCache.TWO_HOURLY     -> "120_minute_aggregation",
+    ZoomCache.FOUR_HOURLY    -> "240_minute_aggregation",
+    ZoomCache.EIGHT_HOURLY   -> "480_minute_aggregation",
+    ZoomCache.DAILY          -> "daily_aggregation"
   )
+
+  val columnMapper = new TimestampColumnDateTimeMapper()
 
   def removeDomain(domain:String) {
     sessionFactory.withSession(s => {
@@ -186,22 +195,33 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     val query = s.getNamedQuery(zoomQueries(zoomLevel))
     query.setParameter("domain", pair.domain)
     query.setParameter("pair", pair.key)
-    query.setParameter("lower_bound", new Timestamp(interval.getStart.minusMonths(1).getMillis))
-    query.setParameter("upper_bound", new Timestamp(interval.getEnd.plusMonths(1).getMillis))
+    query.setParameter("lower_bound", columnMapper.toNonNullValue(interval.getStart))
+    query.setParameter("upper_bound", columnMapper.toNonNullValue(interval.getEnd))
 
     query.setResultTransformer(new ResultTransformer() {
       def transformTuple(tuple: Array[AnyRef], aliases: Array[String]) = {
-        //tuple.foreach(t => println("T: " + t + " - " + t.getClass))
+
+        val minutes = if (zoomLevel > ZoomCache.HOURLY) {
+          tuple(4).asInstanceOf[BigInteger].intValue()
+        } else {
+          0
+        }
+
+        val hours = if (zoomLevel <= ZoomCache.TWO_HOURLY && zoomLevel >= ZoomCache.EIGHT_HOURLY) {
+          tuple(3).asInstanceOf[BigInteger].intValue()
+        } else if (zoomLevel > ZoomCache.TWO_HOURLY) {
+          tuple(3).asInstanceOf[Int].intValue()
+        } else {
+          0
+        }
+
         val start = new DateTime(
           tuple(0).asInstanceOf[Int].intValue(),
           tuple(1).asInstanceOf[Int].intValue(),
           tuple(2).asInstanceOf[Int].intValue(),
-          tuple(3).asInstanceOf[Int].intValue(),
-          tuple(4).asInstanceOf[BigInteger].intValue(),
-          0,0,DateTimeZone.UTC)
-        val end = start
-        val interval = new Interval(start,end)
-        AggregateEvents(interval, tuple(5).asInstanceOf[Int].intValue())
+          hours, minutes, 0, 0, DateTimeZone.UTC)
+        val interval = ZoomCache.intervalFromStartTime(start, zoomLevel)
+        AggregateEvents(interval, tuple.last.asInstanceOf[Int].intValue())
       }
 
       def transformList(collection: List[_]) = collection

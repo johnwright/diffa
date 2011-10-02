@@ -658,11 +658,31 @@ class HibernateDomainDifferenceStoreTest {
     val end = start.plusDays(1)
     val interval = new Interval(start, end)
 
-    diffStore.addReportableUnmatchedEvent(VersionID(pair, "aaz"), start.plusMinutes(1), "", "", start.plusMinutes(1))
+    val eventTime = start.plusMinutes(1)
+
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "aaz"), eventTime, "", "", eventTime)
 
     val expected = Map(
       ZoomCache.QUARTER_HOURLY -> Seq(
-        AggregateEvents(new Interval(start, start), 1)
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.QUARTER_HOURLY), 1)
+      ),
+      ZoomCache.HALF_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.HALF_HOURLY), 1)
+      ),
+      ZoomCache.HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.HOURLY), 1)
+      ),
+      ZoomCache.TWO_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.TWO_HOURLY), 1)
+      ),
+      ZoomCache.FOUR_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.FOUR_HOURLY), 1)
+      ),
+      ZoomCache.EIGHT_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.EIGHT_HOURLY), 1)
+      ),
+      ZoomCache.DAILY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.DAILY), 1)
       )
     )
 
