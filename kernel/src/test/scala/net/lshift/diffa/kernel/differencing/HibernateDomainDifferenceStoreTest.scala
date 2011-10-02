@@ -651,13 +651,25 @@ class HibernateDomainDifferenceStoreTest {
 
   @Test
   def unmatchedEventsShouldAggregate = {
+
+    diffStore.clearAllDifferences
     val pair = DiffaPairRef("pair1", "domain")
-    val start = new DateTime(2029,6,6,14,15,0,0,DateTimeZone.UTC)
+    val start = new DateTime(2009,6,6,14,15,0,0,DateTimeZone.UTC)
     val end = start.plusDays(1)
     val interval = new Interval(start, end)
-    val aggregates = diffStore.aggregateUnmatchedEvents(pair, interval, ZoomCache.QUARTER_HOURLY)
 
-    assertNotNull(aggregates)
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "aaz"), start.plusMinutes(1), "", "", start.plusMinutes(1))
+
+    val expected = Map(
+      ZoomCache.QUARTER_HOURLY -> Seq(
+        AggregateEvents(new Interval(start, start), 1)
+      )
+    )
+
+    expected.foreach{ case (zoomLevel, events) => {
+      val aggregates = diffStore.aggregateUnmatchedEvents(pair, interval, zoomLevel)
+      assertEquals(events, aggregates)
+    }}
   }
 
   @Test
@@ -949,10 +961,4 @@ object HibernateDomainDifferenceStoreTest {
   (new HibernateConfigStorePreparationStep).prepare(sf, config)
   val diffStore = new HibernateDomainDifferenceStore(sf, cacheManager)
 
-
-  @AfterClass
-  def close() {
-    sf.close()
-    DerbyHelper.shutdown("target/domainCache")
-  }
 }

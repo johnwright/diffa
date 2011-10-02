@@ -1,6 +1,5 @@
 package net.lshift.diffa.kernel.differencing
 
-import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import reflect.BeanProperty
@@ -9,6 +8,12 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.Session
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{Cursor, HibernateQueryUtils}
+import java.sql.Timestamp
+import scala.collection.JavaConversions._
+import org.hibernate.transform.ResultTransformer
+import org.joda.time.{DateTimeZone, DateTime, Interval}
+import java.math.BigInteger
+import java.util.List
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -18,6 +23,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     with HibernateQueryUtils {
 
   val zoomCache = new ZoomCacheProvider(this, cacheManager)
+
+  val zoomQueries = Map(
+    ZoomCache.QUARTER_HOURLY -> "15_minute_aggregation"
+  )
 
   def removeDomain(domain:String) {
     sessionFactory.withSession(s => {
@@ -172,15 +181,33 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
-  def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) = sessionFactory.withSession(s => {
-    val query = s.getNamedQuery("15_minute_aggregation")
+  def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) : Seq[AggregateEvents] = sessionFactory.withSession(s => {
+
+    val query = s.getNamedQuery(zoomQueries(zoomLevel))
     query.setParameter("domain", pair.domain)
     query.setParameter("pair", pair.key)
-    query.setParameter("lower_bound", interval.getStart)
-    query.setParameter("upper_bound", interval.getEnd)
-    val result = query.list()
-    println(result)
-    Seq[AggregateEvents]()
+    query.setParameter("lower_bound", new Timestamp(interval.getStart.minusMonths(1).getMillis))
+    query.setParameter("upper_bound", new Timestamp(interval.getEnd.plusMonths(1).getMillis))
+
+    query.setResultTransformer(new ResultTransformer() {
+      def transformTuple(tuple: Array[AnyRef], aliases: Array[String]) = {
+        //tuple.foreach(t => println("T: " + t + " - " + t.getClass))
+        val start = new DateTime(
+          tuple(0).asInstanceOf[Int].intValue(),
+          tuple(1).asInstanceOf[Int].intValue(),
+          tuple(2).asInstanceOf[Int].intValue(),
+          tuple(3).asInstanceOf[Int].intValue(),
+          tuple(4).asInstanceOf[BigInteger].intValue(),
+          0,0,DateTimeZone.UTC)
+        val end = start
+        val interval = new Interval(start,end)
+        AggregateEvents(interval, tuple(5).asInstanceOf[Int].intValue())
+      }
+
+      def transformList(collection: List[_]) = collection
+    })
+
+    query.list.map(item => item.asInstanceOf[AggregateEvents])
   })
 
   def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
@@ -323,4 +350,15 @@ case class PendingDifferenceEvent(
   def this() = this(oid = null)
 
   def convertToUnmatched = ReportedDifferenceEvent(null, objId, detectedAt, false, upstreamVsn, downstreamVsn, lastSeen)
+}
+
+case class AggregateEventsRow(
+  @BeanProperty var year:java.lang.Integer = null,
+  @BeanProperty var month:java.lang.Integer = null,
+  @BeanProperty var day:java.lang.Integer = null,
+  @BeanProperty var hour:java.lang.Integer = null,
+  @BeanProperty var minute:java.lang.Integer = null,
+  @BeanProperty var aggregate:java.lang.Integer = null
+) {
+  def this() = this(year = null)
 }

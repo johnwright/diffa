@@ -52,7 +52,7 @@ public class AlterTableBuilderTest {
     mb.alterTable("foo").addColumn("bar", Types.VARCHAR, 255, false, "baz");
 
     Connection conn = createStrictMock(Connection.class);
-    expect(conn.prepareStatement("alter table foo add column bar varchar(255) not null default 'baz'")).
+    expect(conn.prepareStatement("alter table foo add column bar varchar(255) default 'baz' not null")).
         andReturn(mockExecutablePreparedStatement());
     replay(conn);
 

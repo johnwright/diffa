@@ -31,7 +31,7 @@ import java.io.{File, InputStream}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theory, Theories}
 import java.sql._
-import net.lshift.diffa.kernel.util.DerbyHelper
+import net.lshift.diffa.kernel.util.{DatabaseEnvironment, DerbyHelper}
 
 /**
  * Test cases for ensuring that preparation steps apply to database schemas at various levels, and allow us to upgrade
@@ -41,8 +41,6 @@ import net.lshift.diffa.kernel.util.DerbyHelper
 class HibernatePreparationTest {
 
   val log = LoggerFactory.getLogger(getClass)
-
-  val genericConfig = new Configuration().setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect")
 
   // The Hibernate validateSchema method won't check for too-many tables being present, presumably since this won't
   // adversely affect it's operation. Since we do care that we delete some objects, we'll have a specific ban-list of
@@ -74,9 +72,11 @@ class HibernatePreparationTest {
     val config = new Configuration().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-        setProperty("hibernate.connection.url", "jdbc:derby:target/configStore-" + startVersion.startName + ";create=true").
-        setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver").
+        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-" + startVersion.startName)).
+        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
+        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
+        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
         setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory")
     val sf = config.buildSessionFactory
     val dialect = Dialect.getDialect(config.getProperties)
@@ -117,8 +117,6 @@ class HibernatePreparationTest {
     // Ensure we can run the upgrade again cleanly
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
 
-    // Shut down the database
-    DerbyHelper.shutdown(dbDir)
   }
 
   /**
@@ -132,9 +130,11 @@ class HibernatePreparationTest {
       val config = new Configuration().
           addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
           addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-          setProperty("hibernate.dialect", "org.hibernate.dialect.DerbyDialect").
-          setProperty("hibernate.connection.url", "jdbc:derby:target/configStore-export;create=true").
-          setProperty("hibernate.connection.driver_class", "org.apache.derby.jdbc.EmbeddedDriver")
+          setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+          setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-export")).
+          setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
+          setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
+          setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD)
 
       val exporter = new SchemaExport(config)
       exporter.setOutputFile("target/current-schema.sql")

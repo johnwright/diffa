@@ -218,6 +218,7 @@ object RemoveGroupsMigrationStep extends HibernateMigrationStep {
   def migrate(config: Configuration, connection: Connection) {
     val migration = new MigrationBuilder(config)
     migration.alterTable("pair").
+      dropConstraint("FK3462DAF4F4CA7C").
       dropColumn("NAME")
     migration.dropTable("pair_group")
 
@@ -361,7 +362,7 @@ object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
     val migration = new MigrationBuilder(config)
     migration.alterTable("users").
       addColumn("password_enc", Types.VARCHAR, 255, false, "LOCKED").
-      addColumn("superuser", Types.SMALLINT, 1, false, 0)
+      addColumn("superuser", Types.BIT, 1, false, 0)
     applyReferenceData(migration)
 
     migration.apply(connection)
@@ -384,12 +385,12 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
       column("domain", Types.VARCHAR, 255, false).
       column("pair", Types.VARCHAR, 255, false).
       column("entity_id", Types.VARCHAR, 255, false).
-      column("is_match", Types.SMALLINT, false).
+      column("is_match", Types.BIT, false).
       column("detected_at", Types.TIMESTAMP, false).
       column("last_seen", Types.TIMESTAMP, false).
       column("upstream_vsn", Types.VARCHAR, 255, true).
       column("downstream_vsn", Types.VARCHAR, 255, true).
-      column("ignored", Types.SMALLINT, false).
+      column("ignored", Types.BIT, false).
       pk("seq_id").
       withNativeIdentityGenerator()
 

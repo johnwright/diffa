@@ -21,22 +21,22 @@ package net.lshift.diffa.kernel.util
  */
 object DatabaseEnvironment {
 
-  val URL = System.getProperty("diffa.jdbc.url", "jdbc:derby:target/diffaDb;create=true")
-  val DIALECT = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.DerbyDialect")
-  val DRIVER = System.getProperty("diffa.jdbc.driver", "org.apache.derby.jdbc.EmbeddedDriver")
-  val USERNAME = System.getProperty("diffa.jdbc.username", "")
+  val URL = System.getProperty("diffa.jdbc.url", "jdbc:hsqldb:mem")
+  val DIALECT = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
+  val DRIVER = System.getProperty("diffa.jdbc.driver", "org.hsqldb.jdbc.JDBCDriver")
+  val USERNAME = System.getProperty("diffa.jdbc.username", "SA")
   val PASSWORD = System.getProperty("diffa.jdbc.password", "")
 
   /**
    * The motivation behind this URL builder is because ATM, unless you run mvn clean, the tests
    * leave data behind which gets picked up by subsequent test runs.
    *
-   * TODO Fix this behavior.Y
+   * TODO Fix this behavior.
    */
   def substitutableURL(path:String) = {
-    val url = System.getProperty("diffa.jdbc.url", "jdbc:derby:%s;create=true")
+    val url = System.getProperty("diffa.jdbc.url", "jdbc:hsqldb:mem:%s")
     if (url.contains("%s")) {
-      "jdbc:derby:%s;create=true".format(path)
+      url.format(path)
     }
     else {
       url

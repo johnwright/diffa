@@ -145,9 +145,9 @@
     from
       diffs d
     where
-      d.domain = :domain,
-      and d.pair = :pair,
-      and d.detected_at >= :lower_bound,
+      d.domain = :domain
+      and d.pair = :pair
+      and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
     group by
       extract(year from d.detected_at),
