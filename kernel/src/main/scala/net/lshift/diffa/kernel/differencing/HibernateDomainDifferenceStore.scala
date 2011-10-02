@@ -193,6 +193,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) : Seq[AggregateEvents] = sessionFactory.withSession(s => {
 
     val query = s.getNamedQuery(zoomQueries(zoomLevel))
+
     query.setParameter("domain", pair.domain)
     query.setParameter("pair", pair.key)
     query.setParameter("lower_bound", columnMapper.toNonNullValue(interval.getStart))
@@ -201,17 +202,35 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     query.setResultTransformer(new ResultTransformer() {
       def transformTuple(tuple: Array[AnyRef], aliases: Array[String]) = {
 
+        // Note to maintainers:
+        // The reason why the type casting is selective is because the SQL return value of the extract function
+        // maps to an Int, whereas the SQL return value of floor * int maps to BigInteger
+
+        // I could have tried to cast to something consistent in the DB, but I wanted to get the statements to be
+        // portable first - it might worth streamlining this in due course.
+
+
+        // The minute column is only relevant for sub hourly aggregates
+
         val minutes = if (zoomLevel > ZoomCache.HOURLY) {
           tuple(4).asInstanceOf[BigInteger].intValue()
         } else {
           0
         }
 
+        // Super hourly queries involve the floor * int function for the hour component
+
         val hours = if (zoomLevel <= ZoomCache.TWO_HOURLY && zoomLevel >= ZoomCache.EIGHT_HOURLY) {
           tuple(3).asInstanceOf[BigInteger].intValue()
         } else if (zoomLevel > ZoomCache.TWO_HOURLY) {
+
+          // Hourly and sub-hourly just extract the hour component as an int
+
           tuple(3).asInstanceOf[Int].intValue()
         } else {
+
+          // Daily queries do not group by hours if any case
+
           0
         }
 
