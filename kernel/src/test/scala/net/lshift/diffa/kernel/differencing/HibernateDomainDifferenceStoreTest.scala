@@ -32,7 +32,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment, DerbyHelper}
+import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import org.joda.time.{DateTime, Interval, DateTimeZone}
 
 /**
