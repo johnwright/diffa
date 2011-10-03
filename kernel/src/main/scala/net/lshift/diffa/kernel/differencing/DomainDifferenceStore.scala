@@ -99,7 +99,14 @@ trait DomainDifferenceStore {
   /**
    * Applies a closure to all unmatched events for the given pair whose detection timestamp falls into the supplied time bound
    */
+  @Deprecated
   def retrieveUnmatchedEvents(domain:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit)
+
+  /**
+   * Returns an aggregate of all unmatched events for the given pair whose detection timestamp falls into the supplied time bound.
+   * The results are grouped by date intervals according to the desired zoom level.
+   */
+  def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) : Seq[AggregateEvents]
 
   /**
    * Retrieves all unmatched events that have been added to the cache that have a detection time within the specified
@@ -150,6 +157,11 @@ case class TileGroup(
 
 case class EventOptions(
   includeIgnored:Boolean = false    // Whether ignored events should be included in the response
+)
+
+case class AggregateEvents(
+  interval:Interval,
+  count:Int
 )
 
 case class ReportedDifferenceEvent(

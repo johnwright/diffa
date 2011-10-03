@@ -121,9 +121,9 @@
         <artifactId>jetty-maven-plugin</artifactId>
         <dependencies>
           <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derby</artifactId>
-            <version>${derby.version}</version>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>${hsqldb.version}</version>
           </dependency>
           <dependency>
             <groupId>commons-dbcp</groupId>

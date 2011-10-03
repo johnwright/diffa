@@ -31,9 +31,10 @@ import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.T
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
-import org.joda.time.{DateTime, DateTimeZone, Interval}
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment, DerbyHelper}
+import net.lshift.diffa.kernel.util.DatabaseEnvironment
+import org.joda.time.{DateTime, Interval, DateTimeZone}
+import org.hibernate.dialect.Dialect
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -650,6 +651,49 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def unmatchedEventsShouldAggregate = {
+
+    diffStore.clearAllDifferences
+    val pair = DiffaPairRef("pair1", "domain")
+    val start = new DateTime(2009,6,6,14,15,0,0,DateTimeZone.UTC)
+    val end = start.plusDays(1)
+    val interval = new Interval(start, end)
+
+    val eventTime = start.plusMinutes(1)
+
+    diffStore.addReportableUnmatchedEvent(VersionID(pair, "aaz"), eventTime, "", "", eventTime)
+
+    val expected = Map(
+      ZoomCache.QUARTER_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.QUARTER_HOURLY), 1)
+      ),
+      ZoomCache.HALF_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.HALF_HOURLY), 1)
+      ),
+      ZoomCache.HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.HOURLY), 1)
+      ),
+      ZoomCache.TWO_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.TWO_HOURLY), 1)
+      ),
+      ZoomCache.FOUR_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.FOUR_HOURLY), 1)
+      ),
+      ZoomCache.EIGHT_HOURLY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.EIGHT_HOURLY), 1)
+      ),
+      ZoomCache.DAILY -> Seq(
+        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.DAILY), 1)
+      )
+    )
+
+    expected.foreach{ case (zoomLevel, events) => {
+      val aggregates = diffStore.aggregateUnmatchedEvents(pair, interval, zoomLevel)
+      assertEquals(events, aggregates)
+    }}
+  }
+
+  @Test
   def tilesShouldBeWithinTimeSpan = ZoomCache.levels.foreach(tilesShouldBeWithinTimeSpanAtZoomLevel(_))
 
   private def tilesShouldBeWithinTimeSpanAtZoomLevel(zoomLevel:Int) {
@@ -936,12 +980,7 @@ object HibernateDomainDifferenceStoreTest {
 
   val sf:SessionFactory = config.buildSessionFactory
   (new HibernateConfigStorePreparationStep).prepare(sf, config)
-  val diffStore = new HibernateDomainDifferenceStore(sf, cacheManager)
+  val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
+  val diffStore = new HibernateDomainDifferenceStore(sf, cacheManager, dialect)
 
-
-  @AfterClass
-  def close() {
-    sf.close()
-    DerbyHelper.shutdown("target/domainCache")
-  }
 }

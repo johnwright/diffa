@@ -12,6 +12,7 @@ import org.joda.time.{Interval, DateTime}
 import org.junit.{Ignore, Test}
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.DatabaseEnvironment
+import org.hibernate.dialect.Dialect
 
 /**
  * Performance test for the domain cache.
@@ -216,6 +217,6 @@ object DomainDifferenceStorePerfTest {
   }
 
   lazy val cacheManager = new CacheManager()
-
-  lazy val diffStore = new HibernateDomainDifferenceStore(sessionFactory, cacheManager)
+  lazy val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
+  lazy val diffStore = new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect)
 }
