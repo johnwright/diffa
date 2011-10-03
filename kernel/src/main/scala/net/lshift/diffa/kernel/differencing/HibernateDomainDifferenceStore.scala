@@ -258,6 +258,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     query.list.map(item => item.asInstanceOf[AggregateEvents])
   })
 
+  // TODO consider removing this in favor of aggregateUnmatchedEvents/3
+  @Deprecated
   def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
 
     def processEvent(s:Session, e:ReportedDifferenceEvent) = f(e)
@@ -400,6 +402,9 @@ case class PendingDifferenceEvent(
   def convertToUnmatched = ReportedDifferenceEvent(null, objId, detectedAt, false, upstreamVsn, downstreamVsn, lastSeen)
 }
 
+/**
+ * This is an internal type that represents the structure of the SQL result set that aggregates mismatch events.
+ */
 case class AggregateEventsRow(
   @BeanProperty var year:java.lang.Integer = null,
   @BeanProperty var month:java.lang.Integer = null,
