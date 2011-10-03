@@ -79,13 +79,13 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     applyConstraints(query, dsConstraints, Downstream, true)
     
     val idOnlyCollector = new DocIdOnlyCollector
-    val searcher = new IndexSearcher(index, false)
+    val searcher = new IndexSearcher(writer.getReader)
     searcher.search(query, idOnlyCollector)
     idOnlyCollector.allCorrelations(searcher)
   }
 
   def retrieveCurrentCorrelation(id:VersionID) = {
-    retrieveCurrentDoc(index, id) match {
+    retrieveCurrentDoc(writer.getReader, id) match {
       case None => None
       case Some(doc) => Some(docToCorrelation(doc, id))
     }
@@ -96,7 +96,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     applyConstraints(query, constraints, Upstream, false)
 
     val idOnlyCollector = new DocIdOnlyCollector
-    val searcher = new IndexSearcher(index, false)
+    val searcher = new IndexSearcher(writer.getReader)
 
     searcher.search(preventEmptyQuery(query), idOnlyCollector)
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.upstreamVsn != null)
@@ -106,7 +106,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     applyConstraints(query, constraints, Downstream, false)
 
     val idOnlyCollector = new DocIdOnlyCollector
-    val searcher = new IndexSearcher(index, false)
+    val searcher = new IndexSearcher(writer.getReader)
     searcher.search(preventEmptyQuery(query), idOnlyCollector)
     idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.downstreamUVsn != null)
   }
@@ -164,7 +164,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     else
       query
 
-  private class DocIdOnlyCollector extends Collector {
+  private class DocIdOnlyCollector extends org.apache.lucene.search.Collector {
     val docIds = new ListBuffer[Int]
     private var docBase:Int = 0
 
@@ -206,8 +206,8 @@ object LuceneVersionCorrelationStore {
     val presenceIndicator = "hasDownstream"
   }
 
-  def retrieveCurrentDoc(index: Directory, id:VersionID) : Option[Document] = {
-    val searcher = new IndexSearcher(index, false)
+  def retrieveCurrentDoc(reader: IndexReader, id:VersionID) : Option[Document] = {
+    val searcher = new IndexSearcher(reader)
     retrieveCurrentDoc(searcher, id)
   }
 

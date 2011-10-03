@@ -20,13 +20,13 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.events.VersionID
 import org.apache.lucene.util.Version
 import org.apache.lucene.analysis.standard.StandardAnalyzer
-import org.apache.lucene.index.{IndexWriter, IndexWriterConfig, Term}
 import net.lshift.diffa.kernel.differencing._
 import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.apache.lucene.document.{NumericField, Fieldable, Field, Document}
 import collection.mutable.{HashSet, HashMap}
 import scala.collection.JavaConversions._
 import org.apache.lucene.search.IndexSearcher
+import org.apache.lucene.index.{IndexReader, IndexWriter, IndexWriterConfig, Term}
 
 class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationStore._
@@ -38,6 +38,8 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   private val updatedDocs = HashMap[VersionID, Document]()
   private val deletedDocs = HashSet[VersionID]()
   private var writer = createIndexWriter
+
+  def getReader : IndexReader = IndexReader.open(writer, true)
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.trace("Indexing upstream " + id + " with attributes: " + attributes)
@@ -128,9 +130,8 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   }
 
   private def createIndexWriter() = {
-    val version = Version.LUCENE_33
+    val version = Version.LUCENE_34
     val config = new IndexWriterConfig(version, new StandardAnalyzer(version))
-    //new IndexWriter(index, new StandardAnalyzer(Version.LUCENE_30), IndexWriter.MaxFieldLength.UNLIMITED)
     val writer = new IndexWriter(index, config)
     writer
   }
@@ -165,7 +166,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
         if (deletedDocs.contains(id))
           None
         else {
-          val searcher = new IndexSearcher(writer.getReader)
+          val searcher = new IndexSearcher(getReader)
           val d = retrieveCurrentDoc(searcher, id)
           searcher.close()
           d
@@ -222,7 +223,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
       else if (deletedDocs.contains(id))
         None
       else
-        retrieveCurrentDoc(index, id)
+        retrieveCurrentDoc(getReader, id)
 
     currentDoc match {
       case None => Correlation.asDeleted(id, new DateTime)
