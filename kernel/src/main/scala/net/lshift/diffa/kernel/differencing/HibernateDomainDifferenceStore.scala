@@ -222,7 +222,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         // The minute column is only relevant for sub hourly aggregates
 
         val minutes = if (zoomLevel > ZoomCache.HOURLY) {
-          tuple(4).asInstanceOf[BigInteger].intValue()
+          readIntColumn(tuple(4), false, dialect)
         } else {
           0
         }
@@ -230,12 +230,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         // Super hourly queries involve the floor * int function for the hour component
 
         val hours = if (zoomLevel <= ZoomCache.TWO_HOURLY && zoomLevel >= ZoomCache.EIGHT_HOURLY) {
-          tuple(3).asInstanceOf[BigInteger].intValue()
+          readIntColumn(tuple(3), false, dialect)
         } else if (zoomLevel > ZoomCache.TWO_HOURLY) {
 
-          // Hourly and sub-hourly just extract the hour component as an int
+          // Hourly and sub-hourly just extract the hour component as a small int
 
-          tuple(3).asInstanceOf[Int].intValue()
+          readIntColumn(tuple(3), true, dialect)
         } else {
 
           // Daily queries do not group by hours if any case
@@ -244,12 +244,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         }
 
         val start = new DateTime(
-          tuple(0).asInstanceOf[Int].intValue(),
-          tuple(1).asInstanceOf[Int].intValue(),
-          tuple(2).asInstanceOf[Int].intValue(),
+          readIntColumn(tuple(0), true, dialect),
+          readIntColumn(tuple(1), true, dialect),
+          readIntColumn(tuple(2), true, dialect),
           hours, minutes, 0, 0, DateTimeZone.UTC)
         val interval = ZoomCache.intervalFromStartTime(start, zoomLevel)
-        AggregateEvents(interval, tuple.last.asInstanceOf[Int].intValue())
+        AggregateEvents(interval, readIntColumn(tuple.last, true, dialect))
       }
 
       def transformList(collection: List[_]) = collection
@@ -257,6 +257,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
     query.list.map(item => item.asInstanceOf[AggregateEvents])
   })
+
+  private def readIntColumn(column:Object, small:Boolean, dialect:Dialect) : Int = {
+    if (dialect.getClass.getName.contains("Oracle")) {
+      column.asInstanceOf[java.math.BigDecimal].intValue()
+    }
+    else {
+      if (small) {
+        column.asInstanceOf[Int].intValue()
+      }
+      else {
+        column.asInstanceOf[BigInteger].intValue()
+      }
+    }
+  }
 
   // TODO consider removing this in favor of aggregateUnmatchedEvents/3
   @Deprecated
