@@ -26,6 +26,7 @@ import org.joda.time.{LocalDate, DateTimeZone, DateTime}
 import org.apache.lucene.document.{NumericField, Fieldable, Field, Document}
 import collection.mutable.{HashSet, HashMap}
 import scala.collection.JavaConversions._
+import org.apache.lucene.search.IndexSearcher
 
 class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationStore._
@@ -163,8 +164,12 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
       val doc =
         if (deletedDocs.contains(id))
           None
-        else
-          retrieveCurrentDoc(index, id)
+        else {
+          val searcher = new IndexSearcher(writer.getReader)
+          val d = retrieveCurrentDoc(searcher, id)
+          searcher.close()
+          d
+        }
 
       doc match {
         case None => {
