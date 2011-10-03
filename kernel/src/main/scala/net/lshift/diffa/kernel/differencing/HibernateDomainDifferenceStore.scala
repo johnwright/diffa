@@ -1,6 +1,5 @@
 package net.lshift.diffa.kernel.differencing
 
-import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import reflect.BeanProperty
@@ -9,15 +8,35 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.Session
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{Cursor, HibernateQueryUtils}
+import scala.collection.JavaConversions._
+import org.hibernate.transform.ResultTransformer
+import org.joda.time.{DateTimeZone, DateTime, Interval}
+import java.math.BigInteger
+import java.util.List
+import org.jadira.usertype.dateandtime.joda.columnmapper.TimestampColumnDateTimeMapper
+import org.hibernate.dialect.Dialect
+import java.sql.{Types, Timestamp}
 
 /**
  * Hibernate backed Domain Cache provider.
  */
-class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cacheManager:CacheManager)
+class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cacheManager:CacheManager, val dialect:Dialect)
     extends DomainDifferenceStore
     with HibernateQueryUtils {
 
   val zoomCache = new ZoomCacheProvider(this, cacheManager)
+
+  val zoomQueries = Map(
+    ZoomCache.QUARTER_HOURLY -> "15_minute_aggregation",
+    ZoomCache.HALF_HOURLY    -> "30_minute_aggregation",
+    ZoomCache.HOURLY         -> "60_minute_aggregation",
+    ZoomCache.TWO_HOURLY     -> "120_minute_aggregation",
+    ZoomCache.FOUR_HOURLY    -> "240_minute_aggregation",
+    ZoomCache.EIGHT_HOURLY   -> "480_minute_aggregation",
+    ZoomCache.DAILY          -> "daily_aggregation"
+  )
+
+  val columnMapper = new TimestampColumnDateTimeMapper()
 
   def removeDomain(domain:String) {
     sessionFactory.withSession(s => {
@@ -99,7 +118,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
           existing.state match {
             case MatchState.MATCHED => // Ignore. We've already got an event for what we want.
               existing.asDifferenceEvent
-            case MatchState.UNMATCHED =>
+            case MatchState.UNMATCHED | MatchState.IGNORED =>
               // A difference has gone away. Remove the difference, and add in a match
               s.delete(existing)
               val previousDetectionTime = existing.detectedAt
@@ -109,14 +128,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     })
   }
 
-  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = sessionFactory.withSession(s => {
-    listQuery[ReportedDifferenceEvent](s, "unmatchedEventsOlderThanCutoffByDomainAndPair",
-      Map("domain" -> pair.domain, "pair" -> pair.key, "cutoff" -> cutoff)).map(old => {
-        s.delete(old)
-        val lastSeen = new DateTime
-        saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen) )
-      })
-  })
+  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = {
+
+     def convertOldEvent(s:Session, old:ReportedDifferenceEvent) {
+      s.delete(old)
+      val lastSeen = new DateTime
+      saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, new DateTime, true, old.upstreamVsn, old.upstreamVsn, lastSeen) )
+     }
+
+     val params = Map("domain" -> pair.domain,
+                      "pair"   -> pair.key,
+                      "cutoff" -> cutoff)
+
+     processAsStream[ReportedDifferenceEvent]("unmatchedEventsOlderThanCutoffByDomainAndPair", params, convertOldEvent)
+  }
 
   def ignoreEvent(domain:String, seqId:String) = {
     sessionFactory.withSession(s => {
@@ -166,36 +191,99 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
-  def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
-    val session = sessionFactory.openSession
-    var cursor:Cursor[ReportedDifferenceEvent] = null
-    try {
-      cursor = scrollableQuery[ReportedDifferenceEvent](session, "unmatchedEventsInIntervalByDomainAndPair",
-        Map("domain" -> pair.domain,
-            "pair"   -> pair.key,
-            "start"  -> interval.getStart,
-            "end"    -> interval.getEnd))
+  def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) : Seq[AggregateEvents] = sessionFactory.withSession(s => {
 
-      var count = 0
-      while(cursor.next) {
-        f(cursor.get)
+    val query = s.getNamedQuery(zoomQueries(zoomLevel))
 
-        count += 1
-        if ( count % 100 == 0 ) {
-          // Periodically tell hibernate to let go of any objects it may still be referencing
-          session.clear()
+    query.setParameter("domain", pair.domain)
+    query.setParameter("pair", pair.key)
+    query.setParameter("lower_bound", columnMapper.toNonNullValue(interval.getStart))
+    query.setParameter("upper_bound", columnMapper.toNonNullValue(interval.getEnd))
+
+    val (matched, ignored) = dialect.getTypeName(Types.BIT) match {
+      case "bool" => (false, false)
+      case _      => (0, 0)
+    }
+
+    query.setParameter("matched", matched)
+    query.setParameter("ignored", ignored)
+
+    query.setResultTransformer(new ResultTransformer() {
+      def transformTuple(tuple: Array[AnyRef], aliases: Array[String]) = {
+
+        // Note to maintainers:
+        // The reason why the type casting is selective is because the SQL return value of the extract function
+        // maps to an Int, whereas the SQL return value of floor * int maps to BigInteger
+
+        // I could have tried to cast to something consistent in the DB, but I wanted to get the statements to be
+        // portable first - it might worth streamlining this in due course.
+
+
+        // The minute column is only relevant for sub hourly aggregates
+
+        val minutes = if (zoomLevel > ZoomCache.HOURLY) {
+          readIntColumn(tuple(4), false, dialect)
+        } else {
+          0
         }
-      }
-    }
-    finally {
-      try {
-        cursor.close
-      } finally {
-        session.close()
+
+        // Super hourly queries involve the floor * int function for the hour component
+
+        val hours = if (zoomLevel <= ZoomCache.TWO_HOURLY && zoomLevel >= ZoomCache.EIGHT_HOURLY) {
+          readIntColumn(tuple(3), false, dialect)
+        } else if (zoomLevel > ZoomCache.TWO_HOURLY) {
+
+          // Hourly and sub-hourly just extract the hour component as a small int
+
+          readIntColumn(tuple(3), true, dialect)
+        } else {
+
+          // Daily queries do not group by hours if any case
+
+          0
+        }
+
+        val start = new DateTime(
+          readIntColumn(tuple(0), true, dialect),
+          readIntColumn(tuple(1), true, dialect),
+          readIntColumn(tuple(2), true, dialect),
+          hours, minutes, 0, 0, DateTimeZone.UTC)
+        val interval = ZoomCache.intervalFromStartTime(start, zoomLevel)
+        AggregateEvents(interval, readIntColumn(tuple.last, true, dialect))
       }
 
-    }
+      def transformList(collection: List[_]) = collection
+    })
 
+    query.list.map(item => item.asInstanceOf[AggregateEvents])
+  })
+
+  private def readIntColumn(column:Object, small:Boolean, dialect:Dialect) : Int = {
+    if (dialect.getClass.getName.contains("Oracle")) {
+      column.asInstanceOf[java.math.BigDecimal].intValue()
+    }
+    else {
+      if (small) {
+        column.asInstanceOf[Int].intValue()
+      }
+      else {
+        column.asInstanceOf[BigInteger].intValue()
+      }
+    }
+  }
+
+  // TODO consider removing this in favor of aggregateUnmatchedEvents/3
+  @Deprecated
+  def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
+
+    def processEvent(s:Session, e:ReportedDifferenceEvent) = f(e)
+
+    val params = Map("domain" -> pair.domain,
+                      "pair"  -> pair.key,
+                      "start" -> interval.getStart,
+                      "end"   -> interval.getEnd)
+
+    processAsStream[ReportedDifferenceEvent]("unmatchedEventsInIntervalByDomainAndPair", params, processEvent)
   }
 
   def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int, options:EventOptions = EventOptions()) = sessionFactory.withSession(s => {
@@ -256,9 +344,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     getEventById(s, reportableUnmatched.objId) match  {
       case Some(existing) =>
         existing.state match {
+          case MatchState.IGNORED =>
+            if (identicalEventVersions(existing, reportableUnmatched)) {
+              // Update the last time it was seen
+              existing.lastSeen = reportableUnmatched.lastSeen
+              s.update(existing)
+              existing.asDifferenceEvent
+            } else {
+              s.delete(existing)
+              reportableUnmatched.ignored = true
+              saveAndConvertEvent(s, reportableUnmatched)
+            }
           case MatchState.UNMATCHED =>
             // We've already got an unmatched event. See if it matches all the criteria.
-            if (existing.upstreamVsn == reportableUnmatched.upstreamVsn && existing.downstreamVsn == reportableUnmatched.downstreamVsn) {
+            if (identicalEventVersions(existing, reportableUnmatched)) {
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
@@ -279,6 +378,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         saveAndConvertEvent(s, reportableUnmatched)
     }
   }
+
+  private def identicalEventVersions(first:ReportedDifferenceEvent, second:ReportedDifferenceEvent) =
+    first.upstreamVsn == second.upstreamVsn && first.downstreamVsn == second.downstreamVsn
+
 
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
     updateZoomCache(evt.objId.pair, evt.detectedAt)
@@ -311,4 +414,29 @@ case class PendingDifferenceEvent(
   def this() = this(oid = null)
 
   def convertToUnmatched = ReportedDifferenceEvent(null, objId, detectedAt, false, upstreamVsn, downstreamVsn, lastSeen)
+}
+
+/**
+ * This is an internal type that represents the structure of the SQL result set that aggregates mismatch events.
+ */
+case class AggregateEventsRow(
+  @BeanProperty var year:java.lang.Integer = null,
+  @BeanProperty var month:java.lang.Integer = null,
+  @BeanProperty var day:java.lang.Integer = null,
+  @BeanProperty var hour:java.lang.Integer = null,
+  @BeanProperty var minute:java.lang.Integer = null,
+  @BeanProperty var aggregate:java.lang.Integer = null
+) {
+  def this() = this(year = null)
+}
+
+/**
+ * Workaround for injecting JNDI string - basically because I couldn't find a way to due this just with the Spring XML file.
+ */
+class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory, val cacheManager:CacheManager, val dialectString:String) {
+
+  def create = {
+    val dialect = Class.forName(dialectString).newInstance().asInstanceOf[Dialect]
+    new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect)
+  }
 }

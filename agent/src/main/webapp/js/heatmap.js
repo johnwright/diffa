@@ -766,6 +766,12 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         var selectedPair = this.model.get('swimlaneLabels')[cell.row];
         var gridStartTime = this.model.get('startTime');
         var selectedIdx = cell.column;
+
+        // Workaround for daily granularity
+        if (bucketSize == 86400) {
+          selectedIdx--;
+        }
+
         var bucketSize = this.model.get('bucketSize');
         var selectionStartTime = new Date(gridStartTime.getTime() + (selectedIdx * bucketSize * 1000));
         var selectionEndTime = new Date(selectionStartTime.getTime() + (bucketSize * 1000));

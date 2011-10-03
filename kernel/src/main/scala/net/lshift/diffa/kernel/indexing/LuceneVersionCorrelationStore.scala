@@ -206,8 +206,12 @@ object LuceneVersionCorrelationStore {
     val presenceIndicator = "hasDownstream"
   }
 
-  def retrieveCurrentDoc(index: Directory, id:VersionID) = {
+  def retrieveCurrentDoc(index: Directory, id:VersionID) : Option[Document] = {
     val searcher = new IndexSearcher(index, false)
+    retrieveCurrentDoc(searcher, id)
+  }
+
+  def retrieveCurrentDoc(searcher: IndexSearcher, id:VersionID) : Option[Document] = {
     val hits = searcher.search(queryForId(id), 1)
     if (hits.scoreDocs.size == 0) {
       None
@@ -263,4 +267,3 @@ object LuceneVersionCorrelationStore {
   def formatDateTime(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
   def formatDate(dt:LocalDate) = dt.toString
 }
-
