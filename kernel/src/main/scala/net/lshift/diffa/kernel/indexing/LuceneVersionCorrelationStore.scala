@@ -46,7 +46,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     extends VersionCorrelationStore
     with Closeable {
 
-  import LuceneVersionCorrelationStore._
+  import LuceneVersionCorrelationHandler._
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -77,15 +77,16 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
 
     applyConstraints(query, usConstraints, Upstream, true)
     applyConstraints(query, dsConstraints, Downstream, true)
-    
-    val idOnlyCollector = new DocIdOnlyCollector
-    val searcher = new IndexSearcher(writer.getReader)
-    searcher.search(query, idOnlyCollector)
-    idOnlyCollector.allCorrelations(searcher)
+
+    withSearcher(writer, s => {
+      val idOnlyCollector = new DocIdOnlyCollector
+      s.search(query, idOnlyCollector)
+      idOnlyCollector.allCorrelations(s)
+    })
   }
 
   def retrieveCurrentCorrelation(id:VersionID) = {
-    retrieveCurrentDoc(writer.getReader, id) match {
+    retrieveCurrentDoc(writer, id) match {
       case None => None
       case Some(doc) => Some(docToCorrelation(doc, id))
     }
@@ -95,11 +96,12 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     val query = new BooleanQuery
     applyConstraints(query, constraints, Upstream, false)
 
-    val idOnlyCollector = new DocIdOnlyCollector
-    val searcher = new IndexSearcher(writer.getReader)
+    withSearcher(writer, s => {
+      val idOnlyCollector = new DocIdOnlyCollector
+      s.search(preventEmptyQuery(query), idOnlyCollector)
+      idOnlyCollector.allSortedCorrelations(s).filter(c => c.upstreamVsn != null)
+    })
 
-    searcher.search(preventEmptyQuery(query), idOnlyCollector)
-    idOnlyCollector.allSortedCorrelations(searcher).filter(c => c.upstreamVsn != null)
   }
   def queryDownstreams(constraints:Seq[ScanConstraint]) = {
     val query = new BooleanQuery
@@ -190,80 +192,4 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
   def reset() = {
     writer.reset
   }
-}
-
-object LuceneVersionCorrelationStore {
-  trait StoreParticipantType {
-    def prefix:String
-    def presenceIndicator:String
-  }
-  case object Upstream extends StoreParticipantType {
-    val prefix = "up."
-    val presenceIndicator = "hasUpstream"
-  }
-  case object Downstream extends StoreParticipantType {
-    val prefix = "down."
-    val presenceIndicator = "hasDownstream"
-  }
-
-  def retrieveCurrentDoc(reader: IndexReader, id:VersionID) : Option[Document] = {
-    val searcher = new IndexSearcher(reader)
-    retrieveCurrentDoc(searcher, id)
-  }
-
-  def retrieveCurrentDoc(searcher: IndexSearcher, id:VersionID) : Option[Document] = {
-    val hits = searcher.search(queryForId(id), 1)
-    if (hits.scoreDocs.size == 0) {
-      None
-    } else {
-      Some(searcher.doc(hits.scoreDocs(0).doc))
-    }
-  }
-
-  def docToCorrelation(doc:Document, pair:DiffaPairRef) : Correlation = docToCorrelation(doc,pair.key,pair.domain)
-  def docToCorrelation(doc:Document, id:VersionID) : Correlation = docToCorrelation(doc,id.pair.key,id.pair.domain)
-
-  def docToCorrelation(doc:Document, pairKey:String, domain:String) = {
-    Correlation(
-      pairing = pairKey, domain = domain,
-      id = doc.get("id"),
-      upstreamAttributes = findAttributes(doc, "up."),
-      downstreamAttributes = findAttributes(doc, "down."),
-      lastUpdate = parseDate(doc.get("lastUpdated")),
-      timestamp = parseDate(doc.get("timestamp")),
-      upstreamVsn = doc.get("uvsn"),
-      downstreamUVsn = doc.get("duvsn"),
-      downstreamDVsn = doc.get("ddvsn"),
-      isMatched = parseBool(doc.get("isMatched"))
-    )
-  }
-
-  private def findAttributes(doc:Document, prefix:String) = {
-    val attrs = new HashMap[String, String]
-    doc.getFields.foreach(f => {
-      if (f.name.startsWith(prefix)) {
-        attrs(f.name.substring(prefix.size)) = f.stringValue
-      }
-    })
-    attrs
-  }
-
-  def queryForId(id:VersionID) = {
-    val query = new BooleanQuery
-    query.add(new TermQuery(new Term("id", id.id)), BooleanClause.Occur.MUST)
-    query
-  }
-
-  private def parseBool(bs:String) = bs != null && bs.equals("1")
-
-  def parseDate(ds:String) = {
-    if (ds != null) {
-      ISODateTimeFormat.dateTimeParser.parseDateTime(ds).withZone(DateTimeZone.UTC)
-    } else {
-      null
-    }
-  }
-
-  def formatDateTime(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
-  def formatDate(dt:LocalDate) = dt.toString
 }
