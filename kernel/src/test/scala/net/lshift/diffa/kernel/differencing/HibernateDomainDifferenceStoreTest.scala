@@ -34,6 +34,7 @@ import scala.collection.mutable.HashMap
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import org.joda.time.{DateTime, Interval, DateTimeZone}
+import org.hibernate.dialect.Dialect
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -979,6 +980,7 @@ object HibernateDomainDifferenceStoreTest {
 
   val sf:SessionFactory = config.buildSessionFactory
   (new HibernateConfigStorePreparationStep).prepare(sf, config)
-  val diffStore = new HibernateDomainDifferenceStore(sf, cacheManager)
+  val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
+  val diffStore = new HibernateDomainDifferenceStore(sf, cacheManager, dialect)
 
 }

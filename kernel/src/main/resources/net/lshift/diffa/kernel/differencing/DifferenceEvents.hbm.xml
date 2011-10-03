@@ -154,6 +154,8 @@
       and d.pair = :pair
       and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
+      and d.is_match = :matched
+      and d.ignored = :ignored
     group by
       extract(year from d.detected_at),
       extract(month from d.detected_at),
@@ -179,6 +181,8 @@
       and d.pair = :pair
       and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
+      and d.is_match = :matched
+      and d.ignored = :ignored
     group by
       extract(year from d.detected_at),
       extract(month from d.detected_at),
@@ -203,6 +207,8 @@
       and d.pair = :pair
       and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
+      and d.is_match = :matched
+      and d.ignored = :ignored
     group by
       extract(year from d.detected_at),
       extract(month from d.detected_at),
@@ -226,6 +232,8 @@
       and d.pair = :pair
       and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
+      and d.is_match = :matched
+      and d.ignored = :ignored
     group by
       extract(year from d.detected_at),
       extract(month from d.detected_at),
@@ -249,6 +257,8 @@
       and d.pair = :pair
       and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
+      and d.is_match = :matched
+      and d.ignored = :ignored
     group by
       extract(year from d.detected_at),
       extract(month from d.detected_at),
@@ -272,6 +282,8 @@
       and d.pair = :pair
       and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
+      and d.is_match = :matched
+      and d.ignored = :ignored
     group by
       extract(year from d.detected_at),
       extract(month from d.detected_at),
@@ -294,6 +306,8 @@
       and d.pair = :pair
       and d.detected_at >= :lower_bound
       and d.detected_at <= :upper_bound
+      and d.is_match = :matched
+      and d.ignored = :ignored
     group by
       extract(year from d.detected_at),
       extract(month from d.detected_at),

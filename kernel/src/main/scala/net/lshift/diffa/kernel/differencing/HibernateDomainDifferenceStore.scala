@@ -8,18 +8,19 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.Session
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{Cursor, HibernateQueryUtils}
-import java.sql.Timestamp
 import scala.collection.JavaConversions._
 import org.hibernate.transform.ResultTransformer
 import org.joda.time.{DateTimeZone, DateTime, Interval}
 import java.math.BigInteger
 import java.util.List
 import org.jadira.usertype.dateandtime.joda.columnmapper.TimestampColumnDateTimeMapper
+import org.hibernate.dialect.Dialect
+import java.sql.{Types, Timestamp}
 
 /**
  * Hibernate backed Domain Cache provider.
  */
-class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cacheManager:CacheManager)
+class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cacheManager:CacheManager, val dialect:Dialect)
     extends DomainDifferenceStore
     with HibernateQueryUtils {
 
@@ -198,6 +199,14 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     query.setParameter("pair", pair.key)
     query.setParameter("lower_bound", columnMapper.toNonNullValue(interval.getStart))
     query.setParameter("upper_bound", columnMapper.toNonNullValue(interval.getEnd))
+
+    val (matched, ignored) = dialect.getTypeName(Types.BIT) match {
+      case "bool" => (false, false)
+      case _      => (0, 0)
+    }
+
+    query.setParameter("matched", matched)
+    query.setParameter("ignored", ignored)
 
     query.setResultTransformer(new ResultTransformer() {
       def transformTuple(tuple: Array[AnyRef], aliases: Array[String]) = {
@@ -400,4 +409,15 @@ case class AggregateEventsRow(
   @BeanProperty var aggregate:java.lang.Integer = null
 ) {
   def this() = this(year = null)
+}
+
+/**
+ * Workaround for injecting JNDI string - basically because I couldn't find a way to due this just with the Spring XML file.
+ */
+class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory, val cacheManager:CacheManager, val dialectString:String) {
+
+  def create = {
+    val dialect = Class.forName(dialectString).newInstance().asInstanceOf[Dialect]
+    new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect)
+  }
 }
