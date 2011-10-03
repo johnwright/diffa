@@ -163,7 +163,7 @@
     <property name="origin" type="string" column="origin" not-null="true"/>
   </class>
 
-  <query name="userByName">
+  <query name="userByName" cacheable="true">
     select u from User u where u.name = :name
   </query>
 
@@ -198,13 +198,13 @@
   </query>
 
   <!-- Queries by user -->
-  <query name="membersByUser">
+  <query name="membersByUser" cacheable="true">
     select m from Member m where m.user.name = :user_name
   </query>
 
 
   <!-- Queries by endpoint -->
-  <query name="pairsByEndpoint">
+  <query name="pairsByEndpoint" cacheable="true">
     select p from Pair p
     where
       p.domain.name = :domain_name and
@@ -213,47 +213,47 @@
 
   <!-- Queries by domain only -->
 
-  <query name="membersByDomain">
+  <query name="membersByDomain" cacheable="true">
     select m from Member m where m.domain.name = :domain_name
   </query>
 
-  <query name="domainByName">
+  <query name="domainByName" cacheable="true">
     select d from Domain d where d.name = :domain_name
   </query>
 
-  <query name="pairsByDomain">
+  <query name="pairsByDomain" cacheable="true">
     select p from Pair p where p.domain.name = :domain_name
   </query>
 
-  <query name="endpointsByDomain">
+  <query name="endpointsByDomain" cacheable="true">
     select e from Endpoint e where e.domain.name = :domain_name
   </query>
 
-  <query name="escalationsByDomain">
+  <query name="escalationsByDomain" cacheable="true">
     select e from Escalation e
     join e.pair as p
     join p.domain as d with d.name = :domain_name
   </query>
 
-  <query name="repairActionsByDomain">
+  <query name="repairActionsByDomain" cacheable="true">
     select a from RepairAction a
     join a.pair as p
     join p.domain as d with d.name = :domain_name
   </query>
 
-  <query name="configOptionsByDomain">
+  <query name="configOptionsByDomain" cacheable="true">
     select o from ConfigOption o where o.domain.name = :domain_name
   </query>
 
   <!-- Query by pair with domain -->
 
-  <query name="repairActionsByPair">
+  <query name="repairActionsByPair" cacheable="true">
     select a from RepairAction a
     join a.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
   </query>
 
-  <query name="escalationsByPair">
+  <query name="escalationsByPair" cacheable="true">
     select e from Escalation e
     join e.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
@@ -261,21 +261,21 @@
 
   <!-- Query by pair with domain and key -->
 
-  <query name="repairActionsByNameAndPair">
+  <query name="repairActionsByNameAndPair" cacheable="true">
     select a from RepairAction a
     join a.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
     where a.name = :name
   </query>
 
-  <query name="escalationsByNameAndPair">
+  <query name="escalationsByNameAndPair" cacheable="true">
     select e from Escalation e
     join e.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
     where e.name = :name
   </query>
 
-  <query name="configOptionByNameAndKey">
+  <query name="configOptionByNameAndKey" cacheable="true">
     select o.value from ConfigOption o
     where o.key = :key
     and o.domain.name = :domain_name
