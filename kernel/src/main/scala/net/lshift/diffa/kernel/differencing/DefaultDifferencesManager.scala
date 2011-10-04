@@ -273,16 +273,16 @@ class DefaultDifferencesManager(
   def upgradePending(id:VersionID) {
     val evt = domainDifferenceStore.upgradePendingUnmatchedEvent(id)
     if (evt != null) {
-      log.debug("Processing upgrade from pending to unmatched for " + id)
+      log.trace("Processing upgrade from pending to unmatched for " + id)
       differenceListener.onMismatch(id, evt.detectedAt, evt.upstreamVsn, evt.downstreamVsn, LiveWindow, MatcherFiltered)
     } else {
-      log.debug("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
+      log.trace("Skipped upgrade from pending to unmatched for " + id + " as the event was not pending")
     }
   }
   def cancelPending(id:VersionID, vsn:String) {
     val wasDeleted = domainDifferenceStore.cancelPendingUnmatchedEvent(id, vsn)
     if (wasDeleted) {
-      log.debug("Cancelling pending event for " + id)
+      log.trace("Cancelling pending event for " + id)
     }
   }
 }
