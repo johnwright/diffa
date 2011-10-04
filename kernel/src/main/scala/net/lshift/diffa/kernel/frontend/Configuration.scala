@@ -27,6 +27,7 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import system.SystemConfigStore
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
+import org.joda.time.{Interval, DateTime, Period}
 
 class Configuration(val configStore: DomainConfigStore,
                     val systemConfigStore: SystemConfigStore,
@@ -140,31 +141,53 @@ class Configuration(val configStore: DomainConfigStore,
   def declarePair(domain:String, pairDef: PairDef): Unit = createOrUpdatePair(domain, pairDef)
 
   def createOrUpdatePair(domain:String, pairDef: PairDef): Unit = {
-    log.debug("[%s] Processing pair declare/update request: %s".format(domain,pairDef.key))
+
+    val pairRef = DiffaPairRef(pairDef.key, domain)
+    log.info("%s -> Processing pair declare/update request ....".format(pairRef))
+
     pairDef.validate()
     // Stop a running actor, if there is one
-    maybeWithPair(domain, pairDef.key, (p:DiffaPair) => supervisor.stopActor(p.asRef) )
+    maybeWithPair(domain, pairDef.key, (p:DiffaPair) => {
+      log.info("%s -> Stopping pair actor  (%s)".format(p.asRef, benchmark( () => supervisor.stopActor(p.asRef)) ))
+    })
     configStore.createOrUpdatePair(domain, pairDef)
     withCurrentPair(domain, pairDef.key, (p:DiffaPair) => {
-      supervisor.startActor(p)
-      matchingManager.onUpdatePair(p)
-      differencesManager.onUpdatePair(p.asRef)
-      scanScheduler.onUpdatePair(p)
-      pairPolicyClient.difference(p.asRef)
+      val pair = p.asRef
+      log.info("%s -> Starting pair actor  (%s)".format(pair, benchmark( () => supervisor.startActor(p)) ))
+      log.info("%s -> Adding to matching manager (%s)".format(pair, benchmark( () => matchingManager.onUpdatePair(p)) ))
+      log.info("%s -> Adding to differences store (%s)".format(pair, benchmark( () => differencesManager.onUpdatePair(pair)) ))
+      log.info("%s -> Registering with scheduler (%s)".format(pair, benchmark( () => scanScheduler.onUpdatePair(p)) ))
+      log.info("%s -> Running initial difference (%s)".format(pair, benchmark( () => pairPolicyClient.difference(pair)) ))
     })
+
+    log.info("%s -> Completed pair declare/update request".format(pairRef))
   }
 
   def deletePair(domain:String, key: String): Unit = {
-    log.debug("Processing pair delete request: " + key)
+
+    val pairRef = DiffaPairRef(key,domain)
+    log.info("%s -> Processing pair delete request ...".format(pairRef))
+
     withCurrentPair(domain, key, (p:DiffaPair) => {
-      supervisor.stopActor(p.asRef)
-      matchingManager.onDeletePair(p)
-      versionCorrelationStoreFactory.remove(p.asRef)
-      scanScheduler.onDeletePair(p)
-      differencesManager.onDeletePair(p.asRef)
-      diagnostics.onDeletePair(p.asRef)
+      val pair = p.asRef
+      log.info("%s -> Stopping pair actor  (%s)".format(pair, benchmark( () => supervisor.stopActor(pair)) ))
+      log.info("%s -> Removing from matching manager (%s)".format(pair, benchmark( () => matchingManager.onDeletePair(p)) ))
+      log.info("%s -> Removing from correlation store (%s)".format(pair, benchmark( () => versionCorrelationStoreFactory.remove(pair)) ))
+      log.info("%s -> Unregistering from scheduler (%s)".format(pair, benchmark( () => scanScheduler.onDeletePair(p)) ))
+      log.info("%s -> Removing from differences store (%s)".format(pair, benchmark( () => differencesManager.onDeletePair(pair)) ))
+      log.info("%s -> Unregistering from diagnostics (%s)".format(pair, benchmark( () => diagnostics.onDeletePair(pair)) ))
     })
+
     configStore.deletePair(domain, key)
+
+    log.info("%s -> Completed pair delete request".format(pairRef))
+  }
+
+  private def benchmark(f:() => Unit) : Period = {
+    val start = new DateTime()
+    f()
+    val end = new DateTime()
+    new Interval(start,end).toPeriod()
   }
 
   /**
