@@ -27,6 +27,7 @@ import net.lshift.diffa.messaging.json.NotFoundException
 import org.codehaus.jackson.map.ObjectMapper
 import org.codehaus.jackson.node.ObjectNode
 import net.lshift.diffa.kernel.differencing.{InvalidSequenceNumberException, PairScanState, DifferenceEvent}
+import java.util.ArrayList
 
 /**
  * A RESTful client to poll for difference events on a domain.
@@ -40,7 +41,7 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
   val noMillisFormatter = ISODateTimeFormat.basicDateTimeNoMillis
   val formatter = ISODateTimeFormat.dateTime()
 
-  def getZoomedTiles(from:DateTime, until:DateTime, zoomLevel:Int) : Map[String,Array[Int]]  = {
+  def getZoomedTiles(from:DateTime, until:DateTime, zoomLevel:Int) : Map[String,List[Int]]  = {
     val path = resource.path("tiles/" + zoomLevel)
                        .queryParam("range-start", noMillisFormatter.print(from))
                        .queryParam("range-end", noMillisFormatter.print(until))
@@ -49,7 +50,9 @@ class DifferencesRestClient(serverRootUrl:String, domain:String, username:String
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
-      case 200    => response.getEntity(classOf[java.util.Map[String,Array[Int]]]).toMap[String,Array[Int]]
+      case 200    =>
+        val result = response.getEntity(classOf[java.util.Map[String,ArrayList[Int]]])
+        result.map { case (k,v) => k -> v.toList }.toMap[String,List[Int]]
       case x:Int  => handleHTTPError(x, path, status)
     }
 

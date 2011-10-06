@@ -239,7 +239,8 @@ class DefaultDifferencesManagerTest {
             EasyMock.eq(tileGroupStart))
           ).andStubReturn(Some(TileGroup(tileGroupStart, Map(eventTileStart -> blobSize))))
 
-          val offset = divisions(new Duration(scenario.interval.getStart, timestamp))
+          val alignedStartInterval = ZoomCache.containingInterval(scenario.interval.getStart, scenario.zoomLevel)
+          val offset = divisions(new Duration(alignedStartInterval.getStart, timestamp))
           blobs(offset) = blobSize
         }
       }
@@ -365,6 +366,22 @@ object DefaultDifferencesManagerTest {
                                           ),
                                           interval = new Interval(new DateTime(1968,5,6,10,2,0,0, DateTimeZone.UTC),
                                                                   new DateTime(1968,5,6,14,3,0,0, DateTimeZone.UTC))
+                                        )
+
+  @DataPoint def multiPeriodDaily = Scenario(
+                                          zoomLevel = ZoomCache.DAILY,
+                                          arraySize = 5,
+                                          events = Map(
+                                            new DateTime(1995,2,11,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1995,2,11,0,0,0,0, DateTimeZone.UTC) -> 110),
+                                            new DateTime(1995,2,12,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(1995,2,13,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(1995,2,14,0,0,0,0, DateTimeZone.UTC) -> Map(),
+                                            new DateTime(1995,2,15,0,0,0,0, DateTimeZone.UTC)
+                                                -> Map(new DateTime(1995,2,15,0,0,0,0, DateTimeZone.UTC) -> 210)
+                                          ),
+                                          interval = new Interval(new DateTime(1995,2,11,10,0,0,0, DateTimeZone.UTC),
+                                                                  new DateTime(1995,2,15,10,0,0,0, DateTimeZone.UTC))
                                         )
 
   case class Scenario(zoomLevel:Int, arraySize:Int, events:Map[DateTime, Map[DateTime,Int]], interval:Interval)
