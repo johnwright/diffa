@@ -78,21 +78,6 @@ class LuceneVersionCorrelationStoreTest {
   }
 
   @Test
-  def identicalVersionsShouldNotUpdateMaterialTimestamp {
-    val writer = store.openWriter()
-
-    val id = VersionID(pair, "id1")
-
-    writer.storeUpstreamVersion(id, dateTimeAttributes, JUL_1_2010_1, "upstreamVsn")
-    writer.storeUpstreamVersion(id, dateTimeAttributes, JUL_1_2010_1.plusMinutes(1), "upstreamVsn")
-    writer.flush()
-
-    val correlation = store.retrieveCurrentCorrelation(id).get
-    assertEquals(JUL_1_2010_1, correlation.lastMaterialUpdate)
-
-  }
-
-  @Test
   def constrainedMatchedPairsWithDifferentCategories = {
     val writer = store.openWriter()
     writer.storeUpstreamVersion(VersionID(pair, "id1"), dateTimeAttributes, JUL_1_2010_1, "upstreamVsn")
