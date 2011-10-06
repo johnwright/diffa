@@ -46,12 +46,9 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.trace("Indexing upstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with version " + vsn)
 
-    val version = computeIndexEntryVersion(attributes, true, vsn)
+    val currentVersion = computeIndexEntryVersion(attributes, true, vsn)
 
-    doDocUpdate(id, lastUpdated, doc => {
-
-      //val previousVersion = parseDate(doc.get("version"))
-
+    doDocUpdate(id, lastUpdated, currentVersion, "up.", doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
       updateField(doc, boolField(Upstream.presenceIndicator, true))
@@ -77,8 +74,11 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   }
 
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
+
+    val currentVersion = computeIndexEntryVersion(attributes, true, uvsn, dvsn)
+
     log.trace("Indexing downstream " + id + " with attributes: " + attributes)
-    doDocUpdate(id, lastUpdated, doc => {
+    doDocUpdate(id, lastUpdated, currentVersion, "down.", doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
       updateField(doc, boolField(Downstream.presenceIndicator, true))
@@ -207,10 +207,10 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     }
   }
 
-  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, f:Document => Unit) = {
+  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, currentVersion:String, prefix:String, f:Document => Unit) = {
     val doc = getCurrentOrNewDoc(id)
 
-    f(doc)
+    val previousVersion = doc.get(prefix + "version")
 
     // If the participant does not supply a timestamp, then create one on the fly
     val lastUpdated = lastUpdatedIn match {
@@ -224,8 +224,18 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
       updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
     }
 
-    // Evaluate the last material update
-    val oldMaterialUpdate = parseDate(doc.get("lastMaterialUpdate"))
+    // If the incoming digest does actually differ from the previous update
+    if (previousVersion == null || previousVersion != currentVersion) {
+      f(doc)
+
+      // Evaluate the last material update
+      val lastMaterialUpdate = oldLastUpdate match {
+        case null => lastUpdated
+        case x    => x
+      }
+
+      updateField(doc, dateTimeField("lastMaterialUpdate", lastMaterialUpdate, indexed = true))
+    }
 
 
     // Update the matched status
