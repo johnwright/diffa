@@ -26,6 +26,9 @@ import org.apache.lucene.document.{NumericField, Fieldable, Field, Document}
 import collection.mutable.{HashSet, HashMap}
 import scala.collection.JavaConversions._
 import org.apache.lucene.index.{IndexReader, IndexWriter, IndexWriterConfig, Term}
+import org.apache.commons.codec.binary.Hex
+import java.nio.charset.Charset
+import java.lang.StringBuffer
 
 class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationHandler._
@@ -41,13 +44,36 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   def getReader : IndexReader = IndexReader.open(writer, true)
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
-    log.trace("Indexing upstream " + id + " with attributes: " + attributes)
+    log.trace("Indexing upstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with version " + vsn)
+
+    val version = computeIndexEntryVersion(attributes, true, vsn)
+
     doDocUpdate(id, lastUpdated, doc => {
+
+      //val previousVersion = parseDate(doc.get("version"))
+
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
       updateField(doc, boolField(Upstream.presenceIndicator, true))
       updateField(doc, stringField("uvsn", vsn))
     })
+  }
+
+  private def computeIndexEntryVersion(attributes:scala.collection.immutable.Map[String,TypedAttribute], presence:Boolean, versions:String*) : String = {
+    val buffer = new StringBuffer()
+
+    attributes.toSeq.sortBy(_._1).foreach{ case (name,attribute) => {
+      buffer.append(name)
+      buffer.append(attribute.value)
+    }}
+
+    buffer.append(presence)
+    versions.foreach(buffer.append(_))
+
+    val digest = java.security.MessageDigest.getInstance("MD5")
+    val bytes = buffer.toString().getBytes(Charset.forName("UTF-8"))
+    digest.update(bytes, 0, bytes.length)
+    new String(Hex.encodeHex(digest.digest()))
   }
 
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
@@ -197,6 +223,9 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
       updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
     }
+
+    // Evaluate the last material update
+    val oldMaterialUpdate = parseDate(doc.get("lastMaterialUpdate"))
 
 
     // Update the matched status
