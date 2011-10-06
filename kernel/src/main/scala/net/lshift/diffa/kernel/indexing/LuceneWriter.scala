@@ -41,7 +41,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   def getReader : IndexReader = IndexReader.open(writer, true)
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
-    log.trace("Indexing upstream " + id + " with attributes: " + attributes)
+    log.trace("Indexing upstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with version " + vsn)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
@@ -51,7 +51,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   }
 
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
-    log.trace("Indexing downstream " + id + " with attributes: " + attributes)
+    log.trace("Indexing downstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with up-version " + uvsn + "and down-version " + dvsn)
     doDocUpdate(id, lastUpdated, doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
