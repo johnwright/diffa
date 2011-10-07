@@ -210,7 +210,8 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, currentVersion:String, prefix:String, f:Document => Unit) = {
     val doc = getCurrentOrNewDoc(id)
 
-    val previousVersion = doc.get(prefix + "version")
+    val versionLabel = prefix + "version"
+    val previousVersion = doc.get(versionLabel)
 
     // If the participant does not supply a timestamp, then create one on the fly
     val lastUpdated = lastUpdatedIn match {
@@ -225,18 +226,16 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     }
 
     // If the incoming digest does actually differ from the previous update
+    // Performance note - this extra indexing appears to cost a little bit
+    // e.g. storing 1M entries with this commented take 78s on a particular machine
+    // and with this block commented in, it took 92s
+    // this is approximately a 17% overhead
+    // Interestingly, setting both index flags to false reduce the runtime to 89s
     if (previousVersion == null || previousVersion != currentVersion) {
       f(doc)
-
-      // Evaluate the last material update
-      val lastMaterialUpdate = oldLastUpdate match {
-        case null => lastUpdated
-        case x    => x
-      }
-
-      updateField(doc, dateTimeField("lastMaterialUpdate", lastMaterialUpdate, indexed = true))
+      updateField(doc, dateTimeField("lastMaterialUpdate", lastUpdated, indexed = true))
+      updateField(doc, stringField(versionLabel, currentVersion, indexed = false))
     }
-
 
     // Update the matched status
     val isMatched = doc.get("uvsn") == doc.get("duvsn")
