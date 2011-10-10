@@ -637,6 +637,14 @@ class HibernateDomainDifferenceStoreTest {
     diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
   }
 
+  @Test
+  def shouldStoreLatestVersionPerPair = {
+    val pair = DiffaPairRef("pair1", "domain")
+    assertEquals(None, diffStore.lastRecordedVersion(pair))
+    diffStore.recordLatestVersion(pair, 5294967296L)
+    assertEquals(Some(5294967296L), diffStore.lastRecordedVersion(pair))
+  }
+
   @Theory
   def shouldTileEvents(scenario:TileScenario) = {
     scenario.events.foreach(e => diffStore.addReportableUnmatchedEvent(e.id, e.timestamp, "", "", e.timestamp))

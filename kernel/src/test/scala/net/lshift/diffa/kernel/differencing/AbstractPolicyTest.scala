@@ -228,7 +228,11 @@ abstract class AbstractPolicyTest {
     val timestamp = new DateTime
 
     // If the version check returns mismatches, we should see differences generated
-    expect(store.unmatchedVersions(EasyMock.eq(testData.constraints(0)), EasyMock.eq(testData.constraints(0)))).andReturn(Seq(
+    expect(store.unmatchedVersions(
+      EasyMock.eq(testData.constraints(0)),
+      EasyMock.eq(testData.constraints(0)),
+      EasyMock.eq(None)
+    )).andReturn(Seq(
       new Correlation(null, pair.asRef, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
       new Correlation(null, pair.asRef, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
     diffWriter.writeMismatch(VersionID(pair.asRef, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan); expectLastCall
@@ -236,7 +240,7 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan)
+    policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan, None)
 
     verifyAll
   }

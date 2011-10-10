@@ -61,6 +61,22 @@
     <property name="ignored" type="boolean" column="ignored" />
   </class>
 
+  <class name="StoreCheckpoint" table="store_checkpoints">
+    <composite-id mapped="true">
+      <key-many-to-one name="pair" class="net.lshift.diffa.kernel.config.Pair" lazy="false">
+        <column name="pair" />
+        <column name="domain" />
+      </key-many-to-one>
+      <!--<key-many-to-one name="pair" class="net.lshift.diffa.kernel.config.Pair" lazy="false" column="pair_key"/>-->
+      <!--<key-many-to-one name="domain" class="net.lshift.diffa.kernel.config.Domain" lazy="false" column="domain"/>-->
+    </composite-id>
+    <property name="latestVersion" type="long" column="latest_version" not-null="true"/>
+  </class>
+
+  <query name="storeCheckpointByPairAndDomain">
+    select c from StoreCheckpoint c where c.pair.domain.name = :domain_name and c.pair.key = :pair_key
+  </query>
+
   <query name="removeDomainDiffs">
     delete from ReportedDifferenceEvent where objId.pair.domain = :domain
   </query>

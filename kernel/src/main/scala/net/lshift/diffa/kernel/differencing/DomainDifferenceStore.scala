@@ -90,6 +90,9 @@ trait DomainDifferenceStore {
    */
   def unignoreEvent(domain:String, seqId:String): DifferenceEvent
 
+  def lastRecordedVersion(pair:DiffaPairRef) : Option[Long]
+  def recordLatestVersion(pair:DiffaPairRef, version:Long)
+
   /**
    * Retrieves all unmatched events in the domain that have been added to the cache where their detection timestamp
    * falls within the specified period

@@ -50,6 +50,12 @@ trait DifferencesManager {
   def unignoreDifference(domain:String, seqId:String):DifferenceEvent
 
   /**
+   * Retrieves the version number of the last correlation to get transferred to the diff store.
+   * This version number is global to the pair definition and can be used as a synchonization checkpoint.
+   */
+  def lastRecordedVersion(pair:DiffaPairRef) : Option[Long]
+
+  /**
    *  Retrieves all events known to this domain in the as tiles according to the given zoom level. Will only include unmatched events.
    *  @throws MissingObjectException if the requested domain does not exist
    */

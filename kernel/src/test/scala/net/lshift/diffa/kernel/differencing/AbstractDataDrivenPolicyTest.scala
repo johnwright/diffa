@@ -222,11 +222,15 @@ abstract class AbstractDataDrivenPolicyTest {
     // TODO: Actually generate some mismatched version data?
     val us = scenario.pair.upstream.defaultConstraints
     val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(EasyMock.eq(us), EasyMock.eq(ds))).andReturn(Seq())
+    expect(store.unmatchedVersions(
+      EasyMock.eq(us),
+      EasyMock.eq(ds),
+      EasyMock.eq(None)
+    )).andReturn(Seq())
 
     replayAll
 
-    policy.replayUnmatchedDifferences(scenario.pair, diffWriter, TriggeredByScan)
+    policy.replayUnmatchedDifferences(scenario.pair, diffWriter, TriggeredByScan, None)
 
     verifyAll
   }

@@ -1,7 +1,6 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.config.DiffaPairRef
 import reflect.BeanProperty
 import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper._
@@ -16,6 +15,9 @@ import java.util.List
 import org.jadira.usertype.dateandtime.joda.columnmapper.TimestampColumnDateTimeMapper
 import org.hibernate.dialect.Dialect
 import java.sql.{Types, Timestamp}
+import net.lshift.diffa.kernel.config.DomainScopedKey._
+import net.lshift.diffa.kernel.config.Domain._
+import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -185,6 +187,19 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         false, evt.upstreamVsn, evt.downstreamVsn, new DateTime))
     })
   }
+
+  def lastRecordedVersion(pair:DiffaPairRef) = sessionFactory.withSession(s => {
+    singleQueryOpt[StoreCheckpoint](s, "storeCheckpointByPairAndDomain",
+      Map("pair_key" -> pair.key, "domain_name" -> pair.domain)) match {
+      case None     => None
+      case Some(x)  => Some(x.latestVersion)
+    }
+  })
+
+  def recordLatestVersion(pairRef:DiffaPairRef, version:Long) = sessionFactory.withSession(s => {
+    val pair = getPair(s, pairRef.domain, pairRef.key)
+    s.saveOrUpdate(new StoreCheckpoint(pair, version))
+  })
 
   def retrieveUnmatchedEvents(domain:String, interval: Interval) = sessionFactory.withSession(s => {
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomain",
@@ -439,4 +454,21 @@ class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory, v
     val dialect = Class.forName(dialectString).newInstance().asInstanceOf[Dialect]
     new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect)
   }
+}
+
+case class StoreCheckpoint(
+  @BeanProperty var pair:DiffaPair,
+  @BeanProperty var latestVersion:java.lang.Long = null
+) {
+  def this() = this(pair = null)
+  //def this(pairRef:DiffaPairRef, latestVersion:java.lang.Long) = this(pairRef.domain, pairRef.key, latestVersion)
+}
+
+/**
+ * Convenience wrapper for a compound primary key
+ */
+case class DomainNameScopedKey(@BeanProperty var pair:String = null,
+                               @BeanProperty var domain:String = null) extends java.io.Serializable
+{
+  def this() = this(pair = null)
 }

@@ -108,6 +108,8 @@ class DefaultDifferencesManager(
     domainDifferenceStore.unignoreEvent(domain, seqId)
   }
 
+  def lastRecordedVersion(pair:DiffaPairRef) = domainDifferenceStore.lastRecordedVersion(pair)
+
   def retrieveAllEventsInInterval(domain:String, interval:Interval) =
     domainDifferenceStore.retrieveUnmatchedEvents(domain, interval)
 

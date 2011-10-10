@@ -71,7 +71,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
 
   def openWriter() = writer
 
-  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint]) = {
+  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint], fromVersion:Option[Long]) = {
     val query = new BooleanQuery
     query.add(new TermQuery(new Term("isMatched", "0")), BooleanClause.Occur.MUST)
 

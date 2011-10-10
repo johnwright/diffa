@@ -42,8 +42,9 @@ trait VersionPolicy {
    * Requests that the policy generate a series of events describing the differences between the endpoints
    * within the given pair. This does not perform any endpoint scanning, it operates entirely from
    * local data stores.
+   * TODO document
    */
-  def replayUnmatchedDifferences(pair:DiffaPair, writer:DifferenceWriter, origin:MatchOrigin) : Unit
+  def replayUnmatchedDifferences(pair:DiffaPair, writer:DifferenceWriter, origin:MatchOrigin, fromVersion:Option[Long]) : Unit
 
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are

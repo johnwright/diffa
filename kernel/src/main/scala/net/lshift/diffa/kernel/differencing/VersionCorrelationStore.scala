@@ -48,7 +48,7 @@ trait VersionCorrelationStore extends Closeable {
    * @param usConstraints constraints on the upstream participant's entities
    * @param dsConstraints constraints on the downstream participant's entities
    */
-  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint]) : Seq[Correlation]
+  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint], fromVersion:Option[Long]) : Seq[Correlation]
 
   /**
    * Retrieves the current pairing information for the given pairKey/id.

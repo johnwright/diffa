@@ -278,7 +278,8 @@ case class PairActor(pair:DiffaPair,
       val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
       try {
         diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences")
-        policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan)
+        val version = differencesManager.lastRecordedVersion(pairRef)
+        policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan, version)
         diffWriter.close()
       } catch {
         case ex =>
@@ -355,7 +356,9 @@ case class PairActor(pair:DiffaPair,
 
       val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
       try {
-        policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot)
+        // TODO check code duplication around L280
+        val version = differencesManager.lastRecordedVersion(pairRef)
+        policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot, version)
         diffWriter.close()
       } catch {
         case ex =>
