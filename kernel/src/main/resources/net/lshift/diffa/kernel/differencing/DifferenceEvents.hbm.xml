@@ -67,8 +67,6 @@
         <column name="pair" />
         <column name="domain" />
       </key-many-to-one>
-      <!--<key-many-to-one name="pair" class="net.lshift.diffa.kernel.config.Pair" lazy="false" column="pair_key"/>-->
-      <!--<key-many-to-one name="domain" class="net.lshift.diffa.kernel.config.Domain" lazy="false" column="domain"/>-->
     </composite-id>
     <property name="latestVersion" type="long" column="latest_version" not-null="true"/>
   </class>
