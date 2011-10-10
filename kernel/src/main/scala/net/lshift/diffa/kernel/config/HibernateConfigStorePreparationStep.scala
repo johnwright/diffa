@@ -47,7 +47,8 @@ class HibernateConfigStorePreparationStep
     AddMaxGranularityMigrationStep,
     ExpandPrimaryKeysMigrationStep,
     AddSuperuserAndDefaultUsersMigrationStep,
-    AddPersistentDiffsMigrationStep
+    AddPersistentDiffsMigrationStep,
+    AddStoreCheckpointsMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -424,5 +425,23 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
 
     migration.alterTable("pending_diffs")
       .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+  }
+}
+
+object AddStoreCheckpointsMigrationStep extends HibernateMigrationStep {
+  def versionId = 8
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.createTable("store_checkpoints").
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("latest_version", Types.BIGINT, false).
+      pk("domain", "pair")
+
+    migration.alterTable("store_checkpoints").
+      addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair", "domain"))
+
+    migration.apply(connection)
   }
 }
