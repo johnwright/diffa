@@ -226,7 +226,10 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
         case d    => d
       }
 
-      updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
+      val oldLastUpdate = parseDate(doc.get("lastUpdated"))
+      if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
+        updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
+      }
       updateField(doc, stringField(documentVersionLabel, currentDocumentVersion, indexed = false))
 
       // Update the matched status
