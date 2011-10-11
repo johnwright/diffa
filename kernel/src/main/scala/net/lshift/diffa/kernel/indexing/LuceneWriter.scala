@@ -48,7 +48,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
     val currentVersion = computeIndexEntryVersion(attributes, true, vsn)
 
-    doDocUpdate(id, lastUpdated, currentVersion, "up.", doc => {
+    doDocUpdate(id, lastUpdated, currentVersion, ".up", doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
       updateField(doc, boolField(Upstream.presenceIndicator, true))
@@ -61,7 +61,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     val currentVersion = computeIndexEntryVersion(attributes, true, uvsn, dvsn)
 
     log.trace("Indexing downstream " + id + " with attributes: " + attributes)
-    doDocUpdate(id, lastUpdated, currentVersion, "down.", doc => {
+    doDocUpdate(id, lastUpdated, currentVersion, ".down", doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
       updateField(doc, boolField(Downstream.presenceIndicator, true))
@@ -207,10 +207,11 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     }
   }
 
-  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, currentDocumentVersion:String, prefix:String, f:Document => Unit) = {
+  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, currentDocumentVersion:String, postfix:String, f:Document => Unit) = {
     val doc = getCurrentOrNewDoc(id)
 
-    val documentVersionLabel = prefix + "doc.version"
+    // Append the up- or down qualifier so that it does not get mixed up with normal prefixed attributes
+    val documentVersionLabel = "doc.version" + postfix
     val previousDocumentVersion = doc.get(documentVersionLabel)
 
     // If the incoming digest does actually differ from the previous update
