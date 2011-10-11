@@ -57,6 +57,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   }
 
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
+    log.trace("Indexing downstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with up-version " + uvsn + "and down-version " + dvsn)
 
     val currentVersion = computeIndexEntryVersion(attributes, true, uvsn, dvsn)
 
