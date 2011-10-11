@@ -16,12 +16,9 @@
 
 package net.lshift.diffa.kernel.maintenance
 
-import org.junit.Test
 import org.easymock.EasyMock._
-import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.DiffaPairRef._
 import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStoreFactory
-import org.apache.lucene.store.MMapDirectory
 import net.lshift.diffa.kernel.events.VersionID._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.differencing.StringAttribute._
@@ -34,11 +31,22 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
 import net.lshift.diffa.kernel.config.{HibernateDomainConfigStoreTest, DomainConfigStore, DiffaPairRef}
 import net.lshift.diffa.kernel.config.{Domain,Endpoint,Pair => DiffaPair}
+import net.lshift.diffa.kernel.frontend.FrontendConversions._
+import org.junit.{Before, Test}
+import net.lshift.diffa.kernel.config.system.{HibernateSystemConfigStoreTest, SystemConfigStore}
+import net.sf.ehcache.CacheManager
+import net.lshift.diffa.kernel.util.DatabaseEnvironment
+import org.hibernate.dialect.Dialect
+import net.lshift.diffa.kernel.diag.{LocalDiagnosticsManager, DiagnosticsManager}
+import java.io.File
+import org.apache.lucene.store.MMapDirectory
+import org.apache.commons.io.FileUtils
 
 class StoreSynchronizationTest {
 
-  val domainName = "domain"
+  // Data
 
+  val domainName = "domain"
   val domain = Domain(name=domainName)
 
   val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", contentType = "application/json", inboundUrl = "changes", inboundContentType = "application/json")
@@ -47,72 +55,80 @@ class StoreSynchronizationTest {
   val pair = DiffaPair(key = "pair", domain = domain, versionPolicyName = "policy", upstream = u, downstream = d)
   val pairRef = pair.asRef
 
-  val dummyConfigStore = createMock(classOf[SystemConfigStore])
-  expect(dummyConfigStore.
-      maybeSystemConfigOption(VersionCorrelationStore.schemaVersionKey)).
-      andStubReturn(Some(VersionCorrelationStore.currentSchemaVersion.toString))
-  replay(dummyConfigStore)
-
-
-  val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore)
-  val store = stores(pairRef)
+  // Stub Wiring
 
   val listener = createStrictMock("listener1", classOf[DifferencingListener])
-
   val matcher = createStrictMock("matcher", classOf[EventMatcher])
-
-  val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
-
-  replay(systemConfigStore)
-
-  val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
-  //expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(toPairDef(pair1), toPairDef(pair2)))
-  replay(domainConfigStore)
 
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
   matchingManager.addListener(anyObject.asInstanceOf[MatchingStatusListener]); expectLastCall.once
+  expect(matchingManager.getMatcher(pairRef)).andReturn(None)
   replay(matchingManager)
 
-  // TODO The versionPolicyManager and participantFactory should probably go into some
-  // kind of test factory - i.e. look out for copy and paste
-
-  val versionPolicy = createStrictMock("vp", classOf[VersionPolicy])
-
-
-  val versionPolicyManager = new VersionPolicyManager()
-  versionPolicyManager.registerPolicy("policy", versionPolicy)
-
-  private val protocol1 = new StubParticipantProtocolFactory()
 
   val participantFactory = new ParticipantFactory()
-  participantFactory.registerScanningFactory(protocol1)
+  participantFactory.registerScanningFactory(new StubParticipantProtocolFactory())
 
   val pairPolicyClient = createStrictMock("pairPolicyClient", classOf[PairPolicyClient])
   checkOrder(pairPolicyClient, false)
 
-  val domainDifferenceStore = HibernateDomainDifferenceStoreTest.diffStore
-  //val domainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
+  // Real Wiring
+
+  val domainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
+  val systemConfigStore = HibernateDomainConfigStoreTest.systemConfigStore
+  val sf = HibernateDomainConfigStoreTest.sessionFactory
+
+  val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
+  val domainDifferenceStore = new HibernateDomainDifferenceStore(sf, new CacheManager(), dialect)
+
+  val indexDir = "target/storeSynchronizationTest"
+
+
+  val diagnosticsManager = new LocalDiagnosticsManager(domainConfigStore)
+
+  var versionPolicy:VersionPolicy = null
+  var store:VersionCorrelationStore = null
+
+  // Wire in the diffs manager
 
   val diffsManager = new DefaultDifferencesManager(
     systemConfigStore, domainConfigStore, domainDifferenceStore, matchingManager,
     participantFactory, listener)
 
+  @Before
+  def prepareScenario = {
+    val dir = new File(indexDir)
+    if (dir.exists()) {
+      FileUtils.deleteDirectory(dir)
+    }
+    val stores = new LuceneVersionCorrelationStoreFactory(indexDir, classOf[MMapDirectory], systemConfigStore)
+    store = stores(pairRef)
+    versionPolicy = new SameVersionPolicy(stores, listener, systemConfigStore, diagnosticsManager)
+
+    systemConfigStore.createOrUpdateDomain(domain)
+    domainConfigStore.createOrUpdateEndpoint(domainName, toEndpointDef(u))
+    domainConfigStore.createOrUpdateEndpoint(domainName, toEndpointDef(d))
+    domainConfigStore.createOrUpdatePair(domainName, toPairDef(pair))
+    assertEquals(None, diffsManager.lastRecordedVersion(pairRef))
+  }
+
   @Test
   def storesShouldSynchronizeIncrementally = {
-
-    assertEquals(None, diffsManager.lastRecordedVersion(pairRef))
 
     val writer = store.openWriter()
 
     val attributes = Map("foo" -> StringAttribute("bar"))
     val lastUpdated = new DateTime(2019,5,7,8,12,15,0, DateTimeZone.UTC)
+    val id = VersionID(pairRef, "id1")
 
-    writer.storeUpstreamVersion(VersionID(pairRef, "id1"), attributes, lastUpdated, "vsn")
+    writer.storeUpstreamVersion(id, attributes, lastUpdated, "v1") // Should produce store version 1
+    writer.storeDownstreamVersion(id, attributes, lastUpdated.plusMinutes(1), "v2", "v3") // Should produce store version 2
+
     writer.flush()
 
     replayCorrelationStore(diffsManager, versionPolicy, pair, TriggeredByScan)
 
-    assertEquals(Some(1L), diffsManager.lastRecordedVersion(pairRef))
+    assertEquals(Some(2L), diffsManager.lastRecordedVersion(pairRef))
 
   }
 }
