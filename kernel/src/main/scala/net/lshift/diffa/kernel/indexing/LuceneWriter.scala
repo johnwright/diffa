@@ -56,23 +56,6 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     })
   }
 
-  private def computeIndexEntryVersion(attributes:scala.collection.immutable.Map[String,TypedAttribute], presence:Boolean, versions:String*) : String = {
-    val buffer = new StringBuffer()
-
-    attributes.toSeq.sortBy(_._1).foreach{ case (name,attribute) => {
-      buffer.append(name)
-      buffer.append(attribute.value)
-    }}
-
-    buffer.append(presence)
-    versions.foreach(buffer.append(_))
-
-    val digest = java.security.MessageDigest.getInstance("MD5")
-    val bytes = buffer.toString().getBytes(Charset.forName("UTF-8"))
-    digest.update(bytes, 0, bytes.length)
-    new String(Hex.encodeHex(digest.digest()))
-  }
-
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
 
     val currentVersion = computeIndexEntryVersion(attributes, true, uvsn, dvsn)
@@ -181,6 +164,23 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     if (bufferSize >= maxBufferSize) {
       flush()
     }
+  }
+
+  private def computeIndexEntryVersion(attributes:scala.collection.immutable.Map[String,TypedAttribute], presence:Boolean, versions:String*) : String = {
+    val buffer = new StringBuffer()
+
+    attributes.toSeq.sortBy(_._1).foreach{ case (name,attribute) => {
+      buffer.append(name)
+      buffer.append(attribute.value)
+    }}
+
+    buffer.append(presence)
+    versions.foreach(buffer.append(_))
+
+    val digest = java.security.MessageDigest.getInstance("MD5")
+    val bytes = buffer.toString().getBytes(Charset.forName("UTF-8"))
+    digest.update(bytes, 0, bytes.length)
+    new String(Hex.encodeHex(digest.digest()))
   }
 
   private def getCurrentOrNewDoc(id:VersionID) = {
