@@ -136,7 +136,7 @@ class LuceneVersionCorrelationStoreTest {
 
   private def validateLastMaterialUpdate(id:VersionID, expected:DateTime) = {
     val c1 = store.retrieveCurrentCorrelation(id).get
-    assertEquals(expected, c1.lastMaterialUpdate)
+    assertEquals(expected, c1.lastUpdate)
   }
 
   @Test

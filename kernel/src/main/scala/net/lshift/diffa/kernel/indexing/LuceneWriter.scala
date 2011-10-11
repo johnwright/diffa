@@ -207,34 +207,25 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     }
   }
 
-  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, currentVersion:String, prefix:String, f:Document => Unit) = {
+  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, currentDocumentVersion:String, prefix:String, f:Document => Unit) = {
     val doc = getCurrentOrNewDoc(id)
 
-    val versionLabel = prefix + "version"
-    val previousVersion = doc.get(versionLabel)
-
-    // If the participant does not supply a timestamp, then create one on the fly
-    val lastUpdated = lastUpdatedIn match {
-      case null => new DateTime
-      case d    => d
-    }
-
-    // Update the lastUpdated field
-    val oldLastUpdate = parseDate(doc.get("lastUpdated"))
-    if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
-      updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
-    }
+    val documentVersionLabel = prefix + "doc.version"
+    val previousDocumentVersion = doc.get(documentVersionLabel)
 
     // If the incoming digest does actually differ from the previous update
-    // Performance note - this extra indexing appears to cost a little bit
-    // e.g. storing 1M entries with this commented take 78s on a particular machine
-    // and with this block commented in, it took 92s
-    // this is approximately a 17% overhead
-    // Interestingly, setting both index flags to false reduce the runtime to 89s
-    if (previousVersion == null || previousVersion != currentVersion) {
+    if (previousDocumentVersion == null || previousDocumentVersion != currentDocumentVersion) {
+
       f(doc)
-      updateField(doc, dateTimeField("lastMaterialUpdate", lastUpdated, indexed = true))
-      updateField(doc, stringField(versionLabel, currentVersion, indexed = false))
+
+      // If the participant does not supply a timestamp, then create one on the fly
+      val lastUpdated = lastUpdatedIn match {
+        case null => new DateTime
+        case d    => d
+      }
+
+      updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
+      updateField(doc, stringField(documentVersionLabel, currentDocumentVersion, indexed = false))
     }
 
     // Update the matched status

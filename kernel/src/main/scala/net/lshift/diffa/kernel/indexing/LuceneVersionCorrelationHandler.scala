@@ -72,7 +72,6 @@ object LuceneVersionCorrelationHandler {
       downstreamAttributes = findAttributes(doc, "down."),
       lastUpdate = parseDate(doc.get("lastUpdated")),
       timestamp = parseDate(doc.get("timestamp")),
-      lastMaterialUpdate = parseDate(doc.get("lastMaterialUpdate")),
       upstreamVsn = doc.get("uvsn"),
       downstreamUVsn = doc.get("duvsn"),
       downstreamDVsn = doc.get("ddvsn"),
