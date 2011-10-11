@@ -26,6 +26,7 @@ import org.apache.lucene.document.{NumericField, Fieldable, Field, Document}
 import collection.mutable.{HashSet, HashMap}
 import scala.collection.JavaConversions._
 import org.apache.lucene.index.{IndexReader, IndexWriter, IndexWriterConfig, Term}
+import org.apache.lucene.search.{BooleanClause, TermQuery, BooleanQuery}
 
 class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationHandler._
@@ -39,6 +40,17 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   private var writer = createIndexWriter
 
   def getReader : IndexReader = IndexReader.open(writer, true)
+
+  private val VERSION_LABEL = "latest.store.version"
+  private var latestVersion : Long = getReader.getCommitUserData match {
+    case null     => 0L
+    case userData => {
+      userData.get(VERSION_LABEL) match {
+        case null => 0L
+        case version => version.toLong
+      }
+    }
+  }
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.trace("Indexing upstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with version " + vsn)
@@ -112,7 +124,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
       deletedDocs.foreach { id =>
         writer.deleteDocuments(queryForId(id))
       }
-      writer.commit()
+      writer.commit(Map(VERSION_LABEL -> latestVersion.toString))
       updatedDocs.clear()
       deletedDocs.clear()
       log.trace("Writer flushed")
@@ -121,6 +133,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
   def reset() {
     writer.deleteAll()
+    // TODO not quite sure whether we need to make sure that the last commit user data survives this reset
     writer.commit()
   }
 
@@ -183,6 +196,11 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
   private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, f:Document => Unit) = {
     val doc = getCurrentOrNewDoc(id)
+
+    // Increment the counter
+    // TODO consider protecting this against empty updates
+    latestVersion += 1
+    updateField(doc, longField("store.version", latestVersion))
 
     f(doc)
 
@@ -265,6 +283,8 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     new Field(name, formatDate(dt), Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
   private def intField(name:String, value:Int, indexed:Boolean = true) =
     (new NumericField(name, Field.Store.YES, indexed)).setIntValue(value)
+  private def longField(name:String, value:Long, indexed:Boolean = true) =
+    (new NumericField(name, Field.Store.YES, indexed)).setLongValue(value)
   private def boolField(name:String, value:Boolean, indexed:Boolean = true) =
     new Field(name, if (value) "1" else "0", Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
   private def indexConfig(indexed:Boolean) = if (indexed) Field.Index.NOT_ANALYZED_NO_NORMS else Field.Index.NO

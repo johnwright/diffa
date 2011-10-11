@@ -75,6 +75,12 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     val query = new BooleanQuery
     query.add(new TermQuery(new Term("isMatched", "0")), BooleanClause.Occur.MUST)
 
+    fromVersion match {
+      case None          => // ignore
+      case Some(version) =>
+        query.add(NumericRangeQuery.newLongRange("store.version", version, Long.MaxValue, false, true), BooleanClause.Occur.MUST)
+    }
+
     applyConstraints(query, usConstraints, Upstream, true)
     applyConstraints(query, dsConstraints, Downstream, true)
 

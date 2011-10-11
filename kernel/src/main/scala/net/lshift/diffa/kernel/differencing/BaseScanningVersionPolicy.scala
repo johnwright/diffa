@@ -91,7 +91,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   def replayUnmatchedDifferences(pair:DiffaPair, w:DifferenceWriter, origin:MatchOrigin, fromVersion:Option[Long]) {
     // Run a query for mismatched versions, and report each one
     stores(pair.asRef).unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints, fromVersion).foreach(
-      corr => w.writeMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin))
+      corr => w.writeMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin, corr.storeVersion))
   }
 
   def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,

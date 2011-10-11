@@ -112,7 +112,7 @@ trait DifferenceWriter {
   /**
    * Records a mismatch.
    */
-  def writeMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin)
+  def writeMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin, storeVersion:Long)
 
   /**
    * Aborts this difference writer. Any locks held by this writer will be released (as per the close method), but no

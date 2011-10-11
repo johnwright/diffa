@@ -73,6 +73,7 @@ object LuceneVersionCorrelationHandler {
       lastUpdate = parseDate(doc.get("lastUpdated")),
       timestamp = parseDate(doc.get("timestamp")),
       upstreamVsn = doc.get("uvsn"),
+      storeVersion = parseLong(doc.get("store.version")),
       downstreamUVsn = doc.get("duvsn"),
       downstreamDVsn = doc.get("ddvsn"),
       isMatched = parseBool(doc.get("isMatched"))
@@ -96,6 +97,7 @@ object LuceneVersionCorrelationHandler {
   }
 
   private def parseBool(bs:String) = bs != null && bs.equals("1")
+  private def parseLong(number:String) = if (number == null) 0L else number.toLong
 
   def parseDate(ds:String) = {
     if (ds != null) {
