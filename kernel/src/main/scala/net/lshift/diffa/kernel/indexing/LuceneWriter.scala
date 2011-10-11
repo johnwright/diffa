@@ -228,16 +228,16 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
       updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
       updateField(doc, stringField(documentVersionLabel, currentDocumentVersion, indexed = false))
+
+      // Update the matched status
+      val isMatched = doc.get("uvsn") == doc.get("duvsn")
+      updateField(doc, boolField("isMatched", isMatched))
+
+      // Update the timestamp
+      updateField(doc, dateTimeField("timestamp", new DateTime().withZone(DateTimeZone.UTC), indexed = false))
+
+      prepareUpdate(id, doc)
     }
-
-    // Update the matched status
-    val isMatched = doc.get("uvsn") == doc.get("duvsn")
-    updateField(doc, boolField("isMatched", isMatched))
-
-    // Update the timestamp
-    updateField(doc, dateTimeField("timestamp", new DateTime().withZone(DateTimeZone.UTC), indexed = false))
-
-    prepareUpdate(id, doc)
 
     docToCorrelation(doc, id)
   }
