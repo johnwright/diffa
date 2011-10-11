@@ -42,6 +42,10 @@ object AttributesUtil {
     categories.keys.map { name => name -> asTyped(name, attrs(name), categories) }.toMap
   }
 
+  def toUntypedMap(attrs:Map[String, TypedAttribute]) = {
+    attrs.map { case (k, v) => k -> v.value }.toMap
+  }
+
   def asTyped(name:String, value:String, categories:Map[String, CategoryDescriptor]) = {
     categories(name) match {
       case s:SetCategoryDescriptor => StringAttribute(value)

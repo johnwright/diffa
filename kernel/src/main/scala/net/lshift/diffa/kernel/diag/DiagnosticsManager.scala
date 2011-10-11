@@ -17,6 +17,19 @@ trait DiagnosticsManager {
   def logPairEvent(level:DiagnosticLevel, pair:DiffaPairRef, msg:String)
 
   /**
+   * Logs an explanation event for a pair. Explanations are expected to be highly verbose details about system
+   * internals, and the diagnostics manager is responsible for aggregating these into sets for later system analysis.
+   */
+  def logPairExplanation(pair:DiffaPairRef, msg:String)
+
+  /**
+   * Attaches an 'object' that helps explain Diffa behaviour for a pair. The most common object will be responses from
+   * participants. The diagnostics manager will store this object alongside explanation information, using the provided
+   * object name as a marker.
+   */
+  def attachPairExplanationObject(pair:DiffaPairRef, objName:String, content:String)
+
+  /**
    * Queries for known events about the given pair.
    */
   def queryEvents(pair:DiffaPairRef, maxEvents:Int):Seq[PairEvent]

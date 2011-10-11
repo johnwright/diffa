@@ -5,6 +5,7 @@ import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.differencing.{PairScanState, PairScanListener}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, Pair => DiffaPair}
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
+import org.slf4j.LoggerFactory
 
 /**
  * Local in-memory implementation of the DiagnosticsManager.
@@ -18,9 +19,18 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
   private val pairs = HashMap[DiffaPairRef, PairDiagnostics]()
   private val maxEventsPerPair = 100
 
+  private val log = LoggerFactory.getLogger(getClass)
+
   def logPairEvent(level: DiagnosticLevel, pair: DiffaPairRef, msg: String) {
     val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair, new PairDiagnostics) }
     pairDiag.logPairEvent(PairEvent(new DateTime(), level, msg))
+  }
+
+  def logPairExplanation(pair: DiffaPairRef, msg: String) {
+    log.info("Explain: %s: %s".format(pair, msg))
+  }
+
+  def attachPairExplanationObject(pair: DiffaPairRef, objName: String, content: String) {
   }
 
   def queryEvents(pair:DiffaPairRef, maxEvents: Int) = {

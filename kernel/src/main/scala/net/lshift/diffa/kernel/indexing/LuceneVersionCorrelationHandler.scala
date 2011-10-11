@@ -79,7 +79,7 @@ object LuceneVersionCorrelationHandler {
     )
   }
 
-  private def findAttributes(doc:Document, prefix:String) = {
+  def findAttributes(doc:Document, prefix:String) = {
     val attrs = new HashMap[String, String]
     doc.getFields.foreach(f => {
       if (f.name.startsWith(prefix)) {

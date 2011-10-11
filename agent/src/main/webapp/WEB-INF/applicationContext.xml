@@ -385,6 +385,7 @@
     </constructor-arg>
     <constructor-arg value="org.apache.lucene.store.MMapDirectory" />
     <constructor-arg ref="systemConfigStore" />
+    <constructor-arg ref="diagnosticsManager" />
   </bean>
 
   <!--

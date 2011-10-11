@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.differencing.VersionCorrelationStoreFactory
 import scala.collection.mutable.HashMap
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Factory that creates LuceneVersionCorrelationStore instances.
@@ -29,14 +30,15 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 class LuceneVersionCorrelationStoreFactory[T <: FSDirectory](
   baseDir: String,
   directoryClass: Class[T],
-  configStore: SystemConfigStore
+  configStore: SystemConfigStore,
+  diagnostics:DiagnosticsManager
 ) extends VersionCorrelationStoreFactory {
 
   private val stores = HashMap[DiffaPairRef, LuceneVersionCorrelationStore]()
   
   def apply(pair: DiffaPairRef) =
     stores.getOrElseUpdate(pair,
-      new LuceneVersionCorrelationStore(pair, directory(pair), configStore))
+      new LuceneVersionCorrelationStore(pair, directory(pair), configStore, diagnostics))
 
   private def directory(pair: DiffaPairRef) =
     directoryClass.getConstructor(classOf[File]).newInstance(new File(baseDir, pair.identifier))
