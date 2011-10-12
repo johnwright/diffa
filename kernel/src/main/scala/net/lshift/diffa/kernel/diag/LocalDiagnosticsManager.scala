@@ -6,31 +6,40 @@ import net.lshift.diffa.kernel.differencing.{PairScanState, PairScanListener}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, Pair => DiffaPair}
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
 import org.slf4j.LoggerFactory
+import java.io._
+import org.joda.time.format.ISODateTimeFormat
+import java.util.zip.{ZipEntry, ZipOutputStream}
+import org.apache.commons.io.IOUtils
 
 /**
  * Local in-memory implementation of the DiagnosticsManager.
  *
  *   TODO: Release resources when pair is removed
  */
-class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
+class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDir:String)
     extends DiagnosticsManager
     with PairScanListener
     with AgentLifecycleAware {
   private val pairs = HashMap[DiffaPairRef, PairDiagnostics]()
   private val maxEventsPerPair = 100
 
-  private val log = LoggerFactory.getLogger(getClass)
+  private val timeFormatter = ISODateTimeFormat.time()
+
+  def checkpointExplanations(pair: DiffaPairRef) {
+    maybeGetPair(pair).map(p => p.checkpointExplanations())
+  }
 
   def logPairEvent(level: DiagnosticLevel, pair: DiffaPairRef, msg: String) {
-    val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair, new PairDiagnostics) }
+    val pairDiag = getOrCreatePair(pair)
     pairDiag.logPairEvent(PairEvent(new DateTime(), level, msg))
   }
 
   def logPairExplanation(pair: DiffaPairRef, msg: String) {
-    log.info("Explain: %s: %s".format(pair, msg))
+    getOrCreatePair(pair).logPairExplanation(msg)
   }
 
-  def attachPairExplanationObject(pair: DiffaPairRef, objName: String, content: String) {
+  def writePairExplanationObject(pair:DiffaPairRef, objName: String, f:OutputStream => Unit) {
+    getOrCreatePair(pair).writePairExplanationObject(objName, f)
   }
 
   def queryEvents(pair:DiffaPairRef, maxEvents: Int) = {
@@ -52,7 +61,7 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
   }
 
   def pairScanStateChanged(pair: DiffaPairRef, scanState: PairScanState) = pairs.synchronized {
-    val pairDiag = pairs.synchronized { pairs.getOrElseUpdate(pair, new PairDiagnostics) }
+    val pairDiag = getOrCreatePair(pair)
     pairDiag.scanScate = scanState
   }
 
@@ -60,7 +69,12 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
    * When pairs are deleted, we stop tracking their status in the pair scan map.
    */
   def onDeletePair(pair:DiffaPairRef) {
-    pairs.synchronized { pairs.remove(pair) }
+    pairs.synchronized {
+      pairs.remove(pair) match {
+        case None =>
+        case Some(pairDiag) => pairDiag.checkpointExplanations
+      }
+    }
   }
 
   
@@ -72,9 +86,25 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
     nc.registerForPairScanEvents(this)
   }
 
-  private class PairDiagnostics {
+
+  //
+  // Internals
+  //
+
+  private def getOrCreatePair(pair:DiffaPairRef) =
+    pairs.synchronized { pairs.getOrElseUpdate(pair, new PairDiagnostics(pair)) }
+
+  private def maybeGetPair(pair:DiffaPairRef) =
+    pairs.synchronized { pairs.get(pair) }
+
+  private class PairDiagnostics(pair:DiffaPairRef) {
+    private val pairExplainRoot = new File(explainRootDir, pair.identifier)
     private val log = ListBuffer[PairEvent]()
     var scanScate:PairScanState = PairScanState.UNKNOWN
+
+    private val explainLock = new Object
+    private var explainDir:File = null
+    private var explanationWriter:PrintWriter = null
 
     def logPairEvent(evt:PairEvent) {
       log.synchronized {
@@ -95,6 +125,72 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore)
           log.slice(startIdx, log.length).toSeq
         }
       }
+    }
+
+    def checkpointExplanations() {
+      explainLock.synchronized {
+        if (explanationWriter != null) {
+          explanationWriter.close()
+          explanationWriter = null
+        }
+
+        // Compress the contents of the explanation directory
+        if (explainDir != null) {
+          val explainFiles = explainDir.listFiles()
+          if (explainFiles != null) {
+            val zos = new ZipOutputStream(new FileOutputStream(new File(pairExplainRoot, explainDir.getName + ".zip")))
+
+            explainFiles.foreach(f => {
+              zos.putNextEntry(new ZipEntry(f.getName))
+
+              val inputFile = new FileInputStream(f)
+              try {
+                IOUtils.copy(inputFile, zos)
+              } finally {
+                inputFile.close()
+              }
+              zos.closeEntry()
+
+              f.delete()
+            })
+            zos.close()
+          }
+          explainDir.delete()
+        }
+
+        explainDir = null
+      }
+    }
+
+    def logPairExplanation(msg:String) {
+      explainLock.synchronized {
+        if (explanationWriter == null) {
+          explanationWriter = new PrintWriter(new FileWriter(new File(currentExplainDirectory, "explain.log")))
+        }
+
+        explanationWriter.println("%s: %s".format(timeFormatter.print(new DateTime()), msg))
+      }
+    }
+
+    def writePairExplanationObject(objName: String, f:OutputStream => Unit) {
+      explainLock.synchronized {
+        val outputFile = new File(currentExplainDirectory, objName)
+        val outputStream = new FileOutputStream(outputFile)
+        try {
+          f(outputStream)
+        } finally {
+          outputStream.close()
+        }
+      }
+    }
+
+    private def currentExplainDirectory = {
+      if (explainDir == null) {
+        explainDir = new File(pairExplainRoot, System.currentTimeMillis().toString)
+        explainDir.mkdirs()
+      }
+
+      explainDir
     }
   }
 }

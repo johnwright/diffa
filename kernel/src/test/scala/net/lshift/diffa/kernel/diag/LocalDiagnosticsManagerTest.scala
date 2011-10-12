@@ -14,7 +14,7 @@ import net.lshift.diffa.kernel.config.{Endpoint, DomainConfigStore, Domain, Pair
 class LocalDiagnosticsManagerTest {
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
 
-  val diagnostics = new LocalDiagnosticsManager(domainConfigStore)
+  val diagnostics = new LocalDiagnosticsManager(domainConfigStore, "target/explain")
 
   val domainName = "domain"
   val domain = Domain(name=domainName)
