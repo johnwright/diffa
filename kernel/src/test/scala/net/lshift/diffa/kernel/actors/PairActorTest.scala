@@ -39,9 +39,10 @@ import net.lshift.diffa.kernel.frontend.FrontendConversions
 import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 
 class PairActorTest {
+  import PairActorTest._
 
   val domainName = "some-domain"
-  val pairKey = "some-pairing"
+  val pairKey = nextPairId
   val policyName = ""
   val upstream = Endpoint(name = "up", scanUrl = "up", contentType = "application/json")
   val downstream = Endpoint(name = "down", scanUrl = "down", contentType = "application/json")
@@ -161,6 +162,7 @@ class PairActorTest {
     expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot)).andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
+    writer.flush(); expectLastCall.asStub()
 
     replay(versionPolicy, writer)
 
@@ -526,6 +528,15 @@ class PairActorTest {
     while (!feedbackHandle.isCancelled && endTime > System.currentTimeMillis()) {
       Thread.sleep(100)
     }
+  }
+}
+
+object PairActorTest {
+  private var pairIdCounter = 0
+
+  def nextPairId = {
+    pairIdCounter += 1
+    "some-pairing-" + pairIdCounter
   }
 }
 
