@@ -22,6 +22,7 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDi
     with AgentLifecycleAware {
   private val pairs = HashMap[DiffaPairRef, PairDiagnostics]()
   private val maxEventsPerPair = 100
+  private val maxExplainFilesPerPair = 20
 
   private val timeFormatter = ISODateTimeFormat.time()
 
@@ -136,29 +137,12 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDi
 
         // Compress the contents of the explanation directory
         if (explainDir != null) {
-          val explainFiles = explainDir.listFiles()
-          if (explainFiles != null) {
-            val zos = new ZipOutputStream(new FileOutputStream(new File(pairExplainRoot, explainDir.getName + ".zip")))
+          compressExplanationDir(explainDir)
+          explainDir = null
 
-            explainFiles.foreach(f => {
-              zos.putNextEntry(new ZipEntry(f.getName))
-
-              val inputFile = new FileInputStream(f)
-              try {
-                IOUtils.copy(inputFile, zos)
-              } finally {
-                inputFile.close()
-              }
-              zos.closeEntry()
-
-              f.delete()
-            })
-            zos.close()
-          }
-          explainDir.delete()
+          // Ensure we don't keep too many explanation files
+          trimExplanations()
         }
-
-        explainDir = null
       }
     }
 
@@ -193,6 +177,43 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDi
       }
 
       explainDir
+    }
+
+    private def compressExplanationDir(dir:File) {
+      val explainFiles = dir.listFiles()
+      if (explainFiles != null) {
+        val zos = new ZipOutputStream(new FileOutputStream(new File(pairExplainRoot, dir.getName + ".zip")))
+
+        explainFiles.foreach(f => {
+          zos.putNextEntry(new ZipEntry(f.getName))
+
+          val inputFile = new FileInputStream(f)
+          try {
+            IOUtils.copy(inputFile, zos)
+          } finally {
+            inputFile.close()
+          }
+          zos.closeEntry()
+
+          f.delete()
+        })
+        zos.close()
+      }
+      dir.delete()
+    }
+
+    /**
+     * Ensures that for each pair, only <maxExplainFilesPerPair> zips are kept. When this value is exceeded,
+     * files with older modification dates are removed first.
+     */
+    private def trimExplanations() {
+      val explainFiles = pairExplainRoot.listFiles(new FilenameFilter() {
+        def accept(dir: File, name: String) = name.endsWith(".zip")
+      })
+      if (explainFiles != null && explainFiles.length > maxExplainFilesPerPair) {
+        val orderedFiles = explainFiles.toSeq.sortBy(f => f.lastModified)
+        orderedFiles.take(explainFiles.length - maxExplainFilesPerPair).foreach(f => f.delete())
+      }
     }
   }
 }

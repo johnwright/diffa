@@ -2,6 +2,7 @@ package net.lshift.diffa.kernel.diag
 
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
+import org.hamcrest.number.OrderingComparison._
 import org.joda.time.DateTime
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.util.HamcrestDateTimeHelpers._
@@ -9,9 +10,9 @@ import net.lshift.diffa.kernel.differencing.{PairScanState}
 import net.lshift.diffa.kernel.frontend.FrontendConversions
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore, Domain, Pair => DiffaPair}
-import java.util.zip.ZipInputStream
 import java.io.{FileInputStream, File}
 import org.apache.commons.io.{IOUtils, FileDeleteStrategy}
+import java.util.zip.ZipInputStream
 
 class LocalDiagnosticsManagerTest {
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
@@ -196,6 +197,30 @@ class LocalDiagnosticsManagerTest {
     val zips = pairDir.listFiles()
 
     assertEquals(2, zips.length)
+  }
+
+  @Test
+  def shouldKeepNumberOfExplanationFilesUnderControl() {
+    val pair = DiffaPairRef("controlled", "domain")
+
+    for (i <- 1 until 100) {
+      diagnostics.logPairExplanation(pair, "Test Case", i.toString)
+      diagnostics.checkpointExplanations(pair)
+    }
+
+    val pairDir = new File(explainRoot, "domain/controlled")
+    val zips = pairDir.listFiles()
+
+    assertEquals(20, zips.length)
+    zips.foreach(z => {
+      val zipInputStream = new ZipInputStream(new FileInputStream(z))
+      zipInputStream.getNextEntry
+      val content = IOUtils.toString(zipInputStream)
+      zipInputStream.close()
+
+      val entryNum = content.trim().split(" ").last
+      assertThat(new Integer(entryNum), is(greaterThanOrEqualTo(new Integer(80))))
+    })
   }
 
   def replayAll() { replay(domainConfigStore) }
