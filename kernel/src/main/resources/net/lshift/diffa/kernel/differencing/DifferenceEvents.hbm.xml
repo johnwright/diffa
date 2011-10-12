@@ -75,8 +75,8 @@
     select c from StoreCheckpoint c where c.pair.domain.name = :domain_name and c.pair.key = :pair_key
   </query>
 
-  <query name="storeCheckpointByDomain">
-    select c from StoreCheckpoint c where c.pair.domain.name = :domain_name
+  <query name="removeDomainCheckpoints">
+    delete from StoreCheckpoint where domain = :domain_name
   </query>
 
   <query name="removeDomainDiffs">

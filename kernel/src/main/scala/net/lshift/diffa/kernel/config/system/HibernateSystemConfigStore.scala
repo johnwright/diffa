@@ -38,7 +38,8 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory, val pairCach
 
     pairCache.invalidate(domain)
 
-    deleteByDomain[StoreCheckpoint](s, domain, "storeCheckpointByDomain")
+    removeDomainDifferences(domain)
+
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
     deleteByDomain[DiffaPair](s, domain, "pairsByDomain")

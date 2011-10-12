@@ -170,6 +170,13 @@ trait HibernateQueryUtils {
     singleQuery[Domain](s, "domainByName", Map("domain_name" -> name), "domain %s".format(name))
   })
 
+  def removeDomainDifferences(domain:String) = sessionFactory.withSession(s => {
+    // TODO Maybe this should be integrated with HibernateSystemConfigStore:deleteDomain/1
+    executeUpdate(s, "removeDomainCheckpoints", Map("domain_name" -> domain))
+    executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
+    executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
+  })
+
   /**
    * This is un-protected call to set a configuration option.
    * It is up to the calling context to establish this is authorized.

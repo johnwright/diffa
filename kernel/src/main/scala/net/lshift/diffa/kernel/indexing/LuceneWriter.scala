@@ -218,8 +218,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
       diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s (%s) with changes (%s)".format(id.id, sectionName,
         changedFields.map { case (k, (ov, nv)) => k + ": " + ov + " -> " + nv }.mkString(", ")))
 
-	    // Increment the counter
-      // TODO consider protecting this against empty updates
+      // Increment the counter
       latestVersion += 1
       updateField(doc, longField("store.version", latestVersion))
 

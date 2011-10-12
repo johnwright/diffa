@@ -40,12 +40,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
   val columnMapper = new TimestampColumnDateTimeMapper()
 
-  def removeDomain(domain:String) {
-    sessionFactory.withSession(s => {
-      executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
-      executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
-    })
-  }
+  def removeDomain(domain:String) = removeDomainDifferences(domain)
 
   def removePair(pair: DiffaPairRef) = {
     sessionFactory.withSession { s =>
