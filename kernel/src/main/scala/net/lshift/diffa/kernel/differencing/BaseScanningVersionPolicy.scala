@@ -165,7 +165,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val localDigests = getAggregates(pair, bucketing, constraints)
 
       // Generate a diagnostic object detailing the response provided by the participant
-      diagnostics.writePairExplanationObject(pair, name + "." + System.currentTimeMillis() + ".json", os => {
+      diagnostics.writePairExplanationObject(pair, "Version Policy", name + "." + System.currentTimeMillis() + ".json", os => {
         val pw = new PrintWriter(os)
         pw.println("Bucketing: %s".format(bucketing))
         pw.println("Constraints: %s".format(constraints))

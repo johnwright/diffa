@@ -113,7 +113,7 @@ class LocalDiagnosticsManagerTest {
   def shouldGenerateOutputWhenExplanationsHaveBeenLogged() {
     val pair = DiffaPairRef("explained", "domain")
 
-    diagnostics.logPairExplanation(pair, "Diffa did something")
+    diagnostics.logPairExplanation(pair, "Test Case", "Diffa did something")
     diagnostics.checkpointExplanations(pair)
 
     val pairDir = new File(explainRoot, "domain/explained")
@@ -127,14 +127,14 @@ class LocalDiagnosticsManagerTest {
     assertEquals("explain.log", entry.getName)
 
     val content = IOUtils.toString(zis)
-    assertTrue(content.contains("Diffa did something"))
+    assertTrue(content.contains("[Test Case] Diffa did something"))
   }
 
   @Test
   def shouldIncludeContentsOfObjectsAdded() {
     val pair = DiffaPairRef("explainedobj", "domain")
 
-    diagnostics.writePairExplanationObject(pair, "upstream.123.json", os => {
+    diagnostics.writePairExplanationObject(pair, "Test Case", "upstream.123.json", os => {
       os.write("{a: 1}".getBytes("UTF-8"))
     })
     diagnostics.checkpointExplanations(pair)
@@ -146,21 +146,50 @@ class LocalDiagnosticsManagerTest {
     assertTrue(zips(0).getName.endsWith(".zip"))
 
     val zis = new ZipInputStream(new FileInputStream(zips(0)))
-    val entry = zis.getNextEntry
-    assertEquals("upstream.123.json", entry.getName)
+
+    var entry = zis.getNextEntry
+    while (entry != null && entry.getName != "upstream.123.json") entry = zis.getNextEntry
+
+    if (entry == null) fail("Could not find entry upstream.123.json")
 
     val content = IOUtils.toString(zis)
     assertEquals("{a: 1}", content)
   }
 
   @Test
+  def shouldAddLogMessageIndicatingObjectWasAttached() {
+    val pair = DiffaPairRef("explainedobj", "domain")
+
+    diagnostics.writePairExplanationObject(pair, "Test Case", "upstream.123.json", os => {
+      os.write("{a: 1}".getBytes("UTF-8"))
+    })
+    diagnostics.checkpointExplanations(pair)
+
+    val pairDir = new File(explainRoot, "domain/explainedobj")
+    val zips = pairDir.listFiles()
+
+    assertEquals(1, zips.length)
+    assertTrue(zips(0).getName.endsWith(".zip"))
+
+    val zis = new ZipInputStream(new FileInputStream(zips(0)))
+
+    var entry = zis.getNextEntry
+    while (entry != null && entry.getName != "explain.log") entry = zis.getNextEntry
+
+    if (entry == null) fail("Could not find entry explain.log")
+
+    val content = IOUtils.toString(zis)
+    assertTrue(content.contains("[Test Case] Attached object upstream.123.json"))
+  }
+
+  @Test
   def shouldCreateMultipleOutputsWhenMultipleNonQuietRunsHaveBeenMade() {
     val pair = DiffaPairRef("explained", "domain")
 
-    diagnostics.logPairExplanation(pair, "Diffa did something")
+    diagnostics.logPairExplanation(pair, "Test Case", "Diffa did something")
     diagnostics.checkpointExplanations(pair)
 
-    diagnostics.logPairExplanation(pair, "Diffa did something else")
+    diagnostics.logPairExplanation(pair, "Test Case" , "Diffa did something else")
     diagnostics.checkpointExplanations(pair)
 
     val pairDir = new File(explainRoot, "domain/explained")

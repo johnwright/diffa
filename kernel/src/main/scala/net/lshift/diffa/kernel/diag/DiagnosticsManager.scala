@@ -27,14 +27,14 @@ trait DiagnosticsManager {
    * Logs an explanation event for a pair. Explanations are expected to be highly verbose details about system
    * internals, and the diagnostics manager is responsible for aggregating these into sets for later system analysis.
    */
-  def logPairExplanation(pair:DiffaPairRef, msg:String)
+  def logPairExplanation(pair:DiffaPairRef, source:String, msg:String)
 
   /**
    * Attaches an 'object' that helps explain Diffa behaviour for a pair. The most common object will be responses from
    * participants. The diagnostics manager will store this object alongside explanation information, using the provided
    * object name as a marker.
    */
-  def writePairExplanationObject(pair:DiffaPairRef, objName: String, f:OutputStream => Unit)
+  def writePairExplanationObject(pair:DiffaPairRef, source:String, objName: String, f:OutputStream => Unit)
 
   /**
    * Queries for known events about the given pair.

@@ -34,12 +34,12 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDi
     pairDiag.logPairEvent(PairEvent(new DateTime(), level, msg))
   }
 
-  def logPairExplanation(pair: DiffaPairRef, msg: String) {
-    getOrCreatePair(pair).logPairExplanation(msg)
+  def logPairExplanation(pair: DiffaPairRef, source:String, msg: String) {
+    getOrCreatePair(pair).logPairExplanation(source, msg)
   }
 
-  def writePairExplanationObject(pair:DiffaPairRef, objName: String, f:OutputStream => Unit) {
-    getOrCreatePair(pair).writePairExplanationObject(objName, f)
+  def writePairExplanationObject(pair:DiffaPairRef, source:String, objName: String, f:OutputStream => Unit) {
+    getOrCreatePair(pair).writePairExplanationObject(source, objName, f)
   }
 
   def queryEvents(pair:DiffaPairRef, maxEvents: Int) = {
@@ -162,17 +162,17 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDi
       }
     }
 
-    def logPairExplanation(msg:String) {
+    def logPairExplanation(source:String, msg:String) {
       explainLock.synchronized {
         if (explanationWriter == null) {
           explanationWriter = new PrintWriter(new FileWriter(new File(currentExplainDirectory, "explain.log")))
         }
 
-        explanationWriter.println("%s: %s".format(timeFormatter.print(new DateTime()), msg))
+        explanationWriter.println("%s: [%s] %s".format(timeFormatter.print(new DateTime()), source, msg))
       }
     }
 
-    def writePairExplanationObject(objName: String, f:OutputStream => Unit) {
+    def writePairExplanationObject(source:String, objName: String, f:OutputStream => Unit) {
       explainLock.synchronized {
         val outputFile = new File(currentExplainDirectory, objName)
         val outputStream = new FileOutputStream(outputFile)
@@ -181,6 +181,8 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDi
         } finally {
           outputStream.close()
         }
+
+        logPairExplanation(source, "Attached object " + objName)
       }
     }
 

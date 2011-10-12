@@ -203,7 +203,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
     // If any of the key fields have been changed, then we'll apply an update
     if (changedFields.size > 0) {
-      diagnostics.logPairExplanation(id.pair, "[Correlation Store] Updating %s (%s) with changes (%s)".format(id, sectionName,
+      diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s (%s) with changes (%s)".format(id.id, sectionName,
         changedFields.map { case (k, (ov, nv)) => k + ": " + ov + " -> " + nv }.mkString(", ")))
 
       f(doc)
@@ -245,7 +245,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
       case None => Correlation.asDeleted(id, new DateTime)
       case Some(doc) => {
         if (f(doc)) {
-          diagnostics.logPairExplanation(id.pair, "[Correlation Store] Updating %s to remove %s".format(id, sectionName))
+          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s to remove %s".format(id.id, sectionName))
 
           // We want to keep the document. Update match status and write it out
           updateField(doc, boolField("isMatched", false))
@@ -254,7 +254,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
           docToCorrelation(doc, id)
         } else {
-          diagnostics.logPairExplanation(id.pair, "[Correlation Store] Removing %s as neither upstream nor downstream are present".format(id))
+          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Removing %s as neither upstream nor downstream are present".format(id.id))
 
           // We'll just delete the doc if it doesn't have an upstream
           prepareDelete(id)
