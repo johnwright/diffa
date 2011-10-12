@@ -211,7 +211,7 @@ class LocalDiagnosticsManager(domainConfigStore:DomainConfigStore, explainRootDi
         def accept(dir: File, name: String) = name.endsWith(".zip")
       })
       if (explainFiles != null && explainFiles.length > maxExplainFilesPerPair) {
-        val orderedFiles = explainFiles.toSeq.sortBy(f => f.lastModified)
+        val orderedFiles = explainFiles.toSeq.sortBy(f => (f.lastModified, f.getName))
         orderedFiles.take(explainFiles.length - maxExplainFilesPerPair).foreach(f => f.delete())
       }
     }
