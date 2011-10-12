@@ -44,6 +44,7 @@ class DomainResource {
   @Autowired var pairPolicyClient:PairPolicyClient = null
   @Autowired var domainConfigStore:DomainConfigStore = null
   @Autowired var changes:Changes = null
+  @Autowired var domainSequenceCache:DomainSequenceCache = null
 
   @Path("/config")
   def getConfigResource(@Context uri:UriInfo,
@@ -51,7 +52,7 @@ class DomainResource {
 
   @Path("/diffs")
   def getDifferencesResource(@Context uri:UriInfo,
-                             @PathParam("domain") domain:String) = new DifferencesResource(differencesManager, domain, uri)
+                             @PathParam("domain") domain:String) = new DifferencesResource(differencesManager, domainSequenceCache, domain, uri)
 
   @Path("/escalations")
   def getEscalationsResource(@PathParam("domain") domain:String) = new EscalationsResource(config, domain)
