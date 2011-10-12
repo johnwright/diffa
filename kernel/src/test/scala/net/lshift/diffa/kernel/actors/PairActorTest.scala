@@ -79,7 +79,7 @@ class PairActorTest {
   expect(systemConfigStore.getPair(domainName, pairKey)).andStubReturn(pair)
   expect(systemConfigStore.getPair(DiffaPairRef(pairKey, domainName))).andStubReturn(pair)
   expect(systemConfigStore.listDomains).andStubReturn(Seq(Domain(name = domainName)))
-  expect(systemConfigStore.listPairs).andReturn(Array(pair))
+  expect(systemConfigStore.listPairs).andReturn(Seq())      // Don't return our pair in the list, since we don't want it started immediately
   replay(systemConfigStore)
 
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
