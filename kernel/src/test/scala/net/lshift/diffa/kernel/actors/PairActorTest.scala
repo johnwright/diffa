@@ -162,7 +162,7 @@ class PairActorTest {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
 
-    replay(versionPolicy)
+    replay(versionPolicy, writer)
 
     supervisor.startActor(pair)
     supervisor.difference(pair.asRef)
@@ -297,11 +297,6 @@ class PairActorTest {
 
     expectScans.andAnswer(new IAnswer[Unit] {
       def answer = {
-        // Push a change event through in the cancellation state
-        // The actor should drop this message and hence no invocation
-        // should be made against the versionPolicy mock object
-        supervisor.propagateChangeEvent(event)
-
         // Put the sub actor into a sufficiently long pause so that the cancellation request
         // has enough time to get processed by the parent actor, have it trigger the
         // the scan state listener and send a response back the thread that requested the
@@ -502,8 +497,8 @@ class PairActorTest {
     replay(writer)
 
     supervisor.startActor(pair)
-    mailbox.poll(1, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
-    mailbox.poll(1, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
+    mailbox.poll(5, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
+    mailbox.poll(5, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
   }
 
   def expectFailingScan(downstreamHandler:IAnswer[Unit], failStateHandler:IAnswer[Unit] = EasyMockScalaUtils.emptyAnswer) {
