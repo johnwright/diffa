@@ -319,6 +319,10 @@ case class PairActor(pair:DiffaPair,
     // Make sure there is no dangling back address
     cancellationRequester = null
 
+    // Inform the diagnostics manager that we've completed a major operation, so it should checkpoint the explanation
+    // data.
+    diagnostics.checkpointExplanations(pair.asRef)
+
     // Leave the scan state
     unbecome()
   }

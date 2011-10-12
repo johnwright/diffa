@@ -36,13 +36,14 @@ import net.lshift.diffa.kernel.util.AlertCodes
 import net.lshift.diffa.kernel.config.system.{InvalidSystemConfigurationException, SystemConfigStore}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, DomainConfigStore, Pair => DiffaPair}
 import org.apache.lucene.index.{IndexWriterConfig, IndexReader, Term, IndexWriter}
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
  * provided. Lucene is utilised as it provides for schema-free storage, which strongly suits the dynamic schema nature
  * of pair attributes.
  */
-class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, configStore:SystemConfigStore)
+class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, configStore:SystemConfigStore, diagnostics:DiagnosticsManager)
     extends VersionCorrelationStore
     with Closeable {
 
@@ -67,7 +68,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
     }
   }
 
-  val writer = new LuceneWriter(index)
+  val writer = new LuceneWriter(index, diagnostics)
 
   def openWriter() = writer
 

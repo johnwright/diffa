@@ -82,9 +82,10 @@ class StoreSynchronizationTest {
   val domainDifferenceStore = new HibernateDomainDifferenceStore(sf, new CacheManager(), dialect)
 
   val indexDir = "target/storeSynchronizationTest"
+  val explainDir = "target/storeSynchronizationTest-explain"
 
 
-  val diagnosticsManager = new LocalDiagnosticsManager(domainConfigStore)
+  val diagnosticsManager = new LocalDiagnosticsManager(domainConfigStore, explainDir)
 
   var versionPolicy:VersionPolicy = null
   var store:VersionCorrelationStore = null
@@ -101,7 +102,7 @@ class StoreSynchronizationTest {
     if (dir.exists()) {
       FileUtils.deleteDirectory(dir)
     }
-    val stores = new LuceneVersionCorrelationStoreFactory(indexDir, classOf[MMapDirectory], systemConfigStore)
+    val stores = new LuceneVersionCorrelationStoreFactory(indexDir, classOf[MMapDirectory], systemConfigStore, diagnosticsManager)
     store = stores(pairRef)
     versionPolicy = new SameVersionPolicy(stores, listener, systemConfigStore, diagnosticsManager)
 

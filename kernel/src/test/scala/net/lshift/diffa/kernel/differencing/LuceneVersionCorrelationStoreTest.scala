@@ -35,6 +35,8 @@ import org.joda.time.{LocalDate, DateTime}
 import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, DomainConfigStore, Pair => DiffaPair}
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -46,6 +48,8 @@ class LuceneVersionCorrelationStoreTest {
 
   private val emptyAttributes:Map[String, TypedAttribute] = Map()
   private val emptyStrAttributes:Map[String, String] = Map()
+
+  val log = LoggerFactory.getLogger(getClass)
 
   @Before
   def cleanupStore {
@@ -75,6 +79,65 @@ class LuceneVersionCorrelationStoreTest {
     val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
     assertEquals(1, unmatched.size)
     assertEquals("id1", unmatched(0).id)
+  }
+
+  @Test
+  def identicalVersionsShouldNotUpdateMaterialTimestamp {
+    val writer = store.openWriter()
+
+    val id = VersionID(pair, "id1")
+
+    writer.storeUpstreamVersion(id, dateTimeAttributes, JUL_1_2010_1, "v1")
+
+    val meaninglessUpdateTimestamp = JUL_1_2010_1.plusMinutes(1)
+
+    writer.storeUpstreamVersion(id, dateTimeAttributes, meaninglessUpdateTimestamp , "v1")
+    writer.flush()
+
+    validateLastMaterialUpdate(id, JUL_1_2010_1)
+
+    val meaningfulUpdateTimestamp1 = JUL_1_2010_1.plusMinutes(2)
+
+    writer.storeUpstreamVersion(id, dateTimeAttributes, meaningfulUpdateTimestamp1 , "v2")
+    writer.flush()
+
+    validateLastMaterialUpdate(id, meaningfulUpdateTimestamp1)
+
+    val meaningfulUpdateTimestamp2 = JUL_1_2010_1.plusMinutes(3)
+
+    writer.storeUpstreamVersion(id, excludedByLaterDateTimeAttributes, meaningfulUpdateTimestamp2 , "v2")
+    writer.flush()
+
+    validateLastMaterialUpdate(id, meaningfulUpdateTimestamp2)
+
+  }
+
+  @Test
+  def loadTest = {
+    val writer = store.openWriter()
+
+    val iterations = System.getProperty("lucene.loadtest.iterations","10000").toInt
+
+    val start = System.currentTimeMillis()
+
+    for (i <- 0 to iterations) {
+      writer.storeUpstreamVersion(VersionID(pair, "id-" + i), dateTimeAttributes, JUL_1_2010_1, "v-" + i)
+      if (i % 1000 == 0) {
+        log.info("%sth iteration".format(i))
+      }
+    }
+    writer.flush()
+
+    val end = System.currentTimeMillis()
+
+    val time = (end - start) / 1000
+
+    log.info("Writer load test: %s s".format(time))
+  }
+
+  private def validateLastMaterialUpdate(id:VersionID, expected:DateTime) = {
+    val c1 = store.retrieveCurrentCorrelation(id).get
+    assertEquals(expected, c1.lastUpdate)
   }
 
   @Test
@@ -453,10 +516,13 @@ object LuceneVersionCorrelationStoreTest {
       andStubReturn(Some(VersionCorrelationStore.currentSchemaVersion.toString))
   EasyMock.replay(dummyConfigStore)
 
+  val dummyDiagnostics = EasyMock.createNiceMock(classOf[DiagnosticsManager])
+  EasyMock.replay(dummyDiagnostics)
+
   val domainName = "domain"
   val pair = DiffaPairRef(key="pair",domain=domainName)
   val otherPair = DiffaPairRef(key="other-pair",domain=domainName)
-  val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore)
+  val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore, dummyDiagnostics)
   val store = stores(pair)
   val otherStore = stores(otherPair)
 

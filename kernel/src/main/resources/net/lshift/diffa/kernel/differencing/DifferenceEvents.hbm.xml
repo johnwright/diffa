@@ -75,6 +75,10 @@
     select c from StoreCheckpoint c where c.pair.domain.name = :domain_name and c.pair.key = :pair_key
   </query>
 
+  <query name="storeCheckpointByDomain">
+    select c from StoreCheckpoint c where c.pair.domain.name = :domain_name
+  </query>
+
   <query name="removeDomainDiffs">
     delete from ReportedDifferenceEvent where objId.pair.domain = :domain
   </query>
