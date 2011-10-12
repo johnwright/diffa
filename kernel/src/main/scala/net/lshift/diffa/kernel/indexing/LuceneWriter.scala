@@ -29,8 +29,9 @@ import org.apache.lucene.index.{IndexReader, IndexWriter, IndexWriterConfig, Ter
 import org.apache.commons.codec.binary.Hex
 import java.nio.charset.Charset
 import java.lang.StringBuffer
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
-class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
+class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationHandler._
 
   private val log = LoggerFactory.getLogger(getClass)
@@ -46,9 +47,10 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.trace("Indexing upstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with version " + vsn)
 
-    val currentVersion = computeIndexEntryVersion(attributes, true, vsn)
+    def extractKeyFields(doc:Document) = Map("uvsn" -> doc.get("uvsn")) ++ findAttributes(doc, "up.")
+    val newFields = Map("uvsn" -> vsn) ++ AttributesUtil.toUntypedMap(attributes)
 
-    doDocUpdate(id, lastUpdated, currentVersion, ".up", doc => {
+    doDocUpdate(id, lastUpdated, extractKeyFields, newFields, "upstream", doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "up.", attributes)
       updateField(doc, boolField(Upstream.presenceIndicator, true))
@@ -59,10 +61,12 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   def storeDownstreamVersion(id: VersionID, attributes: scala.collection.immutable.Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String) = {
     log.trace("Indexing downstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with up-version " + uvsn + "and down-version " + dvsn)
 
-    val currentVersion = computeIndexEntryVersion(attributes, true, uvsn, dvsn)
+    def extractKeyFields(doc:Document) =
+      Map("duvsn" -> doc.get("duvsn"), "ddvsn" -> doc.get("ddvsn")) ++ findAttributes(doc, "down.")
+    val newFields = Map("duvsn" -> uvsn, "ddvsn" -> dvsn) ++ AttributesUtil.toUntypedMap(attributes)
 
     log.trace("Indexing downstream " + id + " with attributes: " + attributes)
-    doDocUpdate(id, lastUpdated, currentVersion, ".down", doc => {
+    doDocUpdate(id, lastUpdated, extractKeyFields, newFields, "downstream", doc => {
       // Update all of the upstream attributes
       applyAttributes(doc, "down.", attributes)
       updateField(doc, boolField(Downstream.presenceIndicator, true))
@@ -72,7 +76,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   }
 
   def clearUpstreamVersion(id:VersionID) = {
-    doClearAttributes(id, doc => {
+    doClearAttributes(id, "upstream", doc => {
       if (doc.get("duvsn") == null) {
         false // Remove the document
       } else {
@@ -89,7 +93,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
   }
 
   def clearDownstreamVersion(id:VersionID) = {
-    doClearAttributes(id, doc => {
+    doClearAttributes(id, "downstream", doc => {
       if (doc.get("uvsn") == null) {
         false // Remove the document
       } else {
@@ -167,23 +171,6 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     }
   }
 
-  private def computeIndexEntryVersion(attributes:scala.collection.immutable.Map[String,TypedAttribute], presence:Boolean, versions:String*) : String = {
-    val buffer = new StringBuffer()
-
-    attributes.toSeq.sortBy(_._1).foreach{ case (name,attribute) => {
-      buffer.append(name)
-      buffer.append(attribute.value)
-    }}
-
-    buffer.append(presence)
-    versions.foreach(buffer.append(_))
-
-    val digest = java.security.MessageDigest.getInstance("MD5")
-    val bytes = buffer.toString().getBytes(Charset.forName("UTF-8"))
-    digest.update(bytes, 0, bytes.length)
-    new String(Hex.encodeHex(digest.digest()))
-  }
-
   private def getCurrentOrNewDoc(id:VersionID) = {
     if (updatedDocs.contains(id)) {
       updatedDocs(id)
@@ -208,15 +195,16 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     }
   }
 
-  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, currentDocumentVersion:String, postfix:String, f:Document => Unit) = {
+  private def doDocUpdate(id:VersionID, lastUpdatedIn:DateTime, extractFields:Document => Map[String, String], newFields:Map[String, String], sectionName:String, f:Document => Unit) = {
     val doc = getCurrentOrNewDoc(id)
 
-    // Append the up- or down qualifier so that it does not get mixed up with normal prefixed attributes
-    val documentVersionLabel = "doc.version" + postfix
-    val previousDocumentVersion = doc.get(documentVersionLabel)
+    val currentFields = extractFields(doc)
+    val changedFields = summariseChanges(currentFields, newFields)
 
-    // If the incoming digest does actually differ from the previous update
-    if (previousDocumentVersion == null || previousDocumentVersion != currentDocumentVersion) {
+    // If any of the key fields have been changed, then we'll apply an update
+    if (changedFields.size > 0) {
+      diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s (%s) with changes (%s)".format(id.id, sectionName,
+        changedFields.map { case (k, (ov, nv)) => k + ": " + ov + " -> " + nv }.mkString(", ")))
 
       f(doc)
 
@@ -230,7 +218,6 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
       if (oldLastUpdate == null || lastUpdated.isAfter(oldLastUpdate)) {
         updateField(doc, dateTimeField("lastUpdated", lastUpdated, indexed = false))
       }
-      updateField(doc, stringField(documentVersionLabel, currentDocumentVersion, indexed = false))
 
       // Update the matched status
       val isMatched = doc.get("uvsn") == doc.get("duvsn")
@@ -245,7 +232,7 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     docToCorrelation(doc, id)
   }
 
-  private def doClearAttributes(id:VersionID, f:Document => Boolean) = {
+  private def doClearAttributes(id:VersionID, sectionName:String, f:Document => Boolean) = {
     val currentDoc =
       if (updatedDocs.contains(id))
         Some(updatedDocs(id))
@@ -258,6 +245,8 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
       case None => Correlation.asDeleted(id, new DateTime)
       case Some(doc) => {
         if (f(doc)) {
+          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s to remove %s".format(id.id, sectionName))
+
           // We want to keep the document. Update match status and write it out
           updateField(doc, boolField("isMatched", false))
 
@@ -265,6 +254,8 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
 
           docToCorrelation(doc, id)
         } else {
+          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Removing %s as neither upstream nor downstream are present".format(id.id))
+
           // We'll just delete the doc if it doesn't have an upstream
           prepareDelete(id)
 
@@ -303,4 +294,27 @@ class LuceneWriter(index: Directory) extends ExtendedVersionCorrelationWriter {
     new Field(name, if (value) "1" else "0", Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
   private def indexConfig(indexed:Boolean) = if (indexed) Field.Index.NOT_ANALYZED_NO_NORMS else Field.Index.NO
 
+   /**
+   * Differences two maps, producing a map containing fields that have changed (with the key being the field name, and
+   * the value being a (before, after) pair.
+   */
+  private def summariseChanges(storedFields:Map[String, String], newFields:Map[String, String]) = {
+    val result = scala.collection.mutable.HashMap[String, Tuple2[String, String]]()
+
+    storedFields.foreach { case (k, currentV) =>
+      newFields.get(k) match {
+        case None           => result(k) = (currentV, null)
+        case Some(matchingV) if currentV == matchingV => // New value matches, so ignore
+        case Some(otherV)   => result(k) = (currentV, otherV)
+      }
+    }
+    newFields.foreach { case (k, newV) =>
+      storedFields.get(k) match {
+        case None     =>  result(k) = (null, newV)
+        case Some(_)  => // Ignore - comparison of fields already done in previous iteration
+      }
+    }
+
+    result.toMap
+  }
 }

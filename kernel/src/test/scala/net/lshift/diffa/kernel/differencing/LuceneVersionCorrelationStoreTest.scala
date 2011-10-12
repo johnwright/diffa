@@ -36,6 +36,7 @@ import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, DomainConfigStore, Pair => DiffaPair}
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 /**
  * Test cases for the Hibernate backed VersionCorrelationStore.
@@ -515,10 +516,13 @@ object LuceneVersionCorrelationStoreTest {
       andStubReturn(Some(VersionCorrelationStore.currentSchemaVersion.toString))
   EasyMock.replay(dummyConfigStore)
 
+  val dummyDiagnostics = EasyMock.createNiceMock(classOf[DiagnosticsManager])
+  EasyMock.replay(dummyDiagnostics)
+
   val domainName = "domain"
   val pair = DiffaPairRef(key="pair",domain=domainName)
   val otherPair = DiffaPairRef(key="other-pair",domain=domainName)
-  val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore)
+  val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore, dummyDiagnostics)
   val store = stores(pair)
   val otherStore = stores(otherPair)
 

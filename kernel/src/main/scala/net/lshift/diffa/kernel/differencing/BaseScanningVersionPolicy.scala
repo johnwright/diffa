@@ -28,6 +28,8 @@ import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, Pair => DiffaPair}
 import org.joda.time.{Interval, DateTime}
+import net.lshift.diffa.participant.common.JSONHelper
+import java.io.PrintWriter
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -127,8 +129,9 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
    * The basic functionality for a scanning strategy.
    */
   protected abstract class ScanStrategy {
-
     val log = LoggerFactory.getLogger(getClass)
+
+    def name:String
 
     def scanParticipant(pair:DiffaPairRef,
                         writer:LimitedVersionCorrelationWriter,
@@ -160,6 +163,17 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
       val remoteDigests = participant.scan(constraints, bucketing)
       val localDigests = getAggregates(pair, bucketing, constraints)
+
+      // Generate a diagnostic object detailing the response provided by the participant
+      diagnostics.writePairExplanationObject(pair, "Version Policy", name + "." + System.currentTimeMillis() + ".json", os => {
+        val pw = new PrintWriter(os)
+        pw.println("Bucketing: %s".format(bucketing))
+        pw.println("Constraints: %s".format(constraints))
+        pw.println("------------------------")
+        pw.flush()
+
+        JSONHelper.formatQueryResult(os, remoteDigests)
+      })
 
       if (log.isTraceEnabled) {
         log.trace("Bucketing: %s".format(bucketing))
@@ -222,6 +236,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   }
 
   protected class UpstreamScanStrategy extends ScanStrategy {
+    val name = "Upstream"
 
     def getAggregates(pair:DiffaPairRef, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
