@@ -22,6 +22,7 @@ import net.lshift.diffa.kernel.frontend.wire.WireEvent
 /**
  * Maps event data from an arbitrary incoming content type to Diffa's wire format.
  */
+@Deprecated
 trait EventFormatMapper {
 
   /**
