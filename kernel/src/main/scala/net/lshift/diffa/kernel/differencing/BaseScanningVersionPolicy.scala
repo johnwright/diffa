@@ -228,7 +228,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
         if (issues.size == 0) {
           true
         } else {
-          log.debug("Dropping invalid scan result entry " + entry + " due to issues " + issues)
+          log.warn("Dropping invalid scan result entry " + entry + " due to issues " + issues)
           diagnostics.logPairExplanation(pair, "Version Policy",
             "The result %s was dropped since it didn't meet the request constraints. Identified issues were (%s)".format(
               entry, issues.map { case (k, v) => k + ": " + v }.mkString(", ")))
