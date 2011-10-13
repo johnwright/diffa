@@ -148,7 +148,7 @@ class PairActorTest {
 
   def expectDifferencesReplay() = {
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences"); expectLastCall
-    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan, None))
+    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, writer, TriggeredByScan, None))
   }
 
   def expectWriterRollback() {
@@ -160,7 +160,7 @@ class PairActorTest {
   @Test
   def runDifference = {
     val monitor = new Object
-    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot, None)).andAnswer(new IAnswer[Unit] {
+    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, writer, TriggeredByBoot, None)).andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
     writer.flush(); expectLastCall.asStub()

@@ -57,6 +57,7 @@ abstract class AbstractPolicyTest {
   val diagnostics = createStrictMock("diagnostics", classOf[DiagnosticsManager])
 
   val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
+  val extendedWriter = createMock("extendedWriter", classOf[ExtendedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])
 
   val stores = new VersionCorrelationStoreFactory {
@@ -240,7 +241,7 @@ abstract class AbstractPolicyTest {
 
     replayAll
 
-    policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan, None)
+    policy.replayUnmatchedDifferences(pair, diffWriter, extendedWriter, TriggeredByScan, None)
 
     verifyAll
   }

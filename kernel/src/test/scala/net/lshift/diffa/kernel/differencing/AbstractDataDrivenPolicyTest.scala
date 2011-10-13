@@ -60,6 +60,7 @@ abstract class AbstractDataDrivenPolicyTest {
   val diagnostics = createStrictMock("diagnostics", classOf[DiagnosticsManager])
 
   val writer = createMock("writer", classOf[LimitedVersionCorrelationWriter])
+  val extendedWriter = createMock("extendedWriter", classOf[ExtendedVersionCorrelationWriter])
   val store = createMock("versionStore", classOf[VersionCorrelationStore])
   val stores = new VersionCorrelationStoreFactory {
     def apply(pair: DiffaPairRef) = store
@@ -230,7 +231,7 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.replayUnmatchedDifferences(scenario.pair, diffWriter, TriggeredByScan, None)
+    policy.replayUnmatchedDifferences(scenario.pair, diffWriter, extendedWriter, TriggeredByScan, None)
 
     verifyAll
   }

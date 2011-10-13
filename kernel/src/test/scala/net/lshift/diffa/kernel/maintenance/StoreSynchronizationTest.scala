@@ -127,7 +127,7 @@ class StoreSynchronizationTest {
 
     writer.flush()
 
-    replayCorrelationStore(diffsManager, versionPolicy, pair, TriggeredByScan)
+    replayCorrelationStore(diffsManager, writer, versionPolicy, pair, TriggeredByScan)
 
     assertEquals(Some(2L), diffsManager.lastRecordedVersion(pairRef))
 
