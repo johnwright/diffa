@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.util
 
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-import net.lshift.diffa.kernel.differencing.{MatchOrigin, VersionPolicy, DifferencesManager}
+import net.lshift.diffa.kernel.differencing.{ExtendedVersionCorrelationWriter, MatchOrigin, VersionPolicy, DifferencesManager}
 
 /**
  * Provides some generic routines to maintain the correlation and diff stores.
@@ -29,12 +29,13 @@ object StoreSynchronizationUtils {
   /**
    * Runs a simple replayUnmatchedDifferences for the pair.
    */
-  def replayCorrelationStore(diffsManager:DifferencesManager, policy:VersionPolicy, pair:DiffaPair, origin:MatchOrigin) = {
+  def replayCorrelationStore(diffsManager:DifferencesManager, writer:ExtendedVersionCorrelationWriter,
+                             policy:VersionPolicy, pair:DiffaPair, origin:MatchOrigin) = {
 
     val diffWriter = diffsManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
     try {
       val version = diffsManager.lastRecordedVersion(pair.asRef)
-      policy.replayUnmatchedDifferences(pair, diffWriter, origin, version)
+      policy.replayUnmatchedDifferences(pair, diffWriter, writer, origin, version)
       diffWriter.close()
     } catch {
       case ex =>

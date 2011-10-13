@@ -50,6 +50,11 @@ trait VersionCorrelationStore extends Closeable {
    */
   def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint], fromVersion:Option[Long]) : Seq[Correlation]
 
+  /*
+   * Retrieves a list of versions that have been turned into tombstones since the given store version.
+   */
+  def tombstoneVersions(fromVersion:Option[Long]) : Seq[Correlation]
+
   /**
    * Retrieves the current pairing information for the given pairKey/id.
    */
@@ -145,6 +150,12 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
    * Rolls back any pending changes to the store and deletes any temporary data.
    */
   def rollback() : Unit
+
+  /**
+   * Deletes a version from the store
+   */
+  // TODO Test
+  def deleteVersion(id:VersionID)
 }
 
 /**

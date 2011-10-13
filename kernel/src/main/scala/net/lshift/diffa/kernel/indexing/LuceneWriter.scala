@@ -88,35 +88,31 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
   def clearUpstreamVersion(id:VersionID) = {
     doClearAttributes(id, "upstream", doc => {
-      if (doc.get("duvsn") == null) {
-        false // Remove the document
-      } else {
-        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
-        doc.getFields.toList.foreach(f => {
-          if (f.name.startsWith("up.")) doc.removeField(f.name)
-        })
-        updateField(doc, boolField(Upstream.presenceIndicator, false))
-        doc.removeField("uvsn")
+      // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+      doc.getFields.toList.foreach(f => {
+        if (f.name.startsWith("up.")) doc.removeField(f.name)
+      })
+      updateField(doc, boolField(Upstream.presenceIndicator, false))
+      doc.removeField("uvsn")
 
-        true  // Keep the document
+      if (doc.get("duvsn") == null) {
+        updateField(doc, boolField("tombstone", true))
       }
     })
   }
 
   def clearDownstreamVersion(id:VersionID) = {
     doClearAttributes(id, "downstream", doc => {
-      if (doc.get("uvsn") == null) {
-        false // Remove the document
-      } else {
-        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
-        doc.getFields.toList.foreach(f => {
-          if (f.name.startsWith("down.")) doc.removeField(f.name)
-        })
-        updateField(doc, boolField(Downstream.presenceIndicator, false))
-        doc.removeField("duvsn")
-        doc.removeField("ddvsn")
+      // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+      doc.getFields.toList.foreach(f => {
+        if (f.name.startsWith("down.")) doc.removeField(f.name)
+      })
+      updateField(doc, boolField(Downstream.presenceIndicator, false))
+      doc.removeField("duvsn")
+      doc.removeField("ddvsn")
 
-        true  // Keep the document
+      if (doc.get("uvsn") == null) {
+        updateField(doc, boolField("tombstone", true))
       }
     })
   }
@@ -127,6 +123,10 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     writer.rollback()
     writer = createIndexWriter    // We need to create a new writer, since rollback will have closed the previous one
     log.info("Writer rolled back")
+  }
+
+  def deleteVersion(id:VersionID) = {
+    // TODO implement and test
   }
 
   def flush() {
@@ -200,6 +200,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
           doc.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
           doc.add(new Field(Upstream.presenceIndicator, "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
           doc.add(new Field(Downstream.presenceIndicator, "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
+          doc.add(new Field("tombstone", "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
           doc
         }
         case Some(doc) => doc
@@ -218,10 +219,8 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
       diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s (%s) with changes (%s)".format(id.id, sectionName,
         changedFields.map { case (k, (ov, nv)) => k + ": " + ov + " -> " + nv }.mkString(", ")))
 
-      // Increment the counter
-      latestVersion += 1
-      updateField(doc, longField("store.version", latestVersion))
-
+      // Increment the version counter and update the entry
+      updateStoreVersion(doc)
       f(doc)
 
       // If the participant does not supply a timestamp, then create one on the fly
@@ -248,7 +247,12 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     docToCorrelation(doc, id)
   }
 
-  private def doClearAttributes(id:VersionID, sectionName:String, f:Document => Boolean) = {
+  private def updateStoreVersion(doc:Document) = {
+    latestVersion += 1
+    updateField(doc, longField("store.version", latestVersion))
+  }
+
+  private def doClearAttributes(id:VersionID, sectionName:String, f:Document => Unit) = {
     val currentDoc =
       if (updatedDocs.contains(id))
         Some(updatedDocs(id))
@@ -260,24 +264,29 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     currentDoc match {
       case None => Correlation.asDeleted(id, new DateTime)
       case Some(doc) => {
-        if (f(doc)) {
-          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s to remove %s".format(id.id, sectionName))
 
-          // We want to keep the document. Update match status and write it out
-          updateField(doc, boolField("isMatched", false))
+        // Increment the version counter and update the entry
+        updateStoreVersion(doc)
+        f(doc)
 
-          prepareUpdate(id, doc)
+        diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s to remove %s".format(id.id, sectionName))
 
-          docToCorrelation(doc, id)
-        } else {
-          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Removing %s as neither upstream nor downstream are present".format(id.id))
+        // We want to keep the document. Update match status and write it out
+        updateField(doc, boolField("isMatched", false))
 
-          // We'll just delete the doc if it doesn't have an upstream
-          prepareDelete(id)
+        prepareUpdate(id, doc)
 
-          Correlation.asDeleted(id, new DateTime)
-        }
+        docToCorrelation(doc, id)
       }
+
+        // This was the code that initiated the delete
+//          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Removing %s as neither upstream nor downstream are present".format(id.id))
+//
+//          // We'll just delete the doc if it doesn't have an upstream
+//          prepareDelete(id)
+//
+//          Correlation.asDeleted(id, new DateTime)
+
     }
   }
 

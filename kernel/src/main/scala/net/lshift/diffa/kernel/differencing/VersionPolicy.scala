@@ -44,7 +44,8 @@ trait VersionPolicy {
    * local data stores.
    * TODO document
    */
-  def replayUnmatchedDifferences(pair:DiffaPair, writer:DifferenceWriter, origin:MatchOrigin, fromVersion:Option[Long]) : Unit
+  def replayUnmatchedDifferences(pair:DiffaPair, diffWriter:DifferenceWriter, writer:ExtendedVersionCorrelationWriter,
+                                 origin:MatchOrigin, fromVersion:Option[Long]) : Unit
 
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are

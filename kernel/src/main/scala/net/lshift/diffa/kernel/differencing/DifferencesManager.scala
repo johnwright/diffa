@@ -115,6 +115,12 @@ trait DifferenceWriter {
   def writeMismatch(id:VersionID, lastUpdated:DateTime, upstreamVsn:String, downstreamVsn:String, origin:MatchOrigin, storeVersion:Long)
 
   /**
+   * Indicates that the following correlations are tombstones and differences associated with them can be deleted
+   */
+  // TODO test
+  def evictTombstones(tombstones:Seq[Correlation])
+
+  /**
    * Aborts this difference writer. Any locks held by this writer will be released (as per the close method), but no
    * overwrite behaviour will be performed. This allows a consumer that had opened a write session to handle an exception
    * case where it is no longer able to generate differences.

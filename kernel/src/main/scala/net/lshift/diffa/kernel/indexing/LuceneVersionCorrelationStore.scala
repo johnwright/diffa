@@ -73,23 +73,35 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
   def openWriter() = writer
 
   def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint], fromVersion:Option[Long]) = {
+    searchForCorrelations(fromVersion, query => {
+      query.add(new TermQuery(new Term("isMatched", "0")), BooleanClause.Occur.MUST)
+      applyConstraints(query, usConstraints, Upstream, true)
+      applyConstraints(query, dsConstraints, Downstream, true)
+    })
+  }
+
+  def tombstoneVersions(fromVersion:Option[Long]) = {
+    searchForCorrelations(fromVersion, query => {
+      query.add(new TermQuery(new Term("tombstone", "1")), BooleanClause.Occur.MUST)
+    })
+  }
+
+  private def searchForCorrelations(fromVersion:Option[Long], f:BooleanQuery => Any) = {
     val query = new BooleanQuery
-    query.add(new TermQuery(new Term("isMatched", "0")), BooleanClause.Occur.MUST)
-
-    fromVersion match {
-      case None          => // ignore
-      case Some(version) =>
-        query.add(NumericRangeQuery.newLongRange("store.version", version, Long.MaxValue, false, true), BooleanClause.Occur.MUST)
-    }
-
-    applyConstraints(query, usConstraints, Upstream, true)
-    applyConstraints(query, dsConstraints, Downstream, true)
-
+    f(query)
+    maybeAddStoreVersionConstraint(query, fromVersion)
     withSearcher(writer, s => {
       val idOnlyCollector = new DocIdOnlyCollector
       s.search(query, idOnlyCollector)
       idOnlyCollector.allCorrelations(s)
     })
+  }
+
+
+  private def maybeAddStoreVersionConstraint(query:BooleanQuery, fromVersion:Option[Long]) = fromVersion match {
+    case None          => // ignore
+    case Some(version) =>
+      query.add(NumericRangeQuery.newLongRange("store.version", version, Long.MaxValue, false, true), BooleanClause.Occur.MUST)
   }
 
   def retrieveCurrentCorrelation(id:VersionID) = {
