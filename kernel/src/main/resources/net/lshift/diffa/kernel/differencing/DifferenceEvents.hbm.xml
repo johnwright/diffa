@@ -41,7 +41,8 @@
   </class>
 
   <class name="ReportedDifferenceEvent" table="diffs">
-    <id name="seqId" column="seq_id">
+    <id name="seqId">
+      <column name="seq_id" index="seq_id_domain_idx"/>
       <generator class="native">
         <param name="sequence">diffs_sequence</param>
       </generator>
@@ -49,7 +50,7 @@
     <component name="objId">
       <property name="id" type="string" column="entity_id" index="rdiff_domain_idx" />
       <component name="pair">
-        <property name="domain" type="string" column="domain" index="rdiff_domain_idx" />
+        <property name="domain" type="string" column="domain" index="rdiff_domain_idx, seq_id_domain_idx" />
         <property name="key" type="string" column="pair" index="rdiff_domain_idx" />
       </component>
     </component>
