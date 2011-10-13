@@ -46,6 +46,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     sessionFactory.withSession { s =>
       executeUpdate(s, "removeDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
       executeUpdate(s, "removePendingDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      removeLatestRecordedVersion(pair)
     }
   }
   
