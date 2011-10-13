@@ -132,4 +132,33 @@ class StoreSynchronizationTest {
     assertEquals(Some(2L), diffsManager.lastRecordedVersion(pairRef))
 
   }
+
+  @Test
+  def tombstonesShouldGetRemovedAfterSync = {
+
+    val writer = store.openWriter()
+
+    val attributes = Map("foo" -> StringAttribute("bar"))
+    val lastUpdated = new DateTime(2019,5,7,8,12,15,0, DateTimeZone.UTC)
+    val id = VersionID(pairRef, "id1")
+
+    writer.storeUpstreamVersion(id, attributes, lastUpdated, "v1") // Should produce store version 1
+    writer.storeDownstreamVersion(id, attributes, lastUpdated.plusMinutes(1), "v2", "v3") // Should produce store version 2
+    writer.clearUpstreamVersion(id) // Should produce store version 3
+    writer.clearDownstreamVersion(id) // Should produce store version 4
+
+    writer.flush()
+
+    def checkUnmatched(expectation:Int) = {
+      val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
+      assertEquals(expectation, unmatched.length)
+    }
+
+    checkUnmatched(1)
+
+    replayCorrelationStore(diffsManager, writer, versionPolicy, pair, TriggeredByScan)
+    assertEquals(Some(4L), diffsManager.lastRecordedVersion(pairRef))
+
+    checkUnmatched(0)
+  }
 }
