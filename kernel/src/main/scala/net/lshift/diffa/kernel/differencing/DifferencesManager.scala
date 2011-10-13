@@ -117,7 +117,6 @@ trait DifferenceWriter {
   /**
    * Indicates that the following correlations are tombstones and differences associated with them can be deleted
    */
-  // TODO test
   def evictTombstones(tombstones:Seq[Correlation])
 
   /**

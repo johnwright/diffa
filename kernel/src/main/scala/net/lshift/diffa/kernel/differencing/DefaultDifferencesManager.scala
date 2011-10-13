@@ -75,9 +75,7 @@ class DefaultDifferencesManager(
       }
     }
 
-    def evictTombstones(tombstones:Seq[Correlation]) = {
-      //domainDifferenceStore.r
-    }
+    def evictTombstones(tombstones:Seq[Correlation]) = domainDifferenceStore.removeEvents(tombstones.map(_.asVersionID))
 
     def abort() {
       // Nothing to do

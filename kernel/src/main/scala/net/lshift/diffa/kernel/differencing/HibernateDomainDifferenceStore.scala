@@ -125,6 +125,17 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     })
   }
 
+  def removeEvents(events:Seq[VersionID]) = sessionFactory.withSession(s => {
+    events.foreach(event => {
+      val pair = event.getPair()
+      val params = Map("domain_name" -> pair.domain,
+                       "pair_key"    -> pair.key,
+                       "entity_id"   -> event.id)
+      executeUpdate(s, "removeDiffsByEntityId", params)
+      executeUpdate(s, "removePendingDiffsByEntityId", params)
+    })
+  })
+
   def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = {
 
      def convertOldEvent(s:Session, old:ReportedDifferenceEvent) {
