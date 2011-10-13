@@ -89,6 +89,7 @@ class StoreSynchronizationTest {
 
   var versionPolicy:VersionPolicy = null
   var store:VersionCorrelationStore = null
+  var stores:LuceneVersionCorrelationStoreFactory[MMapDirectory] = null
 
   // Wire in the diffs manager
 
@@ -102,7 +103,7 @@ class StoreSynchronizationTest {
     if (dir.exists()) {
       FileUtils.deleteDirectory(dir)
     }
-    val stores = new LuceneVersionCorrelationStoreFactory(indexDir, classOf[MMapDirectory], systemConfigStore, diagnosticsManager)
+    stores = new LuceneVersionCorrelationStoreFactory(indexDir, classOf[MMapDirectory], systemConfigStore, diagnosticsManager)
     store = stores(pairRef)
     versionPolicy = new SameVersionPolicy(stores, listener, systemConfigStore, diagnosticsManager)
 
@@ -160,5 +161,27 @@ class StoreSynchronizationTest {
     assertEquals(Some(4L), diffsManager.lastRecordedVersion(pairRef))
 
     checkUnmatched(0)
+  }
+
+  @Test
+  def storeVersionShouldSurviveClose = {
+    val firstWriter = store.openWriter()
+
+    val attributes = Map("foo" -> StringAttribute("bar"))
+    val lastUpdated = new DateTime(2019,5,7,8,12,15,0, DateTimeZone.UTC)
+    val id = VersionID(pairRef, "id1")
+
+    firstWriter.storeUpstreamVersion(id, attributes, lastUpdated, "v1") // Should produce store version 1
+
+    firstWriter.flush()
+    replayCorrelationStore(diffsManager, firstWriter, versionPolicy, pair, TriggeredByScan)
+    assertEquals(Some(1L), diffsManager.lastRecordedVersion(pairRef))
+
+    stores.remove(pairRef)
+    store = stores(pairRef)
+
+    val secondWriter = store.openWriter()
+    replayCorrelationStore(diffsManager, secondWriter, versionPolicy, pair, TriggeredByScan)
+    assertEquals(Some(1L), diffsManager.lastRecordedVersion(pairRef))
   }
 }

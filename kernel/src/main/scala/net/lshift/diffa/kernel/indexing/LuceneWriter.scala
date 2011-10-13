@@ -26,9 +26,6 @@ import org.apache.lucene.document.{NumericField, Fieldable, Field, Document}
 import collection.mutable.{HashSet, HashMap}
 import scala.collection.JavaConversions._
 import org.apache.lucene.index.{IndexReader, IndexWriter, IndexWriterConfig, Term}
-import org.apache.commons.codec.binary.Hex
-import java.nio.charset.Charset
-import java.lang.StringBuffer
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 
 class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends ExtendedVersionCorrelationWriter {

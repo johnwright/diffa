@@ -66,7 +66,11 @@ class DefaultDifferencesManager(
   def createDifferenceWriter(domain:String, pair:String, overwrite: Boolean) = new DifferenceWriter {
     // Record when we started the write so all differences can be tagged
     val writerStart = new DateTime
-    var latestStoreVersion:Long = 0L
+    val pairRef = DiffaPairRef(pair,domain)
+    var latestStoreVersion:Long = domainDifferenceStore.lastRecordedVersion(pairRef) match {
+      case Some(version) => version
+      case None          => 0L
+    }
 
     def writeMismatch(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin, storeVersion:Long) {
       onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, origin, Unfiltered)
@@ -82,8 +86,8 @@ class DefaultDifferencesManager(
     }
 
     def close() {
-      domainDifferenceStore.recordLatestVersion(DiffaPairRef(pair,domain), latestStoreVersion)
-      domainDifferenceStore.matchEventsOlderThan(DiffaPairRef(domain = domain, key = pair), writerStart)
+      domainDifferenceStore.recordLatestVersion(pairRef, latestStoreVersion)
+      domainDifferenceStore.matchEventsOlderThan(pairRef, writerStart)
     }
   }
 
