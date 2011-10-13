@@ -19,10 +19,8 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.alerting.Alerter
-import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import concurrent.SyncVar
-import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
@@ -30,6 +28,7 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, Pair => DiffaPair
 import org.joda.time.{Interval, DateTime}
 import net.lshift.diffa.participant.common.JSONHelper
 import java.io.PrintWriter
+import collection.JavaConversions._
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -178,7 +177,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val localDigests = getAggregates(pair, bucketing, constraints)
 
       // Generate a diagnostic object detailing the response provided by the participant
-      diagnostics.writePairExplanationObject(pair, "Version Policy", name + "." + System.currentTimeMillis() + ".json", os => {
+      diagnostics.writePairExplanationObject(pair, "Version Policy", name + "-Aggregates-" + System.currentTimeMillis() + ".json", os => {
         val pw = new PrintWriter(os)
         pw.println("Bucketing: %s".format(bucketing))
         pw.println("Constraints: %s".format(constraints))
@@ -216,12 +215,42 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val remoteVersions = participant.scan(constraints, Seq())
       val cachedVersions = getEntities(pair, constraints)
 
+      // Generate a diagnostic object detailing the response provided by the participant
+      diagnostics.writePairExplanationObject(pair, "Version Policy", name + "-Entities-" + System.currentTimeMillis() + ".json", os => {
+        val pw = new PrintWriter(os)
+        pw.println("Constraints: %s".format(constraints))
+        pw.println("------------------------")
+        pw.flush()
+
+        JSONHelper.formatQueryResult(os, remoteVersions)
+      })
+
       if (log.isTraceEnabled) {
         log.trace("Remote versions: %s".format(remoteVersions))
         log.trace("Local versions: %s".format(cachedVersions))
       }
 
-      DigestDifferencingUtils.differenceEntities(endpoint.categories.toMap, remoteVersions, cachedVersions, constraints)
+      // Validate that the entities provided meet the constraints of the endpoint
+      val endpointCategories = endpoint.categories.toMap
+      val validRemoteVersions = remoteVersions.filter(entry => {
+        val attrsMap = entry.getAttributes.toMap
+        val typedAttrsMap = AttributesUtil.toTypedMap(endpointCategories, attrsMap)
+        val issues = AttributesUtil.detectMissingAttributes(endpointCategories, attrsMap) ++
+          AttributesUtil.detectOutsideConstraints(constraints, typedAttrsMap)
+
+        if (issues.size == 0) {
+          true
+        } else {
+          log.warn("Dropping invalid scan result entry " + entry + " due to issues " + issues)
+          diagnostics.logPairExplanation(pair, "Version Policy",
+            "The result %s was dropped since it didn't meet the request constraints. Identified issues were (%s)".format(
+              entry, issues.map { case (k, v) => k + ": " + v }.mkString(", ")))
+
+          false
+        }
+      })
+
+      DigestDifferencingUtils.differenceEntities(endpointCategories, validRemoteVersions, cachedVersions, constraints)
         .foreach(handleMismatch(pair, writer, _, listener))
     }
 

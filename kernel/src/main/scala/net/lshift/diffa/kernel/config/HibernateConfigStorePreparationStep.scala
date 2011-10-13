@@ -48,6 +48,7 @@ class HibernateConfigStorePreparationStep
     ExpandPrimaryKeysMigrationStep,
     AddSuperuserAndDefaultUsersMigrationStep,
     AddPersistentDiffsMigrationStep,
+    AddDomainSequenceIndexMigrationStep,
     AddStoreCheckpointsMigrationStep
   )
 
@@ -428,8 +429,17 @@ object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
   }
 }
 
-object AddStoreCheckpointsMigrationStep extends HibernateMigrationStep {
+object AddDomainSequenceIndexMigrationStep extends HibernateMigrationStep {
   def versionId = 8
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+    migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")
+    migration.apply(connection)
+  }
+}
+
+object AddStoreCheckpointsMigrationStep extends HibernateMigrationStep {
+  def versionId = 9
   def migrate(config: Configuration, connection: Connection) {
     val migration = new MigrationBuilder(config)
 
