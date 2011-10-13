@@ -141,7 +141,6 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
   def reset() {
     writer.deleteAll()
-    // TODO not quite sure whether we need to make sure that the last commit user data survives this reset
     writer.commit()
   }
 

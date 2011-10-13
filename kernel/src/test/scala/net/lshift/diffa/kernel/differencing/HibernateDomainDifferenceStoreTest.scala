@@ -671,6 +671,8 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(None, diffStore.lastRecordedVersion(pair))
     diffStore.recordLatestVersion(pair, 5294967296L)
     assertEquals(Some(5294967296L), diffStore.lastRecordedVersion(pair))
+    diffStore.removeLatestRecordedVersion(pair)
+    assertEquals(None, diffStore.lastRecordedVersion(pair))
   }
 
   @Theory

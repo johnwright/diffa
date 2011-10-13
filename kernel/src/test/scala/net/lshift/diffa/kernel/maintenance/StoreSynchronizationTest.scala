@@ -32,7 +32,6 @@ import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
 import net.lshift.diffa.kernel.config.{HibernateDomainConfigStoreTest, DomainConfigStore, DiffaPairRef}
 import net.lshift.diffa.kernel.config.{Domain,Endpoint,Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
-import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.config.system.{HibernateSystemConfigStoreTest, SystemConfigStore}
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.DatabaseEnvironment
@@ -41,6 +40,7 @@ import net.lshift.diffa.kernel.diag.{LocalDiagnosticsManager, DiagnosticsManager
 import java.io.File
 import org.apache.lucene.store.MMapDirectory
 import org.apache.commons.io.FileUtils
+import org.junit.{After, Before, Test}
 
 class StoreSynchronizationTest {
 
@@ -111,8 +111,13 @@ class StoreSynchronizationTest {
     domainConfigStore.createOrUpdateEndpoint(domainName, toEndpointDef(u))
     domainConfigStore.createOrUpdateEndpoint(domainName, toEndpointDef(d))
     domainConfigStore.createOrUpdatePair(domainName, toPairDef(pair))
+    domainDifferenceStore.removeLatestRecordedVersion(pairRef)
+
     assertEquals(None, diffsManager.lastRecordedVersion(pairRef))
   }
+
+  @After
+  def closeStore = stores.close
 
   @Test
   def storesShouldSynchronizeIncrementally = {

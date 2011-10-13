@@ -95,7 +95,19 @@ trait DomainDifferenceStore {
    */
   def unignoreEvent(domain:String, seqId:String): DifferenceEvent
 
+  /**
+   * Returns the last correlation version that was transferred to the diffs store
+   */
   def lastRecordedVersion(pair:DiffaPairRef) : Option[Long]
+
+  /**
+   * Removes the entry for the latest correlation store that was recorded with the diffs store.
+   */
+  def removeLatestRecordedVersion(pair:DiffaPairRef)
+
+  /**
+   * Registers the latest correlation store version with the diff store.
+   */
   def recordLatestVersion(pair:DiffaPairRef, version:Long)
 
   /**

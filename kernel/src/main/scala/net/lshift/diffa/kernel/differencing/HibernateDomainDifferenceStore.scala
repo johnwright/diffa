@@ -199,6 +199,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     case Some(checkpoint) => Some(checkpoint.latestVersion)
   }
 
+  def removeLatestRecordedVersion(pair:DiffaPairRef) = sessionFactory.withSession(s => {
+    getStoreCheckpoint(pair) match {
+      case Some(checkpoint) => s.delete(checkpoint)
+      case None             => //
+    }
+  })
+
   def recordLatestVersion(pairRef:DiffaPairRef, version:Long) = sessionFactory.withSession(s => {
     val pair = getPair(s, pairRef.domain, pairRef.key)
     s.saveOrUpdate(new StoreCheckpoint(pair, version))
