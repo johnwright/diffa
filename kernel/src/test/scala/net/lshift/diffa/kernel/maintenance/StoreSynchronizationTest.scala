@@ -184,4 +184,25 @@ class StoreSynchronizationTest {
     replayCorrelationStore(diffsManager, secondWriter, versionPolicy, pair, TriggeredByScan)
     assertEquals(Some(1L), diffsManager.lastRecordedVersion(pairRef))
   }
+
+  @Test
+  def storeVersionShouldSurviveReset = {
+    val writer = store.openWriter()
+
+    val attributes = Map("foo" -> StringAttribute("bar"))
+    val lastUpdated = new DateTime(2019,5,7,8,12,15,0, DateTimeZone.UTC)
+    val id = VersionID(pairRef, "id1")
+
+    writer.storeUpstreamVersion(id, attributes, lastUpdated, "v1") // Should produce store version 1
+    writer.storeUpstreamVersion(id, attributes, lastUpdated, "v2") // Should produce store version 2
+
+    writer.flush()
+    replayCorrelationStore(diffsManager, writer, versionPolicy, pair, TriggeredByScan)
+    assertEquals(Some(2L), diffsManager.lastRecordedVersion(pairRef))
+
+    writer.reset()
+    replayCorrelationStore(diffsManager, writer, versionPolicy, pair, TriggeredByScan)
+    assertEquals(Some(2L), diffsManager.lastRecordedVersion(pairRef))
+
+  }
 }

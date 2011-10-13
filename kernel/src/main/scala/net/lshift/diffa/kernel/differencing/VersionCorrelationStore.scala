@@ -147,6 +147,11 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
   def flush(): Unit
 
   /**
+   * Removes all correlations from the store.
+   */
+  def reset()
+
+  /**
    * Rolls back any pending changes to the store and deletes any temporary data.
    */
   def rollback() : Unit
