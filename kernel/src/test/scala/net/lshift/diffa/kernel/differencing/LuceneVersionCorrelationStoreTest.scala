@@ -82,6 +82,28 @@ class LuceneVersionCorrelationStoreTest {
   }
 
   @Test
+  def versionsShouldBeDeleteable = {
+    val writer = store.openWriter()
+
+    val id = VersionID(pair, "id1")
+
+    writer.storeUpstreamVersion(id, emptyAttributes, DEC_31_2009, "uvsn")
+    writer.flush
+
+    def verifyUnmatched(expectation:Int, writer:ExtendedVersionCorrelationWriter) = {
+      val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
+      assertEquals(expectation, unmatched.size)
+    }
+
+    verifyUnmatched(1, writer)
+
+    writer.deleteVersion(id)
+    writer.flush()
+
+    verifyUnmatched(0, writer)
+  }
+
+  @Test
   def identicalVersionsShouldNotUpdateMaterialTimestamp {
     val writer = store.openWriter()
 
@@ -265,7 +287,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id7"), bizDateTimeMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")
     val corr = writer.clearUpstreamVersion(VersionID(pair, "id6"))
     writer.flush()
-    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
+    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, false), corr)
 
     val collector = new Collector
     store.queryUpstreams(List(new TimeRangeConstraint("bizDateTime", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
@@ -297,7 +319,7 @@ class LuceneVersionCorrelationStoreTest {
     val writer2 = store.openWriter()
     val corr = writer2.clearDownstreamVersion(VersionID(pair, "id6"))
     writer2.flush()
-    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
+    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, false), corr)
 
     val collector = new Collector
     val digests = store.queryDownstreams(List(new TimeRangeConstraint("bizDateTime", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)

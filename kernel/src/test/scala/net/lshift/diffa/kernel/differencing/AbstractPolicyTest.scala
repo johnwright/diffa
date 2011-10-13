@@ -227,6 +227,7 @@ abstract class AbstractPolicyTest {
 
   protected def shouldReportMismatchesReportedByUnderlyingStore(testData: PolicyTestData) {
     val timestamp = new DateTime
+    val pairRef = pair.asRef
 
     // If the version check returns mismatches, we should see differences generated
     expect(store.unmatchedVersions(
@@ -234,10 +235,18 @@ abstract class AbstractPolicyTest {
       EasyMock.eq(testData.constraints(0)),
       EasyMock.eq(None)
     )).andReturn(Seq(
-      new Correlation(null, pair.asRef, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
-      new Correlation(null, pair.asRef, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
-    diffWriter.writeMismatch(VersionID(pair.asRef, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan, 0L); expectLastCall
-    diffWriter.writeMismatch(VersionID(pair.asRef, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", TriggeredByScan, 0L); expectLastCall
+      new Correlation(null, pairRef, "id1", toStrMap(testData.upstreamAttributes(0)), emptyStrAttributes, JUN_6_2009_1, timestamp, "vsn1", "vsn1a", "vsn3", false),
+      new Correlation(null, pairRef, "id2", toStrMap(testData.upstreamAttributes(1)), emptyStrAttributes, JUL_8_2010_1, timestamp, "vsn2", "vsn2a", "vsn4", false)))
+    diffWriter.writeMismatch(VersionID(pairRef, "id1"), JUN_6_2009_1, "vsn1", "vsn1a", TriggeredByScan, 0L); expectLastCall
+    diffWriter.writeMismatch(VersionID(pairRef, "id2"), JUL_8_2010_1, "vsn2", "vsn2a", TriggeredByScan, 0L); expectLastCall
+
+    val tombstones = Seq(
+      new Correlation(null, pairRef, "id3", null, null, JUN_6_2009_1, timestamp, null,null,null, false),
+      new Correlation(null, pairRef, "id4", null, null, JUN_6_2009_1, timestamp, null,null,null, false)
+    )
+
+    expect(store.tombstoneVersions(None)).andReturn(tombstones)
+    diffWriter.evictTombstones(tombstones); expectLastCall
 
     replayAll
 

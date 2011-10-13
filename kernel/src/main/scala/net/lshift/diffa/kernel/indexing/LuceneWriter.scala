@@ -125,9 +125,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     log.info("Writer rolled back")
   }
 
-  def deleteVersion(id:VersionID) = {
-    // TODO implement and test
-  }
+  def deleteVersion(id:VersionID) = prepareDelete(id)
 
   def flush() {
     if (isDirty) {
@@ -278,15 +276,6 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
         docToCorrelation(doc, id)
       }
-
-        // This was the code that initiated the delete
-//          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Removing %s as neither upstream nor downstream are present".format(id.id))
-//
-//          // We'll just delete the doc if it doesn't have an upstream
-//          prepareDelete(id)
-//
-//          Correlation.asDeleted(id, new DateTime)
-
     }
   }
 

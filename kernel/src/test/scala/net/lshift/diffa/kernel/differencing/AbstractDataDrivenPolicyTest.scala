@@ -229,6 +229,9 @@ abstract class AbstractDataDrivenPolicyTest {
       EasyMock.eq(None)
     )).andReturn(Seq())
 
+    expect(store.tombstoneVersions(None)).andReturn(Seq())
+    diffWriter.evictTombstones(Seq()); expectLastCall
+
     replayAll
 
     policy.replayUnmatchedDifferences(scenario.pair, diffWriter, extendedWriter, TriggeredByScan, None)

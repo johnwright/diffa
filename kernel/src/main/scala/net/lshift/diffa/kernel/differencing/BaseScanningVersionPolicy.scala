@@ -104,6 +104,9 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
     // Now that the diffs are in sync, we can purge the the tombstones
     tombstones.foreach(t => versionWriter.deleteVersion(VersionID(DiffaPairRef(t.pairing, t.domain), t.id)))
+
+    // Make sure that all deletes get flushed
+    versionWriter.flush()
   }
 
   def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,

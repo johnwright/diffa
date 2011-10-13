@@ -152,9 +152,8 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
   def rollback() : Unit
 
   /**
-   * Deletes a version from the store
+   * Deletes a version from the store. Note that the store will need to be flushed to guarantee that this change is written.
    */
-  // TODO Test
   def deleteVersion(id:VersionID)
 }
 
