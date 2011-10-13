@@ -47,6 +47,13 @@ public class TimeRangeConstraint extends AbstractScanConstraint implements Range
     return end;
   }
 
+  public boolean contains(DateTime value) {
+    if (start != null && value.isBefore(start)) return false;
+    if (end != null && value.isAfter(end)) return false;
+
+    return true;
+  }
+
   @Override
   public String getStartText() {
     return start.toString(formatter);

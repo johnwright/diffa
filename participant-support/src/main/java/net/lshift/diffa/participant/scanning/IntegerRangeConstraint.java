@@ -40,6 +40,13 @@ public class IntegerRangeConstraint extends AbstractScanConstraint implements Ra
     return end;
   }
 
+  public boolean contains(Integer value) {
+    if (start != null && value < start) return false;
+    if (end != null && value > end) return false;
+    
+    return true;
+  }
+
   @Override
   public String getStartText() {
     return Integer.toString(start);
