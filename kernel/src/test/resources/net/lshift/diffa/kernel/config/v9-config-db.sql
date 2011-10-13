@@ -13,6 +13,7 @@ create table range_category_descriptor (id integer not null, data_type varchar(2
 create table repair_actions (name varchar(255) not null, pair_key varchar(255) not null, domain varchar(255) not null, url varchar(255), scope varchar(255), primary key (name, pair_key, domain));
 create table set_category_descriptor (id integer not null, primary key (id));
 create table set_constraint_values (value_id integer not null, value_name varchar(255) not null, primary key (value_id, value_name));
+create table store_checkpoints (pair varchar(255) not null, domain varchar(255) not null, latest_version bigint not null, primary key (pair, domain));
 create table system_config_options (opt_key varchar(255) not null, opt_val varchar(255), primary key (opt_key));
 create table users (name varchar(255) not null, email varchar(255), password_enc varchar(255), superuser bit, primary key (name));
 create table schema_version (version integer not null, primary key (version));
@@ -37,6 +38,7 @@ alter table range_category_descriptor add constraint FKDC53C74E7A220B71 foreign 
 alter table repair_actions add constraint FKF6BE324B2E298B6C foreign key (pair_key, domain) references pair;
 alter table set_category_descriptor add constraint FKA51D45F39810CA56 foreign key (id) references category_descriptor;
 alter table set_constraint_values add constraint FK96C7B32744035BE4 foreign key (value_id) references category_descriptor;
+alter table store_checkpoints add constraint FK50EE698DF6FDBACC foreign key (pair, domain) references pair;
 insert into domains(name) values('diffa');
 insert into users(name, email, password_enc, superuser) values('guest', 'guest@diffa.io', '84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec', 1);
 insert into schema_version(version) values(7);
