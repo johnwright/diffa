@@ -15,6 +15,7 @@
  */
 package net.lshift.diffa.participant.scanning;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -44,6 +45,13 @@ public class DateRangeConstraint extends AbstractScanConstraint implements Range
 
   public LocalDate getEnd() {
     return end;
+  }
+
+  public boolean contains(LocalDate value) {
+    if (start != null && value.isBefore(start)) return false;
+    if (end != null && value.isAfter(end)) return false;
+
+    return true;
   }
 
   @Override

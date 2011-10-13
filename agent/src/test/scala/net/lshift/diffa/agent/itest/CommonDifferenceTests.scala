@@ -190,6 +190,30 @@ trait CommonDifferenceTests {
   }
 
   @Test
+  def shouldIgnoreRealtimeChangesThatDontConformToConstraints {
+
+    // someString is configured to be a string prefix category that only accepts 'ss'
+
+    runScanAndWaitForCompletion(yearAgo, today)
+    env.addAndNotifyUpstream("abc", "abcdef", someDate = yesterday, someString = "abcdef")
+
+    val diffs = pollForAllDifferences(yearAgo, nextYear)
+
+    assertTrue("Expected not to find differences for realtime event", diffs.isEmpty)
+  }
+
+  @Test
+  def shouldIgnoreScanChangesThatDontConformToConstraints {
+
+    // someString is configured to be a string prefix category that only accepts 'ss'
+
+    env.upstream.addEntity("abc", datetime = today, someString = "abcdef", lastUpdated = new DateTime, body = "abcdef")
+    val diffs = getReport(yearAgo, nextYear)
+
+    assertTrue("Expected not to find differences in scan", diffs.isEmpty)
+  }
+
+  @Test
   def shouldPageDifferences = {
     val start = new DateTime
     val end = start.plusMinutes(2)
