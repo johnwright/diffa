@@ -89,25 +89,6 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     result
   }
 
-  def replayUnmatchedDifferences(pair:DiffaPair, diffWriter:DifferenceWriter, versionWriter:ExtendedVersionCorrelationWriter,
-                                 origin:MatchOrigin, fromVersion:Option[Long]) {
-
-    val store = stores(pair.asRef)
-
-    // Run a query for mismatched versions, and report each one
-    store.unmatchedVersions(pair.upstream.defaultConstraints, pair.downstream.defaultConstraints, fromVersion).foreach(
-      corr => diffWriter.writeMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin, corr.storeVersion))
-
-    val tombstones = store.tombstoneVersions(fromVersion)
-    diffWriter.evictTombstones(tombstones)
-
-    // Now that the diffs are in sync, we can purge the the tombstones
-    tombstones.foreach(t => versionWriter.deleteVersion(VersionID(DiffaPairRef(t.pairing, t.domain), t.id)))
-
-    // Make sure that all deletes get flushed
-    versionWriter.flush()
-  }
-
   def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
                    listener:DifferencingListener, handle:FeedbackHandle) = {
     benchmark(pair, "upstream scan", () => {

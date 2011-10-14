@@ -16,8 +16,11 @@
 
 package net.lshift.diffa.kernel.util
 
-import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-import net.lshift.diffa.kernel.differencing.{ExtendedVersionCorrelationWriter, MatchOrigin, VersionPolicy, DifferencesManager}
+import net.lshift.diffa.kernel.events.VersionID._
+import net.lshift.diffa.kernel.config.DiffaPairRef._
+import net.lshift.diffa.kernel.differencing._
+import net.lshift.diffa.kernel.events.VersionID
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Provides some generic routines to maintain the correlation and diff stores.
@@ -30,12 +33,23 @@ object StoreSynchronizationUtils {
    * Runs a simple replayUnmatchedDifferences for the pair.
    */
   def replayCorrelationStore(diffsManager:DifferencesManager, writer:ExtendedVersionCorrelationWriter,
-                             policy:VersionPolicy, pair:DiffaPair, origin:MatchOrigin) = {
+                             store:VersionCorrelationStore, pair:DiffaPair, origin:MatchOrigin) = {
 
     val diffWriter = diffsManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
     try {
       val version = diffsManager.lastRecordedVersion(pair.asRef)
-      policy.replayUnmatchedDifferences(pair, diffWriter, writer, origin, version)
+      
+      // Run a query for mismatched versions, and report each one
+      store.unmatchedVersions(pair.upstream.defaultConstraints(), pair.downstream.defaultConstraints(), version).foreach(
+        corr => diffWriter.writeMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin, corr.storeVersion))
+
+      val tombstones = store.tombstoneVersions(version)
+      diffWriter.evictTombstones(tombstones)
+
+      // Now that the diffs are in sync, we can purge the the tombstones.
+      writer.clearTombstones()
+
+      // Close the diff writer
       diffWriter.close()
     } catch {
       case ex =>

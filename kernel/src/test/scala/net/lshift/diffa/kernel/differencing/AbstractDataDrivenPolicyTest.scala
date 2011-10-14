@@ -213,32 +213,6 @@ abstract class AbstractDataDrivenPolicyTest {
     verifyAll
   }
 
-  /**
-   * Scenario for replaying unmatched differences at the completion of a scan.
-   */
-  @Theory
-  def shouldWriteMismatchEventsBasedOnResultsOfStore(scenario:Scenario) {
-    setupStubs(scenario)
-
-    // TODO: Actually generate some mismatched version data?
-    val us = scenario.pair.upstream.defaultConstraints
-    val ds = scenario.pair.downstream.defaultConstraints
-    expect(store.unmatchedVersions(
-      EasyMock.eq(us),
-      EasyMock.eq(ds),
-      EasyMock.eq(None)
-    )).andReturn(Seq())
-
-    expect(store.tombstoneVersions(None)).andReturn(Seq())
-    diffWriter.evictTombstones(Seq()); expectLastCall
-
-    replayAll
-
-    policy.replayUnmatchedDifferences(scenario.pair, diffWriter, extendedWriter, TriggeredByScan, None)
-
-    verifyAll
-  }
-
 
   //
   // Helpers

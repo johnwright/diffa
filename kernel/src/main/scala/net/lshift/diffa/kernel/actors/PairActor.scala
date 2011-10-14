@@ -279,7 +279,7 @@ case class PairActor(pair:DiffaPair,
 
       try {
         diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences")
-        replayCorrelationStore(differencesManager, writer, policy, pair, TriggeredByScan)
+        replayCorrelationStore(differencesManager, writer, store, pair, TriggeredByScan)
       } catch {
         case ex =>
           logger.error("Failed to apply unmatched differences to the differences manager", ex)
@@ -355,7 +355,7 @@ case class PairActor(pair:DiffaPair,
   def handleDifferenceMessage() = {
     try {
       writer.flush()
-      replayCorrelationStore(differencesManager, writer, policy, pair, TriggeredByBoot)
+      replayCorrelationStore(differencesManager, writer, store, pair, TriggeredByBoot)
     } catch {
       case ex => {
         diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to Difference Pair: " + ex.getMessage)

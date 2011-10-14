@@ -27,6 +27,7 @@ import collection.mutable.{HashSet, HashMap}
 import scala.collection.JavaConversions._
 import org.apache.lucene.index.{IndexReader, IndexWriter, IndexWriterConfig, Term}
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import org.apache.lucene.search.{BooleanQuery, BooleanClause, TermQuery}
 
 class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationHandler._
@@ -36,7 +37,6 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
   private val maxBufferSize = 10000
 
   private val updatedDocs = HashMap[VersionID, Document]()
-  private val deletedDocs = HashSet[VersionID]()
   private var writer = createIndexWriter
 
   def getReader : IndexReader = IndexReader.open(writer, true)
@@ -106,7 +106,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     })
   }
 
-  def isDirty = bufferSize > 0
+  def isDirty = updatedDocs.size > 0
 
   def rollback() = {
     writer.rollback()
@@ -114,20 +114,15 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     log.info("Writer rolled back")
   }
 
-  def deleteVersion(id:VersionID) = prepareDelete(id)
+  def clearTombstones() {
+    prepareFlush()
+    writer.deleteDocuments(createTombstoneQuery)
+    flushInternal()
+  }
 
   def flush() {
-    if (isDirty) {
-      updatedDocs.foreach { case (id, doc) =>
-        writer.updateDocument(new Term("id", id.id), doc)
-      }
-      deletedDocs.foreach { id =>
-        writer.deleteDocuments(queryForId(id))
-      }
-      writer.commit(Map(VERSION_LABEL -> latestVersion.toString))
-      updatedDocs.clear()
-      deletedDocs.clear()
-      log.trace("Writer flushed")
+    if (prepareFlush()) {
+      flushInternal()
     }
   }
 
@@ -147,24 +142,9 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     writer
   }
 
-  private def bufferSize = updatedDocs.size + deletedDocs.size
-
   private def prepareUpdate(id: VersionID, doc: Document) = {
-    if (deletedDocs.remove(id)) {
-      log.warn("Detected update of a document that was deleted in the same writer: " + id)
-    }
     updatedDocs.put(id, doc)
-    if (bufferSize >= maxBufferSize) {
-      flush()
-    }
-  }
-
-  private def prepareDelete(id: VersionID) = {
-    if (updatedDocs.remove(id).isDefined) {
-      log.warn("Detected delete of a document that was updated in the same writer: " + id)
-    }
-    deletedDocs.add(id)
-    if (bufferSize >= maxBufferSize) {
+    if (updatedDocs.size >= maxBufferSize) {
       flush()
     }
   }
@@ -173,11 +153,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     if (updatedDocs.contains(id)) {
       updatedDocs(id)
     } else {
-      val doc =
-        if (deletedDocs.contains(id))
-          None
-        else
-          retrieveCurrentDoc(this, id)
+      val doc = retrieveCurrentDoc(this, id)
 
       doc match {
         case None => {
@@ -241,8 +217,6 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     val currentDoc =
       if (updatedDocs.contains(id))
         Some(updatedDocs(id))
-      else if (deletedDocs.contains(id))
-        None
       else
         retrieveCurrentDoc(this, id)
 
@@ -256,8 +230,9 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
         diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s to remove %s".format(id.id, sectionName))
 
-        // We want to keep the document. Update match status and write it out
-        updateField(doc, boolField("isMatched", false))
+        // Update the match status of the document. A document with neither participant is matched (and will be seen
+        // as a tombstone)
+        updateField(doc, boolField("isMatched", hasUpstream(doc) || hasDownstream(doc)))
 
         prepareUpdate(id, doc)
 
@@ -319,5 +294,22 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     }
 
     result.toMap
+  }
+
+  private def prepareFlush() = {
+    if (isDirty) {
+      updatedDocs.foreach { case (id, doc) =>
+        writer.updateDocument(new Term("id", id.id), doc)
+      }
+      true
+    } else {
+      false
+    }
+  }
+
+  private def flushInternal() {
+    writer.commit(Map(VERSION_LABEL -> latestVersion.toString))
+      updatedDocs.clear()
+      log.trace("Writer flushed")
   }
 }

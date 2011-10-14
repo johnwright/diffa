@@ -74,7 +74,7 @@ trait DomainDifferenceStore {
   /**
    * Removes the events identified by these versions from the store
    */
-  def removeEvents(events:Seq[VersionID])
+  def removeEvents(events:Iterable[VersionID])
 
   /**
    * Indicates that all differences in the cache older than the given date should be marked as matched. This is generally

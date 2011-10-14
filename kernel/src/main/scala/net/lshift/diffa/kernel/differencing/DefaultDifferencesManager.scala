@@ -79,7 +79,7 @@ class DefaultDifferencesManager(
       }
     }
 
-    def evictTombstones(tombstones:Seq[Correlation]) = domainDifferenceStore.removeEvents(tombstones.map(_.asVersionID))
+    def evictTombstones(tombstones:Iterable[Correlation]) = domainDifferenceStore.removeEvents(tombstones.map(_.asVersionID))
 
     def abort() {
       // Nothing to do
@@ -87,7 +87,6 @@ class DefaultDifferencesManager(
 
     def close() {
       domainDifferenceStore.recordLatestVersion(pairRef, latestStoreVersion)
-      domainDifferenceStore.matchEventsOlderThan(pairRef, writerStart)
     }
   }
 

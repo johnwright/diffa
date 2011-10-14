@@ -117,7 +117,7 @@ trait DifferenceWriter {
   /**
    * Indicates that the following correlations are tombstones and differences associated with them can be deleted
    */
-  def evictTombstones(tombstones:Seq[Correlation])
+  def evictTombstones(tombstones:Iterable[Correlation])
 
   /**
    * Aborts this difference writer. Any locks held by this writer will be released (as per the close method), but no

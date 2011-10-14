@@ -48,12 +48,12 @@ trait VersionCorrelationStore extends Closeable {
    * @param usConstraints constraints on the upstream participant's entities
    * @param dsConstraints constraints on the downstream participant's entities
    */
-  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint], fromVersion:Option[Long]) : Seq[Correlation]
+  def unmatchedVersions(usConstraints:Seq[ScanConstraint], dsConstraints:Seq[ScanConstraint], fromVersion:Option[Long]) : Iterable[Correlation]
 
   /*
    * Retrieves a list of versions that have been turned into tombstones since the given store version.
    */
-  def tombstoneVersions(fromVersion:Option[Long]) : Seq[Correlation]
+  def tombstoneVersions(fromVersion:Option[Long]) : Iterable[Correlation]
 
   /**
    * Retrieves the current pairing information for the given pairKey/id.
@@ -157,9 +157,10 @@ trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
   def rollback() : Unit
 
   /**
-   * Deletes a version from the store. Note that the store will need to be flushed to guarantee that this change is written.
+   * Clears all tombstones from the store. This method will internally perform a <code>flush</code>, so any
+   * pending updates will also be written as part of this operation.
    */
-  def deleteVersion(id:VersionID)
+  def clearTombstones()
 }
 
 /**
