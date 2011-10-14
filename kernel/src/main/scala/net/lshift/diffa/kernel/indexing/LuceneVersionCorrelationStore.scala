@@ -82,7 +82,8 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory, con
 
   def tombstoneVersions(fromVersion:Option[Long]) = {
     searchForCorrelations(fromVersion, query => {
-      query.add(new TermQuery(new Term("tombstone", "1")), BooleanClause.Occur.MUST)
+      query.add(new TermQuery(new Term(Upstream.presenceIndicator, "0")), BooleanClause.Occur.MUST)
+      query.add(new TermQuery(new Term(Downstream.presenceIndicator, "0")), BooleanClause.Occur.MUST)
     })
   }
 

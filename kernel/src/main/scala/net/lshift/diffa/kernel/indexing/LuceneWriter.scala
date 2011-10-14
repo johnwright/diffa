@@ -91,10 +91,6 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
       })
       updateField(doc, boolField(Upstream.presenceIndicator, false))
       doc.removeField("uvsn")
-
-      if (doc.get("duvsn") == null) {
-        updateField(doc, boolField("tombstone", true))
-      }
     })
   }
 
@@ -107,10 +103,6 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
       updateField(doc, boolField(Downstream.presenceIndicator, false))
       doc.removeField("duvsn")
       doc.removeField("ddvsn")
-
-      if (doc.get("uvsn") == null) {
-        updateField(doc, boolField("tombstone", true))
-      }
     })
   }
 
@@ -194,7 +186,6 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
           doc.add(new Field("id", id.id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
           doc.add(new Field(Upstream.presenceIndicator, "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
           doc.add(new Field(Downstream.presenceIndicator, "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
-          doc.add(new Field("tombstone", "0", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, Field.TermVector.NO))
           doc
         }
         case Some(doc) => doc
