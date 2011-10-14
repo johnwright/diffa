@@ -39,15 +39,6 @@ trait VersionPolicy {
   def onChange(writer: LimitedVersionCorrelationWriter, evt:PairChangeEvent) : Unit
 
   /**
-   * Requests that the policy generate a series of events describing the differences between the endpoints
-   * within the given pair. This does not perform any endpoint scanning, it operates entirely from
-   * local data stores.
-   * TODO document
-   */
-  def replayUnmatchedDifferences(pair:DiffaPair, diffWriter:DifferenceWriter, writer:ExtendedVersionCorrelationWriter,
-                                 origin:MatchOrigin, fromVersion:Option[Long]) : Unit
-
-  /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are
    * detected will be reported to the listener provided.
    * @throws If the shouldRun variable is set to false, this will throw a ScanCancelledException

@@ -109,4 +109,18 @@ object LuceneVersionCorrelationHandler {
 
   def formatDateTime(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
   def formatDate(dt:LocalDate) = dt.toString
+
+  def addTombstoneClauses(query:BooleanQuery) {
+    query.add(new TermQuery(new Term(Upstream.presenceIndicator, "0")), BooleanClause.Occur.MUST)
+    query.add(new TermQuery(new Term(Downstream.presenceIndicator, "0")), BooleanClause.Occur.MUST)
+  }
+
+  def createTombstoneQuery = {
+    var tombstonedQuery = new BooleanQuery
+    addTombstoneClauses(tombstonedQuery)
+    tombstonedQuery
+  }
+
+  def hasUpstream(doc:Document) = parseBool(doc.get(Upstream.presenceIndicator))
+  def hasDownstream(doc:Document) = parseBool(doc.get(Downstream.presenceIndicator))
 }

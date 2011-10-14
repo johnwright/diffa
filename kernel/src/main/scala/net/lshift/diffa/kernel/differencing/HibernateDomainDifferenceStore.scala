@@ -126,7 +126,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     })
   }
 
-  def removeEvents(events:Seq[VersionID]) = sessionFactory.withSession(s => {
+  def removeEvents(events:Iterable[VersionID]) = sessionFactory.withSession(s => {
     events.foreach(event => {
       val pair = event.getPair()
       val params = Map("domain_name" -> pair.domain,

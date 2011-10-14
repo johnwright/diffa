@@ -97,8 +97,11 @@ class LuceneVersionCorrelationStoreTest {
 
     verifyUnmatched(1, writer)
 
-    writer.deleteVersion(id)
+    writer.clearUpstreamVersion(id)
     writer.flush()
+    verifyUnmatched(0, writer)
+
+    writer.clearTombstones()
 
     verifyUnmatched(0, writer)
   }
