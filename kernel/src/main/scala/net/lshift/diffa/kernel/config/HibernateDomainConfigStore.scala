@@ -166,6 +166,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   private def deletePairInSession(s:Session, domain:String, pair:DiffaPair) = {
     getRepairActionsInPair(s, domain, pair.key).foreach(s.delete)
     getEscalationsForPair(s, domain, pair.key).foreach(s.delete)
+    deleteStoreCheckpoint(pair.asRef)
     s.delete(pair)
   }
 

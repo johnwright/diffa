@@ -191,6 +191,34 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def shouldRemoveReportedEventsById() {
+    val timestamp = new DateTime()
+    val pair = DiffaPairRef("pair2", "domain")
+
+    def versionId(i:Int) = VersionID(pair, "id-" + i)
+
+    val events = 100
+
+    for (i <- 0 until events) {
+      diffStore.addReportableUnmatchedEvent(versionId(i), timestamp, "uV-" + i, "dV-" + i, timestamp)
+    }
+
+    def checkUnmatched(expectation:Int) = {
+      val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+      val unmatched = diffStore.retrieveUnmatchedEvents("domain", interval)
+      assertEquals(expectation, unmatched.length)
+    }
+
+    checkUnmatched(events)
+
+    val toDelete = for (i <- 0 until (events / 2)) yield versionId(i)
+    diffStore.removeEvents(toDelete)
+
+    checkUnmatched(events / 2)
+
+  }
+
+  @Test
   def shouldReportUnmatchedEventWithinInterval() {
     val start = new DateTime(2004, 11, 6, 3, 5, 15, 0)
     val size = 60
@@ -635,6 +663,16 @@ class HibernateDomainDifferenceStoreTest {
     val seen = lastUpdate.plusSeconds(5)
 
     diffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+  }
+
+  @Test
+  def shouldStoreLatestVersionPerPair = {
+    val pair = DiffaPairRef("pair1", "domain")
+    assertEquals(None, diffStore.lastRecordedVersion(pair))
+    diffStore.recordLatestVersion(pair, 5294967296L)
+    assertEquals(Some(5294967296L), diffStore.lastRecordedVersion(pair))
+    diffStore.removeLatestRecordedVersion(pair)
+    assertEquals(None, diffStore.lastRecordedVersion(pair))
   }
 
   @Theory

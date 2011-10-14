@@ -63,7 +63,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(), Seq())
+    val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
     assertEquals(0, unmatched.size)
   }
 
@@ -76,9 +76,34 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
     writer.rollback()
 
-    val unmatched = store.unmatchedVersions(Seq(), Seq())
+    val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
     assertEquals(1, unmatched.size)
     assertEquals("id1", unmatched(0).id)
+  }
+
+  @Test
+  def versionsShouldBeDeleteable = {
+    val writer = store.openWriter()
+
+    val id = VersionID(pair, "id1")
+
+    writer.storeUpstreamVersion(id, emptyAttributes, DEC_31_2009, "uvsn")
+    writer.flush
+
+    def verifyUnmatched(expectation:Int, writer:ExtendedVersionCorrelationWriter) = {
+      val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
+      assertEquals(expectation, unmatched.size)
+    }
+
+    verifyUnmatched(1, writer)
+
+    writer.clearUpstreamVersion(id)
+    writer.flush()
+    verifyUnmatched(0, writer)
+
+    writer.clearTombstones()
+
+    verifyUnmatched(0, writer)
   }
 
   @Test
@@ -147,7 +172,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id1"), intAttributes, JUL_1_2010_1, "upstreamVsn", "downstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(dateTimeConstraints, intConstraints)
+    val unmatched = store.unmatchedVersions(dateTimeConstraints, intConstraints, None)
     assertEquals(0, unmatched.size)
   }
 
@@ -158,7 +183,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id2"), emptyAttributes, DEC_31_2009, "upstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(), Seq())
+    val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(new Correlation(null, pair, "id2", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
@@ -170,7 +195,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id2"), system.includedAttrs, DEC_31_2009, "upstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(system.constraints, system.constraints)
+    val unmatched = store.unmatchedVersions(system.constraints, system.constraints, None)
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(new Correlation(null, pair, "id2", system.includedStrAttrs, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsn", null, null, false), unmatched(0))
   }
@@ -182,7 +207,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id2"), system.excludedAttrs, DEC_31_2009, "upstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(system.constraints, system.constraints)
+    val unmatched = store.unmatchedVersions(system.constraints, system.constraints, None)
     assertEquals(0, unmatched.size)
   }
 
@@ -203,7 +228,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id3"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(), Seq())
+    val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(new Correlation(null, pair, "id3", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp,  null, "upstreamVsn", "downstreamVsn", false), unmatched(0))
   }
@@ -226,7 +251,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeDownstreamVersion(VersionID(pair, "id4"), emptyAttributes, DEC_31_2009, "upstreamVsnB", "downstreamVsnB")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(), Seq())
+    val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
     assertEquals(0, unmatched.size)
   }
 
@@ -240,7 +265,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id5"), emptyAttributes, DEC_31_2009, "upstreamVsnB")
     writer.flush()
 
-    val unmatched = store.unmatchedVersions(Seq(), Seq())
+    val unmatched = store.unmatchedVersions(Seq(), Seq(), None)
     assertEquals(1, unmatched.size)
     assertCorrelationEquals(new Correlation(null, pair, "id5", emptyStrAttributes, emptyStrAttributes, DEC_31_2009, timestamp, "upstreamVsnB", "upstreamVsnA", "downstreamVsnA", false), unmatched(0))
   }
@@ -265,7 +290,7 @@ class LuceneVersionCorrelationStoreTest {
     writer.storeUpstreamVersion(VersionID(pair, "id7"), bizDateTimeMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id7")
     val corr = writer.clearUpstreamVersion(VersionID(pair, "id6"))
     writer.flush()
-    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
+    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, false), corr)
 
     val collector = new Collector
     store.queryUpstreams(List(new TimeRangeConstraint("bizDateTime", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectUpstream)
@@ -297,7 +322,7 @@ class LuceneVersionCorrelationStoreTest {
     val writer2 = store.openWriter()
     val corr = writer2.clearDownstreamVersion(VersionID(pair, "id6"))
     writer2.flush()
-    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, true), corr)
+    assertCorrelationEquals(new Correlation(null, pair, "id6", null, null, null, null, null, null, null, false), corr)
 
     val collector = new Collector
     val digests = store.queryDownstreams(List(new TimeRangeConstraint("bizDateTime", DEC_1_2009, endOfDay(DEC_1_2009))), collector.collectDownstream)

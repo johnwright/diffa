@@ -31,6 +31,7 @@ import collection.mutable.{SynchronizedQueue, Queue}
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
+import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -275,14 +276,12 @@ case class PairActor(pair:DiffaPair,
 
       // Notify all interested parties of all of the outstanding mismatches
       writer.flush()
-      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
+
       try {
         diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences")
-        policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan)
-        diffWriter.close()
+        replayCorrelationStore(differencesManager, writer, store, pair, TriggeredByScan)
       } catch {
         case ex =>
-          diffWriter.abort()
           logger.error("Failed to apply unmatched differences to the differences manager", ex)
       }
 
@@ -356,16 +355,7 @@ case class PairActor(pair:DiffaPair,
   def handleDifferenceMessage() = {
     try {
       writer.flush()
-
-      val diffWriter = differencesManager.createDifferenceWriter(pair.domain.name, pair.key, overwrite = true)
-      try {
-        policy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot)
-        diffWriter.close()
-      } catch {
-        case ex =>
-          diffWriter.abort()
-          throw ex      // The exception will be logged below. This block is simply to ensure that abort is called.
-      }
+      replayCorrelationStore(differencesManager, writer, store, pair, TriggeredByBoot)
     } catch {
       case ex => {
         diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to Difference Pair: " + ex.getMessage)

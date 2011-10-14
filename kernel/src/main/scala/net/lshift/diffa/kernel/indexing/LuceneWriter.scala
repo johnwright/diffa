@@ -26,10 +26,8 @@ import org.apache.lucene.document.{NumericField, Fieldable, Field, Document}
 import collection.mutable.{HashSet, HashMap}
 import scala.collection.JavaConversions._
 import org.apache.lucene.index.{IndexReader, IndexWriter, IndexWriterConfig, Term}
-import org.apache.commons.codec.binary.Hex
-import java.nio.charset.Charset
-import java.lang.StringBuffer
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
+import org.apache.lucene.search.{BooleanQuery, BooleanClause, TermQuery}
 
 class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends ExtendedVersionCorrelationWriter {
   import LuceneVersionCorrelationHandler._
@@ -39,10 +37,20 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
   private val maxBufferSize = 10000
 
   private val updatedDocs = HashMap[VersionID, Document]()
-  private val deletedDocs = HashSet[VersionID]()
   private var writer = createIndexWriter
 
   def getReader : IndexReader = IndexReader.open(writer, true)
+
+  private val VERSION_LABEL = "latest.store.version"
+  private var latestVersion : Long = getReader.getCommitUserData match {
+    case null     => 0L
+    case userData => {
+      userData.get(VERSION_LABEL) match {
+        case null => 0L
+        case version => version.toLong
+      }
+    }
+  }
 
   def storeUpstreamVersion(id:VersionID, attributes:scala.collection.immutable.Map[String,TypedAttribute], lastUpdated: DateTime, vsn: String) = {
     log.trace("Indexing upstream " + id + " with attributes: " + attributes + " lastupdated at " + lastUpdated + " with version " + vsn)
@@ -77,40 +85,28 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
   def clearUpstreamVersion(id:VersionID) = {
     doClearAttributes(id, "upstream", doc => {
-      if (doc.get("duvsn") == null) {
-        false // Remove the document
-      } else {
-        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
-        doc.getFields.toList.foreach(f => {
-          if (f.name.startsWith("up.")) doc.removeField(f.name)
-        })
-        updateField(doc, boolField(Upstream.presenceIndicator, false))
-        doc.removeField("uvsn")
-
-        true  // Keep the document
-      }
+      // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+      doc.getFields.toList.foreach(f => {
+        if (f.name.startsWith("up.")) doc.removeField(f.name)
+      })
+      updateField(doc, boolField(Upstream.presenceIndicator, false))
+      doc.removeField("uvsn")
     })
   }
 
   def clearDownstreamVersion(id:VersionID) = {
     doClearAttributes(id, "downstream", doc => {
-      if (doc.get("uvsn") == null) {
-        false // Remove the document
-      } else {
-        // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
-        doc.getFields.toList.foreach(f => {
-          if (f.name.startsWith("down.")) doc.removeField(f.name)
-        })
-        updateField(doc, boolField(Downstream.presenceIndicator, false))
-        doc.removeField("duvsn")
-        doc.removeField("ddvsn")
-
-        true  // Keep the document
-      }
+      // Remove all the upstream attributes. Convert to list as middle-step to prevent ConcurrentModificationEx - see #177
+      doc.getFields.toList.foreach(f => {
+        if (f.name.startsWith("down.")) doc.removeField(f.name)
+      })
+      updateField(doc, boolField(Downstream.presenceIndicator, false))
+      doc.removeField("duvsn")
+      doc.removeField("ddvsn")
     })
   }
 
-  def isDirty = bufferSize > 0
+  def isDirty = updatedDocs.size > 0
 
   def rollback() = {
     writer.rollback()
@@ -118,18 +114,15 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     log.info("Writer rolled back")
   }
 
+  def clearTombstones() {
+    prepareFlush()
+    writer.deleteDocuments(createTombstoneQuery)
+    flushInternal()
+  }
+
   def flush() {
-    if (isDirty) {
-      updatedDocs.foreach { case (id, doc) =>
-        writer.updateDocument(new Term("id", id.id), doc)
-      }
-      deletedDocs.foreach { id =>
-        writer.deleteDocuments(queryForId(id))
-      }
-      writer.commit()
-      updatedDocs.clear()
-      deletedDocs.clear()
-      log.trace("Writer flushed")
+    if (prepareFlush()) {
+      flushInternal()
     }
   }
 
@@ -149,24 +142,9 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     writer
   }
 
-  private def bufferSize = updatedDocs.size + deletedDocs.size
-
   private def prepareUpdate(id: VersionID, doc: Document) = {
-    if (deletedDocs.remove(id)) {
-      log.warn("Detected update of a document that was deleted in the same writer: " + id)
-    }
     updatedDocs.put(id, doc)
-    if (bufferSize >= maxBufferSize) {
-      flush()
-    }
-  }
-
-  private def prepareDelete(id: VersionID) = {
-    if (updatedDocs.remove(id).isDefined) {
-      log.warn("Detected delete of a document that was updated in the same writer: " + id)
-    }
-    deletedDocs.add(id)
-    if (bufferSize >= maxBufferSize) {
+    if (updatedDocs.size >= maxBufferSize) {
       flush()
     }
   }
@@ -175,11 +153,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     if (updatedDocs.contains(id)) {
       updatedDocs(id)
     } else {
-      val doc =
-        if (deletedDocs.contains(id))
-          None
-        else
-          retrieveCurrentDoc(this, id)
+      val doc = retrieveCurrentDoc(this, id)
 
       doc match {
         case None => {
@@ -206,6 +180,8 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
       diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s (%s) with changes (%s)".format(id.id, sectionName,
         changedFields.map { case (k, (ov, nv)) => k + ": " + ov + " -> " + nv }.mkString(", ")))
 
+      // Increment the version counter and update the entry
+      updateStoreVersion(doc)
       f(doc)
 
       // If the participant does not supply a timestamp, then create one on the fly
@@ -232,35 +208,35 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     docToCorrelation(doc, id)
   }
 
-  private def doClearAttributes(id:VersionID, sectionName:String, f:Document => Boolean) = {
+  private def updateStoreVersion(doc:Document) = {
+    latestVersion += 1
+    updateField(doc, longField("store.version", latestVersion))
+  }
+
+  private def doClearAttributes(id:VersionID, sectionName:String, f:Document => Unit) = {
     val currentDoc =
       if (updatedDocs.contains(id))
         Some(updatedDocs(id))
-      else if (deletedDocs.contains(id))
-        None
       else
         retrieveCurrentDoc(this, id)
 
     currentDoc match {
       case None => Correlation.asDeleted(id, new DateTime)
       case Some(doc) => {
-        if (f(doc)) {
-          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s to remove %s".format(id.id, sectionName))
 
-          // We want to keep the document. Update match status and write it out
-          updateField(doc, boolField("isMatched", false))
+        // Increment the version counter and update the entry
+        updateStoreVersion(doc)
+        f(doc)
 
-          prepareUpdate(id, doc)
+        diagnostics.logPairExplanation(id.pair, "Correlation Store", "Updating %s to remove %s".format(id.id, sectionName))
 
-          docToCorrelation(doc, id)
-        } else {
-          diagnostics.logPairExplanation(id.pair, "Correlation Store", "Removing %s as neither upstream nor downstream are present".format(id.id))
+        // Update the match status of the document. A document with neither participant is matched (and will be seen
+        // as a tombstone)
+        updateField(doc, boolField("isMatched", hasUpstream(doc) || hasDownstream(doc)))
 
-          // We'll just delete the doc if it doesn't have an upstream
-          prepareDelete(id)
+        prepareUpdate(id, doc)
 
-          Correlation.asDeleted(id, new DateTime)
-        }
+        docToCorrelation(doc, id)
       }
     }
   }
@@ -290,6 +266,8 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     new Field(name, formatDate(dt), Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
   private def intField(name:String, value:Int, indexed:Boolean = true) =
     (new NumericField(name, Field.Store.YES, indexed)).setIntValue(value)
+  private def longField(name:String, value:Long, indexed:Boolean = true) =
+    (new NumericField(name, Field.Store.YES, indexed)).setLongValue(value)
   private def boolField(name:String, value:Boolean, indexed:Boolean = true) =
     new Field(name, if (value) "1" else "0", Field.Store.YES, indexConfig(indexed), Field.TermVector.NO)
   private def indexConfig(indexed:Boolean) = if (indexed) Field.Index.NOT_ANALYZED_NO_NORMS else Field.Index.NO
@@ -316,5 +294,22 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
     }
 
     result.toMap
+  }
+
+  private def prepareFlush() = {
+    if (isDirty) {
+      updatedDocs.foreach { case (id, doc) =>
+        writer.updateDocument(new Term("id", id.id), doc)
+      }
+      true
+    } else {
+      false
+    }
+  }
+
+  private def flushInternal() {
+    writer.commit(Map(VERSION_LABEL -> latestVersion.toString))
+      updatedDocs.clear()
+      log.trace("Writer flushed")
   }
 }

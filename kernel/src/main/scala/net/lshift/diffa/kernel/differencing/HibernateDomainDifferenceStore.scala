@@ -1,7 +1,6 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.config.DiffaPairRef
 import reflect.BeanProperty
 import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper._
@@ -16,6 +15,9 @@ import java.util.List
 import org.jadira.usertype.dateandtime.joda.columnmapper.TimestampColumnDateTimeMapper
 import org.hibernate.dialect.Dialect
 import java.sql.{Types, Timestamp}
+import net.lshift.diffa.kernel.config.DomainScopedKey._
+import net.lshift.diffa.kernel.config.Domain._
+import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, DiffaPairRef, Pair => DiffaPair}
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -38,17 +40,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
   val columnMapper = new TimestampColumnDateTimeMapper()
 
-  def removeDomain(domain:String) {
-    sessionFactory.withSession(s => {
-      executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
-      executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
-    })
-  }
+  def removeDomain(domain:String) = removeDomainDifferences(domain)
 
   def removePair(pair: DiffaPairRef) = {
     sessionFactory.withSession { s =>
       executeUpdate(s, "removeDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
       executeUpdate(s, "removePendingDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      removeLatestRecordedVersion(pair)
     }
   }
   
@@ -128,6 +126,17 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     })
   }
 
+  def removeEvents(events:Iterable[VersionID]) = sessionFactory.withSession(s => {
+    events.foreach(event => {
+      val pair = event.getPair()
+      val params = Map("domain_name" -> pair.domain,
+                       "pair_key"    -> pair.key,
+                       "entity_id"   -> event.id)
+      executeUpdate(s, "removeDiffsByEntityId", params)
+      executeUpdate(s, "removePendingDiffsByEntityId", params)
+    })
+  })
+
   def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = {
 
      def convertOldEvent(s:Session, old:ReportedDifferenceEvent) {
@@ -185,6 +194,23 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
         false, evt.upstreamVsn, evt.downstreamVsn, new DateTime))
     })
   }
+
+  def lastRecordedVersion(pair:DiffaPairRef) = getStoreCheckpoint(pair) match {
+    case None             => None
+    case Some(checkpoint) => Some(checkpoint.latestVersion)
+  }
+
+  def removeLatestRecordedVersion(pair:DiffaPairRef) = sessionFactory.withSession(s => {
+    getStoreCheckpoint(pair) match {
+      case Some(checkpoint) => s.delete(checkpoint)
+      case None             => //
+    }
+  })
+
+  def recordLatestVersion(pairRef:DiffaPairRef, version:Long) = sessionFactory.withSession(s => {
+    val pair = getPair(s, pairRef.domain, pairRef.key)
+    s.saveOrUpdate(new StoreCheckpoint(pair, version))
+  })
 
   def retrieveUnmatchedEvents(domain:String, interval: Interval) = sessionFactory.withSession(s => {
     listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomain",
@@ -439,4 +465,21 @@ class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory, v
     val dialect = Class.forName(dialectString).newInstance().asInstanceOf[Dialect]
     new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect)
   }
+}
+
+case class StoreCheckpoint(
+  @BeanProperty var pair:DiffaPair,
+  @BeanProperty var latestVersion:java.lang.Long = null
+) {
+  def this() = this(pair = null)
+  //def this(pairRef:DiffaPairRef, latestVersion:java.lang.Long) = this(pairRef.domain, pairRef.key, latestVersion)
+}
+
+/**
+ * Convenience wrapper for a compound primary key
+ */
+case class DomainNameScopedKey(@BeanProperty var pair:String = null,
+                               @BeanProperty var domain:String = null) extends java.io.Serializable
+{
+  def this() = this(pair = null)
 }

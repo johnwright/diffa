@@ -24,6 +24,7 @@ import scala.collection.JavaConversions._
 import scala.collection.Map
 import org.hibernate._
 import java.io.Closeable
+import net.lshift.diffa.kernel.differencing.StoreCheckpoint
 
 /**
  * Mixin providing a bunch of useful query utilities for stores.
@@ -169,6 +170,13 @@ trait HibernateQueryUtils {
     singleQuery[Domain](s, "domainByName", Map("domain_name" -> name), "domain %s".format(name))
   })
 
+  def removeDomainDifferences(domain:String) = sessionFactory.withSession(s => {
+    // TODO Maybe this should be integrated with HibernateSystemConfigStore:deleteDomain/1
+    executeUpdate(s, "removeDomainCheckpoints", Map("domain_name" -> domain))
+    executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
+    executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
+  })
+
   /**
    * This is un-protected call to set a configuration option.
    * It is up to the calling context to establish this is authorized.
@@ -196,6 +204,18 @@ trait HibernateQueryUtils {
     s.get(classOf[ConfigOption], scopedKey) match {
       case null =>
       case current:ConfigOption =>  s.delete(current)
+    }
+  })
+
+  def getStoreCheckpoint(pair:DiffaPairRef) = sessionFactory.withSession(s => {
+    singleQueryOpt[StoreCheckpoint](s, "storeCheckpointByPairAndDomain",
+      Map("pair_key" -> pair.key, "domain_name" -> pair.domain))
+  })
+
+  def deleteStoreCheckpoint(pair:DiffaPairRef) = sessionFactory.withSession(s => {
+    getStoreCheckpoint(pair) match {
+      case Some(x) => s.delete(x)
+      case None    => // nothing to do
     }
   })
 

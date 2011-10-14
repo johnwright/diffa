@@ -73,6 +73,7 @@ object LuceneVersionCorrelationHandler {
       lastUpdate = parseDate(doc.get("lastUpdated")),
       timestamp = parseDate(doc.get("timestamp")),
       upstreamVsn = doc.get("uvsn"),
+      storeVersion = parseLong(doc.get("store.version")),
       downstreamUVsn = doc.get("duvsn"),
       downstreamDVsn = doc.get("ddvsn"),
       isMatched = parseBool(doc.get("isMatched"))
@@ -96,6 +97,7 @@ object LuceneVersionCorrelationHandler {
   }
 
   private def parseBool(bs:String) = bs != null && bs.equals("1")
+  private def parseLong(number:String) = if (number == null) 0L else number.toLong
 
   def parseDate(ds:String) = {
     if (ds != null) {
@@ -107,4 +109,18 @@ object LuceneVersionCorrelationHandler {
 
   def formatDateTime(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
   def formatDate(dt:LocalDate) = dt.toString
+
+  def addTombstoneClauses(query:BooleanQuery) {
+    query.add(new TermQuery(new Term(Upstream.presenceIndicator, "0")), BooleanClause.Occur.MUST)
+    query.add(new TermQuery(new Term(Downstream.presenceIndicator, "0")), BooleanClause.Occur.MUST)
+  }
+
+  def createTombstoneQuery = {
+    var tombstonedQuery = new BooleanQuery
+    addTombstoneClauses(tombstonedQuery)
+    tombstonedQuery
+  }
+
+  def hasUpstream(doc:Document) = parseBool(doc.get(Upstream.presenceIndicator))
+  def hasDownstream(doc:Document) = parseBool(doc.get(Downstream.presenceIndicator))
 }

@@ -37,6 +37,7 @@ import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, AlertCodes}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Domain, Endpoint, Pair => DiffaPair}
 import net.lshift.diffa.kernel.frontend.FrontendConversions
 import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
+import net.lshift.diffa.participant.scanning.ScanConstraint
 
 class PairActorTest {
   import PairActorTest._
@@ -89,8 +90,7 @@ class PairActorTest {
   val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
 
   val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
-  expect(store.openWriter()).andReturn(writer).anyTimes
-  replay(store)
+  expect(store.openWriter()).andStubReturn(writer)
 
   val stores = createStrictMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
   expect(stores.apply(pairRef)).andReturn(store)
@@ -101,6 +101,7 @@ class PairActorTest {
   val differencesManager = createStrictMock(classOf[DifferencesManager])
   val diffWriter = createStrictMock("differenceWriter", classOf[DifferenceWriter])
   expect(differencesManager.createDifferenceWriter(domainName, pairKey, overwrite = true)).andStubReturn(diffWriter)
+  expect(differencesManager.lastRecordedVersion(pairRef)).andStubReturn(None)
   replay(differencesManager)
 
   val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100)
@@ -145,26 +146,34 @@ class PairActorTest {
     expectDownstreamScan()
   }
 
-  def expectDifferencesReplay() = {
+  def expectDifferencesReplay(assertFlush:Boolean = true) = {
+    if (assertFlush) writer.flush(); expectLastCall.atLeastOnce()
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences"); expectLastCall
-    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByScan))
+    expect(store.unmatchedVersions(anyObject[Seq[ScanConstraint]], anyObject[Seq[ScanConstraint]], EasyMock.eq[Option[Long]](None))).andReturn(Seq())
+    expect(store.tombstoneVersions(None)).andReturn(Seq())
+    diffWriter.evictTombstones(Seq()); expectLastCall
+    writer.clearTombstones(); expectLastCall
+    diffWriter.close(); expectLastCall()
   }
 
   def expectWriterRollback() {
     expect(writer.flush()).atLeastOnce
     expect(writer.rollback())
-    replay(writer)
   }
 
   @Test
   def runDifference = {
     val monitor = new Object
-    expect(versionPolicy.replayUnmatchedDifferences(pair, diffWriter, TriggeredByBoot)).andAnswer(new IAnswer[Unit] {
+    writer.flush(); expectLastCall.atLeastOnce()
+    expect(store.unmatchedVersions(anyObject[Seq[ScanConstraint]], anyObject[Seq[ScanConstraint]], EasyMock.eq[Option[Long]](None))).andReturn(Seq())
+    expect(store.tombstoneVersions(None)).andReturn(Seq())
+    diffWriter.evictTombstones(Seq()); expectLastCall
+    writer.clearTombstones(); expectLastCall
+    diffWriter.close(); expectLastCall().andAnswer(new IAnswer[Unit] {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
-    writer.flush(); expectLastCall.asStub()
 
-    replay(versionPolicy, writer)
+    replay(versionPolicy, store, diffWriter, writer)
 
     supervisor.startActor(pair)
     supervisor.difference(pair.asRef)
@@ -180,8 +189,6 @@ class PairActorTest {
   def runScan = {
     val monitor = new Object
 
-    expect(writer.flush()).atLeastOnce
-    replay(writer)
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall.atLeastOnce()
 
     expectScans
@@ -192,14 +199,14 @@ class PairActorTest {
       def answer = { monitor.synchronized { monitor.notifyAll } }
     })
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan completed"); expectLastCall
-    replay(versionPolicy, scanListener, diagnostics)
+    replay(writer, store, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pair.asRef)
     monitor.synchronized {
       monitor.wait(1000)
     }
-    verify(versionPolicy, scanListener, diagnostics)
+    verify(writer, versionPolicy, scanListener, diagnostics)
   }
 
   @Test
@@ -244,7 +251,7 @@ class PairActorTest {
 
     expectDifferencesReplay()
 
-    replay(versionPolicy)
+    replay(writer, store, diffWriter, versionPolicy)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pair.asRef)
@@ -262,6 +269,9 @@ class PairActorTest {
 
   @Test
   def shouldHandleCancellationWhilstNotScanning = {
+    writer.flush(); expectLastCall.asStub()
+    replay(store, writer, diffWriter, versionPolicy)
+
     supervisor.startActor(pair)
     assertTrue(supervisor.cancelScans(pair.asRef))
   }
@@ -307,7 +317,9 @@ class PairActorTest {
       }
     })
 
-    replay(versionPolicy, scanListener, diagnostics)
+    writer.flush(); expectLastCall.asStub()
+    expect(writer.rollback); expectLastCall
+    replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pair.asRef)
@@ -332,7 +344,7 @@ class PairActorTest {
       failStateHandler = new IAnswer[Unit] {
           def answer { monitor.synchronized { monitor.notifyAll } }
         })
-    replay(versionPolicy, scanListener, diagnostics)
+    replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pair.asRef)
@@ -353,7 +365,7 @@ class PairActorTest {
         wasMarkedAsCancelled.set(feedbackHandle.isCancelled)
       }
     })
-    replay(versionPolicy, scanListener, diagnostics)
+    replay(writer, store, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pair.asRef)
@@ -379,7 +391,7 @@ class PairActorTest {
         }
       }
     })
-    replay(versionPolicy, scanListener, diagnostics)
+    replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pair.asRef)
@@ -440,7 +452,7 @@ class PairActorTest {
         proxyDidGenerateException.get(waitForStragglerToFinishDelay)
       }
     }).once()
-    expectDifferencesReplay()
+    expectDifferencesReplay(assertFlush = false)
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan completed"); expectLastCall
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer {
@@ -448,7 +460,7 @@ class PairActorTest {
       }
     }).once()
 
-    replay(versionPolicy, scanListener, diagnostics)
+    replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
     supervisor.scanPair(pairRef)
@@ -456,7 +468,7 @@ class PairActorTest {
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too
 
-    verify(versionPolicy, scanListener, diagnostics)
+    verify(scanListener, diagnostics)
   }
 
   @Test
@@ -473,7 +485,7 @@ class PairActorTest {
         }
       }
     })
-    replay(versionPolicy)
+    replay(store, diffWriter, versionPolicy)
 
     supervisor.startActor(pair)
     supervisor.propagateChangeEvent(event)
@@ -496,7 +508,7 @@ class PairActorTest {
         null
       }
     })
-    replay(writer)
+    replay(writer, store, diffWriter)
 
     supervisor.startActor(pair)
 

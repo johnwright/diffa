@@ -48,7 +48,8 @@ class HibernateConfigStorePreparationStep
     ExpandPrimaryKeysMigrationStep,
     AddSuperuserAndDefaultUsersMigrationStep,
     AddPersistentDiffsMigrationStep,
-    AddDomainSequenceIndexMigrationStep
+    AddDomainSequenceIndexMigrationStep,
+    AddStoreCheckpointsMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -433,6 +434,24 @@ object AddDomainSequenceIndexMigrationStep extends HibernateMigrationStep {
   def migrate(config: Configuration, connection: Connection) {
     val migration = new MigrationBuilder(config)
     migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")
+    migration.apply(connection)
+  }
+}
+
+object AddStoreCheckpointsMigrationStep extends HibernateMigrationStep {
+  def versionId = 9
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.createTable("store_checkpoints").
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("latest_version", Types.BIGINT, false).
+      pk("domain", "pair")
+
+    migration.alterTable("store_checkpoints").
+      addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair", "domain"))
+
     migration.apply(connection)
   }
 }
