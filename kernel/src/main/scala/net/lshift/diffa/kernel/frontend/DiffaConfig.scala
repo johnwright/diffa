@@ -58,8 +58,27 @@ case class EndpointDef (
 
   def this() = this(name = null)
 
+  val DEFAULT_URL_LENGTH_LIMIT = 1024
+
   def validate(path:String = null) {
     // TODO [#344] : Add validation of endpoint parameters
+    val endPointPath = ValidationUtil.buildPath(path, "endpoint", Map("name" -> name))
+    if (contentType == null) {
+      throw new ConfigValidationException(endPointPath, "Content type should not be null for endpoint %s".format(this))
+    }
+    Seq(
+      scanUrl,
+      contentRetrievalUrl,
+      versionGenerationUrl,
+      inboundUrl
+    ).foreach(url => {
+      if (url != null) {
+        if (url.length() > DEFAULT_URL_LENGTH_LIMIT) {
+          throw new ConfigValidationException(endPointPath,
+            "URL (%s) length was %s, but the limit is %s (endpoint was %s)".format(url, url.length(), DEFAULT_URL_LENGTH_LIMIT, this))
+        }
+      }
+    })
   }
 }
 

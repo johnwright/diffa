@@ -49,7 +49,8 @@ class HibernateConfigStorePreparationStep
     AddSuperuserAndDefaultUsersMigrationStep,
     AddPersistentDiffsMigrationStep,
     AddDomainSequenceIndexMigrationStep,
-    AddStoreCheckpointsMigrationStep
+    AddStoreCheckpointsMigrationStep,
+    ReviseUrlLengthMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -451,6 +452,21 @@ object AddStoreCheckpointsMigrationStep extends HibernateMigrationStep {
 
     migration.alterTable("store_checkpoints").
       addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair", "domain"))
+
+    migration.apply(connection)
+  }
+}
+
+object ReviseUrlLengthMigrationStep extends HibernateMigrationStep {
+  def versionId = 10
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.alterTable("endpoint").
+      alterColumn("scan_url", Types.VARCHAR, 1024, true, null).
+      alterColumn("content_retrieval_url", Types.VARCHAR, 1024, true, null).
+      alterColumn("version_generation_url", Types.VARCHAR, 1024, true, null).
+      alterColumn("inbound_url", Types.VARCHAR, 1024, true, null)
 
     migration.apply(connection)
   }
