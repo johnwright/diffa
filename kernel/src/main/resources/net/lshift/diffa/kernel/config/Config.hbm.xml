@@ -64,10 +64,10 @@
       <key-property name="name" type="string" />
       <key-many-to-one name="domain" class="Domain" column="domain" lazy="false" />
     </composite-id>
-    <property name="scanUrl" column="scan_url" type="string" not-null="false" unique="false"/>
-    <property name="contentRetrievalUrl" column="content_retrieval_url" type="string" not-null="false" unique="false"/>
-    <property name="versionGenerationUrl" column="version_generation_url" type="string" not-null="false" unique="false"/>
-    <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false"/>
+    <property name="scanUrl" column="scan_url" type="string" not-null="false" unique="false" length="1024"/>
+    <property name="contentRetrievalUrl" column="content_retrieval_url" type="string" not-null="false" unique="false" length="1024"/>
+    <property name="versionGenerationUrl" column="version_generation_url" type="string" not-null="false" unique="false" length="1024"/>
+    <property name="inboundUrl" column="inbound_url" type="string" not-null="false" unique="false" length="1024"/>
     <property name="contentType" column="content_type" type="string" not-null="true"/>
     <property name="inboundContentType" column="inbound_content_type" type="string" not-null="false"/>
     <map name="categories" lazy="false" cascade="all">
