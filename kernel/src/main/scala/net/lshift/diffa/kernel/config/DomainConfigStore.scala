@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
 import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
+import scala.Option._
 
 /**
  * Provides general configuration options within the scope of a particular domain.
@@ -107,9 +108,12 @@ case class Endpoint(
   @BeanProperty var contentType: String = null,
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
-  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
+  @BeanProperty var views: java.util.Set[EndpointView] = new java.util.HashSet[EndpointView]) {
 
   def this() = this(name = null)
+
+  def defaultView = views.find(v => v.name == "default").get
 
   /**
    * Fuses a list of runtime attributes together with their
@@ -178,6 +182,15 @@ case class Endpoint(
     }).toList
 }
 
+case class EndpointView(
+  @BeanProperty var name:String = null,
+  @BeanProperty var endpoint:Endpoint = null,
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]
+) {
+
+  def this() = this(name = null)
+}
+
 case class Pair(
   @BeanProperty var key: String = null,
   @BeanProperty var domain: Domain = null,
@@ -185,7 +198,8 @@ case class Pair(
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
-  @BeanProperty var scanCronSpec: String = null) {
+  @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var views:java.util.Set[PairView] = new java.util.HashSet[PairView]) {
 
   def this() = this(key = null)
 
@@ -200,6 +214,15 @@ case class Pair(
 
   // TODO This looks a bit strange
   override def hashCode = 31 * (31 + key.hashCode) + domain.hashCode
+}
+
+case class PairView(
+  @BeanProperty var name:String = null,
+  @BeanProperty var pair:Pair = null,
+  @BeanProperty var scanCronSpec:String = null
+) {
+
+  def this() = this(name = null)
 }
 
 /**
@@ -357,6 +380,24 @@ case class DomainScopedKey(@BeanProperty var key:String = null,
  */
 case class DomainScopedName(@BeanProperty var name:String = null,
                             @BeanProperty var domain:Domain = null) extends java.io.Serializable
+{
+  def this() = this(name = null)
+}
+
+/**
+ * Provides an Endpoint Scoped name for an entity.
+ */
+case class EndpointScopedName(@BeanProperty var name:String = null,
+                            @BeanProperty var endpoint:Endpoint = null) extends java.io.Serializable
+{
+  def this() = this(name = null)
+}
+
+/**
+ * Provides a Pair Scoped name for an entity.
+ */
+case class PairScopedName(@BeanProperty var name:String = null,
+                          @BeanProperty var pair:Pair = null) extends java.io.Serializable
 {
   def this() = this(name = null)
 }
