@@ -102,6 +102,10 @@
     <field name="setCategories" type="net.lshift.diffa.agent.rest.CastorSerializableSetCategoryDescriptor" collection="arraylist">
       <bind-xml name="set-category" />
     </field>
+
+    <field name="views" type="net.lshift.diffa.agent.rest.CastorSerializableEndpointView" collection="arraylist">
+      <bind-xml name="view" />
+    </field>
   </class>
 
   <class name="net.lshift.diffa.agent.rest.CastorSerializablePair">
@@ -128,6 +132,9 @@
     </field>
     <field name="escalations" type="net.lshift.diffa.kernel.frontend.EscalationDef" collection="arraylist">
       <bind-xml name="escalation" />
+    </field>
+    <field name="views" type="net.lshift.diffa.kernel.config.PairView" collection="arraylist">
+      <bind-xml name="view" />
     </field>
   </class>
 
@@ -158,6 +165,31 @@
     </field>
     <field name="origin" type="string">
       <bind-xml name="origin" node="attribute" />
+    </field>
+  </class>
+
+  <class name="net.lshift.diffa.agent.rest.CastorSerializableEndpointView">
+    <field name="name" type="string">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    
+    <field name="rangeCategories" type="net.lshift.diffa.agent.rest.CastorSerializableRangeCategoryDescriptor" collection="arraylist">
+      <bind-xml name="range-category" />
+    </field>
+    <field name="prefixCategories" type="net.lshift.diffa.agent.rest.CastorSerializablePrefixCategoryDescriptor" collection="arraylist">
+      <bind-xml name="prefix-category" />
+    </field>
+    <field name="setCategories" type="net.lshift.diffa.agent.rest.CastorSerializableSetCategoryDescriptor" collection="arraylist">
+      <bind-xml name="set-category" />
+    </field>
+  </class>
+
+  <class name="net.lshift.diffa.kernel.config.PairView">
+    <field name="name" type="string">
+      <bind-xml name="name" node="attribute" />
+    </field>
+    <field name="scanCronSpec" type="string">
+      <bind-xml name="scan-schedule" node="attribute" />
     </field>
   </class>
 
