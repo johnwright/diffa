@@ -27,8 +27,18 @@ class JSONEncodingUtilsTest {
 
   def time() = new DateTime().toString()
 
+
   @Test
   def wireEventRoundTrip = {
+    val event = WireEvent("baz", Map("foo" -> "bar"), List("a", "b", "c"))
+    val serialized = JSONEncodingUtils.serializeEvent(event)
+    val deserialized = JSONEncodingUtils.deserializeEvent(serialized)
+    assertNotNull(deserialized)
+    assertEquals(event, deserialized)
+  }
+
+  @Test
+  def wireEventListRoundTrip = {
     val event = Seq(WireEvent("baz1", Map("foo1" -> "bar1"), List("a", "b", "c")),
                     WireEvent("baz2", Map("foo2" -> "bar2"), List("d", "e", "f")))
     val serialized = JSONEncodingUtils.serializeEventList(event)
