@@ -60,7 +60,7 @@ class Changes(val domainConfig:DomainConfigStore,
       val attrsMap = AttributesUtil.toMap(endpointCategories.keys, pairEvt.attributes)
       val typedAttrsMap = AttributesUtil.toTypedMap(endpointCategories, attrsMap)
       val issues = AttributesUtil.detectMissingAttributes(endpointCategories, attrsMap) ++
-        AttributesUtil.detectOutsideConstraints(endpoint.defaultConstraints(), typedAttrsMap)
+        AttributesUtil.detectOutsideConstraints(endpoint.initialConstraints(None), typedAttrsMap)
 
       if (issues.size > 0) {
         log.warn("Dropping invalid pair event " + pairEvt + " due to issues " + issues)

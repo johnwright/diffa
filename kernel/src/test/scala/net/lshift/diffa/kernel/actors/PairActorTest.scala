@@ -131,12 +131,12 @@ class PairActorTest {
   }
 
   def expectUpstreamScan() = {
-    expect(versionPolicy.scanUpstream(EasyMock.eq(pair), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pair), EasyMock.eq(None), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
                                       EasyMock.eq(us), EasyMock.isA(classOf[DifferencingListener]),
                                       EasyMock.isA(classOf[FeedbackHandle])))
   }
   def expectDownstreamScan() = {
-    expect(versionPolicy.scanDownstream(EasyMock.eq(pair), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+    expect(versionPolicy.scanDownstream(EasyMock.eq(pair), EasyMock.eq(None), EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
                                         EasyMock.eq(us), EasyMock.eq(ds), EasyMock.isA(classOf[DifferencingListener]),
                                         EasyMock.isA(classOf[FeedbackHandle])))
   }
@@ -202,7 +202,7 @@ class PairActorTest {
     replay(writer, store, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pair.asRef)
+    supervisor.scanPair(pair.asRef, None)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -232,6 +232,7 @@ class PairActorTest {
     })
 
     expect(versionPolicy.scanUpstream(EasyMock.eq(pair),
+           EasyMock.eq(None),
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us),
            EasyMock.isA(classOf[DifferencingListener]),
@@ -244,6 +245,7 @@ class PairActorTest {
       }
     })
     expect(versionPolicy.scanDownstream(EasyMock.eq(pair),
+           EasyMock.eq(None),
            EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
            EasyMock.eq(us), EasyMock.eq(ds),
            EasyMock.isA(classOf[DifferencingListener]),
@@ -254,7 +256,7 @@ class PairActorTest {
     replay(writer, store, diffWriter, versionPolicy)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pair.asRef)
+    supervisor.scanPair(pair.asRef, None)
 
     flushMonitor.synchronized {
       flushMonitor.wait(2000)
@@ -322,7 +324,7 @@ class PairActorTest {
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pair.asRef)
+    supervisor.scanPair(pair.asRef, None)
 
     responseMonitor.synchronized {
       responseMonitor.wait(timeToWait * 2)
@@ -347,7 +349,7 @@ class PairActorTest {
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pair.asRef)
+    supervisor.scanPair(pair.asRef, None)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -360,7 +362,7 @@ class PairActorTest {
 
     expectFailingScan(downstreamHandler = new IAnswer[Unit] {
       def answer() {
-        val feedbackHandle = EasyMock.getCurrentArguments()(5).asInstanceOf[FeedbackHandle]
+        val feedbackHandle = EasyMock.getCurrentArguments()(6).asInstanceOf[FeedbackHandle]
         awaitFeedbackHandleCancellation(feedbackHandle)
         wasMarkedAsCancelled.set(feedbackHandle.isCancelled)
       }
@@ -368,7 +370,7 @@ class PairActorTest {
     replay(writer, store, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pair.asRef)
+    supervisor.scanPair(pair.asRef, None)
     assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
   }
@@ -379,10 +381,10 @@ class PairActorTest {
 
     expectFailingScan(downstreamHandler = new IAnswer[Unit] {
       def answer() {
-        val feedbackHandle = EasyMock.getCurrentArguments()(5).asInstanceOf[FeedbackHandle]
+        val feedbackHandle = EasyMock.getCurrentArguments()(6).asInstanceOf[FeedbackHandle]
         awaitFeedbackHandleCancellation(feedbackHandle)
 
-        val writer = EasyMock.getCurrentArguments()(1).asInstanceOf[LimitedVersionCorrelationWriter]
+        val writer = EasyMock.getCurrentArguments()(2).asInstanceOf[LimitedVersionCorrelationWriter]
         try {
           writer.clearDownstreamVersion(VersionID(DiffaPairRef("p1","domain"), "abc"))
           proxyDidGenerateException.set(false)
@@ -394,7 +396,7 @@ class PairActorTest {
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pair.asRef)
+    supervisor.scanPair(pair.asRef, None)
     
     assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
@@ -420,7 +422,7 @@ class PairActorTest {
       downstreamHandler = new IAnswer[Unit] {
           def answer() {
             if (secondScanIsRunning.get(waitForSecondScanToStartDelay).isDefined) {
-              val writer = EasyMock.getCurrentArguments()(1).asInstanceOf[LimitedVersionCorrelationWriter]
+              val writer = EasyMock.getCurrentArguments()(2).asInstanceOf[LimitedVersionCorrelationWriter]
               try {
                 writer.clearDownstreamVersion(VersionID(DiffaPairRef("p1","domain"), "abc"))
                 proxyDidGenerateException.set(false)
@@ -437,7 +439,7 @@ class PairActorTest {
         },
       failStateHandler = new IAnswer[Unit] {
           def answer {
-            supervisor.scanPair(pair.asRef)      // Run a second scan when the first one fails
+            supervisor.scanPair(pair.asRef, None)      // Run a second scan when the first one fails
           }
         })
     
@@ -463,7 +465,7 @@ class PairActorTest {
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair)
-    supervisor.scanPair(pairRef)
+    supervisor.scanPair(pairRef, None)
 
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too

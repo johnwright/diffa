@@ -54,7 +54,7 @@ class QuartzScanScheduler(systemConfig:SystemConfigStore, pairPolicyClient:PairP
 
       log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
       try {
-        pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain))
+        pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), None)
       } catch {
           // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
         case ex =>

@@ -195,8 +195,8 @@ case class PairActor(pair:DiffaPair,
    * and will be re-delivered into this actor's mailbox when the scan state is exited.
    */
   def receive = {
-    case ScanMessage => {
-      if (handleScanMessage()) {
+    case ScanMessage(scanView) => {
+      if (handleScanMessage(scanView)) {
         // Go into the scanning state
         become(receiveWhilstScanning)
       }
@@ -368,7 +368,7 @@ case class PairActor(pair:DiffaPair,
    * Implements the top half of the request to scan the participants for digests.
    * This actor will still be in the scan state after this callback has returned.
    */
-  def handleScanMessage() : Boolean = {
+  def handleScanMessage(scanView:Option[String]) : Boolean = {
     val createdScan = OutstandingScan(new UUID)
 
     // allocate a writer proxy
@@ -386,7 +386,7 @@ case class PairActor(pair:DiffaPair,
 
       Actor.spawn {
         try {
-          policy.scanUpstream(pair, writerProxy, us, bufferingListener, currentFeedbackHandle)
+          policy.scanUpstream(pair, scanView, writerProxy, us, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Up, Success)
         }
         catch {
@@ -404,7 +404,7 @@ case class PairActor(pair:DiffaPair,
 
       Actor.spawn {
         try {
-          policy.scanDownstream(pair, writerProxy, us, ds, bufferingListener, currentFeedbackHandle)
+          policy.scanDownstream(pair, scanView, writerProxy, us, ds, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Down, Success)
         }
         catch {
@@ -491,7 +491,7 @@ case object Cancellation extends Result
 abstract class Deferrable
 case class ChangeMessage(event: PairChangeEvent) extends Deferrable
 case object DifferenceMessage extends Deferrable
-case object ScanMessage
+case class ScanMessage(scanView:Option[String])
 
 /**
  * This message indicates that this actor should cancel all current and pending scan operations.

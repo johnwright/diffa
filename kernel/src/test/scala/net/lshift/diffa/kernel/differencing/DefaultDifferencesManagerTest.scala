@@ -143,7 +143,7 @@ class DefaultDifferencesManagerTest {
       expect(pairPolicyClient.difference(p.asRef)).atLeastOnce
     })
     pairs.foreach(p => {
-      expect(pairPolicyClient.scanPair(p.asRef)).atLeastOnce
+      expect(pairPolicyClient.scanPair(p.asRef, None)).atLeastOnce
     })
 
     replay(pairPolicyClient)

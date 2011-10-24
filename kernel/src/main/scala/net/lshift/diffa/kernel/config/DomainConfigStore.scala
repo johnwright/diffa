@@ -24,6 +24,7 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
 import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
 import scala.Option._
+import net.lshift.diffa.kernel.util.CategoryUtil
 
 /**
  * Provides general configuration options within the scope of a particular domain.
@@ -122,64 +123,22 @@ case class Endpoint(
    */
   def schematize(runtimeValues:Seq[String]) = AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
 
-  def defaultBucketing() : Seq[CategoryFunction] = {
-    categories.flatMap {
-      case (name, categoryType) => {
-        categoryType match {
-          // #203: By default, set elements should be sent out individually. The default behaviour for an
-          // un-aggregated attribute is to handle it by name, so we don't need to return any bucketing for it.
-          case s:SetCategoryDescriptor    => None
-          case r:RangeCategoryDescriptor  => RangeTypeRegistry.defaultCategoryFunction(name, r)
-          case p:PrefixCategoryDescriptor => Some(StringPrefixCategoryFunction(name, p.prefixLength, p.maxLength, p.step))
-        }
-      }
-    }.toSeq
-  }
+  def initialBucketing(view:Option[String]) =
+    CategoryUtil.initialBucketingFor(CategoryUtil.fuseViewCategories(categories.toMap, views, view))
 
   /**
    * Returns a structured group of constraints for the current endpoint that is appropriate for transmission
    * over the wire.
    */
-  def groupedConstraints() : Seq[Seq[ScanConstraint]] = {
-    val constraints = defaultConstraints.map {
-      /**
-       * #203: By default, set elements should be sent out individually - in the future, this may be configurable
-       */
-      case sc:SetConstraint =>
-        sc.getValues.map(v => new SetConstraint(sc.getAttributeName, Set(v))).toSeq
-      case c                =>
-        Seq(c)
-    }
-    if (constraints.length > 0) {
-      constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
-    } else {
-      Seq()
-    }
-  }
+  def groupedConstraints(view:Option[String]) =
+    CategoryUtil.groupConstraints(CategoryUtil.fuseViewCategories(categories.toMap, views, view))
 
   /**
    * Returns a set of the coarsest unbound query constraints for
    * each of the category types that has been configured for this pair.
    */
-  def defaultConstraints() : Seq[ScanConstraint] =
-    categories.flatMap({
-      case (name, categoryType) => {
-        categoryType match {
-          case s:SetCategoryDescriptor   =>
-            Some(new SetConstraint(name, s.values))
-          case r:RangeCategoryDescriptor => {
-            if (r.lower == null && r.upper == null) {
-              None
-            }
-            else {
-              Some(RangeCategoryParser.buildConstraint(name,r))
-            }
-          }
-          case p:PrefixCategoryDescriptor =>
-            None
-        }
-      }
-    }).toList
+  def initialConstraints(view:Option[String]) =
+    CategoryUtil.initialConstraintsFor(CategoryUtil.fuseViewCategories(categories.toMap, views, view))
 }
 
 case class EndpointView(

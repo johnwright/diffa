@@ -20,13 +20,13 @@ import org.junit.Test
 import org.easymock.EasyMock._
 import org.junit.Assert._
 import org.joda.time.DateTime
-import org.easymock.IAnswer
 import org.junit.runner.RunWith
 import net.lshift.diffa.kernel.util.{Concurrent, ConcurrentJunitRunner}
 import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain, Pair => DiffaPair}
+import org.easymock.{EasyMock, IAnswer}
 
 /**
  * Test cases for the QuartzScanScheduler.
@@ -145,7 +145,7 @@ class QuartzScanSchedulerTest {
 
   private def createExecuteListenerQueue = {
     val q = new LinkedBlockingQueue[DiffaPairRef]
-    expect(pairPolicyClient.scanPair(anyObject.asInstanceOf[DiffaPairRef])).andAnswer(new IAnswer[Unit] {
+    expect(pairPolicyClient.scanPair(anyObject.asInstanceOf[DiffaPairRef], EasyMock.eq(None))).andAnswer(new IAnswer[Unit] {
       def answer = {
         val pair = getCurrentArguments()(0).asInstanceOf[DiffaPairRef]
         q.add(pair)

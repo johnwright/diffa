@@ -96,8 +96,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.scanUpstream(scenario.pair, None, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, None, writer, usMock, dsMock, listener, feedbackHandle)
 
     verifyAll
   }
@@ -127,8 +127,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.scanUpstream(scenario.pair, None, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, None, writer, usMock, dsMock, listener, feedbackHandle)
 
     verifyAll
   }
@@ -167,8 +167,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.scanUpstream(scenario.pair, None, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, None, writer, usMock, dsMock, listener, feedbackHandle)
 
     verifyAll
   }
@@ -207,8 +207,8 @@ abstract class AbstractDataDrivenPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(scenario.pair, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(scenario.pair, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.scanUpstream(scenario.pair, None, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(scenario.pair, None, writer, usMock, dsMock, listener, feedbackHandle)
 
     verifyAll
   }
