@@ -48,7 +48,7 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
   @Description("Starts a scan for the given pair.")
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
   @OptionalParam(name = "view", datatype="string", description="Child View to Scan")
-  def startScan(@PathParam("pairKey") pairKey:String, @QueryParam("view") view:String) = {
+  def startScan(@PathParam("pairKey") pairKey:String, @FormParam("view") view:String) = {
     pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), if (view != null) Some(view) else None)
     Response.status(Response.Status.ACCEPTED).build
   }

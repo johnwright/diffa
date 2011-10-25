@@ -20,6 +20,7 @@ import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
 import net.lshift.diffa.kernel.differencing.PairScanState
 import scala.collection.JavaConversions._
+import com.sun.jersey.core.util.MultivaluedMapImpl
 
 /**
  * A RESTful client to manage participant scanning.
@@ -29,11 +30,13 @@ class ScanningRestClient(serverRootUrl:String, domain:String, username:String = 
 
   def startScan(pairKey: String, view:Option[String] = None) = {
     val p = resource.path("pairs").path(pairKey).path("scan")
-    val maybeWithView = view match {
-      case None     => p
-      case Some(v)  => p.queryParam("view", v)
+    val postData = new MultivaluedMapImpl()
+    view match {
+      case None     =>
+      case Some(v)  => postData.add("view", v)
     }
-    val response = maybeWithView.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
+    val response = p.accept(MediaType.APPLICATION_JSON_TYPE).
+      `type`("application/x-www-form-urlencoded").post(classOf[ClientResponse], postData)
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 202     => // Successfully submitted (202 is "Accepted")
