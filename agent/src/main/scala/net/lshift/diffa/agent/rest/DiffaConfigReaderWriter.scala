@@ -112,7 +112,7 @@ class DiffaProperty(@BeanProperty var key:String, @BeanProperty var value:String
   def this() = this(null, null)
 }
 
-trait Categorised {
+trait Categorized {
   @BeanProperty var rangeCategories: java.util.List[CastorSerializableRangeCategoryDescriptor] = new java.util.ArrayList[CastorSerializableRangeCategoryDescriptor]
   @BeanProperty var prefixCategories: java.util.List[CastorSerializablePrefixCategoryDescriptor] = new java.util.ArrayList[CastorSerializablePrefixCategoryDescriptor]
   @BeanProperty var setCategories: java.util.List[CastorSerializableSetCategoryDescriptor] = new java.util.ArrayList[CastorSerializableSetCategoryDescriptor]
@@ -133,7 +133,7 @@ trait Categorised {
   }
 }
 
-class CastorSerializableEndpoint extends Categorised {
+class CastorSerializableEndpoint extends Categorized {
   @BeanProperty var name: String = null
   @BeanProperty var scanUrl: String = null
   @BeanProperty var contentRetrievalUrl: String = null
@@ -166,7 +166,7 @@ class CastorSerializableEndpoint extends Categorised {
     )
 }
 
-class CastorSerializableEndpointView extends Categorised {
+class CastorSerializableEndpointView extends Categorized {
   @BeanProperty var name: String = null
 
   def fromDiffaEndpointView(e:EndpointViewDef) = {
