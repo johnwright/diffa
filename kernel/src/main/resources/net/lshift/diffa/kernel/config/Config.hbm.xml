@@ -135,7 +135,7 @@
 
   <class name="PairView" table="pair_views" abstract="false">
     <cache usage="read-write"/>
-    <composite-id mapped="true" class="net.lshift.diffa.kernel.config.PairScopedName">
+    <composite-id mapped="true">
       <key-property name="name" type="string" />
       <key-many-to-one name="pair" class="Pair" lazy="false">
         <column name="pair" />
@@ -257,6 +257,13 @@
       (p.upstream.name = :endpoint_name or p.downstream.name = :endpoint_name)
   </query>
 
+  <query name="endpointViewsByEndpoint" cacheable="true">
+    select v from EndpointView v
+    where
+      v.endpoint.domain.name = :domain_name and
+      v.endpoint.name = :endpoint_name
+  </query>
+
   <!-- Queries by domain only -->
 
   <query name="membersByDomain" cacheable="true">
@@ -271,8 +278,16 @@
     select p from Pair p where p.domain.name = :domain_name
   </query>
 
+  <query name="pairViewsByDomain" cacheable="true">
+    select v from PairView v where v.pair.domain.name = :domain_name
+  </query>
+
   <query name="endpointsByDomain" cacheable="true">
     select e from Endpoint e where e.domain.name = :domain_name
+  </query>
+
+  <query name="endpointViewsByDomain" cacheable="true">
+    select v from EndpointView v where v.endpoint.domain.name = :domain_name
   </query>
 
   <query name="escalationsByDomain" cacheable="true">
@@ -325,6 +340,11 @@
     select o.value from ConfigOption o
     where o.key = :key
     and o.domain.name = :domain_name
+  </query>
+
+  <query name="pairViewsByPair" cacheable="true">
+    select v from PairView v
+    where v.pair.domain.name = :domain_name and v.pair.key = :pair_key
   </query>
 
 </hibernate-mapping>

@@ -169,7 +169,7 @@ class CastorSerializableEndpoint extends Categorised {
 class CastorSerializableEndpointView extends Categorised {
   @BeanProperty var name: String = null
 
-  def fromDiffaEndpointView(e:EndpointView) = {
+  def fromDiffaEndpointView(e:EndpointViewDef) = {
     this.name = e.name
     this.fromDiffaCategories(e.categories)
 
@@ -177,7 +177,7 @@ class CastorSerializableEndpointView extends Categorised {
   }
 
   def toDiffaEndpointView =
-    EndpointView(
+    EndpointViewDef(
       name = name,
       categories = toDiffaCategories
     )
@@ -222,7 +222,7 @@ class CastorSerializablePair(
   @BeanProperty var repairActions: java.util.List[RepairActionDef] = new java.util.ArrayList[RepairActionDef],
   @BeanProperty var escalations: java.util.List[EscalationDef] = new java.util.ArrayList[EscalationDef],
   @BeanProperty var scanCronSpec: String = null,
-  @BeanProperty var views: java.util.List[PairView] = new java.util.ArrayList[PairView]
+  @BeanProperty var views: java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]
 ) {
   def this() = this(key = null)
 

@@ -109,8 +109,10 @@ case class Endpoint(
   @BeanProperty var contentType: String = null,
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
-  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
-  @BeanProperty var views: java.util.Set[EndpointView] = new java.util.HashSet[EndpointView]) {
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
+
+  // Don't include this in the header definition, since it is a lazy collection
+  @BeanProperty var views: java.util.Set[EndpointView] = new java.util.HashSet[EndpointView]
 
   def this() = this(name = null)
 
@@ -141,6 +143,13 @@ case class Endpoint(
     CategoryUtil.initialConstraintsFor(CategoryUtil.fuseViewCategories(categories.toMap, views, view))
 }
 
+case class EndpointViewDef(
+  @BeanProperty var name:String = null,
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]
+) {
+  def this() = this(name = null)
+}
+
 case class EndpointView(
   @BeanProperty var name:String = null,
   @BeanProperty var endpoint:Endpoint = null,
@@ -148,6 +157,13 @@ case class EndpointView(
 ) {
 
   def this() = this(name = null)
+
+  override def equals(that:Any) = that match {
+    case v:EndpointView => v.name == name && v.categories == categories
+    case _              => false
+  }
+
+  override def hashCode = 31 * (31 + name.hashCode) + categories.hashCode
 }
 
 case class Pair(
@@ -175,13 +191,29 @@ case class Pair(
   override def hashCode = 31 * (31 + key.hashCode) + domain.hashCode
 }
 
-case class PairView(
+case class PairViewDef(
   @BeanProperty var name:String = null,
-  @BeanProperty var pair:Pair = null,
   @BeanProperty var scanCronSpec:String = null
 ) {
+  def this() = this(name = null)
+}
+
+case class PairView(
+  @BeanProperty var name:String = null,
+  @BeanProperty var scanCronSpec:String = null
+) {
+  // Not wanted in equals, hashCode or toString
+  @BeanProperty var pair:Pair = null
 
   def this() = this(name = null)
+
+  override def equals(that:Any) = that match {
+    case p:PairView => p.name == name && p.pair.key == pair.key && p.pair.domain.name == pair.domain.name
+    case _          => false
+  }
+
+  // TODO This looks a bit strange
+  override def hashCode = 31 * (31 * (31 + pair.key.hashCode) + name.hashCode) + pair.domain.name.hashCode
 }
 
 /**

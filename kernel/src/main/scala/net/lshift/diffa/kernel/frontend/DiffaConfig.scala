@@ -55,7 +55,7 @@ case class EndpointDef (
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
-  @BeanProperty var views: java.util.List[EndpointView] = new java.util.ArrayList[EndpointView]) {
+  @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef]) {
 
   def this() = this(name = null)
 
@@ -93,7 +93,7 @@ case class PairDef(
   @BeanProperty var upstreamName: String = null,
   @BeanProperty var downstreamName: String = null,
   @BeanProperty var scanCronSpec: String = null,
-  @BeanProperty var views:java.util.List[PairView] = new java.util.ArrayList[PairView]) {
+  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
 
   def this() = this(key = null)
 

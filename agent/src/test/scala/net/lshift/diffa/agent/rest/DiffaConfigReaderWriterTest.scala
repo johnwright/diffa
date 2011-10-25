@@ -41,7 +41,7 @@ class DiffaConfigReaderWriterTest {
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c")),
             "c" -> new RangeCategoryDescriptor("date", "1888", "1889", "individual")),
-          views = List(new EndpointView(name = "little-view",
+          views = List(EndpointViewDef(name = "little-view",
             categories = Map(
               "a" -> new RangeCategoryDescriptor("date", "2010", "2010"),
               "b" -> new SetCategoryDescriptor(Set("a")))
@@ -52,14 +52,14 @@ class DiffaConfigReaderWriterTest {
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
           ),
-          views = List(new EndpointView(name = "little-view",
+          views = List(EndpointViewDef(name = "little-view",
             categories = Map(
               "c" -> new PrefixCategoryDescriptor(2, 5, 1))
             )))
         ),
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0",
-          views = List(new PairView(name = "little-view", scanCronSpec = "0 0 0 * * 0"))),
+          views = List(PairViewDef(name = "little-view", scanCronSpec = "0 0 0 * * 0"))),
         PairDef("ac", "same", 5, "upstream1", "downstream1")),
       repairActions = Set(
         RepairActionDef(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pair="ab"),

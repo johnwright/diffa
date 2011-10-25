@@ -16,7 +16,8 @@
 
 package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config.{User, Domain, Escalation, RepairAction, Endpoint, Pair => DiffaPair}
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{PairView, PairViewDef, EndpointViewDef, EndpointView, User, Domain, Escalation, RepairAction, Endpoint, Pair => DiffaPair}
 
 /**
  * A bunch of converter functions to translate frontend objects from their internal counterparts
@@ -31,7 +32,8 @@ object FrontendConversions {
     contentType = e.contentType,
     inboundUrl = e.inboundUrl,
     inboundContentType = e.inboundContentType,
-    categories = e.categories)
+    categories = e.categories,
+    views = new java.util.ArrayList[EndpointViewDef](e.views.map(v => toEndpointViewDef(v))))
 
   def fromEndpointDef(domain:Domain, e:EndpointDef) = Endpoint(
     name = e.name,
@@ -44,13 +46,26 @@ object FrontendConversions {
     inboundContentType = e.inboundContentType,
     categories = e.categories)
 
+  def fromEndpointViewDef(endpoint:Endpoint, v:EndpointViewDef) =
+    EndpointView(name = v.name, endpoint = endpoint, categories = v.categories)
+
+  def toEndpointViewDef(v:EndpointView) = EndpointViewDef(name = v.name, categories = v.categories)
+
   def toPairDef(p:DiffaPair) = PairDef(
     key = p.key,
     versionPolicyName = p.versionPolicyName,
     matchingTimeout = p.matchingTimeout,
     upstreamName = p.upstream.name,
     downstreamName = p.downstream.name,
-    scanCronSpec = p.scanCronSpec)
+    scanCronSpec = p.scanCronSpec,
+    views = p.views.map(v => toPairViewDef(v)).toList)
+
+  def toPairViewDef(v:PairView) = PairViewDef(name = v.name, scanCronSpec = v.scanCronSpec)
+  def fromPairViewDef(p:DiffaPair, v:PairViewDef) = {
+    val result = PairView(name = v.name, scanCronSpec = v.scanCronSpec)
+    result.pair = p
+    result
+  }
 
   def toRepairActionDef(a:RepairAction) = RepairActionDef(
     name = a.name,

@@ -27,9 +27,13 @@ import scala.collection.JavaConversions._
 class ScanningRestClient(serverRootUrl:String, domain:String, username:String = "guest", password:String = "guest")
     extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/scanning/", username, password) {
 
-  def startScan(pairKey: String) = {
+  def startScan(pairKey: String, view:Option[String] = None) = {
     val p = resource.path("pairs").path(pairKey).path("scan")
-    val response = p.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
+    val maybeWithView = view match {
+      case None     => p
+      case Some(v)  => p.queryParam("view", v)
+    }
+    val response = maybeWithView.accept(MediaType.APPLICATION_JSON_TYPE).post(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 202     => // Successfully submitted (202 is "Accepted")
