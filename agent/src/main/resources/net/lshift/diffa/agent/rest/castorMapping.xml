@@ -133,7 +133,7 @@
     <field name="escalations" type="net.lshift.diffa.kernel.frontend.EscalationDef" collection="arraylist">
       <bind-xml name="escalation" />
     </field>
-    <field name="views" type="net.lshift.diffa.kernel.config.PairViewDef" collection="arraylist">
+    <field name="views" type="net.lshift.diffa.kernel.frontend.PairViewDef" collection="arraylist">
       <bind-xml name="view" />
     </field>
   </class>
@@ -184,7 +184,7 @@
     </field>
   </class>
 
-  <class name="net.lshift.diffa.kernel.config.PairViewDef">
+  <class name="net.lshift.diffa.kernel.frontend.PairViewDef">
     <field name="name" type="string">
       <bind-xml name="name" node="attribute" />
     </field>

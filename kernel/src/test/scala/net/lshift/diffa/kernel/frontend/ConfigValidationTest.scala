@@ -36,6 +36,34 @@ class ConfigValidationTest {
   }
 
   @Test
+  def shouldRejectPairThatUsesAnUpstreamEndpointThatDoesntExist() {
+    val pairDef = PairDef(key = "p", upstreamName = "c", downstreamName = "b")
+    val endpoints = Set(EndpointDef(name = "a"), EndpointDef(name = "b"))
+
+    try {
+      pairDef.validate("config", endpoints)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]: Upstream endpoint 'c' is not defined", e.getMessage)
+    }
+  }
+
+  @Test
+  def shouldRejectPairThatUsesADownstreamEndpointThatDoesntExist() {
+    val pairDef = PairDef(key = "p", upstreamName = "a", downstreamName = "c")
+    val endpoints = Set(EndpointDef(name = "a"), EndpointDef(name = "b"))
+
+    try {
+      pairDef.validate("config", endpoints)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]: Downstream endpoint 'c' is not defined", e.getMessage)
+    }
+  }
+
+  @Test
   def shouldRejectViewsWithCategoriesNotPresentOnParent() {
     val endpointDef = EndpointDef(name = "endpointA", contentType = "application/json",
       categories = Map("someString" -> new SetCategoryDescriptor(Set("a", "b"))),
@@ -202,5 +230,43 @@ class ConfigValidationTest {
     assertFalse(base.isRefinement(new PrefixCategoryDescriptor(5, 12, 1)))
     assertFalse(base.isRefinement(new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31")))
     assertFalse(base.isRefinement(new RangeCategoryDescriptor("datetime", "2011-01-01T00:00:00.000Z", "2011-12-31T00:00:00.000Z")))
+  }
+
+  @Test
+  def shouldAcceptPairViewThatUsesViewsThatExistOnBothEndpoints() {
+    val pairDef = PairDef(key = "p", upstreamName = "a", downstreamName = "b", views = List(PairViewDef("abc")))
+    val endpoints = Set(
+      EndpointDef(name = "a", views = List(EndpointViewDef(name = "abc"))),
+      EndpointDef(name = "b", views = List(EndpointViewDef(name = "abc"))))
+
+    pairDef.validate("config", endpoints)
+  }
+
+  @Test
+  def shouldRejectPairViewThatUsesAnUpstreamViewThatDoesntExist() {
+    val pairDef = PairDef(key = "p", upstreamName = "a", downstreamName = "b", views = List(PairViewDef("abc")))
+    val endpoints = Set(EndpointDef(name = "a"), EndpointDef(name = "b", views = List(EndpointViewDef(name = "abc"))))
+
+    try {
+      pairDef.validate("config", endpoints)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]/views[name=abc]: The upstream endpoint does not define the view 'abc'", e.getMessage)
+    }
+  }
+
+  @Test
+  def shouldRejectPairViewThatUsesADownstreamViewThatDoesntExist() {
+    val pairDef = PairDef(key = "p", upstreamName = "a", downstreamName = "b", views = List(PairViewDef("abc")))
+    val endpoints = Set(EndpointDef(name = "a", views = List(EndpointViewDef(name = "abc"))), EndpointDef(name = "b"))
+
+    try {
+      pairDef.validate("config", endpoints)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]/views[name=abc]: The downstream endpoint does not define the view 'abc'", e.getMessage)
+    }
   }
 }

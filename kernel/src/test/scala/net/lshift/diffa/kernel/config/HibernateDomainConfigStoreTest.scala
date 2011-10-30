@@ -27,9 +27,9 @@ import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.SessionHelper._
-import net.lshift.diffa.kernel.frontend.{RepairActionDef, PairDef, EndpointDef, EscalationDef}
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.frontend._
 
 class HibernateDomainConfigStoreTest {
 

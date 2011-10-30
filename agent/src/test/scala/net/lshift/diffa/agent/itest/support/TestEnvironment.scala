@@ -33,7 +33,7 @@ import collection.mutable.HashMap
 import net.lshift.diffa.agent.client._
 import java.util.List
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
-import net.lshift.diffa.kernel.frontend.{UserDef, EndpointDef, DomainDef, PairDef}
+import net.lshift.diffa.kernel.frontend._
 
 /**
  * An assembled environment consisting of a downstream and upstream participant. Provides a factory for the
