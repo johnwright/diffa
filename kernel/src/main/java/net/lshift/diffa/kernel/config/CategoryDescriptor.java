@@ -43,4 +43,13 @@ abstract public class CategoryDescriptor {
   public void setId(int id) {
     this.id = id;
   }
+
+  /**
+   * Determines whether the given other category descriptor is a refinement of this category descriptor. This allows
+   * for validation of views - ensuring that they don't specify configuration that isn't achievable.
+   * @param other the other category descriptor to validate.
+   * @return true - the provided other descriptor is a refinement; false - the other descriptor is outside the bounds of
+   *      this descriptor.
+   */
+  public abstract boolean isRefinement(CategoryDescriptor other);
 }

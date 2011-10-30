@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import reflect.BeanProperty
 import org.quartz.CronExpression
 import java.util.HashMap
+import scala.collection.JavaConversions._
 
 /**
  * Describes a complete Diffa configuration in the context of a domain - this means that all of the objects
@@ -80,6 +81,7 @@ case class EndpointDef (
         }
       }
     })
+    views.foreach(v => v.validate(this, endPointPath))
   }
 }
 

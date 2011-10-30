@@ -47,6 +47,19 @@ public class IntegerRangeConstraint extends AbstractScanConstraint implements Ra
     return true;
   }
 
+  public boolean containsRange(Integer rangeStart, Integer rangeEnd) {
+    if (rangeStart == null && rangeEnd == null)
+      return start == null && end == null;
+
+    if (rangeStart == null)
+      return start == null && contains(rangeEnd);
+
+    if (rangeEnd == null)
+      return end == null && contains(rangeStart);
+
+    return contains(rangeStart) && contains(rangeEnd);
+  }
+
   @Override
   public String getStartText() {
     return Integer.toString(start);

@@ -148,6 +148,26 @@ case class EndpointViewDef(
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]
 ) {
   def this() = this(name = null)
+
+  def validate(owner:EndpointDef, path:String = null) {
+    val viewPath = ValidationUtil.buildPath(path, "views", Map("name" -> this.name))
+
+    categories.keySet().foreach(viewCategory => {
+      if (!owner.categories.containsKey(viewCategory)) {
+        // Ensure that we don't expose any categories that aren't known to the parent
+        throw new ConfigValidationException(viewPath,
+          "View category '%s' does not derive from an endpoint category".format(viewCategory))
+      } else {
+        val ourCategory = categories.get(viewCategory)
+        val ownerCategory = owner.categories.get(viewCategory)
+
+        if (!ownerCategory.isRefinement(ourCategory)) {
+          throw new ConfigValidationException(viewPath,
+          "View category '%s' (%s) does not refine endpoint category (%s)".format(viewCategory, ourCategory, ownerCategory))
+        }
+      }
+    })
+  }
 }
 
 case class EndpointView(
