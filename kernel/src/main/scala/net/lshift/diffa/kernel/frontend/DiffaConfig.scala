@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import reflect.BeanProperty
 import org.quartz.CronExpression
 import java.util.HashMap
+import scala.collection.JavaConversions._
 
 /**
  * Describes a complete Diffa configuration in the context of a domain - this means that all of the objects
@@ -37,7 +38,7 @@ case class DiffaConfig(
   def validate() {
     val path = "config"
     endpoints.foreach(_.validate(path))
-    pairs.foreach(_.validate(path))
+    pairs.foreach(_.validate(path, endpoints))
     repairActions.foreach(_.validate(path))
     escalations.foreach(_.validate(path))
   }
@@ -54,7 +55,8 @@ case class EndpointDef (
   @BeanProperty var contentType: String = null,
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var inboundContentType: String = null,
-  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
+  @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef]) {
 
   def this() = this(name = null)
 
@@ -79,6 +81,34 @@ case class EndpointDef (
         }
       }
     })
+    views.foreach(v => v.validate(this, endPointPath))
+  }
+}
+
+case class EndpointViewDef(
+  @BeanProperty var name:String = null,
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]
+) {
+  def this() = this(name = null)
+
+  def validate(owner:EndpointDef, path:String = null) {
+    val viewPath = ValidationUtil.buildPath(path, "views", Map("name" -> this.name))
+
+    categories.keySet().foreach(viewCategory => {
+      if (!owner.categories.containsKey(viewCategory)) {
+        // Ensure that we don't expose any categories that aren't known to the parent
+        throw new ConfigValidationException(viewPath,
+          "View category '%s' does not derive from an endpoint category".format(viewCategory))
+      } else {
+        val ourCategory = categories.get(viewCategory)
+        val ownerCategory = owner.categories.get(viewCategory)
+
+        if (!ownerCategory.isRefinement(ourCategory)) {
+          throw new ConfigValidationException(viewPath,
+          "View category '%s' (%s) does not refine endpoint category (%s)".format(viewCategory, ourCategory, ownerCategory))
+        }
+      }
+    })
   }
 }
 
@@ -91,11 +121,12 @@ case class PairDef(
   @BeanProperty var matchingTimeout: Int = 0,
   @BeanProperty var upstreamName: String = null,
   @BeanProperty var downstreamName: String = null,
-  @BeanProperty var scanCronSpec: String = null) {
+  @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
 
   def this() = this(key = null)
 
-  def validate(path:String = null) {
+  def validate(path:String = null, endpoints:Set[EndpointDef] = null) {
     val pairPath = ValidationUtil.buildPath(path, "pair", Map("key" -> key))
 
     // Ensure that cron specs are valid
@@ -109,6 +140,36 @@ case class PairDef(
           throw new ConfigValidationException(pairPath, "Schedule '" + scanCronSpec + "' is not a valid: " + ex.getMessage)
       }
     }
+
+    // TODO: Currently, pairs are created directly via REST calls. In those scenarios, we don't have the full context
+      // with details of all the endpoints, so we can't validate that they exist. We should load endpoint definitions
+      // when this happens so we can continue to do the early consistency check.
+    if (endpoints != null) {
+      // Ensure that endpoints exist for both the specified upstream and downstream names
+      val upstreamEp = endpoints.find(e => e.name == upstreamName).
+        getOrElse(throw new ConfigValidationException(pairPath, "Upstream endpoint '%s' is not defined".format(upstreamName)))
+      val downstreamEp = endpoints.find(e => e.name == downstreamName).
+        getOrElse(throw new ConfigValidationException(pairPath, "Downstream endpoint '%s' is not defined".format(downstreamName)))
+
+      views.foreach(v => v.validate(this, pairPath, upstreamEp, downstreamEp))
+    }
+  }
+}
+
+case class PairViewDef(
+  @BeanProperty var name:String = null,
+  @BeanProperty var scanCronSpec:String = null
+) {
+  def this() = this(name = null)
+
+  def validate(owner:PairDef, path:String, upstreamEp:EndpointDef, downstreamEp:EndpointDef) {
+    val viewPath = ValidationUtil.buildPath(path, "views", Map("name" -> this.name))
+
+    // Ensure we have both upstream and downstream endpoint views corresponding to this view
+    upstreamEp.views.find(v => v.name == this.name).
+      getOrElse(throw new ConfigValidationException(viewPath, "The upstream endpoint does not define the view '%s'".format(name)))
+    downstreamEp.views.find(v => v.name == this.name).
+      getOrElse(throw new ConfigValidationException(viewPath, "The downstream endpoint does not define the view '%s'".format(name)))
   }
 }
 

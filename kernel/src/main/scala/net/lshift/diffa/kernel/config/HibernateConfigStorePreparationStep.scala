@@ -50,7 +50,8 @@ class HibernateConfigStorePreparationStep
     AddPersistentDiffsMigrationStep,
     AddDomainSequenceIndexMigrationStep,
     AddStoreCheckpointsMigrationStep,
-    ReviseUrlLengthMigrationStep
+    ReviseUrlLengthMigrationStep,
+    AddEndpointViewsMigrationStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -467,6 +468,41 @@ object ReviseUrlLengthMigrationStep extends HibernateMigrationStep {
       alterColumn("content_retrieval_url", Types.VARCHAR, 1024, true, null).
       alterColumn("version_generation_url", Types.VARCHAR, 1024, true, null).
       alterColumn("inbound_url", Types.VARCHAR, 1024, true, null)
+
+    migration.apply(connection)
+  }
+}
+
+object AddEndpointViewsMigrationStep extends HibernateMigrationStep {
+  def versionId = 11
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.createTable("endpoint_views").
+      column("name", Types.VARCHAR, 255, false).
+      column("endpoint", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 255, false).
+      pk("name", "endpoint", "domain")
+    migration.createTable("endpoint_views_categories").
+      column("name", Types.VARCHAR, 255, false).
+      column("endpoint", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("category_descriptor_id", Types.INTEGER, false).
+      column("category_name", Types.VARCHAR, 255, false).
+      pk("name", "endpoint", "domain", "category_name")
+    migration.createTable("pair_views").
+      column("name", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("scan_cron_spec", Types.VARCHAR, 255, true).
+      pk("name", "pair", "domain")
+
+    migration.alterTable("endpoint_views").
+      addForeignKey("FKBE0A5744D532E642", Array("endpoint", "domain"), "endpoint", Array("name", "domain"))
+    migration.alterTable("endpoint_views_categories").
+      addForeignKey("FKF03ED1F7B6D4F2CB", Array("category_descriptor_id"), "category_descriptor", Array("id"))
+    migration.alterTable("pair_views").
+      addForeignKey("FKE0BDD4C9F6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.apply(connection)
   }

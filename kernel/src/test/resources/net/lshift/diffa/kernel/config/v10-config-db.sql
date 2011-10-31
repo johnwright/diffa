@@ -41,5 +41,5 @@ alter table set_constraint_values add constraint FK96C7B32744035BE4 foreign key 
 alter table store_checkpoints add constraint FK50EE698DF6FDBACC foreign key (pair, domain) references pair;
 insert into domains(name) values('diffa');
 insert into users(name, email, password_enc, superuser) values('guest', 'guest@diffa.io', '84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec', 1);
-insert into schema_version(version) values(7);
+insert into schema_version(version) values(10);
 insert into system_config_options (opt_key, opt_val) values ('correlationStore.schemaVersion', '1');

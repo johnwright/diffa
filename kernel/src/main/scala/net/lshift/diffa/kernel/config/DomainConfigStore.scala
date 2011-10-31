@@ -23,6 +23,8 @@ import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
 import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
+import scala.Option._
+import net.lshift.diffa.kernel.util.CategoryUtil
 
 /**
  * Provides general configuration options within the scope of a particular domain.
@@ -109,7 +111,12 @@ case class Endpoint(
   @BeanProperty var inboundContentType: String = null,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
 
+  // Don't include this in the header definition, since it is a lazy collection
+  @BeanProperty var views: java.util.Set[EndpointView] = new java.util.HashSet[EndpointView]
+
   def this() = this(name = null)
+
+  def defaultView = views.find(v => v.name == "default").get
 
   /**
    * Fuses a list of runtime attributes together with their
@@ -118,64 +125,38 @@ case class Endpoint(
    */
   def schematize(runtimeValues:Seq[String]) = AttributesUtil.toTypedMap(categories.toMap, runtimeValues)
 
-  def defaultBucketing() : Seq[CategoryFunction] = {
-    categories.flatMap {
-      case (name, categoryType) => {
-        categoryType match {
-          // #203: By default, set elements should be sent out individually. The default behaviour for an
-          // un-aggregated attribute is to handle it by name, so we don't need to return any bucketing for it.
-          case s:SetCategoryDescriptor    => None
-          case r:RangeCategoryDescriptor  => RangeTypeRegistry.defaultCategoryFunction(name, r)
-          case p:PrefixCategoryDescriptor => Some(StringPrefixCategoryFunction(name, p.prefixLength, p.maxLength, p.step))
-        }
-      }
-    }.toSeq
-  }
+  def initialBucketing(view:Option[String]) =
+    CategoryUtil.initialBucketingFor(CategoryUtil.fuseViewCategories(categories.toMap, views, view))
 
   /**
    * Returns a structured group of constraints for the current endpoint that is appropriate for transmission
    * over the wire.
    */
-  def groupedConstraints() : Seq[Seq[ScanConstraint]] = {
-    val constraints = defaultConstraints.map {
-      /**
-       * #203: By default, set elements should be sent out individually - in the future, this may be configurable
-       */
-      case sc:SetConstraint =>
-        sc.getValues.map(v => new SetConstraint(sc.getAttributeName, Set(v))).toSeq
-      case c                =>
-        Seq(c)
-    }
-    if (constraints.length > 0) {
-      constraints.map(_.map(Seq(_))).reduceLeft((acc, nextConstraints) => for {a <- acc; c <- nextConstraints} yield a ++ c)
-    } else {
-      Seq()
-    }
-  }
+  def groupedConstraints(view:Option[String]) =
+    CategoryUtil.groupConstraints(CategoryUtil.fuseViewCategories(categories.toMap, views, view))
 
   /**
    * Returns a set of the coarsest unbound query constraints for
    * each of the category types that has been configured for this pair.
    */
-  def defaultConstraints() : Seq[ScanConstraint] =
-    categories.flatMap({
-      case (name, categoryType) => {
-        categoryType match {
-          case s:SetCategoryDescriptor   =>
-            Some(new SetConstraint(name, s.values))
-          case r:RangeCategoryDescriptor => {
-            if (r.lower == null && r.upper == null) {
-              None
-            }
-            else {
-              Some(RangeCategoryParser.buildConstraint(name,r))
-            }
-          }
-          case p:PrefixCategoryDescriptor =>
-            None
-        }
-      }
-    }).toList
+  def initialConstraints(view:Option[String]) =
+    CategoryUtil.initialConstraintsFor(CategoryUtil.fuseViewCategories(categories.toMap, views, view))
+}
+
+case class EndpointView(
+  @BeanProperty var name:String = null,
+  @BeanProperty var endpoint:Endpoint = null,
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]
+) {
+
+  def this() = this(name = null)
+
+  override def equals(that:Any) = that match {
+    case v:EndpointView => v.name == name && v.categories == categories
+    case _              => false
+  }
+
+  override def hashCode = 31 * (31 + name.hashCode) + categories.hashCode
 }
 
 case class Pair(
@@ -185,7 +166,8 @@ case class Pair(
   @BeanProperty var downstream: Endpoint = null,
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
-  @BeanProperty var scanCronSpec: String = null) {
+  @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var views:java.util.Set[PairView] = new java.util.HashSet[PairView]) {
 
   def this() = this(key = null)
 
@@ -200,6 +182,24 @@ case class Pair(
 
   // TODO This looks a bit strange
   override def hashCode = 31 * (31 + key.hashCode) + domain.hashCode
+}
+
+case class PairView(
+  @BeanProperty var name:String = null,
+  @BeanProperty var scanCronSpec:String = null
+) {
+  // Not wanted in equals, hashCode or toString
+  @BeanProperty var pair:Pair = null
+
+  def this() = this(name = null)
+
+  override def equals(that:Any) = that match {
+    case p:PairView => p.name == name && p.pair.key == pair.key && p.pair.domain.name == pair.domain.name
+    case _          => false
+  }
+
+  // TODO This looks a bit strange
+  override def hashCode = 31 * (31 * (31 + pair.key.hashCode) + name.hashCode) + pair.domain.name.hashCode
 }
 
 /**
@@ -357,6 +357,24 @@ case class DomainScopedKey(@BeanProperty var key:String = null,
  */
 case class DomainScopedName(@BeanProperty var name:String = null,
                             @BeanProperty var domain:Domain = null) extends java.io.Serializable
+{
+  def this() = this(name = null)
+}
+
+/**
+ * Provides an Endpoint Scoped name for an entity.
+ */
+case class EndpointScopedName(@BeanProperty var name:String = null,
+                            @BeanProperty var endpoint:Endpoint = null) extends java.io.Serializable
+{
+  def this() = this(name = null)
+}
+
+/**
+ * Provides a Pair Scoped name for an entity.
+ */
+case class PairScopedName(@BeanProperty var name:String = null,
+                          @BeanProperty var pair:Pair = null) extends java.io.Serializable
 {
   def this() = this(name = null)
 }

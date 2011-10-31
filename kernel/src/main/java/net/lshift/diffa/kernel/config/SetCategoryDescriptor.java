@@ -45,6 +45,12 @@ public class SetCategoryDescriptor extends CategoryDescriptor {
   }
 
   @Override
+  public boolean isRefinement(CategoryDescriptor other) {
+    return other instanceof SetCategoryDescriptor &&
+      this.values.containsAll(((SetCategoryDescriptor) other).values);
+  }
+
+  @Override
   public String toString() {
     return "SetCategoryDescriptor{" +
       "values=" + values +

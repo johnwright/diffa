@@ -54,6 +54,19 @@ public class DateRangeConstraint extends AbstractScanConstraint implements Range
     return true;
   }
 
+  public boolean containsRange(LocalDate rangeStart, LocalDate rangeEnd) {
+    if (rangeStart == null && rangeEnd == null)
+      return start == null && end == null;
+
+    if (rangeStart == null)
+      return start == null && contains(rangeEnd);
+
+    if (rangeEnd == null)
+      return end == null && contains(rangeStart);
+
+    return contains(rangeStart) && contains(rangeEnd);
+  }
+
   @Override
   public String getStartText() {
     return start.toString(formatter);

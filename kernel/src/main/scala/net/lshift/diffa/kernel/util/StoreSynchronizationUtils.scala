@@ -39,8 +39,10 @@ object StoreSynchronizationUtils {
     try {
       val version = diffsManager.lastRecordedVersion(pair.asRef)
       
-      // Run a query for mismatched versions, and report each one
-      store.unmatchedVersions(pair.upstream.defaultConstraints(), pair.downstream.defaultConstraints(), version).foreach(
+      // Run a query for mismatched versions, and report each one. Note that we always sync using the default view -
+      // given we're doing an incremental sync, this shouldn't see changes other than the ones that we've found in the
+      // view, and will ensure that we don't miss syncing realtime changes that affect sequence versioning.
+      store.unmatchedVersions(pair.upstream.initialConstraints(None), pair.downstream.initialConstraints(None), version).foreach(
         corr => diffWriter.writeMismatch(corr.asVersionID, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, origin, corr.storeVersion))
 
       val tombstones = store.tombstoneVersions(version)

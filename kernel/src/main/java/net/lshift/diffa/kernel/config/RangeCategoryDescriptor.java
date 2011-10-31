@@ -17,6 +17,11 @@
 package net.lshift.diffa.kernel.config;
 
 
+import net.lshift.diffa.participant.scanning.DateRangeConstraint;
+import net.lshift.diffa.participant.scanning.IntegerRangeConstraint;
+import net.lshift.diffa.participant.scanning.RangeConstraint;
+import net.lshift.diffa.participant.scanning.TimeRangeConstraint;
+
 /**
  * This describes a category that can be constrained by range.
  */
@@ -91,6 +96,43 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
 
   public void setUpper(String upper) {
     this.upper = upper;
+  }
+
+  @Override
+  public boolean isRefinement(CategoryDescriptor other) {
+    if (other instanceof RangeCategoryDescriptor && ((RangeCategoryDescriptor) other).dataType.equals(this.dataType)) {
+      RangeCategoryDescriptor otherDesc = (RangeCategoryDescriptor) other;
+
+      if (dataType.equals("date")) {
+        DateRangeConstraint constraint = (DateRangeConstraint) toConstraint("unknown");
+        DateRangeConstraint otherConstraint = (DateRangeConstraint) otherDesc.toConstraint("unknown");
+        return constraint.containsRange(otherConstraint.getStart(), otherConstraint.getEnd());
+      } else if (dataType.equals("datetime")) {
+        TimeRangeConstraint constraint = (TimeRangeConstraint) toConstraint("unknown");
+        TimeRangeConstraint otherConstraint = (TimeRangeConstraint) otherDesc.toConstraint("unknown");
+        return constraint.containsRange(otherConstraint.getStart(), otherConstraint.getEnd());
+      } else if (dataType.equals("integer")) {
+        IntegerRangeConstraint constraint = (IntegerRangeConstraint) toConstraint("unknown");
+        IntegerRangeConstraint otherConstraint = (IntegerRangeConstraint) otherDesc.toConstraint("unknown");
+        return constraint.containsRange(otherConstraint.getStart(), otherConstraint.getEnd());
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  public RangeConstraint toConstraint(String name) {
+    if (dataType.equals("date")) {
+      return new DateRangeConstraint(name, this.lower, this.upper);
+    } else if (dataType.equals("datetime")) {
+      return new TimeRangeConstraint(name, this.lower, this.upper);
+    } else if (dataType.equals("integer")) {
+      return new IntegerRangeConstraint(name, this.lower, this.upper);
+    } else {
+      throw new IllegalArgumentException("Unknown data type " + this.dataType);
+    }
   }
 
   @Override

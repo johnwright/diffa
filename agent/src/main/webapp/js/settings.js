@@ -52,6 +52,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
     this.bind("change:selected", function(pair) {
       if (pair.get('selected')) {
         self.fetchActions();
+        self.fetchFullDetails();
 
         self.logPollIntervalId = window.setInterval(self.syncLog, Diffa.Config.LogPollInterval);
         self.syncLog();
@@ -75,6 +76,13 @@ Diffa.Models.Pair = Backbone.Model.extend({
     });
   },
 
+  fetchFullDetails: function() {
+    var self = this;
+    $.getJSON(API_BASE + "/" + Diffa.currentDomain + '/config/pairs/' + this.id, function(pairInfo) {
+      self.set(pairInfo);
+    });
+  },
+
   syncLog: function() {
     var self = this;
     $.getJSON(API_BASE + "/" + Diffa.currentDomain + "/diagnostics/" + this.id + "/log", function(logEntries) {
@@ -82,13 +90,18 @@ Diffa.Models.Pair = Backbone.Model.extend({
     });
   },
 
-  startScan: function() {
+  startScan: function(view) {
     var self = this;
-
+    var data = {};
+    if (view) {
+      data.view = view;
+    }
+    
     this.set({state: 'REQUESTING'});
     $.ajax({
       url: API_BASE + "/" + Diffa.currentDomain + "/scanning/pairs/" + this.id + "/scan",
       type: "POST",
+      data: data,
       success: function() {
         self.set({state: 'SCANNING'});
       },
@@ -293,6 +306,7 @@ Diffa.Views.PairControls = Diffa.Views.PairSelectionView.extend({
 
     this.model.bind('change:selected', this.maybeRender);
     this.model.bind('change:state',    this.maybeRender);
+    this.model.bind('change:views',    this.maybeRender);
 
     this.maybeRender();
   },
@@ -303,11 +317,23 @@ Diffa.Views.PairControls = Diffa.Views.PairSelectionView.extend({
     var currentState = currentPair.get('state');
     var scanIsRunning = (currentState == "REQUESTING" || currentState == "SCANNING");
 
-    var scanButton = this.$('#pair-controls .scan-button');
+    var scanButtons = this.$('#pair-controls .scan-button');
     var cancelButton = this.$('#pair-controls .cancel-button');
 
-    $(scanButton).toggle(!scanIsRunning);
+    $(scanButtons).toggle(!scanIsRunning);
     $(cancelButton).toggle(scanIsRunning);
+
+    this.$('#pair-controls .view-scan-button').remove();
+    if (currentPair.get('views')) {
+      _.each(currentPair.get('views'), function(view) {
+        $('<button class="repair scan-button view-scan-button">Scan ' + view.name + '</button>').
+          appendTo($('#pair-controls')).
+          click(function(e) {
+            e.preventDefault();
+            currentPair.startScan(view.name);
+          });
+      });
+    }
   },
 
   startScan: function() {

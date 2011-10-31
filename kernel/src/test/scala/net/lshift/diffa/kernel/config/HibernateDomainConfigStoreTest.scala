@@ -27,9 +27,9 @@ import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
 import net.lshift.diffa.kernel.util.SessionHelper._
-import net.lshift.diffa.kernel.frontend.{RepairActionDef, PairDef, EndpointDef, EscalationDef}
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.frontend._
 
 class HibernateDomainConfigStoreTest {
 
@@ -58,11 +58,14 @@ class HibernateDomainConfigStoreTest {
   val domainName = "domain"
   val domain = new Domain(domainName)
 
+  val setView = EndpointViewDef(name = "a-only", categories = Map(dateCategoryName -> new SetCategoryDescriptor(Set("a"))))
+
   val upstream1 = new EndpointDef(name = "TEST_UPSTREAM", scanUrl = "testScanUrl1", contentType = "application/json",
                                   categories = dateRangeCategoriesMap)
   val upstream2 = new EndpointDef(name = "TEST_UPSTREAM_ALT", scanUrl = "testScanUrl2",
                                   contentRetrievalUrl = "contentRetrieveUrl1", contentType = "application/json",
-                                  categories = setCategoriesMap)
+                                  categories = setCategoriesMap,
+                                  views = Seq(setView))
 
   val downstream1 = new EndpointDef(name = "TEST_DOWNSTREAM", scanUrl = "testScanUrl3",
                                     contentType = "application/json", categories = intRangeCategoriesMap)
@@ -75,7 +78,7 @@ class HibernateDomainConfigStoreTest {
   val versionPolicyName2 = "TEST_VPNAME_ALT"
   val pairKey = "TEST_PAIR"
   val pairDef = new PairDef(pairKey, versionPolicyName1, matchingTimeout, upstream1.name,
-    downstream1.name)
+    downstream1.name, views = Seq(PairViewDef(name = "a-only")))
 
   val pair = DiffaPair(key = pairKey, domain = domain)
 
@@ -428,6 +431,31 @@ class HibernateDomainConfigStoreTest {
     assertEquals(1, descriptor.prefixLength)
     assertEquals(3, descriptor.maxLength)
     assertEquals(1, descriptor.step)
+  }
+
+  @Test
+  def shouldStoreViewsOnEndpoints = {
+    declareAll
+    val endpoint = domainConfigStore.getEndpointDef(domainName, upstream2.name)
+    assertNotNull(endpoint.views)
+    assertEquals(1, endpoint.views.length)
+
+    val view = endpoint.views(0)
+    assertEquals("a-only", view.name)
+    assertNotNull(view.categories)
+    val descriptor = view.categories(dateCategoryName).asInstanceOf[SetCategoryDescriptor]
+    assertEquals(Set("a"), descriptor.values.toSet)
+  }
+
+  @Test
+  def shouldStoreViewsOnPairs = {
+    declareAll
+    val pair = domainConfigStore.getPairDef(domainName, pairKey)
+    assertNotNull(pair.views)
+    assertEquals(1, pair.views.length)
+
+    val view = pair.views(0)
+    assertEquals("a-only", view.name)
   }
 
   @Test

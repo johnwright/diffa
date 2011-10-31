@@ -35,6 +35,13 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
     val domain = getDomain(domainName)
     val endpoint = fromEndpointDef(domain, e)
     s.saveOrUpdate(endpoint)
+
+    // Update the view definitions
+    val existingViews = listEndpointViews(s, domainName, e.name)
+    val viewsToRemove = existingViews.filter(existing => e.views.find(v => v.name == existing.name).isEmpty)
+    viewsToRemove.foreach(r => s.delete(r))
+    e.views.foreach(v => s.saveOrUpdate(fromEndpointViewDef(endpoint, v)))
+
     endpoint
   })
 
@@ -48,6 +55,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
     // which would create an infinite loop in computing the hashCode of pairs
     s.createQuery("FROM Pair WHERE upstream = :endpoint OR downstream = :endpoint").
             setEntity("endpoint", endpoint).list.foreach(p => deletePairInSession(s, domain, p.asInstanceOf[DiffaPair]))
+
+    endpoint.views.foreach(s.delete(_))
 
     s.delete(endpoint)
   })
@@ -78,6 +87,12 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
     val dom = getDomain(domain)
     val toUpdate = new Pair(p.key, dom, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
     s.saveOrUpdate(toUpdate)
+
+    // Update the view definitions
+    val existingViews = listPairViews(s, domain, p.key)
+    val viewsToRemove = existingViews.filter(existing => p.views.find(v => v.name == existing.name).isEmpty)
+    viewsToRemove.foreach(r => s.delete(r))
+    p.views.foreach(v => s.saveOrUpdate(fromPairViewDef(toUpdate, v)))
   })
 
   def deletePair(domain:String, key: String): Unit = sessionFactory.withSession(s => {
@@ -166,6 +181,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   private def deletePairInSession(s:Session, domain:String, pair:DiffaPair) = {
     getRepairActionsInPair(s, domain, pair.key).foreach(s.delete)
     getEscalationsForPair(s, domain, pair.key).foreach(s.delete)
+    pair.views.foreach(s.delete(_))
     deleteStoreCheckpoint(pair.asRef)
     s.delete(pair)
   }
@@ -184,4 +200,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
     listQuery[Member](s, "membersByDomain", Map("domain_name" -> domain))
   })
 
+  def listEndpointViews(s:Session, domain:String, endpointName:String) =
+    listQuery[EndpointView](s, "endpointViewsByEndpoint", Map("domain_name" -> domain, "endpoint_name" -> endpointName))
+  def listPairViews(s:Session, domain:String, pairKey:String) =
+    listQuery[PairView](s, "pairViewsByPair", Map("domain_name" -> domain, "pair_key" -> pairKey))
 }

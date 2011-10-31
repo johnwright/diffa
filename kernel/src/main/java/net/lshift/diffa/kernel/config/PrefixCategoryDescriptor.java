@@ -60,6 +60,11 @@ public class PrefixCategoryDescriptor extends CategoryDescriptor {
   }
 
   @Override
+  public boolean isRefinement(CategoryDescriptor other) {
+    return (other instanceof PrefixCategoryDescriptor);
+  }
+
+  @Override
   public String toString() {
     return "PrefixCategoryDescriptor{" +
       "prefixLength=" + prefixLength +

@@ -89,21 +89,21 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     result
   }
 
-  def scanUpstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
+  def scanUpstream(pair:DiffaPair, view:Option[String], writer: LimitedVersionCorrelationWriter, participant:UpstreamParticipant,
                    listener:DifferencingListener, handle:FeedbackHandle) = {
     benchmark(pair, "upstream scan", () => {
-      val upstreamConstraints = pair.upstream.groupedConstraints
+      val upstreamConstraints = pair.upstream.groupedConstraints(view)
       constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy)
-        .scanParticipant(pair.asRef, writer, pair.upstream, pair.upstream.defaultBucketing, _, participant, listener, handle))
+        .scanParticipant(pair.asRef, writer, pair.upstream, pair.upstream.initialBucketing(view), _, participant, listener, handle))
     })
   }
 
-  def scanDownstream(pair:DiffaPair, writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
+  def scanDownstream(pair:DiffaPair, view:Option[String], writer: LimitedVersionCorrelationWriter, us:UpstreamParticipant,
                      ds:DownstreamParticipant, listener:DifferencingListener, handle:FeedbackHandle) = {
     benchmark(pair, "downstream scan", () => {
-      val downstreamConstraints = pair.downstream.groupedConstraints
+      val downstreamConstraints = pair.downstream.groupedConstraints(view)
       constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds)
-        .scanParticipant(pair.asRef, writer, pair.downstream, pair.downstream.defaultBucketing, _, ds, listener, handle))
+        .scanParticipant(pair.asRef, writer, pair.downstream, pair.downstream.initialBucketing(view), _, ds, listener, handle))
     })
   }
 

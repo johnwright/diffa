@@ -40,15 +40,26 @@ class DiffaConfigReaderWriterTest {
           categories = Map(
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c")),
-            "c" -> new RangeCategoryDescriptor("date", "1888", "1889", "individual"))),
+            "c" -> new RangeCategoryDescriptor("date", "1888", "1889", "individual")),
+          views = List(EndpointViewDef(name = "little-view",
+            categories = Map(
+              "a" -> new RangeCategoryDescriptor("date", "2010", "2010"),
+              "b" -> new SetCategoryDescriptor(Set("a")))
+            ))),
         EndpointDef(name = "downstream1", contentType = "application/json",
           scanUrl = "http://localhost:5432/scan", versionGenerationUrl = "http://localhost:5432/generate-version",
           categories = Map(
             "c" -> new PrefixCategoryDescriptor(1, 5, 1),
             "d" -> new PrefixCategoryDescriptor(1, 6, 1)
-          ))),
+          ),
+          views = List(EndpointViewDef(name = "little-view",
+            categories = Map(
+              "c" -> new PrefixCategoryDescriptor(2, 5, 1))
+            )))
+        ),
       pairs = Set(
-        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0"),
+        PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0",
+          views = List(PairViewDef(name = "little-view", scanCronSpec = "0 0 0 * * 0"))),
         PairDef("ac", "same", 5, "upstream1", "downstream1")),
       repairActions = Set(
         RepairActionDef(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pair="ab"),
@@ -80,11 +91,20 @@ class DiffaConfigReaderWriterTest {
             <value>c</value>
           </set-category>
           <range-category name="c" data-type="date" lower="1888" upper="1889" max-granularity="individual"/>
+          <view name="little-view">
+            <range-category name="a" data-type="date" lower="2010" upper="2010" />
+            <set-category name="b">
+              <value>a</value>
+            </set-category>
+          </view>
         </endpoint>
         <endpoint name="downstream1" content-type="application/json"
                   scan-url="http://localhost:5432/scan" version-url="http://localhost:5432/generate-version">
           <prefix-category name="c" prefix-length="1" max-length="5" step="1"/>
           <prefix-category name="d" prefix-length="1" max-length="6" step="1"/>
+          <view name="little-view">
+            <prefix-category name="c" prefix-length="2" max-length="5" step="1" />
+          </view>
         </endpoint>
         <pair key="ab" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5" scan-schedule="0 0 0 * 0 0">
           <repair-action url="http://example.com/resend/{id}" name="Resend Sauce" scope="entity" />
@@ -92,6 +112,7 @@ class DiffaConfigReaderWriterTest {
           <escalation name="Delete From Upstream" action="Delete Result" type="repair" event="upstream-missing" origin="scan" />
           <escalation name="Resend Missing Downstream" action="Resend Sauce" type="repair" event="downstream-missing" origin="scan" />
           <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
+          <view name="little-view" scan-schedule="0 0 0 * * 0" />
         </pair>
         <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>
       </diffa-config>.toString
