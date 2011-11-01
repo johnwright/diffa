@@ -52,4 +52,17 @@ abstract public class CategoryDescriptor {
    *      this descriptor.
    */
   public abstract boolean isRefinement(CategoryDescriptor other);
+
+  /**
+   * Applies the given other category descriptor as a refinement to this category descriptor. In many cases,
+   * this will just be a case of returning the refinement descriptor. In other cases, configuration options from this
+   * parent descriptor will be applied to the refinement (such as max-granularity on range descriptors) if not defined
+   * in the refinement.
+   * @param refinement the refinement to apply.
+   * @return the refinement that is the union of the new options defined in the specified refinement and the options
+   *  defined in this descriptor.
+   * @throws RuntimeException if the provided descriptor isn't a refinement, as determined by this instance's
+   *  <code>isRefinement</code> method.
+   */
+  public abstract CategoryDescriptor applyRefinement(CategoryDescriptor refinement);
 }

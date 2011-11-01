@@ -123,6 +123,18 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
     return false;
   }
 
+  @Override
+  public CategoryDescriptor applyRefinement(CategoryDescriptor refinement) {
+    if (!isRefinement(refinement)) throw new IllegalArgumentException(refinement + " is not a refinement of " + this);
+    RangeCategoryDescriptor refinedRange = (RangeCategoryDescriptor) refinement;
+
+    return new RangeCategoryDescriptor(
+      this.dataType,
+      refinedRange.lower,
+      refinedRange.upper,
+      refinedRange.maxGranularity != null ? refinedRange.maxGranularity : this.maxGranularity);
+  }
+
   public RangeConstraint toConstraint(String name) {
     if (dataType.equals("date")) {
       return new DateRangeConstraint(name, this.lower, this.upper);
@@ -141,18 +153,21 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
       "dataType='" + dataType + '\'' +
       ", lower='" + lower + '\'' +
       ", upper='" + upper + '\'' +
+      ", maxGranularity='" + maxGranularity + '\'' +
       '}';
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof RangeCategoryDescriptor)) return false;
+    if (o == null || getClass() != o.getClass()) return false;
 
     RangeCategoryDescriptor that = (RangeCategoryDescriptor) o;
 
     if (dataType != null ? !dataType.equals(that.dataType) : that.dataType != null) return false;
     if (lower != null ? !lower.equals(that.lower) : that.lower != null) return false;
+    if (maxGranularity != null ? !maxGranularity.equals(that.maxGranularity) : that.maxGranularity != null)
+      return false;
     if (upper != null ? !upper.equals(that.upper) : that.upper != null) return false;
 
     return true;
@@ -163,6 +178,7 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
     int result = dataType != null ? dataType.hashCode() : 0;
     result = 31 * result + (lower != null ? lower.hashCode() : 0);
     result = 31 * result + (upper != null ? upper.hashCode() : 0);
+    result = 31 * result + (maxGranularity != null ? maxGranularity.hashCode() : 0);
     return result;
   }
 }
