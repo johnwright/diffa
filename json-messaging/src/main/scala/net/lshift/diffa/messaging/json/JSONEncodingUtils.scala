@@ -55,7 +55,7 @@ object JSONEncodingUtils {
   def deserializeEventList(wire:String): Seq[WireEvent] =
     asScalaBuffer(mapper.readValue(wire, new TypeReference[List[WireEvent]]() {}))
 
-  def maybeDeserializeEventList(event: String) = {
+  def maybeDeserializeEventList(event: String) : Seq[WireEvent] = {
     if (event.startsWith("[")) {
       deserializeEventList(event)
     }

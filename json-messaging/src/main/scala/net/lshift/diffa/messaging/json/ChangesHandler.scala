@@ -25,10 +25,11 @@ import JSONEncodingUtils._
  */
 
 class ChangesHandler(val frontend: Changes,
-                     domain: String, endpoint:String) extends AbstractJSONHandler {
+                     val domain: String,
+                     val endpoint:String) extends AbstractJSONHandler {
 
   protected val endpoints = Map(
-    "changes" -> skeleton((maybeDeserializeEventList(_)
+    "changes" -> skeleton((maybeDeserializeEventList( _:String )
                              .foreach { wireEvent => frontend.onChange(domain, endpoint, wireEvent.toKernelEvent) })
                            andThen (_ => serializeEmptyResponse()))
   )
