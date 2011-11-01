@@ -26,7 +26,7 @@ object CategoryUtil {
           getOrElse(throw new RuntimeException("Unknown view " + viewName)).
           categories
 
-        categories ++ viewCategories
+        categories ++ viewCategories.map { case (k, cat) => k -> categories(k).applyRefinement(cat) }
     }
   }
 

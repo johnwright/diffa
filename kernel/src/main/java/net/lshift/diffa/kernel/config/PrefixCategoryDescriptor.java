@@ -65,6 +65,13 @@ public class PrefixCategoryDescriptor extends CategoryDescriptor {
   }
 
   @Override
+  public CategoryDescriptor applyRefinement(CategoryDescriptor refinement) {
+    if (!isRefinement(refinement)) throw new IllegalArgumentException(refinement + " is not a refinement of " + this);
+
+    return refinement;
+  }
+
+  @Override
   public String toString() {
     return "PrefixCategoryDescriptor{" +
       "prefixLength=" + prefixLength +
