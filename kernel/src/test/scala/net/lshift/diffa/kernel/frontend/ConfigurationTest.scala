@@ -94,7 +94,7 @@ class ConfigurationTest {
   @Test
   def shouldGenerateExceptionWhenInvalidConfigurationIsApplied() {
     val e1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:1234/scan", contentType = "application/json",
-          inboundUrl = "http://inbound", inboundContentType = "application/xml")
+          inboundUrl = "http://inbound")
     val e2 = EndpointDef(name = "downstream1", scanUrl = "http://localhost:5432/scan", contentType = "application/json")
     val conf = new DiffaConfig(
       endpoints = Set(e1, e2),
@@ -120,7 +120,7 @@ class ConfigurationTest {
     systemConfigStore.createOrUpdateUser(User(name = "def"))
 
     val ep1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:1234", contentType = "application/json",
-                inboundUrl = "http://inbound", inboundContentType = "application/xml",
+                inboundUrl = "http://inbound",
                 categories = Map(
                   "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
                   "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
@@ -174,7 +174,7 @@ class ConfigurationTest {
 
       // upstream1 is kept but changed
     val ep1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:6543/scan", contentType = "application/json",
-          inboundUrl = "http://inbound", inboundContentType = "application/xml",
+          inboundUrl = "http://inbound",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))

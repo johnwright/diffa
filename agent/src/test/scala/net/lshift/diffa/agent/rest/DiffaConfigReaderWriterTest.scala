@@ -35,8 +35,9 @@ class DiffaConfigReaderWriterTest {
       members = Set("abc"),
       endpoints = Set(
         EndpointDef(name = "upstream1", contentType = "application/json",
-          inboundUrl = "http://inbound", inboundContentType = "application/xml",
-          scanUrl = "http://localhost:1234/scan", contentRetrievalUrl = "http://localhost:1234/content",
+          inboundUrl = "http://inbound",
+          scanUrl = "http://localhost:1234/scan",
+          contentRetrievalUrl = "http://localhost:1234/content",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c")),
@@ -82,7 +83,7 @@ class DiffaConfigReaderWriterTest {
         <property key="a">b</property>
         <member>abc</member>
         <endpoint name="upstream1" content-type="application/json"
-                  inbound-url="http://inbound" inbound-content-type="application/xml"
+                  inbound-url="http://inbound"
                   scan-url="http://localhost:1234/scan" content-url="http://localhost:1234/content">
           <range-category name="a" data-type="date" lower="2009" upper="2010"/>
           <set-category name="b">

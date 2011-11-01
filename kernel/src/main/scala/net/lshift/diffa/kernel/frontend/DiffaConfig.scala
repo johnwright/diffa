@@ -54,7 +54,6 @@ case class EndpointDef (
   @BeanProperty var versionGenerationUrl: String = null,
   @BeanProperty var contentType: String = null,
   @BeanProperty var inboundUrl: String = null,
-  @BeanProperty var inboundContentType: String = null,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
   @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef]) {
 

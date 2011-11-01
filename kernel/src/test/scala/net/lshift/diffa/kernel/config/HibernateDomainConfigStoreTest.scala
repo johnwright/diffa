@@ -119,7 +119,6 @@ class HibernateDomainConfigStoreTest {
     assertEquals(count, endpoints.length)
     assertEquals(e.name, endpoints(offset).name)
     assertEquals(e.inboundUrl, endpoints(offset).inboundUrl)
-    assertEquals(e.inboundContentType, endpoints(offset).inboundContentType)
     assertEquals(e.scanUrl, endpoints(offset).scanUrl)
     assertEquals(e.contentRetrievalUrl, endpoints(offset).contentRetrievalUrl)
     assertEquals(e.versionGenerationUrl, endpoints(offset).versionGenerationUrl)
@@ -280,8 +279,9 @@ class HibernateDomainConfigStoreTest {
         
     // Change its name
     domainConfigStore.createOrUpdateEndpoint(domainName, EndpointDef(name = upstreamRenamed,
-                                                                     scanUrl = upstream1.scanUrl, contentType = "application/json",
-                                                                     inboundUrl = "changes", inboundContentType = "application/json"))
+                                                                     scanUrl = upstream1.scanUrl,
+                                                                     contentType = "application/json",
+                                                                     inboundUrl = "changes"))
 
     val retrieved = domainConfigStore.getEndpointDef(domainName, upstreamRenamed)
     assertEquals(upstreamRenamed, retrieved.name)
@@ -390,8 +390,7 @@ class HibernateDomainConfigStoreTest {
     systemConfigStore.createOrUpdateDomain(domain)
     domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
     domainConfigStore.createOrUpdateEndpoint(domainName, EndpointDef(name = upstream1.name, scanUrl = "DIFFERENT_URL",
-                                                                     contentType = "application/json", inboundUrl = "changes",
-                                                                     inboundContentType = "application/json"))
+                                                                     contentType = "application/json", inboundUrl = "changes"))
     assertEquals(1, domainConfigStore.listEndpoints(domainName).length)
     assertEquals("DIFFERENT_URL", domainConfigStore.getEndpointDef(domainName, upstream1.name).scanUrl)
   }

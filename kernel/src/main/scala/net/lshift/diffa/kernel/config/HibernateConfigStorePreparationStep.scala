@@ -519,3 +519,14 @@ object AddAllowManualScanFlagToPairStep extends HibernateMigrationStep {
     migration.apply(connection)
   }
 }
+
+object RemoveInboundContentTypeFromEndpointStep extends HibernateMigrationStep {
+  def versionId = 13
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.alterTable("endpoint").dropColumn("inbound_content_type")
+
+    migration.apply(connection)
+  }
+}
