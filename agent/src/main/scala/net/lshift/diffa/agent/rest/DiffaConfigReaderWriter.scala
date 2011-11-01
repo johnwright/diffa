@@ -150,7 +150,6 @@ class CastorSerializableEndpoint extends Categorized {
     this.versionGenerationUrl = e.versionGenerationUrl
     this.contentType = e.contentType
     this.inboundUrl = e.inboundUrl
-    this.inboundContentType = e.inboundContentType
     this.fromDiffaCategories(e.categories)
     this.views = e.views.map(v => new CastorSerializableEndpointView().fromDiffaEndpointView(v));
 
@@ -159,7 +158,7 @@ class CastorSerializableEndpoint extends Categorized {
 
   def toDiffaEndpoint =
     EndpointDef(
-      name = name, contentType = contentType, inboundUrl = inboundUrl, inboundContentType = inboundContentType,
+      name = name, contentType = contentType, inboundUrl = inboundUrl,
       scanUrl = scanUrl, contentRetrievalUrl = contentRetrievalUrl, versionGenerationUrl = versionGenerationUrl,
       categories = toDiffaCategories,
       views = views.map(v => v.toDiffaEndpointView)

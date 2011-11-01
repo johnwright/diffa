@@ -217,14 +217,6 @@
     <constructor-arg ref="systemConfigStore" />
   </bean>
 
-    <!--
-      ===============================
-        Event Format Mapping Management
-      ===============================
-    -->
-
-  <bean id="eventFormatMapperManager" class="net.lshift.diffa.kernel.participants.EventFormatMapperManager" />
-
   <!--
     =============
       Supervision

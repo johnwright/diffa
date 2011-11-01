@@ -132,13 +132,13 @@ class TestEnvironment(val pairKey: String,
   systemConfig.declareDomain(domain)
   configurationClient.declareEndpoint(EndpointDef(name = upstreamEpName,
     scanUrl = participants.upstreamScanUrl, contentRetrievalUrl = participants.upstreamContentUrl, contentType = contentType,
-    inboundUrl = inboundURLBuilder(upstreamEpName), inboundContentType = contentType,
+    inboundUrl = inboundURLBuilder(upstreamEpName),
     categories = categories,
     views = views))
   configurationClient.declareEndpoint(EndpointDef(name = downstreamEpName,
     scanUrl = participants.downstreamScanUrl, contentRetrievalUrl = participants.downstreamContentUrl,
     versionGenerationUrl = participants.downstreamVersionUrl, contentType = contentType,
-    inboundUrl = inboundURLBuilder(downstreamEpName), inboundContentType = contentType,
+    inboundUrl = inboundURLBuilder(downstreamEpName),
     categories = categories,
     views = views))
 

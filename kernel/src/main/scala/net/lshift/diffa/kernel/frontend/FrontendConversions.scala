@@ -31,7 +31,6 @@ object FrontendConversions {
     versionGenerationUrl = e.versionGenerationUrl,
     contentType = e.contentType,
     inboundUrl = e.inboundUrl,
-    inboundContentType = e.inboundContentType,
     categories = e.categories,
     views = new java.util.ArrayList[EndpointViewDef](e.views.map(v => toEndpointViewDef(v))))
 
@@ -43,7 +42,6 @@ object FrontendConversions {
     versionGenerationUrl = e.versionGenerationUrl,
     contentType = e.contentType,
     inboundUrl = e.inboundUrl,
-    inboundContentType = e.inboundContentType,
     categories = e.categories)
 
   def fromEndpointViewDef(endpoint:Endpoint, v:EndpointViewDef) =
