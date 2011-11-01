@@ -80,6 +80,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
     var self = this;
     $.getJSON(API_BASE + "/" + Diffa.currentDomain + '/config/pairs/' + this.id, function(pairInfo) {
       self.set(pairInfo);
+      self.set({fullContent: true})
     });
   },
 
@@ -304,9 +305,9 @@ Diffa.Views.PairControls = Diffa.Views.PairSelectionView.extend({
 
     _.bindAll(this, "render");
 
-    this.model.bind('change:selected', this.maybeRender);
-    this.model.bind('change:state',    this.maybeRender);
-    this.model.bind('change:views',    this.maybeRender);
+    this.model.bind('change:selected',    this.maybeRender);
+    this.model.bind('change:state',       this.maybeRender);
+    this.model.bind('change:fullContent', this.maybeRender);
 
     this.maybeRender();
   },
@@ -317,22 +318,34 @@ Diffa.Views.PairControls = Diffa.Views.PairSelectionView.extend({
     var currentState = currentPair.get('state');
     var scanIsRunning = (currentState == "REQUESTING" || currentState == "SCANNING");
 
+    var pairScanButton = this.$('#pair-controls .pair-scan-button');
     var scanButtons = this.$('#pair-controls .scan-button');
     var cancelButton = this.$('#pair-controls .cancel-button');
 
-    $(scanButtons).toggle(!scanIsRunning);
     $(cancelButton).toggle(scanIsRunning);
 
     this.$('#pair-controls .view-scan-button').remove();
-    if (currentPair.get('views')) {
-      _.each(currentPair.get('views'), function(view) {
-        $('<button class="repair scan-button view-scan-button">Scan ' + view.name + '</button>').
-          appendTo($('#pair-controls')).
-          click(function(e) {
-            e.preventDefault();
-            currentPair.startScan(view.name);
-          });
-      });
+    if (currentPair.get('fullContent')) {
+      // The presence of 'fullContent' indicates that the full data has been loaded
+      var views = _.sortBy(currentPair.get('views'), function(v) { return v.name; });
+
+      // Render scan buttons only if we're not currently doing a scan
+      if (!scanIsRunning) {
+        _.each(views, function(view) {
+          $('<button class="repair scan-button view-scan-button">Scan ' + view.name + '</button>').
+            appendTo($('#pair-controls')).
+            click(function(e) {
+              e.preventDefault();
+              currentPair.startScan(view.name);
+            });
+        });
+      }
+
+      // Only show the pair scan button if we're not scanning and we allow manual scans
+      var allowManualScans = (currentPair.get('allowManualScans') !== false);
+      $(pairScanButton).toggle(!scanIsRunning && allowManualScans);
+    } else {
+      $(scanButtons).hide();      // Don't show scan buttons till we know if they're allowed
     }
   },
 

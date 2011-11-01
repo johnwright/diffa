@@ -60,7 +60,7 @@ class DiffaConfigReaderWriterTest {
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0",
           views = List(PairViewDef(name = "little-view", scanCronSpec = "0 0 0 * * 0"))),
-        PairDef("ac", "same", 5, "upstream1", "downstream1")),
+        PairDef("ac", "same", 5, "upstream1", "downstream1", allowManualScans = false)),
       repairActions = Set(
         RepairActionDef(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pair="ab"),
         RepairActionDef(name="Delete Result", scope="entity", url="http://example.com/delete/{id}", pair="ab")
@@ -114,7 +114,8 @@ class DiffaConfigReaderWriterTest {
           <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
           <view name="little-view" scan-schedule="0 0 0 * * 0" />
         </pair>
-        <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"/>
+        <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"
+              allow-manual-scans="false" />
       </diffa-config>.toString
 
     ConfigComparisonUtil.assertConfigMatches(expectedXml, new String(baos.toByteArray, "UTF-8"))
