@@ -36,6 +36,20 @@ class ConfigValidationTest {
   }
 
   @Test
+  def shouldRejectPairWithScanCronSpecThatIsntACronSpec() {
+    val pairDef = PairDef(key = "p", upstreamName = "a", downstreamName = "b", scanCronSpec = "1 2 3")
+    val endpoints = Set(EndpointDef(name = "a"), EndpointDef(name = "b"))
+
+    try {
+      pairDef.validate("config", endpoints)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]: Schedule '1 2 3' is not a valid: Unexpected end of expression.", e.getMessage)
+    }
+  }
+
+  @Test
   def shouldRejectPairThatUsesAnUpstreamEndpointThatDoesntExist() {
     val pairDef = PairDef(key = "p", upstreamName = "c", downstreamName = "b")
     val endpoints = Set(EndpointDef(name = "a"), EndpointDef(name = "b"))
@@ -267,6 +281,34 @@ class ConfigValidationTest {
     } catch {
       case e:ConfigValidationException =>
         assertEquals("config/pair[key=p]/views[name=abc]: The downstream endpoint does not define the view 'abc'", e.getMessage)
+    }
+  }
+
+  @Test
+  def shouldAcceptPairViewThatUsesValidCronExpression() {
+    val pairDef = PairDef(key = "p", upstreamName = "a", downstreamName = "b",
+      views = List(PairViewDef("abc", scanCronSpec = "0 * * * * ?")))
+    val endpoints = Set(
+      EndpointDef(name = "a", views = List(EndpointViewDef(name = "abc"))),
+      EndpointDef(name = "b", views = List(EndpointViewDef(name = "abc"))))
+
+    pairDef.validate("config", endpoints)
+  }
+
+  @Test
+  def shouldRejectPairViewThatUsesInvalidCronExpression() {
+    val pairDef = PairDef(key = "p", upstreamName = "a", downstreamName = "b",
+      views = List(PairViewDef("abc", scanCronSpec = "1 2 3")))
+    val endpoints = Set(
+      EndpointDef(name = "a", views = List(EndpointViewDef(name = "abc"))),
+      EndpointDef(name = "b", views = List(EndpointViewDef(name = "abc"))))
+
+    try {
+      pairDef.validate("config", endpoints)
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]/views[name=abc]: Schedule '1 2 3' is not a valid: Unexpected end of expression.", e.getMessage)
     }
   }
 }
