@@ -180,7 +180,7 @@ class StoreSynchronizationTest {
     replayCorrelationStore(diffsManager, firstWriter, store, pair, TriggeredByScan)
     assertEquals(Some(1L), diffsManager.lastRecordedVersion(pairRef))
 
-    stores.remove(pairRef)
+    stores.close(pairRef)
     store = stores(pairRef)
 
     val secondWriter = store.openWriter()
