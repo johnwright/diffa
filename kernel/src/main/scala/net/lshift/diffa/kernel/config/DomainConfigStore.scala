@@ -167,6 +167,7 @@ case class Pair(
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = Pair.NO_MATCHING,
   @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var allowManualScans: java.lang.Boolean = null,
   @BeanProperty var views:java.util.Set[PairView] = new java.util.HashSet[PairView]) {
 
   def this() = this(key = null)

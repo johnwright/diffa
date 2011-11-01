@@ -298,7 +298,7 @@ class HibernateDomainConfigStoreTest {
     }
 
     domainConfigStore.createOrUpdatePair(domainName, PairDef(pairRenamed, versionPolicyName2, Pair.NO_MATCHING,
-      downstream1.name, upstream1.name, "0 0 * * * ?"))
+      downstream1.name, upstream1.name, "0 0 * * * ?", allowManualScans = false))
     
     val retrieved = domainConfigStore.getPairDef(domainName, pairRenamed)
     assertEquals(pairRenamed, retrieved.key)
@@ -306,6 +306,7 @@ class HibernateDomainConfigStoreTest {
     assertEquals(upstream1.name, retrieved.downstreamName)
     assertEquals(versionPolicyName2, retrieved.versionPolicyName)
     assertEquals("0 0 * * * ?", retrieved.scanCronSpec)
+    assertEquals(false, retrieved.allowManualScans)
     assertEquals(Pair.NO_MATCHING, retrieved.matchingTimeout)
   }
 

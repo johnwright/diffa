@@ -51,7 +51,8 @@ class HibernateConfigStorePreparationStep
     AddDomainSequenceIndexMigrationStep,
     AddStoreCheckpointsMigrationStep,
     ReviseUrlLengthMigrationStep,
-    AddEndpointViewsMigrationStep
+    AddEndpointViewsMigrationStep,
+    AddAllowManualScanFlagToPairStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -503,6 +504,17 @@ object AddEndpointViewsMigrationStep extends HibernateMigrationStep {
       addForeignKey("FKF03ED1F7B6D4F2CB", Array("category_descriptor_id"), "category_descriptor", Array("id"))
     migration.alterTable("pair_views").
       addForeignKey("FKE0BDD4C9F6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+
+    migration.apply(connection)
+  }
+}
+object AddAllowManualScanFlagToPairStep extends HibernateMigrationStep {
+  def versionId = 12
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.alterTable("pair").
+      addColumn("allow_manual_scans", Types.BIT, 1, true, 0)
 
     migration.apply(connection)
   }

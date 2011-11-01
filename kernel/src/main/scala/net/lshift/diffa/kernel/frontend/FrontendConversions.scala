@@ -58,6 +58,7 @@ object FrontendConversions {
     upstreamName = p.upstream.name,
     downstreamName = p.downstream.name,
     scanCronSpec = p.scanCronSpec,
+    allowManualScans = p.allowManualScans,
     views = p.views.map(v => toPairViewDef(v)).toList)
 
   def toPairViewDef(v:PairView) = PairViewDef(name = v.name, scanCronSpec = v.scanCronSpec)

@@ -85,7 +85,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
     val up = getEndpoint(s, domain, p.upstreamName)
     val down = getEndpoint(s, domain, p.downstreamName)
     val dom = getDomain(domain)
-    val toUpdate = new Pair(p.key, dom, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec)
+    val toUpdate = new Pair(p.key, dom, up, down, p.versionPolicyName, p.matchingTimeout, p.scanCronSpec, p.allowManualScans)
     s.saveOrUpdate(toUpdate)
 
     // Update the view definitions
