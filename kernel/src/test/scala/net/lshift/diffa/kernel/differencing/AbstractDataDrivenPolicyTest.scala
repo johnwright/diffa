@@ -65,6 +65,7 @@ abstract class AbstractDataDrivenPolicyTest {
   val stores = new VersionCorrelationStoreFactory {
     def apply(pair: DiffaPairRef) = store
     def remove(pair: DiffaPairRef) {}
+    def close(pair: DiffaPairRef) {}
     def close {}
   }
 

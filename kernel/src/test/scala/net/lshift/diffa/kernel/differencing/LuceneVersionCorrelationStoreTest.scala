@@ -45,15 +45,18 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 class LuceneVersionCorrelationStoreTest {
   import LuceneVersionCorrelationStoreTest._
 
-
   private val emptyAttributes:Map[String, TypedAttribute] = Map()
   private val emptyStrAttributes:Map[String, String] = Map()
 
   val log = LoggerFactory.getLogger(getClass)
 
+  val store = stores(pair)
+  val otherStore = stores(otherPair)
+
   @Before
   def cleanupStore {
-    flushStore
+    store.reset
+    otherStore.reset
   }
 
   @Test
@@ -504,6 +507,20 @@ class LuceneVersionCorrelationStoreTest {
     assertFalse(writer.isDirty)
   }
 
+  @Test
+  def storeShouldClearWhenRemoved = {
+    val writer = store.openWriter()
+    writer.storeUpstreamVersion(VersionID(pair, "id1"), emptyAttributes, DEC_31_2009, "upstreamVsn")
+    writer.storeDownstreamVersion(VersionID(pair, "id2"), emptyAttributes, DEC_31_2009, "upstreamVsn", "downstreamVsn")
+    writer.flush()
+    assertEquals(2, store.unmatchedVersions(Seq(), Seq(), None).length)
+
+    stores.remove(pair)
+    val reopenedStore = stores(pair)
+
+    assertEquals(0, reopenedStore.unmatchedVersions(Seq(), Seq(), None).length)
+  }
+
   private def assertCorrelationEquals(expected:Correlation, actual:Correlation) {
     if (expected == null) {
       assertNull(actual)
@@ -548,8 +565,6 @@ object LuceneVersionCorrelationStoreTest {
   val pair = DiffaPairRef(key="pair",domain=domainName)
   val otherPair = DiffaPairRef(key="other-pair",domain=domainName)
   val stores = new LuceneVersionCorrelationStoreFactory("target", classOf[MMapDirectory], dummyConfigStore, dummyDiagnostics)
-  val store = stores(pair)
-  val otherStore = stores(otherPair)
 
   // Helper methods for various constraint/attribute scenarios
   def bizDateTimeSeq(d:DateTime) = Seq(d.toString())
@@ -600,9 +615,4 @@ object LuceneVersionCorrelationStoreTest {
     AttributeSystem(dateTimeConstraints ++ setConstraints, dateTimeAttributes ++ stringAttributes, dateTimeAttributes ++ excludedStringAttributes),
     AttributeSystem(dateTimeConstraints ++ setConstraints, dateTimeAttributes ++ stringAttributes, excludedByLaterDateTimeAttributes ++ stringAttributes)
   )
-
-  def flushStore = {
-    store.reset
-    otherStore.reset
-  }
 }
