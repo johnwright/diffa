@@ -170,6 +170,18 @@ case class PairViewDef(
       getOrElse(throw new ConfigValidationException(viewPath, "The upstream endpoint does not define the view '%s'".format(name)))
     downstreamEp.views.find(v => v.name == this.name).
       getOrElse(throw new ConfigValidationException(viewPath, "The downstream endpoint does not define the view '%s'".format(name)))
+
+    // Ensure that cron specs are valid
+    if (scanCronSpec != null) {
+      try {
+        // Will throw an exception if the expression is invalid. The exception message will also include useful
+        // diagnostics of why it is wrong.
+        new CronExpression(scanCronSpec)
+      } catch {
+        case ex =>
+          throw new ConfigValidationException(viewPath, "Schedule '" + scanCronSpec + "' is not a valid: " + ex.getMessage)
+      }
+    }
   }
 }
 
