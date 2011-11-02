@@ -64,7 +64,7 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
   private def generateDifferencesReport(pair:DiffaPairRef, reportWriter:PrintWriter) {
     val datetimeFormatter = ISODateTimeFormat.basicDateTime()
 
-    reportWriter.println("detection date,object id,upstream version,downstream vsn,state")
+    reportWriter.println("detection date,object id,upstream version,downstream version,state")
     diffStore.streamUnmatchedEvents(pair, event => {
       val state = (event.upstreamVsn, event.downstreamVsn) match {
         case (null, null) => "entirely-absent"
@@ -76,8 +76,8 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
       reportWriter.println(
         event.detectedAt.toString(datetimeFormatter) + "," +
         event.objId.id + "," +
-        event.upstreamVsn + "," +
-        event.downstreamVsn + "," +
+        formatVersion(event.upstreamVsn) + "," +
+        formatVersion(event.downstreamVsn) + "," +
         state
       )
     })
@@ -90,7 +90,9 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
 
     try {
       val reportPost = new HttpPost(target)
-      reportPost.setEntity(new InputStreamEntity(fileStream, reportLength))
+      val entity = new InputStreamEntity(fileStream, reportLength)
+      entity.setContentType("text/csv")
+      reportPost.setEntity(entity)
       client.execute(reportPost)
     } finally {
       fileStream.close()
@@ -106,5 +108,10 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
       if (!FileUtils.deleteQuietly(reportTmp))
         reportTmp.deleteOnExit();
     }
+  }
+
+  private def formatVersion(vsn:String) = vsn match {
+    case null => ""
+    case v    => v
   }
 }

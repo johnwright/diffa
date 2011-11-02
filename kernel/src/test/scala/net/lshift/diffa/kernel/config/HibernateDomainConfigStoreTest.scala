@@ -30,6 +30,7 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
 import net.lshift.diffa.kernel.frontend._
+import org.hibernate.dialect.Dialect
 
 class HibernateDomainConfigStoreTest {
 
@@ -584,8 +585,9 @@ object HibernateDomainConfigStoreTest {
     sf
   }
 
-  lazy val pairCache = new PairCache(new CacheManager())
-
+  lazy val cacheManager = new CacheManager()
+  lazy val pairCache = new PairCache(cacheManager)
+  val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
 
   lazy val domainConfigStore = new HibernateDomainConfigStore(sessionFactory, pairCache)
   lazy val systemConfigStore = new HibernateSystemConfigStore(sessionFactory, pairCache)
