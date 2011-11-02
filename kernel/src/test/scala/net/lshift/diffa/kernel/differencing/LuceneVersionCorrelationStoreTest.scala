@@ -579,11 +579,15 @@ object LuceneVersionCorrelationStoreTest {
   private val excludedByEarlierDateTimeAttributes = bizDateTimeMap(FEB_15_2010)
   private val excludedByLaterDateTimeAttributes = bizDateTimeMap(AUG_11_2010_1)
   private val dateTimeConstraints = Seq(new TimeRangeConstraint("bizDateTime", JUL_2010, END_JUL_2010))
+  private val unboundedLowerDateTimeConstraint = Seq(new TimeRangeConstraint("bizDateTime", null, END_JUL_2010))
+  private val unboundedUpperDateTimeConstraint = Seq(new TimeRangeConstraint("bizDateTime", JUL_2010, null))
 
   private val dateAttributes = bizDateMap(JUL_1_2010.toLocalDate)
   private val excludedByEarlierDateAttributes = bizDateMap(FEB_15_2010.toLocalDate)
   private val excludedByLaterDateAttributes = bizDateMap(AUG_11_2010.toLocalDate)
   private val dateConstraints = Seq(new DateRangeConstraint("bizDate", JUL_1_2010.toLocalDate, JUL_31_2010.toLocalDate))
+  private val unboundedLowerDateConstraint = Seq(new DateRangeConstraint("bizDate", null, JUL_31_2010.toLocalDate))
+  private val unboundedUpperDateConstraint = Seq(new DateRangeConstraint("bizDate", JUL_1_2010.toLocalDate, null))
 
   private val intAttributes = intMap(2500)
   private val excludedIntAttributes = intMap(20000)
@@ -603,9 +607,17 @@ object LuceneVersionCorrelationStoreTest {
     AttributeSystem(dateTimeConstraints, dateTimeAttributes, excludedByLaterDateTimeAttributes),
     AttributeSystem(dateTimeConstraints, dateTimeAttributes, excludedByEarlierDateTimeAttributes)
   )
+  @DataPoints def unboundedDateTimes = Array(
+    AttributeSystem(unboundedLowerDateTimeConstraint, dateTimeAttributes, excludedByLaterDateTimeAttributes),
+    AttributeSystem(unboundedUpperDateTimeConstraint, dateTimeAttributes, excludedByEarlierDateTimeAttributes)
+  )
   @DataPoints def dates = Array(
     AttributeSystem(dateConstraints, dateAttributes, excludedByLaterDateAttributes),
     AttributeSystem(dateConstraints, dateAttributes, excludedByEarlierDateAttributes)
+  )
+  @DataPoints def unboundedDates = Array(
+    AttributeSystem(unboundedLowerDateConstraint, dateAttributes, excludedByLaterDateAttributes),
+    AttributeSystem(unboundedUpperDateConstraint, dateAttributes, excludedByEarlierDateAttributes)
   )
   @DataPoint def ints = AttributeSystem(intConstraints, intAttributes, excludedIntAttributes)
   @DataPoint def strings = AttributeSystem(stringConstraints, stringAttributes, excludedStringAttributes)

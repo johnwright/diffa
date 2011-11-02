@@ -54,4 +54,25 @@ class CategoryUtilTest {
       Map("someString" -> baseStringCategory, "someInt" -> baseIntCategory, "someDate" -> fusedDateCategory),
       fused)
   }
+
+  @Test
+  def shouldInferDateBoundsFromUpperToLower() {
+    val unboundedUpperDateCategory = Map("someDate" -> new RangeCategoryDescriptor("date", "2011-01-01", null, "individual"))
+    val unboundedLowerDateCategory = Map("someDate" -> new RangeCategoryDescriptor("date", null, "2011-12-31", "individual"))
+
+    val undoundedLowerView = Seq(EndpointView(name = "dates", categories = unboundedLowerDateCategory))
+    val undoundedUpperView = Seq(EndpointView(name = "dates", categories = unboundedUpperDateCategory))
+
+    val fusedForwards = CategoryUtil.fuseViewCategories(unboundedUpperDateCategory, undoundedLowerView, Some("dates"))
+    val fusedBackwards = CategoryUtil.fuseViewCategories(unboundedLowerDateCategory, undoundedUpperView, Some("dates"))
+
+    assertEquals(
+      Map("someDate" -> new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31", "individual")),
+      fusedForwards)
+
+    assertEquals(
+      Map("someDate" -> new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31", "individual")),
+      fusedBackwards)
+  }
+
 }
