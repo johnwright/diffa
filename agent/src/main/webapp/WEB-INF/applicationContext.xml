@@ -119,14 +119,18 @@
   </bean>
 
   <!--
-    ============
-      Escalations
-    ============
+    =============================
+      Escalations and Reporting
+    =============================
   -->
 
   <bean id="escalationManager" class="net.lshift.diffa.kernel.escalation.EscalationManager">
     <constructor-arg ref="domainConfigStore" />
     <constructor-arg ref="actionsFrontend" />
+  </bean>
+
+  <bean id="reportManager" class="net.lshift.diffa.kernel.reporting.ReportManager">
+    <constructor-arg ref="domainConfigStore" />
   </bean>
 
   <!--

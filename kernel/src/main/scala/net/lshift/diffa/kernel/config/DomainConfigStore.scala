@@ -60,6 +60,7 @@ trait DomainConfigStore {
   def getPairDef(domain:String, key: String) : PairDef
 
   def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
+  def getPairReportDef(domain:String, name:String, pairKey:String):PairReportDef
 
   /**
    * Retrieves all (domain-specific, non-internal) agent configuration options.
