@@ -130,8 +130,8 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
 
     return new RangeCategoryDescriptor(
       this.dataType,
-      refinedRange.lower,
-      refinedRange.upper,
+      refinedRange.lower != null ? refinedRange.lower : this.lower,
+      refinedRange.upper != null ? refinedRange.upper : this.upper,
       refinedRange.maxGranularity != null ? refinedRange.maxGranularity : this.maxGranularity);
   }
 
