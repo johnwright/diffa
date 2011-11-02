@@ -140,6 +140,12 @@
       e.isMatch = false and
       e.ignored = false
   ]]></query>
+  <query name="unmatchedEventsByDomainAndPair"><![CDATA[
+    select e from ReportedDifferenceEvent e where
+      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
+      e.isMatch = false and
+      e.ignored = false
+  ]]></query>
   <query name="unmatchedEventsInIntervalByDomainAndPair"><![CDATA[
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and

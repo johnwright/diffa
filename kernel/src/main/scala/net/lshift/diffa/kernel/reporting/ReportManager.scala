@@ -16,11 +16,19 @@
 package net.lshift.diffa.kernel.reporting
 
 import net.lshift.diffa.kernel.config.{PairReportType, DiffaPairRef, DomainConfigStore}
+import net.lshift.diffa.kernel.differencing.DomainDifferenceStore
+import org.apache.http.impl.client.DefaultHttpClient
+import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
+import org.apache.http.client.methods.HttpPost
+import org.apache.commons.io.FileUtils
+import java.io.{FileInputStream, FileWriter, PrintWriter, File}
+import org.apache.http.entity.InputStreamEntity
+import org.joda.time.format.ISODateTimeFormat
 
 /**
  * Component responsible for executing reports defined on a pair.
  */
-class ReportManager(configStore:DomainConfigStore) {
+class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceStore, diagnostics:DiagnosticsManager) {
   import PairReportType._
 
   /**
@@ -30,12 +38,73 @@ class ReportManager(configStore:DomainConfigStore) {
   def executeReport(pair:DiffaPairRef, name:String) {
     val reportDef = configStore.getPairReportDef(pair.domain, name, pair.key)
 
-    reportDef.reportType match {
-      case DIFFERENCES => runDifferencesReport(pair, reportDef.target)
+    diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Initiating report %s".format(name))
+    try {
+      // Execute the report, and stream it to disk. It is necessary to do this because a HttpPost needs to
+      // include a length, which we won't know till we've assembled the report
+      withTempFile(reportTmp => {
+        val reportWriter = new PrintWriter(new FileWriter(reportTmp))
+        try {
+          reportDef.reportType match {
+            case DIFFERENCES => generateDifferencesReport(pair, reportWriter)
+          }
+        } finally {
+          reportWriter.close()
+        }
+
+        postReport(reportDef.target, reportTmp)
+      })
+      diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Completed report %s".format(name))
+    } catch {
+      case e =>
+        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Report %s failed: %s".format(name, e.getMessage))
     }
   }
 
-  private def runDifferencesReport(pair:DiffaPairRef, target:String) {
+  private def generateDifferencesReport(pair:DiffaPairRef, reportWriter:PrintWriter) {
+    val datetimeFormatter = ISODateTimeFormat.basicDateTime()
 
+    reportWriter.println("detection date,object id,upstream version,downstream vsn,state")
+    diffStore.streamUnmatchedEvents(pair, event => {
+      val state = (event.upstreamVsn, event.downstreamVsn) match {
+        case (null, null) => "entirely-absent"
+        case (_, null)    => "missing-from-downstream"
+        case (null, _)    => "missing-from-upstream"
+        case (_, _)       => "version-mismatch"
+      }
+
+      reportWriter.println(
+        event.detectedAt.toString(datetimeFormatter) + "," +
+        event.objId.id + "," +
+        event.upstreamVsn + "," +
+        event.downstreamVsn + "," +
+        state
+      )
+    })
+  }
+
+  private def postReport(target:String, reportFile:File) {
+    val client = new DefaultHttpClient
+    val reportLength = reportFile.length()
+    val fileStream = new FileInputStream(reportFile)
+
+    try {
+      val reportPost = new HttpPost(target)
+      reportPost.setEntity(new InputStreamEntity(fileStream, reportLength))
+      client.execute(reportPost)
+    } finally {
+      fileStream.close()
+    }
+  }
+
+  private def withTempFile[T](f:(File) => T):T = {
+    val reportTmp = File.createTempFile("diffa-report", ".csv")
+    try {
+      f(reportTmp)
+    } finally {
+      // Delete the tmp file either now or later
+      if (!FileUtils.deleteQuietly(reportTmp))
+        reportTmp.deleteOnExit();
+    }
   }
 }
