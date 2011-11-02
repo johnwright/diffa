@@ -32,7 +32,8 @@ case class DiffaConfig(
   endpoints:Set[EndpointDef] = Set(),
   pairs:Set[PairDef] = Set(),
   repairActions:Set[RepairActionDef] = Set(),
-  escalations:Set[EscalationDef] = Set()
+  escalations:Set[EscalationDef] = Set(),
+  reports:Set[PairReportDef] = Set()
 ) {
 
   def validate() {
@@ -41,6 +42,7 @@ case class DiffaConfig(
     pairs.foreach(_.validate(path, endpoints))
     repairActions.foreach(_.validate(path))
     escalations.foreach(_.validate(path))
+    reports.foreach(_.validate(path))
   }
 }
 
@@ -255,5 +257,33 @@ case class EscalationDef (
 
   def asEscalation(domain:String)
     = Escalation(name, DiffaPair(key=pair,domain=Domain(name=domain)), action, actionType, event, origin)
+}
+
+case class PairReportDef(
+  @BeanProperty var name:String = null,
+  @BeanProperty var pair: String = null,
+  @BeanProperty var reportType:String = null,
+  @BeanProperty var target:String = null
+) {
+  import PairReportType._
+
+  def this() = this(name = null)
+
+  def validate(path:String = null) {
+    val escalationPath = ValidationUtil.buildPath(
+      ValidationUtil.buildPath(path, "pair", Map("key" -> pair)),
+      "report", Map("name" -> name))
+
+    reportType match {
+      case DIFFERENCES  =>
+      case _ => throw new ConfigValidationException(escalationPath, "Invalid report type: " + reportType)
+    }
+
+    target match {
+      case null | "" => throw new ConfigValidationException(escalationPath, "Missing target")
+      case url if (url.startsWith("http://") || url.startsWith("https://")) =>   // Valid
+      case _ => throw new ConfigValidationException(escalationPath, "Invalid target (not a URL): " + target)
+    }
+  }
 }
 

@@ -52,7 +52,8 @@ class HibernateConfigStorePreparationStep
     AddStoreCheckpointsMigrationStep,
     ReviseUrlLengthMigrationStep,
     AddEndpointViewsMigrationStep,
-    AddAllowManualScanFlagToPairStep
+    AddAllowManualScanFlagToPairStep,
+    AddPairReportsStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -526,6 +527,26 @@ object RemoveInboundContentTypeFromEndpointStep extends HibernateMigrationStep {
     val migration = new MigrationBuilder(config)
 
     migration.alterTable("endpoint").dropColumn("inbound_content_type")
+
+    migration.apply(connection)
+  }
+}
+
+object AddPairReportsStep extends HibernateMigrationStep {
+  def versionId = 14
+  def migrate(config: Configuration, connection: Connection) {
+    val migration = new MigrationBuilder(config)
+
+    migration.createTable("pair_reports").
+      column("name", Types.VARCHAR, 255, false).
+      column("pair_key", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("report_type", Types.VARCHAR, 255, false).
+      column("target", Types.VARCHAR, 255, false).
+      pk("name", "pair_key", "domain")
+
+    migration.alterTable("pair_reports").
+      addForeignKey("FKCEC6E15A2E298B6C", Array("pair_key", "domain"), "pair", Array("key", "domain"))
 
     migration.apply(connection)
   }

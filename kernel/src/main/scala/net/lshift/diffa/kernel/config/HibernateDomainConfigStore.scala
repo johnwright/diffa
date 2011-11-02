@@ -21,8 +21,8 @@ import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{Pair => DiffaPair}
-import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
+import net.lshift.diffa.kernel.frontend._
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:PairCache)
     extends DomainConfigStore
@@ -136,6 +136,26 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   def listEscalationsForPair(domain:String, pairKey: String) : Seq[EscalationDef] =
     sessionFactory.withSession(s => getEscalationsForPair(s, domain, pairKey).map(toEscalationDef(_)))
 
+  def listReports(domain:String) = sessionFactory.withSession(s => {
+    listQuery[PairReport](s, "reportsByDomain", Map("domain_name" -> domain)).map(toPairReportDef(_))
+  })
+
+  def deleteReport(domain:String, name: String, pairKey: String) = {
+    sessionFactory.withSession(s => {
+      val report = getReport(s, domain, name, pairKey)
+      s.delete(report)
+    })
+  }
+
+  def createOrUpdateReport(domain:String, r: PairReportDef) = sessionFactory.withSession( s => {
+    val pair = getPair(s, domain, r.pair)
+    val report = fromPairReportDef(pair, r)
+    s.saveOrUpdate(report)
+  })
+
+  def listReportsForPair(domain:String, pairKey: String) : Seq[PairReportDef] =
+    sessionFactory.withSession(s => getReportsForPair(s, domain, pairKey).map(toPairReportDef(_)))
+
   private def getRepairActionsInPair(s: Session, domain:String, pairKey: String): Seq[RepairAction] =
     listQuery[RepairAction](s, "repairActionsByPair", Map("pair_key" -> pairKey,
                                                           "domain_name" -> domain))
@@ -143,6 +163,10 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   private def getEscalationsForPair(s: Session, domain:String, pairKey:String): Seq[Escalation] =
     listQuery[Escalation](s, "escalationsByPair", Map("pair_key" -> pairKey,
                                                       "domain_name" -> domain))
+
+  private def getReportsForPair(s: Session, domain:String, pairKey:String): Seq[PairReport] =
+    listQuery[PairReport](s, "reportsByPair", Map("pair_key" -> pairKey,
+                                                  "domain_name" -> domain))
 
   def listRepairActions(domain:String) : Seq[RepairActionDef] = sessionFactory.withSession(s =>
     listQuery[RepairAction](s, "repairActionsByDomain", Map("domain_name" -> domain)).map(toRepairActionDef(_)))
@@ -181,6 +205,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   private def deletePairInSession(s:Session, domain:String, pair:DiffaPair) = {
     getRepairActionsInPair(s, domain, pair.key).foreach(s.delete)
     getEscalationsForPair(s, domain, pair.key).foreach(s.delete)
+    getReportsForPair(s, domain, pair.key).foreach(s.delete)
     pair.views.foreach(s.delete(_))
     deleteStoreCheckpoint(pair.asRef)
     s.delete(pair)

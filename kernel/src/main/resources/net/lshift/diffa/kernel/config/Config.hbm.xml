@@ -209,6 +209,19 @@
     <property name="origin" type="string" column="origin" not-null="true"/>
   </class>
 
+  <class name="PairReport" table="pair_reports" abstract="false">
+    <cache usage="read-write"/>
+    <composite-id mapped="true">
+      <key-property name="name" type="string" column="name" />
+      <key-many-to-one name="pair" class="Pair" lazy="false">
+        <column name="pair_key" />
+        <column name="domain" />
+      </key-many-to-one>
+    </composite-id>
+    <property name="reportType" type="string" column="report_type" not-null="true" />
+    <property name="target" type="string" column="target" not-null="true"/>
+  </class>
+
   <query name="userByName" cacheable="true">
     select u from User u where u.name = :name
   </query>
@@ -296,6 +309,12 @@
     join p.domain as d with d.name = :domain_name
   </query>
 
+  <query name="reportsByDomain" cacheable="true">
+    select r from PairReport r
+    join r.pair as p
+    join p.domain as d with d.name = :domain_name
+  </query>
+
   <query name="repairActionsByDomain" cacheable="true">
     select a from RepairAction a
     join a.pair as p
@@ -320,6 +339,12 @@
     join p.domain as d with d.name = :domain_name
   </query>
 
+  <query name="reportsByPair" cacheable="true">
+    select r from PairReport r
+    join r.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+  </query>
+
   <!-- Query by pair with domain and key -->
 
   <query name="repairActionsByNameAndPair" cacheable="true">
@@ -334,6 +359,13 @@
     join e.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
     where e.name = :name
+  </query>
+
+  <query name="reportsByNameAndPair" cacheable="true">
+    select r from PairReport r
+    join r.pair as p with p.key = :pair_key
+    join p.domain as d with d.name = :domain_name
+    where r.name = :name
   </query>
 
   <query name="configOptionByNameAndKey" cacheable="true">

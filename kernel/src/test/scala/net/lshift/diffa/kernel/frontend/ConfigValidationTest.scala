@@ -311,4 +311,49 @@ class ConfigValidationTest {
         assertEquals("config/pair[key=p]/views[name=abc]: Schedule '1 2 3' is not a valid: Unexpected end of expression.", e.getMessage)
     }
   }
+
+  @Test
+  def shouldAcceptReportWithValidReportType() {
+    val reportDef = PairReportDef(name = "Process Differences", pair ="p", reportType = "differences",
+                                  target = "http://someapp.com/handle_report")
+    reportDef.validate("config")
+  }
+
+  @Test
+  def shouldRejectReportWithInvalidReportType() {
+    val reportDef = PairReportDef(name = "Process Differences", pair ="p", reportType = "blah-blah",
+                                  target = "http://someapp.com/handle_report")
+    try {
+      reportDef.validate("config")
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]/report[name=Process Differences]: Invalid report type: blah-blah", e.getMessage)
+    }
+  }
+
+  @Test
+  def shouldRejectReportWithMissingTarget() {
+    val reportDef = PairReportDef(name = "Process Differences", pair ="p", reportType = "differences")
+    try {
+      reportDef.validate("config")
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]/report[name=Process Differences]: Missing target", e.getMessage)
+    }
+  }
+
+  @Test
+  def shouldRejectReportWithInvalidTarget() {
+    val reportDef = PairReportDef(name = "Process Differences", pair ="p", reportType = "differences",
+                                  target = "random-target")
+    try {
+      reportDef.validate("config")
+      fail("Should have thrown ConfigValidationException")
+    } catch {
+      case e:ConfigValidationException =>
+        assertEquals("config/pair[key=p]/report[name=Process Differences]: Invalid target (not a URL): random-target", e.getMessage)
+    }
+  }
 }

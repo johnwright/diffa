@@ -69,16 +69,23 @@ class Configuration(val configStore: DomainConfigStore,
     diffaConfig.repairActions.foreach(createOrUpdateRepairAction(domain,_))
       
     // Remove missing escalations, and create/update the rest
-    var removedEscalations =
+    val removedEscalations =
       configStore.listEscalations(domain).filter(e => diffaConfig.escalations
         .find(newE => newE.name == e.name && newE.pair == e.pair).isEmpty)
     removedEscalations.foreach(e => deleteEscalation(domain, e.name, e.pair))
     diffaConfig.escalations.foreach(createOrUpdateEscalation(domain,_))
 
+    // Remove missing reports, and create/update the rest
+    val removedReports =
+      configStore.listReports(domain).filter(r => diffaConfig.reports
+        .find(newR => newR.name == r.name && newR.pair == r.pair).isEmpty)
+    removedReports.foreach(r => deleteReport(domain, r.name, r.pair))
+    diffaConfig.reports.foreach(createOrUpdateReport(domain,_))
+
     // Remove old pairs and endpoints
     val removedPairs = configStore.listPairs(domain).filter(currP => diffaConfig.pairs.find(newP => newP.key == currP.key).isEmpty)
     removedPairs.foreach(p => deletePair(domain, p.key))
-    var removedEndpoints = configStore.listEndpoints(domain).filter(currE => diffaConfig.endpoints.find(newE => newE.name == currE.name).isEmpty)
+    val removedEndpoints = configStore.listEndpoints(domain).filter(currE => diffaConfig.endpoints.find(newE => newE.name == currE.name).isEmpty)
     removedEndpoints.foreach(e => deleteEndpoint(domain, e.name))
   }
   def retrieveConfiguration(domain:String) : DiffaConfig = {
@@ -90,8 +97,8 @@ class Configuration(val configStore: DomainConfigStore,
         p => PairDef(p.key, p.versionPolicyName, p.matchingTimeout, p.upstreamName, p.downstreamName, p.scanCronSpec)).toSet,
       repairActions = configStore.listRepairActions(domain).map(
         a => RepairActionDef(a.name, a.url, a.scope, a.pair)).toSet,
-      escalations = configStore.listEscalations(domain).map(
-        e => EscalationDef(e.name, e.pair, e.action, e.actionType, e.event, e.origin)).toSet
+      escalations = configStore.listEscalations(domain).toSet,
+      reports = configStore.listReports(domain).toSet
     )
   }
 
@@ -255,6 +262,17 @@ class Configuration(val configStore: DomainConfigStore,
 
   def listEscalationForPair(domain:String, pairKey: String): Seq[EscalationDef] = {
     configStore.listEscalationsForPair(domain, pairKey)
+  }
+
+  def deleteReport(domain:String, name: String, pairKey: String) {
+    log.debug("Processing report delete request: (name="+name+", pairKey="+pairKey+")")
+    configStore.deleteReport(domain, name, pairKey)
+  }
+
+  def createOrUpdateReport(domain:String, report: PairReportDef) {
+    log.debug("Processing report declare/update request: " + report.name)
+    report.validate()
+    configStore.createOrUpdateReport(domain, report)
   }
 
   def makeDomainMember(domain:String, userName:String) = configStore.makeDomainMember(domain,userName)

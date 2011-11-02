@@ -235,6 +235,11 @@ trait HibernateQueryUtils {
                             Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
                             "esclation %s for pair %s in domain %s".format(name, pairKey, domain))
 
+  def getReport(s: Session, domain:String, name: String, pairKey: String) =
+    singleQuery[PairReport](s, "reportsByNameAndPair",
+                            Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
+                            "report %s for pair %s in domain %s".format(name, pairKey, domain))
+
   def listPairsInDomain(domain:String) = sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)))
 
 }

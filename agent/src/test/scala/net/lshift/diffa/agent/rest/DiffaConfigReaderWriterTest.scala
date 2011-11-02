@@ -70,6 +70,9 @@ class DiffaConfigReaderWriterTest {
         EscalationDef(name="Delete From Upstream", action="Delete Result", actionType="repair", event="upstream-missing", origin="scan", pair="ab"),
         EscalationDef(name="Resend Missing Downstream", action="Resend Sauce", actionType="repair", event="downstream-missing", origin="scan", pair="ab"),
         EscalationDef(name="Resend On Mismatch", action="Resend Sauce", actionType="repair", event="mismatch", origin="scan", pair="ab")
+      ),
+      reports = Set(
+        PairReportDef(name="Bulk Fix Differences", reportType="differences", target="http://example.com/bulk_diff_handler", pair="ab")
       )
     )
 
@@ -113,6 +116,7 @@ class DiffaConfigReaderWriterTest {
           <escalation name="Delete From Upstream" action="Delete Result" type="repair" event="upstream-missing" origin="scan" />
           <escalation name="Resend Missing Downstream" action="Resend Sauce" type="repair" event="downstream-missing" origin="scan" />
           <escalation name="Resend On Mismatch" action="Resend Sauce" type="repair" event="mismatch" origin="scan" />
+          <report name="Bulk Fix Differences" report-type="differences" target="http://example.com/bulk_diff_handler" />
           <view name="little-view" scan-schedule="0 0 0 * * 0" />
         </pair>
         <pair key="ac" upstream="upstream1" downstream="downstream1" version-policy="same" matching-timeout="5"
