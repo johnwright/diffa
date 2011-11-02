@@ -64,7 +64,7 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
   private def generateDifferencesReport(pair:DiffaPairRef, reportWriter:PrintWriter) {
     val datetimeFormatter = ISODateTimeFormat.basicDateTime()
 
-    reportWriter.println("detection date,object id,upstream version,downstream version,state")
+    reportWriter.println("detection date,entity id,upstream version,downstream version,state")
     diffStore.streamUnmatchedEvents(pair, event => {
       val state = (event.upstreamVsn, event.downstreamVsn) match {
         case (null, null) => "entirely-absent"

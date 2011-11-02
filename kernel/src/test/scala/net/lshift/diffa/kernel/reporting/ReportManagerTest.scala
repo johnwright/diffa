@@ -55,9 +55,9 @@ class ReportManagerTest {
       val report = reports(0)
       val lines = report.lines.toSeq
       assertEquals(4, lines.length)   // Header line + 3 difference lines
-      assertEquals("detection date,object id,upstream version,downstream version,state", lines(0))
+      assertEquals("detection date,entity id,upstream version,downstream version,state", lines(0))
       val headerKeys = lines(0).split(",")
-      val Seq(id1, id2, id3) = lines.drop(1).map(l => headerKeys.zip(l.split(",")).toMap).sortBy(l => l("object id"))
+      val Seq(id1, id2, id3) = lines.drop(1).map(l => headerKeys.zip(l.split(",")).toMap).sortBy(l => l("entity id"))
 
       assertEquals("a", id1("upstream version"))
       assertEquals("", id2("upstream version"))
