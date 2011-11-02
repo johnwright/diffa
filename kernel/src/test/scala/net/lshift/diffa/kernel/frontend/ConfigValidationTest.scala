@@ -165,6 +165,18 @@ class ConfigValidationTest {
   }
 
   @Test
+  def shouldAcceptDateRangeCategoriesThatRefineUnboundedUpperLimitBase() {
+    val unboundedUpperLimit = new RangeCategoryDescriptor("date", "2011-01-01", null)
+    assertTrue(new RangeCategoryDescriptor("date", null, "2011-12-31").isRefinement(unboundedUpperLimit))
+  }
+
+  @Test
+  def shouldAcceptDateRangeCategoriesThatRefineUnboundedLowerLimitBase() {
+    val unboundedLowerLimit = new RangeCategoryDescriptor("date", null, "2011-12-31")
+    assertTrue(new RangeCategoryDescriptor("date", "2011-01-01", null).isRefinement(unboundedLowerLimit))
+  }
+
+  @Test
   def shouldRejectDateRangeCategoriesThatAreNotWithinOuterRange() {
     val base = new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31")
 
