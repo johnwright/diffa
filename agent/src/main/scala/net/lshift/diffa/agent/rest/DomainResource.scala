@@ -29,6 +29,7 @@ import net.lshift.diffa.kernel.frontend.{Changes, Configuration}
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.context.annotation.Scope
 import org.springframework.beans.factory.config.BeanDefinition
+import net.lshift.diffa.kernel.reporting.ReportManager
 
 @Path("/{domain}")
 @Component
@@ -45,6 +46,7 @@ class DomainResource {
   @Autowired var domainConfigStore:DomainConfigStore = null
   @Autowired var changes:Changes = null
   @Autowired var domainSequenceCache:DomainSequenceCache = null
+  @Autowired var reports:ReportManager = null
 
   @Path("/config")
   def getConfigResource(@Context uri:UriInfo,
@@ -60,6 +62,10 @@ class DomainResource {
   @Path("/actions")
   def getActionsResource(@Context uri:UriInfo,
                          @PathParam("domain") domain:String) = new ActionsResource(actionsClient, domain, uri)
+
+  @Path("/reports")
+  def getReportsResource(@Context uri:UriInfo,
+                         @PathParam("domain") domain:String) = new ReportsResource(domainConfigStore, reports, domain, uri)
 
   @Path("/diagnostics")
   def getDiagnosticsResource(@PathParam("domain") domain:String) = new DiagnosticsResource(diagnosticsManager, config, domain)

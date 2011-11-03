@@ -22,9 +22,9 @@ import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
-import net.lshift.diffa.kernel.frontend.{EscalationDef, RepairActionDef, EndpointDef, PairDef}
 import scala.Option._
 import net.lshift.diffa.kernel.util.CategoryUtil
+import net.lshift.diffa.kernel.frontend._
 
 /**
  * Provides general configuration options within the scope of a particular domain.
@@ -51,10 +51,16 @@ trait DomainConfigStore {
   def createOrUpdateEscalation(domain:String, escalation : EscalationDef)
   def listEscalationsForPair(domain:String, key: String) : Seq[EscalationDef]
 
+  def listReports(domain:String) : Seq[PairReportDef]
+  def deleteReport(domain:String, name: String, pairKey: String)
+  def createOrUpdateReport(domain:String, report: PairReportDef)
+  def listReportsForPair(domain:String, key: String) : Seq[PairReportDef]
+
   def getEndpointDef(domain:String, name: String) : EndpointDef
   def getPairDef(domain:String, key: String) : PairDef
 
   def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
+  def getPairReportDef(domain:String, name:String, pairKey:String):PairReportDef
 
   /**
    * Retrieves all (domain-specific, non-internal) agent configuration options.
@@ -202,6 +208,22 @@ case class PairView(
   override def hashCode = 31 * (31 * (31 + pair.key.hashCode) + name.hashCode) + pair.domain.name.hashCode
 }
 
+case class PairReport(
+  @BeanProperty var name:String = null,
+  @BeanProperty var pair: Pair = null,
+  @BeanProperty var reportType:String = null,
+  @BeanProperty var target:String = null
+) {
+  def this() = this(name = null)
+}
+
+/**
+ * Enumeration of valid types of reports that can be run.
+ */
+object PairReportType {
+  val DIFFERENCES = "differences"
+}
+
 /**
  * This is a light weight pointer to a pair in Diffa.
  */
@@ -291,6 +313,8 @@ object EscalationEvent {
   val UPSTREAM_MISSING = "upstream-missing"
   val DOWNSTREAM_MISSING = "downstream-missing"
   val MISMATCH = "mismatch"
+  val SCAN_FAILED = "scan-failed"
+  val SCAN_COMPLETED = "scan-completed"
 }
 
 /**
@@ -305,6 +329,7 @@ object EscalationOrigin {
  */
 object EscalationActionType {
   val REPAIR = "repair"
+  val REPORT = "report"
 }
 
 case class User(@BeanProperty var name: String = null,

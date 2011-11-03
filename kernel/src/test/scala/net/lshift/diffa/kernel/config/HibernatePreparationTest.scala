@@ -185,6 +185,7 @@ object HibernatePreparationTest {
   @DataPoint def v11 = StartingDatabaseVersion("v11")
   @DataPoint def v12 = StartingDatabaseVersion("v12")
   @DataPoint def v13 = StartingDatabaseVersion("v13")
+  @DataPoint def v14 = StartingDatabaseVersion("v14")
 }
 
 case class StartingDatabaseVersion(startName:String)

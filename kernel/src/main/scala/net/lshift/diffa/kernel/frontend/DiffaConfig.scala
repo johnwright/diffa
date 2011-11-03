@@ -32,7 +32,8 @@ case class DiffaConfig(
   endpoints:Set[EndpointDef] = Set(),
   pairs:Set[PairDef] = Set(),
   repairActions:Set[RepairActionDef] = Set(),
-  escalations:Set[EscalationDef] = Set()
+  escalations:Set[EscalationDef] = Set(),
+  reports:Set[PairReportDef] = Set()
 ) {
 
   def validate() {
@@ -41,6 +42,7 @@ case class DiffaConfig(
     pairs.foreach(_.validate(path, endpoints))
     repairActions.foreach(_.validate(path))
     escalations.foreach(_.validate(path))
+    reports.foreach(_.validate(path))
   }
 }
 
@@ -236,24 +238,65 @@ case class EscalationDef (
       ValidationUtil.buildPath(path, "pair", Map("key" -> pair)),
       "escalation", Map("name" -> name))
 
-    // Ensure that the event is supported
-    this.event = event match {
-      case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
-      case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
-    }
-    // Ensure that the origin is supported
-    this.origin = origin match {
-      case SCAN => origin
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
-    }
-    // Ensure that the action type is supported
-    this.actionType = actionType match {
-      case REPAIR => actionType
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
+    // Ensure that the action type is supported, and validate the parameters that depend on it
+    actionType match {
+      case REPAIR =>
+        // Ensure that the origin is supported
+        origin match {
+          case SCAN =>
+          case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
+        }
+        event match {
+          case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
+          case _ =>
+            throw new ConfigValidationException(escalationPath,
+              "Invalid escalation event source type %s for action type %s".format(event, actionType))
+        }
+      case REPORT =>
+        // We don't support origins for reports
+        if (origin != null)
+          throw new ConfigValidationException(escalationPath, "Origin not supported on report escalations.")
+
+        event match {
+          case SCAN_FAILED | SCAN_COMPLETED => event
+          case _ =>
+            throw new ConfigValidationException(escalationPath,
+              "Invalid escalation event source type %s for action type %s".format(event, actionType))
+        }
+      case _    =>
+        throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
     }
   }
 
   def asEscalation(domain:String)
     = Escalation(name, DiffaPair(key=pair,domain=Domain(name=domain)), action, actionType, event, origin)
+}
+
+case class PairReportDef(
+  @BeanProperty var name:String = null,
+  @BeanProperty var pair: String = null,
+  @BeanProperty var reportType:String = null,
+  @BeanProperty var target:String = null
+) {
+  import PairReportType._
+
+  def this() = this(name = null)
+
+  def validate(path:String = null) {
+    val escalationPath = ValidationUtil.buildPath(
+      ValidationUtil.buildPath(path, "pair", Map("key" -> pair)),
+      "report", Map("name" -> name))
+
+    reportType match {
+      case DIFFERENCES  =>
+      case _ => throw new ConfigValidationException(escalationPath, "Invalid report type: " + reportType)
+    }
+
+    target match {
+      case null | "" => throw new ConfigValidationException(escalationPath, "Missing target")
+      case url if (url.startsWith("http://") || url.startsWith("https://")) =>   // Valid
+      case _ => throw new ConfigValidationException(escalationPath, "Invalid target (not a URL): " + target)
+    }
+  }
 }
 

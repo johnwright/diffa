@@ -137,7 +137,11 @@ class ConfigurationTest {
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
       repairActions = Set(RepairActionDef("Resend Sauce", "resend", "pair", "ab")),
-      escalations = Set(EscalationDef("Resend Missing", "ab", "Resend Sauce", "repair", "downstream-missing", "scan"))
+      reports = Set(PairReportDef("Bulk Send Differences", "ab", "differences", "http://location:5432/diffhandler")),
+      escalations = Set(
+        EscalationDef("Resend Missing", "ab", "Resend Sauce", "repair", "downstream-missing", "scan"),
+        EscalationDef("Report Differences", "ab", "Bulk Send Differences", "report", "scan-completed")
+      )
     )
 
     val ab = DiffaPair(key = "ab", domain = Domain(name="domain"), matchingTimeout = 5,
@@ -198,7 +202,8 @@ class ConfigurationTest {
         PairDef("ad", "same", 5, "upstream1", "downstream2")),
       // name of repair action is changed
       repairActions = Set(RepairActionDef("Resend Source", "resend", "pair", "ab")),
-      escalations = Set(EscalationDef("Resend Another Missing", "ab", "Resend Source", "repair", "downstream-missing", "scan"))
+      escalations = Set(EscalationDef("Resend Another Missing", "ab", "Resend Source", "repair", "downstream-missing", "scan")),
+      reports = Set(PairReportDef("Bulk Send Reports Elsewhere", "ab", "differences", "http://location:5431/diffhandler"))
     )
 
     val ab = DiffaPair(key = "ab", domain = Domain(name="domain"), matchingTimeout = 5,

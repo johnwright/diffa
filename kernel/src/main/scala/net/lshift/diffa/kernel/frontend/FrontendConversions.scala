@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.frontend
 
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{PairView, EndpointView, User, Domain, Escalation, RepairAction, Endpoint, Pair => DiffaPair}
+import net.lshift.diffa.kernel.config.{PairReport, PairView, EndpointView, User, Domain, Escalation, RepairAction, Endpoint, Pair => DiffaPair}
 
 /**
  * A bunch of converter functions to translate frontend objects from their internal counterparts
@@ -96,6 +96,20 @@ object FrontendConversions {
     actionType = e.actionType,
     origin = e.origin,
     event = e.event
+  )
+
+  def toPairReportDef(r:PairReport) = PairReportDef(
+    name = r.name,
+    pair = r.pair.key,
+    reportType = r.reportType,
+    target = r.target
+  )
+
+  def fromPairReportDef(pair:DiffaPair,r:PairReportDef) = PairReport(
+    name = r.name,
+    pair = pair,
+    reportType = r.reportType,
+    target = r.target
   )
 
   def fromDomainDef(d:DomainDef) = Domain(name=d.name)

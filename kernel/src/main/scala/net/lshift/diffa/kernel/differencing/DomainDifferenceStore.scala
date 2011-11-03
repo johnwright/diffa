@@ -117,6 +117,11 @@ trait DomainDifferenceStore {
   def retrieveUnmatchedEvents(domain:String, interval:Interval) : Seq[DifferenceEvent]
 
   /**
+   * Streams all unmatched events for the given pair to a provided handler.
+   */
+  def streamUnmatchedEvents(pairRef:DiffaPairRef, handler:(ReportedDifferenceEvent) => Unit)
+
+  /**
    * Applies a closure to all unmatched events for the given pair whose detection timestamp falls into the supplied time bound
    */
   @Deprecated
