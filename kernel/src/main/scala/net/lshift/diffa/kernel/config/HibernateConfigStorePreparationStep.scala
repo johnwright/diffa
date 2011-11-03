@@ -542,7 +542,7 @@ object AddPairReportsStep extends HibernateMigrationStep {
       column("pair_key", Types.VARCHAR, 255, false).
       column("domain", Types.VARCHAR, 255, false).
       column("report_type", Types.VARCHAR, 255, false).
-      column("target", Types.VARCHAR, 255, false).
+      column("target", Types.VARCHAR, 1024, false).
       pk("name", "pair_key", "domain")
 
     migration.alterTable("pair_reports").

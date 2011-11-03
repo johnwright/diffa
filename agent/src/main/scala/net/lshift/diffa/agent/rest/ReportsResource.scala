@@ -1,7 +1,5 @@
-package net.lshift.diffa.agent.rest
-
 /**
- * Copyright (C) 2011 LShift Ltd.
+ * Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +13,8 @@ package net.lshift.diffa.agent.rest
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.agent.rest
 
 import javax.ws.rs._
 import core.{Response, UriInfo}

@@ -24,7 +24,7 @@
     <Arg>
       <New class="org.apache.commons.dbcp.BasicDataSource">
         <Set name="driverClassName">org.hsqldb.jdbc.JDBCDriver</Set>
-        <Set name="url">jdbc:hsqldb:mem</Set>
+        <Set name="url">jdbc:hsqldb:target/webapp-data/diffa-data</Set>
       </New>
     </Arg>
   </New>

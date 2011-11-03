@@ -219,7 +219,7 @@
       </key-many-to-one>
     </composite-id>
     <property name="reportType" type="string" column="report_type" not-null="true" />
-    <property name="target" type="string" column="target" not-null="true"/>
+    <property name="target" type="string" column="target" not-null="true" length="1024" />
   </class>
 
   <query name="userByName" cacheable="true">
