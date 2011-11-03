@@ -60,7 +60,7 @@
     <connection>scm:git:git://github.com/lshift/diffa.git</connection>
   </scm>
 
-  <distributionManagement>
+  <!--distributionManagement>
     <repository>
       <id>nexus-oss</id>
       <name>Nexus OSS (Releases)</name>
@@ -71,7 +71,7 @@
       <name>Nexus OSS (Snapshots)</name>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
-  </distributionManagement>
+  </distributionManagement-->
     
   <dependencyManagement>
   <dependencies>
