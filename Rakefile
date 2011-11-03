@@ -2,7 +2,7 @@ task :prepare_versions do
   fail('VERSION must be provided - eg, VERSION=0.9.3') unless ENV['VERSION']
 
   @version = ENV['VERSION']
-  @tag_name = "accent_#{@version.gsub(/\./, "_")}"
+  @tag_name = "diffa_v#{@version.gsub(/\./, "_")}"
 end
 
 task :prepare_dev_version do
