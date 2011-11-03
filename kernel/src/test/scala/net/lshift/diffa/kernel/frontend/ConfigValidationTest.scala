@@ -20,7 +20,10 @@ import org.junit.Test
 import org.junit.Assert._
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.config._
+import org.junit.experimental.theories.{Theories, Theory, DataPoint}
+import org.junit.runner.RunWith
 
+@RunWith(classOf[Theories])
 class ConfigValidationTest {
 
   @Test(expected = classOf[ConfigValidationException])
@@ -150,26 +153,70 @@ class ConfigValidationTest {
     assertFalse(base.isRefinement(new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31")))
   }
 
-  @Test
-  def shouldAcceptDateRangeCategoriesThatAreEqualOrSubset() {
-    val base = new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31")
-    val unboundedBase = new RangeCategoryDescriptor("date", null, null)
+  @Theory
+  def shouldAcceptRangeCategoriesThatAreEqualOrSubset(scenario:RangeScenario) {
+    val base = new RangeCategoryDescriptor(scenario.dataType, scenario.lower, scenario.upper)
+    val unboundedBase = new RangeCategoryDescriptor(scenario.dataType, null, null)
 
-    assertTrue(base.isRefinement(new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31")))
-    assertTrue(base.isRefinement(new RangeCategoryDescriptor("date", "2011-05-05", "2011-11-01")))
+    assertTrue(base.isRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lower, scenario.upper)))
+    assertTrue(base.isRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, scenario.upperMid)))
 
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("date", "2011-05-05", "2011-11-01")))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("date", "2011-05-05", null)))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("date", null, "2014-11-01")))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("date", null, null)))
+    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, scenario.upperMid)))
+    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, null)))
+    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor(scenario.dataType, null, scenario.wayAfter)))
+    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor(scenario.dataType, null, null)))
   }
 
-  @Test
-  def shouldRejectDateRangeCategoriesThatAreNotWithinOuterRange() {
-    val base = new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31")
+  @Theory
+  def shouldAcceptRangeCategoriesThatRefineUnboundedUpperLimitBase(scenario:RangeScenario) {
+    val unboundedUpperLimit = new RangeCategoryDescriptor(scenario.dataType, scenario.lower, null)
+    assertTrue(new RangeCategoryDescriptor(scenario.dataType, null, scenario.upper).isRefinement(unboundedUpperLimit))
+  }
 
-    assertFalse(base.isRefinement(new RangeCategoryDescriptor("date", "2010-12-31", "2011-05-05")))
-    assertFalse(base.isRefinement(new RangeCategoryDescriptor("date", "2011-03-03", "2012-01-01")))
+  @Theory
+  def shouldAcceptRangeCategoriesThatRefineUnboundedLowerLimitBase(scenario:RangeScenario) {
+    val unboundedLowerLimit = new RangeCategoryDescriptor(scenario.dataType, null, scenario.upper)
+    assertTrue(new RangeCategoryDescriptor(scenario.dataType, scenario.lower, null).isRefinement(unboundedLowerLimit))
+  }
+
+  @Theory
+  def shouldRejectRangeCategoriesThatAreNotWithinOuterRange(scenario:RangeScenario) {
+    val base = new RangeCategoryDescriptor(scenario.dataType, scenario.lower, scenario.upper)
+
+    assertFalse(base.isRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.justBefore, scenario.lowerMid)))
+    assertFalse(base.isRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, scenario.justAfter)))
+  }
+
+  @Theory
+  def shouldOverrideNullLowerRangeWithParentRange(scenario:RangeScenario) {
+    val base = new RangeCategoryDescriptor(scenario.dataType, scenario.lower, scenario.upper)
+
+    assertEquals(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, scenario.upper),
+      base.applyRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, null)))
+  }
+
+  @Theory
+  def shouldOverrideNullUpperRangeWithParentRange(scenario:RangeScenario) {
+    val base = new RangeCategoryDescriptor(scenario.dataType, scenario.lower, scenario.upper)
+
+    assertEquals(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, scenario.upper),
+      base.applyRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, null)))
+  }
+
+  @Theory
+  def shouldOverrideNullParentLowerRangeWithRefinementLower(scenario:RangeScenario) {
+    val base = new RangeCategoryDescriptor(scenario.dataType, null, scenario.upper)
+
+    assertEquals(new RangeCategoryDescriptor(scenario.dataType, scenario.lower, scenario.upperMid),
+      base.applyRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lower, scenario.upperMid)))
+  }
+
+  @Theory
+  def shouldOverrideNullParentUpperRangeWithRefinmentUpper(scenario:RangeScenario) {
+    val base = new RangeCategoryDescriptor(scenario.dataType, scenario.lower, null)
+
+    assertEquals(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, scenario.upper),
+      base.applyRefinement(new RangeCategoryDescriptor(scenario.dataType, scenario.lowerMid, scenario.upper)))
   }
 
   @Test
@@ -183,28 +230,6 @@ class ConfigValidationTest {
   }
 
   @Test
-  def shouldAcceptTimeRangeCategoriesThatAreEqualOrSubset() {
-    val base = new RangeCategoryDescriptor("datetime", "2011-01-01T12:52:12.123Z", "2011-12-31T05:12:13.876Z")
-    val unboundedBase = new RangeCategoryDescriptor("datetime", null, null)
-
-    assertTrue(base.isRefinement(new RangeCategoryDescriptor("datetime", "2011-01-01T12:52:12.123Z", "2011-12-31T05:12:13.876Z")))
-    assertTrue(base.isRefinement(new RangeCategoryDescriptor("datetime", "2011-05-05T01:02:03.000Z", "2011-11-01T12:13:14.123Z")))
-
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("datetime", "2011-05-05T12:52:12.123Z", "2011-11-01T12:52:12.123Z")))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("datetime", "2011-05-05T12:52:12.123Z", null)))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("datetime", null, "2014-11-01T12:52:12.123Z")))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("datetime", null, null)))
-  }
-
-  @Test
-  def shouldRejectTimeRangeCategoriesThatAreNotWithinOuterRange() {
-    val base = new RangeCategoryDescriptor("datetime", "2011-01-01T12:52:12.123Z", "2011-12-31T23:59:59.999Z")
-
-    assertFalse(base.isRefinement(new RangeCategoryDescriptor("datetime", "2011-01-01T12:52:12.122Z", "2011-05-05T12:52:12.123Z")))
-    assertFalse(base.isRefinement(new RangeCategoryDescriptor("datetime", "2011-03-03T12:52:12.123Z", "2012-01-01T00:00:00.000Z")))
-  }
-
-  @Test
   def shouldRejectAnyTimeRangeCategoryRefinementsThatAreNotTimeRangeCategories() {
     val base = new RangeCategoryDescriptor("datetime", "2011-01-01T00:00:00.000Z", "2011-12-31T00:00:00.000Z")
 
@@ -212,28 +237,6 @@ class ConfigValidationTest {
     assertFalse(base.isRefinement(new PrefixCategoryDescriptor(5, 12, 1)))
     assertFalse(base.isRefinement(new RangeCategoryDescriptor("date", "2011-01-01", "2011-12-31")))
     assertFalse(base.isRefinement(new RangeCategoryDescriptor("integer", "52", "104")))
-  }
-
-  @Test
-  def shouldAcceptIntegerRangeCategoriesThatAreEqualOrSubset() {
-    val base = new RangeCategoryDescriptor("integer", "52", "104")
-    val unboundedBase = new RangeCategoryDescriptor("integer", null, null)
-
-    assertTrue(base.isRefinement(new RangeCategoryDescriptor("integer", "52", "104")))
-    assertTrue(base.isRefinement(new RangeCategoryDescriptor("integer", "58", "101")))
-
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("integer", "1", "1200")))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("integer", "57", null)))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("integer", null, "57")))
-    assertTrue(unboundedBase.isRefinement(new RangeCategoryDescriptor("integer", null, null)))
-  }
-
-  @Test
-  def shouldRejectIntegerRangeCategoriesThatAreNotWithinOuterRange() {
-    val base = new RangeCategoryDescriptor("integer", "52", "104")
-
-    assertFalse(base.isRefinement(new RangeCategoryDescriptor("integer", "51", "108")))
-    assertFalse(base.isRefinement(new RangeCategoryDescriptor("integer", "56", "105")))
   }
 
   @Test
@@ -356,4 +359,28 @@ class ConfigValidationTest {
         assertEquals("config/pair[key=p]/report[name=Process Differences]: Invalid target (not a URL): random-target", e.getMessage)
     }
   }
+}
+
+case class RangeScenario(dataType:String, lower:String, upper:String, justBefore:String, justAfter:String, wayAfter:String, lowerMid:String, upperMid:String)
+object ConfigValidationTest {
+  @DataPoint def dateRange = RangeScenario(
+    dataType = "date",
+    lower = "2011-01-01", upper = "2011-12-31",
+    justBefore = "2010-12-31", justAfter ="2012-01-01",
+    wayAfter = "2014-11-01",
+    lowerMid = "2011-05-05", upperMid = "2011-11-01")
+
+  @DataPoint def timeRange = RangeScenario(
+    dataType = "datetime",
+    lower = "2011-01-01T12:52:12.123Z", upper = "2011-12-31T05:12:13.876Z",
+    justBefore = "2011-01-01T12:52:12.122Z", justAfter ="2012-01-01T00:00:00.000Z",
+    wayAfter = "2014-11-01T12:52:12.123Z",
+    lowerMid = "2011-05-05T01:02:03.000Z", upperMid = "2011-11-01T12:13:14.123Z")
+
+  @DataPoint def integerRange = RangeScenario(
+    dataType = "integer",
+    lower = "52", upper = "104",
+    justBefore = "51", justAfter ="105",
+    wayAfter = "150",
+    lowerMid = "58", upperMid = "101")
 }

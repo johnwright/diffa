@@ -170,7 +170,18 @@ trait VersionCorrelationStoreFactory extends Closeable {
 
   def apply(pair: DiffaPairRef): VersionCorrelationStore
 
+  /**
+   * Closes the correlation store associated with the given, and removes all persistent resources. This method should
+   * only be called when a pair is no longer valid within the system, and the data associated with it is no longer
+   * required.
+   */
   def remove(pair: DiffaPairRef): Unit
+
+  /**
+   * Closes the correlation store associated with the given pair, releasing in-memory resources associated with it.
+   * Does not remove any persistent resources.
+   */
+  def close(pair: DiffaPairRef)
 }
 
 abstract class TypedAttribute { def value:String }

@@ -55,14 +55,10 @@ public class TimeRangeConstraint extends AbstractScanConstraint implements Range
   }
 
   public boolean containsRange(DateTime rangeStart, DateTime rangeEnd) {
-    if (rangeStart == null && rangeEnd == null)
-      return start == null && end == null;
-
-    if (rangeStart == null)
-      return start == null && contains(rangeEnd);
-
-    if (rangeEnd == null)
-      return end == null && contains(rangeStart);
+    // A null property indicate that the parent value should be inherited
+    if (rangeStart == null && rangeEnd == null) return true;
+    if (rangeStart == null) return contains(rangeEnd);
+    if (rangeEnd == null) return contains(rangeStart);
 
     return contains(rangeStart) && contains(rangeEnd);
   }

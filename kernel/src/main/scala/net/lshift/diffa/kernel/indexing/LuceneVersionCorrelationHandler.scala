@@ -107,8 +107,8 @@ object LuceneVersionCorrelationHandler {
     }
   }
 
-  def formatDateTime(dt:DateTime) = dt.withZone(DateTimeZone.UTC).toString()
-  def formatDate(dt:LocalDate) = dt.toString
+  def formatDateTime(dt:DateTime) = if (dt != null) dt.withZone(DateTimeZone.UTC).toString() else null
+  def formatDate(dt:LocalDate) = if (dt != null) dt.toString else null
 
   def addTombstoneClauses(query:BooleanQuery) {
     query.add(new TermQuery(new Term(Upstream.presenceIndicator, "0")), BooleanClause.Occur.MUST)
