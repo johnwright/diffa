@@ -62,7 +62,7 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
   }
 
   private def generateDifferencesReport(pair:DiffaPairRef, reportWriter:PrintWriter) {
-    val datetimeFormatter = ISODateTimeFormat.basicDateTime()
+    val datetimeFormatter = ISODateTimeFormat.basicDateTime().withZoneUTC()
 
     reportWriter.println("detection date,entity id,upstream version,downstream version,state")
     diffStore.streamUnmatchedEvents(pair, event => {
