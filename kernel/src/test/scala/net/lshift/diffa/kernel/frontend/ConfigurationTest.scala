@@ -137,8 +137,11 @@ class ConfigurationTest {
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?"),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
       repairActions = Set(RepairActionDef("Resend Sauce", "resend", "pair", "ab")),
-      escalations = Set(EscalationDef("Resend Missing", "ab", "Resend Sauce", "repair", "downstream-missing", "scan")),
-      reports = Set(PairReportDef("Bulk Send Differences", "ab", "differences", "http://location:5432/diffhandler"))
+      reports = Set(PairReportDef("Bulk Send Differences", "ab", "differences", "http://location:5432/diffhandler")),
+      escalations = Set(
+        EscalationDef("Resend Missing", "ab", "Resend Sauce", "repair", "downstream-missing", "scan"),
+        EscalationDef("Report Differences", "ab", "Bulk Send Differences", "report", "scan-completed")
+      )
     )
 
     val ab = DiffaPair(key = "ab", domain = Domain(name="domain"), matchingTimeout = 5,

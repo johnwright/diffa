@@ -206,7 +206,7 @@
     <property name="action" type="string" column="action" not-null="true" />
     <property name="actionType" type="string" column="action_type" not-null="true"/>
     <property name="event" type="string" column="event" not-null="true"/>
-    <property name="origin" type="string" column="origin" not-null="true"/>
+    <property name="origin" type="string" column="origin" not-null="false"/>
   </class>
 
   <class name="PairReport" table="pair_reports" abstract="false">

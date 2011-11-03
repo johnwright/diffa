@@ -548,6 +548,10 @@ object AddPairReportsStep extends HibernateMigrationStep {
     migration.alterTable("pair_reports").
       addForeignKey("FKCEC6E15A2E298B6C", Array("pair_key", "domain"), "pair", Array("key", "domain"))
 
+    // Report escalations don't have a configured origin, so relax the constraint on origin being mandatory
+    migration.alterTable("escalations").
+      alterColumn("origin", Types.VARCHAR, 255, true, null)
+
     migration.apply(connection)
   }
 }

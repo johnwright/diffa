@@ -238,21 +238,33 @@ case class EscalationDef (
       ValidationUtil.buildPath(path, "pair", Map("key" -> pair)),
       "escalation", Map("name" -> name))
 
-    // Ensure that the event is supported
-    this.event = event match {
-      case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
-      case SCAN_FAILED | SCAN_COMPLETED => event
-      case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
-    }
-    // Ensure that the origin is supported
-    this.origin = origin match {
-      case SCAN => origin
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
-    }
-    // Ensure that the action type is supported
-    this.actionType = actionType match {
-      case REPAIR | REPORT => actionType
-      case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
+    // Ensure that the action type is supported, and validate the parameters that depend on it
+    actionType match {
+      case REPAIR =>
+        // Ensure that the origin is supported
+        origin match {
+          case SCAN =>
+          case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
+        }
+        event match {
+          case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
+          case _ =>
+            throw new ConfigValidationException(escalationPath,
+              "Invalid escalation event source type %s for action type %s".format(event, actionType))
+        }
+      case REPORT =>
+        // We don't support origins for reports
+        if (origin != null)
+          throw new ConfigValidationException(escalationPath, "Origin not supported on report escalations.")
+
+        event match {
+          case SCAN_FAILED | SCAN_COMPLETED => event
+          case _ =>
+            throw new ConfigValidationException(escalationPath,
+              "Invalid escalation event source type %s for action type %s".format(event, actionType))
+        }
+      case _    =>
+        throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
     }
   }
 
