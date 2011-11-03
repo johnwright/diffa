@@ -28,19 +28,26 @@ task :release => :prepare do
 
   chdir('checkout') do
     sh "git clone git@github.com:lshift/diffa.git"
-    chdir('diffa/participant-support') do
+    chdir('diffa') do
       sh "git checkout #{@tag_name}"
-      sh %Q{mvn -Dgpg.passphrase="xxxxxxx" -Darguments="-Dgpg.passphrase=xxxxxxxxx" deploy}
+      sh "mvn clean install -Dmaven.test.skip=true -Djetty.skip=true"
+
+      puts "Deploying to sonatype"
+      chdir('participant-support') do
+        sh %Q{mvn -Dgpg.passphrase="xxxxxxx" -Darguments="-Dgpg.passphrase=xxxxxxxxx" -Dmaven.test.skip=true -Djetty.skip=true deploy}
+      end
+
+      puts "Deploying release war to s3"
+      chdir('agent') do
+        sh "mvn deploy -Dmaven.test.skip=true -Djetty.skip=true"
+      end
+
+      puts "Deploying release zip to s3"
+      chdir('dist') do
+        sh "s3cmd put target/diffa-*.zip s3://diffa-packages/releases"
+      end
+
     end
   end
 
-  puts "Deploying release war to s3"
-  chdir('agent') do
-    sh "mvn deploy -Dmaven.test.skip=true -Djetty.skip=true"
-  end
-
-  puts "Deploying release zip to s3"
-  chdir('dist') do
-    sh "s3cmd put target/diffa-*.zip s3://diffa-packages/releases"
-  end
 end
