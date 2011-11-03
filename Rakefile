@@ -22,7 +22,9 @@ end
 
 task :release => :prepare do
   puts "Performing release #{@version}"
-  sh %Q{mvn -Dgpg.passphrase="xxxxxxx" -Darguments="-Dgpg.passphrase=xxxxxxxxx" release:perform}
+  chdir('participant-support') do
+    sh %Q{mvn -Dgpg.passphrase="xxxxxxx" -Darguments="-Dgpg.passphrase=xxxxxxxxx" release:perform}
+  end
 
   puts "Deploying release war to s3"
   chdir('agent') do
