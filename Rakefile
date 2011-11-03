@@ -22,8 +22,16 @@ end
 
 task :release => :prepare do
   puts "Performing release #{@version}"
-  chdir('participant-support') do
-    sh %Q{mvn -DconnectionUrl="scm:git:git@github.com:lshift/diffa.git" -Dgpg.passphrase="xxxxxxx" -Darguments="-Dgpg.passphrase=xxxxxxxxx" release:perform}
+
+  sh("rm -rf checkout")
+  sh("mkdir -p checkout")
+
+  chdir('checkout') do
+    sh "git clone git@github.com:lshift/diffa.git"
+    chdir('diffa/participant-support') do
+      sh "git checkout #{@tag_name}"
+      sh %Q{mvn -Dgpg.passphrase="xxxxxxx" -Darguments="-Dgpg.passphrase=xxxxxxxxx" deploy}
+    end
   end
 
   puts "Deploying release war to s3"
