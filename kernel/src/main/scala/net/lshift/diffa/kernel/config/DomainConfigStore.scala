@@ -313,6 +313,8 @@ object EscalationEvent {
   val UPSTREAM_MISSING = "upstream-missing"
   val DOWNSTREAM_MISSING = "downstream-missing"
   val MISMATCH = "mismatch"
+  val SCAN_FAILED = "scan-failed"
+  val SCAN_COMPLETED = "scan-completed"
 }
 
 /**
@@ -327,6 +329,7 @@ object EscalationOrigin {
  */
 object EscalationActionType {
   val REPAIR = "repair"
+  val REPORT = "report"
 }
 
 case class User(@BeanProperty var name: String = null,

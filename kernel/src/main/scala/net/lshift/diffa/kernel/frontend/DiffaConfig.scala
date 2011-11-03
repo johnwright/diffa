@@ -241,6 +241,7 @@ case class EscalationDef (
     // Ensure that the event is supported
     this.event = event match {
       case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
+      case SCAN_FAILED | SCAN_COMPLETED => event
       case _ => throw new ConfigValidationException(escalationPath, "Invalid escalation event: " + event)
     }
     // Ensure that the origin is supported
@@ -250,7 +251,7 @@ case class EscalationDef (
     }
     // Ensure that the action type is supported
     this.actionType = actionType match {
-      case REPAIR => actionType
+      case REPAIR | REPORT => actionType
       case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation action type: " + actionType)
     }
   }
