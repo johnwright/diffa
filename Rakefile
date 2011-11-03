@@ -30,11 +30,17 @@ task :release => :prepare do
     sh "git clone git@github.com:lshift/diffa.git"
     chdir('diffa') do
       sh "git checkout #{@tag_name}"
-      sh "mvn clean install -Dmaven.test.skip=true -Djetty.skip=true"
+      sh "mvn clean javadoc:jar source:jar install -Dmaven.test.skip=true -Djetty.skip=true"
 
       puts "Deploying to sonatype"
+
+      url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+      repoId = "sonatype-nexus-staging"
+
       chdir('participant-support') do
-        sh %Q{mvn -Dgpg.passphrase="xxxxxxx" -Darguments="-Dgpg.passphrase=xxxxxxxxx" -Dmaven.test.skip=true -Djetty.skip=true deploy}
+        sh "mvn gpg:sign-and-deploy-file -Dgpg.passphrase=xxxxxxx -Durl=#{url} -DrepositoryId=#{repoId} -DpomFile=pom.xml -Dfile=target/participant-support-#{@version}.jar"
+        sh "mvn gpg:sign-and-deploy-file -Dgpg.passphrase=xxxxxxx -Durl=#{url} -DrepositoryId=#{repoId} -DpomFile=pom.xml -Dfile=target/participant-support-#{@version}-sources.jar -Dclassifier=sources"
+        sh "mvn gpg:sign-and-deploy-file -Dgpg.passphrase=xxxxxxx -Durl=#{url} -DrepositoryId=#{repoId} -DpomFile=pom.xml -Dfile=target/participant-support-#{@version}-javadoc.jar -Dclassifier=javadoc"
       end
 
       puts "Deploying release war to s3"
