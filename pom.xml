@@ -57,21 +57,19 @@
 
   <scm>
     <url>https://github.com/lshift/diffa</url>
-    <connection>scm:git:git://github.com/lshift/diffa.git</connection>
+    <connection>scm:git:git@github.com:lshift/diffa.git</connection>
   </scm>
 
-  <!--distributionManagement>
-    <repository>
-      <id>nexus-oss</id>
-      <name>Nexus OSS (Releases)</name>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-    </repository>
-    <snapshotRepository>
-      <id>nexus-oss</id>
-      <name>Nexus OSS (Snapshots)</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-  </distributionManagement-->
+  <developers>
+    <developer>
+      <id>paulj</id>
+      <name>Paul Jones</name>
+    </developer>
+    <developer>
+      <id>0x6e6562</id>
+      <name>Ben Hood</name>
+    </developer>
+  </developers>
     
   <dependencyManagement>
   <dependencies>

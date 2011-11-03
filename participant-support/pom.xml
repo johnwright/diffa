@@ -22,7 +22,7 @@
 
   <scm>
     <url>https://github.com/lshift/diffa</url>
-    <connection>scm:git:git://github.com/lshift/diffa.git</connection>
+    <connection>scm:git:git@github.com:lshift/diffa.git</connection>
   </scm>
 
   <developers>
@@ -94,12 +94,12 @@
 
   <distributionManagement>
     <repository>
-      <id>nexus-oss</id>
-      <name>Nexus OSS (Releases)</name>
+      <id>sonatype-nexus-staging</id>
+      <name>Nexus OSS (Staging)</name>
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
     </repository>
     <snapshotRepository>
-      <id>nexus-oss</id>
+      <id>sonatype-nexus-snapshots</id>
       <name>Nexus OSS (Snapshots)</name>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
