@@ -83,7 +83,7 @@ object CategoryUtil {
               None
             }
             else {
-              Some(RangeCategoryParser.buildConstraint(name,r))
+              Some(r.toConstraint(name))
             }
           }
           case p:PrefixCategoryDescriptor =>
