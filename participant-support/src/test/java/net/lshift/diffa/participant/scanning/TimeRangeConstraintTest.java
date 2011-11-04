@@ -19,10 +19,32 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TimeRangeConstraintTest {
+  @Test
+  public void shouldSupportDateStringAsProvidedValueAndWidenItOnEnd() {
+    TimeRangeConstraint constraint = new TimeRangeConstraint("someTime", "2011-11-04", "2011-11-05");
+    assertEquals(new DateTime(2011, 11, 4, 0, 0, 0, 0, DateTimeZone.UTC), constraint.getStart());
+    assertEquals(new DateTime(2011, 11, 5, 23, 59, 59, 999, DateTimeZone.UTC), constraint.getEnd());
+  }
+
+  @Test
+  public void shouldSupportTimeStringAsProvidedValue() {
+    TimeRangeConstraint constraint = new TimeRangeConstraint("someTime", "2011-11-04T12:13:14.000Z", "2011-11-05T13:14:15.000Z");
+    assertEquals(new DateTime(2011, 11, 4, 12, 13, 14, 0, DateTimeZone.UTC), constraint.getStart());
+    assertEquals(new DateTime(2011, 11, 5, 13, 14, 15, 0, DateTimeZone.UTC), constraint.getEnd());
+  }
+  
+  @Test
+  public void shouldSupportNullStringAsProvidedValue() {
+    TimeRangeConstraint constraint = new TimeRangeConstraint("someTime", (String) null, (String) null);
+    assertEquals(null, constraint.getStart());
+    assertEquals(null, constraint.getEnd());
+  }
+
   @Test
   public void shouldSupportContainsCheckForBoundsOnBothSides() {
     TimeRangeConstraint constraint = new TimeRangeConstraint("someTime",
