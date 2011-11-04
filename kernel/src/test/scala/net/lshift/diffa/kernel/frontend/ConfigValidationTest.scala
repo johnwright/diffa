@@ -378,7 +378,7 @@ object ConfigValidationTest {
     lowerMid = "2011-05-05T01:02:03.000Z", upperMid = "2011-11-01T12:13:14.123Z")
 
   @DataPoint def integerRange = RangeScenario(
-    dataType = "integer",
+    dataType = "int",
     lower = "52", upper = "104",
     justBefore = "51", justAfter ="105",
     wayAfter = "150",

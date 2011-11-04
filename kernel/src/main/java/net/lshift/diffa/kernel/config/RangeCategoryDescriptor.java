@@ -111,7 +111,7 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
         TimeRangeConstraint constraint = (TimeRangeConstraint) toConstraint("unknown");
         TimeRangeConstraint otherConstraint = (TimeRangeConstraint) otherDesc.toConstraint("unknown");
         return constraint.containsRange(otherConstraint.getStart(), otherConstraint.getEnd());
-      } else if (dataType.equals("integer")) {
+      } else if (dataType.equals("int")) {
         IntegerRangeConstraint constraint = (IntegerRangeConstraint) toConstraint("unknown");
         IntegerRangeConstraint otherConstraint = (IntegerRangeConstraint) otherDesc.toConstraint("unknown");
         return constraint.containsRange(otherConstraint.getStart(), otherConstraint.getEnd());
@@ -140,7 +140,7 @@ public class RangeCategoryDescriptor extends CategoryDescriptor {
       return new DateRangeConstraint(name, this.lower, this.upper);
     } else if (dataType.equals("datetime")) {
       return new TimeRangeConstraint(name, this.lower, this.upper);
-    } else if (dataType.equals("integer")) {
+    } else if (dataType.equals("int")) {
       return new IntegerRangeConstraint(name, this.lower, this.upper);
     } else {
       throw new IllegalArgumentException("Unknown data type " + this.dataType);
