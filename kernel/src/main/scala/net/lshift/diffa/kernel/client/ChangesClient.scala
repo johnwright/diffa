@@ -16,7 +16,7 @@
 
 package net.lshift.diffa.kernel.client
 
-import net.lshift.diffa.kernel.events.ChangeEvent
+import net.lshift.diffa.participant.changes.ChangeEvent
 
 /**
  * Interface supported by clients capable of reporting change events to the diffa agent.
