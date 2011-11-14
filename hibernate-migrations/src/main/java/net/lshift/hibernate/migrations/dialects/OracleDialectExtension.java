@@ -19,9 +19,15 @@ package net.lshift.hibernate.migrations.dialects;
  * Extension to the Oracle Dialect, providing additional Oracle-specific SQL information.
  */
 public class OracleDialectExtension extends DialectExtension {
+
   @Override
   public String alterColumnString() {
     return "modify";
+  }
+
+  @Override
+  public String addColumnString() {
+    return "add";
   }
 
   @Override

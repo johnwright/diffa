@@ -27,10 +27,18 @@ import static net.lshift.hibernate.migrations.VerificationUtil.verifyMigrationBu
  * Validates support for the oracle dialect.
  */
 public class OracleDialectSupportTest {
+
   @Test
   public void shouldAlterColumnUsingModifySyntax() throws Exception {
     MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration(HibernateHelper.ORACLE_DIALECT));
     mb.alterTable("foo").alterColumn("bar", Types.VARCHAR, 1024, true, null);
     verifyMigrationBuilder(mb, "alter table foo modify (bar varchar2(1024 char))");
+  }
+
+  @Test
+  public void shouldAddColumnUsingWithoutColumnKeyword() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration(HibernateHelper.ORACLE_DIALECT));
+    mb.alterTable("foo").addColumn("bar", Types.BIT, 1, true, 0);
+    verifyMigrationBuilder(mb, "alter table foo add bar number(1,0) default 0");
   }
 }
