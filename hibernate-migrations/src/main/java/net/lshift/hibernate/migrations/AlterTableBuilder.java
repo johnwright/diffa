@@ -59,7 +59,7 @@ public class AlterTableBuilder extends TraceableMigrationElement {
 
   public AlterTableBuilder addColumn(String name, int sqlType, int length, boolean nullable, Object defaultVal) {
     Column col = buildColumnDefinition(name, sqlType, length, nullable, defaultVal);
-    alterFragments.add("add column " + generateColumnString(dialect, col, false));
+    alterFragments.add(dialectExtension.addColumnString() + " " + generateColumnString(dialect, col, false));
     return this;
   }
 

@@ -20,12 +20,21 @@ package net.lshift.hibernate.migrations.dialects;
  * extension, this base extension will be used.
  */
 public class DialectExtension {
+
   /**
    * Retrieves the string to be used when specifying that a column is being altered.
    * @return the string.
    */
   public String alterColumnString() {
     return "alter column";
+  }
+
+  /**
+   * Retrieves the string to be used when specifying that a column is being added.
+   * @return the string.
+   */
+  public String addColumnString() {
+    return "add column";
   }
 
   /**
