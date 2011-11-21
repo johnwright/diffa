@@ -34,6 +34,12 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>net.lshift</groupId>
+      <artifactId>accent</artifactId>
+      <version>${accent.version}</version>
+    </dependency>
+
     <!-- The Rabbit client jars will be supplied by the container -->
     <dependency>
       <groupId>com.rabbitmq</groupId>
