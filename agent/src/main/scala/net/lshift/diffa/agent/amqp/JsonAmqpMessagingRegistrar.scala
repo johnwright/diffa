@@ -46,11 +46,6 @@ class JsonAmqpMessagingRegistrar(con: AccentConnection,
     def ensureEndpointReceiver(e: Endpoint) {
       log.info("Starting consumer for endpoint: %s".format(e))
 
-      // handler only has one endpoint, which is the queue that it consumes from
-      object ChangesEndpointMapper extends EndpointMapper {
-        def apply(props: BasicProperties) = "changes"
-      }
-
       val params = new ReceiverParameters(AmqpQueueUrl.parse(e.inboundUrl).queue)
 
       val c = new AccentReceiver(con,
