@@ -17,7 +17,6 @@
 package net.lshift.diffa.agent.amqp
 
 import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 import java.io.{IOException, OutputStream, ByteArrayInputStream}
 import com.rabbitmq.client.{Envelope, Consumer, ShutdownSignalException, Channel}
 import com.rabbitmq.client.AMQP.BasicProperties
@@ -88,11 +87,6 @@ class AccentReceiver(con: AccentConnection,
       val msg = "Ignoring message (%s) with delivery (%s) because the worker pool has been shutdown"
       log.warn(msg.format(new String(body), header.getDeliveryTag))
     }
-  }
-
-  protected def createResponse() = new TransportResponse {
-    def setStatusCode(status: Int) {}
-    def withOutputStream(f:(OutputStream) => Unit) {}
   }
 
   override def close() {

@@ -20,10 +20,8 @@ import org.apache.commons.io.IOUtils
 import org.junit.Assert._
 import org.junit.Assume.assumeTrue
 import org.junit.Test
-import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
 import net.lshift.accent.AccentConnection
 import com.rabbitmq.client.ConnectionFactory
-import com.rabbitmq.client.AMQP.BasicProperties
 import com.eaio.uuid.UUID
 import net.lshift.diffa.kernel.frontend.Changes
 import net.lshift.diffa.participant.changes.ChangeEvent
