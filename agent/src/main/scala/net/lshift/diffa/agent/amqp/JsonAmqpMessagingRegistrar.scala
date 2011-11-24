@@ -17,7 +17,6 @@
 package net.lshift.diffa.agent.amqp
 
 import net.lshift.diffa.kernel.frontend.Changes
-import net.lshift.diffa.messaging.json.ChangesHandler
 import net.lshift.diffa.kernel.config.Endpoint
 import collection.mutable.HashMap
 import org.slf4j.LoggerFactory
