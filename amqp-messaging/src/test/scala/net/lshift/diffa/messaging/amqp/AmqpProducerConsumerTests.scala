@@ -72,13 +72,13 @@ class AmqpProducerConsumerTests {
   }
 
   @Test(timeout = 5000)
-  def applicationExceptionsShouldBeAcked() = {
+  def applicationExceptionsShouldBeRejected() = {
 
     val con = new AccentConnection(factory, failureHandler)
     val monitor = new Object
 
     val params = new ReceiverParameters(queueName = new UUID().toString) {
-      autoDelete = true;
+      autoDelete = false;
     }
 
     val receiver = new AccentReceiver(con, params, new EndpointMapper { def apply(props:BasicProperties) = "" }, new ProtocolHandler {
@@ -98,13 +98,26 @@ class AmqpProducerConsumerTests {
     monitor.synchronized {
       monitor.wait(1000)
     }
-    
+
     receiver.close()
 
-    val channel = factory.newConnection().createChannel()
-    val response = channel.basicGet(params.queueName, true)
-    assertNull(response.getBody)
-    assertEquals(0, response.getMessageCount)
+    // TODO The call to con.close/0 _appears_ to be necessary to make sure that when you try to deliberately
+    // break the test by commenting out the call to reject the message, the new channel
+    // created below can see the unrejected message, and hence the test fails
+    con.close()
 
+
+    val channel = factory.newConnection().createChannel()
+
+    try {
+      assertNull(channel.basicGet(params.queueName, false))
+    }
+    finally {
+
+      // Make sure that the queue is disposed of
+
+      channel.queueDelete(params.queueName)
+      channel.close()
+    }
   }
 }

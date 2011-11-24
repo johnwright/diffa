@@ -64,7 +64,7 @@ class AccentReceiver(con: AccentConnection,
   def handleRecoverOk() {}
 
   def handleDelivery(consumerTag: String, header: Envelope, properties: BasicProperties, body: Array[Byte]) = {
-    if (!pool.isShutdown()) {
+    if (!pool.isShutdown() && !isClosing.get()) {
       pool.submit(new Runnable() {
         def run() {
           try {
@@ -77,14 +77,15 @@ class AccentReceiver(con: AccentConnection,
           catch {
             case e => {
               consumer.reliableReject(header.getDeliveryTag, false)
-              log.error("Rejected message: " + new String(body), e)
+              log.error("Rejected message (%s) due to error".format(new String(body)), e)
             }
           }
         }
       })
     }
     else {
-      log.warn("Ignoring message with delivery %s because the worker pool has been shutdown")
+      val msg = "Ignoring message (%s) with delivery (%s) because the worker pool has been shutdown"
+      log.warn(msg.format(new String(body), header.getDeliveryTag))
     }
   }
 
