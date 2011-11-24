@@ -290,6 +290,7 @@
         <configuration>
           <!--<forkMode>never</forkMode>-->
           <excludes>
+            <exclude>**/*$*/**</exclude>
             <exclude>**/itest/**</exclude>
           </excludes>
         </configuration>

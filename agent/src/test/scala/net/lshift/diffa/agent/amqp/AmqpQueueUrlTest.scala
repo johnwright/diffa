@@ -1,5 +1,3 @@
-package net.lshift.diffa.agent.amqp
-
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -16,13 +14,15 @@ package net.lshift.diffa.agent.amqp
  * limitations under the License.
  */
 
+package net.lshift.diffa.agent.amqp
+
 import org.junit.Assert._
 import org.junit.Test
 
 /**
  * Test cases for the AmqpQueueUrl class.
  */
-class AmqpQueueUrlTests {
+class AmqpQueueUrlTest {
 
   @Test
   def parseUrlWithNoPortAndEmptyVHost() {

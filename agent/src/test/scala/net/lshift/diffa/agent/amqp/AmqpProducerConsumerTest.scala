@@ -1,5 +1,3 @@
-package net.lshift.diffa.agent.amqp
-
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -16,6 +14,8 @@ package net.lshift.diffa.agent.amqp
  * limitations under the License.
  */
 
+package net.lshift.diffa.agent.amqp
+
 import org.apache.commons.io.IOUtils
 import org.junit.Assert._
 import org.junit.Assume.assumeTrue
@@ -26,7 +26,7 @@ import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.eaio.uuid.UUID
 
-class AmqpProducerConsumerTests {
+class AmqpProducerConsumerTest {
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
 

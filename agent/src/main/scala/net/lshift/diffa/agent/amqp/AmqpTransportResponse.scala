@@ -1,5 +1,3 @@
-package net.lshift.diffa.agent.amqp
-
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -15,6 +13,8 @@ package net.lshift.diffa.agent.amqp
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.agent.amqp
 
 import java.io.{ByteArrayOutputStream, OutputStream}
 import net.lshift.diffa.kernel.protocol.TransportResponse
