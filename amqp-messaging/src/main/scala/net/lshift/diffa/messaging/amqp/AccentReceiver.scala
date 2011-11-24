@@ -34,14 +34,10 @@ import java.lang.String
 class AccentReceiver(con: AccentConnection,
                      params:ReceiverParameters,
                      endpointMapper: EndpointMapper,
-                     handler: ProtocolHandler
-                     )
+                     handler: ProtocolHandler)
   extends AccentAwareComponent(con) with Consumer {
 
   protected val log = LoggerFactory.getLogger(getClass)
-
-  private val queueIsDurable = true
-  private val queueIsExclusive = false
 
   val isClosing = new AtomicBoolean(false)
 
@@ -50,7 +46,7 @@ class AccentReceiver(con: AccentConnection,
   channel.addChannelSetupListener(new ChannelListenerAdapter() {
     override def channelCreated(c: Channel) {
       log.debug("Declaring queue: %s".format(params.queueName))
-      c.queueDeclare(params.queueName, queueIsDurable, queueIsExclusive, params.autoDelete, null)
+      c.queueDeclare(params.queueName, params.queueIsDurable, params.queueIsExclusive, params.autoDelete, null)
       c.basicQos(params.prefetchCount)
     }
   })
@@ -106,5 +102,7 @@ class AccentReceiver(con: AccentConnection,
 class ReceiverParameters (
   var queueName:String,
   var prefetchCount:Int = 1,
-  var autoDelete:Boolean = false
+  var autoDelete:Boolean = false,
+  var queueIsDurable:Boolean = true,
+  var queueIsExclusive:Boolean = false
 )

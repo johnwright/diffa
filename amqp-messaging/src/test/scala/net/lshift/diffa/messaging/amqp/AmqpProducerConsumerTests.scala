@@ -25,11 +25,7 @@ import net.lshift.accent.AccentConnection
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.eaio.uuid.UUID
-import net.lshift.diffa.messaging.amqp.ReceiverParameters._
 
-/**
- * Test cases for fire-and-forget AMQP messaging.
- */
 class AmqpProducerConsumerTests {
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
@@ -38,7 +34,7 @@ class AmqpProducerConsumerTests {
   val failureHandler = new AccentConnectionFailureHandler()
 
   @Test
-  def fireAndForget() {
+  def receiverShouldBeAbleToProcessMessage() {
     val con = new AccentConnection(factory, failureHandler)
 
     val monitor = new Object
