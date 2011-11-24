@@ -16,9 +16,9 @@
 
 package net.lshift.diffa.messaging.amqp
 
-import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
+import com.rabbitmq.client.AMQP.BasicProperties
 
 /**
  * Determines the endpoint name for an incoming AMQP message.
  */
-trait EndpointMapper extends (ReceivedMessage => String)
+trait EndpointMapper extends (BasicProperties => String)

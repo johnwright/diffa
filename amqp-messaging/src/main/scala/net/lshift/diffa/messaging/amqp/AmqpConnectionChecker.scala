@@ -22,6 +22,9 @@ import org.slf4j.LoggerFactory
 /**
  * Utility object that can detect whether a RabbitMQ connection is available
  * on localhost, using the default port number.
+ *
+ * Example usage: assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
+ *
  */
 object AmqpConnectionChecker {
 

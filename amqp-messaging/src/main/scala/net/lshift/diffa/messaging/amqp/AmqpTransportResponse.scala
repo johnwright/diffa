@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.protocol.TransportResponse
  */
 class AmqpTransportResponse extends TransportResponse {
 
-  var status = AmqpRpc.defaultStatusCode
+  var status = 200
 
   val os = new ByteArrayOutputStream()
 

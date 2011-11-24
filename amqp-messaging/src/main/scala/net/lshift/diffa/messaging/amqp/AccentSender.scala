@@ -16,34 +16,21 @@
 
 package net.lshift.diffa.messaging.amqp
 
-import java.io.Closeable
-import org.slf4j.LoggerFactory
-import com.rabbitmq.messagepatterns.unicast.{Connector, Factory}
+import net.lshift.accent.{AccentConfirmPublisher, AccentConnection}
+import com.rabbitmq.client.MessageProperties
 
 /**
- * AMQP message producer.
+ * Forwards messages directly into a specifically named AMQP queue
  */
-class AmqpProducer(connector: Connector, queueName: String)
-  extends Closeable {
+class AccentSender(con: AccentConnection, queueName:String) extends AccentAwareComponent(con) {
 
-  private val log = LoggerFactory.getLogger(getClass)
+  private val publisher = new AccentConfirmPublisher(channel)
 
-  private val sender = {
-    val s = Factory.createSender()
-    s.setConnector(connector)
-    s.setExchangeName("")
-    s.init()
-    s
-  }
-
-  def send(payload: String) {
-    val msg = sender.createMessage()
-    msg.setRoutingKey(queueName)
-    msg.setBody(payload.getBytes(AmqpRpc.encoding))
-    sender.send(msg)
-  }
-
-  def close() {
-    sender.close()
+  /**
+   * Send the given payload to the configured queue.
+   */
+  def send(payload: String) = {
+    val packed = payload.getBytes("UTF-8")
+    publisher.reliablePublish("", queueName, MessageProperties.PERSISTENT_BASIC, packed)
   }
 }

@@ -21,16 +21,17 @@ import net.lshift.diffa.kernel.protocol.ProtocolMapper
 import net.lshift.diffa.messaging.json.ChangesHandler
 import net.lshift.diffa.kernel.config.Endpoint
 import collection.mutable.HashMap
-import com.rabbitmq.messagepatterns.unicast.ReceivedMessage
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.{InboundEndpointFactory, InboundEndpointManager, ParticipantFactory}
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
+import com.rabbitmq.client.AMQP.BasicProperties
+import net.lshift.accent.AccentConnection
 
 /**
  * Utility class responsible for registering JSON over AMQP protocol support with necessary factories
  * and request handlers.
  */
-class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
+class JsonAmqpMessagingRegistrar(con: AccentConnection,
                                  inboundEndpointManager: InboundEndpointManager,
                                  protocolMapper: ProtocolMapper,
                                  participantFactory: ParticipantFactory,
@@ -42,7 +43,7 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
   // Register the inbound changes handler
   inboundEndpointManager.registerFactory(new InboundEndpointFactory {
 
-    val consumers = new HashMap[String, AmqpConsumer]
+    val consumers = new HashMap[String, AccentReceiver]
 
     def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =
       inboundUrl.startsWith("amqp://")
@@ -52,15 +53,16 @@ class JsonAmqpMessagingRegistrar(connectorHolder: ConnectorHolder,
 
       // handler only has one endpoint, which is the queue that it consumes from
       object ChangesEndpointMapper extends EndpointMapper {
-        def apply(msg: ReceivedMessage) = "changes"
+        def apply(props: BasicProperties) = "changes"
       }
 
-      val c = new AmqpConsumer(connectorHolder.connector,
-                               AmqpQueueUrl.parse(e.inboundUrl).queue,
-                               ChangesEndpointMapper,
-                               new ChangesHandler(changes, e.domain.name, e.name))
+      val params = new ReceiverParameters(AmqpQueueUrl.parse(e.inboundUrl).queue)
+
+      val c = new AccentReceiver(con,
+                                 params,
+                                 ChangesEndpointMapper,
+                                 new ChangesHandler(changes, e.domain.name, e.name))
       consumers.put(e.name, c)
-      c.start()
     }
 
     def endpointGone(key: String) {

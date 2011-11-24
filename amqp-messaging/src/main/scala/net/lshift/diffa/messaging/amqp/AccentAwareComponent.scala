@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ *  Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 
 package net.lshift.diffa.messaging.amqp
 
-import java.io.IOException
+import java.io.Closeable
+import net.lshift.accent.{AccentConnection, AccentChannel}
 
 /**
- * Exception thrown when by AMQP RPC clients when a response is not received within a fixed
- * period of time.
+ * Simple base class for implementing disposable Accent based senders and receivers.
  */
-case class ReceiveTimeoutException(queueName:String, endpoint:String, timeoutMillis: Long) extends IOException {
+class AccentAwareComponent(con: AccentConnection) extends Closeable {
 
-  override def getMessage = "Receive (%s - %s) timed out after %dms".format(queueName, endpoint, timeoutMillis)
+  protected val channel: AccentChannel = con.createChannel()
+
+  def close = channel.close
 }

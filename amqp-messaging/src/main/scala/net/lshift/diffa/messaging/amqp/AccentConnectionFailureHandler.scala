@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ *  Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package net.lshift.diffa.messaging.amqp
 
-import com.rabbitmq.client.ConnectionFactory
-import com.rabbitmq.messagepatterns.unicast.{Factory, ConnectionBuilder}
+import net.lshift.accent.ConnectionFailureListener
+import java.lang.Exception
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.util.AlertCodes
 
 /**
- * Wrapper for a Connector instance as required by the message patterns library. Connection
- * parameters are passed in via a ConnectionFactory instance.
+ * Default handler for listening to failures in Accent connections.
  */
-case class ConnectorHolder(connectionFactory: ConnectionFactory = new ConnectionFactory()) {
+class AccentConnectionFailureHandler extends ConnectionFailureListener {
 
-  private lazy val builder = new ConnectionBuilder {
-    def createConnection = connectionFactory.newConnection()
-  }
+  val log = LoggerFactory.getLogger(getClass)
 
-  lazy val connector = Factory.createConnector(builder)
-
-  def close() {
-    connector.close()
-  }
+  def connectionFailure(e: Exception)
+    = log.error("%s: Accent connection failure".format(AlertCodes.GENERAL_MESSAGING_ERROR), e)
 }

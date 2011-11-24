@@ -21,8 +21,11 @@ import org.junit.Assert._
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import net.lshift.diffa.kernel.protocol.{TransportResponse, TransportRequest, ProtocolHandler}
-import com.rabbitmq.messagepatterns.unicast.{ChannelSetupListener, ReceivedMessage,Factory}
-import com.rabbitmq.client.Channel
+import net.lshift.accent.AccentConnection
+import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.AMQP.BasicProperties
+import com.eaio.uuid.UUID
+import net.lshift.diffa.messaging.amqp.ReceiverParameters._
 
 /**
  * Test cases for fire-and-forget AMQP messaging.
@@ -31,60 +34,77 @@ class AmqpProducerConsumerTests {
 
   assumeTrue(AmqpConnectionChecker.isConnectionAvailable)
 
-  @Test(timeout = 1000)
-  def fireAndForget() {
-    val queueName = "testQueue"
-    val holder = new ConnectorHolder()
+  val factory = new ConnectionFactory()
+  val failureHandler = new AccentConnectionFailureHandler()
 
-    val consumer = new AmqpConsumer(holder.connector,
-                                    queueName,
-                                    new EndpointMapper { def apply(msg: ReceivedMessage) = "" },
-                                    new ProtocolHandler {
+  @Test
+  def fireAndForget() {
+    val con = new AccentConnection(factory, failureHandler)
+
+    val monitor = new Object
+    var messageProcessed = false
+
+    val params = new ReceiverParameters(new UUID().toString) {
+      autoDelete = true;
+    }
+
+    new AccentReceiver(con, params, new EndpointMapper { def apply(props:BasicProperties) = "" }, new ProtocolHandler {
       val contentType = "text/plain"
 
       def handleRequest(req: TransportRequest, res: TransportResponse) = {
         assertEquals("expected payload", IOUtils.toString(req.is))
+        messageProcessed = true
+        monitor.synchronized {
+          monitor.notifyAll
+        }
         true
       }
     })
     
-    val producer = new AmqpProducer(holder.connector, queueName)
+    val producer = new AccentSender(con, params.queueName)
     producer.send("expected payload")
+
+    monitor.synchronized {
+      monitor.wait(5000)
+    }
+
+    assertTrue(messageProcessed)
   }
 
   @Test(timeout = 5000)
   def applicationExceptionsShouldBeAcked() = {
 
-    val queueName = "testQueue"
-    val holder = new ConnectorHolder()
+    val con = new AccentConnection(factory, failureHandler)
+    val monitor = new Object
 
-    val consumer1 = new AmqpConsumer(holder.connector,
-                                    queueName,
-                                    new EndpointMapper { def apply(msg: ReceivedMessage) = "" },
-                                    new ProtocolHandler {
+    val params = new ReceiverParameters(queueName = new UUID().toString) {
+      autoDelete = true;
+    }
+
+    val receiver = new AccentReceiver(con, params, new EndpointMapper { def apply(props:BasicProperties) = "" }, new ProtocolHandler {
       val contentType = "text/plain"
 
       def handleRequest(req: TransportRequest, res: TransportResponse) = {
+        monitor.synchronized {
+          monitor.notifyAll()
+        }
         throw new Exception("Deliberate exception")
       }
     })
 
-    val producer = new AmqpProducer(holder.connector, queueName)
+    val producer = new AccentSender(con, params.queueName)
     producer.send("some payload")
 
-    Thread.sleep(1000)
-    consumer1.close
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
+    
+    receiver.close()
 
-    val m = Factory.createMessaging()
-    m.setConnector(holder.connector)
-    m.setQueueName(queueName)
-    m.setExchangeName("")
-    m.addSetupListener(new ChannelSetupListener {
-      def channelSetup(channel: Channel) {
-        val response = channel.basicGet(queueName, true)
-        assertNull(response.getBody)
-        assertEquals(0, response.getMessageCount)
-      }
-    })
+    val channel = factory.newConnection().createChannel()
+    val response = channel.basicGet(params.queueName, true)
+    assertNull(response.getBody)
+    assertEquals(0, response.getMessageCount)
+
   }
 }

@@ -11,27 +11,17 @@
   <name>LShift Diffa AMQP Messaging Support</name>
 
   <dependencies>
+
     <dependency>
       <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-kernel</artifactId>
       <version>${project.version}</version>
     </dependency>
+
     <dependency>
       <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-json-messaging</artifactId>
       <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>rabbitmq-messagepatterns</artifactId>
-      <version>${rabbitmq.messagepatterns.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.rabbitmq</groupId>
-          <artifactId>amqp-client</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>
@@ -47,6 +37,7 @@
       <version>${rabbitmq.version}</version>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>

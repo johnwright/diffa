@@ -16,21 +16,21 @@
 
 package net.lshift.diffa.messaging.amqp
 
-import com.rabbitmq.messagepatterns.unicast.Connector
 import net.lshift.diffa.kernel.client.ChangesClient
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.participant.changes.ChangeEvent
 import java.io.ByteArrayOutputStream
 import net.lshift.diffa.participant.common.JSONHelper
+import net.lshift.accent.AccentConnection
 
 /**
  * RPC client wrapper for clients to report change events to the diffa agent using JSON over AMQP.
  */
-class ChangesAmqpClient(connector: Connector,
+class ChangesAmqpClient(con: AccentConnection,
                         queueName: String,
                         timeout: Long)
 
-  extends AmqpProducer(connector, queueName)
+  extends AccentSender(con, queueName)
   with ChangesClient {
 
   private val log = LoggerFactory.getLogger(getClass)
