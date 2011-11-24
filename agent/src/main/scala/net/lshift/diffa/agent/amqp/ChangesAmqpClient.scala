@@ -35,15 +35,7 @@ class ChangesAmqpClient(con: AccentConnection,
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  def onChangeEvent(evt: ChangeEvent) {
-    val baos = new ByteArrayOutputStream
-    JSONHelper.writeChangeEvent(baos, evt)
-    val payload = new String(baos.toByteArray, "UTF-8")
-    if (log.isDebugEnabled) {
-      log.debug("onChangeEvent: %s".format(payload))
-    }
-    send(payload)
-  }
+  def onChangeEvent(evt: ChangeEvent) = send(JSONHelper.writeChangeEvent(evt))
 
   def inboundURL = AmqpQueueUrl(queueName).toString
 }

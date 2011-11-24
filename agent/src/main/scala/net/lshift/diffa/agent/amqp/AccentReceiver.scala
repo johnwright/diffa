@@ -25,6 +25,8 @@ import java.util.concurrent.Executors
 import net.lshift.accent.{AccentConsumer, ChannelListenerAdapter, AccentConnection}
 import java.util.concurrent.atomic.AtomicBoolean
 import java.lang.String
+import net.lshift.diffa.kernel.frontend.Changes
+import net.lshift.diffa.participant.common.JSONHelper
 
 
 /**
@@ -33,8 +35,9 @@ import java.lang.String
  */
 class AccentReceiver(con: AccentConnection,
                      params:ReceiverParameters,
-                     endpointMapper: EndpointMapper,
-                     handler: ProtocolHandler)
+                     domain:String,
+                     endpoint:String,
+                     changes: Changes)
   extends AccentAwareComponent(con) with Consumer {
 
   protected val log = LoggerFactory.getLogger(getClass)
@@ -62,12 +65,14 @@ class AccentReceiver(con: AccentConnection,
   def handleDelivery(consumerTag: String, header: Envelope, properties: BasicProperties, body: Array[Byte]) = {
     if (!pool.isShutdown() && !isClosing.get()) {
       pool.submit(new Runnable() {
+
         def run() {
           try {
-            val endpoint = endpointMapper(properties)
-            val request = new TransportRequest(endpoint, new ByteArrayInputStream(body))
-            val response = createResponse()
-            handler.handleRequest(request, response)        
+
+            JSONHelper.readChangeEvents(new ByteArrayInputStream(body)).foreach(
+              changes.onChange(domain, endpoint, _)
+            )
+
             consumer.reliableAck(header.getDeliveryTag, false)
           }
           catch {

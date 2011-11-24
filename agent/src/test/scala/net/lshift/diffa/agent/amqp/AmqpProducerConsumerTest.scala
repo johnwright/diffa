@@ -25,6 +25,10 @@ import net.lshift.accent.AccentConnection
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.eaio.uuid.UUID
+import net.lshift.diffa.kernel.frontend.Changes
+import net.lshift.diffa.participant.changes.ChangeEvent
+import net.lshift.diffa.participant.common.JSONHelper
+import org.joda.time.{DateTimeZone, DateTime}
 
 class AmqpProducerConsumerTest {
 
@@ -44,21 +48,23 @@ class AmqpProducerConsumerTest {
       autoDelete = true;
     }
 
-    new AccentReceiver(con, params, new EndpointMapper { def apply(props:BasicProperties) = "" }, new ProtocolHandler {
-      val contentType = "text/plain"
+    val expectedEvent = ChangeEvent.forChange("id", "vsn", new DateTime().withZone(DateTimeZone.UTC))
 
-      def handleRequest(req: TransportRequest, res: TransportResponse) = {
-        assertEquals("expected payload", IOUtils.toString(req.is))
+    new AccentReceiver(con, params, "domain", "endpoint", new Changes(null,null,null,null) {
+
+      override def onChange(domain:String, endpoint:String, evt:ChangeEvent) {
+        assertEquals(expectedEvent, evt)
         messageProcessed = true
         monitor.synchronized {
           monitor.notifyAll
         }
-        true
       }
+
     })
     
     val producer = new AccentSender(con, params.queueName)
-    producer.send("expected payload")
+
+    producer.send(JSONHelper.writeChangeEvent(expectedEvent))
 
     monitor.synchronized {
       monitor.wait(5000)
@@ -77,19 +83,22 @@ class AmqpProducerConsumerTest {
       autoDelete = false;
     }
 
-    val receiver = new AccentReceiver(con, params, new EndpointMapper { def apply(props:BasicProperties) = "" }, new ProtocolHandler {
-      val contentType = "text/plain"
 
-      def handleRequest(req: TransportRequest, res: TransportResponse) = {
+    val receiver = new AccentReceiver(con, params, "domain", "endpoint", new Changes(null,null,null,null) {
+
+      override def onChange(domain:String, endpoint:String, evt:ChangeEvent) {
         monitor.synchronized {
           monitor.notifyAll()
         }
         throw new Exception("Deliberate exception")
       }
+
     })
 
     val producer = new AccentSender(con, params.queueName)
-    producer.send("some payload")
+
+    val event = ChangeEvent.forChange("id", "vsn", new DateTime)
+    producer.send(JSONHelper.writeChangeEvent(event))
 
     monitor.synchronized {
       monitor.wait(1000)

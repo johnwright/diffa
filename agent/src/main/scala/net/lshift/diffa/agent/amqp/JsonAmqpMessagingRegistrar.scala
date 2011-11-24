@@ -56,8 +56,9 @@ class JsonAmqpMessagingRegistrar(con: AccentConnection,
 
       val c = new AccentReceiver(con,
                                  params,
-                                 ChangesEndpointMapper,
-                                 new ChangesHandler(changes, e.domain.name, e.name))
+                                 e.domain.name,
+                                 e.name,
+                                 changes)
       consumers.put(e.name, c)
     }
 

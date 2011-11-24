@@ -29,8 +29,7 @@ class AccentSender(con: AccentConnection, queueName:String) extends AccentAwareC
   /**
    * Send the given payload to the configured queue.
    */
-  def send(payload: String) = {
-    val packed = payload.getBytes("UTF-8")
-    publisher.reliablePublish("", queueName, MessageProperties.PERSISTENT_BASIC, packed)
+  def send(payload: Array[Byte]) = {
+    publisher.reliablePublish("", queueName, MessageProperties.PERSISTENT_BASIC, payload)
   }
 }
