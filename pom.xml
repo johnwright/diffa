@@ -14,7 +14,6 @@
     <module>agent</module>
     <module>kernel</module>
     <module>json-messaging</module>
-    <module>amqp-messaging</module>
     <module>participants</module>
     <module>participant-support</module>
     <module>participants-web</module>

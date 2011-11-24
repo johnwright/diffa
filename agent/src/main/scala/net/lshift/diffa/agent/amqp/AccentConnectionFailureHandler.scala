@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.amqp
+
 /**
  *  Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,18 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.messaging.amqp
-
-import java.io.Closeable
-import net.lshift.accent.{AccentConnection, AccentChannel}
+import net.lshift.accent.ConnectionFailureListener
+import java.lang.Exception
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.util.AlertCodes
 
 /**
- * Simple base class for implementing disposable Accent based senders and receivers.
+ * Default handler for listening to failures in Accent connections.
  */
-class AccentAwareComponent(con: AccentConnection) extends Closeable {
+class AccentConnectionFailureHandler extends ConnectionFailureListener {
 
-  protected val channel: AccentChannel = con.createChannel()
+  val log = LoggerFactory.getLogger(getClass)
 
-  def close = channel.close
+  def connectionFailure(e: Exception)
+    = log.error("%s: Accent connection failure".format(AlertCodes.GENERAL_MESSAGING_ERROR), e)
 }

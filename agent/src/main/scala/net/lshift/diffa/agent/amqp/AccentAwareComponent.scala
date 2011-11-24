@@ -1,5 +1,7 @@
+package net.lshift.diffa.agent.amqp
+
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ *  Copyright (C) 2010-2011 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +16,15 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.amqp
-
-import java.io.{ByteArrayOutputStream, OutputStream}
-import net.lshift.diffa.kernel.protocol.TransportResponse
+import java.io.Closeable
+import net.lshift.accent.{AccentConnection, AccentChannel}
 
 /**
- * TransportResponse implementation for communication over AMQP.
+ * Simple base class for implementing disposable Accent based senders and receivers.
  */
-class AmqpTransportResponse extends TransportResponse {
+class AccentAwareComponent(con: AccentConnection) extends Closeable {
 
-  var status = 200
+  protected val channel: AccentChannel = con.createChannel()
 
-  val os = new ByteArrayOutputStream()
-
-  def setStatusCode(code: Int) { status = code }
-
-  def withOutputStream(f: OutputStream => Unit) = f(os)
-
+  def close = channel.close
 }

@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.amqp
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -14,11 +16,20 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.messaging.amqp
-
-import com.rabbitmq.client.AMQP.BasicProperties
+import java.io.{ByteArrayOutputStream, OutputStream}
+import net.lshift.diffa.kernel.protocol.TransportResponse
 
 /**
- * Determines the endpoint name for an incoming AMQP message.
+ * TransportResponse implementation for communication over AMQP.
  */
-trait EndpointMapper extends (BasicProperties => String)
+class AmqpTransportResponse extends TransportResponse {
+
+  var status = 200
+
+  val os = new ByteArrayOutputStream()
+
+  def setStatusCode(code: Int) { status = code }
+
+  def withOutputStream(f: OutputStream => Unit) = f(os)
+
+}
