@@ -20,24 +20,23 @@ import net.lshift.diffa.kernel.participants._
 
 trait ParticipantRestClientFactory {
 
-  def supportsAddress(address: String, protocol: String) =
-    protocol == "application/json" && address.startsWith("http://")
+  def supportsAddress(address: String) = address.startsWith("http://")
 }
 
 class ScanningParticipantRestClientFactory
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
 
-  def createParticipantRef(address: String, protocol: String) = new ScanningParticipantRestClient(address)
+  def createParticipantRef(address: String) = new ScanningParticipantRestClient(address)
 }
 
 class ContentParticipantRestClientFactory
   extends ContentParticipantFactory with ParticipantRestClientFactory {
 
-  def createParticipantRef(address: String, protocol: String) = new ContentParticipantRestClient(address)
+  def createParticipantRef(address: String) = new ContentParticipantRestClient(address)
 }
 
 class VersioningParticipantRestClientFactory
   extends VersioningParticipantFactory with ParticipantRestClientFactory {
 
-  def createParticipantRef(address: String, protocol: String) = new VersioningParticipantRestClient(address)
+  def createParticipantRef(address: String) = new VersioningParticipantRestClient(address)
 }

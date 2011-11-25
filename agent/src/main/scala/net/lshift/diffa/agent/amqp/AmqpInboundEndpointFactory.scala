@@ -30,7 +30,7 @@ class AmqpInboundEndpointFactory(con: AccentConnection, changes: Changes)
 
   val consumers = new HashMap[String, AccentReceiver]
 
-  def canHandleInboundEndpoint(inboundUrl: String, contentType: String) =
+  def canHandleInboundEndpoint(inboundUrl: String) =
     inboundUrl.startsWith("amqp://")
 
   def ensureEndpointReceiver(e: Endpoint) {
