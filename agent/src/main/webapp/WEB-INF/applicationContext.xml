@@ -422,27 +422,18 @@
     </constructor-arg>
   </bean>
 
-  <bean class="net.lshift.diffa.agent.amqp.JsonAmqpMessagingRegistrar">
-    <constructor-arg ref="accentConnection" />
-    <constructor-arg ref="inboundEndpointManager" />
-    <constructor-arg ref="changesFrontend" />
-    <constructor-arg>
-      <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="systemConfigStore"/>
-        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
-        <property name="arguments">
-          <list>
-            <value>diffa.amqp.rpc.timeout</value>
-            <value>10000</value>
-          </list>
-        </property>
-      </bean>
-    </constructor-arg>
+  <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="inboundEndpointManager" />
+    <property name="targetMethod" value="registerFactory" />
+    <property name="arguments">
+      <list>
+        <bean class="net.lshift.diffa.agent.amqp.AmqpInboundEndpointFactory">
+          <constructor-arg ref="accentConnection" />
+          <constructor-arg ref="changesFrontend" />
+        </bean>
+      </list>
+    </property>
   </bean>
-
-  <!-- TODO we should deprecate this dynamic loading -->
-
-  <import resource="classpath*:conf/diffa-messaging-*.xml"/>
 
   <!--
       ========
