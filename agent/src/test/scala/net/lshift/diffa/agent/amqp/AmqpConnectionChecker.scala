@@ -1,3 +1,5 @@
+package net.lshift.diffa.agent.amqp
+
 /**
  * Copyright (C) 2010-2011 LShift Ltd.
  *
@@ -13,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.agent.amqp
 
 import com.rabbitmq.client.ConnectionFactory
 import org.slf4j.LoggerFactory
