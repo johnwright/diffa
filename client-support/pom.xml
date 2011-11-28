@@ -9,7 +9,7 @@
   </parent>
 
   <artifactId>diffa-client-support</artifactId>
-  <name>LShift Diffa JSON Messaging Support</name>
+  <name>LShift Diffa JSON Client Support</name>
 
   <packaging>jar</packaging>
 
