@@ -25,9 +25,9 @@ import org.hibernate.tool.hbm2ddl.{DatabaseMetadata, SchemaExport}
 import org.hibernate.cfg.{Environment, Configuration}
 import java.sql.{Types, Connection}
 import net.lshift.diffa.kernel.differencing.VersionCorrelationStore
-import net.lshift.hibernate.migrations.MigrationBuilder
 import scala.collection.JavaConversions._
 import org.hibernate.`type`.IntegerType
+import net.lshift.hibernate.migrations.MigrationBuilder
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -52,7 +52,9 @@ class HibernateConfigStorePreparationStep
     ReviseUrlLengthMigrationStep,
     AddEndpointViewsMigrationStep,
     AddAllowManualScanFlagToPairStep,
-    AddPairReportsStep
+    RemoveInboundContentTypeFromEndpointStep,
+    AddPairReportsStep,
+    RemoveContentTypeFromEndpointStep
   )
 
   def prepare(sf: SessionFactory, config: Configuration) {
@@ -554,6 +556,17 @@ object AddPairReportsStep extends HibernateMigrationStep {
     // Report escalations don't have a configured origin, so relax the constraint on origin being mandatory
     migration.alterTable("escalations").
       alterColumn("origin", Types.VARCHAR, 255, true, null)
+
+    migration
+  }
+}
+
+object RemoveContentTypeFromEndpointStep extends HibernateMigrationStep {
+  def versionId = 15
+  def createMigration(config: Configuration) = {
+    val migration = new MigrationBuilder(config)
+
+    migration.alterTable("endpoint").dropColumn("content_type")
 
     migration
   }
