@@ -48,16 +48,11 @@ class AmqpInboundEndpointFactory(changes: Changes)
     log.info("Starting consumer for endpoint: %s".format(e))
 
     val amqpUrl = AmqpQueueUrl.parse(e.inboundUrl)
-    val params = new ReceiverParameters(amqpUrl.queue)
+
 
     val consumersForUrl = getConsumersByUrl(amqpUrl)
-    val c = new AccentReceiver(consumersForUrl.connection,
-                               params,
-                               e.domain.name,
-                               e.name,
-                               changes)
-
-    consumersForUrl.put(e.name, c)
+    consumersForUrl.put(e.name,
+                        createConsumer(consumersForUrl.connection, amqpUrl.queue, e.domain.name, e.name))
   }
 
   def endpointGone(endpointName: String) {
@@ -87,19 +82,34 @@ class AmqpInboundEndpointFactory(changes: Changes)
     }
   }
 
+  protected def createConnectionFactory(url: AmqpQueueUrl) = {
+    val cf = new ConnectionFactory()
+    cf.setHost(url.host)
+    cf.setPort(url.port)
+    cf.setUsername(url.username)
+    cf.setPassword(url.password)
+    if (! url.isDefaultVHost) {
+      cf.setVirtualHost(url.vHost)
+    }
+    cf
+  }
+
+  protected def createConnection(cf: ConnectionFactory) =
+    new AccentConnection(cf, new AccentConnectionFailureHandler)
+
+  protected def createConsumer(connection: AccentConnection, queue: String, domain: String, endpoint: String) = {
+    val params = new ReceiverParameters(queue)
+    new AccentReceiver(connection,
+                       params,
+                       domain,
+                       endpoint,
+                       changes)
+  }
+
   private def getConsumersByUrl(url: AmqpQueueUrl): Consumers = {
     val connectionKey = ConnectionKey.fromUrl(url)
     consumers.getOrElseUpdate(connectionKey, {
-      val cf = new ConnectionFactory()
-      cf.setHost(url.host)
-      cf.setPort(url.port)
-      cf.setUsername(url.username)
-      cf.setPassword(url.password)
-      if (! url.isDefaultVHost) {
-        cf.setVirtualHost(url.vHost)
-      }
-
-      val connection = new AccentConnection(cf, new AccentConnectionFailureHandler)
+      val connection = createConnection(createConnectionFactory(url))
       new Consumers(connection, connectionKey)
     })
   }
