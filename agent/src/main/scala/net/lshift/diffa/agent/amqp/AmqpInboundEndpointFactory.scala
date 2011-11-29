@@ -18,12 +18,13 @@ package net.lshift.diffa.agent.amqp
 
 import collection.mutable.HashMap
 import net.lshift.diffa.kernel.config.Endpoint
-import net.lshift.accent.AccentConnection
 import net.lshift.diffa.kernel.frontend.Changes
 import net.lshift.diffa.kernel.participants.InboundEndpointFactory
 import org.slf4j.LoggerFactory
+import net.lshift.accent.AccentConnection
+import com.rabbitmq.client.ConnectionFactory
 
-class AmqpInboundEndpointFactory(con: AccentConnection, changes: Changes)
+class AmqpInboundEndpointFactory(changes: Changes)
   extends InboundEndpointFactory {
 
   val log = LoggerFactory.getLogger(getClass)
@@ -36,14 +37,28 @@ class AmqpInboundEndpointFactory(con: AccentConnection, changes: Changes)
   def ensureEndpointReceiver(e: Endpoint) {
     log.info("Starting consumer for endpoint: %s".format(e))
 
-    val params = new ReceiverParameters(AmqpQueueUrl.parse(e.inboundUrl).queue)
+    val amqpUrl = AmqpQueueUrl.parse(e.inboundUrl)
+    val params = new ReceiverParameters(amqpUrl.queue)
 
-    val c = new AccentReceiver(con,
+    val c = new AccentReceiver(createAccentConnection(amqpUrl),
                                params,
                                e.domain.name,
                                e.name,
                                changes)
     consumers.put(e.name, c)
+  }
+
+  private def createAccentConnection(url: AmqpQueueUrl) = {
+    val cf = new ConnectionFactory()
+    cf.setHost(url.host)
+    cf.setPort(url.port)
+    cf.setUsername(url.username)
+    cf.setPassword(url.password)
+    if (! url.isDefaultVHost) {
+      cf.setVirtualHost(url.vHost)
+    }
+
+    new AccentConnection(cf, new AccentConnectionFailureHandler)
   }
 
   def endpointGone(key: String) {

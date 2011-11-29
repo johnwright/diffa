@@ -29,6 +29,8 @@ case class AmqpQueueUrl(queue: String,
                         username: String = DEFAULT_USER,
                         password: String = DEFAULT_PASS) {
 
+  def isDefaultVHost = vHost.isEmpty
+
   private def portString = if (port == USE_DEFAULT_PORT) "" else ":%d".format(port)
 
   private def userInfoString =
