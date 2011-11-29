@@ -174,6 +174,8 @@ abstract class HibernateMigrationStep {
 
 class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep {
   val log:Logger = LoggerFactory.getLogger(classOf[HibernateConfigStorePreparationStep])
+  
+  val steps = HibernateConfigStorePreparationStep.migrationSteps
 
   def versionId = currentMaxVersionId
 
@@ -185,14 +187,14 @@ class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep
     val freshMigration = new MigrationBuilder(config)
     freshMigration.insert("system_config_options").
       values(Map("opt_key" -> HibernatePreparationUtils.correlationStoreSchemaKey, "opt_val" -> HibernatePreparationUtils.correlationStoreVersion))
-    AddDomainsMigrationStep.applyReferenceData(freshMigration)
-    AddSuperuserAndDefaultUsersMigrationStep.applyReferenceData(freshMigration)
 
-    // Also need to add foreign key constraint from diffs.pair to pair.pair_key
-    AddPersistentDiffsMigrationStep.addForeignKeyConstraintForPairColumnOnDiffsTables(freshMigration)
+    type R = ReferenceDataMigrationStep
+    type C = StandaloneConstraintMigrationStep
 
-    // Add the schema version table
-    AddSchemaVersionMigrationStep.defineTableAndInitialEntry(freshMigration, versionId)
+    steps.filter(_.isInstanceOf[R]).map(_.asInstanceOf[R]).foreach(_.applyReferenceData(freshMigration))
+    steps.filter(_.isInstanceOf[C]).map(_.asInstanceOf[C]).foreach(_.applyConstraint(freshMigration))
+
+    DefineSchemaVersionTable.defineTableAndInitialEntry(freshMigration, versionId)
 
     freshMigration
   }
@@ -210,6 +212,40 @@ class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep
     // is swallowed and mixed in with exceptions that you probably don't care about.
     // @see https://hibernate.onjira.com/browse/HHH-6633
   }
+}
+
+
+// Special migration steps can be applied independently of the main migration step,
+// but if it is filtered from the master list, they can also be applied in the same order.
+
+/**
+ * A special type of migration step that in addition to applying DDL also applies new reference data to the database.
+ */
+trait ReferenceDataMigrationStep {
+  def applyReferenceData(migration:MigrationBuilder)
+}
+
+/**
+ * A special type of migration step that in addition to applying DDL also adds a constraint that may
+ * not have been possible with an inline constraint definition.
+ */
+trait StandaloneConstraintMigrationStep {
+  def applyConstraint(migration:MigrationBuilder)
+}
+
+/**
+ * One-off definition of the schema version table.
+ */
+object DefineSchemaVersionTable {
+
+  def defineTableAndInitialEntry(migration:MigrationBuilder, targetVersion:Int) {
+    migration.createTable("schema_version").
+        column("version", Types.INTEGER, false).
+        pk("version")
+    migration.insert("schema_version").
+        values(Map("version" -> new java.lang.Integer(targetVersion)))
+  }
+
 }
 
 object HibernateConfigStorePreparationStep {
@@ -238,21 +274,13 @@ object HibernateConfigStorePreparationStep {
       def name = "Add schema version"
       def createMigration(config: Configuration) = {
         val migration = new MigrationBuilder(config)
-        defineTableAndInitialEntry(migration, versionId)
+        DefineSchemaVersionTable.defineTableAndInitialEntry(migration, versionId)
 
         migration
       }
-
-      def defineTableAndInitialEntry(migration:MigrationBuilder, targetVersion:Int) {
-        migration.createTable("schema_version").
-            column("version", Types.INTEGER, false).
-            pk("version")
-        migration.insert("schema_version").
-            values(Map("version" -> new java.lang.Integer(versionId)))
-      }
     },
 
-    new HibernateMigrationStep {
+    new HibernateMigrationStep with ReferenceDataMigrationStep {
       def versionId = 3
       def name = "Add domains"
       def createMigration(config: Configuration) = {
@@ -372,7 +400,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    new HibernateMigrationStep {
+    new HibernateMigrationStep with ReferenceDataMigrationStep {
       def versionId = 6
       def name = "Add superuser and default users"
       def createMigration(config: Configuration) = {
@@ -393,7 +421,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    new HibernateMigrationStep {
+    new HibernateMigrationStep with StandaloneConstraintMigrationStep {
       def versionId = 7
       def name = "Add persistent diffs"
       def createMigration(config: Configuration) = {
@@ -425,7 +453,7 @@ object HibernateConfigStorePreparationStep {
           pk("oid").
           withNativeIdentityGenerator()
 
-        addForeignKeyConstraintForPairColumnOnDiffsTables(migration)
+        applyConstraint(migration)
 
         migration.createIndex("diff_last_seen", "diffs", "last_seen")
         migration.createIndex("diff_detection", "diffs", "detected_at")
@@ -436,7 +464,7 @@ object HibernateConfigStorePreparationStep {
         migration
       }
 
-      def addForeignKeyConstraintForPairColumnOnDiffsTables(migration: MigrationBuilder) {
+      def applyConstraint(migration: MigrationBuilder) {
         // alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair, domain) references pair (pair_key, domain);
         migration.alterTable("diffs")
           .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
