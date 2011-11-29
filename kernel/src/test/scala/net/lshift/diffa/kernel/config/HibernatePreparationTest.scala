@@ -49,10 +49,13 @@ class HibernatePreparationTest {
   )
   val invalidColumns = Map(
     "pair" -> Seq(
-      "name"    // Removed as of the v1 migration
+      "name"    // Removed as part of the v1 migration
     ),
     "config_options" -> Seq(
-      "is_internal"    // Removed as of the v3 migration
+      "is_internal"    // Removed as part of the v3 migration
+    ),
+    "endpoint" -> Seq(
+      "inbound_content_type"    // Removed as part of the v13 migration
     )
   )
 
