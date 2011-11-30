@@ -34,50 +34,60 @@ class AmqpInboundEndpointFactory(changes: Changes)
       ConnectionKey(host = url.host, port = url.port, username = url.username, password = url.password, vHost = url.vHost)
   }
 
-  class Consumers(val connection: AccentConnection,
-                  val connectionKey: ConnectionKey) extends HashMap[String, AccentReceiver]
+  case class ReceiverKey(domain: String, endpoint: String)
+
+  object ReceiverKey {
+    def fromEndpoint(e: Endpoint) =
+      ReceiverKey(domain = e.domain.name, endpoint = e.name)
+  }
+
+  class Receivers(val connection: AccentConnection,
+                  val connectionKey: ConnectionKey) extends HashMap[ReceiverKey, AccentReceiver]
 
   val log = LoggerFactory.getLogger(getClass)
 
-  val consumers = new HashMap[ConnectionKey, Consumers]
+  val receivers = new HashMap[ConnectionKey, Receivers]
 
   def canHandleInboundEndpoint(inboundUrl: String) =
     inboundUrl.startsWith("amqp://")
 
   def ensureEndpointReceiver(e: Endpoint) {
-    log.info("Starting consumer for endpoint: %s".format(e))
+    log.info("Starting receiver for endpoint: %s".format(e))
 
     val amqpUrl = AmqpQueueUrl.parse(e.inboundUrl)
 
 
-    val consumersForUrl = getConsumersByUrl(amqpUrl)
-    consumersForUrl.put(e.name,
-                        createConsumer(consumersForUrl.connection, amqpUrl.queue, e.domain.name, e.name))
+    val receiversForUrl = getReceiversByUrl(amqpUrl)
+    val receiverKey = ReceiverKey.fromEndpoint(e)
+    receiversForUrl.put(receiverKey,
+                        createReceiver(receiversForUrl.connection, amqpUrl.queue, receiverKey))
   }
 
-  def endpointGone(endpointName: String) {
-    getConsumersByEndpoint(endpointName) match {
+  def endpointGone(domain: String, endpoint: String) {
+    val key = ReceiverKey(domain, endpoint)
+    
+    getReceiversByKey(key) match {
       case None =>
-        log.error("No consumers for endpoint name: %s".format(endpointName))
+        log.error("No receivers for endpoint name: %s".format(endpoint))
 
-      case Some(cons) =>
-        cons.get(endpointName) map { c =>
+      case Some(rcv) =>
+        rcv.get(key) map { c =>
           try {
             c.close()
           } catch {
-            case _ => log.error("Unable to shutdown consumer for endpoint name %s".format(endpointName))
+            case _ => log.error("Unable to shutdown receiver for endpoint name %s".format(endpoint))
           }
         }
-        cons.remove(endpointName)
+        rcv.remove(key)
 
-        // if there are no more consumers on the connection, close it
-        if (cons.isEmpty) {
+        // if there are no more receivers on the connection, close it
+        if (rcv.isEmpty) {
           try {
-            cons.connection.close()
+            rcv.connection.close()
           } catch {
-            case _ => log.error("Unable to shutdown connection for endpoint name %s".format(endpointName))
+            case _ => log.error("Unable to shutdown connection for endpoint name %s".format(endpoint))
           }
-          consumers.remove(cons.connectionKey)
+          receivers.remove(rcv.connectionKey)
         }
     }
   }
@@ -97,24 +107,24 @@ class AmqpInboundEndpointFactory(changes: Changes)
   protected def createConnection(cf: ConnectionFactory) =
     new AccentConnection(cf, new AccentConnectionFailureHandler)
 
-  protected def createConsumer(connection: AccentConnection, queue: String, domain: String, endpoint: String) = {
+  protected def createReceiver(connection: AccentConnection, queue: String, key: ReceiverKey) = {
     val params = new ReceiverParameters(queue)
     new AccentReceiver(connection,
                        params,
-                       domain,
-                       endpoint,
+                       key.domain,
+                       key.endpoint,
                        changes)
   }
 
-  private def getConsumersByUrl(url: AmqpQueueUrl): Consumers = {
+  private def getReceiversByUrl(url: AmqpQueueUrl): Receivers = {
     val connectionKey = ConnectionKey.fromUrl(url)
-    consumers.getOrElseUpdate(connectionKey, {
+    receivers.getOrElseUpdate(connectionKey, {
       val connection = createConnection(createConnectionFactory(url))
-      new Consumers(connection, connectionKey)
+      new Receivers(connection, connectionKey)
     })
   }
 
-  private def getConsumersByEndpoint(endpointName: String): Option[Consumers] = {
-    consumers.values.find(_.contains(endpointName))
+  private def getReceiversByKey(key: ReceiverKey): Option[Receivers] = {
+    receivers.values.find(_.contains(key))
   }
 }

@@ -31,7 +31,7 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
 
   var inboundEndpointFactory: InboundEndpointFactory = _
   val connections = ListBuffer[AccentConnection]()
-  val consumers = ListBuffer[AccentReceiver]()
+  val receivers = ListBuffer[AccentReceiver]()
 
   @Before
   def setup() {
@@ -45,9 +45,9 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
         c
       }
 
-      protected override def createConsumer(connection: AccentConnection, queue: String, domain: String, endpoint: String): AccentReceiver = {
+      protected override def createReceiver(connection: AccentConnection, queue: String, key: ReceiverKey): AccentReceiver = {
         val c = createMock(classOf[AccentReceiver])
-        thisTest.consumers += c
+        thisTest.receivers += c
         c
       }
     }
@@ -55,17 +55,17 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
 
   private def replayAll() {
     connections.foreach { replay(_) }
-    consumers.foreach { replay(_) }
+    receivers.foreach { replay(_) }
   }
 
   private def verifyAll() {
     connections.foreach { verify(_) }
-    consumers.foreach { verify(_) }
+    receivers.foreach { verify(_) }
   }
 
   private def resetAll() {
     connections.foreach { reset(_) }
-    consumers.foreach { reset(_) }
+    receivers.foreach { reset(_) }
   }
 
   private def endpointWithAmqpUrl(name: String, amqpUrl: String) = {
@@ -78,12 +78,12 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
     inboundEndpointFactory.ensureEndpointReceiver(e)
 
     assertEquals(1, connections.size)
-    assertEquals(1, consumers.size)
+    assertEquals(1, receivers.size)
 
-    expect(consumers(0).close())
+    expect(receivers(0).close())
     expect(connections(0).close())
     replayAll()
-    inboundEndpointFactory.endpointGone(e.name)
+    inboundEndpointFactory.endpointGone(e.domain.name, e.name)
     verifyAll()
   }
 
@@ -95,14 +95,14 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
     inboundEndpointFactory.ensureEndpointReceiver(e2)
 
     assertEquals(1, connections.size)
-    assertEquals(2, consumers.size)
+    assertEquals(2, receivers.size)
 
-    val c1 = consumers(0)
-    val c2 = consumers(1)
+    val c1 = receivers(0)
+    val c2 = receivers(1)
 
     expect(c1.close())
     replayAll()
-    inboundEndpointFactory.endpointGone(e1.name)
+    inboundEndpointFactory.endpointGone(e1.domain.name, e1.name)
     verifyAll()
 
     resetAll()
@@ -110,7 +110,7 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
     expect(c2.close())
     expect(connections(0).close())
     replayAll()
-    inboundEndpointFactory.endpointGone(e2.name)
+    inboundEndpointFactory.endpointGone(e2.domain.name, e2.name)
     verifyAll()
   }
 
@@ -125,22 +125,22 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
     inboundEndpointFactory.ensureEndpointReceiver(e2)
 
     assertEquals(1, connections.size)
-    assertEquals(2, consumers.size)
+    assertEquals(2, receivers.size)
 
     inboundEndpointFactory.ensureEndpointReceiver(e3)
     inboundEndpointFactory.ensureEndpointReceiver(e4)
 
     assertEquals(2, connections.size)
-    assertEquals(4, consumers.size)
+    assertEquals(4, receivers.size)
 
-    val foo1 = consumers(0)
-    val foo2 = consumers(1)
-    val bar1 = consumers(2)
-    val bar2 = consumers(3)
+    val foo1 = receivers(0)
+    val foo2 = receivers(1)
+    val bar1 = receivers(2)
+    val bar2 = receivers(3)
 
     expect(foo1.close())
     replayAll()
-    inboundEndpointFactory.endpointGone(e1.name)
+    inboundEndpointFactory.endpointGone(e1.domain.name, e1.name)
     verifyAll()
 
     resetAll()
@@ -148,14 +148,14 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
     expect(foo2.close())
     expect(connections(0).close())
     replayAll()
-    inboundEndpointFactory.endpointGone(e2.name)
+    inboundEndpointFactory.endpointGone(e2.domain.name, e2.name)
     verifyAll()
 
     resetAll()
 
     expect(bar1.close())
     replayAll()
-    inboundEndpointFactory.endpointGone(e3.name)
+    inboundEndpointFactory.endpointGone(e3.domain.name, e3.name)
     verifyAll()
 
     resetAll()
@@ -163,7 +163,7 @@ class AmqpInboundEndpointFactoryTest { thisTest =>
     expect(bar2.close())
     expect(connections(1).close())
     replayAll()
-    inboundEndpointFactory.endpointGone(e4.name)
+    inboundEndpointFactory.endpointGone(e4.domain.name, e4.name)
     verifyAll()
   }
 }
