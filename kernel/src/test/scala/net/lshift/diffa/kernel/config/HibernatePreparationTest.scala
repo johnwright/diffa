@@ -49,16 +49,25 @@ class HibernatePreparationTest {
   )
   val invalidColumns = Map(
     "pair" -> Seq(
-      "name"    // Removed as of the v1 migration
+      "name"    // Removed as part of the v1 migration
     ),
     "config_options" -> Seq(
-      "is_internal"    // Removed as of the v3 migration
+      "is_internal"    // Removed as part of the v3 migration
     ),
     "endpoint" -> Seq(
-      "inbound_content_type", // Removed as of the v13 migration
-      "content_type" // Removed as of the v15 migration
+      "inbound_content_type",   // Removed as part of the v13 migration
+      "content_type"   // Removed as of the v15 migration
     )
   )
+  
+  @Test
+  def migrationStepsShouldBeOrderedCorrectly = {
+    val steps = HibernateConfigStorePreparationStep.migrationSteps
+    for (i <- 0 until steps.length) {
+      val msg = "Attempting to verify version id of step [%s]".format(steps(i).name)
+      assertEquals(msg, i + 1, steps(i).versionId)
+    }
+  }
 
   @Theory
   def shouldBeAbleToPrepareDatabaseVersion(startVersion:StartingDatabaseVersion) {

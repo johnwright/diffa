@@ -37,25 +37,7 @@ class HibernateConfigStorePreparationStep
 
   val log:Logger = LoggerFactory.getLogger(getClass)
 
-  // The migration steps necessary to bring a hibernate configuration up-to-date. Note that these steps should be
-  // in strictly ascending order.
-  val migrationSteps:Seq[HibernateMigrationStep] = Seq(
-    RemoveGroupsMigrationStep,
-    AddSchemaVersionMigrationStep,
-    AddDomainsMigrationStep,
-    AddMaxGranularityMigrationStep,
-    ExpandPrimaryKeysMigrationStep,
-    AddSuperuserAndDefaultUsersMigrationStep,
-    AddPersistentDiffsMigrationStep,
-    AddDomainSequenceIndexMigrationStep,
-    AddStoreCheckpointsMigrationStep,
-    ReviseUrlLengthMigrationStep,
-    AddEndpointViewsMigrationStep,
-    AddAllowManualScanFlagToPairStep,
-    RemoveInboundContentTypeFromEndpointStep,
-    AddPairReportsStep,
-    RemoveContentTypeFromEndpointStep
-  )
+  val migrationSteps = HibernateConfigStorePreparationStep.migrationSteps
 
   def prepare(sf: SessionFactory, config: Configuration) {
     val migrations = detectVersion(sf, config) match {
@@ -89,7 +71,7 @@ class HibernateConfigStorePreparationStep
                 s.createSQLQuery(HibernatePreparationUtils.schemaVersionUpdateStatement(step.versionId)).executeUpdate()
                 s.flush
               }
-              log.info("Upgraded database to version " + step.versionId)
+              log.info("Upgraded database to version %s (%s)".format(step.versionId, step.name))
             } catch {
               case ex =>
                 println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
@@ -180,6 +162,11 @@ abstract class HibernateMigrationStep {
   def versionId:Int
 
   /**
+   * The name of this migration step
+   */
+  def name:String
+
+  /**
    * Requests that the step create migration builder for doing it's migration.
    */
   def createMigration(config:Configuration):MigrationBuilder
@@ -187,8 +174,12 @@ abstract class HibernateMigrationStep {
 
 class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep {
   val log:Logger = LoggerFactory.getLogger(classOf[HibernateConfigStorePreparationStep])
+  
+  val steps = HibernateConfigStorePreparationStep.migrationSteps
 
   def versionId = currentMaxVersionId
+
+  def name = "Fresh database migration"
 
   def createMigration(config: Configuration) = {
     // Create a migration for fresh databases, since there are steps that we need to apply on top of hibernate
@@ -196,14 +187,14 @@ class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep
     val freshMigration = new MigrationBuilder(config)
     freshMigration.insert("system_config_options").
       values(Map("opt_key" -> HibernatePreparationUtils.correlationStoreSchemaKey, "opt_val" -> HibernatePreparationUtils.correlationStoreVersion))
-    AddDomainsMigrationStep.applyReferenceData(freshMigration)
-    AddSuperuserAndDefaultUsersMigrationStep.applyReferenceData(freshMigration)
 
-    // Also need to add foreign key constraint from diffs.pair to pair.pair_key
-    AddPersistentDiffsMigrationStep.addForeignKeyConstraintForPairColumnOnDiffsTables(freshMigration)
+    type R = ReferenceDataMigrationStep
+    type C = StandaloneConstraintMigrationStep
 
-    // Add the schema version table
-    AddSchemaVersionMigrationStep.defineTableAndInitialEntry(freshMigration, versionId)
+    steps.filter(_.isInstanceOf[R]).map(_.asInstanceOf[R]).foreach(_.applyReferenceData(freshMigration))
+    steps.filter(_.isInstanceOf[C]).map(_.asInstanceOf[C]).foreach(_.applyConstraint(freshMigration))
+
+    DefineSchemaVersionTable.defineTableAndInitialEntry(freshMigration, versionId)
 
     freshMigration
   }
@@ -223,351 +214,407 @@ class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep
   }
 }
 
-object RemoveGroupsMigrationStep extends HibernateMigrationStep {
-  def versionId = 1
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-    migration.alterTable("pair").
-      dropConstraint("FK3462DAF4F4CA7C").
-      dropColumn("NAME")
-    migration.dropTable("pair_group")
 
-    migration
-  }
+// Special migration steps can be applied independently of the main migration step,
+// but if it is filtered from the master list, they can also be applied in the same order.
+
+/**
+ * A special type of migration step that in addition to applying DDL also applies new reference data to the database.
+ */
+trait ReferenceDataMigrationStep {
+  def applyReferenceData(migration:MigrationBuilder)
 }
 
-object AddSchemaVersionMigrationStep extends HibernateMigrationStep {
-  def versionId = 2
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-    defineTableAndInitialEntry(migration, versionId)
+/**
+ * A special type of migration step that in addition to applying DDL also adds a constraint that may
+ * not have been possible with an inline constraint definition.
+ */
+trait StandaloneConstraintMigrationStep {
+  def applyConstraint(migration:MigrationBuilder)
+}
 
-    migration
-  }
+/**
+ * One-off definition of the schema version table.
+ */
+object DefineSchemaVersionTable {
 
   def defineTableAndInitialEntry(migration:MigrationBuilder, targetVersion:Int) {
     migration.createTable("schema_version").
         column("version", Types.INTEGER, false).
         pk("version")
     migration.insert("schema_version").
-        values(Map("version" -> new java.lang.Integer(versionId)))
-  }
-}
-object AddDomainsMigrationStep extends HibernateMigrationStep {
-  def versionId = 3
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-
-    // Add our new tables (domains and system config options)
-    migration.createTable("domains").
-      column("name", Types.VARCHAR, 255, false).
-      pk("name")
-    migration.createTable("system_config_options").
-      column("opt_key", Types.VARCHAR, 255, false).
-      column("opt_val", Types.VARCHAR, 255, false).
-      pk("opt_key")
-
-    // Add standard reference data
-    applyReferenceData(migration)
-
-    // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));
-    migration.createTable("members").
-      column("domain_name", Types.VARCHAR, 255, false).
-      column("user_name", Types.VARCHAR, 255, false).
-      pk("user_name", "domain_name")
-    migration.alterTable("members").
-      addForeignKey("FK388EC9191902E93E", "domain_name", "domains", "name").
-      addForeignKey("FK388EC9195A11FA9E", "user_name", "users", "name")
-
-    // alter table config_options drop column is_internal
-    migration.alterTable("config_options").
-        dropColumn("is_internal")
-
-    // Add domain column to config_option, endpoint and pair
-    migration.alterTable("config_options").
-      addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
-      addForeignKey("FK80C74EA1C3C204DC", "domain", "domains", "name")
-    migration.alterTable("endpoint").
-      addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
-      addForeignKey("FK67C71D95C3C204DC", "domain", "domains", "name")
-    migration.alterTable("pair").
-      addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
-      addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name")
-
-    // Upgrade the schema version for the correlation store
-    migration.sql(HibernatePreparationUtils.correlationSchemaVersionUpdateStatement("1"))
-
-    //alter table escalations add constraint FK2B3C687E7D35B6A8 foreign key (pair_key) references pair;
-    migration.alterTable("escalations").
-      addForeignKey("FK2B3C687E7D35B6A8", "pair_key", "pair", "name")
-
-    //alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;
-    migration.alterTable("repair_actions").
-      addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "name")
-
-    migration
+        values(Map("version" -> new java.lang.Integer(targetVersion)))
   }
 
-  def applyReferenceData(migration:MigrationBuilder) {
-    // Make sure the default domain is in the DB
-    migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
-  }
-}
-object AddMaxGranularityMigrationStep extends HibernateMigrationStep {
-  def versionId = 4
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-
-    migration.alterTable("range_category_descriptor").
-      addColumn("max_granularity", Types.VARCHAR, 255, true, null)
-
-    migration
-  }
-}
-object ExpandPrimaryKeysMigrationStep extends HibernateMigrationStep {
-  def versionId = 5
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-    migration.alterTable("endpoint_categories").
-      dropConstraint("FKEE1F9F06BC780104")
-    migration.alterTable("pair").
-      dropConstraint("FK3462DA25F0B1C4").
-      dropConstraint("FK3462DA4242E68B")
-    migration.alterTable("escalations").
-      dropConstraint("FK2B3C687E7D35B6A8")
-    migration.alterTable("repair_actions").
-      dropConstraint("FKF6BE324B7D35B6A8")
-
-    migration.alterTable("endpoint").
-      dropPrimaryKey().
-      addPrimaryKey("name", "domain")
-    migration.alterTable("pair").
-      dropPrimaryKey().
-      addPrimaryKey("pair_key", "domain")
-
-    migration.alterTable("endpoint_categories").
-      addColumn("domain", Types.VARCHAR, 255, false, "diffa").
-      addForeignKey("FKEE1F9F066D6BD5C8", Array("id", "domain"), "endpoint", Array("name", "domain"))
-    migration.alterTable("escalations").
-      addColumn("domain", Types.VARCHAR, 255, false, "diffa").
-      addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
-    migration.alterTable("pair").
-      addColumn("uep_domain", Types.VARCHAR, 255, true, null).
-      addColumn("dep_domain", Types.VARCHAR, 255, true, null).
-      addForeignKey("FK3462DAF2DA557F", Array("downstream, dep_domain"), "endpoint", Array("name", "domain")).
-      addForeignKey("FK3462DAF68A3C7", Array("upstream, uep_domain"), "endpoint", Array("name", "domain"))
-    migration.alterTable("repair_actions").
-      addColumn("domain", Types.VARCHAR, 255, false, "diffa").
-      addForeignKey("FKF6BE324B2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
-
-    // Where we currently have an upstream or downstream domain, bring in the current pair domain
-    migration.sql("update pair set uep_domain=domain where upstream is not null")
-    migration.sql("update pair set dep_domain=domain where downstream is not null")
-
-    migration
-  }
-}
-object AddSuperuserAndDefaultUsersMigrationStep extends HibernateMigrationStep {
-  def versionId = 6
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-    migration.alterTable("users").
-      addColumn("password_enc", Types.VARCHAR, 255, false, "LOCKED").
-      addColumn("superuser", Types.BIT, 1, false, 0)
-    applyReferenceData(migration)
-
-    migration
-  }
-  def applyReferenceData(migration:MigrationBuilder) {
-    migration.insert("users").
-      values(Map(
-        "name" -> "guest", "email" -> "guest@diffa.io",
-        "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
-        "superuser" -> Boolean.box(true)))
-  }
-}
-object AddPersistentDiffsMigrationStep extends HibernateMigrationStep {
-  def versionId = 7
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-
-    migration.createTable("diffs").
-      column("seq_id", Types.INTEGER, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
-      column("entity_id", Types.VARCHAR, 255, false).
-      column("is_match", Types.BIT, false).
-      column("detected_at", Types.TIMESTAMP, false).
-      column("last_seen", Types.TIMESTAMP, false).
-      column("upstream_vsn", Types.VARCHAR, 255, true).
-      column("downstream_vsn", Types.VARCHAR, 255, true).
-      column("ignored", Types.BIT, false).
-      pk("seq_id").
-      withNativeIdentityGenerator()
-
-    migration.createTable("pending_diffs").
-      column("oid", Types.INTEGER, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
-      column("entity_id", Types.VARCHAR, 255, false).
-      column("detected_at", Types.TIMESTAMP, false).
-      column("last_seen", Types.TIMESTAMP, false).
-      column("upstream_vsn", Types.VARCHAR, 255, true).
-      column("downstream_vsn", Types.VARCHAR, 255, true).
-      pk("oid").
-      withNativeIdentityGenerator()
-
-    addForeignKeyConstraintForPairColumnOnDiffsTables(migration)
-
-    migration.createIndex("diff_last_seen", "diffs", "last_seen")
-    migration.createIndex("diff_detection", "diffs", "detected_at")
-    migration.createIndex("rdiff_is_matched", "diffs", "is_match")
-    migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
-    migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
-
-    migration
-  }
-
-  def addForeignKeyConstraintForPairColumnOnDiffsTables(migration: MigrationBuilder) {
-    // alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair, domain) references pair (pair_key, domain);
-    migration.alterTable("diffs")
-      .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
-
-    migration.alterTable("pending_diffs")
-      .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
-  }
 }
 
-object AddDomainSequenceIndexMigrationStep extends HibernateMigrationStep {
-  def versionId = 8
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
-    migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")
-    migration
-  }
-}
+object HibernateConfigStorePreparationStep {
+  /**
+   * This is the ordered list of migration steps to apply from any given schema version to bring a hibernate configuration up-to-date.
+   * Note that these steps should be executed in strictly ascending order.
+   */
+  val migrationSteps = Seq(
 
-object AddStoreCheckpointsMigrationStep extends HibernateMigrationStep {
-  def versionId = 9
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
+    new HibernateMigrationStep {
+      def versionId = 1
+      def name = "Remove groups"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+        migration.alterTable("pair").
+          dropConstraint("FK3462DAF4F4CA7C").
+          dropColumn("NAME")
+        migration.dropTable("pair_group")
 
-    migration.createTable("store_checkpoints").
-      column("domain", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
-      column("latest_version", Types.BIGINT, false).
-      pk("domain", "pair")
+        migration
+      }
+    },
 
-    migration.alterTable("store_checkpoints").
-      addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair", "domain"))
+    new HibernateMigrationStep {
+      def versionId = 2
+      def name = "Add schema version"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+        DefineSchemaVersionTable.defineTableAndInitialEntry(migration, versionId)
 
-    migration
-  }
-}
+        migration
+      }
+    },
 
-object ReviseUrlLengthMigrationStep extends HibernateMigrationStep {
-  def versionId = 10
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
+    new HibernateMigrationStep with ReferenceDataMigrationStep {
+      def versionId = 3
+      def name = "Add domains"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
 
-    migration.alterTable("endpoint").
-      alterColumn("scan_url", Types.VARCHAR, 1024, true, null).
-      alterColumn("content_retrieval_url", Types.VARCHAR, 1024, true, null).
-      alterColumn("version_generation_url", Types.VARCHAR, 1024, true, null).
-      alterColumn("inbound_url", Types.VARCHAR, 1024, true, null)
+        // Add our new tables (domains and system config options)
+        migration.createTable("domains").
+          column("name", Types.VARCHAR, 255, false).
+          pk("name")
+        migration.createTable("system_config_options").
+          column("opt_key", Types.VARCHAR, 255, false).
+          column("opt_val", Types.VARCHAR, 255, false).
+          pk("opt_key")
 
-    migration
-  }
-}
+        // Add standard reference data
+        applyReferenceData(migration)
 
-object AddEndpointViewsMigrationStep extends HibernateMigrationStep {
-  def versionId = 11
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
+        // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));
+        migration.createTable("members").
+          column("domain_name", Types.VARCHAR, 255, false).
+          column("user_name", Types.VARCHAR, 255, false).
+          pk("user_name", "domain_name")
+        migration.alterTable("members").
+          addForeignKey("FK388EC9191902E93E", "domain_name", "domains", "name").
+          addForeignKey("FK388EC9195A11FA9E", "user_name", "users", "name")
 
-    migration.createTable("endpoint_views").
-      column("name", Types.VARCHAR, 255, false).
-      column("endpoint", Types.VARCHAR, 255, false).
-      column("domain", Types.VARCHAR, 255, false).
-      pk("name", "endpoint", "domain")
-    migration.createTable("endpoint_views_categories").
-      column("name", Types.VARCHAR, 255, false).
-      column("endpoint", Types.VARCHAR, 255, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("category_descriptor_id", Types.INTEGER, false).
-      column("category_name", Types.VARCHAR, 255, false).
-      pk("name", "endpoint", "domain", "category_name")
-    migration.createTable("pair_views").
-      column("name", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("scan_cron_spec", Types.VARCHAR, 255, true).
-      pk("name", "pair", "domain")
+        // alter table config_options drop column is_internal
+        migration.alterTable("config_options").
+            dropColumn("is_internal")
 
-    migration.alterTable("endpoint_views").
-      addForeignKey("FKBE0A5744D532E642", Array("endpoint", "domain"), "endpoint", Array("name", "domain"))
-    migration.alterTable("endpoint_views_categories").
-      addForeignKey("FKF03ED1F7B6D4F2CB", Array("category_descriptor_id"), "category_descriptor", Array("id"))
-    migration.alterTable("pair_views").
-      addForeignKey("FKE0BDD4C9F6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+        // Add domain column to config_option, endpoint and pair
+        migration.alterTable("config_options").
+          addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
+          addForeignKey("FK80C74EA1C3C204DC", "domain", "domains", "name")
+        migration.alterTable("endpoint").
+          addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
+          addForeignKey("FK67C71D95C3C204DC", "domain", "domains", "name")
+        migration.alterTable("pair").
+          addColumn("domain", Types.VARCHAR, 255, false, Domain.DEFAULT_DOMAIN.name).
+          addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name")
 
-    migration
-  }
-}
-object AddAllowManualScanFlagToPairStep extends HibernateMigrationStep {
-  def versionId = 12
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
+        // Upgrade the schema version for the correlation store
+        migration.sql(HibernatePreparationUtils.correlationSchemaVersionUpdateStatement("1"))
 
-    migration.alterTable("pair").
-      addColumn("allow_manual_scans", Types.BIT, 1, true, 0)
+        //alter table escalations add constraint FK2B3C687E7D35B6A8 foreign key (pair_key) references pair;
+        migration.alterTable("escalations").
+          addForeignKey("FK2B3C687E7D35B6A8", "pair_key", "pair", "name")
 
-    migration
-  }
-}
+        //alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;
+        migration.alterTable("repair_actions").
+          addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "name")
 
-object RemoveInboundContentTypeFromEndpointStep extends HibernateMigrationStep {
-  def versionId = 13
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
+        migration
+      }
 
-    migration.alterTable("endpoint").dropColumn("inbound_content_type")
+      def applyReferenceData(migration:MigrationBuilder) {
+        // Make sure the default domain is in the DB
+        migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
+      }
+    },
 
-    migration
-  }
-}
+    new HibernateMigrationStep {
+      def versionId = 4
+      def name = "Add max granularity"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
 
-object AddPairReportsStep extends HibernateMigrationStep {
-  def versionId = 14
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
+        migration.alterTable("range_category_descriptor").
+          addColumn("max_granularity", Types.VARCHAR, 255, true, null)
 
-    migration.createTable("pair_reports").
-      column("name", Types.VARCHAR, 255, false).
-      column("pair_key", Types.VARCHAR, 255, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("report_type", Types.VARCHAR, 255, false).
-      column("target", Types.VARCHAR, 1024, false).
-      pk("name", "pair_key", "domain")
+        migration
+      }
+    },
 
-    migration.alterTable("pair_reports").
-      addForeignKey("FKCEC6E15A2E298B6C", Array("pair_key", "domain"), "pair", Array("key", "domain"))
+    new HibernateMigrationStep {
+      def versionId = 5
+      def name = "Expand primary keys"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+        migration.alterTable("endpoint_categories").
+          dropConstraint("FKEE1F9F06BC780104")
+        migration.alterTable("pair").
+          dropConstraint("FK3462DA25F0B1C4").
+          dropConstraint("FK3462DA4242E68B")
+        migration.alterTable("escalations").
+          dropConstraint("FK2B3C687E7D35B6A8")
+        migration.alterTable("repair_actions").
+          dropConstraint("FKF6BE324B7D35B6A8")
 
-    // Report escalations don't have a configured origin, so relax the constraint on origin being mandatory
-    migration.alterTable("escalations").
-      alterColumn("origin", Types.VARCHAR, 255, true, null)
+        migration.alterTable("endpoint").
+          dropPrimaryKey().
+          addPrimaryKey("name", "domain")
+        migration.alterTable("pair").
+          dropPrimaryKey().
+          addPrimaryKey("pair_key", "domain")
 
-    migration
-  }
-}
+        migration.alterTable("endpoint_categories").
+          addColumn("domain", Types.VARCHAR, 255, false, "diffa").
+          addForeignKey("FKEE1F9F066D6BD5C8", Array("id", "domain"), "endpoint", Array("name", "domain"))
+        migration.alterTable("escalations").
+          addColumn("domain", Types.VARCHAR, 255, false, "diffa").
+          addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+        migration.alterTable("pair").
+          addColumn("uep_domain", Types.VARCHAR, 255, true, null).
+          addColumn("dep_domain", Types.VARCHAR, 255, true, null).
+          addForeignKey("FK3462DAF2DA557F", Array("downstream, dep_domain"), "endpoint", Array("name", "domain")).
+          addForeignKey("FK3462DAF68A3C7", Array("upstream, uep_domain"), "endpoint", Array("name", "domain"))
+        migration.alterTable("repair_actions").
+          addColumn("domain", Types.VARCHAR, 255, false, "diffa").
+          addForeignKey("FKF6BE324B2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
-object RemoveContentTypeFromEndpointStep extends HibernateMigrationStep {
-  def versionId = 15
-  def createMigration(config: Configuration) = {
-    val migration = new MigrationBuilder(config)
+        // Where we currently have an upstream or downstream domain, bring in the current pair domain
+        migration.sql("update pair set uep_domain=domain where upstream is not null")
+        migration.sql("update pair set dep_domain=domain where downstream is not null")
 
-    migration.alterTable("endpoint").dropColumn("content_type")
+        migration
+      }
+    },
 
-    migration
-  }
+    new HibernateMigrationStep with ReferenceDataMigrationStep {
+      def versionId = 6
+      def name = "Add superuser and default users"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+        migration.alterTable("users").
+          addColumn("password_enc", Types.VARCHAR, 255, false, "LOCKED").
+          addColumn("superuser", Types.BIT, 1, false, 0)
+        applyReferenceData(migration)
+
+        migration
+      }
+      def applyReferenceData(migration:MigrationBuilder) {
+        migration.insert("users").
+          values(Map(
+            "name" -> "guest", "email" -> "guest@diffa.io",
+            "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+            "superuser" -> Boolean.box(true)))
+      }
+    },
+
+    new HibernateMigrationStep with StandaloneConstraintMigrationStep {
+      def versionId = 7
+      def name = "Add persistent diffs"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.createTable("diffs").
+          column("seq_id", Types.INTEGER, false).
+          column("domain", Types.VARCHAR, 255, false).
+          column("pair", Types.VARCHAR, 255, false).
+          column("entity_id", Types.VARCHAR, 255, false).
+          column("is_match", Types.BIT, false).
+          column("detected_at", Types.TIMESTAMP, false).
+          column("last_seen", Types.TIMESTAMP, false).
+          column("upstream_vsn", Types.VARCHAR, 255, true).
+          column("downstream_vsn", Types.VARCHAR, 255, true).
+          column("ignored", Types.BIT, false).
+          pk("seq_id").
+          withNativeIdentityGenerator()
+
+        migration.createTable("pending_diffs").
+          column("oid", Types.INTEGER, false).
+          column("domain", Types.VARCHAR, 255, false).
+          column("pair", Types.VARCHAR, 255, false).
+          column("entity_id", Types.VARCHAR, 255, false).
+          column("detected_at", Types.TIMESTAMP, false).
+          column("last_seen", Types.TIMESTAMP, false).
+          column("upstream_vsn", Types.VARCHAR, 255, true).
+          column("downstream_vsn", Types.VARCHAR, 255, true).
+          pk("oid").
+          withNativeIdentityGenerator()
+
+        applyConstraint(migration)
+
+        migration.createIndex("diff_last_seen", "diffs", "last_seen")
+        migration.createIndex("diff_detection", "diffs", "detected_at")
+        migration.createIndex("rdiff_is_matched", "diffs", "is_match")
+        migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
+        migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
+
+        migration
+      }
+
+      def applyConstraint(migration: MigrationBuilder) {
+        // alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair, domain) references pair (pair_key, domain);
+        migration.alterTable("diffs")
+          .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+
+        migration.alterTable("pending_diffs")
+          .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 8
+      def name = "Add domain sequence index"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+        migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")
+        migration
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 9
+      def name = "Add store checkpoints"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.createTable("store_checkpoints").
+          column("domain", Types.VARCHAR, 255, false).
+          column("pair", Types.VARCHAR, 255, false).
+          column("latest_version", Types.BIGINT, false).
+          pk("domain", "pair")
+
+        migration.alterTable("store_checkpoints").
+          addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair", "domain"))
+
+        migration
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 10
+      def name = "Revise url length"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.alterTable("endpoint").
+          alterColumn("scan_url", Types.VARCHAR, 1024, true, null).
+          alterColumn("content_retrieval_url", Types.VARCHAR, 1024, true, null).
+          alterColumn("version_generation_url", Types.VARCHAR, 1024, true, null).
+          alterColumn("inbound_url", Types.VARCHAR, 1024, true, null)
+
+        migration
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 11
+      def name = "Add endpoint views"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.createTable("endpoint_views").
+          column("name", Types.VARCHAR, 255, false).
+          column("endpoint", Types.VARCHAR, 255, false).
+          column("domain", Types.VARCHAR, 255, false).
+          pk("name", "endpoint", "domain")
+        migration.createTable("endpoint_views_categories").
+          column("name", Types.VARCHAR, 255, false).
+          column("endpoint", Types.VARCHAR, 255, false).
+          column("domain", Types.VARCHAR, 255, false).
+          column("category_descriptor_id", Types.INTEGER, false).
+          column("category_name", Types.VARCHAR, 255, false).
+          pk("name", "endpoint", "domain", "category_name")
+        migration.createTable("pair_views").
+          column("name", Types.VARCHAR, 255, false).
+          column("pair", Types.VARCHAR, 255, false).
+          column("domain", Types.VARCHAR, 255, false).
+          column("scan_cron_spec", Types.VARCHAR, 255, true).
+          pk("name", "pair", "domain")
+
+        migration.alterTable("endpoint_views").
+          addForeignKey("FKBE0A5744D532E642", Array("endpoint", "domain"), "endpoint", Array("name", "domain"))
+        migration.alterTable("endpoint_views_categories").
+          addForeignKey("FKF03ED1F7B6D4F2CB", Array("category_descriptor_id"), "category_descriptor", Array("id"))
+        migration.alterTable("pair_views").
+          addForeignKey("FKE0BDD4C9F6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+
+        migration
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 12
+      def name = "Add allow manual scan flag to pair"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.alterTable("pair").
+          addColumn("allow_manual_scans", Types.BIT, 1, true, 0)
+
+        migration
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 13
+      def name = "Remove inbound content type from endpoint"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.alterTable("endpoint").dropColumn("inbound_content_type")
+
+        migration
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 14
+      def name = "Add pair reports"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.createTable("pair_reports").
+          column("name", Types.VARCHAR, 255, false).
+          column("pair_key", Types.VARCHAR, 255, false).
+          column("domain", Types.VARCHAR, 255, false).
+          column("report_type", Types.VARCHAR, 255, false).
+          column("target", Types.VARCHAR, 1024, false).
+          pk("name", "pair_key", "domain")
+
+        migration.alterTable("pair_reports").
+          addForeignKey("FKCEC6E15A2E298B6C", Array("pair_key", "domain"), "pair", Array("key", "domain"))
+
+        // Report escalations don't have a configured origin, so relax the constraint on origin being mandatory
+        migration.alterTable("escalations").
+          alterColumn("origin", Types.VARCHAR, 255, true, null)
+
+        migration
+      }
+    },
+
+    new HibernateMigrationStep {
+      def versionId = 15
+      def name = "Remove content type from endpoint"
+      def createMigration(config: Configuration) = {
+        val migration = new MigrationBuilder(config)
+
+        migration.alterTable("endpoint").dropColumn("content_type")
+
+        migration
+      }
+    }
+  )
 }
