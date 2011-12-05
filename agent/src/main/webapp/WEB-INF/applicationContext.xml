@@ -423,6 +423,28 @@
     </property>
   </bean>
 
+  <!-- get REST client parameters -->
+  <bean id="restClientConnectTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="systemConfigStore"/>
+    <property name="targetMethod" value="systemConfigOptionOrDefault"/>
+    <property name="arguments">
+      <list>
+        <value>rest.client.connect.timeout</value>
+        <value>0</value>
+      </list>
+    </property>
+  </bean>
+  <bean id="restClientReadTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+    <property name="targetObject" ref="systemConfigStore"/>
+    <property name="targetMethod" value="systemConfigOptionOrDefault"/>
+    <property name="arguments">
+      <list>
+        <value>rest.client.read.timeout</value>
+        <value>0</value>
+      </list>
+    </property>
+  </bean>
+
   <!-- register REST client support for participants -->
   <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="participantFactory" />

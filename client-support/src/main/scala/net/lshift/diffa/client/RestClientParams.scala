@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.agent.client
+package net.lshift.diffa.client
 
-import net.lshift.diffa.kernel.frontend.EscalationDef
-import net.lshift.diffa.client.RestClientParams
+case class RestClientParams(username: Option[String] = None,
+                            password: Option[String] = None,
+                            connectTimeout: Option[Long] = None,
+                            readTimeout: Option[Long] = None) {
 
-class EscalationsRestClient(serverRootUrl:String, domain:String, params: RestClientParams = RestClientParams.default)
-    extends DomainAwareRestClient(serverRootUrl, domain, "rest/{domain}/escalations/", params) {
+  def hasCredentials = username.isDefined && password.isDefined
+}
 
-  def listEscalations(pairKey: String) = {
-    val t = classOf[Array[EscalationDef]]
-    rpc(pairKey, t)
-  }
+object RestClientParams {
+
+  val default = RestClientParams(username = Some("guest"), password = Some("guest"))
 }
