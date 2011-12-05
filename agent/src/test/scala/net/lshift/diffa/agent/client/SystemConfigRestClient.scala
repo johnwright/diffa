@@ -21,9 +21,11 @@ import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import net.lshift.diffa.client.{NotFoundException, AbstractRestClient}
+import net.lshift.diffa.client.{RestClientParams, AbstractRestClient}
 
-class SystemConfigRestClient(rootUrl:String, username:String = "guest", password:String = "guest")
-    extends AbstractRestClient(rootUrl, "rest/root/", username, password) {
+
+class SystemConfigRestClient(rootUrl:String, params: RestClientParams = RestClientParams.default)
+    extends AbstractRestClient(rootUrl, "rest/root/", params) {
 
   def declareDomain(domain:DomainDef) = create("domains", domain)
 
