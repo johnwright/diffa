@@ -424,25 +424,33 @@
   </bean>
 
   <!-- get REST client parameters -->
-  <bean id="restClientConnectTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="systemConfigStore"/>
-    <property name="targetMethod" value="systemConfigOptionOrDefault"/>
-    <property name="arguments">
-      <list>
-        <value>rest.client.connect.timeout</value>
-        <value>0</value>
-      </list>
-    </property>
-  </bean>
-  <bean id="restClientReadTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetObject" ref="systemConfigStore"/>
-    <property name="targetMethod" value="systemConfigOptionOrDefault"/>
-    <property name="arguments">
-      <list>
-        <value>rest.client.read.timeout</value>
-        <value>0</value>
-      </list>
-    </property>
+  <bean id="restClientParams" class="net.lshift.diffa.client.RestClientParams">
+    <constructor-arg value="guest" />
+    <constructor-arg value="guest" />
+    <constructor-arg>
+      <bean id="restClientConnectTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="systemConfigStore"/>
+        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
+        <property name="arguments">
+          <list>
+            <value>rest.client.connect.timeout</value>
+            <value>0</value>
+          </list>
+        </property>
+      </bean>
+    </constructor-arg>
+    <constructor-arg>
+      <bean id="restClientReadTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="systemConfigStore"/>
+        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
+        <property name="arguments">
+          <list>
+            <value>rest.client.read.timeout</value>
+            <value>0</value>
+          </list>
+        </property>
+      </bean>
+    </constructor-arg>
   </bean>
 
   <!-- register REST client support for participants -->
@@ -451,7 +459,9 @@
     <property name="targetMethod" value="registerScanningFactory" />
     <property name="arguments">
       <list>
-        <bean class="net.lshift.diffa.client.ScanningParticipantRestClientFactory" />
+        <bean class="net.lshift.diffa.client.ScanningParticipantRestClientFactory">
+          <constructor-arg ref="restClientParams" />
+        </bean>
       </list>
     </property>
   </bean>
@@ -460,7 +470,9 @@
     <property name="targetMethod" value="registerContentFactory" />
     <property name="arguments">
       <list>
-        <bean class="net.lshift.diffa.client.ContentParticipantRestClientFactory" />
+        <bean class="net.lshift.diffa.client.ContentParticipantRestClientFactory">
+          <constructor-arg ref="restClientParams" />
+        </bean>
       </list>
     </property>
   </bean>
@@ -469,7 +481,9 @@
     <property name="targetMethod" value="registerVersioningFactory" />
     <property name="arguments">
       <list>
-        <bean class="net.lshift.diffa.client.VersioningParticipantRestClientFactory" />
+        <bean class="net.lshift.diffa.client.VersioningParticipantRestClientFactory">
+          <constructor-arg ref="restClientParams" />
+        </bean>
       </list>
     </property>
   </bean>

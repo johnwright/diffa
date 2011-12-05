@@ -39,8 +39,8 @@ abstract class AbstractRestClient(val serverRootUrl:String, val restResourceSubU
 
   val config = new DefaultClientConfig()
   config.getProperties().put(ClientConfig.PROPERTY_FOLLOW_REDIRECTS, true.asInstanceOf[AnyRef])
-  config.getProperties().put(ClientConfig.PROPERTY_CONNECT_TIMEOUT, params.connectTimeout.getOrElse(null).asInstanceOf[AnyRef])
-  config.getProperties().put(ClientConfig.PROPERTY_READ_TIMEOUT, params.readTimeout.getOrElse(null).asInstanceOf[AnyRef])
+  config.getProperties().put(ClientConfig.PROPERTY_CONNECT_TIMEOUT, params.connectTimeout.getOrElse(null))
+  config.getProperties().put(ClientConfig.PROPERTY_READ_TIMEOUT, params.readTimeout.getOrElse(null))
   config.getClasses().add(classOf[JacksonJsonProvider]);
   val client = Client.create(config)
   if (params.hasCredentials) {
