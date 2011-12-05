@@ -16,8 +16,11 @@
 
 package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.client.AbstractRestClient
 import net.lshift.diffa.kernel.frontend.DomainDef
+import javax.ws.rs.core.MediaType
+import com.sun.jersey.api.client.ClientResponse
+import com.sun.jersey.core.util.MultivaluedMapImpl
+import net.lshift.diffa.client.{NotFoundException, AbstractRestClient}
 
 class SystemConfigRestClient(rootUrl:String, username:String = "guest", password:String = "guest")
     extends AbstractRestClient(rootUrl, "rest/root/", username, password) {
@@ -25,4 +28,36 @@ class SystemConfigRestClient(rootUrl:String, username:String = "guest", password
   def declareDomain(domain:DomainDef) = create("domains", domain)
 
   def removeDomain(name: String) = delete("/domains/" + name)
+  
+  def setConfigOption(key:String, value:String) = {    
+    val path = resource.path("/system/config/" + key)
+    val response = path.`type`(MediaType.TEXT_PLAIN).put(classOf[ClientResponse], value)
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 204 | 304    => ()
+      case x:Int => handleHTTPError(x, path, status)
+    }
+  }
+
+  def deleteConfigOption(key:String) = {
+    val path = resource.path("/system/config/" + key)
+    val response = path.delete(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 204   => ()
+      case x:Int => handleHTTPError(x, path, status)
+    }
+  }
+
+  def getConfigOption(key:String) = {
+      val path = resource.path("/system/config/" + key)
+      val media = path.accept(MediaType.TEXT_PLAIN)
+      val response = media.get(classOf[ClientResponse])
+      val status = response.getClientResponseStatus
+      status.getStatusCode match {
+        case 200   => response.getEntity(classOf[String])
+        case 404   => throw new NotFoundException(path.toString)
+        case x:Int => handleHTTPError(x, path, status)
+      }
+    }
 }
