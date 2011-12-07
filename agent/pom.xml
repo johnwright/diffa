@@ -163,7 +163,6 @@
       <groupId>com.rabbitmq</groupId>
       <artifactId>amqp-client</artifactId>
       <version>${rabbitmq.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>net.lshift</groupId>
