@@ -17,20 +17,19 @@
 package net.lshift.diffa.kernel.indexing
 
 import java.io.File
-import org.apache.lucene.store.FSDirectory
 import net.lshift.diffa.kernel.differencing.VersionCorrelationStoreFactory
 import scala.collection.mutable.HashMap
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import org.apache.commons.io.FileUtils
+import org.apache.lucene.store.{SimpleFSDirectory, NIOFSDirectory, FSDirectory}
 
 /**
  * Factory that creates LuceneVersionCorrelationStore instances.
  */
-class LuceneVersionCorrelationStoreFactory[T <: FSDirectory](
+class LuceneVersionCorrelationStoreFactory(
   baseDir: String,
-  directoryClass: Class[T],
   configStore: SystemConfigStore,
   diagnostics:DiagnosticsManager
 ) extends VersionCorrelationStoreFactory {
@@ -42,8 +41,17 @@ class LuceneVersionCorrelationStoreFactory[T <: FSDirectory](
       new LuceneVersionCorrelationStore(pair, luceneDirectory(pair), configStore, diagnostics))
 
   private def directory(pair: DiffaPairRef) = new File(baseDir, pair.identifier)
+
   private def luceneDirectory(pair: DiffaPairRef) =
     directoryClass.getConstructor(classOf[File]).newInstance(directory(pair))
+
+  private def directoryClass = {
+    val os = System.getProperty("os.name")
+    if (os != null && os.toLowerCase.indexOf("win") >= 0)
+      classOf[SimpleFSDirectory]
+    else
+      classOf[NIOFSDirectory]
+  }
 
   def remove(pair: DiffaPairRef) {
     close(pair)
