@@ -15,6 +15,7 @@
  */
 package net.lshift.hibernate.migrations;
 
+import net.lshift.hibernate.migrations.dialects.DialectExtension;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.PrimaryKey;
@@ -23,6 +24,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static net.lshift.hibernate.migrations.SQLStringHelpers.generateColumnString;
@@ -34,13 +36,17 @@ import static net.lshift.hibernate.migrations.SQLStringHelpers.generateNonIdenti
  */
 public class CreateTableBuilder extends TraceableMigrationElement {
   private final Dialect dialect;
+  private final DialectExtension dialectExtension;
   private final String name;
   private final List<String> primaryKeys;
   private final List<Column> columns;
   private boolean useNativeIdentityGenerator = false;
+  private int partitionCount = 1;
+  private String[] partitionColumns;
 
-  public CreateTableBuilder(Dialect dialect, String name, String... primaryKeys) {
+  public CreateTableBuilder(Dialect dialect, DialectExtension dialectExtension, String name, String... primaryKeys) {
     this.dialect = dialect;
+    this.dialectExtension = dialectExtension;
     this.name = name;
     this.primaryKeys = new ArrayList<String>(Arrays.asList(primaryKeys));
     this.columns = new ArrayList<Column>();
@@ -73,6 +79,14 @@ public class CreateTableBuilder extends TraceableMigrationElement {
 
     return this;
   }
+  
+  public CreateTableBuilder hashPartitions(int partitions, String ... columns) {
+    if (dialectExtension.supportsHashPartitioning()) {
+      partitionCount = partitions;
+      partitionColumns = columns;
+    }    
+    return this;
+  }
 
 
   //
@@ -98,6 +112,12 @@ public class CreateTableBuilder extends TraceableMigrationElement {
     buffer.append(getPrimaryKey().sqlConstraintString(dialect));
 
     buffer.append(")");
+
+    if (dialectExtension.supportsHashPartitioning() && partitionColumns != null && partitionColumns.length > 0) {
+      buffer.append(" ");
+      buffer.append(dialectExtension.defineHashPartitionString(partitionCount, partitionColumns));
+    }
+
     return buffer.toString();
   }
 

@@ -34,4 +34,14 @@ public class OracleDialectExtension extends DialectExtension {
   public boolean shouldBracketAlterColumnStatement() {
     return true;
   }
+
+  @Override
+  public boolean supportsHashPartitioning() {
+    return true;
+  }
+
+  @Override
+  public String defineHashPartitionString(int partitions, String... columns) {
+    return String.format("partition by hash(%s) partitions ", columns) + partitions;
+  }
 }

@@ -50,7 +50,7 @@ public class MigrationBuilder {
   //
 
   public CreateTableBuilder createTable(String name, String...pks) {
-    return register(new CreateTableBuilder(dialect, name, pks));
+    return register(new CreateTableBuilder(dialect, dialectExtension, name, pks));
   }
 
   public InsertBuilder insert(String table) {
