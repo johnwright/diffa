@@ -16,11 +16,13 @@
 package net.lshift.diffa.agent.auth
 
 import org.springframework.security.core.Authentication
-import org.springframework.security.authentication.{AuthenticationProvider}
-import java.lang.Class
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider
 import org.slf4j.{LoggerFactory, Logger}
+import org.springframework.security.authentication.AuthenticationProvider
+import scala.collection.JavaConversions._
+import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.core.userdetails.UserDetails
 
 /**
  * Runtime controllable authentication provider implementation, that will proxy to an internally configured LDAP
@@ -48,12 +50,40 @@ class ExternalAuthenticationProviderSwitch(val configStore:SystemConfigStore) ex
   }
 
   def authenticate(authentication: Authentication) = backingProvider match {
-    case Some(ap) => ap.authenticate(authentication)
+    case Some(ap) => enhanceResult(ap.authenticate(authentication))
     case None     => null
   }
 
   def supports(authentication: Class[_]):Boolean = backingProvider match {
     case Some(ap) => ap.supports(authentication)
     case None     => false
+  }
+
+  def enhanceResult(res:Authentication):Authentication = res match {
+    case null => null
+    case _    => {
+      val username = res.getPrincipal.asInstanceOf[UserDetails].getUsername
+
+      // Process the user and their authorities (groups) to generate a list of domains that the user can access. Also,
+      // if any discovered membership contains a user with root access, then this user will have root access.
+      val identities = Seq(username) ++ res.getAuthorities.map(a => a.getAuthority)
+      val memberships = identities.flatMap(i => configStore.listDomainMemberships(i))
+      val domainAuthorities = memberships.map(m => DomainAuthority(m.domain.name, "user")).toSet
+      val isRoot = memberships.find(m => m.user.superuser).isDefined
+      val authorities = domainAuthorities ++ Seq(new SimpleGrantedAuthority("user")) ++ (isRoot match {
+        case true   => Seq(new SimpleGrantedAuthority("root"))
+        case false  => Seq()
+      })
+
+      new Authentication {
+        def getDetails = res.getDetails
+        def getCredentials = res.getCredentials
+        def setAuthenticated(isAuthenticated: Boolean) { res.setAuthenticated(isAuthenticated) }
+        def getPrincipal = res.getPrincipal
+        def getAuthorities = authorities
+        def getName = res.getName
+        def isAuthenticated = res.isAuthenticated
+      }
+    }
   }
 }
