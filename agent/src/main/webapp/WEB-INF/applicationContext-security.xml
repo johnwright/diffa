@@ -37,10 +37,15 @@
     <beans:constructor-arg ref="systemConfigStore" />
   </beans:bean>
 
+  <beans:bean id="externalProviderSwitch" class="net.lshift.diffa.agent.auth.ExternalAuthenticationProviderSwitch">
+    <beans:constructor-arg ref="systemConfigStore" />
+  </beans:bean>
+
   <authentication-manager>
     <authentication-provider user-service-ref="userDetailsProvider">
       <password-encoder ref="encoder"/>
     </authentication-provider>
+    <authentication-provider ref="externalProviderSwitch" />
   </authentication-manager>
 
   <global-method-security pre-post-annotations="enabled">
