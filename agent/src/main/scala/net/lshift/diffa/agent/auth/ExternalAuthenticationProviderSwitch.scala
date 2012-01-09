@@ -65,7 +65,8 @@ class ExternalAuthenticationProviderSwitch(val configStore:SystemConfigStore) ex
       val username = res.getPrincipal.asInstanceOf[UserDetails].getUsername
 
       // Process the user and their authorities (groups) to generate a list of domains that the user can access. Also,
-      // if any discovered membership contains a user with root access, then this user will have root access.
+      // if a builtin account (for either the user or the group) has root privileges, then this user will be given a
+      // root authority.
       val identities = Seq(username) ++ res.getAuthorities.map(a => a.getAuthority)
       val memberships = identities.flatMap(i => configStore.listDomainMemberships(i))
       val domainAuthorities = memberships.map(m => DomainAuthority(m.domain.name, "user")).toSet
