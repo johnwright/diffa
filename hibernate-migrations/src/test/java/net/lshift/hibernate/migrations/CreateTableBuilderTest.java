@@ -108,7 +108,7 @@ public class CreateTableBuilderTest {
     String statement = "create table foo (bar number(10,0) not null, baz varchar2(1024 char), primary key (bar)) partition by hash(baz) partitions 10";
 
     MigrationBuilder mb = new MigrationBuilder(config);
-    CreateTableBuilder cb = mb.createTable("foo").
+    mb.createTable("foo").
       column("bar", Types.INTEGER, false).
       column("baz", Types.VARCHAR, 1024, true).
       pk("bar").

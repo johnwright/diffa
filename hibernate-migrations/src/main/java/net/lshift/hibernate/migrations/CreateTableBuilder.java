@@ -36,17 +36,15 @@ import static net.lshift.hibernate.migrations.SQLStringHelpers.generateNonIdenti
  */
 public class CreateTableBuilder extends TraceableMigrationElement {
   private final Dialect dialect;
-  private final DialectExtension dialectExtension;
   private final String name;
   private final List<String> primaryKeys;
   private final List<Column> columns;
   private boolean useNativeIdentityGenerator = false;
-  private int partitionCount = 1;
-  private String[] partitionColumns;
+  private PartitionAwareTableHelper partitionHelper;
 
   public CreateTableBuilder(Dialect dialect, DialectExtension dialectExtension, String name, String... primaryKeys) {
     this.dialect = dialect;
-    this.dialectExtension = dialectExtension;
+    this.partitionHelper = new PartitionAwareTableHelper(dialectExtension);
     this.name = name;
     this.primaryKeys = new ArrayList<String>(Arrays.asList(primaryKeys));
     this.columns = new ArrayList<Column>();
@@ -81,10 +79,7 @@ public class CreateTableBuilder extends TraceableMigrationElement {
   }
   
   public CreateTableBuilder hashPartitions(int partitions, String ... columns) {
-    if (dialectExtension.supportsHashPartitioning()) {
-      partitionCount = partitions;
-      partitionColumns = columns;
-    }    
+    partitionHelper.definePartitions(partitions,columns);
     return this;
   }
 
@@ -113,10 +108,7 @@ public class CreateTableBuilder extends TraceableMigrationElement {
 
     buffer.append(")");
 
-    if (dialectExtension.supportsHashPartitioning() && partitionColumns != null && partitionColumns.length > 0) {
-      buffer.append(" ");
-      buffer.append(dialectExtension.defineHashPartitionString(partitionCount, partitionColumns));
-    }
+    partitionHelper.appendPartitionString(buffer);
 
     return buffer.toString();
   }

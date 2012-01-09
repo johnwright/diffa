@@ -43,6 +43,7 @@ public class AlterTableBuilder extends TraceableMigrationElement {
   private final DialectExtension dialectExtension;
   private final String table;
   private final List<String> alterFragments;
+  private PartitionAwareTableHelper partitionHelper;
 
   public AlterTableBuilder(Configuration config, Dialect dialect, DialectExtension dialectExtension, String table) {
     this.config = config;
@@ -50,6 +51,7 @@ public class AlterTableBuilder extends TraceableMigrationElement {
     this.dialectExtension = dialectExtension;
     this.table = table;
     this.alterFragments = new ArrayList<String>();
+    this.partitionHelper = new PartitionAwareTableHelper(dialectExtension);
   }
 
   public AlterTableBuilder dropColumn(String column) {
@@ -118,6 +120,12 @@ public class AlterTableBuilder extends TraceableMigrationElement {
       pk.addColumn(new Column(col));
     }
     alterFragments.add("add " + pk.sqlConstraintString(dialect));
+    return this;
+  }
+
+  public AlterTableBuilder hashPartitions(int partitions, String ... columns) {
+    partitionHelper.definePartitions(partitions,columns);
+    partitionHelper.appendAlterFragment(alterFragments);
     return this;
   }
 
