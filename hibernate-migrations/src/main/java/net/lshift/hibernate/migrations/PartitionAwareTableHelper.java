@@ -26,14 +26,11 @@ public class PartitionAwareTableHelper {
   
   public void appendPartitionString(StringBuffer buffer) {
     if (dialectExtension.supportsHashPartitioning()) {
-      buffer.append(" ");
-      buffer.append(dialectExtension.defineHashPartitionString(partitionCount, partitionColumns));
+      if (partitionColumns != null && partitionColumns.length > 0) {
+        buffer.append(" ");
+        buffer.append(dialectExtension.defineHashPartitionString(partitionCount, partitionColumns));
+      }
     }
   }
 
-  public void appendAlterFragment(List<String> alterFragments) {
-    if (dialectExtension.supportsHashPartitioning()) {
-      alterFragments.add()
-    }
-  }
 }
