@@ -19,11 +19,10 @@ import net.lshift.hibernate.migrations.dialects.DialectExtension;
 import net.lshift.hibernate.migrations.dialects.DialectExtensionSelector;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,11 +30,17 @@ import java.util.List;
  * Helper for describing database migrations.
  */
 public class MigrationBuilder {
+  
+  static Logger log = LoggerFactory.getLogger(MigrationBuilder.class);
+  
   private final Dialect dialect;
   private final DialectExtension dialectExtension;
   private final List<MigrationElement> elements;
   private final Configuration config;
   private final List<String> statements;
+  private String preconditionQuery;
+  private String preconditionTable;
+  private int expectedPreconditionCount;
 
   public MigrationBuilder(Configuration config) {
     this.config = config;
@@ -87,11 +92,47 @@ public class MigrationBuilder {
   }
 
 
+  public void addPrecondition(String table, String predicate, int expectedRows) {
+    this.preconditionQuery = "select count(*) from " + table + " " + predicate;
+    this.preconditionTable = table;
+    this.expectedPreconditionCount = expectedRows;
+  }
+  
   //
   // Application Methods
   //
 
   public void apply(Connection conn) throws SQLException {
+    
+    if(preconditionQuery != null) {
+      int count = 0;
+      ResultSet rs = null;
+      try {
+
+        rs = conn.getMetaData().getTables(null, null, preconditionTable, null);
+        if (rs.next()) {
+          rs = conn.createStatement().executeQuery(preconditionQuery);
+
+          if (rs.next()) {
+            count = rs.getInt(1);
+          }
+        }
+      }
+      finally {
+        if (rs != null) {
+          rs.close();
+        }
+      }
+
+      if (count != expectedPreconditionCount) {
+        log.info(String.format(
+            "Precondition [%s] not fulfilled: count was %s, expected %s",
+            new Object[]{preconditionQuery, count, expectedPreconditionCount}));
+        return;
+      }
+
+    }
+    
     for (MigrationElement el : elements) {
       try {
         el.apply(conn);

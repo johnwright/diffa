@@ -665,7 +665,10 @@ object HibernateConfigStorePreparationStep {
 
       def applyPartitioning(migration:MigrationBuilder) = {
         if (migration.canPartition) {
-          
+
+          migration.addPrecondition("partition_information",
+                                    "where table_name = '%s' and version = %s".format("diffs", versionId), 0)
+
           // This number is quite arbitrary
           val arbitraryPartitionCount = 16
   
