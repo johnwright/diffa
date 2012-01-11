@@ -21,6 +21,10 @@ package net.lshift.hibernate.migrations.dialects;
  */
 public class DialectExtension {
 
+
+  public String getDialectName() {
+    return "DEFAULT";
+  }
   /**
    * Retrieves the string to be used when specifying that a column is being altered.
    * @return the string.
@@ -62,4 +66,21 @@ public class DialectExtension {
   public String defineHashPartitionString(int partitions, String ... columns) {
     throw new RuntimeException("Hash partitioning is not supported by this dialect");
   }
+
+  /**
+   * Indicates whether the database permits tables to be analyzed.
+   * @return
+   */
+  public boolean supportsAnalyze() {
+    return false;
+  }
+
+  /**
+   * Retrieves the string to be used when analyzing a table
+   * @param table The table to analyze.
+   */
+  public String analyzeTableString(String table) {
+    throw new RuntimeException("analyze table is not supported by this dialect");
+  }
+
 }

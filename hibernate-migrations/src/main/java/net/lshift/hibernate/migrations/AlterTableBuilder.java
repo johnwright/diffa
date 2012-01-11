@@ -126,6 +126,11 @@ public class AlterTableBuilder extends TraceableMigrationElement {
     return this;
   }
 
+  public AlterTableBuilder renameTo(String newName) {
+    alterFragments.add("rename to " + newName);
+    return this;
+  }
+
   @Override
   public void apply(Connection conn) throws SQLException {
     for (String fragment : alterFragments) {

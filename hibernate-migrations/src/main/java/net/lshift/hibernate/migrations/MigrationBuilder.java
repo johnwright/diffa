@@ -69,6 +69,14 @@ public class MigrationBuilder {
     return register(new CreateIndexBuilder(name, table, columns));
   }
 
+  public CopyTableBuilder copyTableContents(String source, String destination) {
+    return register(new CopyTableBuilder(source, destination));
+  }
+
+  public AnalyzeTableBuilder analyzeTable(String table) {
+    return register(new AnalyzeTableBuilder(dialectExtension, table));
+  }
+
   public RawSqlBuilder sql(String sql) {
     return register(new RawSqlBuilder(sql));
   }
@@ -95,5 +103,13 @@ public class MigrationBuilder {
 
   public List<String> getStatements() {
     return statements;
+  }
+
+  public boolean canPartition() {
+    return dialectExtension.supportsHashPartitioning();
+  }
+
+  public boolean canAnalyze() {
+    return dialectExtension.supportsAnalyze();
   }
 }

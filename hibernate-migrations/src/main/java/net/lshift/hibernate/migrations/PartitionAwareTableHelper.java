@@ -23,13 +23,26 @@ public class PartitionAwareTableHelper {
       partitionColumns = columns;
     }
   }
+
+  /**
+   * Indicates whether partitioning is supported by the underlying database and that partitioning
+   * information has been supplied.
+   */
+  private boolean shouldPartition() {
+    return canPartition() && partitionColumns != null && partitionColumns.length > 0;
+  }
+
+  /**
+   * Indicates whether partitioning is supported by the underlying database
+   */
+  public boolean canPartition() {
+    return dialectExtension.supportsHashPartitioning();
+  }
   
   public void appendPartitionString(StringBuffer buffer) {
-    if (dialectExtension.supportsHashPartitioning()) {
-      if (partitionColumns != null && partitionColumns.length > 0) {
-        buffer.append(" ");
-        buffer.append(dialectExtension.defineHashPartitionString(partitionCount, partitionColumns));
-      }
+    if (shouldPartition()) {
+      buffer.append(" ");
+      buffer.append(dialectExtension.defineHashPartitionString(partitionCount, partitionColumns));
     }
   }
 

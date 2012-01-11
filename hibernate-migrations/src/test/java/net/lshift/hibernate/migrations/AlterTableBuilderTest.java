@@ -129,4 +129,18 @@ public class AlterTableBuilderTest {
     mb.apply(conn);
     verify(conn);
   }
+
+  @Test
+  public void shouldRenameTable() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.alterTable("foo").renameTo("bar");
+
+    Connection conn = createStrictMock(Connection.class);
+    expect(conn.prepareStatement("alter table foo rename to bar")).
+        andReturn(mockExecutablePreparedStatement());
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
 }
