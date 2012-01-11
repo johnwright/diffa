@@ -19,12 +19,11 @@ package net.lshift.hibernate.migrations.dialects;
  * Class providing extensions to specific Hibernate dialects. When a Hibernate dialect doesn't have a specific
  * extension, this base extension will be used.
  */
-public class DialectExtension {
+public abstract class DialectExtension {
 
 
-  public String getDialectName() {
-    return "DEFAULT";
-  }
+  public abstract String getDialectName() ;
+
   /**
    * Retrieves the string to be used when specifying that a column is being altered.
    * @return the string.

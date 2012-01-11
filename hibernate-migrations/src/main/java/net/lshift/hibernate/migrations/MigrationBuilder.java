@@ -38,7 +38,7 @@ public class MigrationBuilder {
   private final List<MigrationElement> elements;
   private final Configuration config;
   private final List<String> statements;
-  private String preconditionQuery;
+  private String preconditionPredicate;
   private String preconditionTable;
   private int expectedPreconditionCount;
 
@@ -93,41 +93,67 @@ public class MigrationBuilder {
 
 
   public void addPrecondition(String table, String predicate, int expectedRows) {
-    this.preconditionQuery = "select count(*) from " + table + " " + predicate;
+    this.preconditionPredicate = predicate;
     this.preconditionTable = table;
     this.expectedPreconditionCount = expectedRows;
   }
-  
+
+  private String buildQueryString(String table, String predicate) {
+    return "select count(*) from " + table + " " + predicate;
+  }
+
   //
   // Application Methods
   //
 
   public void apply(Connection conn) throws SQLException {
     
-    if(preconditionQuery != null) {
+    if(preconditionPredicate != null && preconditionTable != null) {
       int count = 0;
-      ResultSet rs = null;
+      ResultSet metaDataRs = null;
+      ResultSet countRs = null;
+      Statement statement = null;
       try {
 
-        rs = conn.getMetaData().getTables(null, null, preconditionTable, null);
-        if (rs.next()) {
-          rs = conn.createStatement().executeQuery(preconditionQuery);
+        metaDataRs = conn.getMetaData().getTables(null, null, preconditionTable, null);
+        if (metaDataRs.next()) {
+          statement = conn.createStatement();
+          countRs = statement.executeQuery(buildQueryString(preconditionTable, preconditionPredicate));
 
-          if (rs.next()) {
-            count = rs.getInt(1);
+          if (countRs.next()) {
+            count = countRs.getInt(1);
           }
+
         }
       }
       finally {
-        if (rs != null) {
-          rs.close();
+
+        try {
+
+          if (statement != null) {
+            statement.close();
+          }
+
+        }
+        finally {
+
+          try {
+            if (metaDataRs != null) {
+              metaDataRs.close();
+            }
+          } finally {
+            if (countRs != null) {
+              countRs.close();
+            }
+          }
+
         }
       }
 
       if (count != expectedPreconditionCount) {
         log.info(String.format(
             "Precondition [%s] not fulfilled: count was %s, expected %s",
-            new Object[]{preconditionQuery, count, expectedPreconditionCount}));
+            new Object[]{preconditionPredicate, count, expectedPreconditionCount}));
         return;
       }
 
