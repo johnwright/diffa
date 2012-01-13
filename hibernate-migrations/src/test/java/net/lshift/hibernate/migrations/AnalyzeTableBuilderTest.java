@@ -16,6 +16,7 @@
 package net.lshift.hibernate.migrations;
 
 
+import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -24,18 +25,18 @@ import java.util.Arrays;
 import static net.lshift.hibernate.migrations.HibernateHelper.mockExecutablePreparedStatement;
 import static org.easymock.EasyMock.*;
 
-public class CopyTableBuilderTest {
+public class AnalyzeTableBuilderTest {
   
   @Test
-  public void shouldDropColumnUsingCapitalizedName() throws Exception {
-    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+  public void shouldAnalyzeColumnInOracle() throws Exception {
+    Configuration config = new Configuration().setProperty("hibernate.dialect", "org.hibernate.dialect.Oracle10gDialect");
+    MigrationBuilder mb = new MigrationBuilder(config);
 
-    Iterable<String> columns = Arrays.asList("foo", "bar", "baz");
-    mb.copyTableContents("src", "dest", columns);
+    mb.analyzeTable("foo");
 
     Connection conn = createStrictMock(Connection.class);
 
-    expect(conn.prepareStatement("insert into dest(foo,bar,baz) select foo,bar,baz from src")).andReturn(mockExecutablePreparedStatement());
+    expect(conn.prepareStatement("analyze table foo compute statistics")).andReturn(mockExecutablePreparedStatement());
     replay(conn);
 
     mb.apply(conn);
