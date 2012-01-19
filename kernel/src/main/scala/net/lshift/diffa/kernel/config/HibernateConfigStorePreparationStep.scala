@@ -769,6 +769,10 @@ object HibernateConfigStorePreparationStep {
           val columns = Seq("seq_id", "domain", "pair", "entity_id", "is_match", "detected_at",
                             "last_seen","upstream_vsn","downstream_vsn","ignored")
 
+          // Load the appropriate stored procedure into the database, and execute it
+          migration.executeDatabaseScript("sync_pair_diff_partitions", "net.lshift.diffa.kernel.config.procedures")
+          migration.executeStoredProcedure("sync_pair_diff_partitions('diffs_tmp')")
+
           migration.copyTableContents("diffs", "diffs_tmp", columns)
           migration.dropTable("diffs")
           migration.alterTable("diffs_tmp").renameTo("diffs")
