@@ -1,9 +1,9 @@
 package net.lshift.diffa.kernel.hooks
 
-import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.apache.commons.lang.StringEscapeUtils
 import org.apache.commons.codec.digest.DigestUtils
+import org.hibernate.{Session, SessionFactory}
 
 /**
  * Oracle implementation of the DifferencePartitioningHook. Assumes that the underlying table has been list-partitioned
@@ -16,8 +16,10 @@ class OracleDifferencePartitioningHook(sessionFactory:SessionFactory) extends Di
       val escapedVal = StringEscapeUtils.escapeSql(domain + "_" + key)
       val partitionName = generatePartitionName(domain, key)
 
-      val query = s.createSQLQuery("alter table diffs add partition " + partitionName + " values('" + escapedVal + "')");
-      query.executeUpdate()
+      if (!hasPartition(s, partitionName)) {
+        val query = s.createSQLQuery("alter table diffs add partition " + partitionName + " values('" + escapedVal + "')");
+        query.executeUpdate()
+      }
     })
   }
 
@@ -25,17 +27,25 @@ class OracleDifferencePartitioningHook(sessionFactory:SessionFactory) extends Di
     // Drop the relevant partition on the diffs table
     sessionFactory.withSession(s => {
       val partitionName = generatePartitionName(domain, key)
-      val query = s.createSQLQuery("alter table diffs drop partition " + partitionName)
-      query.executeUpdate()
+
+      if (hasPartition(s, partitionName)) {
+        val query = s.createSQLQuery("alter table diffs drop partition " + partitionName)
+        query.executeUpdate()
+      }
     })
   }
 
   def removeAllPairDifferences(domain: String, key: String) = {
     sessionFactory.withSession(s => {
       val partitionName = generatePartitionName(domain, key)
-      val query = s.createSQLQuery("alter table diffs truncate partition " + partitionName)
-      query.executeUpdate()
-      true
+
+      if (hasPartition(s, partitionName)) {
+        val query = s.createSQLQuery("alter table diffs truncate partition " + partitionName)
+        query.executeUpdate()
+        true
+      } else {
+        false
+      }
     })
   }
 
@@ -44,4 +54,10 @@ class OracleDifferencePartitioningHook(sessionFactory:SessionFactory) extends Di
    * from causing any kind of injection attack.
    */
   def generatePartitionName(domain:String, key:String) = "p_" + DigestUtils.md5Hex(domain + "_" + key).substring(0, 28)
+
+  def hasPartition(s:Session, name:String) = {
+    val query = s.createSQLQuery("select count(*) from all_tab_partitions where table_name='DIFFS' and partition_name=:name")
+    query.setString("name", name.toUpperCase)   // Oracle will have forced the partition names to uppercase
+    query.uniqueResult().asInstanceOf[java.math.BigDecimal].longValue() > 0
+  }
 }
