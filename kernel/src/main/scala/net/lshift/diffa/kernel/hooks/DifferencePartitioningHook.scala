@@ -19,4 +19,11 @@ trait DifferencePartitioningHook {
    * true to indicate that it was able to assist, or false to indicate that a normal DELETE should be issued.
    */
   def removeAllPairDifferences(domain:String, key:String):Boolean
+
+  /**
+   * Queries whether difference partitioning is generally enabled by the hook. Note that even if this method returns
+   * false, it is still safe to call the various other methods - they must be implemented as no-ops if not supported.
+   * This method should generally be queried before performing any expensive work in order to use a hook method.
+   */
+  def isDifferencePartitioningEnabled:Boolean
 }

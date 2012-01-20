@@ -278,6 +278,7 @@
     <constructor-arg ref="systemConfigStore"/>
     <constructor-arg ref="differencesManager" />
     <constructor-arg ref="notificationCentre" />
+    <constructor-arg ref="configurationFrontend" />
   </bean>
   <bean id="changesFrontend" class="net.lshift.diffa.kernel.frontend.Changes">
     <constructor-arg ref="domainConfigStore"/>

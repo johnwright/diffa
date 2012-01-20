@@ -49,6 +49,8 @@ class OracleDifferencePartitioningHook(sessionFactory:SessionFactory) extends Di
     })
   }
 
+  def isDifferencePartitioningEnabled = true
+
   /**
    * Generates a unique, repeatable partition name based on using the domain and key, preventing SQL-unsafe characters
    * from causing any kind of injection attack.

@@ -42,14 +42,23 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
   val columnMapper = new TimestampColumnDateTimeMapper()
 
-  def removeDomain(domain:String) = removeDomainDifferences(domain)
+  def removeDomain(domain:String) = {
+    // If difference partitioning is enabled, ask the hook to clean up each pair. Note that we'll end up running a
+    // delete over all pair differences later anyway, so we won't record the result of the removal operation.
+    if (hook.isDifferencePartitioningEnabled) {
+      listPairsInDomain(domain).foreach(p => hook.removeAllPairDifferences(domain, p.key))
+    }
+
+    removeDomainDifferences(domain)
+  }
 
   def removePair(pair: DiffaPairRef) = {
     val hookHelped = hook.removeAllPairDifferences(pair.domain, pair.key)
 
     sessionFactory.withSession { s =>
-      if (!hookHelped)
+      if (!hookHelped) {
         executeUpdate(s, "removeDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      }
       executeUpdate(s, "removePendingDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
       removeLatestRecordedVersion(pair)
     }

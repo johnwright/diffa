@@ -48,4 +48,5 @@ class EmptyDifferencePartitioningHook extends DifferencePartitioningHook {
   def pairCreated(domain: String, key: String) {}
   def pairRemoved(domain: String, key: String) {}
   def removeAllPairDifferences(domain: String, key: String) = false
+  def isDifferencePartitioningEnabled = false
 }
