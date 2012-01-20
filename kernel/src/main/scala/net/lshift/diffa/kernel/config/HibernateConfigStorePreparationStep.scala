@@ -674,7 +674,7 @@ object HibernateConfigStorePreparationStep {
       }
 
       def applyPartitioning(migration:MigrationBuilder) = {
-        if (migration.canPartition) {
+        if (migration.canUseHashPartitioning) {
 
           DefinePartitionInformationTable.preventPartitionReapplication(migration, "diffs", versionId)
 
@@ -746,7 +746,7 @@ object HibernateConfigStorePreparationStep {
       }
 
       def applyPartitioning(migration:MigrationBuilder) = {
-        if (migration.canPartition) {
+        if (migration.canUseListPartitioning) {
 
           DefinePartitionInformationTable.preventPartitionReapplication(migration, "diffs", versionId)
           

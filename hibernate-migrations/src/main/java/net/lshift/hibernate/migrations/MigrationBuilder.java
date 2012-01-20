@@ -180,8 +180,12 @@ public class MigrationBuilder {
     return statements;
   }
 
-  public boolean canPartition() {
+  public boolean canUseHashPartitioning() {
     return dialectExtension.supportsHashPartitioning();
+  }
+
+  public boolean canUseListPartitioning() {
+    return dialectExtension.supportsListPartitioning();
   }
 
   public boolean canAnalyze() {
