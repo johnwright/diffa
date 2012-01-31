@@ -21,6 +21,7 @@ import reflect.BeanProperty
 import org.quartz.CronExpression
 import java.util.HashMap
 import scala.collection.JavaConversions._
+import org.codehaus.jackson.annotate.JsonIgnoreProperties
 
 /**
  * Describes a complete Diffa configuration in the context of a domain - this means that all of the objects
@@ -49,6 +50,7 @@ case class DiffaConfig(
 /**
  * Serializable representation of an Endpoint within the context of a domain.
  */
+@JsonIgnoreProperties(Array("id"))
 case class EndpointDef (
   @BeanProperty var name: String = null,
   @BeanProperty var scanUrl: String = null,
