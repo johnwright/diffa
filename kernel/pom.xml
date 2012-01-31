@@ -235,6 +235,33 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>oracle</id>
+      <dependencies>
+        <dependency>
+          <groupId>com.oracle</groupId>
+          <artifactId>ojdbc6</artifactId>
+          <version>11.2.0.1.0</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <systemPropertyVariables>
+                <diffa.hibernate.dialect>${diffa.hibernate.dialect}</diffa.hibernate.dialect>
+                <diffa.jdbc.url>${diffa.jdbc.url}</diffa.jdbc.url>
+                <diffa.jdbc.driver>${diffa.jdbc.driver}</diffa.jdbc.driver>
+                <diffa.jdbc.username>${diffa.jdbc.username}</diffa.jdbc.username>
+                <diffa.jdbc.password>${diffa.jdbc.password}</diffa.jdbc.password>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
 
