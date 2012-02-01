@@ -57,8 +57,8 @@
         <div id="pairs-list" class="element-list-panel">
           <h4>Pairs</h4>
           <span class="none-message">No pairs configured</span>
-          <ul id="pairs"></ul>
-          <a id="addPair" href="" class="add-element">Add New</a>
+          <ul class="element-list"></ul>
+          <a id="addPair" href="#pair" class="add-element">Add New</a>
         </div>
 
       </div>
@@ -66,11 +66,32 @@
       <div id="details">
         <div style="display:none" id="endpoint-editor">
           <dl>
-            <dt>Name:</dt><dd class="endpoint-name"><input data-key="name" type="text"><span data-bind="name"></span></dd>
+            <dt>Name:</dt><dd class="name-container"><input data-key="name" type="text"><span data-bind="name"></span></dd>
             <dt>Scan URL:</dt><dd><input data-key="scanUrl" type="text" size="60"></dd>
             <dt>Content Retrieval URL:</dt><dd><input data-key="contentRetrievalUrl" type="text" size="60"></dd>
             <dt>Version Generation URL:</dt><dd><input data-key="versionGenerationUrl" type="text" size="60"></dd>
             <dt>Inbound URL:</dt><dd><input data-key="inboundUrl" type="text" size="60"></dd>
+
+            <dd><button class="save">Save</button> <button class="delete">Delete</button></dd>
+          </dl>
+        </div>
+        <div style="display:none" id="pair-editor">
+          <dl>
+            <dt>Key:</dt><dd class="name-container"><input data-key="key" type="text"><span data-bind="key"></span></dd>
+            <dt>Version Policy:</dt><dd>
+              <select data-key="versionPolicyName">
+                <option value="same">Same</option>
+                <option value="correlated">Correlated</option>
+              </select>
+            </dd>
+            <dt>Upstream:</dt><dd><select class="endpoint-selection" data-key="upstreamName"></select></dd>
+            <dt>Downstream:</dt><dd><select class="endpoint-selection" data-key="downstreamName"></select></dd>
+            <dt>Allow Manual Scans:</dt><dd>
+              <input data-key="allowManualScans" type="checkbox" id="allowPairManualScans">
+              <label for="allowPairManualScans">Allow Manual Scans</label>
+            </dd>
+            <dt>Scan Cron Specification:</dt><dd><input data-key="scanCronSpec" type="text"></dd>
+            <dt>Matching Timeout:</dt><dd><input data-key="matchingTimeout" type="text"></dd>
 
             <dd><button class="save">Save</button> <button class="delete">Delete</button></dd>
           </dl>
