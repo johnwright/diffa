@@ -21,6 +21,7 @@
     <title>Diffa Settings</title>
 
     <script type="text/javascript" src="js/thirdparty/jquery-1.6.min.js"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery.color.js"></script>
     <script type="text/javascript" src="js/thirdparty/json2.js"></script>
     <script type="text/javascript" src="js/thirdparty/underscore-1.3.1.min.js"></script>
     <script type="text/javascript" src="js/thirdparty/backbone-0.9.0.min.js"></script>
@@ -50,7 +51,7 @@
           <h4>Endpoints</h4>
           <span class="none-message">No endpoints configured</span>
           <ul class="element-list"></ul>
-          <a id="addEndpoint" href="" class="add-element">Add New</a>
+          <a id="addEndpoint" href="#endpoint" class="add-element">Add New</a>
         </div>
 
         <div id="pairs-list" class="element-list-panel">
@@ -65,7 +66,7 @@
       <div id="details">
         <div style="display:none" id="endpoint-editor">
           <dl>
-            <dt>Name:</dt><dd><input data-key="name" type="text"></dd>
+            <dt>Name:</dt><dd class="endpoint-name"><input data-key="name" type="text"><span data-bind="name"></span></dd>
             <dt>Scan URL:</dt><dd><input data-key="scanUrl" type="text" size="60"></dd>
             <dt>Content Retrieval URL:</dt><dd><input data-key="contentRetrievalUrl" type="text" size="60"></dd>
             <dt>Version Generation URL:</dt><dd><input data-key="versionGenerationUrl" type="text" size="60"></dd>

@@ -27,6 +27,7 @@ $(function() {
 Diffa.Routers.Config = Backbone.Router.extend({
   routes: {
     "":                   "index",          // #
+    "endpoint":           "createEndpoint", // #endpoint
     "endpoint/:endpoint": "manageEndpoint"  // #endpoint/ep1
   },
 
@@ -34,10 +35,15 @@ Diffa.Routers.Config = Backbone.Router.extend({
     this.updateEditor(null);
   },
 
+  createEndpoint: function() {
+    var newEndpoint = new Diffa.Models.Endpoint({name: 'untitled'});
+    this.updateEditor(function() { return new Diffa.Views.EndpointEditor({model: newEndpoint}) });
+  },
+
   manageEndpoint: function(endpointName) {
     var endpoint = Diffa.EndpointsCollection.get(endpointName);
     if (endpoint == null) {
-      endpoint = new Diffa.Models.Endpoint({name: endpointName});
+      endpoint = new Diffa.Models.Endpoint({id: endpointName, name: endpointName});
       endpoint.fetch();
     }
 
@@ -57,8 +63,20 @@ Diffa.Routers.Config = Backbone.Router.extend({
 });
 
 Diffa.Models.Endpoint = Backbone.Model.extend({
-  url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints/" + this.get('name'); },
+  url: function() {
+    if (this.isNew()) {
+      return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints";
+    } else {
+      return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints/" + this.get('name');
+    }
+  },
   parse: function(response) {
+    // If we've just been created on the server, then no response will be returned. Simulate a response containing
+    // the new id (which just matches the name).
+    if (this.isNew() && response == null) {
+      return {id: this.get('name')};
+    }
+
     // Alias the name as the id of the object
     response.id = response.name;
     return response;
@@ -67,14 +85,18 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
 
 Diffa.Collections.Endpoints = Backbone.Collection.extend({
   model: Diffa.Models.Endpoint,
-  url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints"; }
+  url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints"; },
+  comparator: function(endpoint) { return endpoint.get('name'); }
 });
 
 Diffa.Views.ElementList = Backbone.View.extend({
   initialize: function() {
-    _.bindAll(this, "render");
+    var self = this;
+
+    _.bindAll(this, "render", "addOne");
 
     this.collection.bind('reset', this.render);
+    this.collection.bind('add', function(m) { self.addOne(m, false); });
   },
 
   render: function() {
@@ -82,19 +104,28 @@ Diffa.Views.ElementList = Backbone.View.extend({
 
     this.$('.none-message').toggle(this.collection.length == 0);
 
-    var list = this.$('.element-list');
     this.collection.each(function(m) {
-      list.append(new Diffa.Views.ElementListItem({model: m, elementType: self.options.elementType}).render());
+      self.addOne(m, true);
     });
 
     return this;
+  },
+
+  addOne: function(m, initialRender) {
+    var self = this;
+    var newView = new Diffa.Views.ElementListItem({model: m, elementType: self.options.elementType});
+
+    this.$('.element-list').append(newView.render());
+    this.$('.none-message').hide();
+
+    if (!initialRender) newView.flash();
   }
 });
 Diffa.Views.ElementListItem = Backbone.View.extend({
   tagName: 'li',
 
   initialize: function() {
-    _.bindAll(this, 'render');
+    _.bindAll(this, 'render', 'flash');
 
     this.model.bind("change:name", this.render);
   },
@@ -106,6 +137,10 @@ Diffa.Views.ElementListItem = Backbone.View.extend({
       '</a>');
 
     return this.el;
+  },
+
+  flash: function() {
+    $('a', this.el).css('background-color', '#ffff99').animate({'background-color': '#FFFFFF'});
   }
 });
 Diffa.Views.EndpointEditor = Backbone.View.extend({
@@ -128,6 +163,11 @@ Diffa.Views.EndpointEditor = Backbone.View.extend({
   },
 
   render: function() {
+    var nameContainer = $('.endpoint-name', this.el);
+
+    $('input', nameContainer).toggle(this.model.isNew());
+    $('span', nameContainer).toggle(!this.model.isNew());
+
     $(this.el).show();
   },
 
@@ -139,7 +179,14 @@ Diffa.Views.EndpointEditor = Backbone.View.extend({
   },
 
   saveChanges: function() {
-    this.model.save();
+    var self = this;
+
+    this.model.save({}, {
+      success: function() {
+        Diffa.EndpointsCollection.add(self.model);
+        Diffa.SettingsApp.navigate("endpoint/" + self.model.id, {replace: true, trigger: true});
+      }
+    });
   }
 });
 
