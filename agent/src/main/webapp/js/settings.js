@@ -48,23 +48,11 @@ Diffa.Routers.Config = Backbone.Router.extend({
 
   manageEndpoint: function(endpointName) {
     var endpoint = Diffa.EndpointsCollection.get(endpointName);
-    if (endpoint == null) {
-      endpoint = new Diffa.Models.Endpoint({id: endpointName, name: endpointName});
-      endpoint.fetch();
-        // TODO: Ensure this is connected back to collection, otherwise updates can get lost!
-    }
-
     this.updateEditor(function() { return new Diffa.Views.EndpointEditor({model: endpoint, collection: Diffa.EndpointsCollection}) });
   },
 
   managePair: function(pairName) {
     var pair = Diffa.PairsCollection.get(pairName);
-    if (pair == null) {
-      pair = new Diffa.Models.Pair({id: pairName, key: pairName});
-      pair.fetch();
-        // TODO: Ensure this is connected back to collection, otherwise updates can get lost!
-    }
-
     this.updateEditor(function() { return new Diffa.Views.PairEditor({model: pair, collection: Diffa.PairsCollection}) });
   },
 
@@ -274,9 +262,24 @@ Diffa.EndpointElementListView = new Diffa.Views.ElementList({
   collection: Diffa.PairsCollection,
   elementType: 'pair'
 });
-Backbone.history.start();
 
-Diffa.EndpointsCollection.fetch();
-Diffa.PairsCollection.fetch();
+var preloadCollections = function(colls, callback) {
+  var remaining = colls.length;
+  _.each(colls, function(preload) {
+    preload.fetch({
+      success: function() {
+        remaining -= 1;
 
+        if (remaining == 0) {
+          callback();
+        }
+      }
+    })
+  });
+};
+
+// Preload useful collections, and then start processing history
+preloadCollections([Diffa.EndpointsCollection, Diffa.PairsCollection], function() {
+  Backbone.history.start();
+});
 });
