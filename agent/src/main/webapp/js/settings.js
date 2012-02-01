@@ -93,20 +93,21 @@ Diffa.Views.ElementList = Backbone.View.extend({
   initialize: function() {
     var self = this;
 
-    _.bindAll(this, "render", "addOne");
+    _.bindAll(this, "render", "addOne", "updateNoneMessage");
 
     this.collection.bind('reset', this.render);
     this.collection.bind('add', function(m) { self.addOne(m, false); });
+    this.collection.bind('remove', this.updateNoneMessage);
   },
 
   render: function() {
     var self = this;
 
-    this.$('.none-message').toggle(this.collection.length == 0);
-
     this.collection.each(function(m) {
       self.addOne(m, true);
     });
+
+    this.updateNoneMessage();
 
     return this;
   },
@@ -116,18 +117,23 @@ Diffa.Views.ElementList = Backbone.View.extend({
     var newView = new Diffa.Views.ElementListItem({model: m, elementType: self.options.elementType});
 
     this.$('.element-list').append(newView.render());
-    this.$('.none-message').hide();
+    this.updateNoneMessage();
 
     if (!initialRender) newView.flash();
+  },
+
+  updateNoneMessage: function() {
+    this.$('.none-message').toggle(this.collection.length == 0);
   }
 });
 Diffa.Views.ElementListItem = Backbone.View.extend({
   tagName: 'li',
 
   initialize: function() {
-    _.bindAll(this, 'render', 'flash');
+    _.bindAll(this, 'render', 'flash', 'remove');
 
     this.model.bind("change:name", this.render);
+    this.model.bind("destroy", this.remove);
   },
 
   render: function() {
@@ -147,7 +153,8 @@ Diffa.Views.EndpointEditor = Backbone.View.extend({
   el: $('#endpoint-editor'),
 
   events: {
-    "click .save": 'saveChanges'
+    "click .save": 'saveChanges',
+    "click .delete": 'deleteEndpoint'
   },
 
   initialize: function() {
@@ -185,6 +192,14 @@ Diffa.Views.EndpointEditor = Backbone.View.extend({
       success: function() {
         Diffa.EndpointsCollection.add(self.model);
         Diffa.SettingsApp.navigate("endpoint/" + self.model.id, {replace: true, trigger: true});
+      }
+    });
+  },
+
+  deleteEndpoint: function() {
+    this.model.destroy({
+      success: function() {
+        Diffa.SettingsApp.navigate("", {trigger: true});
       }
     });
   }
