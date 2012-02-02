@@ -21,7 +21,6 @@ import reflect.BeanProperty
 import org.quartz.CronExpression
 import java.util.HashMap
 import scala.collection.JavaConversions._
-import org.codehaus.jackson.annotate.JsonIgnoreProperties
 
 /**
  * Describes a complete Diffa configuration in the context of a domain - this means that all of the objects
@@ -50,7 +49,6 @@ case class DiffaConfig(
 /**
  * Serializable representation of an Endpoint within the context of a domain.
  */
-@JsonIgnoreProperties(Array("id"))    // id field is sent in requests by our UI, and is the same as the name
 case class EndpointDef (
   @BeanProperty var name: String = null,
   @BeanProperty var scanUrl: String = null,
@@ -114,7 +112,6 @@ case class EndpointViewDef(
 /**
  * Serializable representation of a Pair within the context of a domain.
  */
-@JsonIgnoreProperties(Array("id"))    // id field is sent in requests by our UI, and is the same as the key
 case class PairDef(
   @BeanProperty var key: String = null,
   @BeanProperty var versionPolicyName: String = null,

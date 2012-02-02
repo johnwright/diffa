@@ -38,11 +38,11 @@ Diffa.Routers.Config = Backbone.Router.extend({
   },
 
   createEndpoint: function() {
-    var newEndpoint = new Diffa.Models.Endpoint({name: 'untitled'});
+    var newEndpoint = new Diffa.Models.Endpoint();
     this.updateEditor(function() { return new Diffa.Views.EndpointEditor({model: newEndpoint, collection: Diffa.EndpointsCollection}) });
   },
   createPair: function() {
-    var newPair = new Diffa.Models.Pair({key: 'untitled'});
+    var newPair = new Diffa.Models.Pair();
     this.updateEditor(function() { return new Diffa.Views.PairEditor({model: newPair, collection: Diffa.PairsCollection}) });
   },
 
@@ -68,22 +68,8 @@ Diffa.Routers.Config = Backbone.Router.extend({
   }
 });
 
-Diffa.Models.SimulatedId = Backbone.Model.extend({
-  idField: "name",
-
-  parse: function(response) {
-    // If we've just been created on the server, then no response will be returned. Simulate a response containing
-    // the new id (which just matches the name).
-    if (this.isNew() && response == null) {
-      return {id: this.get(this.idField)};
-    }
-
-    // Alias the id field as the id of the object
-    response.id = response[this.idField];
-    return response;
-  }
-});
-Diffa.Models.Endpoint = Diffa.Models.SimulatedId.extend({
+Diffa.Models.Endpoint = Backbone.Model.extend({
+  idAttribute: 'name',
   initialize: function() {
     _.bindAll(this, 'updateCategories');
     this.bind('change:categories', this.updateCategories);
@@ -111,8 +97,8 @@ Diffa.Models.Endpoint = Diffa.Models.SimulatedId.extend({
     this.prefixCategories.unpack(this.get('categories'));
   }
 });
-Diffa.Models.Pair = Diffa.Models.SimulatedId.extend({
-  idField: "key",
+Diffa.Models.Pair = Backbone.Model.extend({
+  idAttribute: "key",
   urlRoot: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/pairs"; },
   prepareForSave: function() {
       // Remove properties artifacts from the databinding library
@@ -210,8 +196,8 @@ Diffa.Views.ElementListItem = Backbone.View.extend({
 
   render: function() {
     $(this.el).html(
-      '<a href="#' + this.options.elementType + '/' + this.model.get(this.model.idField) + '">' +
-        this.model.get(this.model.idField) +
+      '<a href="#' + this.options.elementType + '/' + this.model.id + '">' +
+        this.model.id +
       '</a>');
 
     return this.el;
