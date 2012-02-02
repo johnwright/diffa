@@ -84,8 +84,32 @@ Diffa.Models.SimulatedId = Backbone.Model.extend({
   }
 });
 Diffa.Models.Endpoint = Diffa.Models.SimulatedId.extend({
+  initialize: function() {
+    _.bindAll(this, 'updateCategories');
+    this.bind('change:categories', this.updateCategories);
+
+    this.rangeCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'range'});
+    this.setCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'set'});
+    this.prefixCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'prefix'});
+
+    this.updateCategories();
+  },
   urlRoot: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints"; },
-  prepareForSave: function() {}
+  prepareForSave: function() {
+    var categories = {};
+
+    this.rangeCategories.pack(categories);
+    this.setCategories.pack(categories);
+    this.prefixCategories.pack(categories);
+
+    // Pack the categories back into their own fields
+    this.set({categories: categories}, {silent: true});
+  },
+  updateCategories: function() {
+    this.rangeCategories.unpack(this.get('categories'));
+    this.setCategories.unpack(this.get('categories'));
+    this.prefixCategories.unpack(this.get('categories'));
+  }
 });
 Diffa.Models.Pair = Diffa.Models.SimulatedId.extend({
   idField: "key",
@@ -107,6 +131,34 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
   model: Diffa.Models.Pair,
   url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/pairs"; },
   comparator: function(endpoint) { return endpoint.get('name'); }
+});
+Diffa.Collections.CategoryCollection = Backbone.Collection.extend({
+  model: Backbone.Model,
+  initialize: function(models, options) {
+    Diffa.Collections.CategoryCollection.__super__.initialize.call(this, arguments);
+    this.categoryType = options.categoryType;
+  },
+  pack: function(target) {
+    var self = this;
+
+    this.each(function(cat) {
+      target[cat.get('name')] = $.extend({}, cat.attributes, {'@type': self.categoryType});
+      delete target[cat.get('name')].name;
+    });
+  },
+  unpack: function(source) {
+    var self = this;
+
+    this.reset([]);
+    _.each(source, function(value, name) {
+      if (value['@type'] == self.categoryType) {
+        var attrs = $.extend({}, value, {name: name});
+        delete attrs['@type']
+
+        self.add(new self.model(attrs));
+      }
+    });
+  }
 });
 
 Diffa.Views.ElementList = Backbone.View.extend({
@@ -187,7 +239,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     this.preBind();
 
     $('input[data-key]', this.el).val('');    // Clear the contents of all bound fields
-    Backbone.ModelBinding.bind(this, {text: "data-key", select: "data-key", checkbox: "data-key"});
+    Backbone.ModelBinding.bind(this, {all: "data-key"});
 
     var nameContainer = $('.name-container', this.el);
 
@@ -198,14 +250,16 @@ Diffa.Views.FormEditor = Backbone.View.extend({
   },
 
   // Callback function to be implemented by subclasses that need to add field values before binding.
-  preBind: function() {
-  },
+  preBind: function() {},
+  postClose: function() {},
 
   close: function() {
     $(this.el).hide();
 
     this.undelegateEvents();
     Backbone.ModelBinding.unbind(this);
+
+    this.postClose();
   },
 
   saveChanges: function() {
@@ -232,7 +286,18 @@ Diffa.Views.FormEditor = Backbone.View.extend({
 });
 Diffa.Views.EndpointEditor = Diffa.Views.FormEditor.extend({
   el: $('#endpoint-editor'),
-  elementType: "endpoint"
+  elementType: "endpoint",
+
+  preBind: function() {
+    // Attach categories
+    this.categoryEditors = [
+      new Diffa.Views.CategoriesEditor({collection: this.model.rangeCategories, el: this.$('.range-categories')}),
+      new Diffa.Views.CategoriesEditor({collection: this.model.prefixCategories, el: this.$('.prefix-categories')})
+    ];
+  },
+  postClose: function() {
+    if (this.categoryEditors) _.each(this.categoryEditors, function(editor) { editor.close(); });
+  }
 });
 Diffa.Views.PairEditor = Diffa.Views.FormEditor.extend({
   el: $('#pair-editor'),
@@ -245,6 +310,58 @@ Diffa.Views.PairEditor = Diffa.Views.FormEditor.extend({
     Diffa.EndpointsCollection.each(function(ep) {
       selections.append('<option value="' + ep.get('name') + '">' + ep.get('name') + '</option>');
     });
+  }
+});
+
+Diffa.Views.CategoriesEditor = Backbone.View.extend({
+  events: {
+    "click .add-category-link": "createCategory"
+  },
+
+  initialize: function() {
+    _.bindAll(this, "addOne", "render");
+    this.collection.bind("add", this.addOne);
+    this.collection.bind("reset", this.render);
+
+    this.render();
+  },
+
+  render: function() {
+    // Remove all category rows
+    this.$('table tr.category-row').remove();
+
+    this.collection.each(this.addOne);
+  },
+
+  addOne: function(added) {
+    // Retrieve the field names
+    var keys = this.$('table thead td').map(function(idx, el) { return $(el).data('key'); });
+
+    // Generate a row, with values for each of the header cells
+    var row = $('<tr class="category-row"></tr>');
+    _.each(keys, function(k) { row.append('<td><input type="text" data-el-key="' + k + '"></td>'); });
+    this.$('table').append(row);
+
+    // Bind the model to the row
+    var rowView = new Diffa.Views.CategoryEditor({el: row, model: added});
+  },
+
+  createCategory: function(e) {
+    e.preventDefault();
+
+    this.collection.add(new this.collection.model({name: 'Untitled'}));
+  },
+
+  close: function() {
+    this.undelegateEvents();
+    
+    this.collection.unbind("add", this.addOne);
+    this.collection.unbind("reset", this.render);
+  }
+});
+Diffa.Views.CategoryEditor = Backbone.View.extend({
+  initialize: function() {
+    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
   }
 });
 

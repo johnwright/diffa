@@ -25,7 +25,7 @@
     <script type="text/javascript" src="js/thirdparty/json2.js"></script>
     <script type="text/javascript" src="js/thirdparty/underscore-1.3.1.min.js"></script>
     <script type="text/javascript" src="js/thirdparty/backbone-0.9.0.min.js"></script>
-    <script type="text/javascript" src="js/thirdparty/backbone.modelbinding-0.5.0.js"></script>
+    <script type="text/javascript" src="js/thirdparty/backbone.modelbinding-0.5.0-patched.js"></script>
     <script type="text/javascript" src="js/datejs/date-en-GB.js" charset="utf-8"></script>
     <script type="text/javascript" src="js/datejs/extras.js" charset="utf-8"></script>
     <script type="text/javascript" src="js/diffa-common.js" charset="utf-8"></script>
@@ -72,7 +72,29 @@
             <dt>Version Generation URL:</dt><dd><input data-key="versionGenerationUrl" type="text" size="60"></dd>
             <dt>Inbound URL:</dt><dd><input data-key="inboundUrl" type="text" size="60"></dd>
 
-            <dd><button class="save">Save</button> <button class="delete">Delete</button></dd>
+            <dt>Range Categories</dt>
+            <dd class="range-categories">
+              <table class="category-table">
+                <thead><tr><td data-key="name">Name</td><td data-key="dataType">Data Type</td><td data-key="lower">Lower</td><td data-key="upper">Upper</td></tr></thead>
+              </table>
+              <a class="add-category-link" href="">Add New</a>
+            </dd>
+            <dt>Set Categories</dt>
+            <dd class="set-categories">
+              <table class="category-table">
+                <thead><tr><td>Name</td><td>Values</td></tr></thead>
+              </table>
+              <a class="add-category-link" href="">Add New</a>
+            </dd>
+            <dt>Prefix Categories</dt>
+            <dd class="prefix-categories">
+              <table class="category-table">
+                <thead><tr><td data-key="name">Name</td><td data-key="prefixLength">Prefix Length</td><td data-key="maxLength">Max Length</td><td data-key="step">Step</td></tr></thead>
+              </table>
+              <a class="add-category-link" href="">Add New</a>
+            </dd>
+
+            <dd class="controls"><button class="save">Save</button> <button class="delete">Delete</button></dd>
           </dl>
         </div>
         <div style="display:none" id="pair-editor">
@@ -91,9 +113,9 @@
               <label for="allowPairManualScans">Allow Manual Scans</label>
             </dd>
             <dt>Scan Cron Specification:</dt><dd><input data-key="scanCronSpec" type="text"></dd>
-            <dt>Matching Timeout:</dt><dd><input data-key="matchingTimeout" type="text"></dd>
+            <dt>Matching Timeout:</dt><dd><input data-key="matchingTimeout" type="number"></dd>
 
-            <dd><button class="save">Save</button> <button class="delete">Delete</button></dd>
+            <dd class="controls"><button class="save">Save</button> <button class="delete">Delete</button></dd>
           </dl>
         </div>
       </div>
