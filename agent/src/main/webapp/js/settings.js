@@ -19,7 +19,8 @@ var Diffa = {
   Views: {},
   Collections: {},
   Models: {},
-  Config: {}
+  Config: {},
+  Binders: {}
 };
 
 $(function() {
@@ -341,7 +342,16 @@ Diffa.Views.CategoriesEditor = Backbone.View.extend({
 
     // Generate a row, with values for each of the header cells
     var row = $('<tr class="category-row"></tr>');
-    _.each(keys, function(k) { row.append('<td><input type="text" data-el-key="' + k + '"></td>'); });
+    this.$('table thead td').each(function(idx, el) {
+      var k = $(el).data('key');
+      var type = $(el).data('type');
+
+      if (!type || type == "text") {
+        row.append('<td><input type="text" data-el-key="' + k + '"></td>');
+      } else if (type == "list") {
+        row.append('<td data-el-list-key="' + k + '"></td>');
+      }
+    });
     this.$('table').append(row);
 
     // Bind the model to the row
@@ -364,6 +374,51 @@ Diffa.Views.CategoriesEditor = Backbone.View.extend({
 Diffa.Views.CategoryEditor = Backbone.View.extend({
   initialize: function() {
     Backbone.ModelBinding.bind(this, {all: "data-el-key"});
+
+    new Diffa.Binders.ListBinder(this, "data-el-list-key");
+  }
+});
+
+Diffa.Binder = function(options) {
+  this.initialize.apply(this, arguments);
+};
+_.extend(Diffa.Binder.prototype, {
+  initialize: function() {}
+});
+Diffa.Binder.extend = Backbone.Model.extend;    // Copy the extend method definition from a backbone class
+Diffa.Binders.ListBinder = Diffa.Binder.extend({
+  initialize: function(view, key) {
+    var self = this;
+
+    _.bindAll(this, 'renderEl');
+    this.view = view;
+
+    view.$('[' + key + ']').each(function(idx, el) {
+      var attrName = $(el).attr(key);
+
+      self.renderEl(attrName, el);
+      view.model.bind('change:' + attrName, function() { self.renderEl(attrName, el); });
+    });
+  },
+
+  renderEl: function(attrName, el) {
+    var self = this;
+    var values = self.view.model.get(attrName);
+
+    $(el).empty();
+    _.each(values, function(val, idx) {
+      $('<input type="text" value="' + _.escape(val) + '">').
+        appendTo(el).
+        change(function() {
+          values[idx] = $(this).val();
+        });
+    });
+
+    $('<button>+</button>').
+      appendTo(el).
+      click(function() {
+        self.view.model.set(attrName, (self.view.model.get(attrName) || []).concat(""))
+      });
   }
 });
 
