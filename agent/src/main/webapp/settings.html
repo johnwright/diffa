@@ -51,12 +51,14 @@
           <h4>Endpoints</h4>
           <span class="none-message">No endpoints configured</span>
           <ul class="element-list"></ul>
+          <span class="loading"><img src="images/busy.gif"/></span>
           <a id="addEndpoint" href="#endpoint" class="add-element">Add New</a>
         </div>
 
         <div id="pairs-list" class="element-list-panel">
           <h4>Pairs</h4>
           <span class="none-message">No pairs configured</span>
+          <span class="loading"><img src="images/busy.gif"/></span>
           <ul class="element-list"></ul>
           <a id="addPair" href="#pair" class="add-element">Add New</a>
         </div>
@@ -82,7 +84,7 @@
             <dt>Set Categories</dt>
             <dd class="set-categories">
               <table class="category-table">
-                <thead><tr><td>Name</td><td>Values</td></tr></thead>
+                <thead><tr><td data-key="name">Name</td><td data-key="values">Values</td></tr></thead>
               </table>
               <a class="add-category-link" href="">Add New</a>
             </dd>

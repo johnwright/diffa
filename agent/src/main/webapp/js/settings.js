@@ -108,12 +108,24 @@ Diffa.Models.Pair = Backbone.Model.extend({
   }
 });
 
-Diffa.Collections.Endpoints = Backbone.Collection.extend({
+Diffa.Collections.CollectionBase = Backbone.Collection.extend({
+  initialize: function() {
+    var self = this;
+
+    // Track whether an initial load has been done. This allows a UI to distinguish
+    // between "still loading" and "empty".
+    this.initialLoadComplete = false;
+    this.bind("reset", function() {
+      self.initialLoadComplete = true;
+    });
+  }
+});
+Diffa.Collections.Endpoints = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Endpoint,
   url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints"; },
   comparator: function(endpoint) { return endpoint.get('name'); }
 });
-Diffa.Collections.Pairs = Backbone.Collection.extend({
+Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Pair,
   url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/pairs"; },
   comparator: function(endpoint) { return endpoint.get('name'); }
@@ -156,6 +168,8 @@ Diffa.Views.ElementList = Backbone.View.extend({
     this.collection.bind('reset', this.render);
     this.collection.bind('add', function(m) { self.addOne(m, false); });
     this.collection.bind('remove', this.updateNoneMessage);
+
+    this.render();
   },
 
   render: function() {
@@ -181,7 +195,8 @@ Diffa.Views.ElementList = Backbone.View.extend({
   },
 
   updateNoneMessage: function() {
-    this.$('.none-message').toggle(this.collection.length == 0);
+    this.$('.none-message').toggle(this.collection.length == 0 && !!this.collection.initialLoadComplete);
+    this.$('.loading').toggle(this.collection.length == 0 && !this.collection.initialLoadComplete);
   }
 });
 Diffa.Views.ElementListItem = Backbone.View.extend({
@@ -278,6 +293,7 @@ Diffa.Views.EndpointEditor = Diffa.Views.FormEditor.extend({
     // Attach categories
     this.categoryEditors = [
       new Diffa.Views.CategoriesEditor({collection: this.model.rangeCategories, el: this.$('.range-categories')}),
+      new Diffa.Views.CategoriesEditor({collection: this.model.setCategories, el: this.$('.set-categories')}),
       new Diffa.Views.CategoriesEditor({collection: this.model.prefixCategories, el: this.$('.prefix-categories')})
     ];
   },
