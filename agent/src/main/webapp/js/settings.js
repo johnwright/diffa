@@ -20,7 +20,8 @@ var Diffa = {
   Collections: {},
   Models: {},
   Config: {},
-  Binders: {}
+  Binders: {},
+  Helpers: {}
 };
 
 $(function() {
@@ -69,45 +70,73 @@ Diffa.Routers.Config = Backbone.Router.extend({
   }
 });
 
+Diffa.Helpers.ViewsHelper = {
+  extractViews: function(model, viewCollectionClass) {
+    var updateViews = function() {
+      model.views.reset(model.get('views'));
+    };
+
+    model.bind('change:views', updateViews);
+    model.views = new (viewCollectionClass || Backbone.Collection)([]);
+    updateViews();
+  },
+  packViews: function(model) {
+    model.views.each(function(m) { if (m.prepareForSave) m.prepareForSave(); });
+    model.set({views: model.views.toJSON()}, {silent: true});
+  }
+};
+Diffa.Helpers.CategoriesHelper = {
+  extractCategories: function(model, viewCollectionClass) {
+    var updateCategories = function() {
+      model.rangeCategories.unpack(model.get('categories'));
+      model.setCategories.unpack(model.get('categories'));
+      model.prefixCategories.unpack(model.get('categories'));
+    };
+
+    model.bind('change:categories', updateCategories);
+
+    model.rangeCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'range'});
+    model.setCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'set'});
+    model.prefixCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'prefix'});
+
+    updateCategories();
+  },
+  packCategories: function(model) {
+    var categories = {};
+
+    model.rangeCategories.pack(categories);
+    model.setCategories.pack(categories);
+    model.prefixCategories.pack(categories);
+
+    model.set({categories: categories}, {silent: true});
+  }
+};
 Diffa.Models.Endpoint = Backbone.Model.extend({
   idAttribute: 'name',
   initialize: function() {
-    _.bindAll(this, 'updateCategories');
-    this.bind('change:categories', this.updateCategories);
-
-    this.rangeCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'range'});
-    this.setCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'set'});
-    this.prefixCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'prefix'});
-
-    this.updateCategories();
+    Diffa.Helpers.CategoriesHelper.extractCategories(this);
+    Diffa.Helpers.ViewsHelper.extractViews(this, Diffa.Collections.EndpointViews);
   },
   urlRoot: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints"; },
   prepareForSave: function() {
-    var categories = {};
-
-    this.rangeCategories.pack(categories);
-    this.setCategories.pack(categories);
-    this.prefixCategories.pack(categories);
-
-    // Pack the categories back into their own fields
-    this.set({categories: categories}, {silent: true});
+    Diffa.Helpers.CategoriesHelper.packCategories(this);
+    Diffa.Helpers.ViewsHelper.packViews(this);
+  }
+});
+Diffa.Models.EndpointView = Backbone.Model.extend({
+  idAttribute: 'name',
+  initialize: function() {
+    Diffa.Helpers.CategoriesHelper.extractCategories(this);
   },
-  updateCategories: function() {
-    this.rangeCategories.unpack(this.get('categories'));
-    this.setCategories.unpack(this.get('categories'));
-    this.prefixCategories.unpack(this.get('categories'));
+  prepareForSave: function() {
+    Diffa.Helpers.CategoriesHelper.packCategories(this);
   }
 });
 Diffa.Models.Pair = Backbone.Model.extend({
   idAttribute: "key",
   urlRoot: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/pairs"; },
   initialize: function() {
-    _.bindAll(this, 'updateViews');
-    this.bind('change:views', this.updateViews);
-
-    this.views = new Backbone.Collection([]);
-
-    this.updateViews();
+    Diffa.Helpers.ViewsHelper.extractViews(this);
   },
   prepareForSave: function() {
       // Remove properties artifacts from the databinding library
@@ -115,7 +144,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
     this.unset('upstreamName_text', {silent: true});
     this.unset('downstreamName_text', {silent: true});
 
-    this.set({views: this.views.toJSON()}, {silent: true});
+    Diffa.Helpers.ViewsHelper.packViews(this);
   },
   updateViews: function() {
     this.views.reset(this.get('views'));
@@ -139,6 +168,9 @@ Diffa.Collections.Endpoints = Diffa.Collections.CollectionBase.extend({
   url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/endpoints"; },
   comparator: function(endpoint) { return endpoint.get('name'); }
 });
+Diffa.Collections.EndpointViews = Backbone.Collection.extend({
+  model: Diffa.Models.EndpointView
+})
 Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Pair,
   url: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/pairs"; },
@@ -310,9 +342,12 @@ Diffa.Views.EndpointEditor = Diffa.Views.FormEditor.extend({
       new Diffa.Views.CategoriesEditor({collection: this.model.setCategories, el: this.$('.set-categories')}),
       new Diffa.Views.CategoriesEditor({collection: this.model.prefixCategories, el: this.$('.prefix-categories')})
     ];
+
+    this.viewsEditor = new Diffa.Views.EndpointViewsEditor({collection: this.model.views, el: this.$('.views')});
   },
   postClose: function() {
     if (this.categoryEditors) _.each(this.categoryEditors, function(editor) { editor.close(); });
+    if (this.viewsEditor) this.viewsEditor.close();
   }
 });
 Diffa.Views.PairEditor = Diffa.Views.FormEditor.extend({
@@ -337,42 +372,32 @@ Diffa.Views.PairEditor = Diffa.Views.FormEditor.extend({
 Diffa.Views.TableEditor = Backbone.View.extend({
   rowEditor: undefined,   /* Must be overriden by subclasses */
 
-  events: {
-    "click .add-link": "createRow"
-  },
-
   initialize: function() {
-    _.bindAll(this, "addOne", "render");
+    _.bindAll(this, "addOne", "render", "createRow");
     this.collection.bind("add", this.addOne);
     this.collection.bind("reset", this.render);
+
+    this.$('>.add-link').click(this.createRow);
+
+    this.templateName = this.$('table').data('template');
+    if (!this.templateName) console.error("Missing template name", this);
+    this.template = _.template($('#' + this.templateName).html());
+
+    this.table = this.$('>table');
 
     this.render();
   },
 
   render: function() {
     // Remove all category rows
-    this.$('table tr.editable-row').remove();
+    $('tr.editable-row', this.table).remove();
 
     this.collection.each(this.addOne);
   },
 
   addOne: function(added) {
-    // Retrieve the field names
-    var keys = this.$('table thead td').map(function(idx, el) { return $(el).data('key'); });
-
-    // Generate a row, with values for each of the header cells
-    var row = $('<tr class="editable-row"></tr>');
-    this.$('table thead td').each(function(idx, el) {
-      var k = $(el).data('key');
-      var type = $(el).data('type');
-
-      if (!type || type == "text") {
-        row.append('<td><input type="text" data-el-key="' + k + '"></td>');
-      } else if (type == "list") {
-        row.append('<td data-el-list-key="' + k + '"></td>');
-      }
-    });
-    this.$('table').append(row);
+    // Create a row with the table template
+    var row = $(this.template()).addClass('editable-row').appendTo(this.table);
 
     // Bind the model to the row
     var rowView = new this.rowEditor({el: row, model: added});
@@ -408,6 +433,19 @@ Diffa.Views.PairViewEditor = Backbone.View.extend({
 });
 Diffa.Views.PairViewsEditor = Diffa.Views.TableEditor.extend({
   rowEditor: Diffa.Views.PairViewEditor
+});
+Diffa.Views.EndpointViewEditor = Backbone.View.extend({
+  initialize: function() {
+    this.categoryEditors = [
+      new Diffa.Views.CategoriesEditor({collection: this.model.rangeCategories, el: this.$('.range-categories')}),
+      new Diffa.Views.CategoriesEditor({collection: this.model.setCategories, el: this.$('.set-categories')}),
+      new Diffa.Views.CategoriesEditor({collection: this.model.prefixCategories, el: this.$('.prefix-categories')})
+    ];
+    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
+  }
+});
+Diffa.Views.EndpointViewsEditor = Diffa.Views.TableEditor.extend({
+  rowEditor: Diffa.Views.EndpointViewEditor
 });
 
 
