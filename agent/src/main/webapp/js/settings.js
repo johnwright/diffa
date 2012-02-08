@@ -101,11 +101,24 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
 Diffa.Models.Pair = Backbone.Model.extend({
   idAttribute: "key",
   urlRoot: function() { return API_BASE + "/" + Diffa.currentDomain + "/config/pairs"; },
+  initialize: function() {
+    _.bindAll(this, 'updateViews');
+    this.bind('change:views', this.updateViews);
+
+    this.views = new Backbone.Collection([]);
+
+    this.updateViews();
+  },
   prepareForSave: function() {
       // Remove properties artifacts from the databinding library
     this.unset('versionPolicyName_text', {silent: true});
     this.unset('upstreamName_text', {silent: true});
     this.unset('downstreamName_text', {silent: true});
+
+    this.set({views: this.views.toJSON()}, {silent: true});
+  },
+  updateViews: function() {
+    this.views.reset(this.get('views'));
   }
 });
 
@@ -313,12 +326,19 @@ Diffa.Views.PairEditor = Diffa.Views.FormEditor.extend({
     Diffa.EndpointsCollection.each(function(ep) {
       selections.append('<option value="' + ep.get('name') + '">' + ep.get('name') + '</option>');
     });
+
+    this.viewsEditor = new Diffa.Views.PairViewsEditor({collection: this.model.views, el: this.$('.views')});
+  },
+  postClose: function() {
+    if (this.viewsEditor) this.viewsEditor.close();
   }
 });
 
-Diffa.Views.CategoriesEditor = Backbone.View.extend({
+Diffa.Views.TableEditor = Backbone.View.extend({
+  rowEditor: undefined,   /* Must be overriden by subclasses */
+
   events: {
-    "click .add-category-link": "createCategory"
+    "click .add-link": "createRow"
   },
 
   initialize: function() {
@@ -331,7 +351,7 @@ Diffa.Views.CategoriesEditor = Backbone.View.extend({
 
   render: function() {
     // Remove all category rows
-    this.$('table tr.category-row').remove();
+    this.$('table tr.editable-row').remove();
 
     this.collection.each(this.addOne);
   },
@@ -341,7 +361,7 @@ Diffa.Views.CategoriesEditor = Backbone.View.extend({
     var keys = this.$('table thead td').map(function(idx, el) { return $(el).data('key'); });
 
     // Generate a row, with values for each of the header cells
-    var row = $('<tr class="category-row"></tr>');
+    var row = $('<tr class="editable-row"></tr>');
     this.$('table thead td').each(function(idx, el) {
       var k = $(el).data('key');
       var type = $(el).data('type');
@@ -355,18 +375,18 @@ Diffa.Views.CategoriesEditor = Backbone.View.extend({
     this.$('table').append(row);
 
     // Bind the model to the row
-    var rowView = new Diffa.Views.CategoryEditor({el: row, model: added});
+    var rowView = new this.rowEditor({el: row, model: added});
   },
 
-  createCategory: function(e) {
+  createRow: function(e) {
     e.preventDefault();
 
-    this.collection.add(new this.collection.model({name: 'Untitled'}));
+    this.collection.add(new this.collection.model({}));
   },
 
   close: function() {
     this.undelegateEvents();
-    
+
     this.collection.unbind("add", this.addOne);
     this.collection.unbind("reset", this.render);
   }
@@ -378,6 +398,18 @@ Diffa.Views.CategoryEditor = Backbone.View.extend({
     new Diffa.Binders.ListBinder(this, "data-el-list-key");
   }
 });
+Diffa.Views.CategoriesEditor = Diffa.Views.TableEditor.extend({
+  rowEditor: Diffa.Views.CategoryEditor
+});
+Diffa.Views.PairViewEditor = Backbone.View.extend({
+  initialize: function() {
+    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
+  }
+});
+Diffa.Views.PairViewsEditor = Diffa.Views.TableEditor.extend({
+  rowEditor: Diffa.Views.PairViewEditor
+});
+
 
 Diffa.Binder = function(options) {
   this.initialize.apply(this, arguments);
