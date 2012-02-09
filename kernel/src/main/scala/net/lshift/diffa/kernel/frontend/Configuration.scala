@@ -57,7 +57,7 @@ class Configuration(val configStore: DomainConfigStore,
     diffaConfig.members.foreach(configStore.makeDomainMember(domain,_))
 
     // Apply endpoint and pair updates
-    diffaConfig.endpoints.foreach(createOrUpdateEndpoint(domain, _))
+    diffaConfig.endpoints.foreach(createOrUpdateEndpoint(domain, _, false))   // Don't restart pairs - that'll happen in the next step
     diffaConfig.pairs.foreach(p => createOrUpdatePair(domain, p))
 
     // Remove missing repair actions, and create/update the rest
@@ -109,14 +109,16 @@ class Configuration(val configStore: DomainConfigStore,
   * */
   def declareEndpoint(domain:String, endpoint: EndpointDef): Unit = createOrUpdateEndpoint(domain, endpoint)
 
-  def createOrUpdateEndpoint(domain:String, endpointDef: EndpointDef) = {
+  def createOrUpdateEndpoint(domain:String, endpointDef: EndpointDef, restartPairs:Boolean = true) = {
     log.debug("[%s] Processing endpoint declare/update request: %s".format(domain, endpointDef.name))
     endpointDef.validate()
     val endpoint = configStore.createOrUpdateEndpoint(domain, endpointDef)
     endpointListener.onEndpointAvailable(endpoint)
 
     // Inform each related pair that it has been updated
-    configStore.listPairsForEndpoint(domain, endpoint.name).foreach(notifyPairUpdate(_))
+    if (restartPairs) {
+      configStore.listPairsForEndpoint(domain, endpoint.name).foreach(notifyPairUpdate(_))
+    }
   }
 
   def deleteEndpoint(domain:String, endpoint: String) = {
@@ -159,10 +161,6 @@ class Configuration(val configStore: DomainConfigStore,
     log.info("%s -> Processing pair declare/update request ....".format(pairRef))
 
     pairDef.validate()
-    // Stop a running actor, if there is one
-    maybeWithPair(domain, pairDef.key, (p:DiffaPair) => {
-      log.info("%s -> Stopping pair actor  (%s)".format(p.asRef, benchmark( () => supervisor.stopActor(p.asRef)) ))
-    })
     configStore.createOrUpdatePair(domain, pairDef)
     withCurrentPair(domain, pairDef.key, notifyPairUpdate(_))
 
