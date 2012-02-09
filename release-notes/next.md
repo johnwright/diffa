@@ -12,3 +12,4 @@
 
 * [28] - Addresses a issue whereby updating a user's config would regenerate their authentication token
 * [29] - Introduces a simplification of the way pairs refer to endpoints
+* [33] - Instead of letting the global error bar show a non-specific error, an error panel is rendered that shows the error returned by the server
