@@ -114,6 +114,9 @@ class Configuration(val configStore: DomainConfigStore,
     endpointDef.validate()
     val endpoint = configStore.createOrUpdateEndpoint(domain, endpointDef)
     endpointListener.onEndpointAvailable(endpoint)
+
+    // Inform each related pair that it has been updated
+    configStore.listPairsForEndpoint(domain, endpoint.name).foreach(notifyPairUpdate(_))
   }
 
   def deleteEndpoint(domain:String, endpoint: String) = {
@@ -161,14 +164,7 @@ class Configuration(val configStore: DomainConfigStore,
       log.info("%s -> Stopping pair actor  (%s)".format(p.asRef, benchmark( () => supervisor.stopActor(p.asRef)) ))
     })
     configStore.createOrUpdatePair(domain, pairDef)
-    withCurrentPair(domain, pairDef.key, (p:DiffaPair) => {
-      val pair = p.asRef
-      log.info("%s -> Starting pair actor  (%s)".format(pair, benchmark( () => supervisor.startActor(p)) ))
-      log.info("%s -> Adding to matching manager (%s)".format(pair, benchmark( () => matchingManager.onUpdatePair(p)) ))
-      log.info("%s -> Adding to differences store (%s)".format(pair, benchmark( () => differencesManager.onUpdatePair(pair)) ))
-      log.info("%s -> Registering with scheduler (%s)".format(pair, benchmark( () => scanScheduler.onUpdatePair(p)) ))
-      log.info("%s -> Running initial difference (%s)".format(pair, benchmark( () => pairPolicyClient.difference(pair)) ))
-    })
+    withCurrentPair(domain, pairDef.key, notifyPairUpdate(_))
 
     log.info("%s -> Completed pair declare/update request".format(pairRef))
   }
@@ -281,4 +277,14 @@ class Configuration(val configStore: DomainConfigStore,
   def makeDomainMember(domain:String, userName:String) = configStore.makeDomainMember(domain,userName)
   def removeDomainMembership(domain:String, userName:String) = configStore.removeDomainMembership(domain, userName)
   def listDomainMembers(domain:String) = configStore.listDomainMembers(domain)
+
+  def notifyPairUpdate(p:DiffaPair) {
+    val pairRef = p.asRef
+
+    log.info("%s -> Starting pair actor  (%s)".format(pairRef, benchmark( () => supervisor.startActor(p)) ))
+    log.info("%s -> Adding to matching manager (%s)".format(pairRef, benchmark( () => matchingManager.onUpdatePair(p)) ))
+    log.info("%s -> Adding to differences store (%s)".format(pairRef, benchmark( () => differencesManager.onUpdatePair(pairRef)) ))
+    log.info("%s -> Registering with scheduler (%s)".format(pairRef, benchmark( () => scanScheduler.onUpdatePair(p)) ))
+    log.info("%s -> Running initial difference (%s)".format(pairRef, benchmark( () => pairPolicyClient.difference(pairRef)) ))
+  }
 }
