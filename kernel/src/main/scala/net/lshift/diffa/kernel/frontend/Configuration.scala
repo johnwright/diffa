@@ -160,7 +160,7 @@ class Configuration(val configStore: DomainConfigStore,
     val pairRef = DiffaPairRef(pairDef.key, domain)
     log.info("%s -> Processing pair declare/update request ....".format(pairRef))
 
-    pairDef.validate()
+    pairDef.validate(null, configStore.listEndpoints(domain).toSet)
     configStore.createOrUpdatePair(domain, pairDef)
     withCurrentPair(domain, pairDef.key, notifyPairUpdate(_))
 
