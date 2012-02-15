@@ -98,6 +98,6 @@ class UsersResource {
   @Path("/users/{name}/memberships")
   @Description("Retrieves the domains which the user is a member of.")
   @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
-  def listUserDomains(@PathParam("name") name: String) : Array[DomainDef] =
-    systemConfig.listDomainMemberships(name).map(m => toDomainDef(m.domain)).toArray
+  def listUserDomains(@PathParam("name") name: String) : Array[String] =
+    systemConfig.listDomainMemberships(name).map(m => m.domain.name).toArray
 }
