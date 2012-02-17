@@ -16,6 +16,8 @@
 
 package net.lshift.diffa.kernel.config
 
+import java.io.{PrintWriter, FileWriter, File, InputStream }
+import java.sql._
 import org.junit.runner.RunWith
 import org.junit.Assert._
 import net.lshift.diffa.kernel.util.SessionHelper._
@@ -24,19 +26,20 @@ import org.hibernate.dialect.Dialect
 import org.hibernate.cfg.{Configuration, Environment}
 import org.hibernate.jdbc.Work
 import scala.collection.JavaConversions._
-import org.junit.Test
 import org.hibernate.tool.hbm2ddl.{SchemaExport, DatabaseMetadata}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theory, Theories}
-import java.sql._
-import java.io.{PrintWriter, FileWriter, File, InputStream}
 import org.easymock.EasyMock._
+import org.hibernate.{Session, SessionFactory}
 import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, DatabaseEnvironment}
+import org.junit.{Ignore, Test}
+import org.hsqldb.Database
 
 /**
  * Test cases for ensuring that preparation steps apply to database schemas at various levels, and allow us to upgrade
  * any version to any other.
  */
+
 @RunWith(classOf[Theories])
 class HibernatePreparationTest {
 
@@ -70,6 +73,66 @@ class HibernatePreparationTest {
     }
   }
 
+  /**
+   * From v0 (earliest version), the deployer should be able to upgrade any supported system to the latest version.
+   *
+   * Supported systems are identified in DialectLookup.
+   * The associated DDL statements are named (differentiated by suffix) accordingly and are located at run-time.
+   */
+  @Test
+  def shouldBeAbleToUpgradeToLatestDatabaseVersion {
+    val databaseEnvironment = DatabaseEnvironment.customEnvironment
+    val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
+
+    cleanSchema(adminEnvironment, databaseEnvironment)
+    waitForSchemaCreation(databaseEnvironment, pollIntervalMs = 100L, timeoutMs = 10000L)
+    
+    val dbConfig = createSecureConfig(databaseEnvironment)
+    val dialect = Dialect.getDialect(dbConfig.getProperties)
+    val sessionFactory = dbConfig.buildSessionFactory
+
+    log.info("Operating on database %s".format(databaseEnvironment.dbName))
+
+    // Install starting version of schema
+    runMigrationStep(HibernateMigrationStep0, dbConfig, sessionFactory)
+    
+    log.info("Installed initial schema")
+
+    // Upgrade to latest version
+    (new HibernateConfigStorePreparationStep).prepare(sessionFactory, dbConfig)
+
+    log.info("Upgraded schema")
+
+    // validate the correctness of the schema
+    val metadata = sessionFactory.withSession(s => retrieveMetadata(s, dialect))
+    assertNotSame(None, metadata)
+    dbConfig.validateSchema(dialect, metadata.get)
+    validateNotTooManyObjects(dbConfig, metadata.get)
+
+    // Verify that a further attempt to upgrade to the latest version doesn't fall over (no op)
+    // TODO: move this to a separate test
+    (new HibernateConfigStorePreparationStep).prepare(sessionFactory, dbConfig)
+  }
+  
+  private def runMigrationStep(step: HibernateMigrationStep, config: Configuration, sessionFactory: SessionFactory) {
+    val migration = step.createMigration(config)
+
+    sessionFactory.executeOnSession(conn => {
+      try {
+        migration.apply(conn)
+      } catch {
+        case ex =>
+          println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
+          println("_" * 80)
+          println()
+          migration.getStatements.foreach(println(_))
+          println("_" * 80)
+          println()
+          throw ex      // Higher level code will log the exception
+      }
+    })
+  }
+
   @Theory
   def shouldBeAbleToPrepareDatabaseVersion(startVersion:StartingDatabaseVersion) {
 
@@ -82,50 +145,25 @@ class HibernatePreparationTest {
     val dbDir = "target/configStore-" + startVersion.startName
     FileUtils.deleteDirectory(new File(dbDir))
 
-    val config = new Configuration().
-        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-" + startVersion.startName)).
-        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
-        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory")
+    val hibernateEnv = TestDatabaseEnvironments.hsqldbEnvironment("configStore-%s".format(startVersion.startName))
+    val config = hibernateEnv.getHibernateConfiguration
+
+    log.info("building session factory for configured database [%s (%s->%s)] as [%s/%s]".format(
+    hibernateEnv.url, hibernateEnv.driver, hibernateEnv.dialect,
+    hibernateEnv.username, hibernateEnv.password))
+
     val sf = config.buildSessionFactory
     val dialect = Dialect.getDialect(config.getProperties)
 
     // Prepare the starting database
-    sf.withSession(s => {
-      s.doWork(new Work() {
-        def execute(connection: Connection) {
-          val stmt = connection.createStatement()
-          prepStmts.foreach(prepStmt => {
-            try {
-              stmt.execute(prepStmt)
-            } catch {
-              case ex =>
-                println("Failed to execute prep stmt: '" + prepStmt + "'")
-                throw ex      // Higher level code will log the exception
-            }
-          })
-          stmt.close()
-        }
-      })
-    })
+    sf.executeStatements(prepStmts, treatErrorsAsFatal = true)
 
     // Upgrade the database, gather the metadata and validate the schema
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
-    var dbMetadata:DatabaseMetadata = null
-    sf.withSession(s => {
-      s.doWork(new Work() {
-        def execute(connection: Connection) {
-          // Load the metadata at completion
-          dbMetadata = new DatabaseMetadata(connection, dialect)
-        }
-      })
-    })
-    config.validateSchema(dialect, dbMetadata)
-    validateNotTooManyObjects(config, dbMetadata)
+    val dbMetadata = sf.withSession(s => retrieveMetadata(s,  dialect))
+
+    config.validateSchema(dialect, dbMetadata.get)
+    validateNotTooManyObjects(config, dbMetadata.get)
 
     // Ensure we can run the upgrade again cleanly
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
@@ -141,13 +179,13 @@ class HibernatePreparationTest {
   def exportSchema() {
     if(System.getProperty("doCurrentSchemaExport") != null) {
       val config = new Configuration().
-          addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-          addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-          setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-          setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-export")).
-          setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-          setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-          setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD)
+      addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+      addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
+      setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+      setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-export")).
+      setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
+      setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
+      setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD)
 
       val exporter = new SchemaExport(config)
       val outputFile = "target/current-schema.sql"
@@ -182,15 +220,15 @@ class HibernatePreparationTest {
   def verifyExternalDatabase() {
     if(System.getProperty("verifyExternalDB") != null) {
       val config = new Configuration().
-          addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-          addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-          setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-          setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-export")).
-          setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-          setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-          setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
-          setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-          setProperty("hibernate.cache.use_second_level_cache", "true")
+      addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+      addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
+      setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+      setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-export")).
+      setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
+      setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
+      setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
+      setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+      setProperty("hibernate.cache.use_second_level_cache", "true")
       val sf = config.buildSessionFactory
       (new HibernateConfigStorePreparationStep).prepare(sf, config)
     }
@@ -205,6 +243,66 @@ class HibernatePreparationTest {
     val nonCommentLines = lines.filter(l => !l.trim().startsWith("--")).toSeq
 
     nonCommentLines.fold("")(_ + _).split(";").filter(l => l.trim().length > 0)
+  }
+
+  private def createSecureConfig(env: DatabaseEnvironment): Configuration = {
+    System.setProperty("javax.net.ssl.trustStore", env.caKeystore)
+    System.setProperty("javax.net.ssl.trustStoreType", "PKCS12")
+    System.setProperty("javax.net.ssl.keyStore", "diffa-ks.jks")
+    System.setProperty("javax.net.ssl.keyStoreType", "JKS")
+    env.getHibernateConfiguration.
+      setProperty("hibernate.connection.requireSSL", "true").
+      setProperty("hibernate.verifyServerCertificate", "false")
+  }
+
+  /**
+   * Drop and recreate the named schema/database in order to provide a clean slate to test from.
+   */
+  private def cleanSchema(sysenv: DatabaseEnvironment, appenv: DatabaseEnvironment) {
+    val sysConfig = sysenv.getHibernateConfiguration
+
+    val cleaner = SchemaCleaner.forDialect(Dialect.getDialect(sysConfig.getProperties))
+    cleaner.clean(sysenv, appenv)
+  }
+
+  private def waitForSchemaCreation(newDbEnviron: DatabaseEnvironment, pollIntervalMs: Long, timeoutMs: Long) {
+    val config = newDbEnviron.getHibernateConfiguration
+    val sessionFactory = config.buildSessionFactory
+    var connected = false
+    var failCount = 0
+    val failThreshold = timeoutMs / pollIntervalMs
+
+    while (connected) {
+      try {
+        sessionFactory.openSession
+        connected = true
+      } catch {
+        case ex =>
+          Thread.sleep(pollIntervalMs)
+          failCount += 1
+          if (failCount >= failThreshold)
+            throw ex
+      }
+    }
+
+  }
+  
+  private def retrieveMetadata(session: Session, dialect: Dialect): Option[DatabaseMetadata] = {
+    var metadata: Option[DatabaseMetadata] = None
+
+    session.doWork(new Work() {
+      def execute(connection: Connection) {
+        metadata = Some(new DatabaseMetadata(connection, dialect))
+      }
+    })
+
+    metadata
+  }
+
+  private def retrieveVersionStatements(versionName: String, dialectName: String): Seq[String] = {
+    val stmtsResourceOrNull = getClass.getResourceAsStream("%s-config-db%s.sql".format(versionName, dialectName))
+    assertNotNull(stmtsResourceOrNull)
+    loadStatements(stmtsResourceOrNull)
   }
 
   /**

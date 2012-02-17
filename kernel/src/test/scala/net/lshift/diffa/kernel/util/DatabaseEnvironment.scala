@@ -16,11 +16,15 @@
 
 package net.lshift.diffa.kernel.util
 
+import org.hibernate.cfg.Configuration
+
 /**
  * Re-useable way of access the DB env
  */
 object DatabaseEnvironment {
+  def customEnvironment = StandardEnvironment
 
+  val DBNAME = System.getProperty("diffa.jdbc.dbname", "")
   val URL = System.getProperty("diffa.jdbc.url", "jdbc:hsqldb:mem")
   val DIALECT = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
   val DRIVER = System.getProperty("diffa.jdbc.driver", "org.hsqldb.jdbc.JDBCDriver")
@@ -41,5 +45,41 @@ object DatabaseEnvironment {
     else {
       url
     }
+  }
+}
+
+object StandardEnvironment extends DatabaseEnvironment
+
+class DatabaseEnvironment {
+  def dbName: String = _dbName
+  def url: String = System.getProperty("diffa.jdbc.url", "jdbc:hsqldb:mem")
+  def dialect: String = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
+  def driver: String = System.getProperty("diffa.jdbc.driver", "org.hsqldb.jdbc.JDBCDriver")
+  def username: String = System.getProperty("diffa.jdbc.username", "SA")
+  def password: String = System.getProperty("diffa.jdbc.password", "")
+  def caKeystore: String = System.getProperty("diffa.jdbc.ssl.trustStore", "")
+
+  var _dbName = System.getProperty("diffa.jdbc.dbname", "")
+  def setDbName(newDbName: String) { _dbName = newDbName }
+
+  def substitutableURL(path: String, url: String): String = {
+    if (url contains "%s") {
+      url.format(path)
+    } else {
+      url
+    }
+  }
+
+  def getHibernateConfiguration: Configuration = {
+    val diffCheckCfg = "net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml"
+    val hibernateCfg = "net/lshift/diffa/kernel/config/Config.hbm.xml"
+
+    new Configuration().addResource(hibernateCfg).addResource(diffCheckCfg).
+      setProperty("hibernate.dialect", dialect).
+      setProperty("hibernate.connection.url", url).
+      setProperty("hibernate.connection.driver_class", driver).
+      setProperty("hibernate.connection.username", username).
+      setProperty("hibernate.connection.password", password).
+      setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory")
   }
 }

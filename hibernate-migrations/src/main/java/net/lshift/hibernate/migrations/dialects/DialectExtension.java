@@ -101,4 +101,8 @@ public abstract class DialectExtension {
   public String analyzeTableString(String table) {
     throw new RuntimeException("analyze table is not supported by this dialect");
   }
+
+  public boolean supportsPrimaryKeyReplace() {
+    return false;
+  }
 }

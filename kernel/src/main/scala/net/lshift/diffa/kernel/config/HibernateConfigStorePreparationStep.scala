@@ -113,7 +113,7 @@ class HibernateConfigStorePreparationStep
           val dbMetadata = new DatabaseMetadata(connection, Dialect.getDialect(props))
 
           val defaultCatalog = props.getProperty(Environment.DEFAULT_CATALOG)
-          val defaultSchema = props.getProperty(Environment.DEFAULT_SCHEMA)
+          val defaultSchema = props.getProperty(Environment.USER) // This might not work for MySQL
 
           hasTable = (dbMetadata.getTableMetadata(tableName, defaultSchema, defaultCatalog, false) != null)
         }
@@ -304,7 +304,7 @@ object HibernateConfigStorePreparationStep {
       def createMigration(config: Configuration) = {
         val migration = new MigrationBuilder(config)
         migration.alterTable("pair").
-          dropConstraint("FK3462DAF4F4CA7C").
+          dropForeignKey("FK3462DAF4F4CA7C").
           dropColumn("NAME")
         migration.dropTable("pair_group")
 
@@ -370,11 +370,11 @@ object HibernateConfigStorePreparationStep {
 
         //alter table escalations add constraint FK2B3C687E7D35B6A8 foreign key (pair_key) references pair;
         migration.alterTable("escalations").
-          addForeignKey("FK2B3C687E7D35B6A8", "pair_key", "pair", "name")
+          addForeignKey("FK2B3C687E7D35B6A8", "pair_key", "pair", "pair_key")
 
         //alter table repair_actions add constraint FKF6BE324B7D35B6A8 foreign key (pair_key) references pair;
         migration.alterTable("repair_actions").
-          addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "name")
+          addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "pair_key")
 
         migration
       }
@@ -391,34 +391,38 @@ object HibernateConfigStorePreparationStep {
       def createMigration(config: Configuration) = {
         val migration = new MigrationBuilder(config)
 
+        migration.alterTable("pair").
+          addColumn("uep_domain", Types.VARCHAR, 255, true, "").
+          addColumn("dep_domain", Types.VARCHAR, 255, true, "")
+
         migration.alterTable("range_category_descriptor").
-          addColumn("max_granularity", Types.VARCHAR, 255, true, null)
+        addColumn("max_granularity", Types.VARCHAR, 255, true, null)
 
         migration
       }
     },
 
-    new HibernateMigrationStep {
+  new HibernateMigrationStep {
       def versionId = 5
       def name = "Expand primary keys"
       def createMigration(config: Configuration) = {
         val migration = new MigrationBuilder(config)
         migration.alterTable("endpoint_categories").
-          dropConstraint("FKEE1F9F06BC780104")
+          dropForeignKey("FKEE1F9F06BC780104")
         migration.alterTable("pair").
-          dropConstraint("FK3462DA25F0B1C4").
-          dropConstraint("FK3462DA4242E68B")
+          dropForeignKey("FK3462DA25F0B1C4").
+          dropForeignKey("FK3462DA4242E68B")
         migration.alterTable("escalations").
-          dropConstraint("FK2B3C687E7D35B6A8")
+          dropForeignKey("FK2B3C687E7D35B6A8")
         migration.alterTable("repair_actions").
-          dropConstraint("FKF6BE324B7D35B6A8")
+          dropForeignKey("FKF6BE324B7D35B6A8")
 
+        // These two alterations belong in Step 5, but the new FKs on pair and repair_actions
+        // fail if attempted in the same migration step as the change of primary key.
         migration.alterTable("endpoint").
-          dropPrimaryKey().
-          addPrimaryKey("name", "domain")
+          replacePrimaryKey("name", "domain")
         migration.alterTable("pair").
-          dropPrimaryKey().
-          addPrimaryKey("pair_key", "domain")
+          replacePrimaryKey("pair_key", "domain")
 
         migration.alterTable("endpoint_categories").
           addColumn("domain", Types.VARCHAR, 255, false, "diffa").
@@ -427,8 +431,6 @@ object HibernateConfigStorePreparationStep {
           addColumn("domain", Types.VARCHAR, 255, false, "diffa").
           addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
         migration.alterTable("pair").
-          addColumn("uep_domain", Types.VARCHAR, 255, true, null).
-          addColumn("dep_domain", Types.VARCHAR, 255, true, null).
           addForeignKey("FK3462DAF2DA557F", Array("downstream, dep_domain"), "endpoint", Array("name", "domain")).
           addForeignKey("FK3462DAF68A3C7", Array("upstream, uep_domain"), "endpoint", Array("name", "domain"))
         migration.alterTable("repair_actions").
@@ -571,19 +573,19 @@ object HibernateConfigStorePreparationStep {
         migration.createTable("endpoint_views").
           column("name", Types.VARCHAR, 255, false).
           column("endpoint", Types.VARCHAR, 255, false).
-          column("domain", Types.VARCHAR, 255, false).
+          column("domain", Types.VARCHAR, 50, false).
           pk("name", "endpoint", "domain")
         migration.createTable("endpoint_views_categories").
           column("name", Types.VARCHAR, 255, false).
           column("endpoint", Types.VARCHAR, 255, false).
-          column("domain", Types.VARCHAR, 255, false).
+          column("domain", Types.VARCHAR, 50, false).
           column("category_descriptor_id", Types.INTEGER, false).
           column("category_name", Types.VARCHAR, 255, false).
           pk("name", "endpoint", "domain", "category_name")
         migration.createTable("pair_views").
           column("name", Types.VARCHAR, 255, false).
           column("pair", Types.VARCHAR, 255, false).
-          column("domain", Types.VARCHAR, 255, false).
+          column("domain", Types.VARCHAR, 50, false).
           column("scan_cron_spec", Types.VARCHAR, 255, true).
           pk("name", "pair", "domain")
 
