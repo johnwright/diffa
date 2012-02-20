@@ -1,9 +1,9 @@
-package net.lshift.diffa.kernel.config
+package net.lshift.diffa.kernel.util
 
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
 
 /**
+ * Implements SchemaCleaner for MySQL databases.
  */
 object MySqlSchemaCleaner extends SchemaCleaner {
   override def clean(sysEnvironment: DatabaseEnvironment, appEnvironment: DatabaseEnvironment) {

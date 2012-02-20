@@ -34,9 +34,9 @@ import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.util.MissingObjectException
 import org.hibernate.cfg.{Configuration => HibernateConfig}
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
+import net.lshift.diffa.kernel.config.TestDatabaseEnvironments
 import net.lshift.diffa.kernel.hooks.HookManager
 
 /**
@@ -291,15 +291,16 @@ class ConfigurationTest {
   }
 }
 object ConfigurationTest {
+  lazy val env = TestDatabaseEnvironments.hsqldbEnvironment("target/configTest")
   lazy val config =
       new HibernateConfig().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("target/configTest")).
-        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
+        setProperty("hibernate.dialect", env.dialect).
+        setProperty("hibernate.connection.url", env.url).
+        setProperty("hibernate.connection.driver_class", env.driver).
+        setProperty("hibernate.connection.username", env.username).
+        setProperty("hibernate.connection.password", env.password).
         setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
         setProperty("hibernate.generate_statistics", "true").
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,

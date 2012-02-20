@@ -31,9 +31,9 @@ import org.apache.commons.io.{FileUtils, IOUtils}
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theory, Theories}
 import org.easymock.EasyMock._
 import org.hibernate.{Session, SessionFactory}
-import net.lshift.diffa.kernel.util.{EasyMockScalaUtils, DatabaseEnvironment}
 import org.junit.{Ignore, Test}
 import org.hsqldb.Database
+import net.lshift.diffa.kernel.util.{SchemaCleaner, EasyMockScalaUtils, DatabaseEnvironment}
 
 /**
  * Test cases for ensuring that preparation steps apply to database schemas at various levels, and allow us to upgrade

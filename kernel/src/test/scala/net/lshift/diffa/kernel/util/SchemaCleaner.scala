@@ -1,10 +1,11 @@
-package net.lshift.diffa.kernel.config
+package net.lshift.diffa.kernel.util
 
 import org.hibernate.dialect.{MySQL5Dialect, Oracle10gDialect, Dialect}
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
 
 /**
- *
+ * Empty the target schema of all database objects (tables, views, triggers, etc.).
+ * A thorough and simple implementation would involve dropping and recreating the
+ * target schema.  This approach may also require restoring baseline privileges.
  */
 trait SchemaCleaner {
   def clean(sysUserEnvironment: DatabaseEnvironment, appEnvironment: DatabaseEnvironment) {}

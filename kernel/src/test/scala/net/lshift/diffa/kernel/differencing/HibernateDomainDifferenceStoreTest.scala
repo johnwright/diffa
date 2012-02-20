@@ -1002,18 +1002,19 @@ object HibernateDomainDifferenceStoreTest {
     zoomLevels:Map[Int,Map[String,Seq[TileGroup]]]
   )
 
-  private val config =
-      new Configuration().
-        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("target/domainCache")).
-        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
-        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                               // otherwise the preparation step will not get committed
+  private val config = {
+    lazy val env = TestDatabaseEnvironments.hsqldbEnvironment("target/domainCache")
+    new Configuration().
+      addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
+      addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
+      setProperty("hibernate.dialect", env.dialect).
+      setProperty("hibernate.connection.url", env.url).
+      setProperty("hibernate.connection.driver_class", env.driver).
+      setProperty("hibernate.connection.username", env.username).
+      setProperty("hibernate.connection.password", env.password).
+      setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+      setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+  }                                       // otherwise the preparation step will not get committed
 
   val cacheManager = new CacheManager()
 

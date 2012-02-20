@@ -13,12 +13,12 @@ import org.joda.time.{DateTimeZone, DateTime, Interval}
 import java.math.BigInteger
 import java.util.List
 import org.jadira.usertype.dateandtime.joda.columnmapper.TimestampColumnDateTimeMapper
-import org.hibernate.dialect.Dialect
 import java.sql.{Types, Timestamp}
 import net.lshift.diffa.kernel.config.DomainScopedKey._
 import net.lshift.diffa.kernel.config.Domain._
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, DiffaPairRef, DiffaPair}
+import org.hibernate.dialect.{Oracle10gDialect, Dialect}
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -303,7 +303,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   private def readIntColumn(column:Object, small:Boolean, dialect:Dialect) : Int = {
-    if (dialect.getClass.getName.contains("Oracle")) {
+    // The following obscure code is to deal with the fact that Oracle drivers pre-10g
+    // will return a BigDecimal in calls to getObject on all INTEGER columns, whereas
+    // the 10g driver may return an Int
+    if (dialect.getClass.getName.contains("Oracle") && !dialect.isInstanceOf[Oracle10gDialect]) {
       column.asInstanceOf[java.math.BigDecimal].intValue()
     }
     else {
