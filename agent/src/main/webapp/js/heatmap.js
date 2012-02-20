@@ -462,8 +462,9 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     var parentOffset = $(parent).offset();
 
     layer.style.position = "absolute";
-    layer.style.left = parentOffset.left;
-    layer.style.top = parentOffset.top;
+    layer.style.left = parentOffset.left.toString() + "px";
+    layer.style.top = parentOffset.top.toString() + "px";
+
     this.resizeLayer(layer, parent.offsetWidth);
   },
   swimlaneHeight: function() { return 2 * this.gutterSize + this.gridSize; },
