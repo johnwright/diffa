@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.config
 
 import org.hibernate.SessionFactory
 import org.hibernate.jdbc.Work
-import org.hibernate.dialect.Dialect
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.tool.hbm2ddl.{DatabaseMetadata, SchemaExport}
@@ -28,6 +27,7 @@ import net.lshift.diffa.kernel.differencing.VersionCorrelationStore
 import net.lshift.hibernate.migrations.MigrationBuilder
 import scala.collection.JavaConversions._
 import org.hibernate.`type`.IntegerType
+import org.hibernate.dialect.{Oracle10gDialect, Dialect}
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -113,8 +113,13 @@ class HibernateConfigStorePreparationStep
           val dbMetadata = new DatabaseMetadata(connection, Dialect.getDialect(props))
 
           val defaultCatalog = props.getProperty(Environment.DEFAULT_CATALOG)
-          val defaultSchema = props.getProperty(Environment.USER) // This might not work for MySQL
-
+          val dialect = Dialect.getDialect(props)
+          val defaultSchema =
+            if (dialect.isInstanceOf[Oracle10gDialect])
+              props.getProperty(Environment.USER) // This is required for Oracle support
+            else
+              props.getProperty(Environment.DEFAULT_SCHEMA) // This is probably required for MySQL/hsqldb
+          
           hasTable = (dbMetadata.getTableMetadata(tableName, defaultSchema, defaultCatalog, false) != null)
         }
       })
@@ -216,7 +221,9 @@ class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep
 
   def initialSetup(config: Configuration) {
     val export = new SchemaExport(config)
+    log.info("initialSetup: before export")
     export.setHaltOnError(true).create(true, true)
+    log.info("initialSetup: after export")
 
     // Note to debuggers: The schema export tool is very annoying from a diagnostics perspective
     // because all SQL errors that occur as a result of a DROP statement are silently swallowed, but they
@@ -391,10 +398,6 @@ object HibernateConfigStorePreparationStep {
       def createMigration(config: Configuration) = {
         val migration = new MigrationBuilder(config)
 
-        migration.alterTable("pair").
-          addColumn("uep_domain", Types.VARCHAR, 255, true, "").
-          addColumn("dep_domain", Types.VARCHAR, 255, true, "")
-
         migration.alterTable("range_category_descriptor").
         addColumn("max_granularity", Types.VARCHAR, 255, true, null)
 
@@ -417,8 +420,6 @@ object HibernateConfigStorePreparationStep {
         migration.alterTable("repair_actions").
           dropForeignKey("FKF6BE324B7D35B6A8")
 
-        // These two alterations belong in Step 5, but the new FKs on pair and repair_actions
-        // fail if attempted in the same migration step as the change of primary key.
         migration.alterTable("endpoint").
           replacePrimaryKey("name", "domain")
         migration.alterTable("pair").
@@ -431,6 +432,8 @@ object HibernateConfigStorePreparationStep {
           addColumn("domain", Types.VARCHAR, 255, false, "diffa").
           addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
         migration.alterTable("pair").
+          addColumn("uep_domain", Types.VARCHAR, 255, true, null).
+          addColumn("dep_domain", Types.VARCHAR, 255, true, null).
           addForeignKey("FK3462DAF2DA557F", Array("downstream, dep_domain"), "endpoint", Array("name", "domain")).
           addForeignKey("FK3462DAF68A3C7", Array("upstream, uep_domain"), "endpoint", Array("name", "domain"))
         migration.alterTable("repair_actions").

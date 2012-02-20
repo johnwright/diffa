@@ -76,7 +76,6 @@ class HibernatePreparationTest {
   /**
    * From v0 (earliest version), the deployer should be able to upgrade any supported system to the latest version.
    *
-   * Supported systems are identified in DialectLookup.
    * The associated DDL statements are named (differentiated by suffix) accordingly and are located at run-time.
    */
   @Test
@@ -135,7 +134,6 @@ class HibernatePreparationTest {
 
   @Theory
   def shouldBeAbleToPrepareDatabaseVersion(startVersion:StartingDatabaseVersion) {
-
     log.info("Testing DB version: " + startVersion.startName)
 
     val prepResource = this.getClass.getResourceAsStream(startVersion.startName + "-config-db.sql")
@@ -149,8 +147,8 @@ class HibernatePreparationTest {
     val config = hibernateEnv.getHibernateConfiguration
 
     log.info("building session factory for configured database [%s (%s->%s)] as [%s/%s]".format(
-    hibernateEnv.url, hibernateEnv.driver, hibernateEnv.dialect,
-    hibernateEnv.username, hibernateEnv.password))
+      hibernateEnv.url, hibernateEnv.driver, hibernateEnv.dialect,
+      hibernateEnv.username, hibernateEnv.password))
 
     val sf = config.buildSessionFactory
     val dialect = Dialect.getDialect(config.getProperties)
