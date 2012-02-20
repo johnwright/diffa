@@ -119,15 +119,16 @@ class SystemConfigurationTest {
 }
 
 object SystemConfigurationTest {
+  private lazy val env = TestDatabaseEnvironments.hsqldbEnvironment("target/systemConfigTest")
   private lazy val config =
       new HibernateConfig().
         addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
         addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-        setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("target/systemConfigTest")).
-        setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-        setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-        setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
+        setProperty("hibernate.dialect", env.dialect).
+        setProperty("hibernate.connection.url", env.url).
+        setProperty("hibernate.connection.driver_class", env.driver).
+        setProperty("hibernate.connection.username", env.username).
+        setProperty("hibernate.connection.password", env.password).
         setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
         setProperty("hibernate.generate_statistics", "true").
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
