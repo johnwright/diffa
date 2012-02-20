@@ -221,9 +221,7 @@ class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep
 
   def initialSetup(config: Configuration) {
     val export = new SchemaExport(config)
-    log.info("initialSetup: before export")
     export.setHaltOnError(true).create(true, true)
-    log.info("initialSetup: after export")
 
     // Note to debuggers: The schema export tool is very annoying from a diagnostics perspective
     // because all SQL errors that occur as a result of a DROP statement are silently swallowed, but they
