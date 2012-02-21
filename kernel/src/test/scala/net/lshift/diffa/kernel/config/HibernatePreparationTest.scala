@@ -69,67 +69,61 @@ class HibernatePreparationTest {
     val steps = HibernateConfigStorePreparationStep.migrationSteps
     for (i <- 0 until steps.length) {
       val msg = "Attempting to verify version id of step [%s]".format(steps(i).name)
-      assertEquals(msg, i + 1, steps(i).versionId)
+      assertEquals(msg, i, steps(i).versionId)
     }
   }
 
   /**
-   * From v0 (earliest version), the deployer should be able to upgrade any supported system to the latest version.
+   * From an empty schema, the deployer should be able to upgrade any supported system to the latest version.
    *
    * The associated DDL statements are named (differentiated by suffix) accordingly and are located at run-time.
    */
   @Test
   def shouldBeAbleToUpgradeToLatestDatabaseVersion {
-    val databaseEnvironment = DatabaseEnvironment.customEnvironment
     val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
+    val databaseEnvironment = DatabaseEnvironment.customEnvironment
 
+    // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
     waitForSchemaCreation(databaseEnvironment, pollIntervalMs = 100L, timeoutMs = 10000L)
     
-    val dbConfig = createSecureConfig(databaseEnvironment)
-    val dialect = Dialect.getDialect(dbConfig.getProperties)
+    val dbConfig = databaseEnvironment.getHibernateConfiguration
     val sessionFactory = dbConfig.buildSessionFactory
 
-    log.info("Operating on database %s".format(databaseEnvironment.dbName))
-
-    // Install starting version of schema
-    runMigrationStep(HibernateMigrationStep0, dbConfig, sessionFactory)
-    
-    log.info("Installed initial schema")
-
-    // Upgrade to latest version
+    // When
+    log.info("Installing schema and upgrading to latest version")
     (new HibernateConfigStorePreparationStep).prepare(sessionFactory, dbConfig)
 
-    log.info("Upgraded schema")
-
-    // validate the correctness of the schema
-    val metadata = sessionFactory.withSession(s => retrieveMetadata(s, dialect))
-    assertNotSame(None, metadata)
-    dbConfig.validateSchema(dialect, metadata.get)
-    validateNotTooManyObjects(dbConfig, metadata.get)
-
-    // Verify that a further attempt to upgrade to the latest version doesn't fall over (no op)
-    // TODO: move this to a separate test
-    (new HibernateConfigStorePreparationStep).prepare(sessionFactory, dbConfig)
+    // Then
+    log.info("Validating the correctness of the schema")
+    validateSchema(sessionFactory, dbConfig)
   }
-  
-  private def runMigrationStep(step: HibernateMigrationStep, config: Configuration, sessionFactory: SessionFactory) {
-    val migration = step.createMigration(config)
 
-    sessionFactory.executeOnSession(conn => {
-      try {
-        migration.apply(conn)
-      } catch {
-        case ex =>
-          println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
-          println("_" * 80)
-          println()
-          migration.getStatements.foreach(println(_))
-          println("_" * 80)
-          println()
-          throw ex      // Higher level code will log the exception
-      }
-    })
+  /**
+   * Attempting to upgrade a schema at the latest version should be a silent no op.
+   */
+  @Test
+  def rerunUpgradeOnLatestVersionShouldSilentlyPassWithoutEffect {
+    val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
+    val databaseEnvironment = DatabaseEnvironment.customEnvironment
+
+    // Given
+    cleanSchema(adminEnvironment, databaseEnvironment)
+    waitForSchemaCreation(databaseEnvironment, pollIntervalMs = 100L, timeoutMs = 10000L)
+
+    val dbConfig = databaseEnvironment.getHibernateConfiguration
+    val sessionFactory = dbConfig.buildSessionFactory
+
+    log.info("Installing schema and upgrading to latest version")
+    (new HibernateConfigStorePreparationStep).prepare(sessionFactory, dbConfig)
+
+    // When
+    log.info("A further attempt to upgrade to the latest version silently passes")
+    (new HibernateConfigStorePreparationStep).prepare(sessionFactory, dbConfig)
+
+    // Then
+    log.info("Validating the correctness of the schema")
+    validateSchema(sessionFactory, dbConfig)
   }
 
   @Theory
@@ -168,52 +162,6 @@ class HibernatePreparationTest {
 
   }
 
-  /**
-   * Dummy test that exports the current schema to a file called 'current-schema.sql' so it can be turned into a test
-   * case. This test can be enabled to run by adding the arguments '-DdoCurrentSchemaExport=1 -DforkMode=never' to
-   * the maven test command.
-   */
-  @Test
-  def exportSchema() {
-    if(System.getProperty("doCurrentSchemaExport") != null) {
-      val config = new Configuration().
-      addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-      addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-      setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-      setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-export")).
-      setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-      setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-      setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD)
-
-      val exporter = new SchemaExport(config)
-      val outputFile = "target/current-schema.sql"
-      exporter.setOutputFile(outputFile)
-      exporter.setDelimiter(";")
-      exporter.execute(false, false, false, true);
-
-      val prepStep = new HibernateConfigStorePreparationStep
-      val freshStep = new FreshMigrationStep(prepStep.migrationSteps.last.versionId)
-      val freshMigration = freshStep.createMigration(config)
-
-      val mockConn = createStrictMock(classOf[Connection])
-      val mockPreparedStatement = createNiceMock(classOf[PreparedStatement])
-      expect(mockPreparedStatement.execute()).andStubReturn(true)
-      expect(mockConn.prepareStatement(EasyMockScalaUtils.anyString)).andStubReturn(mockPreparedStatement)
-      replay(mockConn, mockPreparedStatement);
-
-      freshMigration.apply(mockConn)
-      println(freshMigration.getStatements.toSeq)
-
-      val outputWriter = new PrintWriter(new FileWriter(outputFile, true))
-      try {
-        freshMigration.getStatements.foreach(s => outputWriter.println(s))
-      } finally {
-        outputWriter.flush()
-        outputWriter.close()
-      }
-    }
-  }
-
   @Test
   def verifyExternalDatabase() {
     if(System.getProperty("verifyExternalDB") != null) {
@@ -243,14 +191,13 @@ class HibernatePreparationTest {
     nonCommentLines.fold("")(_ + _).split(";").filter(l => l.trim().length > 0)
   }
 
-  private def createSecureConfig(env: DatabaseEnvironment): Configuration = {
-    System.setProperty("javax.net.ssl.trustStore", env.caKeystore)
-    System.setProperty("javax.net.ssl.trustStoreType", "PKCS12")
-    System.setProperty("javax.net.ssl.keyStore", "diffa-ks.jks")
-    System.setProperty("javax.net.ssl.keyStoreType", "JKS")
-    env.getHibernateConfiguration.
-      setProperty("hibernate.connection.requireSSL", "true").
-      setProperty("hibernate.verifyServerCertificate", "false")
+  private def validateSchema(sessionFactory: SessionFactory, config: Configuration) {
+    val dialect = Dialect.getDialect(config.getProperties)
+    val metadata = sessionFactory.withSession(s => retrieveMetadata(s, dialect))
+
+    assertNotSame(None, metadata)
+    config.validateSchema(dialect, metadata.get)
+    validateNotTooManyObjects(config, metadata.get)
   }
 
   /**

@@ -24,7 +24,9 @@ import org.hibernate.tool.hbm2ddl.{DatabaseMetadata, SchemaExport}
 import org.hibernate.cfg.{Environment, Configuration}
 import java.sql.{Types, Connection}
 import net.lshift.diffa.kernel.differencing.VersionCorrelationStore
+
 import net.lshift.hibernate.migrations.MigrationBuilder
+
 import scala.collection.JavaConversions._
 import org.hibernate.`type`.IntegerType
 import org.hibernate.dialect.{Oracle10gDialect, Dialect}
@@ -39,25 +41,21 @@ class HibernateConfigStorePreparationStep
 
   val migrationSteps = HibernateConfigStorePreparationStep.migrationSteps
 
+  /**
+   * Install/upgrade the schema to the latest version.  In an empty schema, this will
+   * install version 0, then upgrade sequentially through each intermediate version
+   * til the latest, whereas for a schema at version k &lt; L, where L is the latest
+   * version, the schema will be updated to k+1, k+2, ..., L.
+   */
   def prepare(sf: SessionFactory, config: Configuration) {
-    val migrations = detectVersion(sf, config) match {
-      case None          => {
-        log.info("Going to apply initial database schema")
-
-        val freshStep = new FreshMigrationStep(migrationSteps.last.versionId)
-        freshStep.initialSetup(config)
-        Seq(freshStep)
-      }
-      case Some(version) => {
-        log.info("Current database version is " + version)
-        val firstStepIdx = migrationSteps.indexWhere(step => step.versionId > version)
-        if (firstStepIdx != -1) {
-          migrationSteps.slice(firstStepIdx, migrationSteps.length)
-        } else {
-          Seq()
-        }
-      }
+    val version = detectVersion(sf, config)
+    version match {
+      case None =>
+        log.info("Empty schema")
+      case Some(vsn) =>
+        log.info("Current schema version is %d".format(vsn))
     }
+    val migrations = migrationSteps.slice(version.getOrElse(-1) + 1, migrationSteps.length)
 
     sf.withSession(s => {
       s.doWork(new Work {
@@ -189,74 +187,6 @@ abstract class HibernateMigrationStep {
   def createMigration(config:Configuration):MigrationBuilder
 }
 
-class FreshMigrationStep(currentMaxVersionId:Int) extends HibernateMigrationStep {
-  val log:Logger = LoggerFactory.getLogger(classOf[HibernateConfigStorePreparationStep])
-  
-  val steps = HibernateConfigStorePreparationStep.migrationSteps
-
-  def versionId = currentMaxVersionId
-
-  def name = "Fresh database migration"
-
-  def createMigration(config: Configuration) = {
-    // Create a migration for fresh databases, since there are steps that we need to apply on top of hibernate
-    // doing the export
-    val freshMigration = new MigrationBuilder(config)
-    freshMigration.insert("system_config_options").
-      values(Map("opt_key" -> HibernatePreparationUtils.correlationStoreSchemaKey, "opt_val" -> HibernatePreparationUtils.correlationStoreVersion))
-
-    type R = ReferenceDataMigrationStep
-    type C = StandaloneConstraintMigrationStep
-    type P = PartitioningMigrationStep
-
-    DefineSchemaVersionTable.defineTableAndInitialEntry(freshMigration, versionId)
-    DefinePartitionInformationTable.defineTable(freshMigration)
-
-    steps.filter(_.isInstanceOf[R]).map(_.asInstanceOf[R]).foreach(_.applyReferenceData(freshMigration))
-    steps.filter(_.isInstanceOf[C]).map(_.asInstanceOf[C]).foreach(_.applyConstraint(freshMigration))
-    steps.filter(_.isInstanceOf[P]).map(_.asInstanceOf[P]).foreach(_.applyPartitioning(freshMigration))
-
-    freshMigration
-  }
-
-  def initialSetup(config: Configuration) {
-    val export = new SchemaExport(config)
-    export.setHaltOnError(true).create(true, true)
-
-    // Note to debuggers: The schema export tool is very annoying from a diagnostics perspective
-    // because all SQL errors that occur as a result of a DROP statement are silently swallowed, but they
-    // are added to the public list of exceptions that the export tool has seen, but in a completely
-    // undifferentiated fashion. This means that you can't tell from the outside whether something blew up
-    // as a result of a create statement that you should care about, or whether a bunch of irrelevant DROP
-    // exceptions were collected for posterity's sake. In any case, any real exception that you would care about
-    // is swallowed and mixed in with exceptions that you probably don't care about.
-    // @see https://hibernate.onjira.com/browse/HHH-6633
-  }
-}
-
-
-// Special migration steps can be applied independently of the main migration step,
-// but if it is filtered from the master list, they can also be applied in the same order.
-
-/**
- * A special type of migration step that in addition to applying DDL also applies new reference data to the database.
- */
-trait ReferenceDataMigrationStep {
-  def applyReferenceData(migration:MigrationBuilder)
-}
-
-/**
- * A special type of migration step that in addition to applying DDL also adds a constraint that may
- * not have been possible with an inline constraint definition.
- */
-trait StandaloneConstraintMigrationStep {
-  def applyConstraint(migration:MigrationBuilder)
-}
-
-trait PartitioningMigrationStep {
-  def applyPartitioning(migration:MigrationBuilder) : MigrationBuilder
-}
-
 /**
  * One-off definition of the schema version table.
  */
@@ -302,6 +232,7 @@ object HibernateConfigStorePreparationStep {
    * Note that these steps should be executed in strictly ascending order.
    */
   val migrationSteps = Seq(
+    HibernateMigrationStep0,
 
     new HibernateMigrationStep {
       def versionId = 1
@@ -328,7 +259,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    new HibernateMigrationStep with ReferenceDataMigrationStep {
+    new HibernateMigrationStep {
       def versionId = 3
       def name = "Add domains"
       def createMigration(config: Configuration) = {
@@ -446,7 +377,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    new HibernateMigrationStep with ReferenceDataMigrationStep {
+    new HibernateMigrationStep {
       def versionId = 6
       def name = "Add superuser and default users"
       def createMigration(config: Configuration) = {
@@ -467,7 +398,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    new HibernateMigrationStep with StandaloneConstraintMigrationStep {
+    new HibernateMigrationStep {
       def versionId = 7
       def name = "Add persistent diffs"
       def createMigration(config: Configuration) = {
@@ -663,7 +594,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    new HibernateMigrationStep with PartitioningMigrationStep {
+    new HibernateMigrationStep {
         def versionId = 16
         def name = "Partition diffs table"
 
@@ -738,7 +669,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-  new HibernateMigrationStep with PartitioningMigrationStep {
+  new HibernateMigrationStep {
         def versionId = 18
         def name = "Partition diffs table with list partitions"
 
@@ -801,7 +732,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    new HibernateMigrationStep with StandaloneConstraintMigrationStep {
+    new HibernateMigrationStep {
       def versionId = 19
       def name = "Reference endpoints by name only"
 
