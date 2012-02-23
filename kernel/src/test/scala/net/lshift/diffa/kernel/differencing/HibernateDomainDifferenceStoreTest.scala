@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.differencing
 
-import org.hibernate.cfg.Configuration
 import org.hibernate.exception.ConstraintViolationException
 import org.junit.Assert._
 import net.lshift.diffa.kernel.config._
@@ -24,7 +23,6 @@ import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 import org.junit._
 import experimental.theories.{Theories, DataPoint, Theory}
-import org.hibernate.SessionFactory
 import runner.RunWith
 import system.HibernateSystemConfigStore
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
@@ -32,10 +30,12 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import scala.collection.mutable.HashMap
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import org.joda.time.{DateTime, Interval, DateTimeZone}
 import org.hibernate.dialect.Dialect
 import net.lshift.diffa.kernel.hooks.HookManager
+import net.lshift.diffa.kernel.util.{SchemaCleaner, DatabaseEnvironment}
+import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
+import org.hibernate.SessionFactory
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -47,6 +47,7 @@ class HibernateDomainDifferenceStoreTest {
   @Before
   def clear() {
     diffStore.clearAllDifferences
+    HibernateDomainDifferenceStoreTest.rebuildUnusableIndexes()
 
     val pairCache = new PairCache(new CacheManager())
     val configStore = new HibernateDomainConfigStore(sf, pairCache, HibernateDomainDifferenceStoreTest.hookManager)
@@ -527,10 +528,11 @@ class HibernateDomainDifferenceStoreTest {
 
     val events = diffStore.retrieveEventsSince("domain", "0")
     assertEquals(3, events.length)
+    val eventsOrderedBySeqId = events.sortWith((e1, e2) => e1.sequenceId < e2.sequenceId)
 
-    validateUnmatchedEvent(events(0), VersionID(DiffaPairRef("pair2","domain"), "id3"), "uV", "dV", timestamp, seen3)
-    validateMatchedEvent(events(1), VersionID(DiffaPairRef("pair2","domain"), "id1"), "uV", now)
-    validateMatchedEvent(events(2), VersionID(DiffaPairRef("pair2","domain"), "id2"), "uV", now)
+    validateUnmatchedEvent(eventsOrderedBySeqId(0), VersionID(DiffaPairRef("pair2","domain"), "id3"), "uV", "dV", timestamp, seen3)
+    validateMatchedEvent(eventsOrderedBySeqId(1), VersionID(DiffaPairRef("pair2","domain"), "id1"), "uV", now)
+    validateMatchedEvent(eventsOrderedBySeqId(2), VersionID(DiffaPairRef("pair2","domain"), "id2"), "uV", now)
   }
   @Test
   def shouldNotRemoveOrDuplicateMatchEventsSeenBeforeTheCutoff() {
@@ -650,12 +652,30 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(0, unmatched.length)
   }
 
+  /**
+   * Oracle DB throws a BatchUpdateException with ORA-14400 when attempting to
+   * insert a partition key that does not map to any partition.  This exception
+   * pre-empts what would otherwise happen if the table were not partitioned
+   * (ConstraintViolationException).
+   */
   @Test(expected = classOf[ConstraintViolationException])
   def shouldFailToAddReportableEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
 
-    diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+    try {
+      diffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+    } catch {
+      case cve: org.hibernate.exception.ConstraintViolationException =>
+        throw cve
+      case ex => ex.getCause match {
+        case batchUpdateEx: java.sql.BatchUpdateException =>
+          if (batchUpdateEx.getMessage.contains("ORA-14400"))
+            throw new ConstraintViolationException(batchUpdateEx.getMessage, batchUpdateEx, "")
+        case unexpected =>
+          throw unexpected
+      }
+    }
   }
 
   @Test(expected = classOf[ConstraintViolationException])
@@ -1002,26 +1022,53 @@ object HibernateDomainDifferenceStoreTest {
     zoomLevels:Map[Int,Map[String,Seq[TileGroup]]]
   )
 
-  private val config = {
-    lazy val env = TestDatabaseEnvironments.hsqldbEnvironment("target/domainCache")
-    new Configuration().
-      addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-      addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-      setProperty("hibernate.dialect", env.dialect).
-      setProperty("hibernate.connection.url", env.url).
-      setProperty("hibernate.connection.driver_class", env.driver).
-      setProperty("hibernate.connection.username", env.username).
-      setProperty("hibernate.connection.password", env.password).
-      setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-      setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-  }                                       // otherwise the preparation step will not get committed
+  private lazy val sysEnv = TestDatabaseEnvironments.adminEnvironment
+  private lazy val env = DatabaseEnvironment.customEnvironment("target/domainCache")
+
+  private lazy val config = env.getHibernateConfiguration.
+    setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+                                                           // otherwise the preparation step will not get committed
 
   val cacheManager = new CacheManager()
 
-  val sf:SessionFactory = config.buildSessionFactory
-  (new HibernateConfigStorePreparationStep).prepare(sf, config)
-  val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
+  val dialect = Dialect.getDialect(config.getProperties)
+  val sf: SessionFactory = {
+    val cleaner = SchemaCleaner.forDialect(dialect)
+    cleaner.clean(sysUserEnvironment = sysEnv, appEnvironment = env)
+
+    val sessionFactory = config.buildSessionFactory
+    (new HibernateConfigStorePreparationStep).prepare(sessionFactory, config)
+    sessionFactory
+  }
+  
   val hookManager = new HookManager(config)
   val diffStore = new HibernateDomainDifferenceStore(sf, cacheManager, dialect, hookManager)
 
+  def rebuildUnusableIndexes() {
+    rebuildUnusableIndexes(sf)
+  }
+
+  /**
+   * If unusable indexes are found, this should be used to rebuild them prior to retrying the failed query.
+   */
+  def rebuildUnusableIndexes(sessionFactory: SessionFactory) {
+    val unusableIndexesQuery: String = "select index_name from user_indexes where status = 'UNUSABLE'"
+    val alterIndexSql = "alter index %s rebuild"
+
+    sessionFactory.executeOnSession(connection => {
+      var indexNames: List[String] = Nil
+      val stmt = connection.prepareStatement(unusableIndexesQuery)
+      val rs = stmt.executeQuery
+      while (rs.next) {
+        indexNames = rs.getString("index_name") :: indexNames
+      }
+
+      indexNames.foreach(indexName => try {
+        connection.prepareCall(alterIndexSql.format(indexName)).execute
+      } catch {
+        case ex: Exception =>
+          println("Failed to rebuild index [%s]".format(indexName))
+      })
+    })
+  }
 }
