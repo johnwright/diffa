@@ -34,10 +34,10 @@ import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.MissingObjectException
 import org.hibernate.cfg.{Configuration => HibernateConfig}
 import net.lshift.diffa.kernel.config.TestDatabaseEnvironments
 import net.lshift.diffa.kernel.hooks.HookManager
+import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
 
 /**
  * Test cases for the Configuration frontend.
@@ -118,8 +118,11 @@ class ConfigurationTest {
 
     // Create users that have membership references in the domain config
 
-    systemConfigStore.createOrUpdateUser(User(name = "abc"))
-    systemConfigStore.createOrUpdateUser(User(name = "def"))
+    val user1 = User(name = "abc", email = "dev_null1@lshift.net", passwordEnc = "TEST")
+    val user2 = User(name = "def", email = "dev_null1@lshift.net", passwordEnc = "TEST")
+
+    systemConfigStore.createOrUpdateUser(user1)
+    systemConfigStore.createOrUpdateUser(user2)
 
     val ep1 = EndpointDef(name = "upstream1", scanUrl = "http://localhost:1234",
                 inboundUrl = "http://inbound",
@@ -204,7 +207,9 @@ class ConfigurationTest {
         PairDef("ad", "same", 5, "upstream1", "downstream2")),
       // name of repair action is changed
       repairActions = Set(RepairActionDef("Resend Source", "resend", "pair", "ab")),
-      escalations = Set(EscalationDef("Resend Another Missing", "ab", "Resend Source", "repair", "downstream-missing", "scan")),
+      escalations = Set(EscalationDef(name = "Resend Another Missing", pair = "ab",
+                                      action = "Resend Source", actionType = "repair",
+                                      event = "downstream-missing", origin = "scan")),
       reports = Set(PairReportDef("Bulk Send Reports Elsewhere", "ab", "differences", "http://location:5431/diffhandler"))
     )
 
@@ -290,20 +295,11 @@ class ConfigurationTest {
   }
 }
 object ConfigurationTest {
-  lazy val env = TestDatabaseEnvironments.hsqldbEnvironment("target/configTest")
-  lazy val config =
-      new HibernateConfig().
-        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", env.dialect).
-        setProperty("hibernate.connection.url", env.url).
-        setProperty("hibernate.connection.driver_class", env.driver).
-        setProperty("hibernate.connection.username", env.username).
-        setProperty("hibernate.connection.password", env.password).
-        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-        setProperty("hibernate.generate_statistics", "true").
-        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                               // otherwise the preparation step will not get committed
+  lazy val env = DatabaseEnvironment.customEnvironment("target/configTest")
+  lazy val config = env.getHibernateConfiguration.
+    setProperty("hibernate.generate_statistics", "true").
+    setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
+                                                           // otherwise the preparation step will not get committed
 
   lazy val sessionFactory = {
     val sf = config.buildSessionFactory

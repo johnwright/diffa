@@ -27,11 +27,11 @@ import scala.collection.JavaConversions._
 import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.util.SessionHelper._
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
 import net.lshift.diffa.kernel.frontend._
 import org.hibernate.dialect.Dialect
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStore
+import net.lshift.diffa.kernel.util.{SchemaCleaner, DatabaseEnvironment, MissingObjectException}
 
 class HibernateDomainConfigStoreTest {
 
@@ -99,7 +99,9 @@ class HibernateDomainConfigStoreTest {
   val upstreamRenamed = "TEST_UPSTREAM_RENAMED"
   val pairRenamed = "TEST_PAIR_RENAMED"
 
-  val user = User(name = "test_user", email = "dev_null@lshift.net")
+  val user = User(name = "test_user", email = "dev_null@lshift.net", passwordEnc = "TEST")
+  val user2 = User(name = "test_user2", email = "dev_null@lshift.net", passwordEnc = "TEST")
+  val adminUser = User(name = "admin_user", email = "dev_null@lshift.net", passwordEnc = "TEST", superuser = true)
 
   def declareAll() {
     systemConfigStore.createOrUpdateDomain(domain)
@@ -544,18 +546,18 @@ class HibernateDomainConfigStoreTest {
   @Test
   def shouldBeAbleToFindRootUsers = {
 
-    systemConfigStore.createOrUpdateUser(User(name = "test_user", email = "dev_null@lshift.net"))
-    systemConfigStore.createOrUpdateUser(User(name = "admin_user", email = "dev_null@lshift.net", superuser = true))
+    systemConfigStore.createOrUpdateUser(user)
+    systemConfigStore.createOrUpdateUser(adminUser)
 
-    assertTrue(systemConfigStore.containsRootUser(Seq("test_user", "admin_user", "missing_user")))
-    assertFalse(systemConfigStore.containsRootUser(Seq("test_user", "missing_user")))
+    assertTrue(systemConfigStore.containsRootUser(Seq(user.name, adminUser.name, "missing_user")))
+    assertFalse(systemConfigStore.containsRootUser(Seq(user.name, "missing_user")))
     assertFalse(systemConfigStore.containsRootUser(Seq("missing_user1", "missing_user2")))
   }
 
   @Test
   def shouldBeAbleToRetrieveTokenForUser() {
-    systemConfigStore.createOrUpdateUser(User(name = "test_user", email = "dev_null@lshift.net"))
-    systemConfigStore.createOrUpdateUser(User(name = "test_user2", email = "dev_null@lshift.net"))
+    systemConfigStore.createOrUpdateUser(user)
+    systemConfigStore.createOrUpdateUser(user2)
 
     val token1 = systemConfigStore.getUserToken("test_user")
     val token2 = systemConfigStore.getUserToken("test_user2")
@@ -568,10 +570,10 @@ class HibernateDomainConfigStoreTest {
 
   @Test
   def tokenShouldRemainConsistentEvenWhenUserIsUpdated() {
-    systemConfigStore.createOrUpdateUser(User(name = "test_user", email = "dev_null@lshift.net"))
+    systemConfigStore.createOrUpdateUser(user)
     val token1 = systemConfigStore.getUserToken("test_user")
 
-    systemConfigStore.createOrUpdateUser(User(name = "test_user", email = "dev_null2@lshift.net"))
+    systemConfigStore.createOrUpdateUser(User(name = "test_user", email = "dev_null2@lshift.net", passwordEnc = "TEST"))
     val token2 = systemConfigStore.getUserToken("test_user")
 
     assertEquals(token1, token2)
@@ -579,21 +581,21 @@ class HibernateDomainConfigStoreTest {
 
   @Test
   def shouldBeAbleToResetTokenForUser() {
-    systemConfigStore.createOrUpdateUser(User(name = "test_user", email = "dev_null@lshift.net"))
-    systemConfigStore.createOrUpdateUser(User(name = "test_user2", email = "dev_null@lshift.net"))
+    systemConfigStore.createOrUpdateUser(user)
+    systemConfigStore.createOrUpdateUser(user2)
 
-    val token1 = systemConfigStore.getUserToken("test_user")
-    val token2 = systemConfigStore.getUserToken("test_user2")
+    val token1 = systemConfigStore.getUserToken(user.name)
+    val token2 = systemConfigStore.getUserToken(user2.name)
 
-    systemConfigStore.clearUserToken("test_user2")
+    systemConfigStore.clearUserToken(user2.name)
 
-    assertEquals(token1, systemConfigStore.getUserToken("test_user"))
+    assertEquals(token1, systemConfigStore.getUserToken(user.name))
 
-    val newToken2 = systemConfigStore.getUserToken("test_user2")
+    val newToken2 = systemConfigStore.getUserToken(user2.name)
     assertNotNull(newToken2)
     assertFalse(token2.equals(newToken2))
 
-    assertEquals("test_user2", systemConfigStore.getUserByToken(newToken2).name)
+    assertEquals(user2.name, systemConfigStore.getUserByToken(newToken2).name)
     try {
       systemConfigStore.getUserByToken(token2)
       fail("Should have thrown MissingObjectException")
@@ -639,22 +641,19 @@ class HibernateDomainConfigStoreTest {
 }
 
 object HibernateDomainConfigStoreTest {
-  lazy val env = TestDatabaseEnvironments.hsqldbEnvironment("target/domainConfigStore")
-  lazy val config =
-      new Configuration().
-        addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-        addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-        setProperty("hibernate.dialect", env.dialect).
-        setProperty("hibernate.connection.url", env.url).
-        setProperty("hibernate.connection.driver_class", env.driver).
-        setProperty("hibernate.connection.username", env.username).
-        setProperty("hibernate.connection.password", env.password).
-        setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
+  val sysEnv = TestDatabaseEnvironments.adminEnvironment
+  lazy val env = DatabaseEnvironment.customEnvironment("target/domainConfigStore")
+  lazy val config = env.getHibernateConfiguration.
         setProperty("hibernate.generate_statistics", "true").
         setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
                                                                // otherwise the preparation step will not get committed
 
+  val dialect = Dialect.getDialect(config.getProperties)
+
   lazy val sessionFactory = {
+    val cleaner = SchemaCleaner.forDialect(dialect)
+    cleaner.clean(sysUserEnvironment = sysEnv, appEnvironment = env)
+
     val sf = config.buildSessionFactory
     (new HibernateConfigStorePreparationStep).prepare(sf, config)
     sf
@@ -662,7 +661,6 @@ object HibernateDomainConfigStoreTest {
 
   lazy val cacheManager = new CacheManager()
   lazy val pairCache = new PairCache(cacheManager)
-  val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
 
   lazy val hookManager = new HookManager(config)
   lazy val domainConfigStore = new HibernateDomainConfigStore(sessionFactory, pairCache, hookManager)
