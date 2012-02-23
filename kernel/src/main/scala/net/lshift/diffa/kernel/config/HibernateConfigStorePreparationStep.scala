@@ -30,6 +30,7 @@ import net.lshift.hibernate.migrations.MigrationBuilder
 import scala.collection.JavaConversions._
 import org.hibernate.`type`.IntegerType
 import org.hibernate.dialect.{Oracle10gDialect, Dialect}
+import net.lshift.hibernate.migrations.dialects.DialectExtensionSelector
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -49,13 +50,15 @@ class HibernateConfigStorePreparationStep
    */
   def prepare(sf: SessionFactory, config: Configuration) {
     val version = detectVersion(sf, config)
-    version match {
+    val nextVersion = version match {
       case None =>
-        log.info("Empty schema")
+        log.info("Empty schema detected; version 0 will initially be installed, followed by upgrade to latest")
+        0
       case Some(vsn) =>
         log.info("Current schema version is %d".format(vsn))
+        vsn + 1
     }
-    val migrations = migrationSteps.slice(version.getOrElse(-1) + 1, migrationSteps.length)
+    val migrations = migrationSteps.slice(nextVersion, migrationSteps.length)
 
     sf.withSession(s => {
       s.doWork(new Work {
@@ -82,6 +85,7 @@ class HibernateConfigStorePreparationStep
                 }
               }
               log.info("Upgraded database to version %s (%s)".format(step.versionId, step.name))
+//              migration.getStatements foreach { stmt => log.info("STEP: %s".format(stmt)) }
             } catch {
               case ex =>
                 println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
@@ -108,16 +112,14 @@ class HibernateConfigStorePreparationStep
       s.doWork(new Work {
         def execute(connection: Connection) = {
           val props = config.getProperties
-          val dbMetadata = new DatabaseMetadata(connection, Dialect.getDialect(props))
+          val dialect = Dialect.getDialect(props)
+          val dialectExtension = DialectExtensionSelector.select(dialect)
+
+          val dbMetadata = new DatabaseMetadata(connection, dialect)
 
           val defaultCatalog = props.getProperty(Environment.DEFAULT_CATALOG)
-          val dialect = Dialect.getDialect(props)
-          val defaultSchema =
-            if (dialect.isInstanceOf[Oracle10gDialect])
-              props.getProperty(Environment.USER) // This is required for Oracle support
-            else
-              props.getProperty(Environment.DEFAULT_SCHEMA) // This is probably required for MySQL/hsqldb
-          
+          val defaultSchema = props.getProperty(dialectExtension.schemaPropertyName)
+
           hasTable = (dbMetadata.getTableMetadata(tableName, defaultSchema, defaultCatalog, false) != null)
         }
       })
@@ -140,6 +142,7 @@ class HibernateConfigStorePreparationStep
     else if (tableExists(sf, config, "config_options") ) {
       //Prior to version 2 of the database, the schema version was kept in the ConfigOptions table
       val query = "select opt_val from config_options where opt_key = 'configStore.schemaVersion'"
+
       Some(sf.withSession(_.createSQLQuery(query).uniqueResult().asInstanceOf[String].toInt))
     }
     else {
@@ -274,8 +277,8 @@ object HibernateConfigStorePreparationStep {
           column("opt_val", Types.VARCHAR, 255, false).
           pk("opt_key")
 
-        // Add standard reference data
-        applyReferenceData(migration)
+        // Make sure the default domain is in the DB
+        migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
 
         // create table members (domain_name varchar(255) not null, user_name varchar(255) not null, primary key (domain_name, user_name));
         migration.createTable("members").
@@ -314,11 +317,6 @@ object HibernateConfigStorePreparationStep {
 
         migration
       }
-
-      def applyReferenceData(migration:MigrationBuilder) {
-        // Make sure the default domain is in the DB
-        migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
-      }
     },
 
     new HibernateMigrationStep {
@@ -328,7 +326,7 @@ object HibernateConfigStorePreparationStep {
         val migration = new MigrationBuilder(config)
 
         migration.alterTable("range_category_descriptor").
-        addColumn("max_granularity", Types.VARCHAR, 255, true, null)
+          addColumn("max_granularity", Types.VARCHAR, 255, true, null)
 
         migration
       }
@@ -385,16 +383,14 @@ object HibernateConfigStorePreparationStep {
         migration.alterTable("users").
           addColumn("password_enc", Types.VARCHAR, 255, false, "LOCKED").
           addColumn("superuser", Types.BIT, 1, false, 0)
-        applyReferenceData(migration)
 
-        migration
-      }
-      def applyReferenceData(migration:MigrationBuilder) {
         migration.insert("users").
           values(Map(
-            "name" -> "guest", "email" -> "guest@diffa.io",
-            "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
-            "superuser" -> Boolean.box(true)))
+          "name" -> "guest", "email" -> "guest@diffa.io",
+          "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+          "superuser" -> Boolean.box(true)))
+
+        migration
       }
     },
 
@@ -430,7 +426,12 @@ object HibernateConfigStorePreparationStep {
           pk("oid").
           withNativeIdentityGenerator()
 
-        applyConstraint(migration)
+        // alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair, domain) references pair (pair_key, domain);
+        migration.alterTable("diffs")
+          .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+
+        migration.alterTable("pending_diffs")
+          .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
         migration.createIndex("diff_last_seen", "diffs", "last_seen")
         migration.createIndex("diff_detection", "diffs", "detected_at")
@@ -439,15 +440,6 @@ object HibernateConfigStorePreparationStep {
         migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
 
         migration
-      }
-
-      def applyConstraint(migration: MigrationBuilder) {
-        // alter table diffs add constraint FK5AA9592F53F69C16 foreign key (pair, domain) references pair (pair_key, domain);
-        migration.alterTable("diffs")
-          .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
-
-        migration.alterTable("pending_diffs")
-          .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
       }
     },
 
@@ -576,7 +568,7 @@ object HibernateConfigStorePreparationStep {
 
         // Report escalations don't have a configured origin, so relax the constraint on origin being mandatory
         migration.alterTable("escalations").
-          alterColumn("origin", Types.VARCHAR, 255, true, null)
+          setColumnNullable("origin", true)
 
         migration
       }
@@ -746,15 +738,11 @@ object HibernateConfigStorePreparationStep {
           dropColumn("dep_domain").
           dropColumn("uep_domain")
 
-        applyConstraint(migration)
-
-        migration
-      }
-
-      def applyConstraint(migration:MigrationBuilder) {
         migration.alterTable("pair").
           addForeignKey("FK3462DAF68A3C7", Array("upstream", "domain"), "endpoint", Array("name", "domain")).
           addForeignKey("FK3462DAF2DA557F", Array("downstream", "domain"), "endpoint", Array("name", "domain"))
+
+        migration
       }
     }
   )

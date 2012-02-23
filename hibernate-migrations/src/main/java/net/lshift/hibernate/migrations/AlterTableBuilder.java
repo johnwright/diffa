@@ -68,6 +68,13 @@ public class AlterTableBuilder extends TraceableMigrationElement {
     return this;
   }
 
+  public AlterTableBuilder setColumnNullable(String name, boolean nullable) {
+    alterFragments.add(dialectExtension.alterColumnString() + " " +
+        maybeBracketTerm(name + dialectExtension.setColumnNullString() + String.format("%snull", nullable ? "" : "not "),
+            dialectExtension.shouldBracketAlterColumnStatement()));
+    return this;
+  }
+
   private static Column buildColumnDefinition(String name, int sqlType, int length, boolean nullable, Object defaultVal) {
     Column col = new Column(name);
     col.setSqlTypeCode(sqlType);

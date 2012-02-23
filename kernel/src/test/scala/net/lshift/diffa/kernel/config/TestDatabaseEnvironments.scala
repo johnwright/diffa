@@ -16,7 +16,7 @@ object TestDatabaseEnvironments {
  * This is intended for testing purposes only.
  */
 @Ignore
-object AdminEnvironment extends DatabaseEnvironment {
+object AdminEnvironment extends DatabaseEnvironment("") {
   override def username = System.getProperty("diffa.jdbc.sys.username", "sys")
   override def password = System.getProperty("diffa.jdbc.sys.password", "")
   override def url = {
@@ -32,7 +32,7 @@ object AdminEnvironment extends DatabaseEnvironment {
  * This is intended for testing purposes only.
  */
 @Ignore
-class HsqldbEnvironment(path: String) extends DatabaseEnvironment {
+class HsqldbEnvironment(path: String) extends DatabaseEnvironment(path) {
   override def url = substitutableURL(path, """jdbc:hsqldb:mem:%s""")
   override def dialect = "org.hibernate.dialect.HSQLDialect"
   override def driver = "org.hsqldb.jdbc.JDBCDriver"
