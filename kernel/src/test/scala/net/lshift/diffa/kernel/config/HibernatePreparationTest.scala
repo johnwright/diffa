@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.config
 
-import java.io.{PrintWriter, FileWriter, File, InputStream }
 import java.sql._
 import org.junit.runner.RunWith
 import org.junit.Assert._
@@ -25,15 +24,11 @@ import org.slf4j.LoggerFactory
 import org.hibernate.dialect.Dialect
 import org.hibernate.cfg.{Configuration, Environment}
 import org.hibernate.jdbc.Work
-import scala.collection.JavaConversions._
-import org.hibernate.tool.hbm2ddl.{SchemaExport, DatabaseMetadata}
-import org.apache.commons.io.{FileUtils, IOUtils}
-import org.junit.experimental.theories.{DataPoints, DataPoint, Theory, Theories}
-import org.easymock.EasyMock._
+import org.hibernate.tool.hbm2ddl.DatabaseMetadata
+import org.junit.experimental.theories.Theories
 import org.hibernate.{Session, SessionFactory}
-import org.junit.{Ignore, Test}
-import org.hsqldb.Database
-import net.lshift.diffa.kernel.util.{SchemaCleaner, EasyMockScalaUtils, DatabaseEnvironment}
+import org.junit.Test
+import net.lshift.diffa.kernel.util.{SchemaCleaner, DatabaseEnvironment}
 
 /**
  * Test cases for ensuring that preparation steps apply to database schemas at various levels, and allow us to upgrade
@@ -81,7 +76,7 @@ class HibernatePreparationTest {
   @Test
   def shouldBeAbleToUpgradeToLatestDatabaseVersion {
     val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
-    val databaseEnvironment = DatabaseEnvironment.customEnvironment
+    val databaseEnvironment = DatabaseEnvironment.customEnvironment("target/configStore")
 
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
@@ -97,6 +92,8 @@ class HibernatePreparationTest {
     // Then
     log.info("Validating the correctness of the schema")
     validateSchema(sessionFactory, dbConfig)
+
+    sessionFactory.close
   }
 
   /**
@@ -105,7 +102,7 @@ class HibernatePreparationTest {
   @Test
   def rerunUpgradeOnLatestVersionShouldSilentlyPassWithoutEffect {
     val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
-    val databaseEnvironment = DatabaseEnvironment.customEnvironment
+    val databaseEnvironment = DatabaseEnvironment.customEnvironment("target/configStore")
 
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
@@ -124,42 +121,8 @@ class HibernatePreparationTest {
     // Then
     log.info("Validating the correctness of the schema")
     validateSchema(sessionFactory, dbConfig)
-  }
 
-  @Theory
-  def shouldBeAbleToPrepareDatabaseVersion(startVersion:StartingDatabaseVersion) {
-    log.info("Testing DB version: " + startVersion.startName)
-
-    val prepResource = this.getClass.getResourceAsStream(startVersion.startName + "-config-db.sql")
-    assertNotNull(prepResource)
-    val prepStmts = loadStatements(prepResource)
-
-    val dbDir = "target/configStore-" + startVersion.startName
-    FileUtils.deleteDirectory(new File(dbDir))
-
-    val hibernateEnv = TestDatabaseEnvironments.hsqldbEnvironment("configStore-%s".format(startVersion.startName))
-    val config = hibernateEnv.getHibernateConfiguration
-
-    log.info("building session factory for configured database [%s (%s->%s)] as [%s/%s]".format(
-      hibernateEnv.url, hibernateEnv.driver, hibernateEnv.dialect,
-      hibernateEnv.username, hibernateEnv.password))
-
-    val sf = config.buildSessionFactory
-    val dialect = Dialect.getDialect(config.getProperties)
-
-    // Prepare the starting database
-    sf.executeStatements(prepStmts, treatErrorsAsFatal = true)
-
-    // Upgrade the database, gather the metadata and validate the schema
-    (new HibernateConfigStorePreparationStep).prepare(sf, config)
-    val dbMetadata = sf.withSession(s => retrieveMetadata(s,  dialect))
-
-    config.validateSchema(dialect, dbMetadata.get)
-    validateNotTooManyObjects(config, dbMetadata.get)
-
-    // Ensure we can run the upgrade again cleanly
-    (new HibernateConfigStorePreparationStep).prepare(sf, config)
-
+    sessionFactory.close
   }
 
   @Test
@@ -178,17 +141,6 @@ class HibernatePreparationTest {
       val sf = config.buildSessionFactory
       (new HibernateConfigStorePreparationStep).prepare(sf, config)
     }
-  }
-
-  /**
-   * Loads statements from a resource. The load process consists of reading lines, removing those starting with a
-   * comment, re-joining and splitting based on ;.
-   */
-  private def loadStatements(r:InputStream):Seq[String] = {
-    val lines = IOUtils.readLines(r).asInstanceOf[java.util.List[String]]
-    val nonCommentLines = lines.filter(l => !l.trim().startsWith("--")).toSeq
-
-    nonCommentLines.fold("")(_ + _).split(";").filter(l => l.trim().length > 0)
   }
 
   private def validateSchema(sessionFactory: SessionFactory, config: Configuration) {
@@ -229,7 +181,6 @@ class HibernatePreparationTest {
             throw ex
       }
     }
-
   }
   
   private def retrieveMetadata(session: Session, dialect: Dialect): Option[DatabaseMetadata] = {
@@ -242,12 +193,6 @@ class HibernatePreparationTest {
     })
 
     metadata
-  }
-
-  private def retrieveVersionStatements(versionName: String, dialectName: String): Seq[String] = {
-    val stmtsResourceOrNull = getClass.getResourceAsStream("%s-config-db%s.sql".format(versionName, dialectName))
-    assertNotNull(stmtsResourceOrNull)
-    loadStatements(stmtsResourceOrNull)
   }
 
   /**
@@ -266,27 +211,3 @@ class HibernatePreparationTest {
         dbMetadata.getTableMetadata(owningTable, defaultSchema, defaultCatalog, false).getColumnMetadata(col))))
   }
 }
-object HibernatePreparationTest {
-  @DataPoint def emptyDb = StartingDatabaseVersion("empty")
-  @DataPoint def v0 = StartingDatabaseVersion("v0")
-  @DataPoint def v1 = StartingDatabaseVersion("v1")
-  @DataPoint def v2 = StartingDatabaseVersion("v2")
-  @DataPoint def v3 = StartingDatabaseVersion("v3")
-  @DataPoint def v4 = StartingDatabaseVersion("v4")
-  @DataPoint def v5 = StartingDatabaseVersion("v5")
-  @DataPoint def v6 = StartingDatabaseVersion("v6")
-  @DataPoint def v7 = StartingDatabaseVersion("v7")
-  @DataPoint def v8 = StartingDatabaseVersion("v8")
-  @DataPoint def v9 = StartingDatabaseVersion("v9")
-  @DataPoint def v10 = StartingDatabaseVersion("v10")
-  @DataPoint def v11 = StartingDatabaseVersion("v11")
-  @DataPoint def v12 = StartingDatabaseVersion("v12")
-  @DataPoint def v13 = StartingDatabaseVersion("v13")
-  @DataPoint def v14 = StartingDatabaseVersion("v14")
-  @DataPoint def v15 = StartingDatabaseVersion("v15")
-  @DataPoint def v16 = StartingDatabaseVersion("v16")
-  @DataPoint def v17 = StartingDatabaseVersion("v17")
-  @DataPoint def v19 = StartingDatabaseVersion("v19")
-}
-
-case class StartingDatabaseVersion(startName:String)
