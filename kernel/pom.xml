@@ -185,7 +185,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <!--<forkMode>never</forkMode>-->
+          <forkMode>never</forkMode>
             <!-- Doesn't yet work because it parallelises the Hibernate tests, which aren't thread safe -->
           <!--<parallel>methods</parallel>
           <threadCount>4</threadCount>-->
