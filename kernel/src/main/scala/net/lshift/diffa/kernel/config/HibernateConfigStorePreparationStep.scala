@@ -85,7 +85,6 @@ class HibernateConfigStorePreparationStep
                 }
               }
               log.info("Upgraded database to version %s (%s)".format(step.versionId, step.name))
-//              migration.getStatements foreach { stmt => log.info("STEP: %s".format(stmt)) }
             } catch {
               case ex =>
                 println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
