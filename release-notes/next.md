@@ -11,3 +11,9 @@
 ## General Maintenance
 
 * [?] - ...
+
+## Library Upgrades
+
+* Upgraded to akka 1.3.1
+* Upgraded to slf4j 1.6.4
+* Upgraded to Logback 1.0.0
