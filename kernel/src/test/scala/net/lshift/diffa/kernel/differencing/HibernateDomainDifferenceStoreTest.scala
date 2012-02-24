@@ -36,6 +36,7 @@ import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.{SchemaCleaner, DatabaseEnvironment}
 import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
 import org.hibernate.SessionFactory
+import net.lshift.hibernate.migrations.dialects.{OracleDialectExtension, DialectExtensionSelector}
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -1045,7 +1046,11 @@ object HibernateDomainDifferenceStoreTest {
   val diffStore = new HibernateDomainDifferenceStore(sf, cacheManager, dialect, hookManager)
 
   def rebuildUnusableIndexes() {
-    rebuildUnusableIndexes(sf)
+    DialectExtensionSelector.select(dialect) match {
+      case oracle: OracleDialectExtension =>
+        rebuildUnusableIndexes(sf)
+      case _ =>
+    }
   }
 
   /**
