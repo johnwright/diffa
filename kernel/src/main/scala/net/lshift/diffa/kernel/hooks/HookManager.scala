@@ -25,7 +25,7 @@ import net.lshift.hibernate.migrations.dialects.{OracleDialectExtension, Dialect
  */
 class HookManager {
   private var dialect:Dialect = null
-  private var _dialectExtension: DialectExtension = null
+  private var dialectExtension: DialectExtension = null
 
   def this(config:Configuration) = {
     this()
@@ -33,11 +33,8 @@ class HookManager {
     applyConfiguration(config)
   }
 
-  def dialectExtension = _dialectExtension
-
   def applyConfiguration(config:Configuration) {
     dialect = Dialect.getDialect(config.getProperties)
-    _dialectExtension = DialectExtensionSelector.select(dialect)
   }
 
   def createDifferencePartitioningHook(sessionFactory:SessionFactory) = {
