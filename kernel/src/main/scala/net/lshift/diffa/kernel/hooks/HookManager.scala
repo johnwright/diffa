@@ -35,6 +35,7 @@ class HookManager {
 
   def applyConfiguration(config:Configuration) {
     dialect = Dialect.getDialect(config.getProperties)
+    dialectExtension = DialectExtensionSelector.select(dialect)
   }
 
   def createDifferencePartitioningHook(sessionFactory:SessionFactory) = {
