@@ -11,3 +11,7 @@ s3cmd mb $BUCKET
 s3cmd put --acl-public --guess-mime-type dist/target/*.zip $BUCKET
 s3cmd put --acl-public --guess-mime-type agent/target/*.war $BUCKET
 s3cmd put --acl-public --guess-mime-type packages.js $BUCKET
+
+# Upload the zip package to the archives directory for posterity
+
+s3cmd cp --acl-public --guess-mime-type $BUCKET/diffa-b$1.zip s3://diffa-archives
