@@ -55,12 +55,19 @@ class DatabaseEnvironment(path: String) {
   def url: String = substitutableURL(path, System.getProperty("diffa.jdbc.url", "jdbc:hsqldb:mem"))
   def dialect: String = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
   def driver: String = System.getProperty("diffa.jdbc.driver", "org.hsqldb.jdbc.JDBCDriver")
-  def username: String = System.getProperty("diffa.jdbc.username", "SA")
+  def username: String = _username
   def password: String = System.getProperty("diffa.jdbc.password", "")
   def caKeystore: String = System.getProperty("diffa.jdbc.ssl.trustStore", "")
 
+  val _username = makeUniqueUsername(System.getProperty("diffa.jdbc.username", "SA"))
   var _dbName = System.getProperty("diffa.jdbc.dbname", "")
   def setDbName(newDbName: String) { _dbName = newDbName }
+
+  def makeUniqueUsername(username: String) = {
+    val scale = 100000000L
+    val suffix = math.round(scale * scala.math.random)
+    "%s_%d".format(username, suffix)
+  }
 
   def substitutableURL(path: String, url: String): String = {
     if (url contains "%s") {
