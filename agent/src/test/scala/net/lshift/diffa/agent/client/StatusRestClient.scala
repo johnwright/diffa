@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.kernel.frontend.EscalationDef
-import net.lshift.diffa.client.RestClientParams
 
-class EscalationsRestClient(serverRootUrl:String, domain:String, params: RestClientParams = RestClientParams.default)
-    extends DomainAwareRestClient(serverRootUrl, domain, "domains/{domain}/escalations/", params) {
+import com.sun.jersey.api.client.ClientResponse
+import net.lshift.diffa.client.{RestClientParams, AbstractRestClient}
+import java.lang.String
 
-  def listEscalations(pairKey: String) = {
-    val t = classOf[Array[EscalationDef]]
-    rpc(pairKey, t)
+
+class StatusRestClient(rootUrl:String)
+    extends AbstractRestClient(rootUrl, "status", RestClientParams()) {
+
+  def checkStatus = {
+    val response = resource.get(classOf[ClientResponse])
+    response.getClientResponseStatus.getStatusCode match {
+      case 200 => true
+      case _   => false
+    }
   }
 }

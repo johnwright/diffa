@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.diffa.agent.itest
 
-package net.lshift.diffa.agent.client
+import org.junit.Test
+import net.lshift.diffa.agent.itest.support.TestConstants._
+import org.junit.Assert._
+import net.lshift.diffa.agent.client.StatusRestClient
 
-import net.lshift.diffa.kernel.frontend.EscalationDef
-import net.lshift.diffa.client.RestClientParams
+/**
+ * Integration test for ensuring that the status of the agent can be retrieved.
+ */
+class StatusTest {
+  val statusClient = new StatusRestClient(agentURL)
 
-class EscalationsRestClient(serverRootUrl:String, domain:String, params: RestClientParams = RestClientParams.default)
-    extends DomainAwareRestClient(serverRootUrl, domain, "domains/{domain}/escalations/", params) {
-
-  def listEscalations(pairKey: String) = {
-    val t = classOf[Array[EscalationDef]]
-    rpc(pairKey, t)
+  @Test
+  def shouldReturnSuccessForAgentInBootedState() {
+    assertTrue(statusClient.checkStatus)
   }
 }
