@@ -80,7 +80,6 @@ class HibernatePreparationTest {
 
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
-    waitForSchemaCreation(databaseEnvironment, pollIntervalMs = 100L, timeoutMs = 10000L)
     
     val dbConfig = databaseEnvironment.getHibernateConfiguration
     val sessionFactory = dbConfig.buildSessionFactory
@@ -106,7 +105,6 @@ class HibernatePreparationTest {
 
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
-    waitForSchemaCreation(databaseEnvironment, pollIntervalMs = 100L, timeoutMs = 10000L)
 
     val dbConfig = databaseEnvironment.getHibernateConfiguration
     val sessionFactory = dbConfig.buildSessionFactory
@@ -160,27 +158,6 @@ class HibernatePreparationTest {
 
     val cleaner = SchemaCleaner.forDialect(Dialect.getDialect(sysConfig.getProperties))
     cleaner.clean(sysenv, appenv)
-  }
-
-  private def waitForSchemaCreation(newDbEnviron: DatabaseEnvironment, pollIntervalMs: Long, timeoutMs: Long) {
-    val config = newDbEnviron.getHibernateConfiguration
-    val sessionFactory = config.buildSessionFactory
-    var connected = false
-    var failCount = 0
-    val failThreshold = timeoutMs / pollIntervalMs
-
-    while (connected) {
-      try {
-        sessionFactory.openSession
-        connected = true
-      } catch {
-        case ex =>
-          Thread.sleep(pollIntervalMs)
-          failCount += 1
-          if (failCount >= failThreshold)
-            throw ex
-      }
-    }
   }
   
   private def retrieveMetadata(session: Session, dialect: Dialect): Option[DatabaseMetadata] = {

@@ -19,7 +19,6 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.matching.MatchingManager
 import net.lshift.diffa.kernel.scheduler.ScanScheduler
 import net.lshift.diffa.kernel.differencing.{DifferencesManager, VersionCorrelationStoreFactory}
-import org.junit.{Test, Before}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.participants.EndpointLifecycleListener
 import net.lshift.diffa.kernel.config._
@@ -27,22 +26,21 @@ import scala.collection.JavaConversions._
 import org.easymock.IArgumentMatcher
 import net.lshift.diffa.kernel.config.DiffaPair
 import net.lshift.diffa.kernel.frontend.DiffaConfig._
-import collection.mutable.HashSet
 import scala.collection.JavaConversions._
-import system.{HibernateSystemConfigStore, SystemConfigStore}
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
-import net.sf.ehcache.CacheManager
 import org.hibernate.cfg.{Configuration => HibernateConfig}
-import net.lshift.diffa.kernel.config.TestDatabaseEnvironments
-import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.StoreReferenceContainer
+import org.junit.{AfterClass, Test, Before}
 
 /**
  * Test cases for the Configuration frontend.
  */
 class ConfigurationTest {
+  private val storeReferences = ConfigurationTest.storeReferences
+
   private val matchingManager = createMock("matchingManager", classOf[MatchingManager])
   private val versionCorrelationStoreFactory = createMock("versionCorrelationStoreFactory", classOf[VersionCorrelationStoreFactory])
   private val pairManager = createMock("pairManager", classOf[ActivePairManager])
@@ -53,10 +51,8 @@ class ConfigurationTest {
   private val pairPolicyClient = createMock(classOf[PairPolicyClient])
 
   // TODO This is a strange mixture of mock and real objects
-  private val pairCache = new PairCache(new CacheManager())
-  private val systemConfigStore = new HibernateSystemConfigStore(ConfigurationTest.sessionFactory, pairCache)
-  private val domainConfigStore = new HibernateDomainConfigStore(ConfigurationTest.sessionFactory, pairCache,
-    new HookManager(ConfigurationTest.config))
+  private val systemConfigStore = storeReferences.systemConfigStore
+  private val domainConfigStore = storeReferences.domainConfigStore
 
   private val configuration = new Configuration(domainConfigStore,
                                                 systemConfigStore,
@@ -71,8 +67,6 @@ class ConfigurationTest {
 
   val domainName = "domain"
   val domain = Domain(name = domainName)
-
-
 
   @Before
   def clearConfig = {
@@ -294,16 +288,15 @@ class ConfigurationTest {
     null
   }
 }
-object ConfigurationTest {
-  lazy val env = DatabaseEnvironment.customEnvironment("target/configTest")
-  lazy val config = env.getHibernateConfiguration.
-    setProperty("hibernate.generate_statistics", "true").
-    setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                           // otherwise the preparation step will not get committed
 
-  lazy val sessionFactory = {
-    val sf = config.buildSessionFactory
-    (new HibernateConfigStorePreparationStep).prepare(sf, config)
-    sf
+object ConfigurationTest {
+  private[ConfigurationTest] val env = DatabaseEnvironment.customEnvironment("target/configTest")
+
+  private[ConfigurationTest] val storeReferences =
+    StoreReferenceContainer.withCleanDatabaseEnvironment(env)
+
+  @AfterClass
+  def cleanupSchema {
+    storeReferences.tearDown
   }
 }

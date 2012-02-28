@@ -9,6 +9,7 @@ import org.hibernate.dialect.{MySQL5Dialect, Oracle10gDialect, Dialect}
  */
 trait SchemaCleaner {
   def clean(sysUserEnvironment: DatabaseEnvironment, appEnvironment: DatabaseEnvironment) {}
+  def drop(sysUserEnvironment: DatabaseEnvironment, appEnvironment: DatabaseEnvironment) {}
 }
 
 object SchemaCleaner {

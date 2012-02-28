@@ -17,28 +17,21 @@
 package net.lshift.diffa.kernel.config
 
 import org.junit.Assert._
-import org.hibernate.cfg.Configuration
-import org.hibernate.exception.ConstraintViolationException
-import org.junit.{Test, Before}
 import scala.collection.Map
 import org.joda.time.DateTime
-import collection.mutable.HashSet
 import scala.collection.JavaConversions._
-import system.{HibernateSystemConfigStore, SystemConfigStore}
-import net.lshift.diffa.kernel.util.SessionHelper._
-import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.frontend._
-import org.hibernate.dialect.Dialect
-import net.lshift.diffa.kernel.hooks.HookManager
-import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStore
-import net.lshift.diffa.kernel.util.{SchemaCleaner, DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.StoreReferenceContainer
+import org.slf4j.LoggerFactory
+import org.junit.{AfterClass, Test, Before}
 
 class HibernateDomainConfigStoreTest {
+  private val log = LoggerFactory.getLogger(getClass)
 
-  private lazy val domainConfigStore: DomainConfigStore = HibernateDomainConfigStoreTest.domainConfigStore
-  private lazy val sessionFactory = HibernateDomainConfigStoreTest.sessionFactory
-  private lazy val pairCache = HibernateDomainConfigStoreTest.pairCache
-  private lazy val systemConfigStore: SystemConfigStore = new HibernateSystemConfigStore(sessionFactory,pairCache)
+  private val storeReferences = HibernateDomainConfigStoreTest.storeReferences
+  private val systemConfigStore = storeReferences.systemConfigStore
+  private val domainConfigStore = storeReferences.domainConfigStore
 
   val dateCategoryName = "bizDate"
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
@@ -116,7 +109,7 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Before
-  def setUp = HibernateDomainConfigStoreTest.clearAllConfig
+  def setUp = storeReferences.clearConfiguration(domainName)
 
   def exists (e:EndpointDef, count:Int, offset:Int) : Unit = {
     val endpoints = domainConfigStore.listEndpoints(domainName)
@@ -135,15 +128,15 @@ class HibernateDomainConfigStoreTest {
 
     declareAll()
 
-    val initialCount = sessionFactory.getStatistics.getQueryExecutionCount
+    val initialCount = storeReferences.sessionStatistics.getQueryExecutionCount
 
     // This call should be read through from the DB
     domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache miss", initialCount + 1, sessionFactory.getStatistics.getQueryExecutionCount)
+    assertEquals("Should have generated cache miss", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
 
     // This call should be cached
     domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache hit", initialCount + 1, sessionFactory.getStatistics.getQueryExecutionCount)
+    assertEquals("Should have generated cache hit", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
 
     provokeCacheInvalidation(() => domainConfigStore.createOrUpdateEndpoint(domainName, upstream1))
     provokeCacheInvalidation(() => domainConfigStore.createOrUpdatePair(domainName, pairDef))
@@ -153,9 +146,9 @@ class HibernateDomainConfigStoreTest {
     // This should invalidate the pair cache
     def provokeCacheInvalidation[T](f:() => T) = {
       f()
-      val countAfterOperation = sessionFactory.getStatistics.getQueryExecutionCount
+      val countAfterOperation = storeReferences.sessionStatistics.getQueryExecutionCount
       domainConfigStore.listPairs(domainName)
-      assertEquals("Should have generated cache hit", countAfterOperation + 1, sessionFactory.getStatistics.getQueryExecutionCount)
+      assertEquals("Should have generated cache hit", countAfterOperation + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
     }
   }
 
@@ -629,51 +622,17 @@ class HibernateDomainConfigStoreTest {
           e.getMessage.contains(name))
     }
   }
-
-  private def expectConstraintViolation(f: => Unit) {
-    try {
-      f
-      fail("Expected ConstraintViolationException")
-    } catch {
-      case e:ConstraintViolationException => 
-    }
-  }
 }
 
 object HibernateDomainConfigStoreTest {
-  val sysEnv = TestDatabaseEnvironments.adminEnvironment
-  lazy val env = DatabaseEnvironment.customEnvironment("target/domainConfigStore")
-  lazy val config = env.getHibernateConfiguration.
-        setProperty("hibernate.generate_statistics", "true").
-        setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                               // otherwise the preparation step will not get committed
+  private[HibernateDomainConfigStoreTest] val env =
+    DatabaseEnvironment.customEnvironment("target/domainConfigStore")
 
-  val dialect = Dialect.getDialect(config.getProperties)
+  private[HibernateDomainConfigStoreTest] val storeReferences =
+    StoreReferenceContainer.withCleanDatabaseEnvironment(env)
 
-  lazy val sessionFactory = {
-    val cleaner = SchemaCleaner.forDialect(dialect)
-    cleaner.clean(sysUserEnvironment = sysEnv, appEnvironment = env)
-
-    val sf = config.buildSessionFactory
-    (new HibernateConfigStorePreparationStep).prepare(sf, config)
-    sf
-  }
-
-  lazy val cacheManager = new CacheManager()
-  lazy val pairCache = new PairCache(cacheManager)
-
-  lazy val hookManager = new HookManager(config)
-  lazy val domainConfigStore = new HibernateDomainConfigStore(sessionFactory, pairCache, hookManager)
-  lazy val systemConfigStore = new HibernateSystemConfigStore(sessionFactory, pairCache)
-  lazy val domainDifferenceStore = new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect, hookManager)
-
-  def clearAllConfig = {
-    try {
-      domainDifferenceStore.removeDomain("domain")
-      systemConfigStore.deleteDomain("domain")
-    }
-    catch {
-      case e:MissingObjectException => // ignore non-existent domain, since the point of this call was to delete it anyway
-    }
+  @AfterClass
+  def tearDown {
+    storeReferences.tearDown
   }
 }
