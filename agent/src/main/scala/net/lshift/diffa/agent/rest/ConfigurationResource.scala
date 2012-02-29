@@ -17,7 +17,7 @@
 package net.lshift.diffa.agent.rest
 
 import javax.ws.rs._
-import core.UriInfo
+import core.{Response, UriInfo}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
@@ -37,7 +37,10 @@ class ConfigurationResource(val config:Configuration,
   @GET
   @Path("/xml")
   @Produces(Array("application/xml"))
-  def retrieveConfiguration():DiffaConfig = config.retrieveConfiguration(domain)
+  def retrieveConfiguration() = config.retrieveConfiguration(domain) match {
+    case Some(cfg) => Response.ok.entity(cfg).build()
+    case None      => Response.status(Response.Status.NOT_FOUND).build()
+  }
 
   @POST
   @Path("/xml")
