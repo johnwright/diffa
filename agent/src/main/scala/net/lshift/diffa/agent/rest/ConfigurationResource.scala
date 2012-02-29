@@ -25,6 +25,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.agent.rest.ResponseUtils._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
+import com.sun.jersey.api.NotFoundException
 
 /**
  * This is a REST interface to the Configuration abstraction.
@@ -37,10 +38,8 @@ class ConfigurationResource(val config:Configuration,
   @GET
   @Path("/xml")
   @Produces(Array("application/xml"))
-  def retrieveConfiguration() = config.retrieveConfiguration(domain) match {
-    case Some(cfg) => Response.ok.entity(cfg).build()
-    case None      => Response.status(Response.Status.NOT_FOUND).build()
-  }
+  def retrieveConfiguration() =
+    config.retrieveConfiguration(domain).getOrElse(throw new NotFoundException("Unknown domain"))
 
   @POST
   @Path("/xml")
