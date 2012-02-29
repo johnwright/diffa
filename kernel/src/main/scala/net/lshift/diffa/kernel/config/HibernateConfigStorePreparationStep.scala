@@ -743,6 +743,8 @@ object HibernateConfigStorePreparationStep {
 
         migration
       }
-    }
+    },
+
+    HibernateMigrationStep20
   )
 }
