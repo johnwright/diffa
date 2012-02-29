@@ -5,7 +5,6 @@ import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
 import net.lshift.diffa.kernel.events.VersionID
 import org.hibernate.cfg.Configuration
-import net.lshift.diffa.kernel.config.{HibernateConfigStorePreparationStep, DiffaPairRef}
 import org.apache.commons.io.FileUtils
 import java.io.File
 import org.joda.time.{Interval, DateTime}
@@ -14,14 +13,17 @@ import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import org.hibernate.dialect.Dialect
 import net.lshift.diffa.kernel.hooks.HookManager
+import net.lshift.diffa.kernel.config.{TestDatabaseEnvironments, HibernateConfigStorePreparationStep, DiffaPairRef}
+import net.lshift.diffa.kernel.StoreReferenceContainer
 
 /**
  * Performance test for the domain cache.
  */
 class DomainDifferenceStorePerfTest {
-  assumeThat(System.getProperty("diffa.perftest"), is(equalTo("1")))
+  private val storeReferences = DomainDifferenceStorePerfTest.storeReferences
+  private val diffStore = storeReferences.domainDifferenceStore
 
-  import DomainDifferenceStorePerfTest._
+  assumeThat(System.getProperty("diffa.perftest"), is(equalTo("1")))
 
   @Test
   def differenceInsertionShouldBeConstantTime() {
@@ -197,27 +199,9 @@ class DomainDifferenceStorePerfTest {
 object DomainDifferenceStorePerfTest {
   FileUtils.deleteDirectory(new File("target/domain-cache-perf"))
 
-  lazy val config =
-    new Configuration().
-      addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-      addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
-      setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
-      setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("target/domain-cache-perf")).
-      setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
-      setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).
-      setProperty("hibernate.connection.password", DatabaseEnvironment.PASSWORD).
-      setProperty("hibernate.cache.region.factory_class", "net.sf.ehcache.hibernate.EhCacheRegionFactory").
-      setProperty("hibernate.connection.autocommit", "true") // Turn this on to make the tests repeatable,
-                                                             // otherwise the preparation step will not get committed
+  private[DomainDifferenceStorePerfTest] val env =
+    TestDatabaseEnvironments.uniqueEnvironment("target/domain-cache-perf")
 
-  lazy val sessionFactory = {
-    val sf = config.buildSessionFactory
-    (new HibernateConfigStorePreparationStep).prepare(sf, config)
-
-    sf
-  }
-
-  lazy val cacheManager = new CacheManager()
-  lazy val dialect = Class.forName(DatabaseEnvironment.DIALECT).newInstance().asInstanceOf[Dialect]
-  lazy val diffStore = new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect, new HookManager(config))
+  private[DomainDifferenceStorePerfTest] val storeReferences =
+    StoreReferenceContainer.withCleanDatabaseEnvironment(env)
 }
