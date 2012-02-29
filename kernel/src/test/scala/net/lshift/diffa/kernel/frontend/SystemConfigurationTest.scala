@@ -1,11 +1,8 @@
 package net.lshift.diffa.kernel.frontend
 
-import net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.differencing.DifferencesManager
 import org.junit.Assert._
-import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import org.hibernate.cfg.{Configuration => HibernateConfig}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.lifecycle.NotificationCentre
@@ -121,7 +118,7 @@ class SystemConfigurationTest {
 
 object SystemConfigurationTest {
   private[SystemConfigurationTest] lazy val env =
-    DatabaseEnvironment.customEnvironment("target/systemConfigTest")
+    TestDatabaseEnvironments.uniqueEnvironment("target/systemConfigTest")
 
   private[SystemConfigurationTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)

@@ -28,7 +28,7 @@ import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.T
 import net.lshift.diffa.kernel.differencing.ZoomCache._
 import org.joda.time.{DateTime, Interval, DateTimeZone}
 import org.hibernate.dialect.Dialect
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment}
+import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import net.lshift.diffa.kernel.StoreReferenceContainer
 
 /**
@@ -895,7 +895,7 @@ class HibernateDomainDifferenceStoreTest {
 
 object HibernateDomainDifferenceStoreTest {
   private[HibernateDomainDifferenceStoreTest] val env =
-    DatabaseEnvironment.customEnvironment("target/domainCache")
+    TestDatabaseEnvironments.uniqueEnvironment("target/domainCache")
 
   private[HibernateDomainDifferenceStoreTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)

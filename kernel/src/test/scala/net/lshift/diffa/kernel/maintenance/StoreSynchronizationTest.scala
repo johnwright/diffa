@@ -28,15 +28,14 @@ import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.junit.Assert._
 import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
-import net.lshift.diffa.kernel.config.{Domain,Endpoint,DiffaPair}
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import net.lshift.diffa.kernel.diag.{LocalDiagnosticsManager, DiagnosticsManager}
 import java.io.File
 import org.apache.commons.io.FileUtils
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, MatchingManager, EventMatcher}
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import org.junit.{AfterClass, After, Before, Test}
+import net.lshift.diffa.kernel.config.{TestDatabaseEnvironments, Domain, Endpoint, DiffaPair}
 
 class StoreSynchronizationTest {
 
@@ -207,7 +206,7 @@ object StoreSynchronizationTest {
   private[StoreSynchronizationTest] val explainDir = "target/storeSynchronizationTest-explain"
 
   private[StoreSynchronizationTest] val env =
-    DatabaseEnvironment.customEnvironment(indexDir)
+    TestDatabaseEnvironments.uniqueEnvironment(indexDir)
 
   private[StoreSynchronizationTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)

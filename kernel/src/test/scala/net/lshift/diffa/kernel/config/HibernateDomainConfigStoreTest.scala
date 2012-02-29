@@ -21,7 +21,7 @@ import scala.collection.Map
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend._
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.util.{MissingObjectException}
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import org.slf4j.LoggerFactory
 import org.junit.{AfterClass, Test, Before}
@@ -626,7 +626,7 @@ class HibernateDomainConfigStoreTest {
 
 object HibernateDomainConfigStoreTest {
   private[HibernateDomainConfigStoreTest] val env =
-    DatabaseEnvironment.customEnvironment("target/domainConfigStore")
+    TestDatabaseEnvironments.uniqueEnvironment("target/domainConfigStore")
 
   private[HibernateDomainConfigStoreTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)
