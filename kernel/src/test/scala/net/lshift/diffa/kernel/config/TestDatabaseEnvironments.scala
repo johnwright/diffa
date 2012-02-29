@@ -2,6 +2,7 @@ package net.lshift.diffa.kernel.config
 
 import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import org.junit.Ignore
+import net.lshift.hibernate.migrations.dialects.OracleDialectExtension
 
 /**
  * These database environments are intended for use in testing.
@@ -10,6 +11,22 @@ import org.junit.Ignore
 object TestDatabaseEnvironments {
   def adminEnvironment: DatabaseEnvironment = AdminEnvironment
   def hsqldbEnvironment(path: String): DatabaseEnvironment = new HsqldbEnvironment(path)
+  def uniqueEnvironment(path: String): DatabaseEnvironment = DatabaseEnvironment.customEnvironment(path)
+}
+
+class UniqueEnvironment(path: String) extends DatabaseEnvironment(path) {
+  override def username = {
+    if (dialect.toUpperCase.contains((new OracleDialectExtension).getDialectName.toUpperCase))
+      makeUniqueUsername(super.username)
+    else
+      super.username
+  }
+
+  private def makeUniqueUsername(username: String): String = {
+    val scale = 100000000L
+    val suffix = math.round(scale * scala.math.random)
+    "%s_%d".format(username, suffix)
+  }
 }
 
 /**

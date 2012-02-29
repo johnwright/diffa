@@ -7,10 +7,9 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
 import org.junit.Assert._
-import net.lshift.diffa.kernel.config.{DiffaPairRef, Domain}
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import org.junit.{AfterClass, Before, Test}
+import net.lshift.diffa.kernel.config.{TestDatabaseEnvironments, DiffaPairRef, Domain}
 
 class ReportManagerTest {
   private val storeReferences = ReportManagerTest.storeReferences
@@ -79,7 +78,7 @@ class ReportManagerTest {
 
 object ReportManagerTest {
   private[ReportManagerTest] val env =
-    DatabaseEnvironment.customEnvironment("target/reportManagerTest")
+    TestDatabaseEnvironments.uniqueEnvironment("target/reportManagerTest")
 
   private[ReportManagerTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)

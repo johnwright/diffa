@@ -31,7 +31,7 @@ import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.{PairPolicyClient, ActivePairManager}
 import org.hibernate.cfg.{Configuration => HibernateConfig}
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import org.junit.{AfterClass, Test, Before}
 
@@ -290,7 +290,7 @@ class ConfigurationTest {
 }
 
 object ConfigurationTest {
-  private[ConfigurationTest] val env = DatabaseEnvironment.customEnvironment("target/configTest")
+  private[ConfigurationTest] val env = TestDatabaseEnvironments.uniqueEnvironment("target/configTest")
 
   private[ConfigurationTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)

@@ -76,7 +76,7 @@ class HibernatePreparationTest {
   @Test
   def shouldBeAbleToUpgradeToLatestDatabaseVersion {
     val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
-    val databaseEnvironment = DatabaseEnvironment.customEnvironment("target/configStore")
+    val databaseEnvironment = TestDatabaseEnvironments.uniqueEnvironment("target/configStore")
 
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
@@ -101,7 +101,7 @@ class HibernatePreparationTest {
   @Test
   def rerunUpgradeOnLatestVersionShouldSilentlyPassWithoutEffect {
     val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
-    val databaseEnvironment = DatabaseEnvironment.customEnvironment("target/configStore")
+    val databaseEnvironment = TestDatabaseEnvironments.uniqueEnvironment("target/configStore")
 
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)

@@ -17,10 +17,10 @@
 package net.lshift.diffa.kernel.config.system
 
 import org.junit.Assert._
-import net.lshift.diffa.kernel.config.{User, Domain}
-import net.lshift.diffa.kernel.util.{DatabaseEnvironment, MissingObjectException}
+import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import org.junit.{AfterClass, Before, Test}
+import net.lshift.diffa.kernel.config.{TestDatabaseEnvironments, User, Domain}
 
 class HibernateSystemConfigStoreTest {
   private val storeReferences = HibernateSystemConfigStoreTest.storeReferences
@@ -104,7 +104,7 @@ class HibernateSystemConfigStoreTest {
 
 object HibernateSystemConfigStoreTest {
   private[HibernateSystemConfigStoreTest] val env =
-    DatabaseEnvironment.customEnvironment("target/systemConfigStore")
+    TestDatabaseEnvironments.uniqueEnvironment("target/systemConfigStore")
 
   private[HibernateSystemConfigStoreTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)
