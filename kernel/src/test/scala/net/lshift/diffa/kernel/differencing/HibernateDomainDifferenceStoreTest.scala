@@ -386,12 +386,13 @@ class HibernateDomainDifferenceStoreTest {
     val timestamp = new DateTime()
     val newUnmatched = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
 
+    def sortBySeqId(a: DifferenceEvent, b: DifferenceEvent) = a.sequenceId < b.sequenceId
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
-    val unmatched = domainDiffStore.retrieveUnmatchedEvents("domain", interval)
+    val unmatched = domainDiffStore.retrieveUnmatchedEvents("domain", interval).sortWith(_.sequenceId < _.sequenceId)
     val lastSeq = unmatched.last.seqId
 
     domainDiffStore.ignoreEvent("domain", newUnmatched.seqId)
-    val updates = domainDiffStore.retrieveEventsSince("domain", lastSeq)
+    val updates = domainDiffStore.retrieveEventsSince("domain", lastSeq).sortWith(_.sequenceId < _.sequenceId)
 
     assertEquals(1, updates.length)
     assertEquals(MatchState.IGNORED, updates.head.state)  // Match events for ignored differences have a state IGNORED
