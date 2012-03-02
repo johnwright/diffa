@@ -38,9 +38,16 @@
         } else {
           apiRoot = customRoot;
         }
+
+        // Allow changing the auth token through the environment
+        String authToken = (java.lang.String) myenv.lookup("diffaRootAuthToken");
+
+        if (authToken.equals("__token__")) {
+          authToken = "";
+        }
       %>
       var API_BASE = "<%= apiRoot %>";
-      var USER_AUTH_TOKEN = "foo";
+      var USER_AUTH_TOKEN = "<%= authToken %>";
     </script>
 
     <title><decorator:title default="Diffa"/></title>

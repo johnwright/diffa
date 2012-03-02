@@ -21,7 +21,7 @@ function addAuthToken(path) {
    */
   plainPath = path.split("?")[0];
   query = $.query.load(path);
-  if (typeof USER_AUTH_TOKEN !== "undefined") {
+  if (typeof USER_AUTH_TOKEN !== "undefined" && USER_AUTH_TOKEN.length > 0) {
     query = query.set("authToken", USER_AUTH_TOKEN);
   }
   return plainPath + query.toString();
