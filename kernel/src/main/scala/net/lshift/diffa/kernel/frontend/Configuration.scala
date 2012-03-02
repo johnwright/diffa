@@ -87,8 +87,11 @@ class Configuration(val configStore: DomainConfigStore,
     val removedEndpoints = configStore.listEndpoints(domain).filter(currE => diffaConfig.endpoints.find(newE => newE.name == currE.name).isEmpty)
     removedEndpoints.foreach(e => deleteEndpoint(domain, e.name))
   }
+
+  def doesDomainExist(domain: String) = systemConfigStore.doesDomainExist(domain)
+
   def retrieveConfiguration(domain:String) : Option[DiffaConfig] =
-    if (systemConfigStore.doesDomainExist(domain))
+    if (doesDomainExist(domain))
       Some(DiffaConfig(
         properties = configStore.allConfigOptions(domain),
         members = configStore.listDomainMembers(domain).map(_.user.name).toSet,

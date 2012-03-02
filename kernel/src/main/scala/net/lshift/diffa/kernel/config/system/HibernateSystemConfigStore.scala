@@ -58,6 +58,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory, val pairCach
     }
   })
 
+  // TODO cache domains
   def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))
 
   def listDomains = sessionFactory.withSession(s => listQuery[Domain](s, "allDomains", Map()))

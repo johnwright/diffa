@@ -39,7 +39,7 @@ class ConfigurationResource(val config:Configuration,
   @Path("/xml")
   @Produces(Array("application/xml"))
   def retrieveConfiguration() =
-    config.retrieveConfiguration(domain).getOrElse(throw new NotFoundException("Unknown domain"))
+    config.retrieveConfiguration(domain).get // existence will have been checked in DomainResource
 
   @POST
   @Path("/xml")
