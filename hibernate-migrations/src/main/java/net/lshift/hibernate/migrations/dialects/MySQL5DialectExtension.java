@@ -1,6 +1,7 @@
 package net.lshift.hibernate.migrations.dialects;
 
 import org.hibernate.dialect.Dialect;
+import org.joda.time.DateTime;
 
 /**
  * Additional dialect-specific syntax for MySQL (5.x) not covered by MySQL5Dialect.
@@ -36,5 +37,11 @@ public class MySQL5DialectExtension extends DialectExtension {
   @Override
   public boolean indexDropsWithForeignKey() {
     return false;
+  }
+  
+  @Override
+  public boolean supportsFractionalSeconds() {
+    return false;
+//    return new DateTime(super.getCurrentDateTime().getMillis() / 1000 * 1000);
   }
 }

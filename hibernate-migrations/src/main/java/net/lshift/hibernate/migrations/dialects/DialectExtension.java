@@ -127,4 +127,8 @@ public abstract class DialectExtension {
   public boolean indexDropsWithForeignKey() {
     return true;
   }
+  
+  public boolean supportsFractionalSeconds() {
+    return true;
+  }
 }
