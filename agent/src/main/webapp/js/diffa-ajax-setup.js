@@ -29,6 +29,6 @@ function addAuthToken(path) {
 
 $.ajaxSetup({
   beforeSend: function(jqXHR, settings) {
-    settings.url = addAuthToken(settings.url);
+    settings.url = API_BASE + addAuthToken(settings.url);
   }
 });

@@ -59,7 +59,7 @@
     <script type="text/javascript" src="js/thirdparty/json2.js"></script>
 
     <script src="js/current-domain.js"></script>
-    <script src="js/auth-token.js"></script>
+    <script src="js/diffa-ajax-setup.js"></script>
 
     <decorator:head/>
 
