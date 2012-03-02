@@ -53,6 +53,11 @@
 
     <script src="js/current-domain.js"></script>
 
+    <script type="text/javascript" src="js/thirdparty/jquery-1.6.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery.color.js"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery.scrollTo-1.4.2-min.js"></script>
+    <script type="text/javascript" src="js/thirdparty/json2.js"></script>
+
     <decorator:head/>
 
   </head>
