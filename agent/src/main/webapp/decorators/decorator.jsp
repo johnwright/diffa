@@ -39,7 +39,8 @@
           apiRoot = customRoot;
         }
       %>
-      var API_BASE = "<%= apiRoot %>"
+      var API_BASE = "<%= apiRoot %>";
+      var USER_AUTH_TOKEN = "foo";
     </script>
 
     <title><decorator:title default="Diffa"/></title>
@@ -58,6 +59,7 @@
     <script type="text/javascript" src="js/thirdparty/json2.js"></script>
 
     <script src="js/current-domain.js"></script>
+    <script src="js/auth-token.js"></script>
 
     <decorator:head/>
 
