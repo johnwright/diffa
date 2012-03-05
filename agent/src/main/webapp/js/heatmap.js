@@ -1126,10 +1126,3 @@ Diffa.DiffsCollection.sync();
 setInterval('Diffa.BlobsModel.periodicSync()', Diffa.Config.BlobInterval);
 setInterval('Diffa.DiffsCollection.sync()', Diffa.Config.DiffInterval);
 });
-
-$(function() {
-  $(".top-navigation-link [data-js=domain-append]").each(function(i, link) {
-    link = $(link);
-    link.attr("href", link.attr("href") + "?domain=" + Diffa.currentDomain);
-  });
-});
