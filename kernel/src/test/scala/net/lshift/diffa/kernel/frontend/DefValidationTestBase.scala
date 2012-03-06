@@ -26,6 +26,10 @@ trait DefValidationTestBase {
     validateExceedsMaxColLength(DefaultLimits.KEY_LENGTH_LIMIT, msg, fn)
   }
 
+  def validateExceedsMaxUrlLength(msg: String, fn: String => Validatable) {
+    validateExceedsMaxColLength(DefaultLimits.URL_LENGTH_LIMIT, msg, fn)
+  }
+
   def validateExceedsMaxColLength(maxLength: Int, msg: String, fn: String => Validatable) {
     val len = maxLength + 1
     val name = "a" * len
