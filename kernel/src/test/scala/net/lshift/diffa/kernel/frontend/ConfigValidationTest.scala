@@ -359,46 +359,6 @@ class ConfigValidationTest {
   }
 
   @Test
-  def shouldAcceptReportWithValidReportType() {
-    val reportDef = PairReportDef(name = "Process Differences", pair ="p", reportType = "differences",
-                                  target = "http://someapp.com/handle_report")
-    reportDef.validate("config")
-  }
-
-  @Test
-  def shouldRejectReportWithInvalidReportType() {
-    validateError(
-      PairReportDef(name = "Process Differences", pair ="p", reportType = "blah-blah",
-                    target = "http://someapp.com/handle_report"),
-      "config/pair[key=p]/report[name=Process Differences]: Invalid report type: blah-blah"
-    )
-  }
-
-  @Test
-  def shouldRejectReportWithMissingTarget() {
-    validateError(
-      PairReportDef(name = "Process Differences", pair ="p", reportType = "differences"),
-      "config/pair[key=p]/report[name=Process Differences]: Missing target"
-    )
-  }
-
-  @Test
-  def shouldRejectReportWithInvalidTarget() {
-    validateError(
-      PairReportDef(name = "Process Differences", pair ="p", reportType = "differences",
-                    target = "random-target"),
-      "config/pair[key=p]/report[name=Process Differences]: Invalid target (not a URL): random-target"
-    )
-  }
-
-  @Test
-  def shouldRejectReportWithNameThatIsTooLong {
-    validateExceedsMaxKeyLength("config/pair[key=p]/report[name=%s]: name",
-      name => PairReportDef(name = name, pair = "p", reportType = "differences",
-        target="http://someapp.com/handle_report"))
-  }
-
-  @Test
   def shouldRejectUserWithoutName() {
     validateError(
       UserDef(email = "user@domain.com", password = "password"),
@@ -432,18 +392,6 @@ class ConfigValidationTest {
   def shouldAcceptExternalUserWithoutPassword() {
     val userDef = UserDef(name = "some.user", email = "user@domain.com", external = true)
     userDef.validate("config")
-  }
-
-  @Test
-  def shouldRejectRepairActionWithNameThatIsTooLong {
-    validateExceedsMaxKeyLength("config/pair[key=p]/repair-action[name=%s]: name",
-      name => RepairActionDef(name = name, scope = "pair", pair = "p"))
-  }
-
-  @Test
-  def shouldRejectEscalationWithNameThatIsTooLong {
-    validateExceedsMaxKeyLength("config/pair[key=p]/escalation[name=%s]: name",
-      name => EscalationDef(name = name, pair = "p", actionType = "report", event = "scan-completed"))
   }
 
   type Validatable = {
