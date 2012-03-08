@@ -93,5 +93,5 @@ class DomainResource {
 
   @Path("/inventory")
   def getInventoryResource(@PathParam("domain") domain:String) =
-    withValidDomain(domain, new InventoryResource(changes, domain))
+    withValidDomain(domain, new InventoryResource(changes, domainConfigStore, domain))
 }

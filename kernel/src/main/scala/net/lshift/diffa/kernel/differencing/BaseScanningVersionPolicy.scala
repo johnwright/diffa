@@ -29,6 +29,7 @@ import net.lshift.diffa.participant.common.JSONHelper
 import java.io.PrintWriter
 import collection.JavaConversions._
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Endpoint}
+import net.lshift.diffa.kernel.actors.{UpstreamEndpoint, DownstreamEndpoint, EndpointSide}
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -69,6 +70,19 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     } else {
       listener.onMismatch(evt.id, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, LiveWindow, Unfiltered)
     }
+  }
+
+  /**
+   * Handles an inventory arriving from a participant.
+   */
+  def processInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide,
+                       constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry]) {
+    val strategy = side match {
+      case UpstreamEndpoint   => new UpstreamScanStrategy
+      case DownstreamEndpoint => downstreamStrategy(null, null)
+    }
+
+    strategy.processInventory(pairRef, endpoint, writer, constraints, entries, listener)
   }
 
   def maybe(lastUpdate:DateTime) = {
@@ -231,6 +245,15 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
 
       DigestDifferencingUtils.differenceEntities(endpointCategories, validRemoteVersions, cachedVersions, constraints)
+        .foreach(handleMismatch(pair, writer, _, listener))
+    }
+
+    def processInventory(pair:DiffaPairRef, endpoint:Endpoint, writer:LimitedVersionCorrelationWriter,
+                         constraints:Seq[ScanConstraint], inventoryEntries:Seq[ScanResultEntry], listener: DifferencingListener) {
+      val cachedVersions = getEntities(pair, constraints)
+      val endpointCategories = endpoint.categories.toMap
+
+      DigestDifferencingUtils.differenceEntities(endpointCategories, inventoryEntries, cachedVersions, constraints)
         .foreach(handleMismatch(pair, writer, _, listener))
     }
 

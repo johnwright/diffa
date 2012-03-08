@@ -5,7 +5,7 @@ import scala.Option._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.participants.{StringPrefixCategoryFunction, CategoryFunction}
 import scala.collection.JavaConversions._
-import net.lshift.diffa.participant.scanning.{SetConstraint, ScanConstraint}
+import net.lshift.diffa.participant.scanning.{ConstraintsBuilder, SetConstraint, ScanConstraint}
 
 /**
  * Utility for transforming categories into
@@ -91,4 +91,15 @@ object CategoryUtil {
         }
       }
     }).toList
+
+  /**
+   * Configures a ConstraintBuilder based on the given category descriptors.
+   */
+  def buildConstraints(builder:ConstraintsBuilder, descriptors:Map[String, CategoryDescriptor]) {
+    descriptors.foreach {
+      case (name, _:SetCategoryDescriptor)    => builder.maybeAddSetConstraint(name)
+      case (name, _:PrefixCategoryDescriptor) => builder.maybeAddStringPrefixConstraint(name)
+      case (name, r:RangeCategoryDescriptor)  => RangeTypeRegistry.buildConstraint(builder, name, r)
+    }
+  }
 }
