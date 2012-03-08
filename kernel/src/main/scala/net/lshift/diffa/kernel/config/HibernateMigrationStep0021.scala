@@ -17,11 +17,11 @@ object HibernateMigrationStep0021 extends HibernateMigrationStep {
       addColumn("max_explain_files", Types.INTEGER, 11, false, 0)
 
     migration.insert("system_config_options").values(Map(
-      "opt_key" -> "max_events_to_explain_per_pair",
+      "opt_key" -> ConfigOption.eventExplanationLimitKey,
       "opt_val" -> "100"))
 
     migration.insert("system_config_options").values(Map(
-      "opt_key" -> "max_explain_files_per_pair",
+      "opt_key" -> ConfigOption.explainFilesLimitKey,
       "opt_val" -> "20"))
 
     migration.sql("""
@@ -29,9 +29,11 @@ insert into config_options (domain, opt_key, opt_val)
 select name, o.opt_key, o.opt_val
 from domains d, system_config_options o
 where o.opt_key in (
-  'max_events_to_explain_per_pair',
-  'max_explain_files_per_pair')
-""")
+  '%s',
+  '%s')
+""".format(
+      ConfigOption.eventExplanationLimitKey,
+      ConfigOption.explainFilesLimitKey))
 
     migration
   }

@@ -8,12 +8,12 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.util.HamcrestDateTimeHelpers._
 import net.lshift.diffa.kernel.differencing.{PairScanState}
 import org.junit.{Before, Test}
-import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint, DomainConfigStore, Domain, DiffaPair}
 import java.io.{FileInputStream, File}
 import org.apache.commons.io.{IOUtils, FileDeleteStrategy}
 import java.util.zip.ZipInputStream
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theory}
 import net.lshift.diffa.kernel.frontend.{PairDef, FrontendConversions}
+import net.lshift.diffa.kernel.config._
 
 class LocalDiagnosticsManagerTest {
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
@@ -275,6 +275,14 @@ class LocalDiagnosticsManagerTest {
 
     verifyExplanationFileCount(0, DiffaPairRef(key, domainName))
   }
+  
+  @Test
+  def shouldLimitExplanationFilesToSystemLimit {
+    val key = "limited_to_2_by_system_config"
+    val systemExplanationFileLimit = 2
+    setPairExplainLimitsWithSystemLimits(key, 50, 10, 20, systemExplanationFileLimit)
+    verifyExplanationFileCount(systemExplanationFileLimit, DiffaPairRef(key, domainName))
+  }
 
   private def expectPairListFromConfigStore(pairs: Seq[DiffaPair]) {
     val pairDefs = pairs map FrontendConversions.toPairDef
@@ -293,6 +301,24 @@ class LocalDiagnosticsManagerTest {
 
     expect(domainConfigStore.getPairDef(pair.domain.name, pair.key)).
       andStubReturn(FrontendConversions.toPairDef(pair))
+    replayAll()
+  }
+
+  private def setPairExplainLimitsWithSystemLimits(key: String,
+                                                   pairEventsToLog: Int,
+                                                   pairMaxExplainFiles: Int,
+                                                   systemEventsToLog: Int,
+                                                   systemMaxExplainFiles: Int) {
+    val pair = makeDiffaPairWithLimits(key, pairEventsToLog, pairMaxExplainFiles)
+
+    expect(domainConfigStore.getPairDef(pair.domain.name, pair.key)).
+      andStubReturn(FrontendConversions.toPairDef(pair))
+
+    expect(domainConfigStore.maybeConfigOption(pair.domain.name, ConfigOption.eventExplanationLimitKey)).
+      andStubReturn(Some(String.valueOf(systemEventsToLog)))
+    expect(domainConfigStore.maybeConfigOption(pair.domain.name, ConfigOption.explainFilesLimitKey)).
+      andStubReturn(Some(String.valueOf(systemMaxExplainFiles)))
+
     replayAll()
   }
 

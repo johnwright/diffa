@@ -404,3 +404,8 @@ case class PairScopedName(@BeanProperty var name:String = null,
 {
   def this() = this(name = null)
 }
+
+object ConfigOption {
+  val eventExplanationLimitKey = "maxEventsToExplainPerPair"
+  val explainFilesLimitKey = "maxExplainFilesPerPair"
+}
