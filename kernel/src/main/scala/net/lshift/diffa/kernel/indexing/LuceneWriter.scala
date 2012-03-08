@@ -129,6 +129,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
   def reset() {
     writer.deleteAll()
     writer.commit()
+    updatedDocs.clear()
   }
 
   def close() {
