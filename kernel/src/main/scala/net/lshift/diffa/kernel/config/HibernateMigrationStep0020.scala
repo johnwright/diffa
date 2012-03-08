@@ -3,14 +3,13 @@ package net.lshift.diffa.kernel.config
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import java.sql.Types
-import scala.collection.JavaConversions._
 
 /**
  * Upgrade the diffa database schema to version 20.
  */
-object HibernateMigrationStep20 extends HibernateMigrationStep {
+object HibernateMigrationStep0020 extends HibernateMigrationStep {
   def versionId = 20
-  def name = "Add per-pair logging configuration and shorten columns lengths"
+  def name = "Shorten columns lengths for more complete MySQL support"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
@@ -71,9 +70,7 @@ object HibernateMigrationStep20 extends HibernateMigrationStep {
       alterColumn("upstream", Types.VARCHAR, 50, true, null).
       alterColumn("downstream", Types.VARCHAR, 50, true, null).
       alterColumn("version_policy_name", Types.VARCHAR, 50, true, null).
-      alterColumn("scan_cron_spec", Types.VARCHAR, 50, true, null).
-      addColumn("events_to_log", Types.INTEGER, 11, false, 0).
-      addColumn("max_explain_files", Types.INTEGER, 11, false, 0)
+      alterColumn("scan_cron_spec", Types.VARCHAR, 50, true, null)
 
     migration.alterTable("pair_reports").
       alterColumn("name", Types.VARCHAR, 50, true, null).
@@ -119,23 +116,6 @@ object HibernateMigrationStep20 extends HibernateMigrationStep {
     // See note against dropping the primary key.
     migration.alterTable("diffs").
       addPrimaryKey("seq_id", "domain", "pair")
-
-    migration.insert("system_config_options").values(Map(
-      "opt_key" -> "max_events_to_explain_per_pair",
-      "opt_val" -> "100"))
-
-    migration.insert("system_config_options").values(Map(
-      "opt_key" -> "max_explain_files_per_pair",
-      "opt_val" -> "20"))
-
-    migration.sql("""
-insert into config_options (domain, opt_key, opt_val)
-select name, o.opt_key, o.opt_val
-from domains d, system_config_options o
-where o.opt_key in (
-  'max_events_to_explain_per_pair',
-  'max_explain_files_per_pair')
-""")
 
     if (migration.canAnalyze) {
       migration.analyzeTable("diffs")
