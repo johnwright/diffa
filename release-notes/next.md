@@ -10,6 +10,7 @@
 * [41] - Introduce a status page at /status to allow easy monitoring of agent status
 * [42] - The /rest prefix has been removed, e.g. /rest/domains/abc becomes /domains/abc.
 * [45] - Return a 404 response when a superuser attempts to access resources under non-existent domains
+* [??] - Support for submitting inventories of entities
 
 ## General Maintenance
 
