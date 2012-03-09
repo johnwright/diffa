@@ -17,13 +17,18 @@ package net.lshift.diffa.agent.client
  */
 
 import com.sun.jersey.api.client.ClientResponse
-import net.lshift.diffa.client.RestClientParams
+import net.lshift.diffa.participant.scanning.ScanConstraint
+import com.sun.jersey.core.util.MultivaluedMapImpl
+import net.lshift.diffa.client.{RequestBuildingHelper, RestClientParams}
 
 class InventoryRestClient(serverRootUrl:String, domain:String, params: RestClientParams = RestClientParams.default)
     extends DomainAwareRestClient(serverRootUrl, domain, "domains/{domain}/inventory/", params) {
 
-  def uploadInventory(epName:String, content:String) {
-    val path = resource.path(epName)
+  def uploadInventory(epName:String, constraints:Seq[ScanConstraint], content:String) {
+    val params = new MultivaluedMapImpl()
+    RequestBuildingHelper.constraintsToQueryArguments(params, constraints)
+
+    val path = resource.path(epName).queryParams(params)
     val response = path.entity(content, "text/csv").post(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {

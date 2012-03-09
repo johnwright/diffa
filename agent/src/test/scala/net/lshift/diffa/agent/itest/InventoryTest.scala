@@ -15,25 +15,27 @@
  */
 package net.lshift.diffa.agent.itest
 
-import net.lshift.diffa.agent.itest.support.TestEnvironments
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import org.junit.Test
 import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.differencing.{MatchState, DifferenceEvent}
+import support.{IncludesObjId, DoesntIncludeObjId, DiffCount, TestEnvironments}
+import net.lshift.diffa.participant.scanning.SetConstraint
+import scala.collection.JavaConversions._
 
 class InventoryTest extends AbstractEnvironmentTest {
   val envFactory = TestEnvironments.same _
 
   @Test
   def shouldGenerateDifferencesBasedUponAnInventoryBeingUploaded() {
-    env.inventoryClient.uploadInventory(env.upstreamEpName, csv(
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
     ))
 
-    val diffs = env.differencesHelper.waitForDiffCount(yesterday, tomorrow, 2).sortBy(e => e.objId.id)
+    val diffs = env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(2)).sortBy(e => e.objId.id)
     
     assertDiffEquals(
       DifferenceEvent(objId = VersionID(env.pairRef, "id1"), state = MatchState.UNMATCHED, upstreamVsn = "v1"),
@@ -45,35 +47,37 @@ class InventoryTest extends AbstractEnvironmentTest {
 
   @Test
   def shouldResolveDifferencesWhenMatchingInventoryIsUploadedForDownstream() {
-    env.inventoryClient.uploadInventory(env.upstreamEpName, csv(
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
     ))
-    env.differencesHelper.waitForDiffCount(yesterday, tomorrow, 2)
+    env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(2))
 
-    env.inventoryClient.uploadInventory(env.downstreamEpName, csv(
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
     ))
-    env.differencesHelper.waitForDiffCount(yesterday, tomorrow, 0)
+    env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(0))
   }
 
   @Test
   def shouldSeeTheDifferencesBetweenTwoInventories() {
-    env.inventoryClient.uploadInventory(env.upstreamEpName, csv(
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
     ))
-    env.inventoryClient.uploadInventory(env.downstreamEpName, csv(
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v3,tt,2012-03-10T10:05:12Z",
       "id3,v3,tt,2012-03-10T10:05:12Z"
     ))
-    val diffs = env.differencesHelper.waitForDiffCount(yesterday, tomorrow, 2).sortBy(e => e.objId.id)
+    val diffs = env.differencesHelper.
+      waitFor(yesterday, tomorrow, DiffCount(2), DoesntIncludeObjId("id1")).
+      sortBy(e => e.objId.id)
 
     assertDiffEquals(
       DifferenceEvent(objId = VersionID(env.pairRef, "id2"), state = MatchState.UNMATCHED, upstreamVsn = "v2", downstreamVsn = "v3"),
@@ -81,6 +85,30 @@ class InventoryTest extends AbstractEnvironmentTest {
     assertDiffEquals(
       DifferenceEvent(objId = VersionID(env.pairRef, "id3"), state = MatchState.UNMATCHED, downstreamVsn = "v3"),
       diffs(1))
+  }
+
+  @Test
+  def shouldAllowInventoryRegionToBeRestrictedToAllowPartialUpload() {
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
+      "id,vsn,someString,someDate",
+      "id1,v1,ss,2012-03-09T09:04:00Z",
+      "id2,v2,tt,2012-03-10T10:05:12Z"
+    ))
+    env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(2))
+
+    // Upload the downstream inventory in two parts
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(new SetConstraint("someString", Set("ss"))), csv(
+      "id,vsn,someString,someDate",
+      "id1,v1,ss,2012-03-09T09:04:00Z"
+    ))
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(new SetConstraint("someString", Set("tt"))), csv(
+      "id,vsn,someString,someDate",
+      "id2,v2,tt,2012-03-10T10:05:12Z",
+      "id3,v3,tt,2012-03-10T10:05:12Z"
+    ))
+
+    // Wait for us to reach a state of having only one difference, that being the additional v3
+    env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(1), IncludesObjId("id3"))
   }
 
   private def csv(lines:String*) = lines.mkString("\n")

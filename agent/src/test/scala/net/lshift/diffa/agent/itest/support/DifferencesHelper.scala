@@ -40,12 +40,16 @@ class DifferencesHelper(pairKey:String, diffClient:DifferencesRestClient) {
     diffs
   }
 
-  def waitForDiffCount(from:DateTime, until:DateTime, requiredCount:Int, n:Int = 20, wait:Int = 100) = {
+  def waitFor(from:DateTime, until:DateTime, conditions:DifferenceCondition*) = {
+    val n = 20
+    val wait = 100
+
     def poll() = diffClient.getEvents(pairKey, from, until, 0, 100)
+    def satisfied(diffs:Seq[DifferenceEvent]) = conditions.forall(_.isSatisfiedBy(diffs))
 
     var i = n
     var diffs = poll()
-    while(diffs.length != requiredCount && i > 0) {
+    while(!satisfied(diffs) && i > 0) {
       Thread.sleep(wait)
 
       diffs = poll()
@@ -53,11 +57,31 @@ class DifferencesHelper(pairKey:String, diffClient:DifferencesRestClient) {
     }
 
 
-    if (diffs.length != requiredCount) {
-      throw new Exception(
-        "Never reached required diff count %s. Last attempt returned %s diffs".format(requiredCount, diffs.length))
+    if (!satisfied(diffs)) {
+      val message = conditions.filter(!_.isSatisfiedBy(diffs)).map(_.describeIssuesWith(diffs)).mkString(";")
+      throw new Exception("Conditions weren't satisfied: " + message)
     }
 
     diffs
   }
+}
+
+abstract class DifferenceCondition {
+  def isSatisfiedBy(diffs:Seq[DifferenceEvent]):Boolean
+  def describeIssuesWith(diffs:Seq[DifferenceEvent]):String
+}
+case class DiffCount(count:Int) extends DifferenceCondition {
+  def isSatisfiedBy(diffs: Seq[DifferenceEvent]) = diffs.length == count
+  def describeIssuesWith(diffs: Seq[DifferenceEvent]) =
+    "Didn't reach required diff count %s. Last attempt returned %s diffs".format(count, diffs.length)
+}
+case class DoesntIncludeObjId(id:String) extends DifferenceCondition {
+  def isSatisfiedBy(diffs: Seq[DifferenceEvent]) = diffs.find(e => e.objId.id == id).isEmpty
+  def describeIssuesWith(diffs: Seq[DifferenceEvent]) =
+    "Difference ids (%s) shouldn't have included %s".format(diffs.map(e => e.objId.id), id)
+}
+case class IncludesObjId(id:String) extends DifferenceCondition {
+  def isSatisfiedBy(diffs: Seq[DifferenceEvent]) = diffs.find(e => e.objId.id == id).isDefined
+  def describeIssuesWith(diffs: Seq[DifferenceEvent]) =
+    "Difference ids (%s) should have included %s".format(diffs.map(e => e.objId.id), id)
 }
