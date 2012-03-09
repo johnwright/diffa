@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.participant.changes.ChangeEvent
 import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.actors.{UpstreamEndpoint, DownstreamEndpoint, PairPolicyClient}
+import net.lshift.diffa.kernel.util.CategoryUtil
 
 /**
  * Front-end for reporting changes.
@@ -85,25 +86,26 @@ class Changes(val domainConfig:DomainConfigStore,
 
   def submitInventory(domain:String, endpoint:String, constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry]) {
     val targetEndpoint = domainConfig.getEndpoint(domain, endpoint)
+    val endpointCategories = targetEndpoint.categories.toMap
+    val fullConstraints = CategoryUtil.mergeAndValidateConstraints(endpointCategories, constraints)
 
-    domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
-      val side = if (pair.upstream == endpoint) UpstreamEndpoint else DownstreamEndpoint
+    // Validate the provided entries
+    entries.foreach(entry => {
+      val entryAttributes = AttributesUtil.toTypedMap(endpointCategories, entry.getAttributes.toMap)
+      val issues = AttributesUtil.detectMissingAttributes(endpointCategories, entry.getAttributes.toMap) ++
+        AttributesUtil.detectOutsideConstraints(fullConstraints, entryAttributes)
 
-      // TODO: Validate that the entities provided meet the constraints of the endpoint
-        // TODO: Merge default endpoint constraints
-      val endpointCategories = targetEndpoint.categories.toMap
-      val issues = Seq() //AttributesUtil.detectMissingAttributes(endpointCategories, evt.getAttributes.toMap) ++
-//        AttributesUtil.detectOutsideConstraints(constraints, evtAttributes)
-
-      if (issues.size > 0) {
 //        log.warn("Dropping invalid pair event " + pairEvt + " due to issues " + issues)
 //        diagnostics.logPairExplanation(pair.asRef, "Version Policy",
 //          "The result %s was dropped since it didn't meet the request constraints. Identified issues were (%s)".format(
 //            pairEvt, issues.map { case (k, v) => k + ": " + v }.mkString(", ")))
-      } else {
-        // Propagate the change event to the corresponding policy
-        changeEventClient.submitInventory(pair.asRef, side, constraints, entries)
-      }
+    })
+
+    domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
+      val side = if (pair.upstream == endpoint) UpstreamEndpoint else DownstreamEndpoint
+
+      // Propagate the change event to the corresponding policy
+      changeEventClient.submitInventory(pair.asRef, side, constraints, entries)
     })
   }
 }
