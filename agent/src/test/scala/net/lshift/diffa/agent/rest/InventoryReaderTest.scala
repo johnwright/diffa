@@ -22,6 +22,7 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry
 import org.joda.time.{DateTimeZone, DateTime}
 import java.util.HashMap
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.frontend.InvalidInventoryException
 
 class InventoryReaderTest {
   val reader = new InventoryReader

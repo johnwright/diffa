@@ -60,8 +60,8 @@ class Changes(val domainConfig:DomainConfigStore,
 
       // Validate that the entities provided meet the constraints of the endpoint
       val endpointCategories = targetEndpoint.categories.toMap
-      val issues = AttributesUtil.detectMissingAttributes(endpointCategories, evt.getAttributes.toMap) ++
-        AttributesUtil.detectOutsideConstraints(targetEndpoint.initialConstraints(None), evtAttributes)
+      val issues = AttributesUtil.detectAttributeIssues(
+        endpointCategories, targetEndpoint.initialConstraints(None), evt.getAttributes.toMap, evtAttributes)
 
       if (issues.size > 0) {
         log.warn("Dropping invalid pair event " + pairEvt + " due to issues " + issues)
@@ -90,16 +90,17 @@ class Changes(val domainConfig:DomainConfigStore,
     val fullConstraints = CategoryUtil.mergeAndValidateConstraints(endpointCategories, constraints)
 
     // Validate the provided entries
-    entries.foreach(entry => {
-      val entryAttributes = AttributesUtil.toTypedMap(endpointCategories, entry.getAttributes.toMap)
-      val issues = AttributesUtil.detectMissingAttributes(endpointCategories, entry.getAttributes.toMap) ++
-        AttributesUtil.detectOutsideConstraints(fullConstraints, entryAttributes)
+    entries.zipWithIndex.foreach { case (entry,idx) =>
+      val issues = AttributesUtil.detectAttributeIssues(endpointCategories, fullConstraints, entry.getAttributes.toMap)
 
-//        log.warn("Dropping invalid pair event " + pairEvt + " due to issues " + issues)
-//        diagnostics.logPairExplanation(pair.asRef, "Version Policy",
-//          "The result %s was dropped since it didn't meet the request constraints. Identified issues were (%s)".format(
-//            pairEvt, issues.map { case (k, v) => k + ": " + v }.mkString(", ")))
-    })
+      if (issues.size > 0) {
+        throw new InvalidInventoryException(
+          "Entry %s was invalid. Identified issues were: %s".format(
+            idx+1,
+            issues.map { case (k, v) => k + ": " + v }.mkString(", ")
+          ))
+      }
+    }
 
     domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
       val side = if (pair.upstream == endpoint) UpstreamEndpoint else DownstreamEndpoint
@@ -109,3 +110,8 @@ class Changes(val domainConfig:DomainConfigStore,
     })
   }
 }
+
+/**
+ * Exception for indicating than an inventory was invalid.
+ */
+class InvalidInventoryException(reason:String) extends RuntimeException(reason)

@@ -74,6 +74,20 @@ object AttributesUtil {
     }.toMap
   }
 
+  /**
+   * Examines the provided attributes, and ensures that all attributes are covered by categories.
+   */
+  def detectExcessAttributes(categories:Map[String, CategoryDescriptor], attrs:Map[String, String]):Map[String, String] = {
+    attrs.flatMap {
+      case (name, value) => {
+        categories.get(name) match {
+          case None => Some(name -> "no matching category defined")
+          case Some(v) => None
+        }
+      }
+    }.toMap
+  }
+
   def detectOutsideConstraints(constraints:Seq[ScanConstraint], attrs:Map[String, TypedAttribute]):Map[String, String] = {
     val results:Seq[(String, String)] = constraints.flatMap(constraint =>
       attrs.get(constraint.getAttributeName) match {
@@ -107,5 +121,17 @@ object AttributesUtil {
       }
     )
     results.toMap[String, String]
+  }
+
+  def detectAttributeIssues(categories:Map[String, CategoryDescriptor], constraints:Seq[ScanConstraint],
+                            attrs:Map[String, String]):Map[String, String] =
+    detectAttributeIssues(categories, constraints, attrs, toTypedMap(categories, attrs))
+
+
+  def detectAttributeIssues(categories:Map[String, CategoryDescriptor], constraints:Seq[ScanConstraint],
+                            attrs:Map[String, String], typedAttrs:Map[String, TypedAttribute]):Map[String, String] = {
+    detectMissingAttributes(categories, attrs) ++
+      detectExcessAttributes(categories, attrs) ++
+      detectOutsideConstraints(constraints, typedAttrs)
   }
 }

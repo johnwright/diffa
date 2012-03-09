@@ -28,6 +28,7 @@ import scala.collection.JavaConversions._
 import collection.mutable.ListBuffer
 import org.joda.time.format.ISODateTimeFormat
 import java.util.HashMap
+import net.lshift.diffa.kernel.frontend.InvalidInventoryException
 
 /**
  * Provider for encoding and decoding Diffa inventory submissions blocks.
@@ -111,8 +112,3 @@ class InventoryReader extends MessageBodyReader[ScanResultList] {
  * reader is appropriate.
  */
 case class ScanResultList(results:Seq[ScanResultEntry])
-
-/**
- * Exception for indicating than an inventory was invalid.
- */
-class InvalidInventoryException(reason:String) extends RuntimeException(reason)
