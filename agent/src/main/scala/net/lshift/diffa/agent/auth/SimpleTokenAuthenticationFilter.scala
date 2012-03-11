@@ -46,7 +46,7 @@ class SimpleTokenAuthenticationFilter(authenticationManager:AuthenticationManage
           case failed:AuthenticationException => {
             SecurityContextHolder.clearContext()
 
-            logger.debug("Authentication request for failed: " + failed)
+            logger.trace("Authentication request for failed: " + failed)
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, failed.getMessage)
             
             return

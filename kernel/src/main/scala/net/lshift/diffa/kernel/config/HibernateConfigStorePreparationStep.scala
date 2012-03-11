@@ -49,6 +49,10 @@ class HibernateConfigStorePreparationStep
    * version, the schema will be updated to k+1, k+2, ..., L.
    */
   def prepare(sf: SessionFactory, config: Configuration) {
+    config.getProperties filterKeys(p => p.startsWith("hibernate")) foreach {
+      prop => log.info("Preparing database [%s: %s]".format(prop._1, prop._2))
+    }
+
     val version = detectVersion(sf, config)
     val nextVersion = version match {
       case None =>
@@ -234,7 +238,7 @@ object HibernateConfigStorePreparationStep {
    * Note that these steps should be executed in strictly ascending order.
    */
   val migrationSteps = Seq(
-    HibernateMigrationStep0,
+    HibernateMigrationStep0000,
 
     new HibernateMigrationStep {
       def versionId = 1
@@ -745,6 +749,7 @@ object HibernateConfigStorePreparationStep {
       }
     },
 
-    HibernateMigrationStep20
+    HibernateMigrationStep0020,
+    HibernateMigrationStep0021
   )
 }
