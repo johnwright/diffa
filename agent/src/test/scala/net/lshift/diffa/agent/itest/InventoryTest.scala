@@ -132,6 +132,8 @@ class InventoryTest extends AbstractEnvironmentTest {
   @Test
   def shouldRejectAnInventoryUploadWithInvalidConstraintsWithABadRequestResponse() {
     try {
+      // The constraint someString=qq on the upload isn't valid, since the someString category only
+      // supports ss and tt.
       env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(new SetConstraint("someString", Set("qq"))), csv(
         "id,vsn,someString,someDate",
         "id2,v2,qq,2012-03-10T10:05:12Z",
