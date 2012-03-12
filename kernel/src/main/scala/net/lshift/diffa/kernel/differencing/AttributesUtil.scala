@@ -59,11 +59,23 @@ object AttributesUtil {
     }
   }
 
+  def detectAttributeIssues(categories:Map[String, CategoryDescriptor], constraints:Seq[ScanConstraint],
+                            attrs:Map[String, String]):Map[String, String] =
+    detectAttributeIssues(categories, constraints, attrs, toTypedMap(categories, attrs))
+
+
+  def detectAttributeIssues(categories:Map[String, CategoryDescriptor], constraints:Seq[ScanConstraint],
+                            attrs:Map[String, String], typedAttrs:Map[String, TypedAttribute]):Map[String, String] = {
+    detectMissingAttributes(categories, attrs) ++
+//      detectExcessAttributes(categories, attrs) ++      // TODO: Do we want to detect excess attributes?
+      detectOutsideConstraints(constraints, typedAttrs)
+  }
+
   /**
    * Examines the provided attributes, and ensures that attributes exist for each of the
    * configured categories.
    */
-  def detectMissingAttributes(categories:Map[String, CategoryDescriptor], attrs:Map[String, String]):Map[String, String] = {
+  private def detectMissingAttributes(categories:Map[String, CategoryDescriptor], attrs:Map[String, String]):Map[String, String] = {
     categories.flatMap {
       case (name, categoryType) => {
         attrs.get(name) match {
@@ -77,7 +89,7 @@ object AttributesUtil {
   /**
    * Examines the provided attributes, and ensures that all attributes are covered by categories.
    */
-  def detectExcessAttributes(categories:Map[String, CategoryDescriptor], attrs:Map[String, String]):Map[String, String] = {
+  private def detectExcessAttributes(categories:Map[String, CategoryDescriptor], attrs:Map[String, String]):Map[String, String] = {
     attrs.flatMap {
       case (name, value) => {
         categories.get(name) match {
@@ -88,7 +100,7 @@ object AttributesUtil {
     }.toMap
   }
 
-  def detectOutsideConstraints(constraints:Seq[ScanConstraint], attrs:Map[String, TypedAttribute]):Map[String, String] = {
+  private def detectOutsideConstraints(constraints:Seq[ScanConstraint], attrs:Map[String, TypedAttribute]):Map[String, String] = {
     val results:Seq[(String, String)] = constraints.flatMap(constraint =>
       attrs.get(constraint.getAttributeName) match {
         case None => None   // Missing attributes should be detected with `detectMissingAttributes`
@@ -121,17 +133,5 @@ object AttributesUtil {
       }
     )
     results.toMap[String, String]
-  }
-
-  def detectAttributeIssues(categories:Map[String, CategoryDescriptor], constraints:Seq[ScanConstraint],
-                            attrs:Map[String, String]):Map[String, String] =
-    detectAttributeIssues(categories, constraints, attrs, toTypedMap(categories, attrs))
-
-
-  def detectAttributeIssues(categories:Map[String, CategoryDescriptor], constraints:Seq[ScanConstraint],
-                            attrs:Map[String, String], typedAttrs:Map[String, TypedAttribute]):Map[String, String] = {
-    detectMissingAttributes(categories, attrs) ++
-      detectExcessAttributes(categories, attrs) ++
-      detectOutsideConstraints(constraints, typedAttrs)
   }
 }

@@ -227,10 +227,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       // Validate that the entities provided meet the constraints of the endpoint
       val endpointCategories = endpoint.categories.toMap
       val validRemoteVersions = remoteVersions.filter(entry => {
-        val attrsMap = entry.getAttributes.toMap
-        val typedAttrsMap = AttributesUtil.toTypedMap(endpointCategories, attrsMap)
-        val issues = AttributesUtil.detectMissingAttributes(endpointCategories, attrsMap) ++
-          AttributesUtil.detectOutsideConstraints(constraints, typedAttrsMap)
+        val issues = AttributesUtil.detectAttributeIssues(endpointCategories, constraints, entry.getAttributes.toMap)
 
         if (issues.size == 0) {
           true
