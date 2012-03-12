@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.differencing.{MatchState, DifferenceEvent}
 import support.{IncludesObjId, DoesntIncludeObjId, DiffCount, TestEnvironments}
 import net.lshift.diffa.participant.scanning.SetConstraint
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.frontend.InvalidInventoryException
 
 class InventoryTest extends AbstractEnvironmentTest {
   val envFactory = TestEnvironments.same _
@@ -109,6 +110,40 @@ class InventoryTest extends AbstractEnvironmentTest {
 
     // Wait for us to reach a state of having only one difference, that being the additional v3
     env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(1), IncludesObjId("id3"))
+  }
+
+  @Test
+  def shouldRejectAnInventoryUploadWithMissingColumnsWithABadRequestResponse() {
+    try {
+      env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
+        "id,vsn,someString",
+        "id1,v1,ss",
+        "id2,v2,tt"
+      ))
+      fail("Request should have failed with BadInventoryException")
+    } catch {
+      case e:InvalidInventoryException =>
+        assertEquals(
+          "Inventory was invalid: Entry 1 was invalid. Identified issues were: someDate: property is missing",
+          e.getMessage)
+    }
+  }
+
+  @Test
+  def shouldRejectAnInventoryUploadWithInvalidConstraintsWithABadRequestResponse() {
+    try {
+      env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(new SetConstraint("someString", Set("qq"))), csv(
+        "id,vsn,someString,someDate",
+        "id2,v2,qq,2012-03-10T10:05:12Z",
+        "id3,v3,qq,2012-03-10T10:05:12Z"
+      ))
+      fail("Request should have failed with BadInventoryException")
+    } catch {
+      case e:InvalidInventoryException =>
+        assertEquals(
+          "Constraint was invalid: someString: Not all of the values [qq] are supported by category [ss, tt]",
+          e.getMessage)
+    }
   }
 
   private def csv(lines:String*) = lines.mkString("\n")

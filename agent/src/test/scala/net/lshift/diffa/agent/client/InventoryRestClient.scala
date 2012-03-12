@@ -20,6 +20,7 @@ import com.sun.jersey.api.client.ClientResponse
 import net.lshift.diffa.participant.scanning.ScanConstraint
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import net.lshift.diffa.client.{RequestBuildingHelper, RestClientParams}
+import net.lshift.diffa.kernel.frontend.InvalidInventoryException
 
 class InventoryRestClient(serverRootUrl:String, domain:String, params: RestClientParams = RestClientParams.default)
     extends DomainAwareRestClient(serverRootUrl, domain, "domains/{domain}/inventory/", params) {
@@ -33,6 +34,7 @@ class InventoryRestClient(serverRootUrl:String, domain:String, params: RestClien
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 202     => // Successfully submitted (202 is "Accepted")
+      case 400     => throw new InvalidInventoryException(response.getEntity(classOf[String]))
       case x:Int   => handleHTTPError(x,path, status)
     }
   }
