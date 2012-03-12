@@ -1078,6 +1078,7 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
 
   renderEntityScopedActions: function() {
     var event = this.model.selectedEvent;
+    var self = this;
 
     var pairKey = event.get('objId').pair.key;
     var itemID = event.get('objId').id;
@@ -1087,9 +1088,9 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
         return;
       }
       
-      this.$(".actionlist").empty();
+      self.$(".actionlist").empty();
       $.each(actionList, function(i, action) {
-        var repairStatus = this.$('.repairstatus');
+        var repairStatus = self.$('.repairstatus');
         appendActionButtonToContainer(actionListContainer, action, pairKey, itemID, repairStatus);
       });
     };
