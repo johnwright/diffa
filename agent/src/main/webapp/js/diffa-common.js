@@ -15,6 +15,16 @@
  * limitations under the License.
  */
 
+var Diffa = {
+  Routers: {},
+  Views: {},
+  Collections: {},
+  Models: {},
+  Config: {},
+  Binders: {},
+  Helpers: {}
+};
+
 function appendActionButtonToContainer($container, action, pairKey, itemID, $repairStatus) {
   // Reset the status box
   if ($repairStatus != null) $repairStatus.text("No repairs in progress");
