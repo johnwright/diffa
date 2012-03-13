@@ -107,6 +107,6 @@ $(function() {
 
   $(".top-navigation-link a.domain-page").each(function(i, link) {
     link = $(link);
-    link.attr("href", link.attr("href") + "?domain=" + Diffa.currentDomain);
+    link.attr("href", link.attr("href") + "?domain=" + currentDiffaDomain);
   });
 });
