@@ -7,6 +7,8 @@
 ## New Features
 
 * [60] - Experimental support for submitting inventories of entities
+* [63] - Category Descriptors are now validated
+* [62] - Views and categories can now be removed from endpoints and pairs in the settings editor
 * [??] -
 
 ## General Maintenance
