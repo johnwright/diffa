@@ -66,9 +66,9 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
     Diffa.Helpers.CategoriesHelper.packCategories(this);
     Diffa.Helpers.ViewsHelper.packViews(this);
   },
-  uploadInventory: function(f, opts) {
+  uploadInventory: function(f, constraints, opts) {
     $.ajax({
-      url: '/domains/' + Diffa.currentDomain + '/inventory/' + this.id,
+      url: '/domains/' + Diffa.currentDomain + '/inventory/' + this.id + '?' + constraints,
       type: 'POST',
       contentType: 'text/csv',
       data: f,
