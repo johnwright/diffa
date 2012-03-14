@@ -154,19 +154,25 @@ class DefaultDifferencesManager(
                      resolve:(DiffaPair) => String,
                      p:(Endpoint) => Participant): String = {
     val event = domainDifferenceStore.getEvent(domain, evtSeqId)
+    val noContentMessage = "Expanded detail not available"
+
     check(event) match {
       case true  => {
        val id = event.objId
        val pair = systemConfig.getPair(id.pair.domain, id.pair.key)
        val endpointName = resolve(pair)
        val endpoint = domainConfig.getEndpoint(domain, endpointName)
-       if (!participants.contains(endpoint)) {
-         participants(endpoint) = p(endpoint)
+       if (endpoint.contentRetrievalUrl != null) {
+         if (!participants.contains(endpoint)) {
+           participants(endpoint) = p(endpoint)
+         }
+         val participant = participants(endpoint)
+         participant.retrieveContent(id.id)
+       } else {
+         noContentMessage
        }
-       val participant = participants(endpoint)
-       participant.retrieveContent(id.id)
       }
-      case false => "Expanded detail not available"
+      case false => noContentMessage
     }
 
   }
