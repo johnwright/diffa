@@ -55,7 +55,7 @@
     <link rel="stylesheet" href="assets/diffa-core.css" type="text/css" media="screen, projection">
 
     <script type="text/javascript" src="js/thirdparty/jquery-1.6.min.js" charset="utf-8"></script>
-    <script type="text/javascript" src="assets/diffa-core.js" charset="utf-8"></script>
+    <script type="text/javascript" src="assets/diffa-core.js?minimize=false" charset="utf-8"></script>
 
     <script src="js/current-domain.js"></script>
     <script src="js/diffa-ajax-setup.js"></script>

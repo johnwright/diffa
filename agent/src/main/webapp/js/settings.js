@@ -391,16 +391,15 @@ Diffa.Binders.ListBinder = Diffa.Binder.extend({
 
 Diffa.currentDomain = currentDiffaDomain;
 Diffa.SettingsApp = new Diffa.Routers.Config();
-Diffa.EndpointsCollection = new Diffa.Collections.Endpoints();
-Diffa.PairsCollection = new Diffa.Collections.Pairs();
+Diffa.domain = new Diffa.Models.Domain({name: Diffa.currentDomain});
 Diffa.EndpointElementListView = new Diffa.Views.ElementList({
   el: $('#endpoints-list'),
-  collection: Diffa.EndpointsCollection,
+  collection: Diffa.domain.endpoints,
   elementType: 'endpoint'
 });
 Diffa.EndpointElementListView = new Diffa.Views.ElementList({
   el: $('#pairs-list'),
-  collection: Diffa.PairsCollection,
+  collection: Diffa.domain.pairs,
   elementType: 'pair'
 });
 
@@ -420,7 +419,7 @@ var preloadCollections = function(colls, callback) {
 };
 
 // Preload useful collections, and then start processing history
-preloadCollections([Diffa.EndpointsCollection, Diffa.PairsCollection], function() {
+preloadCollections([Diffa.domain.endpoints, Diffa.domain.pairs], function() {
   Backbone.history.start();
 });
 });
