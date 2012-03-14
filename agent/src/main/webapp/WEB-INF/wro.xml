@@ -9,11 +9,17 @@
     <js>/js/datejs/date-en-GB.js</js>
     <js>/js/datejs/extras.js</js>
     <js>/js/diffa-common.js</js>
+    <js>/js/models.js</js>
   </group>
 
   <group name="heatmap">
     <js>/js/templates/heatmap/*.jst</js>
     <js>/js/heatmap.js</js>
+  </group>
+
+  <group name="data">
+    <js>/js/templates/data/*.jst</js>
+    <js>/js/data.js</js>
   </group>
 
   <group name="status">
