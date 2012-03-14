@@ -4,12 +4,18 @@
         xsi:schemaLocation="http://www.isdc.ro/wro wro.xsd">
 
   <group name="diffa-core">
+    <js>/js/thirdparty/jquery.color.js</js>
+    <js>/js/thirdparty/jquery.scrollTo-1.4.2-min.js</js>
+    <js>/js/thirdparty/jquery.query-2.1.7.js</js>
+    <js>/js/thirdparty/json2.js</js>
     <js>/js/thirdparty/underscore-1.1.6.min.js</js>
     <js>/js/thirdparty/backbone-0.5.1.min.js</js>
     <js>/js/datejs/date-en-GB.js</js>
     <js>/js/datejs/extras.js</js>
     <js>/js/diffa-common.js</js>
     <js>/js/models.js</js>
+
+    <css>/less/styling.less</css>
   </group>
 
   <group name="heatmap">
