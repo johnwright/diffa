@@ -6,11 +6,11 @@
 
 ## New Features
 
-* [65] Excess attributes in inventories, scans and changes are now detected and rejected.
+* [65] - Excess attributes in inventories, scans and changes are now detected and rejected.
 
 ## General Maintenance
 
-* [??] -
+* [68] - Addressed an issue whereby the XML config did not set the per-pair maximum explain files option
 
 ## Library Upgrades
 
