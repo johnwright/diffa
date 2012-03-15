@@ -212,8 +212,6 @@ Diffa.Collections.Pairs = Backbone.Collection.extend({
 });
 
 Diffa.Views.PairList = Backbone.View.extend({
-  el: $('#pair-list'),
-
   initialize: function() {
     _.bindAll(this, "addPair", "removePair");
 
@@ -223,7 +221,7 @@ Diffa.Views.PairList = Backbone.View.extend({
 
   addPair: function(pair) {
     var view = new Diffa.Views.PairSelector({model: pair});
-    this.el.append(view.render().el);
+    $(this.el).append(view.render().el);
   },
 
   removePair: function(pair) {
@@ -279,8 +277,6 @@ Diffa.Views.PairSelector = Backbone.View.extend({
 
 // Base class inherited by views that take a pair collection and then find the selected item to display it.
 Diffa.Views.PairSelectionView = Backbone.View.extend({
-  el: $('#pair-actions'),
-
   initialize: function() {
     _.bindAll(this, "maybeRender");
   },
@@ -305,8 +301,6 @@ Diffa.Views.PairSelectionView = Backbone.View.extend({
 });
 
 Diffa.Views.PairControls = Diffa.Views.PairSelectionView.extend({
-  el: $('#pair-actions'),
-
   events: {
     "click  #pair-controls .scan-button":       "startScan",
     "click  #pair-controls .cancel-button":     "cancelScan"
@@ -360,7 +354,7 @@ Diffa.Views.PairControls = Diffa.Views.PairSelectionView.extend({
       $(scanButtons).hide();      // Don't show scan buttons till we know if they're allowed
     }
 
-    this.el.show();
+    $(this.el).show();
   },
 
   startScan: function() {
@@ -471,7 +465,7 @@ Diffa.Views.PairLog = Diffa.Views.PairSelectionView.extend({
         self.el.append('<div class="entry entry-' + entry.level.toLowerCase() + '">' + text + '</div>')
       });
     }
-    this.el.show();
+    $(this.el).show();
   }
 });
 
@@ -482,8 +476,8 @@ $('#scan_all').click(function(e) {
 Diffa.currentDomain = currentDiffaDomain;
 Diffa.SettingsApp = new Diffa.Routers.Pairs();
 Diffa.PairsCollection = new Diffa.Collections.Pairs();
-Diffa.PairListView = new Diffa.Views.PairList({model: Diffa.PairsCollection});
-Diffa.PairControlsView =  new Diffa.Views.PairControls({model: Diffa.PairsCollection});
+Diffa.PairListView = new Diffa.Views.PairList({el: $('#pair-list'), model: Diffa.PairsCollection});
+Diffa.PairControlsView =  new Diffa.Views.PairControls({el: $('#pair-actions'), model: Diffa.PairsCollection});
 Diffa.PairRepairsView =  new Diffa.Views.PairRepairs({model: Diffa.PairsCollection});
 Diffa.PairReportsView =  new Diffa.Views.PairReports({model: Diffa.PairsCollection});
 Diffa.PairLogView =  new Diffa.Views.PairLog({model: Diffa.PairsCollection});
