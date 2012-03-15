@@ -7,6 +7,7 @@
 ## New Features
 
 * [67] - JS and CSS assets are now packaged to provide smaller downloads and simpler embedding.
+* [65] - Excess attributes in inventories, scans and changes are now detected and rejected.
 
 ## General Maintenance
 
