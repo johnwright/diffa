@@ -30,6 +30,7 @@
   </group>
 
   <group name="status">
+    <js>/js/templates/status/*.jst</js>
     <js>/js/status.js</js>
   </group>
 
