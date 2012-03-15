@@ -391,6 +391,12 @@
               <targetPath>decorators</targetPath>
               <filtering>true</filtering>
             </resource>
+
+            <!-- Allow alternate WEB-INF configuration files when we're packaging -->
+            <resource>
+              <directory>${basedir}/src/main/packaging/WEB-INF</directory>
+              <targetPath>WEB-INF</targetPath>
+            </resource>
           </webResources>
         </configuration>
       </plugin>
