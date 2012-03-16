@@ -19,7 +19,13 @@ $(function() {
 
 Diffa.Routers.Pairs = Backbone.Router.extend({
   initialize: function(opts) {
+    var self = this;
+
     this.domain = opts.domain;
+
+    $(opts.el).on(this.domain.id + ':pairSelected', function(e, selectedPairId) {
+      self.navigate("pair/" + selectedPairId, true);
+    });
   },
 
   routes: {
@@ -72,6 +78,8 @@ Diffa.Views.PairSelector = Backbone.View.extend({
     this.model.bind('change:state',     this.render);
     this.model.bind('change:selected',  this.render);
     this.model.bind('remove',           this.close);
+
+    this.domain = this.model.collection.domain;   // Make access to the domain cleaner
   },
 
   render: function() {
@@ -86,7 +94,7 @@ Diffa.Views.PairSelector = Backbone.View.extend({
   },
 
   select: function() {
-    Diffa.SettingsApp.navigate("pair/" + this.model.id, true);
+    $(this.el).trigger(this.domain.id  + ':pairSelected', [this.model.id]);
   },
 
   renderState: function(state) {
@@ -332,7 +340,7 @@ $('.diffa-pair-log').each(function() {
 
 $('.diffa-status-page').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
-  Diffa.SettingsApp = new Diffa.Routers.Pairs({domain: domain});
+  new Diffa.Routers.Pairs({domain: domain, el: this});
   Backbone.history.start();
 });
 });
