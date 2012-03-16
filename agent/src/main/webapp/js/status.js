@@ -329,4 +329,10 @@ $('.diffa-pair-log').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
   new Diffa.Views.PairLog({el: this, model: domain.pairStates});
 });
+
+$('.diffa-status-page').each(function() {
+  var domain = Diffa.DomainManager.get($(this).data('domain'));
+  Diffa.SettingsApp = new Diffa.Routers.Pairs({domain: domain});
+  Backbone.history.start();
+});
 });
