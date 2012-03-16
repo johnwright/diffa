@@ -358,6 +358,22 @@ Diffa.Models.Domain = Backbone.Model.extend({
     this.endpoints = new Diffa.Collections.Endpoints([], {domain: this});
     this.pairs = new Diffa.Collections.Pairs([], {domain: this});
     this.pairStates = new Diffa.Collections.PairStates([], {domain: this});
+  },
+
+  loadAll: function(colls, callback) {
+    var self = this;
+    var remaining = colls.length;
+    _.each(colls, function(preload) {
+      self[preload].fetch({
+        success: function() {
+          remaining -= 1;
+
+          if (remaining == 0) {
+            callback();
+          }
+        }
+      });
+    });
   }
 });
 
