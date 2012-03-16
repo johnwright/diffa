@@ -51,7 +51,7 @@ public class DiffaStandaloneWroManagerFactory extends ConfigurableStandaloneCont
     final Properties props = super.createProperties();
 
     props.put("preProcessors", "jstTemplates,cssUrlRewriting,cssImport,semicolonAppender");
-    props.put("postProcessors", "jsMin,lessCss,uglifyJs");
+    props.put("postProcessors", "jsMin,lessCss");
 
     return props;
   }
