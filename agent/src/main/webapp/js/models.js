@@ -224,6 +224,23 @@ Diffa.Collections.CollectionBase = Backbone.Collection.extend({
     });
   },
 
+  ensureFetched: function(cb) {
+    var complete = function() { if (cb) cb(); };
+    if (this.initialLoadComplete) {
+      complete();
+      return;
+    }
+
+    if (!this.startedInitialFetch) {
+      this.startedInitialFetch = true;
+      this.fetch({
+        success: function() {
+          complete();
+        }
+      });
+    }
+  },
+
   // Indicates that the given element is watching this collection, and it should periodically update itself.
   watch: function(listenerEl) {
     this.sync();
@@ -364,13 +381,11 @@ Diffa.Models.Domain = Backbone.Model.extend({
     var self = this;
     var remaining = colls.length;
     _.each(colls, function(preload) {
-      self[preload].fetch({
-        success: function() {
-          remaining -= 1;
+      self[preload].ensureFetched(function() {
+        remaining -= 1;
 
-          if (remaining == 0) {
-            callback();
-          }
+        if (remaining == 0) {
+          callback();
         }
       });
     });
