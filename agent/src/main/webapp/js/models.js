@@ -61,7 +61,7 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
     Diffa.Helpers.CategoriesHelper.extractCategories(this);
     Diffa.Helpers.ViewsHelper.extractViews(this, Diffa.Collections.EndpointViews);
   },
-  urlRoot: function() { return "/domains/" + this.collection.domain.id + "/config/endpoints"; },
+  urlRoot: function() { return "/domains/" + (this.domain || this.collection.domain).id + "/config/endpoints"; },
   prepareForSave: function() {
     Diffa.Helpers.CategoriesHelper.packCategories(this);
     Diffa.Helpers.ViewsHelper.packViews(this);
@@ -87,7 +87,7 @@ Diffa.Models.EndpointView = Backbone.Model.extend({
 });
 Diffa.Models.Pair = Backbone.Model.extend({
   idAttribute: "key",
-  urlRoot: function() { return "/domains/" + this.collection.domain.id + "/config/pairs"; },
+  urlRoot: function() { return "/domains/" + (this.domain || this.collection.domain).id + "/config/pairs"; },
   initialize: function() {
     Diffa.Helpers.ViewsHelper.extractViews(this);
   },
