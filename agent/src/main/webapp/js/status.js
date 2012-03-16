@@ -325,7 +325,7 @@ Diffa.Views.PairLog = Diffa.Views.PairSelectionView.extend({
   }
 });
 
-$('.diffa-pair-list').each(function() {
+$('.diffa-pair-status-list').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
   new Diffa.Views.PairList({el: this, model: domain.pairStates});
 });

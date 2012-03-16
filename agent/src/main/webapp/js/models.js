@@ -210,7 +210,21 @@ Diffa.Models.PairState = Backbone.Model.extend({
   }
 });
 
-Diffa.Collections.CollectionBase = Backbone.Collection.extend({
+Diffa.Collections.Watchable = {
+  // Indicates that the given element is watching this collection, and it should periodically update itself.
+  watch: function(listenerEl) {
+    if (!this.watched) {
+      this.watched = true;
+      this.sync();
+
+      this.registeredWatchIntervalId = setInterval(this.sync, this.watchInterval);
+
+      // TODO: If we want to support listening elements coming and going, we should keep track of the listener element
+      //       and only keep polling if we have at least one that is still in the DOM.
+    }
+  }
+};
+Diffa.Collections.CollectionBase = Backbone.Collection.extend(Diffa.Collections.Watchable).extend({
   initialize: function(models, opts) {
     var self = this;
 
@@ -239,16 +253,6 @@ Diffa.Collections.CollectionBase = Backbone.Collection.extend({
         }
       });
     }
-  },
-
-  // Indicates that the given element is watching this collection, and it should periodically update itself.
-  watch: function(listenerEl) {
-    this.sync();
-
-    this.registeredWatchIntervalId = setInterval(this.sync, this.watchInterval);
-
-    // TODO: If we want to support listening elements coming and going, we should keep track of the listener element
-    //       and only keep polling if we have at least one that is still in the DOM.
   }
 });
 Diffa.Collections.Endpoints = Diffa.Collections.CollectionBase.extend({
@@ -375,6 +379,8 @@ Diffa.Models.Domain = Backbone.Model.extend({
     this.endpoints = new Diffa.Collections.Endpoints([], {domain: this});
     this.pairs = new Diffa.Collections.Pairs([], {domain: this});
     this.pairStates = new Diffa.Collections.PairStates([], {domain: this});
+    this.blobs = new Diffa.Models.Blobs({domain: this});
+    this.diffs = new Diffa.Collections.Diffs([], {domain: this});
   },
 
   loadAll: function(colls, callback) {
