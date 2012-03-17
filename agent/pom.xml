@@ -189,18 +189,12 @@
     <dependency>
       <groupId>ro.isdc.wro4j</groupId>
       <artifactId>wro4j-extensions</artifactId>
-      <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>ro.isdc.wro4j</groupId>
-      <artifactId>wro4j-extensions</artifactId>
-      <scope>test</scope>
-    </dependency>
+
     <dependency>
       <groupId>net.lshift.diffa</groupId>
       <artifactId>jst-packaging</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
 
     <!-- Used to support testing LDAP support -->
