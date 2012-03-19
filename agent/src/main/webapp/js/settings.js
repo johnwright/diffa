@@ -421,7 +421,7 @@ Diffa.Binders.ListBinder = Diffa.Binder.extend({
 });
 
 Diffa.Helpers.bindEndpointList = function(el) {
-  var domain = Diffa.DomainManager.get($(this).data('domain'));
+  var domain = Diffa.DomainManager.get($(el).data('domain'));
 
   var template = window.JST['settings/endpointlist'];
 
@@ -432,7 +432,7 @@ Diffa.Helpers.bindEndpointList = function(el) {
   });
 };
 Diffa.Helpers.bindPairList = function(el) {
-  var domain = Diffa.DomainManager.get($(this).data('domain'));
+  var domain = Diffa.DomainManager.get($(el).data('domain'));
 
   var template = window.JST['settings/pairlist'];
 
