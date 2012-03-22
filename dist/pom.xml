@@ -19,7 +19,7 @@
 
   <dependencies>
     <!-- Webapp -->
-    <!--dependency>
+    <dependency>
       <groupId>net.lshift.diffa</groupId>
       <artifactId>diffa-agent</artifactId>
       <version>${project.version}</version>
@@ -30,7 +30,7 @@
       <artifactId>diffa-participants-web</artifactId>
       <version>${project.version}</version>
       <type>war</type>
-    </dependency-->
+    </dependency>
 
     <!-- Jetty Boot -->
     <dependency>
