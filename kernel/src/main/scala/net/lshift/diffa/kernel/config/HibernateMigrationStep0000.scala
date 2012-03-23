@@ -25,7 +25,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       withNativeIdentityGenerator()
 
     migration.createTable("config_options").
-      column("domain", Types.VARCHAR, 255, false).// TODO Domain.DEFAULT_DOMAIN.name
+      column("domain", Types.VARCHAR, 255, false).
       column("opt_key", Types.VARCHAR, 255, false).
       column("opt_val", Types.VARCHAR, 255, true).
       pk("opt_key")
@@ -36,7 +36,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
 
     migration.createTable("endpoint").
-      column("domain", Types.VARCHAR, 255, false).// TODO Domain.DEFAULT_DOMAIN.name
+      column("domain", Types.VARCHAR, 255, false).
       column("name", Types.VARCHAR, 255, false).
       column("scan_url", Types.VARCHAR, 255, true).
       column("content_retrieval_url", Types.VARCHAR, 255, true).
@@ -123,7 +123,14 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.createTable("users").
       column("name", Types.VARCHAR, 255, false).
       column("email", Types.VARCHAR, 255, true).
+      column("password_enc", Types.VARCHAR, 255, false, "LOCKED").
+      column("superuser", Types.BIT, 1, false, 0).
       pk("name")
+    migration.insert("users").
+      values(Map(
+      "name" -> "guest", "email" -> "guest@diffa.io",
+      "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+      "superuser" -> Boolean.box(true)))
 
     migration.alterTable("config_options").
       addForeignKey("FK80C74EA1C3C204DC", "domain", "domains", "name")
