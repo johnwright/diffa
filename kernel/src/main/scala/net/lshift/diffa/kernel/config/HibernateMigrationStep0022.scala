@@ -6,11 +6,11 @@ import scala.collection.JavaConversions._
 import net.lshift.hibernate.migrations.MigrationBuilder
 
 /**
- * This Step 'migrates' a schema/database to version 0 -
+ * This Step 'migrates' a schema/database to version 22 -
  * that is, it creates the base schema from scratch.
  */
-object HibernateMigrationStep0000 extends HibernateMigrationStep {
-  def versionId = 0
+object HibernateMigrationStep0022 extends HibernateMigrationStep {
+  def versionId = 22
   def name = "Create schema"
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
