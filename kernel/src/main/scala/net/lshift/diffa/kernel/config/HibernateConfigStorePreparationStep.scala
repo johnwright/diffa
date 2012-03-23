@@ -140,15 +140,7 @@ class HibernateConfigStorePreparationStep
       Some(sf.withSession(_.createSQLQuery("select max(version) as max_version from schema_version")
                            .addScalar("max_version", IntegerType.INSTANCE)
                            .uniqueResult().asInstanceOf[Int]))
-    }
-    // The schema_version table doesn't exist, so look at the config_options table
-    else if (tableExists(sf, config, "config_options") ) {
-      //Prior to version 2 of the database, the schema version was kept in the ConfigOptions table
-      val query = "select opt_val from config_options where opt_key = 'configStore.schemaVersion'"
-
-      Some(sf.withSession(_.createSQLQuery(query).uniqueResult().asInstanceOf[String].toInt))
-    }
-    else {
+    } else {
       // No known table was available to read a schema version
       None
     }
