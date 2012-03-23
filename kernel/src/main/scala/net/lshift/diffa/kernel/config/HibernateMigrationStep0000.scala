@@ -61,13 +61,8 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("downstream", Types.VARCHAR, 255, false).
       column("version_policy_name", Types.VARCHAR, 255, true).
       column("matching_timeout", Types.INTEGER, true).
-      column("name", Types.VARCHAR, 255, false).
       column("scan_cron_spec", Types.VARCHAR, 255, true).
       pk("pair_key")
-
-    migration.createTable("pair_group").
-      column("group_key", Types.VARCHAR, 255, false).
-      pk("group_key")
 
     migration.createTable("prefix_category_descriptor").
       column("id", Types.INTEGER, false).
@@ -107,7 +102,6 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
 
     migration.alterTable("pair").
       addForeignKey("FK3462DA25F0B1C4", "upstream", "endpoint", "name").
-      addForeignKey("FK3462DAF4F4CA7C", "name", "pair_group", "group_key").
       addForeignKey("FK3462DA4242E68B", "downstream", "endpoint", "name")
 
     migration.alterTable("prefix_category_descriptor").
