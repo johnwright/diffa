@@ -51,10 +51,10 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.createTable("endpoint").
       column("domain", Types.VARCHAR, 255, false).
       column("name", Types.VARCHAR, 255, false).
-      column("scan_url", Types.VARCHAR, 255, true).
-      column("content_retrieval_url", Types.VARCHAR, 255, true).
-      column("version_generation_url", Types.VARCHAR, 255, true).
-      column("inbound_url", Types.VARCHAR, 255, true).
+      column("scan_url", Types.VARCHAR, 1024, true).
+      column("content_retrieval_url", Types.VARCHAR, 1024, true).
+      column("version_generation_url", Types.VARCHAR, 1024, true).
+      column("inbound_url", Types.VARCHAR, 1024, true).
       column("content_type", Types.VARCHAR, 255, false).
       column("inbound_content_type", Types.VARCHAR, 255, true).
       pk("name", "domain")// TODO is this order ideal?
@@ -213,10 +213,10 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
 
 
-    migration.insert("config_options").
-      values(Map("opt_key" -> "configStore.schemaVersion", "opt_val" -> "0", "is_internal" -> new java.lang.Integer(1)))
-
     migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
+    
+    migration.insert("config_options").
+      values(Map("domain" -> Domain.DEFAULT_DOMAIN.name, "opt_key" -> "configStore.schemaVersion", "opt_val" -> "0"))
 
     migration.insert("schema_version").
       values(Map("version" -> new java.lang.Integer(versionId)))
