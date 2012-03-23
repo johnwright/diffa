@@ -55,7 +55,6 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("content_retrieval_url", Types.VARCHAR, 1024, true).
       column("version_generation_url", Types.VARCHAR, 1024, true).
       column("inbound_url", Types.VARCHAR, 1024, true).
-      column("content_type", Types.VARCHAR, 255, false).
       pk("name", "domain")// TODO is this order ideal?
 
     migration.createTable("endpoint_categories").
@@ -86,7 +85,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("action", Types.VARCHAR, 255, false).
       column("action_type", Types.VARCHAR, 255, false).
       column("event", Types.VARCHAR, 255, false).
-      column("origin", Types.VARCHAR, 255, false).
+      column("origin", Types.VARCHAR, 255, true).
       pk("name", "pair_key")
 
     migration.createTable("members").
@@ -106,6 +105,14 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("scan_cron_spec", Types.VARCHAR, 255, true).
       column("allow_manual_scans", Types.BIT, 1, true, 0).
       pk("pair_key", "domain")// TODO is this order ideal?
+
+    migration.createTable("pair_reports").
+      column("name", Types.VARCHAR, 255, false).
+      column("pair_key", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("report_type", Types.VARCHAR, 255, false).
+      column("target", Types.VARCHAR, 1024, false).
+      pk("name", "pair_key", "domain")
 
     migration.createTable("pair_views").
       column("name", Types.VARCHAR, 255, false).
@@ -204,6 +211,9 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name").
       addForeignKey("FK3462DAF2DA557F", Array("downstream", "dep_domain"), "endpoint", Array("name", "domain")).
       addForeignKey("FK3462DAF68A3C7", Array("upstream", "uep_domain"), "endpoint", Array("name", "domain"))
+
+    migration.alterTable("pair_reports").
+      addForeignKey("FKCEC6E15A2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("pair_views").
       addForeignKey("FKE0BDD4C9F6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
