@@ -98,8 +98,6 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("pair_key", Types.VARCHAR, 255, false).
       column("upstream", Types.VARCHAR, 255, false).
       column("downstream", Types.VARCHAR, 255, false).
-      column("uep_domain", Types.VARCHAR, 255, false).
-      column("dep_domain", Types.VARCHAR, 255, false).
       column("version_policy_name", Types.VARCHAR, 255, true).
       column("matching_timeout", Types.INTEGER, true).
       column("scan_cron_spec", Types.VARCHAR, 255, true).
@@ -210,8 +208,8 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
 
     migration.alterTable("pair").
       addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name").
-      addForeignKey("FK3462DAF2DA557F", Array("downstream", "dep_domain"), "endpoint", Array("name", "domain")).
-      addForeignKey("FK3462DAF68A3C7", Array("upstream", "uep_domain"), "endpoint", Array("name", "domain"))
+      addForeignKey("FK3462DAF68A3C7", Array("upstream", "domain"), "endpoint", Array("name", "domain")).
+      addForeignKey("FK3462DAF2DA557F", Array("downstream", "domain"), "endpoint", Array("name", "domain"))
 
     migration.alterTable("pair_reports").
       addForeignKey("FKCEC6E15A2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
