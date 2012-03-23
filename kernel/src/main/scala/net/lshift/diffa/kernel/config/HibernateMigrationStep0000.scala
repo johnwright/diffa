@@ -44,15 +44,17 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("inbound_url", Types.VARCHAR, 255, true).
       column("content_type", Types.VARCHAR, 255, false).
       column("inbound_content_type", Types.VARCHAR, 255, true).
-      pk("name")
+      pk("name", "domain")// TODO is this order ideal?
 
     migration.createTable("endpoint_categories").
+      column("domain", Types.VARCHAR, 255, false).
       column("id", Types.VARCHAR, 255, false).
       column("category_descriptor_id", Types.INTEGER, false).
       column("name", Types.VARCHAR, 255, false).
       pk("id", "name")
     
     migration.createTable("escalations").
+      column("domain", Types.VARCHAR, 255, false).
       column("name", Types.VARCHAR, 255, false).
       column("pair_key", Types.VARCHAR, 255, false).
       column("action", Types.VARCHAR, 255, false).
@@ -67,14 +69,16 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("user_name", "domain_name")
     
     migration.createTable("pair").
-      column("domain", Types.VARCHAR, 255, false).// TODO Domain.DEFAULT_DOMAIN.name
+      column("domain", Types.VARCHAR, 255, false).
       column("pair_key", Types.VARCHAR, 255, false).
       column("upstream", Types.VARCHAR, 255, false).
       column("downstream", Types.VARCHAR, 255, false).
+      column("uep_domain", Types.VARCHAR, 255, false).
+      column("dep_domain", Types.VARCHAR, 255, false).
       column("version_policy_name", Types.VARCHAR, 255, true).
       column("matching_timeout", Types.INTEGER, true).
       column("scan_cron_spec", Types.VARCHAR, 255, true).
-      pk("pair_key")
+      pk("pair_key", "domain")// TODO is this order ideal?
 
     migration.createTable("prefix_category_descriptor").
       column("id", Types.INTEGER, false).
@@ -89,6 +93,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("id")
 
     migration.createTable("repair_actions").
+      column("domain", Types.VARCHAR, 255, false).
       column("name", Types.VARCHAR, 255, false).
       column("pair_key", Types.VARCHAR, 255, false).
       column("url", Types.VARCHAR, 255, true).
@@ -127,16 +132,16 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       addForeignKey("FK67C71D95C3C204DC", "domain", "domains", "name")
 
     migration.alterTable("endpoint_categories").
-      addForeignKey("FKEE1F9F06BC780104", "id", "endpoint", "name").
+      addForeignKey("FKEE1F9F066D6BD5C8", Array("id", "domain"), "endpoint", Array("name", "domain")).
       addForeignKey("FKEE1F9F06B6D4F2CB", "category_descriptor_id", "category_descriptor", "category_id")
 
     migration.alterTable("escalations").
-      addForeignKey("FK2B3C687E7D35B6A8", "pair_key", "pair", "pair_key")
+      addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("pair").
       addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name").
-      addForeignKey("FK3462DA25F0B1C4", "upstream", "endpoint", "name").
-      addForeignKey("FK3462DA4242E68B", "downstream", "endpoint", "name")
+      addForeignKey("FK3462DAF2DA557F", Array("downstream", "dep_domain"), "endpoint", Array("name", "domain")).
+      addForeignKey("FK3462DAF68A3C7", Array("upstream", "uep_domain"), "endpoint", Array("name", "domain"))
 
     migration.alterTable("members").
       addForeignKey("FK388EC9191902E93E", "domain_name", "domains", "name").
@@ -149,7 +154,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       addForeignKey("FKDC53C74E7A220B71", "id", "category_descriptor", "category_id")
 
     migration.alterTable("repair_actions").
-      addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "pair_key")
+      addForeignKey("FKF6BE324B2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("set_category_descriptor").
       addForeignKey("FKA51D45F39810CA56", "id", "category_descriptor", "category_id")
