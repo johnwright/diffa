@@ -85,6 +85,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("data_type", Types.VARCHAR, 255, true).
       column("upper_bound", Types.VARCHAR, 255, true).
       column("lower_bound", Types.VARCHAR, 255, true).
+      column("max_granularity", Types.VARCHAR, 255, true).
       pk("id")
 
     migration.createTable("repair_actions").
@@ -145,7 +146,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       addForeignKey("FK46474423466530AE", "id", "category_descriptor", "category_id")
 
     migration.alterTable("range_category_descriptor").
-q      addForeignKey("FKDC53C74E7A220B71", "id", "category_descriptor", "category_id")
+      addForeignKey("FKDC53C74E7A220B71", "id", "category_descriptor", "category_id")
 
     migration.alterTable("repair_actions").
       addForeignKey("FKF6BE324B7D35B6A8", "pair_key", "pair", "pair_key")
