@@ -138,6 +138,12 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("value_name", Types.VARCHAR, 255, false).
       pk("value_id", "value_name")
 
+    migration.createTable("store_checkpoints").
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("latest_version", Types.BIGINT, false).
+      pk("domain", "pair")
+
     migration.createTable("system_config_options").
       column("opt_key", Types.VARCHAR, 255, false).
       column("opt_val", Types.VARCHAR, 255, false).
@@ -193,6 +199,9 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
 
     migration.alterTable("set_constraint_values").
       addForeignKey("FK96C7B32744035BE4", "value_id", "category_descriptor", "category_id")
+
+    migration.alterTable("store_checkpoints").
+      addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
 
     migration.createIndex("diff_last_seen", "diffs", "last_seen")
