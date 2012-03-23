@@ -200,62 +200,62 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     
 
     migration.alterTable("config_options").
-      addForeignKey("FK80C74EA1C3C204DC", "domain", "domains", "name")
+      addForeignKey("fk_cfop_dmns", "domain", "domains", "name")
 
     migration.alterTable("diffs")
-      .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      .addForeignKey("fk_diff_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("endpoint").
-      addForeignKey("FK67C71D95C3C204DC", "domain", "domains", "name")
+      addForeignKey("fk_edpt_dmns", "domain", "domains", "name")
 
     migration.alterTable("endpoint_categories").
-      addForeignKey("FKEE1F9F066D6BD5C8", Array("id", "domain"), "endpoint", Array("name", "domain")).
-      addForeignKey("FKEE1F9F06B6D4F2CB", "category_descriptor_id", "category_descriptor", "category_id")
+      addForeignKey("fk_epct_edpt", Array("id", "domain"), "endpoint", Array("name", "domain")).
+      addForeignKey("fk_epct_ctds", "category_descriptor_id", "category_descriptor", "category_id")
 
     migration.alterTable("endpoint_views").
-      addForeignKey("FKBE0A5744D532E642", Array("endpoint", "domain"), "endpoint", Array("name", "domain"))
+      addForeignKey("fk_epvw_edpt", Array("endpoint", "domain"), "endpoint", Array("name", "domain"))
 
     migration.alterTable("endpoint_views_categories").
-      addForeignKey("FKF03ED1F7B6D4F2CB", Array("category_descriptor_id"), "category_descriptor", Array("category_id"))
+      addForeignKey("fk_epvc_ctds", Array("category_descriptor_id"), "category_descriptor", Array("category_id"))
 
     migration.alterTable("escalations").
-      addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_escl_pair", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("pair").
-      addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name").
-      addForeignKey("FK3462DAF68A3C7", Array("upstream", "domain"), "endpoint", Array("name", "domain")).
-      addForeignKey("FK3462DAF2DA557F", Array("downstream", "domain"), "endpoint", Array("name", "domain"))
+      addForeignKey("fk_pair_dmns", "domain", "domains", "name").
+      addForeignKey("fk_pair_upstream_edpt", Array("upstream", "domain"), "endpoint", Array("name", "domain")).
+      addForeignKey("fk_pair_downstream_edpt", Array("downstream", "domain"), "endpoint", Array("name", "domain"))
 
     migration.alterTable("pair_reports").
-      addForeignKey("FKCEC6E15A2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_prep_pair", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("pair_views").
-      addForeignKey("FKE0BDD4C9F6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_prvw_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("members").
-      addForeignKey("FK388EC9191902E93E", "domain_name", "domains", "name").
-      addForeignKey("FK388EC9195A11FA9E", "user_name", "users", "name")
+      addForeignKey("fk_mmbs_dmns", "domain_name", "domains", "name").
+      addForeignKey("fk_mmbs_user", "user_name", "users", "name")
 
     migration.alterTable("pending_diffs")
-      .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      .addForeignKey("fk_pddf_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("prefix_category_descriptor").
-      addForeignKey("FK46474423466530AE", "id", "category_descriptor", "category_id")
+      addForeignKey("fk_pfcd_ctds", "id", "category_descriptor", "category_id")
 
     migration.alterTable("range_category_descriptor").
-      addForeignKey("FKDC53C74E7A220B71", "id", "category_descriptor", "category_id")
+      addForeignKey("fk_rctd_ctds", "id", "category_descriptor", "category_id")
 
     migration.alterTable("repair_actions").
-      addForeignKey("FKF6BE324B2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_rpac_pair", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("set_category_descriptor").
-      addForeignKey("FKA51D45F39810CA56", "id", "category_descriptor", "category_id")
+      addForeignKey("fk_sctd_ctds", "id", "category_descriptor", "category_id")
 
     migration.alterTable("set_constraint_values").
-      addForeignKey("FK96C7B32744035BE4", "value_id", "category_descriptor", "category_id")
+      addForeignKey("fk_sctv_ctds", "value_id", "category_descriptor", "category_id")
 
     migration.alterTable("store_checkpoints").
-      addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_stcp_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("users").
       addUniqueConstraint("token")
