@@ -30,10 +30,23 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("opt_val", Types.VARCHAR, 255, true).
       pk("opt_key")
 
+    migration.createTable("diffs").
+      column("seq_id", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("is_match", Types.BIT, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      column("ignored", Types.BIT, false).
+      pk("seq_id").
+      withNativeIdentityGenerator()
+
     migration.createTable("domains").
       column("name", Types.VARCHAR, 255, false).
       pk("name")
-    migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
 
     migration.createTable("endpoint").
       column("domain", Types.VARCHAR, 255, false).
@@ -80,6 +93,18 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("scan_cron_spec", Types.VARCHAR, 255, true).
       pk("pair_key", "domain")// TODO is this order ideal?
 
+    migration.createTable("pending_diffs").
+      column("oid", Types.INTEGER, false).
+      column("domain", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("entity_id", Types.VARCHAR, 255, false).
+      column("detected_at", Types.TIMESTAMP, false).
+      column("last_seen", Types.TIMESTAMP, false).
+      column("upstream_vsn", Types.VARCHAR, 255, true).
+      column("downstream_vsn", Types.VARCHAR, 255, true).
+      pk("oid").
+      withNativeIdentityGenerator()
+
     migration.createTable("prefix_category_descriptor").
       column("id", Types.INTEGER, false).
       pk("id")
@@ -103,8 +128,6 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.createTable("schema_version").
       column("version", Types.INTEGER, false).
       pk("version")
-    migration.insert("schema_version").
-      values(Map("version" -> new java.lang.Integer(versionId)))
 
     migration.createTable("set_category_descriptor").
       column("id", Types.INTEGER, false).
@@ -126,14 +149,13 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("password_enc", Types.VARCHAR, 255, false, "LOCKED").
       column("superuser", Types.BIT, 1, false, 0).
       pk("name")
-    migration.insert("users").
-      values(Map(
-      "name" -> "guest", "email" -> "guest@diffa.io",
-      "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
-      "superuser" -> Boolean.box(true)))
+    
 
     migration.alterTable("config_options").
       addForeignKey("FK80C74EA1C3C204DC", "domain", "domains", "name")
+
+    migration.alterTable("diffs")
+      .addForeignKey("FK5AA9592F53F69C16", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("endpoint").
       addForeignKey("FK67C71D95C3C204DC", "domain", "domains", "name")
@@ -154,6 +176,9 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       addForeignKey("FK388EC9191902E93E", "domain_name", "domains", "name").
       addForeignKey("FK388EC9195A11FA9E", "user_name", "users", "name")
 
+    migration.alterTable("pending_diffs")
+      .addForeignKey("FK75E457E44AD37D84", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+
     migration.alterTable("prefix_category_descriptor").
       addForeignKey("FK46474423466530AE", "id", "category_descriptor", "category_id")
 
@@ -169,8 +194,30 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.alterTable("set_constraint_values").
       addForeignKey("FK96C7B32744035BE4", "value_id", "category_descriptor", "category_id")
 
+
+    migration.createIndex("diff_last_seen", "diffs", "last_seen")
+    migration.createIndex("diff_detection", "diffs", "detected_at")
+    migration.createIndex("rdiff_is_matched", "diffs", "is_match")
+    migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
+    migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")
+
+    migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
+
+
     migration.insert("config_options").
       values(Map("opt_key" -> "configStore.schemaVersion", "opt_val" -> "0", "is_internal" -> new java.lang.Integer(1)))
+
+    migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
+
+    migration.insert("schema_version").
+      values(Map("version" -> new java.lang.Integer(versionId)))
+
+    migration.insert("users").
+      values(Map(
+      "name" -> "guest", "email" -> "guest@diffa.io",
+      "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
+      "superuser" -> Boolean.box(true)))
+
 
     migration
   }
