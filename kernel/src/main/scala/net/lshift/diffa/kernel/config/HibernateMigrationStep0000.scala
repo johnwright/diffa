@@ -25,15 +25,15 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       withNativeIdentityGenerator()
 
     migration.createTable("config_options").
-      column("domain", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
       column("opt_key", Types.VARCHAR, 255, false).
       column("opt_val", Types.VARCHAR, 255, true).
-      pk("opt_key")
+      pk("opt_key", "domain")// TODO is the order ideal?
 
     migration.createTable("diffs").
       column("seq_id", Types.INTEGER, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("pair", Types.VARCHAR, 50, false).
       column("entity_id", Types.VARCHAR, 255, false).
       column("is_match", Types.BIT, false).
       column("detected_at", Types.TIMESTAMP, false).
@@ -45,12 +45,12 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       withNativeIdentityGenerator()
 
     migration.createTable("domains").
-      column("name", Types.VARCHAR, 255, false).
+      column("name", Types.VARCHAR, 50, false).
       pk("name")
 
     migration.createTable("endpoint").
-      column("domain", Types.VARCHAR, 255, false).
-      column("name", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
       column("scan_url", Types.VARCHAR, 1024, true).
       column("content_retrieval_url", Types.VARCHAR, 1024, true).
       column("version_generation_url", Types.VARCHAR, 1024, true).
@@ -58,72 +58,74 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("name", "domain")// TODO is this order ideal?
 
     migration.createTable("endpoint_categories").
-      column("domain", Types.VARCHAR, 255, false).
-      column("id", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("id", Types.VARCHAR, 50, false).
       column("category_descriptor_id", Types.INTEGER, false).
-      column("name", Types.VARCHAR, 255, false).
+      column("name", Types.VARCHAR, 50, false).
       pk("id", "name")
 
     migration.createTable("endpoint_views").
-      column("name", Types.VARCHAR, 255, false).
-      column("endpoint", Types.VARCHAR, 255, false).
+      column("name", Types.VARCHAR, 50, false).
+      column("endpoint", Types.VARCHAR, 50, false).
       column("domain", Types.VARCHAR, 50, false).
       pk("name", "endpoint", "domain")
 
     migration.createTable("endpoint_views_categories").
-      column("name", Types.VARCHAR, 255, false).
-      column("endpoint", Types.VARCHAR, 255, false).
+      column("name", Types.VARCHAR, 50, false).
+      column("endpoint", Types.VARCHAR, 50, false).
       column("domain", Types.VARCHAR, 50, false).
       column("category_descriptor_id", Types.INTEGER, false).
-      column("category_name", Types.VARCHAR, 255, false).
+      column("category_name", Types.VARCHAR, 50, false).
       pk("name", "endpoint", "domain", "category_name")
     
     migration.createTable("escalations").
-      column("domain", Types.VARCHAR, 255, false).
-      column("name", Types.VARCHAR, 255, false).
-      column("pair_key", Types.VARCHAR, 255, false).
-      column("action", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
+      column("pair_key", Types.VARCHAR, 50, false).
+      column("action", Types.VARCHAR, 50, false).
       column("action_type", Types.VARCHAR, 255, false).
       column("event", Types.VARCHAR, 255, false).
       column("origin", Types.VARCHAR, 255, true).
       pk("name", "pair_key")
 
     migration.createTable("members").
-      column("domain_name", Types.VARCHAR, 255, false).
-      column("user_name", Types.VARCHAR, 255, false).
+      column("domain_name", Types.VARCHAR, 50, false).
+      column("user_name", Types.VARCHAR, 50, false).
       pk("user_name", "domain_name")
     
     migration.createTable("pair").
-      column("domain", Types.VARCHAR, 255, false).
-      column("pair_key", Types.VARCHAR, 255, false).
-      column("upstream", Types.VARCHAR, 255, false).
-      column("downstream", Types.VARCHAR, 255, false).
-      column("version_policy_name", Types.VARCHAR, 255, true).
+      column("domain", Types.VARCHAR, 50, false).
+      column("pair_key", Types.VARCHAR, 50, false).
+      column("upstream", Types.VARCHAR, 50, false).
+      column("downstream", Types.VARCHAR, 50, false).
+      column("version_policy_name", Types.VARCHAR, 50, true).
       column("matching_timeout", Types.INTEGER, true).
-      column("scan_cron_spec", Types.VARCHAR, 255, true).
+      column("scan_cron_spec", Types.VARCHAR, 50, true).
       column("allow_manual_scans", Types.BIT, 1, true, 0).
+      column("events_to_log", Types.INTEGER, 11, false, 0).
+      column("max_explain_files", Types.INTEGER, 11, false, 0).
       pk("pair_key", "domain")// TODO is this order ideal?
 
     migration.createTable("pair_reports").
-      column("name", Types.VARCHAR, 255, false).
-      column("pair_key", Types.VARCHAR, 255, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("report_type", Types.VARCHAR, 255, false).
+      column("name", Types.VARCHAR, 50, false).
+      column("pair_key", Types.VARCHAR, 50, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("report_type", Types.VARCHAR, 50, false).
       column("target", Types.VARCHAR, 1024, false).
       pk("name", "pair_key", "domain")
 
     migration.createTable("pair_views").
-      column("name", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
+      column("name", Types.VARCHAR, 50, false).
+      column("pair", Types.VARCHAR, 50, false).
       column("domain", Types.VARCHAR, 50, false).
-      column("scan_cron_spec", Types.VARCHAR, 255, true).
+      column("scan_cron_spec", Types.VARCHAR, 50, true).
       pk("name", "pair", "domain")
 
     migration.createTable("pending_diffs").
       column("oid", Types.INTEGER, false).
-      column("domain", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
-      column("entity_id", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("pair", Types.VARCHAR, 50, false).
+      column("entity_id", Types.VARCHAR, 50, false).
       column("detected_at", Types.TIMESTAMP, false).
       column("last_seen", Types.TIMESTAMP, false).
       column("upstream_vsn", Types.VARCHAR, 255, true).
@@ -137,18 +139,18 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
 
     migration.createTable("range_category_descriptor").
       column("id", Types.INTEGER, false).
-      column("data_type", Types.VARCHAR, 255, true).
+      column("data_type", Types.VARCHAR, 20, true).
       column("upper_bound", Types.VARCHAR, 255, true).
       column("lower_bound", Types.VARCHAR, 255, true).
-      column("max_granularity", Types.VARCHAR, 255, true).
+      column("max_granularity", Types.VARCHAR, 20, true).
       pk("id")
 
     migration.createTable("repair_actions").
-      column("domain", Types.VARCHAR, 255, false).
-      column("name", Types.VARCHAR, 255, false).
-      column("pair_key", Types.VARCHAR, 255, false).
-      column("url", Types.VARCHAR, 255, true).
-      column("scope", Types.VARCHAR, 255, true).
+      column("domain", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
+      column("pair_key", Types.VARCHAR, 50, false).
+      column("url", Types.VARCHAR, 1024, true).
+      column("scope", Types.VARCHAR, 20, true).
       pk("name", "pair_key")
 
     migration.createTable("schema_version").
@@ -165,8 +167,8 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("value_id", "value_name")
 
     migration.createTable("store_checkpoints").
-      column("domain", Types.VARCHAR, 255, false).
-      column("pair", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("pair", Types.VARCHAR, 50, false).
       column("latest_version", Types.BIGINT, false).
       pk("domain", "pair")
 
@@ -176,12 +178,26 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("opt_key")
 
     migration.createTable("users").
-      column("name", Types.VARCHAR, 255, false).
-      column("email", Types.VARCHAR, 255, true).
-      column("password_enc", Types.VARCHAR, 255, false, "LOCKED").
+      column("name", Types.VARCHAR, 50, false).
+      column("email", Types.VARCHAR, 1024, true).
+      column("password_enc", Types.VARCHAR, 100, false, "LOCKED").
       column("superuser", Types.BIT, 1, false, 0).
-      column("token", Types.VARCHAR, 255, true).
+      column("token", Types.VARCHAR, 50, true).
       pk("name")
+
+    /* TODO remaining tasks from migration step 20:
+
+    migration.alterTable("partition_information").
+      alterColumn("table_name", Types.VARCHAR, 50, true, null)
+
+    // See note against dropping the primary key.
+    migration.alterTable("diffs").
+      addPrimaryKey("seq_id", "domain", "pair")
+
+    if (migration.canAnalyze) {
+      migration.analyzeTable("diffs")
+    }
+     */
     
 
     migration.alterTable("config_options").
@@ -260,14 +276,22 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.insert("config_options").
       values(Map("domain" -> Domain.DEFAULT_DOMAIN.name, "opt_key" -> "configStore.schemaVersion", "opt_val" -> "0"))
 
-    migration.insert("schema_version").
-      values(Map("version" -> new java.lang.Integer(versionId)))
+    migration.insert("system_config_options").values(Map(
+      "opt_key" -> ConfigOption.eventExplanationLimitKey,
+      "opt_val" -> "100"))
+
+    migration.insert("system_config_options").values(Map(
+      "opt_key" -> ConfigOption.explainFilesLimitKey,
+      "opt_val" -> "20"))
 
     migration.insert("users").
       values(Map(
       "name" -> "guest", "email" -> "guest@diffa.io",
       "password_enc" -> "84983c60f7daadc1cb8698621f802c0d9f9a3c3c295c810748fb048115c186ec",
       "superuser" -> Boolean.box(true)))
+
+    migration.insert("schema_version").
+      values(Map("version" -> new java.lang.Integer(versionId)))
 
 
     migration
