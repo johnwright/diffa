@@ -15,6 +15,12 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
+    migration.createTable("schema_version").
+      column("version", Types.INTEGER, false).
+      pk("version")
+    migration.insert("schema_version").
+      values(Map("version" -> new java.lang.Integer(versionId)))
+
     migration.createTable("category_descriptor").
       column("category_id", Types.INTEGER, false).
       column("constraint_type", Types.VARCHAR, 20, false).
