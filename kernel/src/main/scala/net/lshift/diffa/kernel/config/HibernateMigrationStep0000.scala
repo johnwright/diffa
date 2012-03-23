@@ -182,6 +182,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("email", Types.VARCHAR, 255, true).
       column("password_enc", Types.VARCHAR, 255, false, "LOCKED").
       column("superuser", Types.BIT, 1, false, 0).
+      column("token", Types.VARCHAR, 255, true).
       pk("name")
     
 
@@ -242,6 +243,9 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
 
     migration.alterTable("store_checkpoints").
       addForeignKey("FK50EE698DF6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+
+    migration.alterTable("users").
+      addUniqueConstraint("token")
 
 
     migration.createIndex("diff_last_seen", "diffs", "last_seen")
