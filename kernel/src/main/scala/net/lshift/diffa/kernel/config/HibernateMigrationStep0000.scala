@@ -1,9 +1,9 @@
 package net.lshift.diffa.kernel.config
 
 import org.hibernate.cfg.Configuration
-import net.lshift.hibernate.migrations.MigrationBuilder
 import java.sql.Types
 import scala.collection.JavaConversions._
+import net.lshift.hibernate.migrations.MigrationBuilder
 
 /**
  * This Step 'migrates' a schema/database to version 0 -
@@ -28,9 +28,9 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("domain", Types.VARCHAR, 50, false).
       column("opt_key", Types.VARCHAR, 255, false).
       column("opt_val", Types.VARCHAR, 255, true).
-      pk("opt_key", "domain")// TODO is the order ideal?
+      pk("opt_key", "domain")
 
-    migration.createTable("diffs").
+    val diffsTable = migration.createTable("diffs").
       column("seq_id", Types.INTEGER, false).
       column("domain", Types.VARCHAR, 50, false).
       column("pair", Types.VARCHAR, 50, false).
@@ -41,8 +41,20 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("upstream_vsn", Types.VARCHAR, 255, true).
       column("downstream_vsn", Types.VARCHAR, 255, true).
       column("ignored", Types.BIT, false).
-      pk("seq_id").
-      withNativeIdentityGenerator()
+      pk("seq_id", "domain", "pair")
+
+    // N.B. include the partition info table on all DBs (support may be added in future)
+    DefinePartitionInformationTable.defineTable(migration)
+
+    if (migration.canUseListPartitioning) {
+      diffsTable.virtualColumn("partition_name", Types.VARCHAR, 512, "domain || '_' || pair").
+        listPartitioned("partition_name").
+        listPartition("part_dummy_default", "default")
+
+      DefinePartitionInformationTable.applyPartitionVersion(migration, "diffs", versionId)
+
+      migration.executeDatabaseScript("sync_pair_diff_partitions", "net.lshift.diffa.kernel.config.procedures")
+    }
 
     migration.createTable("domains").
       column("name", Types.VARCHAR, 50, false).
@@ -55,7 +67,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("content_retrieval_url", Types.VARCHAR, 1024, true).
       column("version_generation_url", Types.VARCHAR, 1024, true).
       column("inbound_url", Types.VARCHAR, 1024, true).
-      pk("name", "domain")// TODO is this order ideal?
+      pk("name", "domain")
 
     migration.createTable("endpoint_categories").
       column("domain", Types.VARCHAR, 50, false).
@@ -104,7 +116,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("allow_manual_scans", Types.BIT, 1, true, 0).
       column("events_to_log", Types.INTEGER, 11, false, 0).
       column("max_explain_files", Types.INTEGER, 11, false, 0).
-      pk("pair_key", "domain")// TODO is this order ideal?
+      pk("pair_key", "domain")
 
     migration.createTable("pair_reports").
       column("name", Types.VARCHAR, 50, false).
@@ -184,20 +196,6 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("superuser", Types.BIT, 1, false, 0).
       column("token", Types.VARCHAR, 50, true).
       pk("name")
-
-    /* TODO remaining tasks from migration step 20:
-
-    migration.alterTable("partition_information").
-      alterColumn("table_name", Types.VARCHAR, 50, true, null)
-
-    // See note against dropping the primary key.
-    migration.alterTable("diffs").
-      addPrimaryKey("seq_id", "domain", "pair")
-
-    if (migration.canAnalyze) {
-      migration.analyzeTable("diffs")
-    }
-     */
     
 
     migration.alterTable("config_options").
@@ -266,7 +264,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.createIndex("diff_detection", "diffs", "detected_at")
     migration.createIndex("rdiff_is_matched", "diffs", "is_match")
     migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
-    migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")
+    migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")// TODO this wasn't re-created after step 16 - is it needed?
 
     migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
 
@@ -292,6 +290,11 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
 
     migration.insert("schema_version").
       values(Map("version" -> new java.lang.Integer(versionId)))
+
+    
+    if (migration.canAnalyze) {
+      migration.analyzeTable("diffs");
+    }
 
 
     migration
