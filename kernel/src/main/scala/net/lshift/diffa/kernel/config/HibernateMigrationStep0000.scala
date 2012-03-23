@@ -65,6 +65,20 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("category_descriptor_id", Types.INTEGER, false).
       column("name", Types.VARCHAR, 255, false).
       pk("id", "name")
+
+    migration.createTable("endpoint_views").
+      column("name", Types.VARCHAR, 255, false).
+      column("endpoint", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      pk("name", "endpoint", "domain")
+
+    migration.createTable("endpoint_views_categories").
+      column("name", Types.VARCHAR, 255, false).
+      column("endpoint", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("category_descriptor_id", Types.INTEGER, false).
+      column("category_name", Types.VARCHAR, 255, false).
+      pk("name", "endpoint", "domain", "category_name")
     
     migration.createTable("escalations").
       column("domain", Types.VARCHAR, 255, false).
@@ -92,6 +106,13 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("matching_timeout", Types.INTEGER, true).
       column("scan_cron_spec", Types.VARCHAR, 255, true).
       pk("pair_key", "domain")// TODO is this order ideal?
+
+    migration.createTable("pair_views").
+      column("name", Types.VARCHAR, 255, false).
+      column("pair", Types.VARCHAR, 255, false).
+      column("domain", Types.VARCHAR, 50, false).
+      column("scan_cron_spec", Types.VARCHAR, 255, true).
+      pk("name", "pair", "domain")
 
     migration.createTable("pending_diffs").
       column("oid", Types.INTEGER, false).
@@ -170,6 +191,12 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       addForeignKey("FKEE1F9F066D6BD5C8", Array("id", "domain"), "endpoint", Array("name", "domain")).
       addForeignKey("FKEE1F9F06B6D4F2CB", "category_descriptor_id", "category_descriptor", "category_id")
 
+    migration.alterTable("endpoint_views").
+      addForeignKey("FKBE0A5744D532E642", Array("endpoint", "domain"), "endpoint", Array("name", "domain"))
+
+    migration.alterTable("endpoint_views_categories").
+      addForeignKey("FKF03ED1F7B6D4F2CB", Array("category_descriptor_id"), "category_descriptor", Array("category_id"))
+
     migration.alterTable("escalations").
       addForeignKey("FK2B3C687E2E298B6C", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
 
@@ -177,6 +204,9 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       addForeignKey("FK3462DAC3C204DC", "domain", "domains", "name").
       addForeignKey("FK3462DAF2DA557F", Array("downstream", "dep_domain"), "endpoint", Array("name", "domain")).
       addForeignKey("FK3462DAF68A3C7", Array("upstream", "uep_domain"), "endpoint", Array("name", "domain"))
+
+    migration.alterTable("pair_views").
+      addForeignKey("FKE0BDD4C9F6FDBACC", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
 
     migration.alterTable("members").
       addForeignKey("FK388EC9191902E93E", "domain_name", "domains", "name").
