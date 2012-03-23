@@ -56,7 +56,6 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("version_generation_url", Types.VARCHAR, 1024, true).
       column("inbound_url", Types.VARCHAR, 1024, true).
       column("content_type", Types.VARCHAR, 255, false).
-      column("inbound_content_type", Types.VARCHAR, 255, true).
       pk("name", "domain")// TODO is this order ideal?
 
     migration.createTable("endpoint_categories").
@@ -105,6 +104,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("version_policy_name", Types.VARCHAR, 255, true).
       column("matching_timeout", Types.INTEGER, true).
       column("scan_cron_spec", Types.VARCHAR, 255, true).
+      column("allow_manual_scans", Types.BIT, 1, true, 0).
       pk("pair_key", "domain")// TODO is this order ideal?
 
     migration.createTable("pair_views").
