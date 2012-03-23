@@ -64,7 +64,27 @@ public class CreateTableBuilder extends TraceableMigrationElement {
   }
 
   public CreateTableBuilder column(String name, int sqlType, boolean nullable) {
-    return column(name, sqlType, Column.DEFAULT_LENGTH, nullable);
+    return column(name, sqlType, Column.DEFAULT_LENGTH, nullable, null);
+  }
+
+  public CreateTableBuilder column(String name, int sqlType, boolean nullable, Object defaultVal) {
+    return column(name, sqlType, Column.DEFAULT_LENGTH, nullable, defaultVal);
+  }
+
+  public CreateTableBuilder column(String name, int sqlType, int length, boolean nullable) {
+    return column(name, sqlType, length, nullable, null);
+  }
+
+  public CreateTableBuilder column(String name, int sqlType, int length, boolean nullable, Object defaultVal) {
+    Column col = new Column(name);
+    col.setNullable(nullable);
+    col.setSqlTypeCode(sqlType);
+    col.setLength(length);
+    col.setDefaultValue(defaultVal != null ? defaultVal.toString() : null);
+
+    columns.add(col);
+
+    return this;
   }
 
   public CreateTableBuilder virtualColumn(String name, int sqlType, int length, String generator) {
@@ -78,16 +98,6 @@ public class CreateTableBuilder extends TraceableMigrationElement {
     return this;
   }
 
-  public CreateTableBuilder column(String name, int sqlType, int length, boolean nullable) {
-    Column col = new Column(name);
-    col.setNullable(nullable);
-    col.setSqlTypeCode(sqlType);
-    col.setLength(length);
-    columns.add(col);
-
-    return this;
-  }
-  
   public CreateTableBuilder hashPartitions(int partitions, String ... columns) {
     partitionHelper.defineHashPartitions(partitions, columns);
     return this;
