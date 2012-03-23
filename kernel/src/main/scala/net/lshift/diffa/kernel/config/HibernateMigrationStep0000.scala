@@ -25,7 +25,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       withNativeIdentityGenerator()
 
     migration.createTable("config_options").
-      column("domain", Types.VARCHAR, 50, false).
+      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
       column("opt_key", Types.VARCHAR, 255, false).
       column("opt_val", Types.VARCHAR, 255, true).
       pk("opt_key", "domain")
@@ -41,7 +41,8 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       column("upstream_vsn", Types.VARCHAR, 255, true).
       column("downstream_vsn", Types.VARCHAR, 255, true).
       column("ignored", Types.BIT, false).
-      pk("seq_id", "domain", "pair")
+      pk("seq_id", "domain", "pair").
+      withNativeIdentityGenerator()
 
     // N.B. include the partition info table on all DBs (support may be added in future)
     DefinePartitionInformationTable.defineTable(migration)
@@ -61,7 +62,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("name")
 
     migration.createTable("endpoint").
-      column("domain", Types.VARCHAR, 50, false).
+      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
       column("name", Types.VARCHAR, 50, false).
       column("scan_url", Types.VARCHAR, 1024, true).
       column("content_retrieval_url", Types.VARCHAR, 1024, true).
@@ -70,7 +71,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("name", "domain")
 
     migration.createTable("endpoint_categories").
-      column("domain", Types.VARCHAR, 50, false).
+      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
       column("id", Types.VARCHAR, 50, false).
       column("category_descriptor_id", Types.INTEGER, false).
       column("name", Types.VARCHAR, 50, false).
@@ -91,7 +92,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("name", "endpoint", "domain", "category_name")
     
     migration.createTable("escalations").
-      column("domain", Types.VARCHAR, 50, false).
+      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
       column("name", Types.VARCHAR, 50, false).
       column("pair_key", Types.VARCHAR, 50, false).
       column("action", Types.VARCHAR, 50, false).
@@ -106,7 +107,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("user_name", "domain_name")
     
     migration.createTable("pair").
-      column("domain", Types.VARCHAR, 50, false).
+      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
       column("pair_key", Types.VARCHAR, 50, false).
       column("upstream", Types.VARCHAR, 50, false).
       column("downstream", Types.VARCHAR, 50, false).
@@ -158,7 +159,7 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
       pk("id")
 
     migration.createTable("repair_actions").
-      column("domain", Types.VARCHAR, 50, false).
+      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
       column("name", Types.VARCHAR, 50, false).
       column("pair_key", Types.VARCHAR, 50, false).
       column("url", Types.VARCHAR, 1024, true).
@@ -264,7 +265,6 @@ object HibernateMigrationStep0000 extends HibernateMigrationStep {
     migration.createIndex("diff_detection", "diffs", "detected_at")
     migration.createIndex("rdiff_is_matched", "diffs", "is_match")
     migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
-    migration.createIndex("seq_id_domain_idx", "diffs", "seq_id", "domain")// TODO this wasn't re-created after step 16 - is it needed?
 
     migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
 
