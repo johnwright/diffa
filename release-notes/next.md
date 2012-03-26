@@ -11,6 +11,7 @@
 
 ## General Maintenance
 
+* [77] - Collapsed database migrations down into a single version
 * [68] - Addressed an issue whereby the XML config did not set the per-pair maximum explain files option
 
 ## Library Upgrades
