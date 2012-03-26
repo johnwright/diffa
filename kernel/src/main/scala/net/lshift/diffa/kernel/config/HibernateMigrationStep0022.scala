@@ -209,7 +209,7 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       addForeignKey("fk_edpt_dmns", "domain", "domains", "name")
 
     migration.alterTable("endpoint_categories").
-      addForeignKey("fk_epct_edpt", Array("id", "domain"), "endpoint", Array("domain", "name")).
+      addForeignKey("fk_epct_edpt", Array("domain", "id"), "endpoint", Array("domain", "name")).
       addForeignKey("fk_epct_ctds", "category_descriptor_id", "category_descriptor", "category_id")
 
     migration.alterTable("endpoint_views").
