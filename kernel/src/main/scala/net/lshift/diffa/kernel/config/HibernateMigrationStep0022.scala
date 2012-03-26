@@ -68,7 +68,7 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       column("content_retrieval_url", Types.VARCHAR, 1024, true).
       column("version_generation_url", Types.VARCHAR, 1024, true).
       column("inbound_url", Types.VARCHAR, 1024, true).
-      pk("name", "domain")
+      pk("domain", "name")
 
     migration.createTable("endpoint_categories").
       column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
@@ -78,18 +78,18 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       pk("id", "name")
 
     migration.createTable("endpoint_views").
-      column("name", Types.VARCHAR, 50, false).
-      column("endpoint", Types.VARCHAR, 50, false).
       column("domain", Types.VARCHAR, 50, false).
-      pk("name", "endpoint", "domain")
+      column("endpoint", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
+      pk("domain", "endpoint", "name")
 
     migration.createTable("endpoint_views_categories").
-      column("name", Types.VARCHAR, 50, false).
-      column("endpoint", Types.VARCHAR, 50, false).
       column("domain", Types.VARCHAR, 50, false).
-      column("category_descriptor_id", Types.INTEGER, false).
+      column("endpoint", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
       column("category_name", Types.VARCHAR, 50, false).
-      pk("name", "endpoint", "domain", "category_name")
+      column("category_descriptor_id", Types.INTEGER, false).
+      pk("domain", "endpoint", "category_name", "name")
     
     migration.createTable("escalations").
       column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
@@ -99,12 +99,12 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       column("action_type", Types.VARCHAR, 255, false).
       column("event", Types.VARCHAR, 255, false).
       column("origin", Types.VARCHAR, 255, true).
-      pk("name", "pair_key")
+      pk("pair_key", "name")
 
     migration.createTable("members").
       column("domain_name", Types.VARCHAR, 50, false).
       column("user_name", Types.VARCHAR, 50, false).
-      pk("user_name", "domain_name")
+      pk("domain_name", "user_name")
     
     migration.createTable("pair").
       column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
@@ -117,22 +117,22 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       column("allow_manual_scans", Types.BIT, 1, true, 0).
       column("events_to_log", Types.INTEGER, 11, false, 0).
       column("max_explain_files", Types.INTEGER, 11, false, 0).
-      pk("pair_key", "domain")
+      pk("domain", "pair_key")
 
     migration.createTable("pair_reports").
-      column("name", Types.VARCHAR, 50, false).
-      column("pair_key", Types.VARCHAR, 50, false).
       column("domain", Types.VARCHAR, 50, false).
+      column("pair_key", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
       column("report_type", Types.VARCHAR, 50, false).
       column("target", Types.VARCHAR, 1024, false).
-      pk("name", "pair_key", "domain")
+      pk("domain", "pair_key", "name")
 
     migration.createTable("pair_views").
-      column("name", Types.VARCHAR, 50, false).
-      column("pair", Types.VARCHAR, 50, false).
       column("domain", Types.VARCHAR, 50, false).
+      column("pair", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
       column("scan_cron_spec", Types.VARCHAR, 50, true).
-      pk("name", "pair", "domain")
+      pk("domain", "pair", "name")
 
     migration.createTable("pending_diffs").
       column("oid", Types.INTEGER, false).
@@ -160,11 +160,11 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
 
     migration.createTable("repair_actions").
       column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
-      column("name", Types.VARCHAR, 50, false).
       column("pair_key", Types.VARCHAR, 50, false).
+      column("name", Types.VARCHAR, 50, false).
       column("url", Types.VARCHAR, 1024, true).
       column("scope", Types.VARCHAR, 20, true).
-      pk("name", "pair_key")
+      pk("pair_key", "name")
 
     migration.createTable("schema_version").
       column("version", Types.INTEGER, false).
