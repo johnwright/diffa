@@ -203,41 +203,41 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       addForeignKey("fk_cfop_dmns", "domain", "domains", "name")
 
     migration.alterTable("diffs")
-      .addForeignKey("fk_diff_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      .addForeignKey("fk_diff_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
 
     migration.alterTable("endpoint").
       addForeignKey("fk_edpt_dmns", "domain", "domains", "name")
 
     migration.alterTable("endpoint_categories").
-      addForeignKey("fk_epct_edpt", Array("id", "domain"), "endpoint", Array("name", "domain")).
+      addForeignKey("fk_epct_edpt", Array("id", "domain"), "endpoint", Array("domain", "name")).
       addForeignKey("fk_epct_ctds", "category_descriptor_id", "category_descriptor", "category_id")
 
     migration.alterTable("endpoint_views").
-      addForeignKey("fk_epvw_edpt", Array("endpoint", "domain"), "endpoint", Array("name", "domain"))
+      addForeignKey("fk_epvw_edpt", Array("domain", "endpoint"), "endpoint", Array("domain", "name"))
 
     migration.alterTable("endpoint_views_categories").
       addForeignKey("fk_epvc_ctds", Array("category_descriptor_id"), "category_descriptor", Array("category_id"))
 
     migration.alterTable("escalations").
-      addForeignKey("fk_escl_pair", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_escl_pair", Array("domain", "pair_key"), "pair", Array("domain", "pair_key"))
 
     migration.alterTable("pair").
       addForeignKey("fk_pair_dmns", "domain", "domains", "name").
-      addForeignKey("fk_pair_upstream_edpt", Array("upstream", "domain"), "endpoint", Array("name", "domain")).
-      addForeignKey("fk_pair_downstream_edpt", Array("downstream", "domain"), "endpoint", Array("name", "domain"))
+      addForeignKey("fk_pair_upstream_edpt", Array("domain", "upstream"), "endpoint", Array("domain", "name")).
+      addForeignKey("fk_pair_downstream_edpt", Array("domain", "downstream"), "endpoint", Array("domain", "name"))
 
     migration.alterTable("pair_reports").
-      addForeignKey("fk_prep_pair", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_prep_pair", Array("domain", "pair_key"), "pair", Array("domain", "pair_key"))
 
     migration.alterTable("pair_views").
-      addForeignKey("fk_prvw_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_prvw_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
 
     migration.alterTable("members").
       addForeignKey("fk_mmbs_dmns", "domain_name", "domains", "name").
       addForeignKey("fk_mmbs_user", "user_name", "users", "name")
 
     migration.alterTable("pending_diffs")
-      .addForeignKey("fk_pddf_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      .addForeignKey("fk_pddf_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
 
     migration.alterTable("prefix_category_descriptor").
       addForeignKey("fk_pfcd_ctds", "id", "category_descriptor", "category_id")
@@ -246,7 +246,7 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       addForeignKey("fk_rctd_ctds", "id", "category_descriptor", "category_id")
 
     migration.alterTable("repair_actions").
-      addForeignKey("fk_rpac_pair", Array("pair_key", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_rpac_pair", Array("domain", "pair_key"), "pair", Array("domain", "pair_key"))
 
     migration.alterTable("set_category_descriptor").
       addForeignKey("fk_sctd_ctds", "id", "category_descriptor", "category_id")
@@ -255,7 +255,7 @@ object HibernateMigrationStep0022 extends HibernateMigrationStep {
       addForeignKey("fk_sctv_ctds", "value_id", "category_descriptor", "category_id")
 
     migration.alterTable("store_checkpoints").
-      addForeignKey("fk_stcp_pair", Array("pair", "domain"), "pair", Array("pair_key", "domain"))
+      addForeignKey("fk_stcp_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
 
     migration.alterTable("users").
       addUniqueConstraint("token")
