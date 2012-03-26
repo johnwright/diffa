@@ -123,12 +123,12 @@ public class CreateTableBuilder extends TraceableMigrationElement {
         new StringBuffer(dialect.getCreateTableString()).append(' ').append(dialect.quote(name)).append(" (");
 
     for (Column col : columns) {
-      if (primaryKeys.contains(col.getName())) {
-        if (useNativeIdentityGenerator && dialect.supportsIdentityColumns()) {
-          buffer.append(generateIdentityColumnString(dialect, col));
-        } else {
-          buffer.append( generateNonIdentityColumnString(dialect, col) );
-        }
+      int indexOfPrimaryKey = primaryKeys.indexOf(col.getName());
+      if (indexOfPrimaryKey == 0 && useNativeIdentityGenerator && dialect.supportsIdentityColumns()) {
+        // only apply native identity generator to first column of primary key
+        buffer.append(generateIdentityColumnString(dialect, col));
+      } else if (indexOfPrimaryKey >= 0) {
+          buffer.append(generateNonIdentityColumnString(dialect, col));
       } else {
         buffer.append(generateColumnString(dialect, col, true));
       }
