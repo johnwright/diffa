@@ -15,27 +15,22 @@
     <js>/js/datejs/extras.js</js>
     <js>/js/diffa-common.js</js>
     <js>/js/models.js</js>
+  </group>
 
+  <group name="styling">
     <css>/less/styling.less</css>
   </group>
 
-  <group name="heatmap">
+  <group name="widgets">
     <js>/js/templates/heatmap/*.jst</js>
-    <js>/js/heatmap.js</js>
-  </group>
-
-  <group name="data">
     <js>/js/templates/data/*.jst</js>
-    <js>/js/data.js</js>
-  </group>
-
-  <group name="status">
     <js>/js/templates/status/*.jst</js>
-    <js>/js/status.js</js>
-  </group>
-
-  <group name="settings">
     <js>/js/templates/settings/*.jst</js>
+    <js>/js/heatmap.js</js>
+    <js>/js/data.js</js>
+    <js>/js/status.js</js>
     <js>/js/settings.js</js>
+
+    <css>/less/widgets.less</css>
   </group>
 </groups>
