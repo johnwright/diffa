@@ -4,6 +4,7 @@ import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
 import org.hibernate.dialect.Dialect
 import net.lshift.hibernate.migrations.dialects.{OracleDialectExtension, DialectExtensionSelector}
+import org.apache.commons.logging.LogFactory
 
 
 object IndexRebuilder {
@@ -14,7 +15,7 @@ object IndexRebuilder {
 }
 
 /**
- * Each database has it's own mechanics for detecting when indices need rebuilding and also how to rebuild them.
+ * Each database has its own mechanics for detecting when indices need rebuilding and also how to rebuild them.
  * This interface provides a means to rebuild indexes by relying on dialect detection to choose the right strategy.
  */
 trait IndexRebuilder {
@@ -26,13 +27,18 @@ class NullIndexRebuilder extends IndexRebuilder {
 }
 
 class OracleIndexRebuilder extends IndexRebuilder {
+  val log = LogFactory.getLog(getClass)
+
+  val partitionedTable = "DIFFS" // N.B. Oracle requires table names to be upper-case
+
   def rebuild(sessionFactory: SessionFactory) {
-    val unusableIndexesQuery: String = "select index_name from user_indexes where status = 'UNUSABLE'"
+    val unusableIndexesQuery = "select index_name from user_indexes where status = 'UNUSABLE' and table_name = ?"
     val alterIndexSql = "alter index %s rebuild"
 
     sessionFactory.executeOnSession(connection => {
       var indexNames: List[String] = Nil
       val stmt = connection.prepareStatement(unusableIndexesQuery)
+      stmt.setString(1, partitionedTable)
       val rs = stmt.executeQuery
       while (rs.next) {
         indexNames = rs.getString("index_name") :: indexNames
@@ -42,7 +48,7 @@ class OracleIndexRebuilder extends IndexRebuilder {
         connection.prepareCall(alterIndexSql.format(indexName)).execute
       } catch {
         case ex: Exception =>
-          println("Failed to rebuild index [%s]".format(indexName))
+          log.error("Failed to rebuild index [%s]".format(indexName), ex)
       })
     })
   }
