@@ -4,6 +4,7 @@ import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
 import org.hibernate.dialect.Dialect
 import net.lshift.hibernate.migrations.dialects.{OracleDialectExtension, DialectExtensionSelector}
+import org.slf4j.LoggerFactory
 
 
 object IndexRebuilder {
@@ -14,25 +15,28 @@ object IndexRebuilder {
 }
 
 /**
- * Each database has it's own mechanics for detecting when indices need rebuilding and also how to rebuild them.
+ * Each database has its own mechanics for detecting when indices need rebuilding and also how to rebuild them.
  * This interface provides a means to rebuild indexes by relying on dialect detection to choose the right strategy.
  */
 trait IndexRebuilder {
-  def rebuild(sessionFactory: SessionFactory): Unit
+  def rebuild(sessionFactory: SessionFactory, tableName:String): Unit
 }
 
 class NullIndexRebuilder extends IndexRebuilder {
-  def rebuild(sessionFactory: SessionFactory) {}
+  def rebuild(sessionFactory: SessionFactory, tableName:String) {}
 }
 
 class OracleIndexRebuilder extends IndexRebuilder {
-  def rebuild(sessionFactory: SessionFactory) {
-    val unusableIndexesQuery: String = "select index_name from user_indexes where status = 'UNUSABLE'"
+  val log = LoggerFactory.getLogger(getClass)
+
+  def rebuild(sessionFactory: SessionFactory, tableName:String) {
+    val unusableIndexesQuery = "select index_name from user_indexes where status = 'UNUSABLE' and table_name = ?"
     val alterIndexSql = "alter index %s rebuild"
 
     sessionFactory.executeOnSession(connection => {
       var indexNames: List[String] = Nil
       val stmt = connection.prepareStatement(unusableIndexesQuery)
+      stmt.setString(1, tableName.toUpperCase) // N.B. Oracle requires table names to be upper-case
       val rs = stmt.executeQuery
       while (rs.next) {
         indexNames = rs.getString("index_name") :: indexNames
@@ -42,7 +46,8 @@ class OracleIndexRebuilder extends IndexRebuilder {
         connection.prepareCall(alterIndexSql.format(indexName)).execute
       } catch {
         case ex: Exception =>
-          println("Failed to rebuild index [%s]".format(indexName))
+          log.error("Failed to rebuild index [%s]".format(indexName), ex)
+          // TODO not sure whether a rebuild failure show be propgated to the caller or just logged
       })
     })
   }
