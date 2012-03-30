@@ -27,7 +27,7 @@ class NullIndexRebuilder extends IndexRebuilder {
 }
 
 class OracleIndexRebuilder(partitionedTable: String) extends IndexRebuilder {
-  val log = LoggerFactory.getLog(getClass)
+  val log = LoggerFactory.getLogger(getClass)
 
   def rebuild(sessionFactory: SessionFactory) {
     val unusableIndexesQuery = "select index_name from user_indexes where status = 'UNUSABLE' and table_name = ?"
