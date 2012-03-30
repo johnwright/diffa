@@ -4,7 +4,7 @@ import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
 import org.hibernate.dialect.Dialect
 import net.lshift.hibernate.migrations.dialects.{OracleDialectExtension, DialectExtensionSelector}
-import org.apache.commons.logging.LogFactory
+import org.slf4j.LoggerFactory
 
 
 object IndexRebuilder {
@@ -26,10 +26,8 @@ class NullIndexRebuilder extends IndexRebuilder {
   def rebuild(sessionFactory: SessionFactory) {}
 }
 
-class OracleIndexRebuilder extends IndexRebuilder {
-  val log = LogFactory.getLog(getClass)
-
-  val partitionedTable = "DIFFS" // N.B. Oracle requires table names to be upper-case
+class OracleIndexRebuilder(partitionedTable: String) extends IndexRebuilder {
+  val log = LoggerFactory.getLog(getClass)
 
   def rebuild(sessionFactory: SessionFactory) {
     val unusableIndexesQuery = "select index_name from user_indexes where status = 'UNUSABLE' and table_name = ?"
@@ -38,7 +36,7 @@ class OracleIndexRebuilder extends IndexRebuilder {
     sessionFactory.executeOnSession(connection => {
       var indexNames: List[String] = Nil
       val stmt = connection.prepareStatement(unusableIndexesQuery)
-      stmt.setString(1, partitionedTable)
+      stmt.setString(1, partitionedTable.toUpperCase) // N.B. Oracle requires table names to be upper-case
       val rs = stmt.executeQuery
       while (rs.next) {
         indexNames = rs.getString("index_name") :: indexNames
