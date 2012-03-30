@@ -47,6 +47,7 @@ class OracleIndexRebuilder extends IndexRebuilder {
       } catch {
         case ex: Exception =>
           log.error("Failed to rebuild index [%s]".format(indexName), ex)
+          // TODO not sure whether a rebuild failure show be propgated to the caller or just logged
       })
     })
   }
