@@ -246,7 +246,7 @@ class DefaultDifferencesManagerTest {
     replay(domainConfigStore)
 
     val content = manager.retrieveEventDetail(domainName, "123", ParticipantType.UPSTREAM)
-    assertEquals("Expanded detail not available", content)
+    assertEquals("Content retrieval not supported", content)
   }
 
   @Theory
