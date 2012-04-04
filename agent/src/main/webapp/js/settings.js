@@ -24,38 +24,50 @@ Diffa.Routers.Config = Backbone.Router.extend({
     "pair/:pair":         "managePair"      // #pair/p1
   },
 
+  initialize: function(opts) {
+    var self = this;
+    this.domain = opts.domain;
+    this.el = opts.el;
+
+    this.endpointEditorEl = $('.diffa-endpoint-editor', this.el);
+    this.pairEditorEl = $('.diffa-pair-editor', this.el);
+
+    $(this.el).on('pair:saved', function(event, pairId) {
+      self.navigate("pair/" + pairId, {replace: true, trigger: true});
+    });
+    $(this.el).on('endpoint:saved', function(event, endpointId) {
+      self.navigate("endpoint/" + endpointId, {replace: true, trigger: true});
+    });
+    $(this.el).on('endpoint:deleted', function() {
+      self.navigate("", {trigger: true});
+    });
+    $(this.el).on('pair:deleted', function() {
+      self.navigate("", {trigger: true});
+    });
+  },
+
   index: function() {
-    this.updateEditor(null);
+    this.pairEditorEl.removeData('pair').trigger('changed:pair');
+    this.endpointEditorEl.removeData('endpoint').trigger('changed:endpoint');
   },
 
   createEndpoint: function() {
-    var newEndpoint = new Diffa.Models.Endpoint();
-    this.updateEditor(function() { return new Diffa.Views.EndpointEditor({model: newEndpoint, collection: Diffa.EndpointsCollection}) });
+    this.pairEditorEl.removeData('pair').trigger('changed:pair');
+    this.endpointEditorEl.data('endpoint', '').trigger('changed:endpoint');
   },
   createPair: function() {
-    var newPair = new Diffa.Models.Pair();
-    this.updateEditor(function() { return new Diffa.Views.PairEditor({model: newPair, collection: Diffa.PairsCollection}) });
+    this.endpointEditorEl.removeData('endpoint').trigger('changed:endpoint');
+    this.pairEditorEl.data('pair', '').trigger('changed:pair');
   },
 
   manageEndpoint: function(endpointName) {
-    var endpoint = Diffa.EndpointsCollection.get(endpointName);
-    this.updateEditor(function() { return new Diffa.Views.EndpointEditor({model: endpoint, collection: Diffa.EndpointsCollection}) });
+    this.pairEditorEl.removeData('pair').trigger('changed:pair');
+    this.endpointEditorEl.data('endpoint', endpointName).trigger('changed:endpoint');
   },
 
   managePair: function(pairName) {
-    var pair = Diffa.PairsCollection.get(pairName);
-    this.updateEditor(function() { return new Diffa.Views.PairEditor({model: pair, collection: Diffa.PairsCollection}) });
-  },
-
-  updateEditor: function(newEditorBuilder) {
-    if (this.currentEditor) {
-      this.currentEditor.close();
-    }
-    if (newEditorBuilder) {
-      this.currentEditor = newEditorBuilder();
-    } else {
-      this.currentEditor = null;
-    }
+    this.endpointEditorEl.removeData('endpoint').trigger('changed:endpoint');
+    this.pairEditorEl.data('pair', pairName).trigger('changed:pair');
   }
 });
 
@@ -131,6 +143,13 @@ Diffa.Views.FormEditor = Backbone.View.extend({
   initialize: function() {
     _.bindAll(this, 'render', 'close');
 
+    // If we have a template, then instantiate it and re-bind events (since the default backbone event binding will have
+    // failed).
+    if (this.template) {
+      $(this.el).html(this.template());
+      this.delegateEvents(this.events);
+    }
+
     this.model.bind('fetch', this.render);
 
     this.render();
@@ -143,6 +162,8 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     $('input[data-key]', this.el).val('');    // Clear the contents of all bound fields
     Backbone.ModelBinding.bind(this, {all: "data-key"});
 
+    this.postBind();
+
     var nameContainer = $('.name-container', this.el);
 
     $('input', nameContainer).toggle(this.model.isNew());
@@ -153,6 +174,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
 
   // Callback function to be implemented by subclasses that need to add field values before binding.
   preBind: function() {},
+  postBind: function() {},
   postClose: function() {},
 
   close: function() {
@@ -179,7 +201,9 @@ Diffa.Views.FormEditor = Backbone.View.extend({
 
         if (!self.collection.get(self.model.id)) {
           self.collection.add(self.model);
-          Diffa.SettingsApp.navigate(self.elementType + "/" + self.model.id, {replace: true, trigger: true});
+          $(self.el).
+            data(self.elementType, self.model.id).
+            trigger(self.elementType + ':saved', [self.model.id]);
         }
       },
       error: function(model, response) {
@@ -191,9 +215,13 @@ Diffa.Views.FormEditor = Backbone.View.extend({
   },
 
   deleteObject: function() {
+    var self = this;
+
     this.model.destroy({
       success: function() {
-        Diffa.SettingsApp.navigate("", {trigger: true});
+        $(self.el).
+          removeData(self.elementType).
+          trigger(self.elementType + ':deleted', [self.model.id]);
       }
     });
   },
@@ -206,10 +234,10 @@ Diffa.Views.FormEditor = Backbone.View.extend({
   }
 });
 Diffa.Views.EndpointEditor = Diffa.Views.FormEditor.extend({
-  el: $('#endpoint-editor'),
   elementType: "endpoint",
+  template: window.JST['settings/endpointeditor'],
 
-  preBind: function() {
+  postBind: function() {
     // Attach categories
     this.categoryEditors = [
       new Diffa.Views.CategoriesEditor({collection: this.model.rangeCategories, el: this.$('.range-categories')}),
@@ -225,17 +253,19 @@ Diffa.Views.EndpointEditor = Diffa.Views.FormEditor.extend({
   }
 });
 Diffa.Views.PairEditor = Diffa.Views.FormEditor.extend({
-  el: $('#pair-editor'),
   elementType: "pair",
+  template: window.JST['settings/paireditor'],
 
   preBind: function() {
     var selections = this.$('select.endpoint-selection');
+    var domain = this.collection.domain;
 
     selections.empty();
-    Diffa.EndpointsCollection.each(function(ep) {
+    domain.endpoints.each(function(ep) {
       selections.append('<option value="' + ep.get('name') + '">' + ep.get('name') + '</option>');
     });
-
+  },
+  postBind: function() {
     this.viewsEditor = new Diffa.Views.PairViewsEditor({collection: this.model.views, el: this.$('.views')});
   },
   postClose: function() {
@@ -256,7 +286,7 @@ Diffa.Views.TableEditor = Backbone.View.extend({
 
     this.templateName = this.$('table').data('template');
     if (!this.templateName) console.error("Missing template name", this);
-    this.template = _.template($('#' + this.templateName).html());
+    this.template = window.JST['settings/' + this.templateName];
 
     this.table = this.$('>table');
 
@@ -330,12 +360,13 @@ Diffa.Views.EndpointViewEditor = Backbone.View.extend({
     "click .remove-view": 'remove'
   },
   initialize: function() {
+    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
+    
     this.categoryEditors = [
       new Diffa.Views.CategoriesEditor({collection: this.model.rangeCategories, el: this.$('.range-categories')}),
       new Diffa.Views.CategoriesEditor({collection: this.model.setCategories, el: this.$('.set-categories')}),
       new Diffa.Views.CategoriesEditor({collection: this.model.prefixCategories, el: this.$('.prefix-categories')})
     ];
-    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
   },
   remove: function() {
     this.model.collection.remove(this.model);
@@ -389,38 +420,116 @@ Diffa.Binders.ListBinder = Diffa.Binder.extend({
   }
 });
 
-Diffa.currentDomain = currentDiffaDomain;
-Diffa.SettingsApp = new Diffa.Routers.Config();
-Diffa.EndpointsCollection = new Diffa.Collections.Endpoints();
-Diffa.PairsCollection = new Diffa.Collections.Pairs();
-Diffa.EndpointElementListView = new Diffa.Views.ElementList({
-  el: $('#endpoints-list'),
-  collection: Diffa.EndpointsCollection,
-  elementType: 'endpoint'
-});
-Diffa.EndpointElementListView = new Diffa.Views.ElementList({
-  el: $('#pairs-list'),
-  collection: Diffa.PairsCollection,
-  elementType: 'pair'
-});
+Diffa.Helpers.bindEndpointList = function(el) {
+  var domain = Diffa.DomainManager.get($(el).data('domain'));
 
-var preloadCollections = function(colls, callback) {
-  var remaining = colls.length;
-  _.each(colls, function(preload) {
-    preload.fetch({
-      success: function() {
-        remaining -= 1;
+  var template = window.JST['settings/endpointlist'];
 
-        if (remaining == 0) {
-          callback();
-        }
-      }
-    })
+  new Diffa.Views.ElementList({
+    el: $(el).html(template({API_BASE: API_BASE})),
+    collection: domain.endpoints,
+    elementType: 'endpoint'
+  });
+};
+Diffa.Helpers.bindPairList = function(el) {
+  var domain = Diffa.DomainManager.get($(el).data('domain'));
+
+  var template = window.JST['settings/pairlist'];
+
+  new Diffa.Views.ElementList({
+    el: $(el).html(template({API_BASE: API_BASE})),
+    collection: domain.pairs,
+    elementType: 'pair'
   });
 };
 
-// Preload useful collections, and then start processing history
-preloadCollections([Diffa.EndpointsCollection, Diffa.PairsCollection], function() {
-  Backbone.history.start();
+Diffa.Helpers.maybeAttachView = function(el, params, viewBuilder) {
+  if (el.lastParams && el.lastParams == params) return;
+
+  if (el.view) {
+    el.view.close();
+  }
+  
+  el.view = viewBuilder();
+  el.lastParams = params;
+};
+Diffa.Helpers.maybeDetachView = function(el) {
+  if (el.view) {
+    el.view.close();
+    delete el.view;
+    delete el.lastParams;
+  }
+};
+
+Diffa.Helpers.bindEndpointEditor = function(el) {
+  var refresh = function() {
+    var domain = Diffa.DomainManager.get($(el).data('domain'));
+    var endpointName = $(el).data("endpoint");
+
+    if (endpointName === undefined) {
+      Diffa.Helpers.maybeDetachView(el);
+    } else {
+      Diffa.Helpers.maybeAttachView(el, {domain: domain.id, endpoint: endpointName}, function() {
+        var endpoint;
+        if (endpointName != "") {
+          endpoint = domain.endpoints.get(endpointName)
+        } else {
+          endpoint = new Diffa.Models.Endpoint();
+          endpoint.domain = domain;
+        }
+
+        return new Diffa.Views.EndpointEditor({
+          model: endpoint,
+          collection: domain.endpoints,
+          el: el
+        });
+      });
+    }
+  };
+
+  $(el).on('changed:endpoint', function() { refresh(); });
+  refresh();
+};
+Diffa.Helpers.bindPairEditor = function(el) {
+  var refresh = function() {
+    var domain = Diffa.DomainManager.get($(el).data('domain'));
+    var pairName = $(el).data("pair");
+
+    if (pairName === undefined) {
+      Diffa.Helpers.maybeDetachView(el);
+    } else {
+      Diffa.Helpers.maybeAttachView(el, {domain: domain.id, pair: pairName}, function() {
+        var pair;
+        if (pairName != "") {
+          pair = domain.pairs.get(pairName)
+        } else {
+          pair = new Diffa.Models.Pair();
+          pair.domain = domain;
+        }
+
+        return new Diffa.Views.PairEditor({
+          model: pair,
+          collection: domain.pairs,
+          el: el
+        });
+      });
+    }
+  };
+
+  $(el).on('changed:pair', function() { refresh(); });
+  refresh();
+};
+
+$('.diffa-endpoint-list').each(function() { Diffa.Helpers.bindEndpointList(this); });
+$('.diffa-pair-list').each(function() { Diffa.Helpers.bindPairList(this); });
+$('.diffa-settings-page').each(function() {
+  var domain = Diffa.DomainManager.get($(this).data('domain'));
+  new Diffa.Routers.Config({domain: domain, el: $(this)});
+
+  domain.loadAll(['endpoints', 'pairs'], function() {
+    Backbone.history.start();
+  });
 });
+$('.diffa-endpoint-editor').each(function() { Diffa.Helpers.bindEndpointEditor(this); });
+$('.diffa-pair-editor').each(function() { Diffa.Helpers.bindPairEditor(this); });
 });

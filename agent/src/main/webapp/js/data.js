@@ -34,9 +34,11 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
                       '</div>'),
     setConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
                         '<span class="name"><%= name %> Values</span>' +
+                        '<br>' +
                         '<% _.each(values, function(value) { %>' +
                           '<input type="checkbox" value="<%= value %>" id="constraint_<%= name %>_<%= value %>">' +
                           '<label for="constraint_<%= name %>_<%= value %>"><%= value %></label>' +
+                          '<br>' +
                         '<% }); %>' +
                       '</div>')
   },
@@ -50,9 +52,13 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     this.collection.bind('add', this.addOne);
     this.collection.bind('remove', this.onEndpointListUpdate);
 
+    $(this.el).html(window.JST['data/inventory-upload'])
+    this.delegateEvents(this.events);
+    
     this.selectList = this.$('select[name=endpoint]');
 
     this.render();
+    this.collection.ensureFetched();
   },
 
   render: function() {
@@ -157,6 +163,7 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 
     applyStatus('Uploading...', 'info');
     endpoint.uploadInventory(inventoryFile, constraints, {
+      global: false,        // Don't invoke global event handlers - we'll deal with errors here locally
       success: function() {
         submitButton.removeAttr('disabled');
         applyStatus('Inventory Submitted', 'success');
@@ -183,12 +190,12 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   }
 });
 
-Diffa.currentDomain = currentDiffaDomain;
-Diffa.EndpointsCollection = new Diffa.Collections.Endpoints();
-Diffa.InventoryUploaderView =  new Diffa.Views.InventoryUploader({
-  el: $('#inventory-uploader'),
-  collection: Diffa.EndpointsCollection
-});
+$('.diffa-inventory-uploader').each(function() {
+  var domain = Diffa.DomainManager.get($(this).data('domain'));
 
-Diffa.EndpointsCollection.fetch();
+  new Diffa.Views.InventoryUploader({
+    el: $(this),
+    collection: domain.endpoints
+  });
+});
 });

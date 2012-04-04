@@ -41,6 +41,15 @@
   </filter-mapping>
 
   <filter>
+    <filter-name>WebResourceOptimizer</filter-name>
+    <filter-class>ro.isdc.wro.http.WroFilter</filter-class>
+  </filter>
+  <filter-mapping>
+    <filter-name>WebResourceOptimizer</filter-name>
+    <url-pattern>/assets/*</url-pattern>
+  </filter-mapping>
+
+  <filter>
     <filter-name>jerseyspring</filter-name>
     <filter-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</filter-class>
     <load-on-startup>1</load-on-startup>
@@ -50,7 +59,7 @@
     </init-param>
     <init-param>
       <param-name>com.sun.jersey.config.property.WebPageContentRegex</param-name>
-      <param-value>/(|.*\.html|(images|less|js|css)/.*)</param-value>
+      <param-value>/(|.*\.html|(assets|images|less|js|css)/.*)</param-value>
     </init-param>
 
   </filter>
@@ -69,6 +78,12 @@
     <filter-name>sitemesh</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
+
+  <servlet-mapping>
+    <servlet-name>jsp</servlet-name>
+    <url-pattern>*.jsp</url-pattern>
+    <url-pattern>*.html</url-pattern>
+  </servlet-mapping>
 
   <resource-ref>
     <description>Diff Engine DataSource</description>

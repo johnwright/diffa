@@ -5,7 +5,7 @@
   <parent>
     <groupId>net.lshift.diffa</groupId>
     <artifactId>diffa-parent</artifactId>
-    <version>1.3.2-SNAPSHOT</version>
+    <version>1.4.3-SNAPSHOT</version>
   </parent>
 
   <artifactId>diffa-agent</artifactId>
@@ -180,6 +180,21 @@
       <groupId>net.lshift</groupId>
       <artifactId>accent</artifactId>
       <version>${accent.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>ro.isdc.wro4j</groupId>
+      <artifactId>wro4j-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ro.isdc.wro4j</groupId>
+      <artifactId>wro4j-extensions</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>net.lshift.diffa</groupId>
+      <artifactId>jst-packaging</artifactId>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- Used to support testing LDAP support -->
@@ -370,6 +385,31 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>ro.isdc.wro4j</groupId>
+        <artifactId>wro4j-maven-plugin</artifactId>
+        <version>${wroj.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>net.lshift.diffa</groupId>
+            <artifactId>jst-packaging</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <destinationFolder>${basedir}/target/assets/</destinationFolder>
+          <wroManagerFactory>net.lshift.diffa.assets.DiffaStandaloneWroManagerFactory</wroManagerFactory>
+        </configuration>
+      </plugin>
+
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-war-plugin</artifactId>
         <configuration>
@@ -379,6 +419,17 @@
               <directory>${basedir}/src/main/webapp/decorators</directory>
               <targetPath>decorators</targetPath>
               <filtering>true</filtering>
+            </resource>
+
+            <!-- Allow alternate WEB-INF configuration files when we're packaging -->
+            <resource>
+              <directory>${basedir}/src/main/packaging/WEB-INF</directory>
+              <targetPath>WEB-INF</targetPath>
+            </resource>
+
+            <resource>
+              <directory>${basedir}/target/assets</directory>
+              <targetPath>assets</targetPath>
             </resource>
           </webResources>
         </configuration>

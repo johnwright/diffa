@@ -35,6 +35,7 @@
     </encoder>
   </appender>
 
+  <logger name="ro.isdc.wro" level="WARN" />
   <logger name="org.hibernate" level="WARN" />
   <logger name="org.springframework" level="WARN" />
   <logger name="net.sf.ehcache" level="WARN" />
