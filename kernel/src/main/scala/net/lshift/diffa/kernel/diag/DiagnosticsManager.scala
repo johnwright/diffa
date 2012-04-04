@@ -12,6 +12,9 @@ import java.io.OutputStream
  * but instead supplements it with a more "user-accessible" view.
  */
 trait DiagnosticsManager {
+
+  val fileSystemFriendlyDateFormat = "yyyy-MM-dd_HH_mm_ss.SSS"
+
   /**
    * Logs an event relevant to a given pair.
    */
