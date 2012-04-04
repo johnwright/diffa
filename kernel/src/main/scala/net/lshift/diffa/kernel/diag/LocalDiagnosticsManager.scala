@@ -26,7 +26,7 @@ class LocalDiagnosticsManager(systemConfigStore: SystemConfigStore, domainConfig
   private val defaultMaxExplainFilesPerPair = 20
 
   private val timeFormatter = ISODateTimeFormat.time()
-  private val fileNameFormatter = DateTimeFormat.forPattern(fileSystemFriendlyDateFormat)
+  private val fileNameFormatter = DateTimeFormat.forPattern(DiagnosticsManager.fileSystemFriendlyDateFormat)
   
   def getPairFromRef(ref: DiffaPairRef) = domainConfigStore.getPairDef(ref.domain, ref.key)
 

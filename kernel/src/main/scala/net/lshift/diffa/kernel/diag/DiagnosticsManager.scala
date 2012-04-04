@@ -13,8 +13,6 @@ import java.io.OutputStream
  */
 trait DiagnosticsManager {
 
-  val fileSystemFriendlyDateFormat = "yyyy-MM-dd_HH_mm_ss.SSS"
-
   /**
    * Logs an event relevant to a given pair.
    */
@@ -53,6 +51,15 @@ trait DiagnosticsManager {
    * Informs the diagnostics manager that a pair has been deleted.
    */
   def onDeletePair(pair:DiffaPairRef)
+}
+
+object DiagnosticsManager {
+
+  /**
+   * Template specification so that the files produced via the diagnostics process have vaguely sane names
+   */
+  val fileSystemFriendlyDateFormat = "yyyy-MM-dd_HH_mm_ss.SSS"
+
 }
 
 /**

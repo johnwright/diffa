@@ -22,7 +22,6 @@ import net.lshift.diffa.kernel.alerting.Alerter
 import org.slf4j.LoggerFactory
 import concurrent.SyncVar
 import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
-import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.common.JSONHelper
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Endpoint}
@@ -31,6 +30,7 @@ import org.joda.time.{DateTimeZone, DateTime, Interval}
 import org.joda.time.format.DateTimeFormat
 import java.io.{OutputStream, PrintWriter}
 import collection.JavaConversions._
+import net.lshift.diffa.kernel.diag.{DiagnosticsManager, DiagnosticLevel}
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -44,7 +44,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  val fileNameFormatter = DateTimeFormat.forPattern(diagnostics.fileSystemFriendlyDateFormat)
+  val fileNameFormatter = DateTimeFormat.forPattern(DiagnosticsManager.fileSystemFriendlyDateFormat)
 
   /**
    * Handles a participant change. Due to the need to later correlate data, event information is cached to the
