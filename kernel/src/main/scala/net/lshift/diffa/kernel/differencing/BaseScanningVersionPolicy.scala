@@ -181,13 +181,6 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
         JSONHelper.formatQueryResult(os, remoteDigests)
       })
 
-      if (log.isTraceEnabled) {
-        log.trace("Bucketing: %s".format(bucketing))
-        log.trace("Constraints: %s".format(constraints))
-        log.trace("Remote digests: %s".format(remoteDigests))
-        log.trace("Local digests: %s".format(localDigests))
-      }
-
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
         case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
           scanAggregates(pair, writer, endpoint, narrowBuckets, narrowConstraints, participant, listener, handle)
@@ -218,11 +211,6 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
         JSONHelper.formatQueryResult(os, remoteVersions)
       })
-
-      if (log.isTraceEnabled) {
-        log.trace("Remote versions: %s".format(remoteVersions))
-        log.trace("Local versions: %s".format(cachedVersions))
-      }
 
       // Validate that the entities provided meet the constraints of the endpoint
       val endpointCategories = endpoint.categories.toMap
