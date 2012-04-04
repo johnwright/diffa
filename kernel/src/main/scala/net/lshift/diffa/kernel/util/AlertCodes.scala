@@ -74,4 +74,24 @@ object AlertCodes {
    * Indicates that an error has occurred in the message processing infrastructure
    */
   val GENERAL_MESSAGING_ERROR = "D11"
+
+  /**
+   * Indicates that an error has occurred whilst performing an upstream scan
+  */
+  val UPSTREAM_SCAN_FAILURE = "D12"
+
+  /**
+   * Indicates that an error has occurred whilst performing an downstream scan
+   */
+  val DOWNSTREAM_SCAN_FAILURE = "D13"
+
+  /**
+    * Indicates that an actor has been started
+    */
+  val ACTOR_STARTED = "D14"
+
+  /**
+    * Indicates that an actor has been started
+    */
+  val ACTOR_STOPPED = "D15"
 }

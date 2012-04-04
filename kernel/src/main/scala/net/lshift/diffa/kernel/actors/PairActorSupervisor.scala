@@ -21,12 +21,12 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.lifecycle.AgentLifecycleAware
-import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.differencing._
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, DiffaPair}
 import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
+import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -67,7 +67,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
                             diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
             )
             pairActor.start
-            log.info("Started actor for key: " + pair.identifier)
+            log.info("%s: %s actor started".format(AlertCodes.ACTOR_STARTED, pair.identifier))
           }
           case None    => log.error("Failed to find policy for name: " + pair.versionPolicyName)
         }
@@ -87,7 +87,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
       case 1 => {
         val actor = actors(0)
         actor.stop
-        log.info("Stopped actor for key: " + pair.identifier)
+        log.info("%s: %s actor stopped".format(AlertCodes.ACTOR_STOPPED, pair.identifier))
       }
       case 0    => log.warn("Could not resolve actor for key: " + pair.identifier)
       case x    => log.error("Too many actors for key: " + pair.identifier + "; actors = " + x)

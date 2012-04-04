@@ -17,7 +17,6 @@
 package net.lshift.diffa.kernel.actors
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import org.slf4j.{Logger, LoggerFactory}
 import net.jcip.annotations.ThreadSafe
 import java.util.concurrent.ScheduledFuture
 import net.lshift.diffa.kernel.differencing._
@@ -33,6 +32,7 @@ import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
 import net.lshift.diffa.kernel.config.{Endpoint, DiffaPair}
 import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
+import org.slf4j.{LoggerFactory, Logger}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -127,7 +127,7 @@ case class PairActor(pair:DiffaPair,
   case class ChildActorCompletionMessage(scanUuid:UUID, upOrDown:UpOrDown, result:Result)
       extends ChildActorScanMessage {
     def logMessage(l:Logger, s:ActorState, code:String)
-      = l.debug("%s: UUID[%s] -> Received %sstream %s in %s state".format(code, scanUuid, upOrDown, result, s))
+      = l.debug("%s: %s -> Received %sstream %s in %s state".format(code, shortId(scanUuid), upOrDown, result, s))
   }
 
   /**
@@ -264,7 +264,7 @@ case class PairActor(pair:DiffaPair,
    * Handles all messages that arrive whilst the actor is cancelling a scan
    */
   def handleCancellation() = {
-    logger.info("%s: Scan %s for pair %s was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST, activeScan.uuid, pair.identifier))
+    logger.info("%s: Scan was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST))
     feedbackHandle.cancel()
 
     // Leave the scanning state as cancelled
@@ -415,7 +415,8 @@ case class PairActor(pair:DiffaPair,
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Cancellation)
           }
           case e:Exception => {
-            logger.error("Upstream scan failed: " + pairRef.identifier, e)
+            logger.error("%s: %s upstream scan (%s) failed".format(
+                          AlertCodes.UPSTREAM_SCAN_FAILURE, pairRef.identifier,shortId(createdScan.uuid)), e)
             diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Upstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Failure)
           }
@@ -433,7 +434,8 @@ case class PairActor(pair:DiffaPair,
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Cancellation)
           }
           case e:Exception => {
-            logger.error("Downstream scan failed: " + pairRef.identifier, e)
+            logger.error("%s: %s downstream scan (%s) failed".format(
+              AlertCodes.DOWNSTREAM_SCAN_FAILURE, pairRef.identifier,shortId(createdScan.uuid)), e)
             diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Downstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Failure)
           }
@@ -480,6 +482,8 @@ case class PairActor(pair:DiffaPair,
 
 
   }
+  
+  private def shortId(uuid:UUID) = uuid.toString.substring(0,6)
 }
 
 /**
