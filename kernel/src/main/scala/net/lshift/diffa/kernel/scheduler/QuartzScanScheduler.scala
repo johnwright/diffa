@@ -58,22 +58,22 @@ class QuartzScanScheduler(systemConfig:SystemConfigStore, pairPolicyClient:PairP
       val view = trigger.getJobDataMap.getString(VIEW_DATA_KEY)
 
       if (view == "") {
-        log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
+        log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTED, pairKey))
         try {
           pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), None)
         } catch {
             // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
           case ex =>
-            log.error("%s: Failed to start scheduled scan for %s".format(AlertCodes.SCHEDULED_SCAN_FAILURE, pairKey), ex)
+            log.error("%s: Failed to start scheduled scan for %s".format(AlertCodes.SCHEDULED_SCAN_FAILED, pairKey), ex)
         }
       } else {
-        log.info("%s: Starting scheduled scan for view %s on pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, view, pairKey))
+        log.info("%s: Starting scheduled scan for view %s on pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTED, view, pairKey))
         try {
           pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), Some(view))
         } catch {
             // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
           case ex =>
-            log.error("%s: Failed to start scheduled scan for view %s on pair %s".format(AlertCodes.SCHEDULED_SCAN_FAILURE, view, pairKey), ex)
+            log.error("%s: Failed to start scheduled scan for view %s on pair %s".format(AlertCodes.SCHEDULED_SCAN_FAILED, view, pairKey), ex)
         }
       }
 

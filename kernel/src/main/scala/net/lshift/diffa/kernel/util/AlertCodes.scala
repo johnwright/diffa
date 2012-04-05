@@ -16,62 +16,75 @@
 
 package net.lshift.diffa.kernel.util
 
+import net.lshift.diffa.kernel.config.DiffaPairRef
+
 /**
  * A dictionary of alert codes that can be used to classify errors in log files quicker
  */
 object AlertCodes {
 
-  /**
-   * Occurs when an actor receives an out of order message. This can occur as a result of a downstream error.
-   */
-  val OUT_OF_ORDER_MESSAGE = "D1"
-  /**
-   * Occurs when an actor receives an unexpected message. This generally indicates a bug in Diffa.
-   */
-  val SPURIOUS_ACTOR_MESSAGE = "D2"
+  def formatAlertCode(pair:DiffaPairRef, code:Int) = "%s [%s/%s]".format(code, pair.domain, pair.key)
+  def formatAlertCode(domain:String, pair:String, code:Int) = "%s [%s/%s]".format(code, domain, pair)
 
-  /**
-   * Occurs when a cancellation for all pending scans to a particular pair is requested.
-   */
-  val CANCELLATION_REQUEST = "D3"
+  // 1xx Informational
 
-  /**
-   * Signifies that an actor has timed out waiting for a message to arrive
-   */
-  val MESSAGE_RECEIVE_TIMEOUT = "D4"
+  // 12x Informational scan events
+  val CANCELLATION_REQUEST_RECEIVED = 120
 
-  /**
-   * Signifies the result of a scanning operation
-   */
-  val SCAN_OPERATION = "D5"
+  // 2xx Successful
 
-  /**
-   * Occurs when the agent fails to establish communication with a repair action endpoint
-   */
-  val ACTION_ENDPOINT_FAILURE = "D6"
+  // 22x Successful manual scan events
+  // Occurs when a cancellation for all pending scans to a particular pair is requested
+  val API_SCAN_STARTED = 220
 
-  /**
-   * Indicates that the scan scheduler is starting a scan.
-   */
-  val SCHEDULED_SCAN_STARTING = "D7"
+  // 23x Successful scheduled scan events
+  val SCHEDULED_SCAN_STARTED = 230
 
-  /**
-   * Indicates the scheduler failed to start a scheduled scan.
-   */
-  val SCHEDULED_SCAN_FAILURE = "D8"
+  // 24x Successful child scan events
+  val CHILD_SCAN_COMPLETED = 241
 
-  /**
-   * Indicates the system is not configured properly.
-   */
-  val INVALID_SYSTEM_CONFIGURATION = "D9"
+  // 25x Successful actor events
+  val ACTOR_STARTED = 250
+  val ACTOR_STOPPED = 251
 
-  /**
-   * Indicates a given domain is not valid or does not exist.
-   */
-  val INVALID_DOMAIN = "D10"
+  // 4xx Errors that occur that as result of an invalid inbound request from a client
 
-  /**
-   * Indicates that an error has occurred in the message processing infrastructure
-   */
-  val GENERAL_MESSAGING_ERROR = "D11"
+
+  // 5xx Errors
+  
+  // 50x System configuration errors
+  
+  // Indicates the system is not configured properly.
+  val INVALID_SYSTEM_CONFIGURATION = 500
+  //Indicates a given domain is not valid or does not exist.
+  val INVALID_DOMAIN = 501
+  
+  // 52x Scheduled scan errors
+  
+  val SCHEDULED_SCAN_FAILED = 530
+
+
+  // 6xx Errors interacting with external systems, generally speaking these are outbound requests
+
+  // 60x Problems invoking actions on external systems
+  
+  // Occurs when the agent fails to establish communication with a repair action endpoint
+  val ACTION_ENDPOINT_FAILURE = 600
+  
+  // 65x Problems with messaging systems
+  
+  // Indicates that an error has occurred in the message processing infrastructure  
+  val GENERAL_MESSAGING_ERROR = 650
+
+  // 7xx Bugs
+
+  // 71x Potential actor bugs
+
+  // Signifies that an actor has timed out waiting for a message to arrive.
+  val MESSAGE_RECEIVE_TIMEOUT = 710
+  //Occurs when an actor receives an unexpected message. This generally indicates a bug in Diffa.
+  val SPURIOUS_ACTOR_MESSAGE = 711
+  //Occurs when an actor receives an out of order message. This can occur as a result of a downstream error.
+  val OUT_OF_ORDER_MESSAGE = 712
+
 }
