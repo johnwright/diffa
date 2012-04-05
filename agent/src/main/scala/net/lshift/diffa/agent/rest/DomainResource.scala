@@ -31,6 +31,8 @@ import org.springframework.context.annotation.Scope
 import org.springframework.beans.factory.config.BeanDefinition
 import net.lshift.diffa.kernel.reporting.ReportManager
 import com.sun.jersey.api.NotFoundException
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.userdetails.UserDetails
 
 @Path("/domains/{domain}")
 @Component
@@ -48,6 +50,9 @@ class DomainResource {
   @Autowired var changes:Changes = null
   @Autowired var domainSequenceCache:DomainSequenceCache = null
   @Autowired var reports:ReportManager = null
+
+  private def getCurrentUser : String =
+    SecurityContextHolder.getContext.getAuthentication.getPrincipal.asInstanceOf[UserDetails].getUsername
 
   private def withValidDomain[T](domain: String, resource: T) =
     if (config.doesDomainExist(domain))
@@ -85,7 +90,7 @@ class DomainResource {
 
   @Path("/scanning")
   def getScanningResource(@PathParam("domain") domain:String) =
-    withValidDomain(domain, new ScanningResource(pairPolicyClient, config, domainConfigStore, diagnosticsManager, domain))
+    withValidDomain(domain, new ScanningResource(pairPolicyClient, config, domainConfigStore, diagnosticsManager, domain, getCurrentUser))
 
   @Path("/changes")
   def getChangesResource(@PathParam("domain") domain:String) =
