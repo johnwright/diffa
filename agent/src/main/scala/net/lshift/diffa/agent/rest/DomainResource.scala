@@ -51,8 +51,11 @@ class DomainResource {
   @Autowired var domainSequenceCache:DomainSequenceCache = null
   @Autowired var reports:ReportManager = null
 
-  private def getCurrentUser : String =
-    SecurityContextHolder.getContext.getAuthentication.getPrincipal.asInstanceOf[UserDetails].getUsername
+  private def getCurrentUser : String = SecurityContextHolder.getContext.getAuthentication.getPrincipal match {
+    case u:UserDetails => u.getUsername
+    case s:String      => s
+    case _             => null
+  }
 
   private def withValidDomain[T](domain: String, resource: T) =
     if (config.doesDomainExist(domain))
