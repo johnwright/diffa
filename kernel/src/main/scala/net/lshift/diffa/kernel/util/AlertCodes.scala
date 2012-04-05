@@ -38,7 +38,8 @@ object AlertCodes {
   val API_SCAN_STARTED = 220
 
   // 23x Successful scheduled scan events
-  val SCHEDULED_SCAN_STARTED = 230
+  val BASIC_SCHEDULED_SCAN_STARTED = 230
+  val VIEW_SCHEDULED_SCAN_STARTED = 231
 
   // 24x Successful child scan events
   val CHILD_SCAN_COMPLETED = 241
@@ -61,7 +62,8 @@ object AlertCodes {
   
   // 52x Scheduled scan errors
   
-  val SCHEDULED_SCAN_FAILED = 530
+  val BASIC_SCHEDULED_SCAN_FAILED = 530
+  val VIEW_SCHEDULED_SCAN_FAILED = 531
 
 
   // 6xx Errors interacting with external systems, generally speaking these are outbound requests
