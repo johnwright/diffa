@@ -24,7 +24,6 @@ import net.lshift.diffa.kernel.client.ActionsClient
 import net.lshift.diffa.kernel.differencing.DifferencesManager
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.actors.PairPolicyClient
-import net.lshift.diffa.kernel.config.DomainConfigStore
 import net.lshift.diffa.kernel.frontend.{Changes, Configuration}
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.context.annotation.Scope
@@ -34,11 +33,16 @@ import com.sun.jersey.api.NotFoundException
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
+import net.lshift.diffa.kernel.config.{User, DomainConfigStore}
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.util.AlertCodes._
 
 @Path("/domains/{domain}")
 @Component
 @PreAuthorize("hasPermission(#domain, 'domain-user')")
 class DomainResource {
+
+  val log = LoggerFactory.getLogger(getClass)
 
   @Context var uriInfo:UriInfo = null
 
@@ -53,9 +57,16 @@ class DomainResource {
   @Autowired var domainSequenceCache:DomainSequenceCache = null
   @Autowired var reports:ReportManager = null
 
-  private def getCurrentUser : String = SecurityContextHolder.getContext.getAuthentication.getPrincipal match {
+  private def getCurrentUser(domain:String) : String = SecurityContextHolder.getContext.getAuthentication.getPrincipal match {
     case user:UserDetails => user.getUsername
-    case token:String     => systemConfigStore.getUserByToken(token).getName()
+    case token:String     => {
+      systemConfigStore.getUserByToken(token) match {
+        case user:User => user.getName
+        case _         =>
+          log.warn(formatAlertCode(domain, SPURIOUS_AUTH_TOKEN) + " " + token)
+          null
+      }
+    }
     case _                => null
   }
 
@@ -95,7 +106,7 @@ class DomainResource {
 
   @Path("/scanning")
   def getScanningResource(@PathParam("domain") domain:String) =
-    withValidDomain(domain, new ScanningResource(pairPolicyClient, config, domainConfigStore, diagnosticsManager, domain, getCurrentUser))
+    withValidDomain(domain, new ScanningResource(pairPolicyClient, config, domainConfigStore, diagnosticsManager, domain, getCurrentUser(domain)))
 
   @Path("/changes")
   def getChangesResource(@PathParam("domain") domain:String) =
