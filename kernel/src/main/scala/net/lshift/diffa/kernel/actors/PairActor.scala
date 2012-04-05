@@ -288,7 +288,7 @@ case class PairActor(pair:DiffaPair,
         replayCorrelationStore(differencesManager, writer, store, pairRef, us, ds, TriggeredByScan)
       } catch {
         case ex =>
-          logger.error("Failed to apply unmatched differences to the differences manager", ex)
+          logger.error(formatAlertCode(pairRef, DIFFERENCE_REPLAY_FAILURE) + " failed to apply unmatched differences to the differences manager", ex)
       }
 
       // Re-queue all buffered commands
@@ -381,7 +381,7 @@ case class PairActor(pair:DiffaPair,
     } catch {
       case ex => {
         diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to Difference Pair: " + ex.getMessage)
-        logger.error("Failed to difference pair " + pairRef.identifier, ex)
+        logger.error(formatAlertCode(pairRef, DIFFERENCING_FAILURE), ex)
       }
     }
   }
@@ -454,7 +454,7 @@ case class PairActor(pair:DiffaPair,
 
     } catch {
       case x: Exception => {
-        logger.error("Failed to initiate scan for pair: " + pairRef.identifier, x)
+        logger.error(formatAlertCode(pairRef, SCAN_INITIALIZATION_FAILURE), x)
         diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to initiate scan for pair: " + x.getMessage)
         processBacklog(PairScanState.FAILED)
         false

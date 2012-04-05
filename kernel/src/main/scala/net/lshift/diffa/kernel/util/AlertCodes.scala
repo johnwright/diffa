@@ -63,11 +63,17 @@ object AlertCodes {
   // 51x General scan errors
   val UPSTREAM_SCAN_FAILURE = 510
   val DOWNSTREAM_SCAN_FAILURE = 511
+  val SCAN_INITIALIZATION_FAILURE = 512
 
   // 52x Scheduled scan errors
   
   val BASIC_SCHEDULED_SCAN_FAILED = 530
   val VIEW_SCHEDULED_SCAN_FAILED = 531
+
+  // 55x Differencing errors
+
+  val DIFFERENCING_FAILURE = 550
+  val DIFFERENCE_REPLAY_FAILURE = 551
 
 
   // 6xx Errors interacting with external systems, generally speaking these are outbound requests
