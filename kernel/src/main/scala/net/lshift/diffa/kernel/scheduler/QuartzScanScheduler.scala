@@ -20,7 +20,7 @@ import org.quartz.impl.DirectSchedulerFactory
 import org.quartz.jobs.NoOpJob
 import org.quartz.listeners.TriggerListenerSupport
 import java.lang.IllegalStateException
-import net.lshift.diffa.kernel.util.AlertCodes
+import net.lshift.diffa.kernel.util.AlertCodes._
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.differencing.DifferencesManager
 import org.quartz.simpl.{RAMJobStore, SimpleThreadPool}
@@ -58,22 +58,22 @@ class QuartzScanScheduler(systemConfig:SystemConfigStore, pairPolicyClient:PairP
       val view = trigger.getJobDataMap.getString(VIEW_DATA_KEY)
 
       if (view == "") {
-        log.info("%s: Starting scheduled scan for pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, pairKey))
         try {
           pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), None)
+          log.info(formatAlertCode(domain, pairKey, BASIC_SCHEDULED_SCAN_STARTED) + " starting basic scheduled scan")
         } catch {
             // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
           case ex =>
-            log.error("%s: Failed to start scheduled scan for %s".format(AlertCodes.SCHEDULED_SCAN_FAILURE, pairKey), ex)
+            log.error(formatAlertCode(domain, pairKey, BASIC_SCHEDULED_SCAN_FAILED) + " failed to start basic scheduled scan")
         }
       } else {
-        log.info("%s: Starting scheduled scan for view %s on pair %s".format(AlertCodes.SCHEDULED_SCAN_STARTING, view, pairKey))
         try {
           pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), Some(view))
+          log.info(formatAlertCode(domain, pairKey, VIEW_SCHEDULED_SCAN_STARTED) + " starting scheduled scan for view " + view)
         } catch {
             // Catch, log, and drop exceptions to prevent the scheduler trying to do any misfire handling
           case ex =>
-            log.error("%s: Failed to start scheduled scan for view %s on pair %s".format(AlertCodes.SCHEDULED_SCAN_FAILURE, view, pairKey), ex)
+            log.error(formatAlertCode(domain, pairKey, VIEW_SCHEDULED_SCAN_FAILED) + " failed to start scheduled scan for view " + view)
         }
       }
 

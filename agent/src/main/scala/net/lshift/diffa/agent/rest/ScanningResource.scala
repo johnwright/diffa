@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore}
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
+import net.lshift.diffa.kernel.util.AlertCodes._
 
 class ScanningResource(val pairPolicyClient:PairPolicyClient,
                        val config:Configuration,
@@ -49,6 +50,8 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
   @OptionalParam(name = "view", datatype="string", description="Child View to Scan")
   def startScan(@PathParam("pairKey") pairKey:String, @FormParam("view") view:String) = {
+    // TODO log out who kicked this scan off
+    log.info(formatAlertCode(domain, pairKey, API_SCAN_STARTED))
     pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), if (view != null) Some(view) else None)
     Response.status(Response.Status.ACCEPTED).build
   }

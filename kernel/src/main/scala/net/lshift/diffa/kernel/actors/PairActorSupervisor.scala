@@ -26,7 +26,8 @@ import net.lshift.diffa.kernel.differencing._
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, DiffaPair}
 import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
-import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
+import net.lshift.diffa.kernel.util.MissingObjectException
+import net.lshift.diffa.kernel.util.AlertCodes._
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -67,7 +68,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
                             diagnostics, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
             )
             pairActor.start
-            log.info("%s: %s actor started".format(AlertCodes.ACTOR_STARTED, pair.identifier))
+            log.info(formatAlertCode(pair.asRef, ACTOR_STARTED) +  " actor started")
           }
           case None    => log.error("Failed to find policy for name: " + pair.versionPolicyName)
         }
@@ -87,7 +88,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
       case 1 => {
         val actor = actors(0)
         actor.stop
-        log.info("%s: %s actor stopped".format(AlertCodes.ACTOR_STOPPED, pair.identifier))
+        log.info(formatAlertCode(pair, ACTOR_STOPPED) +  " actor stopped")
       }
       case 0    => log.warn("Could not resolve actor for key: " + pair.identifier)
       case x    => log.error("Too many actors for key: " + pair.identifier + "; actors = " + x)

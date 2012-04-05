@@ -53,7 +53,7 @@ trait CommonActionTests {
     // Note: Actions test server should NOT be running for this test
     val request = ActionableRequest(env.pairKey, env.domain.name, env.entityScopedActionName, "abc")
     val response = env.actionsClient.invoke(request)
-    assertEquals(AlertCodes.ACTION_ENDPOINT_FAILURE, response.code)
+    assertEquals(AlertCodes.ACTION_ENDPOINT_FAILURE.toString, response.code)
   }
 
   @Test

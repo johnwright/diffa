@@ -23,7 +23,7 @@ import net.lshift.diffa.kernel.differencing._
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.participants.{DownstreamParticipant, UpstreamParticipant}
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.util.AlertCodes
+import net.lshift.diffa.kernel.util.AlertCodes._
 import com.eaio.uuid.UUID
 import akka.actor._
 import collection.mutable.{SynchronizedQueue, Queue}
@@ -126,8 +126,10 @@ case class PairActor(pair:DiffaPair,
    */
   case class ChildActorCompletionMessage(scanUuid:UUID, upOrDown:UpOrDown, result:Result)
       extends ChildActorScanMessage {
-    def logMessage(l:Logger, s:ActorState, code:String)
-      = l.debug("%s: %s -> Received %sstream %s in %s state".format(code, shortId(scanUuid), upOrDown, result, s))
+    def logMessage(l:Logger, s:ActorState, code:Int) {
+      val formattedCode = formatAlertCode(pairRef, code)
+      l.debug("%s Received %sstream %s in %s state; scan id = %s".format(formattedCode, upOrDown, result, s, scanUuid))
+    }
   }
 
   /**
@@ -151,8 +153,8 @@ case class PairActor(pair:DiffaPair,
         case Some(CancelMessage)  => throw new ScanCancelledException(pairRef)
         case Some(result)         => result.asInstanceOf[Correlation]
         case None                 =>
-          logger.error("%s: Writer proxy timed out after %s seconds processing command: %s "
-                       .format(AlertCodes.MESSAGE_RECEIVE_TIMEOUT, timeout, message), new Exception().fillInStackTrace())
+          logger.error("%s Writer proxy timed out after %s seconds processing command: %s "
+                       .format(formatAlertCode(pairRef, MESSAGE_RECEIVE_TIMEOUT), timeout, message), new Exception().fillInStackTrace())
           throw new RuntimeException("Writer proxy timeout")
       }
     }
@@ -216,14 +218,14 @@ case class PairActor(pair:DiffaPair,
       updateOutstandingScans(camsg)     // Allow outstanding cancelled scans to clean themselves up nicely
     case CancelMessage                     => {
       if (logger.isDebugEnabled) {
-          logger.debug("%s : Received cancellation request in non-scanning state, ignoring".format(AlertCodes.CANCELLATION_REQUEST))
+          logger.debug(formatAlertCode(pairRef, CANCELLATION_REQUEST_RECEIVED)  + " Received cancellation request in non-scanning state, ignoring")
       }
       self.reply(true)
     }
     case a:ChildActorCompletionMessage     =>
-      a.logMessage(logger, Ready, AlertCodes.OUT_OF_ORDER_MESSAGE)
+      a.logMessage(logger, Ready, OUT_OF_ORDER_MESSAGE)
     case x                                 =>
-      logger.error("%s: Spurious message during ready loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
+      logger.error("%s Spurious message during ready loop: %s".format(formatAlertCode(pairRef, SPURIOUS_ACTOR_MESSAGE), x))
   }
 
   /**
@@ -246,7 +248,7 @@ case class PairActor(pair:DiffaPair,
     case ScanMessage                        => // ignore any scan requests whilst scanning
     case d: Deferrable                      => deferred.enqueue(d)
     case a: ChildActorCompletionMessage     if isOwnedByActiveScan(a) => {
-      a.logMessage(logger, Scanning, AlertCodes.SCAN_OPERATION)
+      a.logMessage(logger, Scanning, CHILD_SCAN_COMPLETED)
       updateOutstandingScans(a)
 
       a.result match {
@@ -257,14 +259,14 @@ case class PairActor(pair:DiffaPair,
     case camsg:ChildActorScanMessage if isOwnedByOutstandingScan(camsg) =>
       updateOutstandingScans(camsg)     // Allow outstanding cancelled scans to clean themselves up nicely
     case x                                  =>
-      logger.error("%s: Spurious message during scanning loop: %s".format(AlertCodes.SPURIOUS_ACTOR_MESSAGE, x))
+      logger.error("%s Spurious message during scanning loop: %s".format(formatAlertCode(pairRef, SPURIOUS_ACTOR_MESSAGE), x))
   }
 
   /**
    * Handles all messages that arrive whilst the actor is cancelling a scan
    */
   def handleCancellation() = {
-    logger.info("%s: Scan was cancelled on request".format(AlertCodes.CANCELLATION_REQUEST))
+    logger.info("%s Scan %s for pair %s was cancelled on request".format(formatAlertCode(pairRef, CANCELLATION_REQUEST_RECEIVED), activeScan.uuid, pair.identifier))
     feedbackHandle.cancel()
 
     // Leave the scanning state as cancelled
@@ -415,8 +417,8 @@ case class PairActor(pair:DiffaPair,
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Cancellation)
           }
           case e:Exception => {
-            logger.error("%s: %s upstream scan (%s) failed".format(
-                          AlertCodes.UPSTREAM_SCAN_FAILURE, pairRef.identifier,shortId(createdScan.uuid)), e)
+            logger.error("%s upstream scan failed; scan id = %s".format(
+                          formatAlertCode(pairRef, UPSTREAM_SCAN_FAILURE), createdScan.uuid), e)
             diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Upstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Up, Failure)
           }
@@ -434,8 +436,8 @@ case class PairActor(pair:DiffaPair,
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Cancellation)
           }
           case e:Exception => {
-            logger.error("%s: %s downstream scan (%s) failed".format(
-              AlertCodes.DOWNSTREAM_SCAN_FAILURE, pairRef.identifier,shortId(createdScan.uuid)), e)
+            logger.error("%s downstream scan failed; scan id = %s".format(
+                         formatAlertCode(pairRef, DOWNSTREAM_SCAN_FAILURE), createdScan.uuid), e)
             diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Downstream scan failed: " + e.getMessage)
             self ! ChildActorCompletionMessage(createdScan.uuid, Down, Failure)
           }
@@ -482,8 +484,7 @@ case class PairActor(pair:DiffaPair,
 
 
   }
-  
-  private def shortId(uuid:UUID) = uuid.toString.substring(0,6)
+
 }
 
 /**

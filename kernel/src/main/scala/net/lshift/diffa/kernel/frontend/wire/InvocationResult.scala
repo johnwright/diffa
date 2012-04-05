@@ -38,5 +38,5 @@ object InvocationResult {
   /**
    * Factory for an InvocationResult indicating that the agent could not communicate with the endpoint
    */
-  def failure(thrown: Throwable) = InvocationResult(AlertCodes.ACTION_ENDPOINT_FAILURE, thrown.getStackTraceString)
+  def failure(thrown: Throwable) = InvocationResult(AlertCodes.ACTION_ENDPOINT_FAILURE.toString, thrown.getStackTraceString)
 }

@@ -20,6 +20,7 @@ import com.sun.jersey.core.util.MultivaluedMapImpl
 import net.lshift.diffa.kernel.participants._
 import com.sun.jersey.api.client.ClientResponse
 import org.apache.commons.io.IOUtils
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 /**
  * JSON/REST content participant client.
@@ -36,6 +37,7 @@ class ContentParticipantRestClient(contentUrl:String, params: RestClientParams =
     val response = jsonEndpoint.get(classOf[ClientResponse])
     response.getStatus match {
       case 200 => IOUtils.toString(response.getEntityInputStream)
+      case 404 => throw new MissingObjectException(identifier)
       case _   =>
         log.error(response.getStatus + "")
         throw new Exception("Participant content retrieval failed: " + response.getStatus + "\n" + IOUtils.toString(response.getEntityInputStream, "UTF-8"))
