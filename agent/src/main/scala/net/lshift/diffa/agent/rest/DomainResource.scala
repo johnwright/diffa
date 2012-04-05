@@ -33,6 +33,7 @@ import net.lshift.diffa.kernel.reporting.ReportManager
 import com.sun.jersey.api.NotFoundException
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 @Path("/domains/{domain}")
 @Component
@@ -47,14 +48,15 @@ class DomainResource {
   @Autowired var diagnosticsManager:DiagnosticsManager = null
   @Autowired var pairPolicyClient:PairPolicyClient = null
   @Autowired var domainConfigStore:DomainConfigStore = null
+  @Autowired var systemConfigStore:SystemConfigStore = null
   @Autowired var changes:Changes = null
   @Autowired var domainSequenceCache:DomainSequenceCache = null
   @Autowired var reports:ReportManager = null
 
   private def getCurrentUser : String = SecurityContextHolder.getContext.getAuthentication.getPrincipal match {
-    case u:UserDetails => u.getUsername
-    case s:String      => s
-    case _             => null
+    case user:UserDetails => user.getUsername
+    case token:String     => systemConfigStore.getUserByToken(token).getName()
+    case _                => null
   }
 
   private def withValidDomain[T](domain: String, resource: T) =
