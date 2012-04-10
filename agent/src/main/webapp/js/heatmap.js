@@ -770,7 +770,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     if (size <= minimumIn)     { return valueFloor; }
 
     var a = valueFloor;
-    var b = (maximum - valueFloor)/Math.log(100);
+    var b = (maximum - valueFloor)/Math.log(maximumCutOff);
 
     return a + b*Math.log(size);
   },
