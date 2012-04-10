@@ -10,7 +10,7 @@
 
 ## General Maintenance
 
-* [??] -
+* [92] - Increased the minimum blob size in the heatmap and scaled it logarithmically
 
 ## Library Upgrades
 
