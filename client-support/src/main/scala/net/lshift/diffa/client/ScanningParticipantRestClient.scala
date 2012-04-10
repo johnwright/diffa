@@ -43,10 +43,10 @@ class ScanningParticipantRestClient(scanUrl:String, params: RestClientParams = R
     RequestBuildingHelper.constraintsToQueryArguments(params, constraints)
     RequestBuildingHelper.aggregationsToQueryArguments(params, aggregations)
 
-    val url = resource.queryParams(params)
-    logger.debug("%s Querying participant: %s".format(SCAN_QUERY_EVENT, url))
+    val query = resource.queryParams(params)
+    logger.debug("%s Querying participant: %s".format(SCAN_QUERY_EVENT, query))
 
-    val jsonEndpoint = resource.`type`(MediaType.APPLICATION_JSON_TYPE)
+    val jsonEndpoint = query.`type`(MediaType.APPLICATION_JSON_TYPE)
 
     val response = jsonEndpoint.get(classOf[ClientResponse])
     response.getStatus match {
