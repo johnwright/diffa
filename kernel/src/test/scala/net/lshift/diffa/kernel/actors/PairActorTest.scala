@@ -241,7 +241,7 @@ class PairActorTest {
         ).andAnswer(new IAnswer[Unit] {
           def answer = {
             scanMonitor.synchronized { scanMonitor.notifyAll }
-            // Block to allow second scan
+            // Make sure that this scan blocks long enough to allow a second scan to get ignored
             Thread.sleep(timeToWait * 5)
           }
         })
@@ -268,11 +268,15 @@ class PairActorTest {
       scanMonitor.wait(timeToWait)
     }
 
+    // Request a second scan that should get ignored by the actor that should be busy handling the first scan
+
     supervisor.scanPair(pairRef, None)
 
     verify(writer, store, versionPolicy)
 
-    //Thread.sleep(timeToWait)
+    // Since the notification via the diagnostics facility will be invoked asynchronously,
+    // we need a way to deterministically wait for the notification to come through
+
     diagnosticsMonitor.synchronized {
       diagnosticsMonitor.wait(timeToWait)
     }
