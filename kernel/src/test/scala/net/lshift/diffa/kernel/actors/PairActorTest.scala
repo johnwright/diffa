@@ -225,6 +225,62 @@ class PairActorTest {
   }
 
   @Test
+  def scanRequestsReceivedInScanningStateShouldBeIgnored = {
+
+    val timeToWait = 1000
+    val scanMonitor = new Object
+    val diagnosticsMonitor = new Object
+
+    expect(versionPolicy.scanUpstream(EasyMock.eq(pairRef),
+               EasyMock.eq(upstream),
+               EasyMock.eq(None),
+               EasyMock.isA(classOf[LimitedVersionCorrelationWriter]),
+               EasyMock.eq(us),
+               EasyMock.isA(classOf[DifferencingListener]),
+               EasyMock.isA(classOf[FeedbackHandle]))
+        ).andAnswer(new IAnswer[Unit] {
+          def answer = {
+            scanMonitor.synchronized { scanMonitor.notifyAll }
+            // Block to allow second scan
+            Thread.sleep(timeToWait * 5)
+          }
+        })
+
+    writer.flush(); expectLastCall.asStub()
+
+    expect(diagnostics.logPairEvent(DiagnosticLevel.INFO,
+                                    pairRef,
+                                    "Ignoring scan request received during current scan")
+          ).andAnswer(new IAnswer[Unit] {
+            def answer = {
+              diagnosticsMonitor.synchronized {
+                diagnosticsMonitor.notifyAll
+              }
+            }
+          })
+
+    replay(writer, store, versionPolicy, diagnostics)
+
+    supervisor.startActor(pair)
+    supervisor.scanPair(pairRef, None)
+
+    scanMonitor.synchronized {
+      scanMonitor.wait(timeToWait)
+    }
+
+    supervisor.scanPair(pairRef, None)
+
+    verify(writer, store, versionPolicy)
+
+    //Thread.sleep(timeToWait)
+    diagnosticsMonitor.synchronized {
+      diagnosticsMonitor.wait(timeToWait)
+    }
+
+    verify(diagnostics)
+  }
+
+  @Test
   def backlogShouldBeProcessedAfterScan = {
     val flushMonitor = new Object
     val eventMonitor = new Object
