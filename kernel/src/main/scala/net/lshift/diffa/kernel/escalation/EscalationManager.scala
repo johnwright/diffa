@@ -26,6 +26,9 @@ import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAwar
 import net.lshift.diffa.kernel.differencing._
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore}
 import net.lshift.diffa.kernel.reporting.ReportManager
+import akka.actor.Actor
+import net.lshift.diffa.kernel.util.AlertCodes._
+import java.io.Closeable
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -48,9 +51,26 @@ class EscalationManager(val config:DomainConfigStore,
                         val reportManager:ReportManager)
     extends DifferencingListener
     with AgentLifecycleAware
-    with PairScanListener {
+    with PairScanListener
+    with Closeable {
 
   val log = LoggerFactory.getLogger(getClass)
+
+  private class EscalationActor(pair: DiffaPairRef) extends Actor {
+    self.id = EscalationActor.key(pair)
+    
+    def receive = {
+      case (UpstreamMissing, id: VersionID)     => escalateEntityEvent(id, UPSTREAM_MISSING)
+      case (DownstreamMissing, id: VersionID)   => escalateEntityEvent(id, DOWNSTREAM_MISSING)
+      case (ConflictingVersions, id: VersionID) => escalateEntityEvent(id, MISMATCH)
+      case other =>
+        log.warn("EscalationActor for pair " + pair.identifier + " received unexpected message: " + other)
+    }
+  }
+
+  private object EscalationActor {
+    def key(pair: DiffaPairRef) = "escalations:" + pair.identifier
+  }
 
   /**
    * Since escalations are currently only driven off mismatches, matches can be safely ignored.
@@ -63,20 +83,16 @@ class EscalationManager(val config:DomainConfigStore,
   def onMatch(id: VersionID, vsn: String, origin: MatchOrigin) = ()
 
   /**
-   * Escalate matches that occur as part of a scan.
+   * Asynchronously escalate matches that occur as part of a scan.
    */
   def onMismatch(id: VersionID, lastUpdated: DateTime, upstreamVsn: String, downstreamVsn: String,
                  origin: MatchOrigin, level:DifferenceFilterLevel) = origin match {
-    case TriggeredByScan => {
-      DifferenceUtils.differenceType(upstreamVsn, downstreamVsn) match {
-        case UpstreamMissing     => escalateEntityEvent(id, UPSTREAM_MISSING)
-        case DownstreamMissing   => escalateEntityEvent(id, DOWNSTREAM_MISSING)
-        case ConflictingVersions => escalateEntityEvent(id, MISMATCH)
-      }
-    }
+    case TriggeredByScan =>
+      val differenceType = DifferenceUtils.differenceType(upstreamVsn, downstreamVsn)
+      findOrCreateActor(id.pair) ! (differenceType, id)
+
     case _               => // ignore this for now
   }
-
 
   def pairScanStateChanged(pair: DiffaPairRef, scanState: PairScanState) {
     scanState match {
@@ -103,4 +119,25 @@ class EscalationManager(val config:DomainConfigStore,
   def findEscalations(pair: DiffaPairRef, eventType:String, actionTypes:String*) =
     config.listEscalationsForPair(pair.domain, pair.key).
       filter(e => e.event == eventType && actionTypes.contains(e.actionType))
+
+  def close() {
+    Actor.registry.actorsFor[EscalationActor].foreach(_.stop())
+  }
+
+  private def findOrCreateActor(pair: DiffaPairRef) = {
+    val key = EscalationActor.key(pair)
+
+    Actor.registry.actorsFor(key) match {
+      case Array() =>
+        val actor = Actor.actorOf(new EscalationActor(pair))
+        actor.start()
+        log.info(formatAlertCode(pair, ACTOR_STARTED) +  " escalations actor started")
+        actor
+      case Array(actor) =>
+        actor
+      case Array(actors @ _*) =>
+        log.error("Too many actors for key: " + key + "; actors = " + actors)
+        throw new RuntimeException("Too many actors: " + key)
+    }
+  }
 }
