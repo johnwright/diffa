@@ -51,7 +51,16 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
   @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
   @OptionalParam(name = "view", datatype="string", description="Child View to Scan")
   def startScan(@PathParam("pairKey") pairKey:String, @FormParam("view") view:String) = {
-    log.info(formatAlertCode(domain, pairKey, API_SCAN_STARTED) + " scan initiated by " + currentUser)
+
+    val infoString = formatAlertCode(domain, pairKey, API_SCAN_STARTED) + " scan initiated by " + currentUser
+    val message = if (view != null) {
+      infoString + " for " + view + " view"
+    } else {
+      infoString
+    }
+
+    log.info(message)
+
     pairPolicyClient.scanPair(DiffaPairRef(pairKey, domain), if (view != null) Some(view) else None)
     Response.status(Response.Status.ACCEPTED).build
   }
