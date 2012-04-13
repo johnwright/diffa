@@ -121,13 +121,13 @@ class EscalationManagerTest {
   def pairEscalationsSometimesTriggerReports(scenario:Scenario) = {
     assumeThat(scenario, is(instanceOf(classOf[PairScenario])))
     val pairScenario = scenario.asInstanceOf[PairScenario]
-
+    
     expectConfigStoreWithReports(pairScenario.event)
-    expectActionsClient(0)
+    expectActionsClient(0, new Object)
     expectReportManager(pairScenario.invocations)
-
+    
     notificationCentre.pairScanStateChanged(pair.asRef, pairScenario.state)
-
+    
     verifyAll()
   }
 
