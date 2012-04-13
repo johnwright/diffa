@@ -64,7 +64,8 @@ class EscalationManager(val config:DomainConfigStore,
       case (DownstreamMissing, id: VersionID)   => escalateEntityEvent(id, DOWNSTREAM_MISSING)
       case (ConflictingVersions, id: VersionID) => escalateEntityEvent(id, MISMATCH)
       case other =>
-        log.warn("EscalationActor for pair " + pair.identifier + " received unexpected message: " + other)
+        log.warn("{} EscalationActor received unexpected message: {}",
+          formatAlertCode(pair, SPURIOUS_ACTOR_MESSAGE), other)
     }
   }
 
