@@ -116,7 +116,7 @@ class EscalationManagerTest {
 
     verifyAll()
   }
-/*
+
   @Theory
   def pairEscalationsSometimesTriggerReports(scenario:Scenario) = {
     assumeThat(scenario, is(instanceOf(classOf[PairScenario])))
@@ -129,7 +129,7 @@ class EscalationManagerTest {
     notificationCentre.pairScanStateChanged(pair.asRef, pairScenario.state)
 
     verifyAll()
-  }*/
+  }
 
   def verifyAll() {
     verify(configStore, actionsClient)
@@ -142,7 +142,7 @@ case class EntityScenario(uvsn:String, dvsn: String, event: String, matchOrigin:
 case class PairScenario(state:PairScanState, event: String, invocations: Int) extends Scenario
 
 object EscalationManagerTest {
-/*
+
   @DataPoints def mismatchShouldBeEscalated = Array (
     EntityScenario("uvsn", "dsvn", EscalationEvent.MISMATCH, TriggeredByScan, 1),
     EntityScenario("uvsn", "", EscalationEvent.MISMATCH, TriggeredByScan, 0),
@@ -154,13 +154,13 @@ object EscalationManagerTest {
     EntityScenario("uvsn", "dvsn", EscalationEvent.DOWNSTREAM_MISSING, TriggeredByScan, 0),
     EntityScenario("", "dvsn", EscalationEvent.DOWNSTREAM_MISSING, TriggeredByScan, 0)
   )
-*/
+
   @DataPoints def missingUpstreamShouldBeEscalated = Array (
     EntityScenario("uvsn", "", EscalationEvent.UPSTREAM_MISSING, TriggeredByScan, 0),
     EntityScenario("uvsn", "dvsn", EscalationEvent.UPSTREAM_MISSING, TriggeredByScan, 0),
     EntityScenario("", "dvsn", EscalationEvent.UPSTREAM_MISSING, TriggeredByScan, 1)
   )
-/*
+
   @DataPoint def liveWindowShouldNotGetEscalated =
     EntityScenario("uvsn", "dvsn", EscalationEvent.MISMATCH, LiveWindow, 0)
 
@@ -174,6 +174,6 @@ object EscalationManagerTest {
     PairScenario(PairScanState.UP_TO_DATE, EscalationEvent.SCAN_FAILED, 0),
     PairScenario(PairScanState.FAILED, EscalationEvent.SCAN_FAILED, 1),
     PairScenario(PairScanState.CANCELLED, EscalationEvent.SCAN_FAILED, 0)
-  )*/
+  )
 
 }
