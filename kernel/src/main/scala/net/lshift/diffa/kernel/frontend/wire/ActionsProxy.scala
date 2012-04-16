@@ -40,11 +40,11 @@ class ActionsProxy(val config:DomainConfigStore,
 
   val log = LoggerFactory.getLogger(getClass)
 
-  // use arbitrary connection and socket timeouts of one hour
-  // (one hour is not necessarily a sensible default, but if these parameters are not set the timeout becomes infinite)
-  val oneHourInMillis = 60 * 60 * 1000
-  val connectionTimeoutMillis = oneHourInMillis
-  val socketTimeoutMillis = oneHourInMillis
+  // use arbitrary connection and socket timeouts of five minutes
+  // (this is not necessarily a sensible default, but if these parameters are not set the timeout becomes infinite)
+  val fiveMinutesinMillis = 5 * 60 * 1000
+  val connectionTimeoutMillis = fiveMinutesinMillis
+  val socketTimeoutMillis = fiveMinutesinMillis
 
   def listActions(pair:DiffaPairRef): Seq[Actionable] =
     withValidPair(pair) { p =>
