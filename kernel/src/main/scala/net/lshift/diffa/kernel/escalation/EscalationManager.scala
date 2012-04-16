@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.escalation
 
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
+import net.lshift.diffa.kernel.actors.ActorUtils
 import net.lshift.diffa.kernel.config.EscalationEvent._
 import net.lshift.diffa.kernel.config.EscalationActionType._
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
@@ -126,19 +127,13 @@ class EscalationManager(val config:DomainConfigStore,
   }
 
   private def findOrCreateActor(pair: DiffaPairRef) = {
-    val key = EscalationActor.key(pair)
+    val key = ActorUtils.ActorKey(pair, EscalationActor.key(_))
 
-    Actor.registry.actorsFor(key) match {
-      case Array() =>
-        val actor = Actor.actorOf(new EscalationActor(pair))
-        actor.start()
-        log.info(formatAlertCode(pair, ACTOR_STARTED) +  " escalations actor started")
-        actor
-      case Array(actor) =>
-        actor
-      case Array(actors @ _*) =>
-        log.error("Too many actors for key: " + key + "; actors = " + actors)
-        throw new RuntimeException("Too many actors: " + key)
+    ActorUtils.findActor(key).getOrElse {
+      val actor = Actor.actorOf(new EscalationActor(pair))
+      actor.start()
+      log.info("{} Escalations actor started", formatAlertCode(pair, ACTOR_STARTED))
+      actor
     }
   }
 }
