@@ -21,6 +21,7 @@
 * [98]  - Addressed a match error in a receive loop of the pair actor that results in a spurious log entry
 * [100] - Reduced the verbosity of connection refused errors in the logs
 * [103] - Notify the commencement of a scan to the pair activity log
+* [106] - Squashed a UI bug that resulted in scan requests being sent twice to the backend
 
 ## Library Upgrades
 
