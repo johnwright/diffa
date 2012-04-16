@@ -7,6 +7,7 @@
 ## New Features
 
 * [99] - Made the correlation writer proxy timeout a domain configuration option
+* [102] - Made HTTP connection handling more robust in ActionsProxy
 
 ## Deprecated Features
 
