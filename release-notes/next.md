@@ -7,6 +7,7 @@
 ## New Features
 
 * [99] - Made the correlation writer proxy timeout a domain configuration option
+* [101] - Made escalations asynchronous
 
 ## Deprecated Features
 
