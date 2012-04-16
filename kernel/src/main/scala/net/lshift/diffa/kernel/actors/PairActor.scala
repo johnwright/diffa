@@ -30,10 +30,10 @@ import collection.mutable.{SynchronizedQueue, Queue}
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
-import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, Endpoint, DiffaPair}
 import net.lshift.diffa.kernel.util.{EndpointSide, DownstreamEndpoint, UpstreamEndpoint}
+import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -211,6 +211,7 @@ case class PairActor(pair:DiffaPair,
     }
     case c:ChangeMessage                   => handleChangeMessage(c)
     case i:InventoryMessage                => handleInventoryMessage(i)
+    case i:StartInventoryMessage           => self.reply(handleStartInventoryMessage(i))
     case DifferenceMessage                 => handleDifferenceMessage()
     case FlushWriterMessage                => writer.flush()
     case c:VersionCorrelationWriterCommand => {
@@ -359,6 +360,15 @@ case class PairActor(pair:DiffaPair,
       writer.flush()
     }
     lastEventTime = System.currentTimeMillis()
+  }
+
+  def handleStartInventoryMessage(message:StartInventoryMessage):Seq[ScanRequest] = {
+    val ep = message.side match {
+      case UpstreamEndpoint   => us
+      case DownstreamEndpoint => ds
+    }
+
+    policy.startInventory(pair.asRef, ep, writer, message.side)
   }
 
   def handleInventoryMessage(message:InventoryMessage) = {
@@ -548,6 +558,7 @@ abstract class Deferrable
 case class ChangeMessage(event: PairChangeEvent) extends Deferrable
 case object DifferenceMessage extends Deferrable
 case class ScanMessage(scanView:Option[String])
+case class StartInventoryMessage(side:EndpointSide)
 case class InventoryMessage(side:EndpointSide, constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry])
 
 /**

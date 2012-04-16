@@ -21,7 +21,6 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.alerting.Alerter
 import org.slf4j.LoggerFactory
 import concurrent.SyncVar
-import net.lshift.diffa.participant.scanning.{ScanConstraint, DigestBuilder, ScanResultEntry}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.common.JSONHelper
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Endpoint}
@@ -31,6 +30,7 @@ import java.io.{OutputStream, PrintWriter}
 import collection.JavaConversions._
 import net.lshift.diffa.kernel.diag.{DiagnosticsManager, DiagnosticLevel}
 import net.lshift.diffa.kernel.util.{DownstreamEndpoint, EndpointSide, UpstreamEndpoint}
+import net.lshift.diffa.participant.scanning.{ScanRequest, ScanConstraint, DigestBuilder, ScanResultEntry}
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -73,6 +73,15 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     } else {
       listener.onMismatch(evt.id, corr.lastUpdate, corr.upstreamVsn, corr.downstreamUVsn, LiveWindow, Unfiltered)
     }
+  }
+
+  def startInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide) = {
+    val strategy = side match {
+      case UpstreamEndpoint   => new UpstreamScanStrategy
+      case DownstreamEndpoint => downstreamStrategy(null, null)
+    }
+
+    strategy.startInventory(pairRef, endpoint, writer)
   }
 
   /**
@@ -251,6 +260,13 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       pw.println("Response received at: %s".format(responseTimestamp))
       val timeTaken = new Interval(requestTimestamp,responseTimestamp).toPeriod()
       pw.println("Time taken : %s".format(timeTaken))
+    }
+
+    def startInventory(pair: DiffaPairRef, endpoint: Endpoint, writer: LimitedVersionCorrelationWriter): Seq[ScanRequest] = {
+      val constraintGroups = endpoint.groupedConstraints(None)   // TODO: Support views?
+      constraintsOrEmpty(constraintGroups).map(g => {
+        new ScanRequest(g.toList, endpoint.initialBucketing(None).toList)
+      }).toSeq
     }
 
     def processInventory(pair:DiffaPairRef, endpoint:Endpoint, writer:LimitedVersionCorrelationWriter,

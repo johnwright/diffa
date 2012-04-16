@@ -24,11 +24,33 @@ import javax.servlet.http.HttpServletRequest
 import net.lshift.diffa.participant.scanning.ConstraintsBuilder
 import net.lshift.diffa.kernel.config.DomainConfigStore
 import scala.collection.JavaConversions._
+import com.sun.jersey.core.util.MultivaluedMapImpl
+import net.lshift.diffa.client.RequestBuildingHelper
+import java.net.URLEncoder
 
 /**
  * Resource allowing participants to provide bulk details of their current status.
  */
 class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:String) {
+  @GET
+  @Path("/{endpoint}")
+  @Description("Retrieves a list of inventory segments that should be submitted to sync the given endpoint")
+  @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
+  def startInventory(@PathParam("endpoint") endpoint: String) = {
+    val requests = changes.startInventory(domain, endpoint)
+    val requestStrings = requests.map(r => {
+      val params = new MultivaluedMapImpl()
+      RequestBuildingHelper.constraintsToQueryArguments(params, r.getConstraints)
+      RequestBuildingHelper.aggregationsToQueryArguments(params, r.getAggregations)
+
+      params.keys.flatMap(k => {
+        params.get(k).map(v => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8"))
+      }).mkString("&")
+    })
+
+    Response.status(Response.Status.OK).`type`("text/plain").entity(requestStrings.mkString("\n")).build()
+  }
+
   @POST
   @Path("/{endpoint}")
   @Consumes(Array("text/csv"))

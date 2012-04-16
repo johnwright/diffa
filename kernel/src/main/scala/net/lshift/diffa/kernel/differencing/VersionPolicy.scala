@@ -20,8 +20,8 @@ import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.config.{Endpoint, DiffaPairRef}
-import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.util.EndpointSide
+import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -39,6 +39,11 @@ trait VersionPolicy {
    * Indicates to the policy that a change has occurred within a participant.
    */
   def onChange(writer: LimitedVersionCorrelationWriter, evt:PairChangeEvent) : Unit
+
+  /**
+   * Requests that the policy return details of how to start an inventory.
+   */
+  def startInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide):Seq[ScanRequest]
 
   /**
    * Requests that the policy process an inventory of changes.

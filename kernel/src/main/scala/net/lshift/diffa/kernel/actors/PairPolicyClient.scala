@@ -19,19 +19,24 @@ package net.lshift.diffa.kernel.actors
 import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.util.EndpointSide
+import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
 
 /**
  * This is a thread safe entry point to an underlying version policy.
  */
 @ThreadSafe
 trait PairPolicyClient {
-
   /**
    * Propagates the change event to the underlying policy implementation in a serial fashion.
    */
   def propagateChangeEvent(event:PairChangeEvent) : Unit
+
+  /**
+   * Requests that an inventory be initiated, to return the details of what operations need to be performed
+   * to begin an inventory on this node.
+   */
+  def startInventory(pair: DiffaPairRef, side: EndpointSide): Seq[ScanRequest]
 
   /**
    * Submits an inventory of upstream entries for the given constrained space.

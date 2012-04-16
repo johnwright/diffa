@@ -24,9 +24,9 @@ import net.lshift.diffa.kernel.differencing.AttributesUtil
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.participant.changes.ChangeEvent
-import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.util.{DownstreamEndpoint, UpstreamEndpoint, CategoryUtil}
+import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
 
 /**
  * Front-end for reporting changes.
@@ -82,6 +82,20 @@ class Changes(val domainConfig:DomainConfigStore,
         changeEventClient.propagateChangeEvent(pairEvt)
       }
     })
+  }
+
+  def startInventory(domain: String, endpoint: String):Seq[ScanRequest] = {
+    val targetEndpoint = domainConfig.getEndpointDef(domain, endpoint)
+    val requests = scala.collection.mutable.Set[ScanRequest]()
+
+    domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
+      val side = pair.whichSide(targetEndpoint)
+
+      // Propagate the change event to the corresponding policy
+      requests ++= changeEventClient.startInventory(pair.asRef, side)
+    })
+
+    requests.toSeq
   }
 
   def submitInventory(domain:String, endpoint:String, constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry]) {
