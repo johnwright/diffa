@@ -33,6 +33,7 @@ import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
 import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
 import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, Endpoint, DiffaPair}
+import net.lshift.diffa.kernel.util.{EndpointSide, DownstreamEndpoint, UpstreamEndpoint}
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -410,6 +411,13 @@ case class PairActor(pair:DiffaPair,
       // later if one participant fails _really_ fast (ie, before the other has even made the scan* call).
       feedbackHandle = new ScanningFeedbackHandle
       val currentFeedbackHandle = feedbackHandle
+
+      val infoMsg = scanView match {
+        case Some(name) => "Commencing scan on %s view for pair %s".format(name, pairRef.key)
+        case None =>       "Commencing non-filtered scan for pair %s".format(pairRef.key)
+      }
+
+      diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, infoMsg)
 
       Actor.spawn {
         try {
