@@ -1,4 +1,4 @@
-# Version x.y Change Log (yyyy-MM-dd)
+ Version x.y Change Log (yyyy-MM-dd)
 
 ## Release Overview
 
@@ -6,11 +6,7 @@
 
 ## New Features
 
-* [99]  - Made the correlation writer proxy timeout a domain configuration option
-
-## Deprecated Features
-
-* [96]  - Removed the REST API call to trigger a scan for all pairs within a domain
+* [??] -
 
 ## General Maintenance
 
@@ -19,10 +15,11 @@
 * [100] - Reduced the verbosity of connection refused errors in the logs
 * [103] - Notify the commencement of a scan to the pair activity log
 * [109] - Log a summary of each Query triggered by a participant scan.
+* [??] -
 
 ## Library Upgrades
 
-* Upgraded to Scala 2.9.1-1
+* Upgraded to ...
 
 ## Upgrading
 
