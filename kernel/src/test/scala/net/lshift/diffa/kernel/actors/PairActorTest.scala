@@ -627,7 +627,7 @@ class PairActorTest {
     val constraints = Seq(new SetConstraint("foo", Set("a", "b")))
     val entries = Seq(ScanResultEntry.forEntity("id1", "v1", new DateTime, Map("foo" -> "a")))
 
-    expect(versionPolicy.processInventory(pairRef, endpoint, writer, side, constraints, aggregations, entries))
+    expect(versionPolicy.processInventory(pairRef, endpoint, writer, side, constraints, aggregations, entries)).andReturn(Seq())
     expectDifferencesReplay(assertFlush = true, writerCloseMonitor = monitor)
 
     replay(store, diffWriter, versionPolicy, writer)
