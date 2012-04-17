@@ -18,15 +18,22 @@ package net.lshift.diffa.participant.common;
 import net.lshift.diffa.participant.changes.ChangeEvent;
 import net.lshift.diffa.participant.correlation.ProcessingResponse;
 import net.lshift.diffa.participant.scanning.ScanResultEntry;
+import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.node.ArrayNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper for serialising scanning results in JSON.
@@ -34,6 +41,8 @@ import java.io.OutputStream;
 public class JSONHelper {
   private static ObjectMapper mapper = new ObjectMapper();
   private static ObjectMapper prettyMapper = new ObjectMapper();
+  private static JsonFactory jsonFactory = new JsonFactory();
+  private static Logger log = LoggerFactory.getLogger(JSONHelper.class);
   static {
     mapper.getSerializationConfig().set(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
     prettyMapper.getSerializationConfig().set(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
@@ -65,11 +74,21 @@ public class JSONHelper {
   public static ScanResultEntry[] readQueryResult(InputStream stream)
       throws IOException {
     try {
-      return mapper.readValue(stream, ScanResultEntry[].class);
+      List<ScanResultEntry> scanResultEntries = new ArrayList<ScanResultEntry>();
+      JsonParser parser = jsonFactory.createJsonParser(stream);
+      if (parser.nextToken() != JsonToken.START_ARRAY) {
+        throw new Exception("Expected '[' (JSON array start)");
+      }
+
+      while (parser.nextToken() != JsonToken.END_ARRAY) {
+        scanResultEntries.add(mapper.readValue(parser, ScanResultEntry.class));
+      }
+      log.info("ScanResultEntry readQueryResult [count = " + scanResultEntries.size() + "]");
+      return scanResultEntries.toArray(new ScanResultEntry[scanResultEntries.size()]);
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to deserialise result from JSON", ex);
+      throw new IOException("Failed to deserialize result from JSON", ex);
     }
   }
 
