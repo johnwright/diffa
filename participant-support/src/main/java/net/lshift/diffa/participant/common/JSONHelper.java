@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Helper for serialising scanning results in JSON.
+ * Helper for serializing scanning results in JSON.
  */
 public class JSONHelper {
   private static ObjectMapper mapper = new ObjectMapper();
@@ -56,7 +56,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to serialise result to JSON", ex);
+      throw new IOException("Failed to serialize result to JSON", ex);
     }
   }
 
@@ -67,7 +67,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to serialise result to JSON", ex);
+      throw new IOException("Failed to serialize result to JSON", ex);
     }
   }
 
@@ -99,7 +99,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to serialise result to JSON", ex);
+      throw new IOException("Failed to serialize result to JSON", ex);
     }
   }
 
@@ -110,7 +110,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to deserialise result from JSON", ex);
+      throw new IOException("Failed to deserialize result from JSON", ex);
     }
   }
 
@@ -121,7 +121,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to serialise event to JSON", ex);
+      throw new IOException("Failed to serialize event to JSON", ex);
     }
   }
 
@@ -134,7 +134,7 @@ public class JSONHelper {
       } catch (IOException ex) {
         throw ex;
       } catch (Exception ex) {
-        throw new IOException("Failed to serialise event to JSON", ex);
+        throw new IOException("Failed to serialize event to JSON", ex);
       }
     }
 
@@ -145,7 +145,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to serialise events to JSON", ex);
+      throw new IOException("Failed to serialize events to JSON", ex);
     }
   }
 
@@ -156,7 +156,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to serialise events to JSON", ex);
+      throw new IOException("Failed to serialize events to JSON", ex);
     }
   }
 
@@ -172,7 +172,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to deserialise event from JSON", ex);
+      throw new IOException("Failed to deserialize event from JSON", ex);
     }
   }
 }
