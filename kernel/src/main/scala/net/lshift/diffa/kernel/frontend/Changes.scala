@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.participant.changes.ChangeEvent
 import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.util.{DownstreamEndpoint, UpstreamEndpoint, CategoryUtil}
-import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
+import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
 
 /**
  * Front-end for reporting changes.
@@ -98,7 +98,7 @@ class Changes(val domainConfig:DomainConfigStore,
     requests.toSeq
   }
 
-  def submitInventory(domain:String, endpoint:String, constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry]) {
+  def submitInventory(domain:String, endpoint:String, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]):Seq[ScanRequest] = {
     val targetEndpoint = domainConfig.getEndpoint(domain, endpoint)
     val endpointCategories = targetEndpoint.categories.toMap
     val fullConstraints = CategoryUtil.mergeAndValidateConstraints(endpointCategories, constraints)
@@ -116,12 +116,15 @@ class Changes(val domainConfig:DomainConfigStore,
       }
     }
 
+    val nextRequests = scala.collection.mutable.Set[ScanRequest]()
     domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
       val side = if (pair.upstream == endpoint) UpstreamEndpoint else DownstreamEndpoint
 
       // Propagate the change event to the corresponding policy
-      changeEventClient.submitInventory(pair.asRef, side, constraints, entries)
+      nextRequests ++= changeEventClient.submitInventory(pair.asRef, side, constraints, aggregations, entries)
     })
+
+    nextRequests.toSeq
   }
 }
 

@@ -20,7 +20,7 @@ import net.jcip.annotations.ThreadSafe
 import net.lshift.diffa.kernel.events.PairChangeEvent
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.util.EndpointSide
-import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
+import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
 
 /**
  * This is a thread safe entry point to an underlying version policy.
@@ -41,7 +41,7 @@ trait PairPolicyClient {
   /**
    * Submits an inventory of upstream entries for the given constrained space.
    */
-  def submitInventory(pair:DiffaPairRef, side:EndpointSide, constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry])
+  def submitInventory(pair:DiffaPairRef, side:EndpointSide, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]): Seq[ScanRequest]
 
   /**
    * Runs a replayUnmatchedDifferences report based on stored data for the given pair. Does not scan with the participants

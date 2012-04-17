@@ -21,7 +21,7 @@ import net.jcip.annotations.NotThreadSafe
 import net.lshift.diffa.kernel.participants.{UpstreamParticipant, DownstreamParticipant}
 import net.lshift.diffa.kernel.config.{Endpoint, DiffaPairRef}
 import net.lshift.diffa.kernel.util.EndpointSide
-import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
+import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
 
 /**
  * Policy implementations of this trait provide different mechanism for handling the matching of upstream
@@ -49,7 +49,7 @@ trait VersionPolicy {
    * Requests that the policy process an inventory of changes.
    */
   def processInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide,
-                       constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry])
+                       constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]):Seq[ScanRequest]
 
   /**
    * Requests that the policy scan the upstream participants for the given pairing. Differences that are

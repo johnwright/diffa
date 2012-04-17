@@ -27,7 +27,7 @@ import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, DiffaPair}
 import net.lshift.diffa.kernel.util.AlertCodes._
 import net.lshift.diffa.kernel.util.{EndpointSide, MissingObjectException}
-import net.lshift.diffa.participant.scanning.{ScanRequest, ScanResultEntry, ScanConstraint}
+import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -101,8 +101,8 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     (findActor(pair) ? StartInventoryMessage(side)).as[Seq[ScanRequest]].get
   }
 
-  def submitInventory(pair:DiffaPairRef, side:EndpointSide, constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry]) {
-    findActor(pair) ! InventoryMessage(side, constraints, entries)
+  def submitInventory(pair:DiffaPairRef, side:EndpointSide, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]) = {
+    (findActor(pair) ? InventoryMessage(side, constraints, aggregations, entries)).as[Seq[ScanRequest]].get
   }
 
   def difference(pairRef:DiffaPairRef) =

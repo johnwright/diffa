@@ -21,12 +21,12 @@ import javax.ws.rs._
 import core.{Context, UriInfo, Response}
 import net.lshift.diffa.kernel.frontend.{Configuration, Changes}
 import javax.servlet.http.HttpServletRequest
-import net.lshift.diffa.participant.scanning.ConstraintsBuilder
 import net.lshift.diffa.kernel.config.DomainConfigStore
 import scala.collection.JavaConversions._
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import net.lshift.diffa.client.RequestBuildingHelper
 import java.net.URLEncoder
+import net.lshift.diffa.participant.scanning.{ScanRequest, AggregationBuilder, ConstraintsBuilder}
 
 /**
  * Resource allowing participants to provide bulk details of their current status.
@@ -38,17 +38,8 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
   @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
   def startInventory(@PathParam("endpoint") endpoint: String) = {
     val requests = changes.startInventory(domain, endpoint)
-    val requestStrings = requests.map(r => {
-      val params = new MultivaluedMapImpl()
-      RequestBuildingHelper.constraintsToQueryArguments(params, r.getConstraints)
-      RequestBuildingHelper.aggregationsToQueryArguments(params, r.getAggregations)
 
-      params.keys.flatMap(k => {
-        params.get(k).map(v => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8"))
-      }).mkString("&")
-    })
-
-    Response.status(Response.Status.OK).`type`("text/plain").entity(requestStrings.mkString("\n")).build()
+    Response.status(Response.Status.OK).`type`("text/plain").entity(requestsToString(requests)).build()
   }
 
   @POST
@@ -58,12 +49,27 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
   @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
   def submitInventory(@PathParam("endpoint") endpoint: String, @Context request:HttpServletRequest, content:ScanResultList) = {
     val constraintsBuilder = new ConstraintsBuilder(request)
+    val aggregationBuilder = new AggregationBuilder(request)
 
     val ep = configStore.getEndpoint(domain, endpoint)
     ep.buildConstraints(constraintsBuilder)
+    ep.buildAggregations(aggregationBuilder)
 
-    changes.submitInventory(domain, endpoint, constraintsBuilder.toList.toSeq, content.results)
+    val nextRequests = changes.submitInventory(domain, endpoint,
+      constraintsBuilder.toList.toSeq, aggregationBuilder.toList.toSeq, content.results)
     
-    Response.status(Response.Status.ACCEPTED).`type`("text/plain").build()
+    Response.status(Response.Status.ACCEPTED).`type`("text/plain").entity(requestsToString(nextRequests)).build()
+  }
+
+  private def requestsToString(requests:Seq[ScanRequest]):String = {
+    requests.map(r => {
+      val params = new MultivaluedMapImpl()
+      RequestBuildingHelper.constraintsToQueryArguments(params, r.getConstraints)
+      RequestBuildingHelper.aggregationsToQueryArguments(params, r.getAggregations)
+
+      params.keys.flatMap(k => {
+        params.get(k).map(v => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8"))
+      }).mkString("&")
+    }).mkString("\n")
   }
 }

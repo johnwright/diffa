@@ -27,10 +27,10 @@ import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Endpoint
 import org.joda.time.{DateTimeZone, DateTime, Interval}
 import org.joda.time.format.DateTimeFormat
 import java.io.{OutputStream, PrintWriter}
-import collection.JavaConversions._
 import net.lshift.diffa.kernel.diag.{DiagnosticsManager, DiagnosticLevel}
-import net.lshift.diffa.kernel.util.{DownstreamEndpoint, EndpointSide, UpstreamEndpoint}
-import net.lshift.diffa.participant.scanning.{ScanRequest, ScanConstraint, DigestBuilder, ScanResultEntry}
+import net.lshift.diffa.participant.scanning._
+import collection.JavaConversions._
+import net.lshift.diffa.kernel.util.{CategoryUtil, DownstreamEndpoint, EndpointSide, UpstreamEndpoint}
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -88,13 +88,13 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
    * Handles an inventory arriving from a participant.
    */
   def processInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide,
-                       constraints:Seq[ScanConstraint], entries:Seq[ScanResultEntry]) {
+                       constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]) = {
     val strategy = side match {
       case UpstreamEndpoint   => new UpstreamScanStrategy
       case DownstreamEndpoint => downstreamStrategy(null, null)
     }
 
-    strategy.processInventory(pairRef, endpoint, writer, constraints, entries, listener)
+    strategy.processInventory(pairRef, endpoint, writer, constraints, aggregations, entries, listener)
   }
 
   def maybe(lastUpdate:DateTime) = {
@@ -270,12 +270,27 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
 
     def processInventory(pair:DiffaPairRef, endpoint:Endpoint, writer:LimitedVersionCorrelationWriter,
-                         constraints:Seq[ScanConstraint], inventoryEntries:Seq[ScanResultEntry], listener: DifferencingListener) {
+                         constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation],
+                         inventoryEntries:Seq[ScanResultEntry], listener: DifferencingListener):Seq[ScanRequest] = {
       val cachedVersions = getEntities(pair, constraints)
       val endpointCategories = endpoint.categories.toMap
 
-      DigestDifferencingUtils.differenceEntities(endpointCategories, inventoryEntries, cachedVersions, constraints)
-        .foreach(handleMismatch(pair, writer, _, listener))
+      if (aggregations.length == 0) {
+        DigestDifferencingUtils.differenceEntities(endpointCategories, inventoryEntries, cachedVersions, constraints)
+          .foreach(handleMismatch(pair, writer, _, listener))
+
+        Seq()
+      } else {
+        val localDigests = getAggregates(pair, aggregations, constraints)
+        val bucketing = CategoryUtil.categoryFunctionsFor(aggregations, endpoint.getCategories())
+
+        DigestDifferencingUtils.differenceAggregates(inventoryEntries, localDigests, bucketing, constraints).map(o => o match {
+          case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
+            new ScanRequest(narrowConstraints.toList, narrowBuckets.toList)
+          case EntityQueryAction(narrowed)    =>
+            new ScanRequest(narrowed.toList, Seq().toList)
+        })
+      }
     }
 
     def checkForCancellation(handle:FeedbackHandle, pair:DiffaPairRef) = {
@@ -296,7 +311,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
     }
 
-    def getAggregates(pair:DiffaPairRef, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
     def getEntities(pair:DiffaPairRef, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
     def handleMismatch(pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
@@ -304,7 +319,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   protected class UpstreamScanStrategy extends ScanStrategy {
     val name = "Upstream"
 
-    def getAggregates(pair:DiffaPairRef, bucketing:Seq[CategoryFunction], constraints:Seq[ScanConstraint]) = {
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) = {
       val aggregator = new Aggregator(bucketing)
       stores(pair).queryUpstreams(constraints, aggregator.collectUpstream)
       aggregator.digests
@@ -328,7 +343,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
-  protected class Aggregator(bucketing:Seq[CategoryFunction]) {
+  protected class Aggregator(bucketing:Seq[ScanAggregation]) {
     val builder = new DigestBuilder(bucketing)
 
     def collectUpstream(id:VersionID, attributes:Map[String, String], lastUpdate:DateTime, vsn:String) =
