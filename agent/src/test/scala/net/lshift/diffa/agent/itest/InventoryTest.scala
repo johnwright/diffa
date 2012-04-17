@@ -21,16 +21,27 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.differencing.{MatchState, DifferenceEvent}
 import support.{IncludesObjId, DoesntIncludeObjId, DiffCount, TestEnvironments}
-import net.lshift.diffa.participant.scanning.SetConstraint
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend.InvalidInventoryException
+import net.lshift.diffa.participant.scanning.{DateGranularityEnum, DateAggregation, SetConstraint}
 
 class InventoryTest extends AbstractEnvironmentTest {
   val envFactory = TestEnvironments.same _
 
   @Test
+  def shouldReturnInitialListOfTasksToBePerformedForAnInventory() {
+    val tasks = env.inventoryClient.startInventory(env.upstreamEpName)
+
+    assertEquals(
+      Seq(
+        "someString=ss&someDate-granularity=yearly",
+        "someString=tt&someDate-granularity=yearly"),
+      tasks.toSeq.sorted)
+  }
+
+  @Test
   def shouldGenerateDifferencesBasedUponAnInventoryBeingUploaded() {
-    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
@@ -47,15 +58,31 @@ class InventoryTest extends AbstractEnvironmentTest {
   }
 
   @Test
+  def shouldReturnNextStepTasksBasedOnAggregateInventoryUpload() {
+    val tasks = env.inventoryClient.uploadInventory(env.upstreamEpName,
+        Seq(new SetConstraint("someString", Set("ss"))),
+        Seq(new DateAggregation("someDate", DateGranularityEnum.Yearly)),
+        csv(
+        "vsn,someString,someDate",
+        "v1,ss,2012"
+      ))
+
+    assertEquals(
+      Seq(
+        "someDate-start=2012-01-01T00%3A00%3A00.000Z&someDate-end=2012-12-31T23%3A59%3A59.999Z&someString=ss"),
+      tasks.toSeq.sorted)
+  }
+
+  @Test
   def shouldResolveDifferencesWhenMatchingInventoryIsUploadedForDownstream() {
-    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
     ))
     env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(2))
 
-    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(), csv(
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(), Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
@@ -65,12 +92,12 @@ class InventoryTest extends AbstractEnvironmentTest {
 
   @Test
   def shouldSeeTheDifferencesBetweenTwoInventories() {
-    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
     ))
-    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(), csv(
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(), Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v3,tt,2012-03-10T10:05:12Z",
@@ -90,7 +117,7 @@ class InventoryTest extends AbstractEnvironmentTest {
 
   @Test
   def shouldAllowInventoryRegionToBeRestrictedToAllowPartialUpload() {
-    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
+    env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z",
       "id2,v2,tt,2012-03-10T10:05:12Z"
@@ -98,11 +125,11 @@ class InventoryTest extends AbstractEnvironmentTest {
     env.differencesHelper.waitFor(yesterday, tomorrow, DiffCount(2))
 
     // Upload the downstream inventory in two parts
-    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(new SetConstraint("someString", Set("ss"))), csv(
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(new SetConstraint("someString", Set("ss"))), Seq(), csv(
       "id,vsn,someString,someDate",
       "id1,v1,ss,2012-03-09T09:04:00Z"
     ))
-    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(new SetConstraint("someString", Set("tt"))), csv(
+    env.inventoryClient.uploadInventory(env.downstreamEpName, Seq(new SetConstraint("someString", Set("tt"))), Seq(), csv(
       "id,vsn,someString,someDate",
       "id2,v2,tt,2012-03-10T10:05:12Z",
       "id3,v3,tt,2012-03-10T10:05:12Z"
@@ -115,7 +142,7 @@ class InventoryTest extends AbstractEnvironmentTest {
   @Test
   def shouldRejectAnInventoryUploadWithMissingColumnsWithABadRequestResponse() {
     try {
-      env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), csv(
+      env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(), Seq(), csv(
         "id,vsn,someString",
         "id1,v1,ss",
         "id2,v2,tt"
@@ -134,7 +161,7 @@ class InventoryTest extends AbstractEnvironmentTest {
     try {
       // The constraint someString=qq on the upload isn't valid, since the someString category only
       // supports ss and tt.
-      env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(new SetConstraint("someString", Set("qq"))), csv(
+      env.inventoryClient.uploadInventory(env.upstreamEpName, Seq(new SetConstraint("someString", Set("qq"))), Seq(), csv(
         "id,vsn,someString,someDate",
         "id2,v2,qq,2012-03-10T10:05:12Z",
         "id3,v3,qq,2012-03-10T10:05:12Z"
