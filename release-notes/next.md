@@ -22,6 +22,7 @@
 * [100] - Reduced the verbosity of connection refused errors in the logs
 * [103] - Notify the commencement of a scan to the pair activity log
 * [106] - Squashed a UI bug that resulted in scan requests being sent twice to the backend
+* [108] - Made sure that the DB migration works for an arbitrary number of steps
 
 ## Library Upgrades
 
