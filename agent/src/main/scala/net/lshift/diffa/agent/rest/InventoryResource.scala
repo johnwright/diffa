@@ -36,8 +36,17 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
   @Path("/{endpoint}")
   @Description("Retrieves a list of inventory segments that should be submitted to sync the given endpoint")
   @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
-  def startInventory(@PathParam("endpoint") endpoint: String) = {
-    val requests = changes.startInventory(domain, endpoint)
+  def startInventory(@PathParam("endpoint") endpoint: String):Response = startInventory(endpoint, null)
+
+  @GET
+  @Path("/{endpoint}/{view}")
+  @Description("Retrieves a list of inventory segments that should be submitted to sync the given endpoint")
+  @MandatoryParams(Array(
+    new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier"),
+    new MandatoryParam(name="view", datatype="string", description="Endpoint View")
+  ))
+  def startInventory(@PathParam("endpoint") endpoint: String, @PathParam("view") view:String):Response = {
+    val requests = changes.startInventory(domain, endpoint, if (view != null) Some(view) else None)
 
     Response.status(Response.Status.OK).`type`("text/plain").entity(requestsToString(requests)).build()
   }
@@ -47,7 +56,18 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
   @Consumes(Array("text/csv"))
   @Description("Submits an inventory for the given endpoint within a domain")
   @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
-  def submitInventory(@PathParam("endpoint") endpoint: String, @Context request:HttpServletRequest, content:ScanResultList) = {
+  def submitInventory(@PathParam("endpoint") endpoint: String, @Context request:HttpServletRequest, content:ScanResultList):Response =
+    submitInventory(endpoint, null, request, content)
+
+  @POST
+  @Path("/{endpoint}/{view}")
+  @Consumes(Array("text/csv"))
+  @Description("Submits an inventory for the given endpoint within a domain")
+  @MandatoryParams(Array(
+    new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier"),
+    new MandatoryParam(name="view", datatype="string", description="Endpoint View")
+  ))
+  def submitInventory(@PathParam("endpoint") endpoint: String, @PathParam("view") view: String, @Context request:HttpServletRequest, content:ScanResultList):Response = {
     val constraintsBuilder = new ConstraintsBuilder(request)
     val aggregationBuilder = new AggregationBuilder(request)
 
@@ -55,7 +75,7 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
     ep.buildConstraints(constraintsBuilder)
     ep.buildAggregations(aggregationBuilder)
 
-    val nextRequests = changes.submitInventory(domain, endpoint,
+    val nextRequests = changes.submitInventory(domain, endpoint, if (view != null) Some(view) else None,
       constraintsBuilder.toList.toSeq, aggregationBuilder.toList.toSeq, content.results)
     
     Response.status(Response.Status.ACCEPTED).`type`("text/plain").entity(requestsToString(nextRequests)).build()

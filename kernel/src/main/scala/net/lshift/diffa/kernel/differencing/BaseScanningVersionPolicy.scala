@@ -75,13 +75,13 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
-  def startInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide) = {
+  def startInventory(pairRef:DiffaPairRef, endpoint:Endpoint, view:Option[String], writer: LimitedVersionCorrelationWriter, side:EndpointSide) = {
     val strategy = side match {
       case UpstreamEndpoint   => new UpstreamScanStrategy
       case DownstreamEndpoint => downstreamStrategy(null, null)
     }
 
-    strategy.startInventory(pairRef, endpoint, writer)
+    strategy.startInventory(pairRef, endpoint, view, writer)
   }
 
   /**
@@ -262,10 +262,10 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       pw.println("Time taken : %s".format(timeTaken))
     }
 
-    def startInventory(pair: DiffaPairRef, endpoint: Endpoint, writer: LimitedVersionCorrelationWriter): Seq[ScanRequest] = {
-      val constraintGroups = endpoint.groupedConstraints(None)   // TODO: Support views?
+    def startInventory(pair: DiffaPairRef, endpoint: Endpoint, view:Option[String], writer: LimitedVersionCorrelationWriter): Seq[ScanRequest] = {
+      val constraintGroups = endpoint.groupedConstraints(view)
       constraintsOrEmpty(constraintGroups).map(g => {
-        new ScanRequest(g.toList, endpoint.initialBucketing(None).toList)
+        new ScanRequest(g.toList, endpoint.initialBucketing(view).toList)
       }).toSeq
     }
 

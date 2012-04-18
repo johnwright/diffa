@@ -43,7 +43,7 @@ trait VersionPolicy {
   /**
    * Requests that the policy return details of how to start an inventory.
    */
-  def startInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide):Seq[ScanRequest]
+  def startInventory(pairRef:DiffaPairRef, endpoint:Endpoint, view:Option[String], writer: LimitedVersionCorrelationWriter, side:EndpointSide):Seq[ScanRequest]
 
   /**
    * Requests that the policy process an inventory of changes.

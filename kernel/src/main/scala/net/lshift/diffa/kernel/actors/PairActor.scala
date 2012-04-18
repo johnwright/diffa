@@ -368,7 +368,7 @@ case class PairActor(pair:DiffaPair,
       case DownstreamEndpoint => ds
     }
 
-    policy.startInventory(pair.asRef, ep, writer, message.side)
+    policy.startInventory(pair.asRef, ep, message.view, writer, message.side)
   }
 
   def handleInventoryMessage(message:InventoryMessage) = {
@@ -561,7 +561,7 @@ abstract class Deferrable
 case class ChangeMessage(event: PairChangeEvent) extends Deferrable
 case object DifferenceMessage extends Deferrable
 case class ScanMessage(scanView:Option[String])
-case class StartInventoryMessage(side:EndpointSide)
+case class StartInventoryMessage(side:EndpointSide, view:Option[String])
 case class InventoryMessage(side:EndpointSide, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry])
 
 /**

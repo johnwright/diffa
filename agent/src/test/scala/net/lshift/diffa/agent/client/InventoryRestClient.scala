@@ -26,8 +26,10 @@ import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
 class InventoryRestClient(serverRootUrl:String, domain:String, params: RestClientParams = RestClientParams.default)
     extends DomainAwareRestClient(serverRootUrl, domain, "domains/{domain}/inventory/", params) {
 
-  def startInventory(epName: String) = {
-    val path = resource.path(epName)
+  def startInventory(epName: String):Seq[String] = startInventory(epName, None)
+  
+  def startInventory(epName: String, view:Option[String]):Seq[String] = {
+    val path = resource.path(epNameAndMaybeView(epName, view))
     val response = path.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
@@ -37,12 +39,15 @@ class InventoryRestClient(serverRootUrl:String, domain:String, params: RestClien
     }
   }
 
-  def uploadInventory(epName:String, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], content:String) = {
+  def uploadInventory(epName:String, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], content:String):Seq[String] =
+    uploadInventory(epName, None, constraints, aggregations, content)
+
+  def uploadInventory(epName:String, view:Option[String], constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], content:String):Seq[String] = {
     val params = new MultivaluedMapImpl()
     RequestBuildingHelper.constraintsToQueryArguments(params, constraints)
     RequestBuildingHelper.aggregationsToQueryArguments(params, aggregations)
 
-    val path = resource.path(epName).queryParams(params)
+    val path = resource.path(epNameAndMaybeView(epName, view)).queryParams(params)
     val response = path.entity(content, "text/csv").post(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
@@ -51,4 +56,7 @@ class InventoryRestClient(serverRootUrl:String, domain:String, params: RestClien
       case x:Int   => handleHTTPError(x,path, status)
     }
   }
+
+  def epNameAndMaybeView(epName:String, view:Option[String]) =
+    view match { case None => epName; case Some(v) => epName + "/" + v }
 }

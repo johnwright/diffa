@@ -36,7 +36,7 @@ trait PairPolicyClient {
    * Requests that an inventory be initiated, to return the details of what operations need to be performed
    * to begin an inventory on this node.
    */
-  def startInventory(pair: DiffaPairRef, side: EndpointSide): Seq[ScanRequest]
+  def startInventory(pair: DiffaPairRef, side: EndpointSide, view:Option[String]): Seq[ScanRequest]
 
   /**
    * Submits an inventory of upstream entries for the given constrained space.

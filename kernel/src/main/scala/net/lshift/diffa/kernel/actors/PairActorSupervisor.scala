@@ -97,8 +97,8 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id) ! ChangeMessage(event)
 
-  def startInventory(pair: DiffaPairRef, side: EndpointSide): Seq[ScanRequest] = {
-    (findActor(pair) ? StartInventoryMessage(side)).as[Seq[ScanRequest]].get
+  def startInventory(pair: DiffaPairRef, side: EndpointSide, view:Option[String]): Seq[ScanRequest] = {
+    (findActor(pair) ? StartInventoryMessage(side, view)).as[Seq[ScanRequest]].get
   }
 
   def submitInventory(pair:DiffaPairRef, side:EndpointSide, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]) = {
