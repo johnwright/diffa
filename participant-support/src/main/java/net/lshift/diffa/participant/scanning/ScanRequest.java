@@ -1,24 +1,24 @@
 package net.lshift.diffa.participant.scanning;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * Describe a request to perform a specific scan.
  */
 public class ScanRequest {
-  private final List<ScanConstraint> constraints;
-  private final List<ScanAggregation> aggregations;
+  private final Set<ScanConstraint> constraints;
+  private final Set<ScanAggregation> aggregations;
 
-  public ScanRequest(List<ScanConstraint> constraints, List<ScanAggregation> aggregations) {
+  public ScanRequest(Set<ScanConstraint> constraints, Set<ScanAggregation> aggregations) {
     this.constraints = constraints;
     this.aggregations = aggregations;
   }
 
-  public List<ScanConstraint> getConstraints() {
+  public Set<ScanConstraint> getConstraints() {
     return constraints;
   }
 
-  public List<ScanAggregation> getAggregations() {
+  public Set<ScanAggregation> getAggregations() {
     return aggregations;
   }
 
@@ -40,5 +40,13 @@ public class ScanRequest {
     int result = constraints != null ? constraints.hashCode() : 0;
     result = 31 * result + (aggregations != null ? aggregations.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "ScanRequest{" +
+      "constraints=" + constraints +
+      ", aggregations=" + aggregations +
+      '}';
   }
 }

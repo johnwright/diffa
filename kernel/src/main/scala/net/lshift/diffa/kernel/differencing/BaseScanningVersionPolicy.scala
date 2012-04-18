@@ -265,30 +265,31 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     def startInventory(pair: DiffaPairRef, endpoint: Endpoint, view:Option[String], writer: LimitedVersionCorrelationWriter): Seq[ScanRequest] = {
       val constraintGroups = endpoint.groupedConstraints(view)
       constraintsOrEmpty(constraintGroups).map(g => {
-        new ScanRequest(g.toList, endpoint.initialBucketing(view).toList)
+        new ScanRequest(g.toSet[ScanConstraint], endpoint.initialBucketing(view).toSet[ScanAggregation])
       }).toSeq
     }
 
     def processInventory(pair:DiffaPairRef, endpoint:Endpoint, writer:LimitedVersionCorrelationWriter,
                          constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation],
                          inventoryEntries:Seq[ScanResultEntry], listener: DifferencingListener):Seq[ScanRequest] = {
-      val cachedVersions = getEntities(pair, constraints)
       val endpointCategories = endpoint.categories.toMap
 
       if (aggregations.length == 0) {
+        val cachedVersions = getEntities(pair, constraints)
+
         DigestDifferencingUtils.differenceEntities(endpointCategories, inventoryEntries, cachedVersions, constraints)
           .foreach(handleMismatch(pair, writer, _, listener))
 
         Seq()
       } else {
         val localDigests = getAggregates(pair, aggregations, constraints)
-        val bucketing = CategoryUtil.categoryFunctionsFor(aggregations, endpoint.getCategories())
+        val bucketing = CategoryUtil.categoryFunctionsFor(aggregations, endpointCategories)
 
         DigestDifferencingUtils.differenceAggregates(inventoryEntries, localDigests, bucketing, constraints).map(o => o match {
           case AggregateQueryAction(narrowBuckets, narrowConstraints) =>
-            new ScanRequest(narrowConstraints.toList, narrowBuckets.toList)
+            new ScanRequest(narrowConstraints.toSet[ScanConstraint], narrowBuckets.toSet[ScanAggregation])
           case EntityQueryAction(narrowed)    =>
-            new ScanRequest(narrowed.toList, Seq().toList)
+            new ScanRequest(narrowed.toSet[ScanConstraint], Set[ScanAggregation]())
         })
       }
     }

@@ -17,9 +17,9 @@ package net.lshift.diffa.agent.rest
 
 import org.junit.Test
 import org.junit.Assert._
-import java.util.ArrayList
 import scala.collection.JavaConversions._
-import net.lshift.diffa.participant.scanning.{DateAggregation, SetConstraint, ScanRequest}
+import java.util.{HashSet, ArrayList}
+import net.lshift.diffa.participant.scanning._
 
 class ScanRequestWriterTest {
   @Test
@@ -34,19 +34,19 @@ class ScanRequestWriterTest {
   def shouldGenerateSimpleScanRequestForSingleBasicRequest() {
     assertEquals(
       "scan",
-      ScanRequestWriter.writeScanRequests(Seq(new ScanRequest(new ArrayList(), new ArrayList())))
+      ScanRequestWriter.writeScanRequests(Seq(new ScanRequest(new HashSet(), new HashSet())))
     )
   }
 
   @Test
   def shouldSerialiseConstraintsAndAggregations() {
     assertEquals(
-      "scan?someString=ss&someString=tt&someDate-granularity=yearly",
+      "scan?someDate-granularity=yearly&someString=ss&someString=tt",
       ScanRequestWriter.writeScanRequests(
         Seq(
           new ScanRequest(
-            Seq(new SetConstraint("someString", Set("ss", "tt"))),
-            Seq(new DateAggregation("someDate", "yearly")))
+            Set[ScanConstraint](new SetConstraint("someString", Set("ss", "tt"))),
+            Set[ScanAggregation](new DateAggregation("someDate", "yearly")))
         ))
     )
   }
@@ -54,16 +54,16 @@ class ScanRequestWriterTest {
   @Test
   def shouldSerialiseMultipleRequests() {
     assertEquals(
-      "scan?someString=ss&someDate-granularity=yearly\n" +
+      "scan?someDate-granularity=yearly&someString=ss\n" +
       "scan?someString=tt",
       ScanRequestWriter.writeScanRequests(
         Seq(
           new ScanRequest(
-            Seq(new SetConstraint("someString", Set("ss"))),
-            Seq(new DateAggregation("someDate", "yearly"))),
+            Set[ScanConstraint](new SetConstraint("someString", Set("ss"))),
+            Set[ScanAggregation](new DateAggregation("someDate", "yearly"))),
           new ScanRequest(
-            Seq(new SetConstraint("someString", Set("tt"))),
-            Seq())
+            Set[ScanConstraint](new SetConstraint("someString", Set("tt"))),
+            Set[ScanAggregation]())
         ))
     )
   }

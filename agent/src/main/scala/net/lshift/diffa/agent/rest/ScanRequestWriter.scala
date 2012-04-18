@@ -27,15 +27,15 @@ import scala.collection.JavaConversions._
 object ScanRequestWriter {
   def writeScanRequest(req:ScanRequest):String = {
     val params = new MultivaluedMapImpl()
-    RequestBuildingHelper.constraintsToQueryArguments(params, req.getConstraints)
-    RequestBuildingHelper.aggregationsToQueryArguments(params, req.getAggregations)
+    RequestBuildingHelper.constraintsToQueryArguments(params, req.getConstraints.toSeq)
+    RequestBuildingHelper.aggregationsToQueryArguments(params, req.getAggregations.toSeq)
 
     val prefix = "scan" + (if (params.size() > 0) "?" else "")
 
     prefix +
       params.keys.flatMap(k => {
         params.get(k).map(v => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8"))
-      }).mkString("&")
+      }).toSeq.sorted.mkString("&")
   }
 
   def writeScanRequests(requests:Seq[ScanRequest]):String =
