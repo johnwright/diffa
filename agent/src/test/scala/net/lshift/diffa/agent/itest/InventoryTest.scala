@@ -34,8 +34,8 @@ class InventoryTest extends AbstractEnvironmentTest {
 
     assertEquals(
       Seq(
-        "someString=ss&someDate-granularity=yearly",
-        "someString=tt&someDate-granularity=yearly"),
+        "scan?someString=ss&someDate-granularity=yearly",
+        "scan?someString=tt&someDate-granularity=yearly"),
       tasks.sorted)
   }
 
@@ -45,7 +45,7 @@ class InventoryTest extends AbstractEnvironmentTest {
 
     assertEquals(
       Seq(
-        "someString=tt&someDate-granularity=yearly"),
+        "scan?someString=tt&someDate-granularity=yearly"),
       tasks.sorted)
   }
 
@@ -79,7 +79,7 @@ class InventoryTest extends AbstractEnvironmentTest {
 
     assertEquals(
       Seq(
-        "someDate-start=2012-01-01T00%3A00%3A00.000Z&someDate-end=2012-12-31T23%3A59%3A59.999Z&someString=ss"),
+        "scan?someDate-start=2012-01-01T00%3A00%3A00.000Z&someDate-end=2012-12-31T23%3A59%3A59.999Z&someString=ss"),
       tasks.sorted)
   }
 

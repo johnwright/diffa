@@ -48,7 +48,9 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
   def startInventory(@PathParam("endpoint") endpoint: String, @PathParam("view") view:String):Response = {
     val requests = changes.startInventory(domain, endpoint, if (view != null) Some(view) else None)
 
-    Response.status(Response.Status.OK).`type`("text/plain").entity(requestsToString(requests)).build()
+    Response.status(Response.Status.OK).
+      `type`("text/plain").
+      entity(ScanRequestWriter.writeScanRequests(requests)).build()
   }
 
   @POST
@@ -78,18 +80,8 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
     val nextRequests = changes.submitInventory(domain, endpoint, if (view != null) Some(view) else None,
       constraintsBuilder.toList.toSeq, aggregationBuilder.toList.toSeq, content.results)
     
-    Response.status(Response.Status.ACCEPTED).`type`("text/plain").entity(requestsToString(nextRequests)).build()
-  }
-
-  private def requestsToString(requests:Seq[ScanRequest]):String = {
-    requests.map(r => {
-      val params = new MultivaluedMapImpl()
-      RequestBuildingHelper.constraintsToQueryArguments(params, r.getConstraints)
-      RequestBuildingHelper.aggregationsToQueryArguments(params, r.getAggregations)
-
-      params.keys.flatMap(k => {
-        params.get(k).map(v => URLEncoder.encode(k, "UTF-8") + "=" + URLEncoder.encode(v, "UTF-8"))
-      }).mkString("&")
-    }).mkString("\n")
+    Response.status(Response.Status.ACCEPTED).
+      `type`("text/plain").
+      entity(ScanRequestWriter.writeScanRequests(nextRequests)).build()
   }
 }
