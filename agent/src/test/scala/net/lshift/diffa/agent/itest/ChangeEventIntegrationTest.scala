@@ -22,7 +22,7 @@ import net.lshift.diffa.participant.changes.ChangeEvent
 import net.lshift.diffa.kernel.frontend.EndpointDef
 import net.lshift.diffa.agent.client.ConfigurationRestClient
 import com.eaio.uuid.UUID
-import net.lshift.diffa.client.ChangesRestClient
+import net.lshift.diffa.client.{InvalidChangeEventException, ChangesRestClient}
 
 
 class ChangeEventIntegrationTest {
@@ -44,7 +44,7 @@ class ChangeEventIntegrationTest {
       fail("Bogus change event should not have been accepted")
     }
     catch {
-      case x => //
+      case x:InvalidChangeEventException => // this is expected
     }
   }
 }
