@@ -16,13 +16,24 @@
 package net.lshift.diffa.participant.changes;
 
 import org.junit.Test;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
+
 import static org.junit.Assert.*;
 
+@RunWith(Theories.class)
 public class ChangeEventTest {
 
-  @Test
-  public void shouldRejectMissingMandatoryFields() {
-    ChangeEvent bogusEvent = new ChangeEvent();
+  @DataPoint public static ChangeEvent completelyEmptyEvent = new ChangeEvent();
+  @DataPoint public static ChangeEvent nullIdWithValidVersion = new ChangeEvent(null,"vsn", null, null, null);
+  @DataPoint public static ChangeEvent emptyIdWithValidVersion = new ChangeEvent("" ,"vsn", null, null, null);
+  @DataPoint public static ChangeEvent validIdWithEmptyVersion = new ChangeEvent("id" , "", null, null, null);
+  @DataPoint public static ChangeEvent validIdWithNullVersion = new ChangeEvent("id" , null, null, null, null);
+
+  @Theory
+  public void shouldRejectMissingMandatoryFields(ChangeEvent bogusEvent) {
     assertFalse(bogusEvent.containsMandatoryFields());
   }
 
