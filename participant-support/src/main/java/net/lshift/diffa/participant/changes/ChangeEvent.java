@@ -110,6 +110,16 @@ public class ChangeEvent {
     this.attributes = attributes;
   }
 
+  public boolean containsMandatoryFields() {
+    if (id == null || id.length() == 0) {
+      return false;
+    }
+    if (version == null || version.length() == 0) {
+      return false;
+    }
+    return true;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

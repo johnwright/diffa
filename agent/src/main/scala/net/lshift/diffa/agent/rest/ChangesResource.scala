@@ -22,19 +22,35 @@ import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam._
 import javax.ws.rs._
 import net.lshift.diffa.participant.changes.ChangeEvent
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.util.AlertCodes._
 
 /**
  * Resource allowing participants to provide details of changes that have occurred.
  */
 class ChangesResource(changes:Changes, domain:String) {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   @POST
   @Path("/{endpoint}")
   @Consumes(Array("application/json"))
   @Description("Submits a change for the given endpoint within a domain")
   @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
   def submitChange(@PathParam("endpoint") endpoint: String, e:ChangeEvent) = {
-    changes.onChange(domain, endpoint, e)
-    
-    Response.status(Response.Status.ACCEPTED).`type`("text/plain").build()
+
+    if (e.containsMandatoryFields()) {
+      changes.onChange(domain, endpoint, e)
+      Response.status(Response.Status.ACCEPTED).`type`("text/plain").build()
+    }
+    else {
+      log.warn("%s Change event for endpoint %s was missing a mandatory field: %s"
+               .format(formatAlertCode(domain, MANDATORY_FIELDS_MISSING)), endpoint, e)
+      Response.status(Response.Status.BAD_REQUEST)
+              .`type`("text/plain")
+              .entity("Mandatory fields missing")
+              .build()
+    }
+
   }
 }
