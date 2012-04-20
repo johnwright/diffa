@@ -41,11 +41,10 @@ class ChangeEventIntegrationTest {
 
     try {
       changesClient.onChangeEvent(bogus)
+      fail("Bogus change event should not have been accepted")
     }
     catch {
       case x => //
     }
-
-    fail("Bogus change event should not have been accepted")
   }
 }

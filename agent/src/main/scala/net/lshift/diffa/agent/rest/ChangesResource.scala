@@ -45,7 +45,7 @@ class ChangesResource(changes:Changes, domain:String) {
     }
     else {
       log.warn("%s Change event for endpoint %s was missing a mandatory field: %s"
-               .format(formatAlertCode(domain, MANDATORY_FIELDS_MISSING)), endpoint, e)
+               .format(formatAlertCode(domain, MANDATORY_FIELDS_MISSING), endpoint, e))
       Response.status(Response.Status.BAD_REQUEST)
               .`type`("text/plain")
               .entity("Mandatory fields missing")
