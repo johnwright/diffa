@@ -42,7 +42,7 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
     }
 
     // Work through each aggregate, validate and retrieve it. Retain a session between each call to prevent us having
-    // to ask the cache for all the sequence cache keys multiple times
+    // to ask the cache for sequence cache keys multiple times
     val session = MutableMap[SequenceCacheKey, Int]()
     aggregateBounds.map(b => retrieveAggregate(pair, b, session))
   }

@@ -34,31 +34,34 @@ object DifferenceAggregationCachePolicy {
   val startOfBefore = aggregationHours.last._2
 
   def sequenceKeyForDetectionTime(pair:DiffaPairRef, now:DateTime, detectedAt:DateTime):SequenceCacheKey = {
-    val nowHour = ceilHour(now)
+    val nowHour = floorHour(now)
     val rangeIdx = aggregationRangeIdxForDetectionTime(nowHour, detectedAt)
 
     buildKey(pair, nowHour, aggregationHours(rangeIdx))
   }
 
   def sequenceKeysForDetectionTimeRange(pair:DiffaPairRef, now:DateTime, rangeStart:DateTime, rangeEnd:DateTime):Seq[SequenceCacheKey] = {
-    val nowHour = ceilHour(now)
+    val nowHour = floorHour(now)
 
     // Work out the start index in our list of aggregation hours
     val startIdx = rangeEnd match {
       case null => 0
-      case s    => aggregationRangeIdxForDetectionTime(nowHour, s)
+      case s    => aggregationRangeIdxForDetectionTime(nowHour, s, upperBound = true)
     }
     val endIdx = rangeStart match {
       case null => aggregationHours.length - 1
-      case e    => aggregationRangeIdxForDetectionTime(nowHour, e)    // TODO: This is probably rounding in the wrong direction
+      case e    => aggregationRangeIdxForDetectionTime(nowHour, e)
     }
 
     (startIdx to endIdx).map(idx => buildKey(pair, nowHour, aggregationHours(idx)))
   }
 
   /** Works out which aggregation hour item should be used to cover the given detection time **/
-  private def aggregationRangeIdxForDetectionTime(nowHour:DateTime, detectedAt:DateTime):Int = {
-    val detectionHour = ceilHour(detectedAt)
+  private def aggregationRangeIdxForDetectionTime(nowHour:DateTime, detectedAt:DateTime, upperBound:Boolean = false):Int = {
+    // If we're looking for an upper bound, then round up to the nearest hour, then take an hour. This is almost the
+    // same as taking the floorHour, except that if the value is exactly on the hour boundary, it will be taken to the
+    // previous hour - which is desired since our upper bounds are treated as non-inclusive.
+    val detectionHour = if (upperBound) ceilHour(detectedAt).minusHours(1) else floorHour(detectedAt)
 
     if (detectionHour.isAfter(nowHour)) {
       0
@@ -76,11 +79,11 @@ object DifferenceAggregationCachePolicy {
   private def buildKey(pair:DiffaPairRef, nowHour:DateTime, aggregationRange:(Int, Int)) = {
     aggregationRange match {
       case (-1, end) =>
-        SequenceCacheKey(pair, nowHour, null)
+        SequenceCacheKey(pair, nowHour.minusHours(end - 1), null)
       case (start, -1) =>
-        SequenceCacheKey(pair, null, nowHour.minusHours(start))
+        SequenceCacheKey(pair, null, nowHour.minusHours(start - 1))
       case (startOffset, endOffset) =>
-        SequenceCacheKey(pair, nowHour.minusHours(endOffset), nowHour.minusHours(startOffset))
+        SequenceCacheKey(pair, nowHour.minusHours(endOffset - 1), nowHour.minusHours(startOffset - 1))
     }
   }
 
@@ -92,5 +95,9 @@ object DifferenceAggregationCachePolicy {
     } else {
       hourStart.plusHours(1)  // Push forward to the next hour, since we removed some time when we removed the mins/secs/millis
     }
+  }
+  private def floorHour(t:DateTime) = {
+    if (t == null) null
+    else t.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
   }
 }
