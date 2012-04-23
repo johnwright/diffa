@@ -321,6 +321,24 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
+  def shouldFindMaximumEventIdForInterval() {
+    val start = new DateTime(2004, 11, 6, 3, 5, 15, 0)
+    val size = 60
+    val frontFence = 10
+    val rearFence = 10
+
+    val interval = addUnmatchedEvents(start, size, frontFence, rearFence)
+    val pair = DiffaPairRef("pair2", "domain")
+
+    val middleMax = domainDiffStore.maxSequenceId(pair, interval.getStart, interval.getEnd)
+    val lowerMax = domainDiffStore.maxSequenceId(pair, null, interval.getStart)
+    val upperMax = domainDiffStore.maxSequenceId(pair, interval.getEnd, null)
+
+    assertTrue(middleMax + " is not > " + lowerMax, middleMax > lowerMax)
+    assertTrue(middleMax + " is not < " + upperMax, middleMax < upperMax)
+  }
+
+  @Test
   def shouldPageReportableUnmatchedEvent() {
     val start = new DateTime(1982, 5, 5, 14, 15, 19, 0)
     val size = 100

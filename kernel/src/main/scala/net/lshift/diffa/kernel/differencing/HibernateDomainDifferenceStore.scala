@@ -80,8 +80,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     c.add(Restrictions.eq("ignored", false))
     c.setProjection(Projections.max("seqId"))
 
-    val count:Option[java.lang.Long] = Option(c.uniqueResult().asInstanceOf[java.lang.Long])
-    count.getOrElse(new java.lang.Long(0L)).intValue
+    val count:Option[java.lang.Integer] = Option(c.uniqueResult().asInstanceOf[java.lang.Integer])
+    count.getOrElse(new java.lang.Integer(0)).intValue
   })
 
   def addPendingUnmatchedEvent(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, seen: DateTime) {
