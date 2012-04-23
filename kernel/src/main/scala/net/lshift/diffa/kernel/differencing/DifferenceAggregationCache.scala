@@ -34,7 +34,7 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
     sequenceCache.remove(k)
   }
 
-  def retrieveAggregates(pair:DiffaPairRef, start:DateTime, end:DateTime, aggregateMinutes:Option[Int]) = {
+  def retrieveAggregates(pair:DiffaPairRef, start:DateTime, end:DateTime, aggregateMinutes:Option[Int]):Seq[AggregateTile] = {
     // Calculate the time buckets that we're after
     val aggregateBounds = aggregateMinutes match {
       case None    => Seq(new Interval(start, end))
@@ -45,6 +45,11 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
     // to ask the cache for sequence cache keys multiple times
     val session = MutableMap[SequenceCacheKey, Int]()
     aggregateBounds.map(b => retrieveAggregate(pair, b, session))
+  }
+
+  def clear() {
+    sequenceCache.clear()
+    aggregateCache.clear()
   }
 
   def retrieveAggregate(pair:DiffaPairRef, interval:Interval, session:MutableMap[SequenceCacheKey, Int] = MutableMap()) = {
@@ -66,14 +71,17 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
       }
     })
 
-    value match {
+    val count = value match {
       case None    =>
         // Rebuild the value
         val unmatched = diffStore.countUnmatchedEvents(pair, interval.getStart, interval.getEnd)
         aggregateCache.put(key, AggregateCacheValue(unmatched, maxSeqId))
+        unmatched
       case Some(v) =>
         v.count
     }
+
+    AggregateTile(interval.getStart, interval.getEnd, count)
   }
 
   def now = new DateTime
@@ -87,7 +95,7 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
         Minutes.minutesBetween(startTime, endTime).getMinutes, startTime, endTime, aggregateMinutes))
     }
 
-    (0 to divisions).
+    (0 to (divisions - 1)).
       map(d => new Interval(startTime.plusMinutes(d * aggregateMinutes), startTime.plusMinutes((d + 1) * aggregateMinutes)))
   }
 }
@@ -106,3 +114,8 @@ case class AggregateCacheKey(pair:DiffaPairRef, start:DateTime, end:DateTime)
  * Value stored in the aggregate cache.
  */
 case class AggregateCacheValue(count:Int, maxSequenceId:Int)
+
+/**
+ * A tile containing the count from a given start to end time.
+ */
+case class AggregateTile(start:DateTime, end:DateTime, count:Int)

@@ -30,6 +30,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     with HibernateQueryUtils {
 
   val zoomCache = new ZoomCacheProvider(this, cacheManager)
+  val aggregationCache = new DifferenceAggregationCache(this, cacheManager)
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
 
   val zoomQueries = Map(
@@ -76,8 +77,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     c.add(Restrictions.eq("objId.pair.key", pair.key))
     if (start != null) c.add(Restrictions.ge("detectedAt", start))
     if (end != null) c.add(Restrictions.lt("detectedAt", end))
-    c.add(Restrictions.eq("isMatch", false))
-    c.add(Restrictions.eq("ignored", false))
     c.setProjection(Projections.max("seqId"))
 
     val count:Option[java.lang.Integer] = Option(c.uniqueResult().asInstanceOf[java.lang.Integer])
@@ -407,8 +406,15 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
 
-  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) =
-    zoomCache.retrieveTilesForZoomLevel(pair, zoomLevel, timestamp)
+  def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = {
+    val alignedTimespan = ZoomCache.containingTileGroupInterval(timestamp, zoomLevel)
+    val aggregateMinutes = ZoomCache.zoom(zoomLevel)
+    val aggregates =
+      aggregationCache.retrieveAggregates(pair, alignedTimespan.getStart, alignedTimespan.getEnd, Some(aggregateMinutes))
+
+    val interestingAggregates = aggregates.filter(t => t.count > 0)
+    Some(TileGroup(alignedTimespan.getStart, interestingAggregates.map(t => t.start -> t.count).toMap))
+  }
 
   def getEvent(domain:String, evtSeqId: String) = sessionFactory.withSession(s => {
     singleQueryOpt[ReportedDifferenceEvent](s, "eventByDomainAndSeqId",
@@ -425,7 +431,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   }
 
   def clearAllDifferences = sessionFactory.withSession(s => {
-    zoomCache.clear
+    aggregationCache.clear
     s.createQuery("delete from ReportedDifferenceEvent").executeUpdate()
     s.createQuery("delete from PendingDifferenceEvent").executeUpdate()
   })
@@ -457,7 +463,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-              updateZoomCache(existing.objId.pair, reportableUnmatched.detectedAt)
+                // No need to update the zoom cache, since it won't affect the aggregate counts
               existing.asDifferenceEvent
             } else {
               s.delete(existing)
@@ -480,13 +486,15 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
 
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
+    val res = persistAndConvertEventInternal(s, evt)
     updateZoomCache(evt.objId.pair, evt.detectedAt)
-    persistAndConvertEventInternal(s, evt)
+    res
   }
 
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
+    val res = persistAndConvertEventInternal(s, evt)
     updateZoomCache(evt.objId.pair, previousDetectionTime)
-    persistAndConvertEventInternal(s, evt)
+    res
   }
 
   private def persistAndConvertEventInternal(s:Session, evt:ReportedDifferenceEvent) = {
@@ -495,7 +503,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     evt.asDifferenceEvent
   }
 
-  private def updateZoomCache(pair:DiffaPairRef, detectedAt:DateTime) = zoomCache.onStoreUpdate(pair, detectedAt)
+  private def updateZoomCache(pair:DiffaPairRef, detectedAt:DateTime) =
+    aggregationCache.onStoreUpdate(pair, detectedAt)
 }
 
 case class PendingDifferenceEvent(
