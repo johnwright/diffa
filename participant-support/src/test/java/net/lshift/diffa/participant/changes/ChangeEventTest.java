@@ -36,7 +36,7 @@ public class ChangeEventTest {
   @Theory
   @Test(expected = MissingMandatoryFieldException.class)
   public void shouldRejectMissingMandatoryFields(ChangeEvent bogusEvent) {
-    bogusEvent.containsMandatoryFields();
+    bogusEvent.ensureContainsMandatoryFields();
   }
 
   @Test
@@ -44,6 +44,6 @@ public class ChangeEventTest {
     ChangeEvent validEvent = new ChangeEvent();
     validEvent.setId("id");
     validEvent.setVersion("vsn");
-    assertTrue(validEvent.containsMandatoryFields());
+    validEvent.ensureContainsMandatoryFields();
   }
 }

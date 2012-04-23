@@ -112,18 +112,16 @@ public class ChangeEvent {
   }
 
   /**
-   * Verifies that the mandatory fields are set
-   * @return True if this object contains all of the mandatory fields
+   * Verifies that the mandatory fields are set.
    * @throws MissingMandatoryFieldException If a mandatory field is missing
    */
-  public boolean containsMandatoryFields() {
+  public void ensureContainsMandatoryFields() {
     if (id == null || id.length() == 0) {
       throw new MissingMandatoryFieldException("id");
     }
     if (version == null || version.length() == 0) {
       throw new MissingMandatoryFieldException("version");
     }
-    return true;
   }
 
   @Override
