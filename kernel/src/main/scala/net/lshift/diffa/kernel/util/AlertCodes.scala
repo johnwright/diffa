@@ -52,7 +52,7 @@ object AlertCodes {
   val ACTOR_STOPPED = 251
 
   // 4xx Errors that occur that as result of an invalid inbound request from a client
-  val MANDATORY_FIELDS_MISSING = 410
+
 
   // 5xx Errors
   

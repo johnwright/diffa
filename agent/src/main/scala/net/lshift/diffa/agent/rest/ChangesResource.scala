@@ -29,9 +29,6 @@ import net.lshift.diffa.kernel.util.AlertCodes._
  * Resource allowing participants to provide details of changes that have occurred.
  */
 class ChangesResource(changes:Changes, domain:String) {
-
-  val log = LoggerFactory.getLogger(getClass)
-
   @POST
   @Path("/{endpoint}")
   @Consumes(Array("application/json"))
@@ -39,6 +36,7 @@ class ChangesResource(changes:Changes, domain:String) {
   @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
   def submitChange(@PathParam("endpoint") endpoint: String, e:ChangeEvent) = {
     changes.onChange(domain, endpoint, e)
+    
     Response.status(Response.Status.ACCEPTED).`type`("text/plain").build()
   }
 }
