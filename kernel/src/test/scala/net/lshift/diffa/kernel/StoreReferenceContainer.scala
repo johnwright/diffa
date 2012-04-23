@@ -25,6 +25,9 @@ object StoreReferenceContainer {
  * interface for simple initialisation of their configuration.
  */
 trait StoreReferenceContainer {
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
   def sessionFactory: SessionFactory
   def dialect: Dialect
   def systemConfigStore: HibernateSystemConfigStore
@@ -43,7 +46,9 @@ trait StoreReferenceContainer {
       serviceLimitsStore.deleteDomainLimits(domainName)
       systemConfigStore.deleteDomain(domainName)
     }  catch {
-      case e: MissingObjectException =>
+      case e: MissingObjectException => {
+        logger.warn("Could not clear configuration for domain " + domainName, e)
+      }
     }
   }
 
