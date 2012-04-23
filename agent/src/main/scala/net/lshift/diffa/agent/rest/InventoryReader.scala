@@ -50,14 +50,14 @@ class InventoryReader extends MessageBodyReader[ScanResultList] {
     }
 
     val idPosition = maybeField("id", header)
-    val vsnPosition = requireField("vsn", header)
+    val vsnPosition = requireField("version", header)
     val updatedPosition = maybeField("updated", header)
 
     // Index of positions to field names
     val headerIndex = header.zipWithIndex.
       filter {
         case ("id", _)       => false
-        case ("vsn", _)      => false
+        case ("version", _)      => false
         case ("updated", _) => false
         case _               => true
       }
