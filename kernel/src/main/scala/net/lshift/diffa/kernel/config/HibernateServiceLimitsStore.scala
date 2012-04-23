@@ -53,6 +53,7 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
   }
 
   def setDomainHardLimit(domainName: String, limitName: String, limitValue: Int) {
+    validate(limitValue)
     setDomainLimit(domainName, limitName, limitValue, old => old.hardLimit = limitValue)
 
     cascadeLimitToDomainDefaultLimit(limitName, limitValue)
@@ -98,10 +99,22 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
     "pairLimitByPairAndName", Map("limit_name" -> limitName, "domain_name" -> domainName, "pair_key" -> pairKey)
   )
 
+  def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String) =
+    getPairLimitForPairAndName(domainName, pairKey, limitName).getOrElse(
+      getEffectiveLimitByNameForDomain(limitName, domainName))
+
+  def getEffectiveLimitByNameForDomain(limitName: String, domainName: String) =
+    getDomainDefaultLimitForDomainAndName(domainName, limitName).getOrElse(
+      getEffectiveLimitByName(limitName))
+
+  def getEffectiveLimitByName(limitName: String) =
+    getSystemDefaultLimitForName(limitName).getOrElse(
+      ServiceLimit.UNLIMITED)
+
   private def getLimit(queryName: String, params: Map[String, String]) = sessionFactory.withSession(session =>
     singleQueryOpt[Int](
       session, queryName, params
-    ).getOrElse(ServiceLimit.UNLIMITED))
+    ))
 
   private def cascadeLimit(currentLimit: Int, setLimitValue: (String, Int) => Unit,
                            limitName: String, newLimit: Int) {
@@ -112,7 +125,7 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
 
   private def cascadeLimitToSystemDefault(limitName: String, limitValue: Int) {
     cascadeLimit(
-      getSystemDefaultLimitForName(limitName),
+      getEffectiveLimitByName(limitName),
       setSystemDefaultLimit,
       limitName, limitValue)
   }

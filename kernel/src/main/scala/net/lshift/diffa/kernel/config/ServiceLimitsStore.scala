@@ -14,9 +14,13 @@ trait ServiceLimitsStore {
   def setDomainDefaultLimit(domainName: String, limitName: String, limitValue: Int): Unit
   def setPairLimit(domainName: String, pairKey: String, limitName: String, limitValue: Int): Unit
   
-  def getSystemHardLimitForName(limitName: String): Int
-  def getSystemDefaultLimitForName(limitName: String): Int
-  def getDomainHardLimitForDomainAndName(domainName: String, limitName: String): Int
-  def getDomainDefaultLimitForDomainAndName(domainName: String, limitName: String): Int
-  def getPairLimitForPairAndName(domainName: String, pairKey: String, limitName: String): Int
+  def getSystemHardLimitForName(limitName: String): Option[Int]
+  def getSystemDefaultLimitForName(limitName: String): Option[Int]
+  def getDomainHardLimitForDomainAndName(domainName: String, limitName: String): Option[Int]
+  def getDomainDefaultLimitForDomainAndName(domainName: String, limitName: String): Option[Int]
+  def getPairLimitForPairAndName(domainName: String, pairKey: String, limitName: String): Option[Int]
+
+  def getEffectiveLimitByName(limitName: String): Int
+  def getEffectiveLimitByNameForDomain(limitName: String, domainName: String): Int
+  def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int
 }
