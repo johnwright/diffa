@@ -15,6 +15,7 @@
  */
 package net.lshift.diffa.participant.changes;
 
+import net.lshift.diffa.participant.common.MissingMandatoryFieldException;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -33,8 +34,9 @@ public class ChangeEventTest {
   @DataPoint public static ChangeEvent validIdWithNullVersion = new ChangeEvent("id" , null, null, null, null);
 
   @Theory
+  @Test(expected = MissingMandatoryFieldException.class)
   public void shouldRejectMissingMandatoryFields(ChangeEvent bogusEvent) {
-    assertFalse(bogusEvent.containsMandatoryFields());
+    bogusEvent.containsMandatoryFields();
   }
 
   @Test

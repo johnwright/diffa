@@ -44,45 +44,47 @@ class Changes(val domainConfig:DomainConfigStore,
   def onChange(domain:String, endpoint:String, evt:ChangeEvent) {
     log.debug("Received change event for %s %s: %s".format(domain, endpoint, evt))
 
-    val targetEndpoint = domainConfig.getEndpoint(domain, endpoint)
-    val evtAttributes:Map[String, String] = if (evt.getAttributes != null) evt.getAttributes.toMap else Map()
-    val typedAttributes = targetEndpoint.schematize(evtAttributes)
+    if (evt.containsMandatoryFields()) {
+      val targetEndpoint = domainConfig.getEndpoint(domain, endpoint)
+      val evtAttributes:Map[String, String] = if (evt.getAttributes != null) evt.getAttributes.toMap else Map()
+      val typedAttributes = targetEndpoint.schematize(evtAttributes)
 
-    domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
-      val pairEvt = if (pair.upstream == endpoint) {
-        UpstreamPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
-      } else {
-        if (pair.versionPolicyName == "same" || evt.getParentVersion == null) {
-          DownstreamPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
+      domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
+        val pairEvt = if (pair.upstream == endpoint) {
+          UpstreamPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
         } else {
-          DownstreamCorrelatedPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getParentVersion, evt.getVersion)
-        }
-      }
-
-      // Validate that the entities provided meet the constraints of the endpoint
-      val endpointCategories = targetEndpoint.categories.toMap
-      val issues = AttributesUtil.detectAttributeIssues(
-        endpointCategories, targetEndpoint.initialConstraints(None), evtAttributes, typedAttributes)
-
-      if (issues.size > 0) {
-        log.warn("Dropping invalid pair event " + pairEvt + " due to issues " + issues)
-        diagnostics.logPairExplanation(pair.asRef, "Version Policy",
-          "The result %s was dropped since it didn't meet the request constraints. Identified issues were (%s)".format(
-            pairEvt, issues.map { case (k, v) => k + ": " + v }.mkString(", ")))
-      } else {
-        // TODO: Write a test to enforce that the matching manager processes first. This is necessary to ensure
-        //    that the DifferencesManager doesn't emit spurious events.
-
-        // If there is a matcher available, notify it first
-        mm.getMatcher(pair.asRef) match {
-          case None =>
-          case Some(matcher) => matcher.onChange(pairEvt, () => {})
+          if (pair.versionPolicyName == "same" || evt.getParentVersion == null) {
+            DownstreamPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
+          } else {
+            DownstreamCorrelatedPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getParentVersion, evt.getVersion)
+          }
         }
 
-        // Propagate the change event to the corresponding policy
-        changeEventClient.propagateChangeEvent(pairEvt)
-      }
-    })
+        // Validate that the entities provided meet the constraints of the endpoint
+        val endpointCategories = targetEndpoint.categories.toMap
+        val issues = AttributesUtil.detectAttributeIssues(
+          endpointCategories, targetEndpoint.initialConstraints(None), evtAttributes, typedAttributes)
+
+        if (issues.size > 0) {
+          log.warn("Dropping invalid pair event " + pairEvt + " due to issues " + issues)
+          diagnostics.logPairExplanation(pair.asRef, "Version Policy",
+            "The result %s was dropped since it didn't meet the request constraints. Identified issues were (%s)".format(
+              pairEvt, issues.map { case (k, v) => k + ": " + v }.mkString(", ")))
+        } else {
+          // TODO: Write a test to enforce that the matching manager processes first. This is necessary to ensure
+          //    that the DifferencesManager doesn't emit spurious events.
+
+          // If there is a matcher available, notify it first
+          mm.getMatcher(pair.asRef) match {
+            case None =>
+            case Some(matcher) => matcher.onChange(pairEvt, () => {})
+          }
+
+          // Propagate the change event to the corresponding policy
+          changeEventClient.propagateChangeEvent(pairEvt)
+        }
+      })
+    }
   }
 
   def startInventory(domain: String, endpoint: String, view:Option[String]):Seq[ScanRequest] = {
