@@ -20,6 +20,6 @@ package net.lshift.diffa.participant.common;
  */
 public class MissingMandatoryFieldException extends RuntimeException {
   public MissingMandatoryFieldException(String fieldName) {
-    super("The mandatory field " + fieldName + " was missing.");
+    super("Mandatory field " + fieldName + " was missing");
   }
 }

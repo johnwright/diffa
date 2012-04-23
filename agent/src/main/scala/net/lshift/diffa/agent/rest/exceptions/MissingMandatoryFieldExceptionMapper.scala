@@ -25,7 +25,7 @@ class MissingMandatoryFieldExceptionMapper extends ExceptionMapper[MissingMandat
   def toResponse(x: MissingMandatoryFieldException) = {
     Response.status(Response.Status.BAD_REQUEST)
       .`type`("text/plain")
-      .entity("Mandatory fields missing")
+      .entity(x.getMessage)
       .build()
   }
 
