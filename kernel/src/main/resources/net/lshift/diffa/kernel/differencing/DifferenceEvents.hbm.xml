@@ -160,13 +160,6 @@
       e.isMatch = false
       order by e.seqId asc
   ]]></query>
-  <query name="countEventsInIntervalByDomainAndPair"><![CDATA[
-    select count(e) from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
-      e.detectedAt >= :start and e.detectedAt < :end and
-      e.isMatch = false and
-      e.ignored = false
-  ]]></query>
   <query name="unmatchedEventsOlderThanCutoffByDomainAndPair"><![CDATA[
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and

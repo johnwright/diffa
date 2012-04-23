@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, DiffaPairRef, DiffaPair}
 import org.hibernate.dialect.{Oracle10gDialect, Dialect}
 import net.lshift.hibernate.migrations.dialects.{MySQL5DialectExtension, OracleDialectExtension, DialectExtensionSelector}
+import org.hibernate.criterion.{Projections, Restrictions}
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -67,6 +68,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   
   def currentSequenceId(domain:String) = sessionFactory.withSession(s => {
     singleQueryOpt[java.lang.Integer](s, "maxSeqIdByDomain", Map("domain" -> domain)).getOrElse(0).toString
+  })
+
+  def maxSequenceId(pair: DiffaPairRef, start:DateTime, end:DateTime) = sessionFactory.withSession(s => {
+    val c = s.createCriteria(classOf[ReportedDifferenceEvent])
+    c.add(Restrictions.eq("objId.pair.domain", pair.domain))
+    c.add(Restrictions.eq("objId.pair.key", pair.key))
+    if (start != null) c.add(Restrictions.ge("detectedAt", start))
+    if (end != null) c.add(Restrictions.lt("detectedAt", end))
+    c.add(Restrictions.eq("isMatch", false))
+    c.add(Restrictions.eq("ignored", false))
+    c.setProjection(Projections.max("seqId"))
+
+    val count:Option[java.lang.Long] = Option(c.uniqueResult().asInstanceOf[java.lang.Long])
+    count.getOrElse(new java.lang.Long(0L)).intValue
   })
 
   def addPendingUnmatchedEvent(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, seen: DateTime) {
@@ -373,10 +388,17 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       map(_.asDifferenceEvent)
   })
 
-  def countUnmatchedEvents(pair: DiffaPairRef, interval: Interval):Int =  sessionFactory.withSession(s => {
-    val count:Option[java.lang.Long] = singleQueryOpt[java.lang.Long](s, "countEventsInIntervalByDomainAndPair",
-      Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd))
+  def countUnmatchedEvents(pair: DiffaPairRef, start:DateTime, end:DateTime):Int =  sessionFactory.withSession(s => {
+    val c = s.createCriteria(classOf[ReportedDifferenceEvent])
+    c.add(Restrictions.eq("objId.pair.domain", pair.domain))
+    c.add(Restrictions.eq("objId.pair.key", pair.key))
+    if (start != null) c.add(Restrictions.ge("detectedAt", start))
+    if (end != null) c.add(Restrictions.lt("detectedAt", end))
+    c.add(Restrictions.eq("isMatch", false))
+    c.add(Restrictions.eq("ignored", false))
+    c.setProjection(Projections.count("seqId"))
 
+    val count:Option[java.lang.Long] = Option(c.uniqueResult().asInstanceOf[java.lang.Long])
     count.getOrElse(new java.lang.Long(0L)).intValue
   })
 

@@ -42,6 +42,12 @@ trait DomainDifferenceStore {
   def currentSequenceId(domain:String):String
 
   /**
+   * Retrieves the maximum sequence id of all events within the current time range. If no events are available within
+   * the given range, 0 is returned.
+   */
+  def maxSequenceId(pair: DiffaPairRef, start:DateTime, end:DateTime):Int
+
+  /**
    * Adds a pending event for the given version id into the cache.
    */
   def addPendingUnmatchedEvent(id:VersionID, lastUpdate:DateTime, upstreamVsn:String, downstreamVsn:String, seen:DateTime)
@@ -143,7 +149,7 @@ trait DomainDifferenceStore {
   /**
    * Count the number of unmatched events for the given pair within the given interval.
    */
-  def countUnmatchedEvents(pair: DiffaPairRef, interval:Interval) : Int
+  def countUnmatchedEvents(pair: DiffaPairRef, start:DateTime, end:DateTime) : Int
 
   /**
    * Retrieves all events that have occurred within a domain since the provided sequence id.
