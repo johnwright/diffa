@@ -22,8 +22,6 @@ import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam._
 import javax.ws.rs._
 import net.lshift.diffa.participant.changes.ChangeEvent
-import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.util.AlertCodes._
 
 /**
  * Resource allowing participants to provide details of changes that have occurred.
