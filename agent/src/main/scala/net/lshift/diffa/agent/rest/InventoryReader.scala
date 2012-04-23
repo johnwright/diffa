@@ -57,8 +57,8 @@ class InventoryReader extends MessageBodyReader[ScanResultList] {
     val headerIndex = header.zipWithIndex.
       filter {
         case ("id", _)       => false
-        case ("version", _)      => false
-        case ("updated", _) => false
+        case ("version", _)  => false
+        case ("updated", _)  => false
         case _               => true
       }
 
