@@ -27,9 +27,12 @@ import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.differencing.{EventOptions, DifferencesManager}
+import javax.servlet.http.HttpServletRequest
+import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef}
 
 class DifferencesResource(val differencesManager: DifferencesManager,
                           val domainSequenceCache:DomainSequenceCache,
+                          val domainConfigStore:DomainConfigStore,
                           val domain:String,
                           val uriInfo:UriInfo) {
 
@@ -125,6 +128,70 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     val respObj = mapAsJavaMap(tileSet.keys.map(pair => pair -> tileSet(pair).toArray).toMap[String, Array[Int]])
     Response.ok(respObj).tag(domainVsn).build()
   }
+
+  @GET
+  @Path("/aggregates")
+  @Produces(Array("application/json"))
+  @Description("Returns an aggregate view")
+  def getAggregates(@Context request: Request, @Context servletRequest:HttpServletRequest): Response = {
+    val requestedAggregates = parseAggregates(servletRequest)
+    val aggregates = domainConfigStore.listPairs(domain).map(p => {
+      p.key -> mapAsJavaMap(processAggregates(DiffaPairRef(domain = domain, key = p.key), requestedAggregates))
+    }).toMap
+
+    Response.ok(mapAsJavaMap(aggregates)).tag("123").build()
+  }
+
+  @GET
+  @Path("/aggregates/{pair}")
+  @Produces(Array("application/json"))
+  @Description("Returns an aggregate view")
+  def getAggregates(@PathParam("pair") pair:String, @Context request: Request, @Context servletRequest:HttpServletRequest): Response = {
+    val requestedAggregates = parseAggregates(servletRequest)
+    val aggregates = processAggregates(DiffaPairRef(domain = domain, key = pair), requestedAggregates)
+
+    Response.ok(mapAsJavaMap(aggregates)).tag("123").build()
+  }
+
+  val aggregateParamPrefix = "agg-"
+
+  def parseAggregates(request:HttpServletRequest):Map[String, AggregateRequest] = {
+    request.getParameterMap.flatMap { case (key:String, values:Array[String]) =>
+      if (key.startsWith(aggregateParamPrefix)) {
+        Some(key.substring(aggregateParamPrefix.length) -> AggregateRequest.parse(values(0)))
+      } else {
+        None
+      }
+    }.toMap
+  }
+
+  case class AggregateRequest(start:DateTime, end:DateTime, aggregation:Option[Int])
+  object AggregateRequest {
+    val requestFormat = "(\\d{8}T\\d{6}Z)?-(\\d{8}T\\d{6}Z)?(@([\\d]+))?".r
+    val isoParser = ISODateTimeFormat.basicDateTimeNoMillis.withZoneUTC()
+
+    def apply(start:String, end:String, aggregation:Option[Int] = None):AggregateRequest = {
+      def maybeDate(d:String):DateTime = if (d != null) isoParser.parseDateTime(d) else null
+
+      AggregateRequest(maybeDate(start), maybeDate(end), aggregation)
+    }
+
+    def parse(s:String):AggregateRequest = {
+      s match {
+        case requestFormat(start, end, _, null) =>
+          AggregateRequest(start, end)
+        case requestFormat(start, end, _, aggregation) =>
+          AggregateRequest(start, end, Some(Integer.parseInt(aggregation)))
+      }
+    }
+  }
+
+  def processAggregates(pairRef:DiffaPairRef, requests:Map[String, AggregateRequest]) =
+    requests.map { case (name, details) =>
+      val tiles = differencesManager.retrieveAggregates(pairRef, details.start, details.end, details.aggregation)
+
+      name -> tiles.map(_.count).toArray
+    }.toMap
 
   @GET
   @Path("/events/{evtSeqId}/{participant}")
