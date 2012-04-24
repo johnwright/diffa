@@ -16,10 +16,10 @@
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import net.lshift.diffa.kernel.util.CacheWrapper
 import net.sf.ehcache.CacheManager
 import scala.collection.mutable.{Map => MutableMap}
 import org.joda.time.{DateTimeZone, Minutes, Interval, DateTime}
+import net.lshift.diffa.kernel.util.{DateUtils, CacheWrapper}
 
 /**
  * Cache responsible for providing views on aggregated differences.
@@ -45,16 +45,20 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
   }
 
   def retrieveAggregates(pair:DiffaPairRef, start:DateTime, end:DateTime, aggregateMinutes:Option[Int]):Seq[AggregateTile] = {
+    if (!DateUtils.safeIsBefore(start, null)) {
+      throw new InvalidAggregateRequestException("start time must be before end time")
+    }
+
     // Calculate the time buckets that we're after
     val aggregateBounds = aggregateMinutes match {
-      case None    => Seq(new Interval(start, end))
+      case None    => Seq((start, end))
       case Some(a) => slice(start, end, a)
     }
 
     // Work through each aggregate, validate and retrieve it. Retain a session between each call to prevent us having
     // to ask the cache for sequence cache keys multiple times
     val session = MutableMap[SequenceCacheKey, SequenceCacheValue]()
-    aggregateBounds.map(b => retrieveAggregate(pair, b, session))
+    aggregateBounds.map { case ((bStart, bEnd)) => retrieveAggregate(pair, bStart, bEnd, session) }
   }
 
   def clear() {
@@ -62,17 +66,17 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
     aggregateCache.clear()
   }
 
-  def retrieveAggregate(pair:DiffaPairRef, interval:Interval, session:MutableMap[SequenceCacheKey, SequenceCacheValue] = MutableMap()) = {
+  def retrieveAggregate(pair:DiffaPairRef, start:DateTime, end:DateTime, session:MutableMap[SequenceCacheKey, SequenceCacheValue] = MutableMap()) = {
     // Retrieve the sequence cache values that cover this aggregate, then calculate a maximum value
     val seqCacheKeys = DifferenceAggregationCachePolicy.sequenceKeysForDetectionTimeRange(
-      pair, now, interval.getStart, interval.getEnd)
+      pair, now, start, end)
     val cacheEntries = seqCacheKeys.
       map(k => session.getOrElseUpdate(k,
         sequenceCache.readThrough(k, () => retrieveSequenceCacheValue(pair, k.start, k.end))))
     val validationKey = SequenceCacheValue.combine(cacheEntries).toValidationKey
 
     // Retrieve the value from the aggregate cache, and validate that it matches or exceeds the max sequence id
-    val key = AggregateCacheKey(pair, interval.getStart, interval.getEnd)
+    val key = AggregateCacheKey(pair, start, end)
     val value = aggregateCache.get(key).flatMap(v => {
       if (v.validationKey == validationKey) {
         Some(v)
@@ -84,35 +88,44 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
     val count = value match {
       case None    =>
         // Rebuild the value
-        val unmatched = diffStore.countUnmatchedEvents(pair, interval.getStart, interval.getEnd)
+        val unmatched = diffStore.countUnmatchedEvents(pair, start, end)
         aggregateCache.put(key, AggregateCacheValue(unmatched, validationKey))
         unmatched
       case Some(v) =>
         v.count
     }
 
-    AggregateTile(interval.getStart, interval.getEnd, count)
+    AggregateTile(start, end, count)
   }
 
   def now = (new DateTime).withZone(DateTimeZone.UTC)
 
-  private def slice(startTime:DateTime, endTime:DateTime, aggregateMinutes:Int) : Seq[Interval] = {
+  private def slice(startTime:DateTime, endTime:DateTime, aggregateMinutes:Int) : Seq[(DateTime, DateTime)] = {
+    if (startTime == null || endTime == null) {
+      throw new InvalidAggregateRequestException("Both a start and end time must be defined when requesting bucketing")
+    }
+
     val divisions = scala.math.ceil(
       Minutes.minutesBetween(startTime, endTime).getMinutes.asInstanceOf[Double] / aggregateMinutes).toInt
 
     if (startTime.plusMinutes(divisions * aggregateMinutes) != endTime) {
-      throw new IllegalArgumentException("Time range %s minutes (%s -> %s) is not a multiple of %s minutes".format(
+      throw new InvalidAggregateRequestException("Time range %s minutes (%s -> %s) is not a multiple of %s minutes".format(
         Minutes.minutesBetween(startTime, endTime).getMinutes, startTime, endTime, aggregateMinutes))
     }
 
     (0 to (divisions - 1)).
-      map(d => new Interval(startTime.plusMinutes(d * aggregateMinutes), startTime.plusMinutes((d + 1) * aggregateMinutes)))
+      map(d => (startTime.plusMinutes(d * aggregateMinutes), startTime.plusMinutes((d + 1) * aggregateMinutes)))
   }
 
   private def retrieveSequenceCacheValue(pair:DiffaPairRef, start:DateTime, end:DateTime):SequenceCacheValue = {
     SequenceCacheValue(diffStore.maxSequenceId(pair, start, end), diffStore.countUnmatchedEvents(pair, start, end))
   }
 }
+
+/**
+ * Exception indicating that an aggregate request was badly formed.
+ */
+class InvalidAggregateRequestException(msg:String) extends RuntimeException(msg)
 
 /**
  * Key into the sequence cache for a time range on a given pair.
