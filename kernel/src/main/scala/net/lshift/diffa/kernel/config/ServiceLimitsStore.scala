@@ -1,7 +1,11 @@
 package net.lshift.diffa.kernel.config
 
 /**
- * Interface to administration of Service Limits.
+ * Interface to administration of Service Limits.  Limits may be applied to any operation supported by the real-time event, participant scanning
+ *
+ * There are three scopes for limits: System, Domain and Pair.
+ *
+ * System-scoped limits are the broadest, least specific and
  */
 trait ServiceLimitsStore {
   def defineLimit(limitName: String, description: String): Unit
