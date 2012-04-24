@@ -25,7 +25,6 @@ import org.junit._
 import experimental.theories.{Theories, DataPoint, Theory}
 import runner.RunWith
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
-import net.lshift.diffa.kernel.differencing.ZoomCache._
 import org.joda.time.{DateTime, Interval, DateTimeZone}
 import org.hibernate.dialect.Dialect
 import net.lshift.diffa.kernel.util.DatabaseEnvironment
@@ -753,56 +752,13 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def unmatchedEventsShouldAggregate = {
-
-    domainDiffStore.clearAllDifferences
-    val pair = DiffaPairRef("pair1", "domain")
-    val start = new DateTime(2009,6,6,14,15,0,0,DateTimeZone.UTC)
-    val end = start.plusDays(1)
-    val interval = new Interval(start, end)
-
-    val eventTime = start.plusMinutes(1)
-
-    domainDiffStore.addReportableUnmatchedEvent(VersionID(pair, "aaz"), eventTime, "", "", eventTime)
-
-    val expected = Map(
-      ZoomCache.QUARTER_HOURLY -> Seq(
-        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.QUARTER_HOURLY), 1)
-      ),
-      ZoomCache.HALF_HOURLY -> Seq(
-        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.HALF_HOURLY), 1)
-      ),
-      ZoomCache.HOURLY -> Seq(
-        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.HOURLY), 1)
-      ),
-      ZoomCache.TWO_HOURLY -> Seq(
-        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.TWO_HOURLY), 1)
-      ),
-      ZoomCache.FOUR_HOURLY -> Seq(
-        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.FOUR_HOURLY), 1)
-      ),
-      ZoomCache.EIGHT_HOURLY -> Seq(
-        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.EIGHT_HOURLY), 1)
-      ),
-      ZoomCache.DAILY -> Seq(
-        AggregateEvents(ZoomCache.containingInterval(eventTime, ZoomCache.DAILY), 1)
-      )
-    )
-
-    expected.foreach{ case (zoomLevel, events) => {
-      val aggregates = domainDiffStore.aggregateUnmatchedEvents(pair, interval, zoomLevel)
-      assertEquals(events, aggregates)
-    }}
-  }
-
-  @Test
-  def tilesShouldBeWithinTimeSpan = ZoomCache.levels.foreach(tilesShouldBeWithinTimeSpanAtZoomLevel(_))
+  def tilesShouldBeWithinTimeSpan = ZoomLevels.levels.foreach(tilesShouldBeWithinTimeSpanAtZoomLevel(_))
 
   private def tilesShouldBeWithinTimeSpanAtZoomLevel(zoomLevel:Int) {
 
     val observationTime = new DateTime(2008,9,7,0,0,0,0)
     val backOneWeek = observationTime.minusWeeks(1)
-    val tileGroupInterval = ZoomCache.containingTileGroupInterval(backOneWeek.minusMinutes(1), zoomLevel)
+    val tileGroupInterval = ZoomLevels.containingTileGroupInterval(backOneWeek.minusMinutes(1), zoomLevel)
     val queryTime = tileGroupInterval.getStart
 
     val pair = DiffaPairRef("pair1", "domain")
@@ -817,8 +773,8 @@ class HibernateDomainDifferenceStoreTest {
     // Deliberately allow passing a potentially unaligned timestamp
     val tiles = domainDiffStore.retrieveEventTiles(pair, zoomLevel, queryTime)
 
-    val firstIntervalStart = ZoomCache.containingInterval(tileGroupInterval.getEnd.minusMinutes(1), zoomLevel).getStart
-    val secondIntervalStart = ZoomCache.containingInterval(tileGroupInterval.getStart.plusMinutes(1), zoomLevel).getStart
+    val firstIntervalStart = ZoomLevels.containingInterval(tileGroupInterval.getEnd.minusMinutes(1), zoomLevel).getStart
+    val secondIntervalStart = ZoomLevels.containingInterval(tileGroupInterval.getStart.plusMinutes(1), zoomLevel).getStart
 
     // Special case for daily granularity - a daily zoom level will result in only one tile group,
     // hence the aggregate will contain both events
@@ -833,15 +789,15 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def dirtyTilesShouldNotAffectOtherTimeRanges = ZoomCache.levels.foreach(outOfRangeTilesShouldNotBeMarkerDirty(_))
+  def dirtyTilesShouldNotAffectOtherTimeRanges = ZoomLevels.levels.foreach(outOfRangeTilesShouldNotBeMarkerDirty(_))
 
   private def outOfRangeTilesShouldNotBeMarkerDirty(zoomLevel:Int) {
     val observationTime = new DateTime(1977,4,4,0,0,0,0)
     val firstEventTime = observationTime.minusMinutes(1)
     val secondEventTime = observationTime.minusMinutes(1).minusDays(1)
 
-    val alignedTileStart = ZoomCache.containingInterval(firstEventTime, zoomLevel).getStart
-    val alignedTileGroupStart = ZoomCache.containingTileGroupInterval(firstEventTime, zoomLevel).getStart
+    val alignedTileStart = ZoomLevels.containingInterval(firstEventTime, zoomLevel).getStart
+    val alignedTileGroupStart = ZoomLevels.containingTileGroupInterval(firstEventTime, zoomLevel).getStart
 
     val pair = DiffaPairRef("pair1", "domain")
 
@@ -863,13 +819,13 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   @Test
-  def eventsShouldUpdateZoomCache = ZoomCache.levels.foreach(playThroughEventsAtZoomLevel(_))
+  def eventsShouldUpdateZoomCache = ZoomLevels.levels.foreach(playThroughEventsAtZoomLevel(_))
 
   private def playThroughEventsAtZoomLevel(zoomLevel:Int) = {
 
     val observationTime = new DateTime()
-    val timestamp1 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 1)
-    val timestamp2 = observationTime.minusMinutes(ZoomCache.zoom(zoomLevel) + 2)
+    val timestamp1 = observationTime.minusMinutes(ZoomLevels.lookupZoomLevel(zoomLevel) + 1)
+    val timestamp2 = observationTime.minusMinutes(ZoomLevels.lookupZoomLevel(zoomLevel) + 2)
 
     val pair = DiffaPairRef("pair1", "domain")
 
@@ -897,7 +853,7 @@ class HibernateDomainDifferenceStoreTest {
     val expectedTiles = new scala.collection.mutable.HashMap[DateTime,Int]
     eventTimes.foreach(time => {
 
-      val interval = ZoomCache.containingInterval(time, zoomLevel)
+      val interval = ZoomLevels.containingInterval(time, zoomLevel)
       val startTime = interval.getStart
 
       expectedTiles.get(startTime) match {
@@ -993,7 +949,7 @@ object HibernateDomainDifferenceStoreTest {
         ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2a"), timestamp = new DateTime(2002,10,5,14,5,0,0, DateTimeZone.UTC)),
         ReportableEvent(id = VersionID(DiffaPairRef("pair2", "domain"), "2b"), timestamp = new DateTime(2002,10,5,14,5,30,0, DateTimeZone.UTC))
       ),
-      Map(QUARTER_HOURLY -> Map(
+      Map(ZoomLevels.QUARTER_HOURLY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 1,
                                         new DateTime(2002,10,5,13,45,0,0, DateTimeZone.UTC) -> 2,
@@ -1009,7 +965,7 @@ object HibernateDomainDifferenceStoreTest {
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 2)))
          ),
-          HALF_HOURLY -> Map(
+          ZoomLevels.HALF_HOURLY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 1,
                                         new DateTime(2002,10,5,13,30,0,0, DateTimeZone.UTC) -> 5,
@@ -1023,7 +979,7 @@ object HibernateDomainDifferenceStoreTest {
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC)  -> 2)))
          ),
-          HOURLY -> Map(
+          ZoomLevels.HOURLY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 1,
                                          new DateTime(2002,10,5,13,0,0,0, DateTimeZone.UTC) -> 10,
@@ -1035,7 +991,7 @@ object HibernateDomainDifferenceStoreTest {
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 2)))
          ),
-          TWO_HOURLY -> Map(
+          ZoomLevels.TWO_HOURLY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 1,
                                           new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC) -> 11,
@@ -1046,7 +1002,7 @@ object HibernateDomainDifferenceStoreTest {
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,14,0,0,0, DateTimeZone.UTC) -> 2)))
          ),
-          FOUR_HOURLY -> Map(
+          ZoomLevels.FOUR_HOURLY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC) -> 12,
                                           new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC)  -> 1,
@@ -1056,7 +1012,7 @@ object HibernateDomainDifferenceStoreTest {
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,12,0,0,0, DateTimeZone.UTC) -> 2)))
          ),
-          EIGHT_HOURLY -> Map(
+          ZoomLevels.EIGHT_HOURLY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC)  -> 13,
                                           new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC)  -> 1)),
@@ -1065,7 +1021,7 @@ object HibernateDomainDifferenceStoreTest {
            "pair2" -> Seq(TileGroup(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,8,0,0,0, DateTimeZone.UTC)  -> 2)))
          ),
-          DAILY -> Map(
+          ZoomLevels.DAILY -> Map(
            "pair1" -> Seq(TileGroup(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC),
                                     Map(new DateTime(2002,10,5,0,0,0,0, DateTimeZone.UTC) -> 14)),
                           TileGroup(new DateTime(2002,10,4,0,0,0,0, DateTimeZone.UTC),

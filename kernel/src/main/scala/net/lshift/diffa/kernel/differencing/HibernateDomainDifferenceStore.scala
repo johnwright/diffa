@@ -29,19 +29,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     extends DomainDifferenceStore
     with HibernateQueryUtils {
 
-  val zoomCache = new ZoomCacheProvider(this, cacheManager)
   val aggregationCache = new DifferenceAggregationCache(this, cacheManager)
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
-
-  val zoomQueries = Map(
-    ZoomCache.QUARTER_HOURLY -> "15_minute_aggregation",
-    ZoomCache.HALF_HOURLY    -> "30_minute_aggregation",
-    ZoomCache.HOURLY         -> "60_minute_aggregation",
-    ZoomCache.TWO_HOURLY     -> "120_minute_aggregation",
-    ZoomCache.FOUR_HOURLY    -> "240_minute_aggregation",
-    ZoomCache.EIGHT_HOURLY   -> "480_minute_aggregation",
-    ZoomCache.DAILY          -> "daily_aggregation"
-  )
 
   val columnMapper = new TimestampColumnDateTimeMapper()
 
@@ -264,102 +253,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     processAsStream[ReportedDifferenceEvent]("unmatchedEventsByDomainAndPair",
       Map("domain" -> pairRef.domain, "pair" -> pairRef.key), (s, diff) => handler(diff))
 
-  def aggregateUnmatchedEvents(pair:DiffaPairRef, interval:Interval, zoomLevel:Int) : Seq[AggregateEvents] = sessionFactory.withSession(s => {
-
-    val query = s.getNamedQuery(zoomQueries(zoomLevel))
-
-    query.setParameter("domain", pair.domain)
-    query.setParameter("pair", pair.key)
-    query.setParameter("lower_bound", columnMapper.toNonNullValue(interval.getStart))
-    query.setParameter("upper_bound", columnMapper.toNonNullValue(interval.getEnd))
-
-    val (matched, ignored) = dialect.getTypeName(Types.BIT) match {
-      case "bool" => (false, false)
-      case _      => (0, 0)
-    }
-
-    query.setParameter("matched", matched)
-    query.setParameter("ignored", ignored)
-
-    query.setResultTransformer(new ResultTransformer() {
-      def transformTuple(tuple: Array[AnyRef], aliases: Array[String]) = {
-
-        // Note to maintainers:
-        // The reason why the type casting is selective is because the SQL return value of the extract function
-        // maps to an Int, whereas the SQL return value of floor * int maps to BigInteger
-
-        // I could have tried to cast to something consistent in the DB, but I wanted to get the statements to be
-        // portable first - it might worth streamlining this in due course.
-
-
-        // The minute column is only relevant for sub hourly aggregates
-
-        val minutes = if (zoomLevel > ZoomCache.HOURLY) {
-          readIntColumn(tuple(4), false, dialect)
-        } else {
-          0
-        }
-
-        // Super hourly queries involve the floor * int function for the hour component
-
-        val hours = if (zoomLevel <= ZoomCache.TWO_HOURLY && zoomLevel >= ZoomCache.EIGHT_HOURLY) {
-          readIntColumn(tuple(3), false, dialect)
-        } else if (zoomLevel > ZoomCache.TWO_HOURLY) {
-
-          // Hourly and sub-hourly just extract the hour component as a small int
-
-          readIntColumn(tuple(3), true, dialect)
-        } else {
-
-          // Daily queries do not group by hours if any case
-
-          0
-        }
-
-        val start = new DateTime(
-          readIntColumn(tuple(0), true, dialect),
-          readIntColumn(tuple(1), true, dialect),
-          readIntColumn(tuple(2), true, dialect),
-          hours, minutes, 0, 0, DateTimeZone.UTC)
-        val interval = ZoomCache.intervalFromStartTime(start, zoomLevel)
-        AggregateEvents(interval, readIntColumn(tuple.last, true, dialect))
-      }
-
-      def transformList(collection: List[_]) = collection
-    })
-
-    query.list.map(item => item.asInstanceOf[AggregateEvents])
-  })
-
-  private def readIntColumn(column:Object, small:Boolean, dialect:Dialect) : Int = {
-    // The following obscure code is to deal with the fact that Oracle drivers pre-10g
-    // will return a BigDecimal in calls to getObject on all INTEGER columns, whereas
-    // the 10g driver may return an Int (but not always!)
-    if (DialectExtensionSelector.select(dialect).isInstanceOf[OracleDialectExtension]) {
-      try {
-        column.asInstanceOf[Int].intValue()
-      } catch {
-        case classCastEx: java.lang.ClassCastException =>
-          column.asInstanceOf[java.math.BigDecimal].intValue()
-      }
-      // Also, MySQL may return objects as BigIntegers from Int columns
-    } else if (DialectExtensionSelector.select(dialect).isInstanceOf[MySQL5DialectExtension]) {
-      try {
-        column.asInstanceOf[Int].intValue()
-      } catch {
-        case classCastEx: java.lang.ClassCastException =>
-          column.asInstanceOf[java.math.BigInteger].intValue()
-      }
-    } else {
-      if (small) {
-        column.asInstanceOf[Int].intValue()
-      }
-      else {
-        column.asInstanceOf[BigInteger].intValue()
-      }
-    }
-  }
-
   // TODO consider removing this in favor of aggregateUnmatchedEvents/3
   @Deprecated
   def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
@@ -407,8 +300,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def retrieveEventTiles(pair:DiffaPairRef, zoomLevel:Int, timestamp:DateTime) = {
-    val alignedTimespan = ZoomCache.containingTileGroupInterval(timestamp, zoomLevel)
-    val aggregateMinutes = ZoomCache.zoom(zoomLevel)
+    val alignedTimespan = ZoomLevels.containingTileGroupInterval(timestamp, zoomLevel)
+    val aggregateMinutes = ZoomLevels.lookupZoomLevel(zoomLevel)
     val aggregates =
       aggregationCache.retrieveAggregates(pair, alignedTimespan.getStart, alignedTimespan.getEnd, Some(aggregateMinutes))
 
