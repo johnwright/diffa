@@ -45,7 +45,7 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
   }
 
   def retrieveAggregates(pair:DiffaPairRef, start:DateTime, end:DateTime, aggregateMinutes:Option[Int]):Seq[AggregateTile] = {
-    if (!DateUtils.safeIsBefore(start, null)) {
+    if (!DateUtils.safeIsBefore(start, end)) {
       throw new InvalidAggregateRequestException("start time must be before end time")
     }
 
@@ -67,6 +67,10 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
   }
 
   def retrieveAggregate(pair:DiffaPairRef, start:DateTime, end:DateTime, session:MutableMap[SequenceCacheKey, SequenceCacheValue] = MutableMap()) = {
+    if (!DateUtils.safeIsBefore(start, end)) {
+      throw new InvalidAggregateRequestException("start time must be before end time")
+    }
+
     // Retrieve the sequence cache values that cover this aggregate, then calculate a maximum value
     val seqCacheKeys = DifferenceAggregationCachePolicy.sequenceKeysForDetectionTimeRange(
       pair, now, start, end)
