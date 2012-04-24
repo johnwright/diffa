@@ -342,7 +342,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
               // Update the last time it was seen
               existing.lastSeen = reportableUnmatched.lastSeen
               s.update(existing)
-                // No need to update the zoom cache, since it won't affect the aggregate counts
+                // No need to update the aggregate cache, since it won't affect the aggregate counts
               existing.asDifferenceEvent
             } else {
               s.delete(existing)

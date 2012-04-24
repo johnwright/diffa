@@ -18,8 +18,8 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.util.CacheWrapper
 import net.sf.ehcache.CacheManager
-import org.joda.time.{Minutes, Interval, DateTime}
 import scala.collection.mutable.{Map => MutableMap}
+import org.joda.time.{DateTimeZone, Minutes, Interval, DateTime}
 
 /**
  * Cache responsible for providing views on aggregated differences.
@@ -94,7 +94,7 @@ class DifferenceAggregationCache(diffStore:DomainDifferenceStore, cacheManager:C
     AggregateTile(interval.getStart, interval.getEnd, count)
   }
 
-  def now = new DateTime
+  def now = (new DateTime).withZone(DateTimeZone.UTC)
 
   private def slice(startTime:DateTime, endTime:DateTime, aggregateMinutes:Int) : Seq[Interval] = {
     val divisions = scala.math.ceil(
