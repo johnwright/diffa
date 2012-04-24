@@ -15,6 +15,7 @@
 * [113] - Improve validation of pair definitions.
 * [114] - Ensure that changes without attributes are processed.
 * [118] - Make sure that ChangeEvents contain the mandatory fields
+* [124] - Replacement mechanism for caching results of aggregation.
 
 ## Library Upgrades
 
