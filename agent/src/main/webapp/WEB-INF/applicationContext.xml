@@ -381,6 +381,10 @@
     <constructor-arg ref="pairCache" />
   </bean>
 
+  <bean id="serviceLimitsStore" class="net.lshift.diffa.kernel.config.HibernateServiceLimitsStore">
+    <constructor-arg ref="diffaSessionFactory" />
+  </bean>
+
   <!--
     ===========
       Indexing
