@@ -224,8 +224,8 @@ class HibernateDomainDifferenceStoreTest {
 
     val interval = addUnmatchedEvents(start, size, frontFence, rearFence)
 
-    val unmatchedOpenTopCount = domainDiffStore.countUnmatchedEvents(DiffaPairRef("pair2", "domain"), null, interval.getEnd)
-    assertEquals(size - rearFence, unmatchedOpenTopCount)
+    val unmatchedOpenBottomCount = domainDiffStore.countUnmatchedEvents(DiffaPairRef("pair2", "domain"), null, interval.getEnd)
+    assertEquals(size - rearFence, unmatchedOpenBottomCount)
   }
 
   @Test

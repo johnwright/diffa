@@ -366,13 +366,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
 
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
     val res = persistAndConvertEventInternal(s, evt)
-    updateZoomCache(evt.objId.pair, evt.detectedAt)
+    updateAggregateCache(evt.objId.pair, evt.detectedAt)
     res
   }
 
   private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
     val res = persistAndConvertEventInternal(s, evt)
-    updateZoomCache(evt.objId.pair, previousDetectionTime)
+    updateAggregateCache(evt.objId.pair, previousDetectionTime)
     res
   }
 
@@ -382,7 +382,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
     evt.asDifferenceEvent
   }
 
-  private def updateZoomCache(pair:DiffaPairRef, detectedAt:DateTime) =
+  private def updateAggregateCache(pair:DiffaPairRef, detectedAt:DateTime) =
     aggregationCache.onStoreUpdate(pair, detectedAt)
 }
 
