@@ -61,12 +61,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
                           @Context request: Request) = {
 
     try {
-      val domainVsn = new EntityTag(getSequenceNumber(domain))
-
-      request.evaluatePreconditions(domainVsn) match {
-        case null => // We'll continue with the request
-        case r => throw new WebApplicationException(r.build)
-      }
+      val domainVsn = validateETag(request)
 
       val now = new DateTime()
       val from = defaultDateTime(from_param, now.minusDays(1))
@@ -107,11 +102,7 @@ class DifferencesResource(val differencesManager: DifferencesManager,
                      @Context request: Request): Response = {
 
     // Evaluate whether the version of the domain has changed
-    val domainVsn = new EntityTag(getSequenceNumber(domain) + "@" + zoomLevel)
-    request.evaluatePreconditions(domainVsn) match {
-      case null => // We'll continue with the request
-      case r => throw new WebApplicationException(r.build)
-    }
+    val domainVsn = validateETag(request)
 
     val rangeStartDate = isoDateTime.parseDateTime(rangeStart)
     val rangeEndDate = isoDateTime.parseDateTime(rangeEnd)
@@ -132,26 +123,91 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @GET
   @Path("/aggregates")
   @Produces(Array("application/json"))
-  @Description("Returns an aggregate view")
+  @Description("Returns an aggregate view for all pairs in a domain")
   def getAggregates(@Context request: Request, @Context servletRequest:HttpServletRequest): Response = {
+    val domainVsn = validateETag(request)
+
     val requestedAggregates = parseAggregates(servletRequest)
     val aggregates = domainConfigStore.listPairs(domain).map(p => {
       p.key -> mapAsJavaMap(processAggregates(DiffaPairRef(domain = domain, key = p.key), requestedAggregates))
     }).toMap
 
-    Response.ok(mapAsJavaMap(aggregates)).tag("123").build()
+    Response.ok(mapAsJavaMap(aggregates)).tag(domainVsn).build()
   }
 
   @GET
   @Path("/aggregates/{pair}")
   @Produces(Array("application/json"))
-  @Description("Returns an aggregate view")
+  @Description("Returns an aggregate view for a given pair")
   def getAggregates(@PathParam("pair") pair:String, @Context request: Request, @Context servletRequest:HttpServletRequest): Response = {
+    val domainVsn = validateETag(request)
+
     val requestedAggregates = parseAggregates(servletRequest)
     val aggregates = processAggregates(DiffaPairRef(domain = domain, key = pair), requestedAggregates)
 
-    Response.ok(mapAsJavaMap(aggregates)).tag("123").build()
+    Response.ok(mapAsJavaMap(aggregates)).tag(domainVsn).build()
   }
+
+  @GET
+  @Path("/events/{evtSeqId}/{participant}")
+  @Produces(Array("text/plain"))
+  @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID"),
+    new MandatoryParam(name = "participant", datatype = "string", description = "Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
+  ))
+  def getDetail(@PathParam("evtSeqId") evtSeqId:String,
+                @PathParam("participant") participant:String) : String =
+    differencesManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
+
+  @DELETE
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("application/json"))
+  @Description("Ignores the difference with the given sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def ignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    val ignored = differencesManager.ignoreDifference(domain, evtSeqId)
+
+    Response.ok(ignored).build
+  }
+
+  @PUT
+  @Path("/events/{evtSeqId}")
+  @Produces(Array("application/json"))
+  @Description("Unignores a difference with the given sequence id.")
+  @MandatoryParams(Array(
+    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
+  ))
+  def unignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
+    val restored = differencesManager.unignoreDifference(domain, evtSeqId)
+
+    Response.ok(restored).build
+  }
+
+  def validateETag(request:Request) = {
+    val domainVsn = new EntityTag(getSequenceNumber(domain))
+
+    request.evaluatePreconditions(domainVsn) match {
+      case null => // We'll continue with the request
+      case r => throw new WebApplicationException(r.build)
+    }
+
+    domainVsn
+  }
+
+  def defaultDateTime(input:String, default:DateTime) = input match {
+    case "" | null => default
+    case x         => isoDateTime.parseDateTime(x)
+  }
+
+  def defaultInt(input:String, default:Int) = input match {
+    case "" | null => default
+    case x         => x.toInt
+  }
+
+  private def getSequenceNumber(domain:String) = domainSequenceCache.readThrough( domain, () => differencesManager.retrieveDomainSequenceNum(domain) )
 
   val aggregateParamPrefix = "agg-"
 
@@ -192,54 +248,4 @@ class DifferencesResource(val differencesManager: DifferencesManager,
 
       name -> tiles.map(_.count).toArray
     }.toMap
-
-  @GET
-  @Path("/events/{evtSeqId}/{participant}")
-  @Produces(Array("text/plain"))
-  @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID"),
-    new MandatoryParam(name = "participant", datatype = "string", description = "Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
-  ))
-  def getDetail(@PathParam("evtSeqId") evtSeqId:String,
-                @PathParam("participant") participant:String) : String =
-    differencesManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
-
-  @DELETE
-  @Path("/events/{evtSeqId}")
-  @Produces(Array("application/json"))
-  @Description("Ignores the difference with the given sequence id.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
-  ))
-  def ignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
-    val ignored = differencesManager.ignoreDifference(domain, evtSeqId)
-
-    Response.ok(ignored).build
-  }
-
-  @PUT
-  @Path("/events/{evtSeqId}")
-  @Produces(Array("application/json"))
-  @Description("Unignores a difference with the given sequence id.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
-  ))
-  def unignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
-    val restored = differencesManager.unignoreDifference(domain, evtSeqId)
-
-    Response.ok(restored).build
-  }
-
-  def defaultDateTime(input:String, default:DateTime) = input match {
-    case "" | null => default
-    case x         => isoDateTime.parseDateTime(x)
-  }
-
-  def defaultInt(input:String, default:Int) = input match {
-    case "" | null => default
-    case x         => x.toInt
-  }
-
-  private def getSequenceNumber(domain:String) = domainSequenceCache.readThrough( domain, () => differencesManager.retrieveDomainSequenceNum(domain) )
 }
