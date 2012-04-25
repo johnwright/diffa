@@ -1,11 +1,40 @@
 package net.lshift.diffa.kernel.config
 
 /**
- * Interface to administration of Service Limits.  Limits may be applied to any operation supported by the real-time event, participant scanning
+ * Interface to the administration of Service Limits.
+ *
+ * Limits may be applied to any operation supported by the real-time event,
+ * participant scanning or inventory submission services.  The meaning of any
+ * limit is tied to the limiter that uses it, which is outside the
+ * responsibility of the ServiceLimitsStore.
+ * The responsibilities of a ServiceLimitsStore are to: provide mechanisms to
+ * define new limits, set limits at each scope (see below), cascade hard limit
+ * changes down through the chain, and report the effective limit value -
+ * typically with respect to a pair associated with the report from the
+ * representative of the client application (e.g. scan participant).
  *
  * There are three scopes for limits: System, Domain and Pair.
  *
- * System-scoped limits are the broadest, least specific and
+ * <h3>Configuration</h3>
+ * A System Hard Limit constrains all more specific limits of the same name both
+ * initially (at the time the other limits are set) and retrospectively
+ * (whenever the System Hard Limit is changed).  The limits it constrains are:
+ * SystemDefaultLimit, DomainHardLimit, DomainDefaultLimit and PairLimit.
+ *
+ * Similarly, a Domain Hard Limit constrains the value of the following limits:
+ * DomainDefaultLimit and PairLimit.
+ *
+ * <h3>Effective Limit</h3>
+ * In determining an effective limit for a pair, the following strategy should
+ * apply:
+ <ol>
+   <li>If there is a corresponding PairLimit defined, then the value of that
+   limit is the effective limit;</li>
+   <li>Otherwise, if there is a DomainDefaultLimit corresponding to the domain
+   of the pair, then the value of that limit is the effective limit;</li>
+   <li>Otherwise, the value of the relevant SystemDefaultLimit is the effective
+   limit.</li>
+ </ol>
  */
 trait ServiceLimitsStore {
   def defineLimit(limitName: String, description: String): Unit
