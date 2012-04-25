@@ -16,9 +16,10 @@
 package net.lshift.diffa.agent.rest.exceptions
 
 import net.lshift.diffa.kernel.differencing.InvalidAggregateRequestException
-import javax.ws.rs.ext.ExceptionMapper
 import javax.ws.rs.core.Response
+import javax.ws.rs.ext.{Provider, ExceptionMapper}
 
+@Provider
 class InvalidAggregateRequestExceptionMapper extends ExceptionMapper[InvalidAggregateRequestException] {
   def toResponse(exception: InvalidAggregateRequestException) = {
     Response.status(Response.Status.BAD_REQUEST).entity(exception.getMessage).`type`("text/plain").build()

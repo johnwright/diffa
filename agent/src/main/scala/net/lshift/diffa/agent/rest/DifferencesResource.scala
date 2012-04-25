@@ -221,27 +221,6 @@ class DifferencesResource(val differencesManager: DifferencesManager,
     }.toMap
   }
 
-  case class AggregateRequest(start:DateTime, end:DateTime, aggregation:Option[Int])
-  object AggregateRequest {
-    val requestFormat = "(\\d{8}T\\d{6}Z)?-(\\d{8}T\\d{6}Z)?(@([\\d]+))?".r
-    val isoParser = ISODateTimeFormat.basicDateTimeNoMillis.withZoneUTC()
-
-    def apply(start:String, end:String, aggregation:Option[Int] = None):AggregateRequest = {
-      def maybeDate(d:String):DateTime = if (d != null) isoParser.parseDateTime(d) else null
-
-      AggregateRequest(maybeDate(start), maybeDate(end), aggregation)
-    }
-
-    def parse(s:String):AggregateRequest = {
-      s match {
-        case requestFormat(start, end, _, null) =>
-          AggregateRequest(start, end)
-        case requestFormat(start, end, _, aggregation) =>
-          AggregateRequest(start, end, Some(Integer.parseInt(aggregation)))
-      }
-    }
-  }
-
   def processAggregates(pairRef:DiffaPairRef, requests:Map[String, AggregateRequest]) =
     requests.map { case (name, details) =>
       val tiles = differencesManager.retrieveAggregates(pairRef, details.start, details.end, details.aggregation)
