@@ -28,10 +28,6 @@ var colours = {
   white: 'white'
 };
 
-var toISOString = function(d) {
-  return d.toISOString().replace(/-/g, "").replace(/:/g, "").replace(/\.\d\d\d/g, "");
-};
-
 Diffa.Routers.Blobs = Backbone.Router.extend({
   routes: {
     "":                             "index",     // #
@@ -56,7 +52,7 @@ Diffa.Routers.Blobs = Backbone.Router.extend({
   }
 });
 
-Diffa.Models.Blobs = Backbone.Model.extend(Diffa.Collections.Watchable).extend({
+Diffa.Models.HeatmapConfig = Backbone.Model.extend(Diffa.Collections.Watchable).extend({
   watchInterval: 5000,      // How frequently we poll for blob updates
   maxColumns: 96,           // Maybe make variable?
   defaultBucketSize: 3600,
@@ -69,14 +65,16 @@ Diffa.Models.Blobs = Backbone.Model.extend(Diffa.Collections.Watchable).extend({
     this.set({
       zoomLevel: this.defaultZoomLevel,
       bucketSize: this.defaultBucketSize,
-      swimlaneLabels: [],
-      buckets: [],
       maxRows: this.defaultMaxRows,
       polling: true,
       startTime: nearestHour().add({seconds: -1 * this.defaultBucketSize * this.maxColumns}),
-      selectedCell: null
     });
-    this.domain = this.get('domain');   // Pull the domain out as a top-level attribute
+    this.aggregates = this.get('aggregates');   // Pull the aggregates collection out as a top-level attribute
+
+    var self = this;
+    var fireBucketChange = function() { self.trigger('change:buckets'); };
+    this.aggregates.on('add', fireBucketChange);
+    this.aggregates.on('change', fireBucketChange);
   },
 
   sync: function() {
@@ -86,48 +84,14 @@ Diffa.Models.Blobs = Backbone.Model.extend(Diffa.Collections.Watchable).extend({
     var self = this;
 
     var endTime = nearestHour();
+    var startTime = new Date(endTime.getTime() - self.get('bucketSize') * ( self.maxColumns -1 ) * 1000);
 
-    var now = toISOString(endTime);
+    this.aggregates.subscribeAggregate('map', {startTime: startTime, endTime: endTime, bucketing: (self.get('bucketSize') / 60)});
+    this.aggregates.subscribeAggregate('left', {endTime: startTime});
+    this.aggregates.subscribeAggregate('right', {startTime: endTime});
 
-    var startTime = endTime.add({seconds: -1 * self.get('bucketSize') * ( self.maxColumns -1 ) });
-    var dayBeforeNow = toISOString(startTime);
-
-    $.getJSON("/domains/" + this.domain.id + "/diffs/tiles/" + self.get('zoomLevel') + "?range-start=" + dayBeforeNow + "&range-end=" + now, function(data) {
-      var swimlaneLabels = self.get('swimlaneLabels').slice(0);     // Retrieve a cloned copy of the swimlane labels
-      var buckets = [];
-      var maxRows = self.get('maxRows');
-
-      // update swimlane labels
-      for (var pair in data) {
-        // add label if it doesn't already exist
-        if (swimlaneLabels.indexOf(pair) < 0)
-          swimlaneLabels.push(pair);
-      }
-        // Only keep labels that are in the data. Truncate our number of bucket rows to match the number of lanes.
-      swimlaneLabels = $.grep(swimlaneLabels, function(pair) { return data[pair]; });
-      if (buckets.length > swimlaneLabels.length)
-        buckets.splice(swimlaneLabels.length, buckets.length - swimlaneLabels.length);
-
-      // copy data into buckets
-      maxRows = Math.max(swimlaneLabels.length, maxRows);
-      for (var i = 0; i < maxRows; i++) {
-        var values = data[swimlaneLabels[i]];
-        if (values) {
-          buckets[i] = buckets[i] || [];
-          for (var j = 0; j < self.maxColumns; j++)
-            buckets[i][j] = values[j] || 0;
-        } else {
-          // if a pair wasn't in the results, initialize or keep existing data
-          if (! buckets[i]) {
-            buckets[i] = [];
-            for (var j = 0; j < self.maxColumns; j++)
-              buckets[i][j] = 0;
-          }
-        }
-      }
-
-      // Update the swimlane labels and buckets
-      self.set({swimlaneLabels: swimlaneLabels, buckets: buckets, maxRows: maxRows, startTime: startTime});
+    this.aggregates.sync(function() {
+      self.set('startTime', startTime);
     });
   },
 
@@ -170,8 +134,35 @@ Diffa.Models.Blobs = Backbone.Model.extend(Diffa.Collections.Watchable).extend({
 
   isZoomLevelValid: function(zoomLevel) {
     return zoomLevel <= 6 && zoomLevel >= 0;
-  }
+  },
 
+  getSwimlaneLabels: function() {
+    return this.aggregates.pluck('pair');
+  },
+
+  getRow: function(row) {
+    if (this.aggregates.length > row) {
+      return (this.aggregates.at(row).get('map') || []);
+    } else {
+      return [];
+    }
+  },
+
+  getLeftCount: function(row) {
+    if (this.aggregates.length > row) {
+      return (this.aggregates.at(row).get('left') || [0])[0];
+    } else {
+      return 0;
+    }
+  },
+
+  getRightCount: function(row) {
+    if (this.aggregates.length > row) {
+      return (this.aggregates.at(row).get('right') || [0])[0];
+    } else {
+      return 0;
+    }
+  }
 });
 
 Diffa.Models.Diff = Backbone.Model.extend({
@@ -236,7 +227,7 @@ Diffa.Models.Diff = Backbone.Model.extend({
       url: "/domains/" + this.collection.domain.id + "/diffs/events/" + this.id,
       type: 'DELETE',
       success: function(data) {
-        self.collection.domain.blobs.sync();
+        self.collection.blobs.sync();   // TODO: FIX ME!
         self.collection.domain.diffs.sync();
       },
       error: function(xhr, status, ex) {
@@ -272,7 +263,6 @@ Diffa.Collections.Diffs = Diffa.Collections.CollectionBase.extend({
       var url = "/domains/" + self.domain.id + "/diffs?pairKey=" + this.range.pairKey + "&range-start="
           + this.range.start + "&range-end=" + this.range.end
           + "&offset=" + (this.page * this.listSize) + "&length=" + this.listSize;
-      console.log(url);
 
       $.get(url, function(data) {
         if (!force && data.seqId == self.lastSeqId) return;
@@ -467,7 +457,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
   resizeLayer: function(layer, width) {
     layer.width = width;
-    layer.height = Math.max(this.minRows, this.model.get('swimlaneLabels').length) * this.swimlaneHeight() + this.bottomGutter;
+    layer.height = Math.max(this.minRows, this.model.getSwimlaneLabels().length) * this.swimlaneHeight() + this.bottomGutter;
   },
   resizeLayerFromParent: function(layer, parent) {
     var parentOffset = $(parent).offset();
@@ -505,7 +495,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     }
 
     // draw swim lanes
-    var swimlaneLabels = this.model.get('swimlaneLabels');
+    var swimlaneLabels = this.model.getSwimlaneLabels();
     var lane = 0;
     var laneHeight = this.swimlaneHeight();
     var arrowWidth = 18;
@@ -519,12 +509,13 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         this.underlayContext.fillStyle = colours.black;
         this.underlayContext.fillText(swimlaneLabels[lane], 10, s - laneHeight + arrowHeight);
       }
-      var leftCell = this.findCellWithVisibleBlob(viewportX, s - laneHeight, directions.left);
-      if (this.nonEmptyCellExists(leftCell.row, 0, leftCell.column)) {
+
+      // Draw arrows if we have values outside the map for this row
+      var cell = this.coordsToCell({"x": viewportX, "y": s - laneHeight});
+      if (this.model.getLeftCount(cell.row)) {
         this.drawArrow(this.underlayContext, directions.left, 10, s - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
       }
-      var rightCell = this.findCellWithVisibleBlob(viewportX + this.canvas.width - 1, s - laneHeight, directions.right);
-      if (this.nonEmptyCellExists(rightCell.row, rightCell.column + 1, this.model.maxColumns)) {
+      if (this.model.getRightCount(cell.row)) {
         this.drawArrow(this.underlayContext, directions.right, this.canvas.width - 10 - arrowWidth, s - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
       }
       lane++;
@@ -604,7 +595,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     if (cell.column < this.model.maxColumns && cell.row < this.model.get('maxRows')) {
       var cell_x = i + Math.floor(this.gridSize / 2);
       var cell_y = j + this.gutterSize + Math.floor(this.gridSize / 2);
-      var bucketSize = this.model.get('buckets')[cell.row][cell.column];
+      var bucketSize = this.model.getRow(cell.row)[cell.column] || 0;
       var maximum = Math.floor((this.gridSize - 1) / 2);
 
       var cappedSize = this.limit(this.transformBucketSize(bucketSize, maximum), maximum);
@@ -656,7 +647,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
   drawOverlay: function() {
     if (this.highlighted != null && this.highlighted.column >= 0 && this.highlighted.row >= 0) {
-      var value = this.model.get('buckets')[this.highlighted.row][this.highlighted.column];
+      var value = this.model.getRow(this.highlighted.row)[this.highlighted.column];
       if (value > 0) {
         var c_x = this.highlighted.column * this.gridSize;
         var c_y = (this.highlighted.row * (2 * this.gutterSize + this.gridSize)) + this.gutterSize + this.gridSize;
@@ -675,7 +666,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
    */
   findCellWithVisibleBlob: function(x, y, dir) {
     var cell = this.coordsToCell({"x": x, "y": y});
-    var radius = this.limit(this.model.get('buckets')[cell.row][cell.column], Math.floor((this.gridSize - 1) / 2));
+    var radius = this.limit(this.model.getRow(cell.row)[cell.column], Math.floor((this.gridSize - 1) / 2));
     if (radius.value > 0) {
       var cutoff = this.cellToCoords(cell).x + (this.gridSize / 2) + (dir == directions.left ? radius.value : -1 * radius.value);
       if (dir == directions.left && x > cutoff) {
@@ -690,7 +681,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
   },
 
   nonEmptyCellExists: function(row, startColumn, endColumn) {
-    var cols = this.model.get('buckets')[row];
+    var cols = this.model.getRow(row);
     for (var i = startColumn; i < endColumn; i++) {
       if (cols[i] > 0)
         return true;
@@ -825,7 +816,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
         // Perform a navigation
         var cell = this.coordsToCell(c);
-        var selectedPair = this.model.get('swimlaneLabels')[cell.row];
+        var selectedPair = this.model.getSwimlaneLabels()[cell.row];
         var gridStartTime = this.model.get('startTime');
         var selectedIdx = cell.column;
         var bucketSize = this.model.get('bucketSize');
@@ -837,7 +828,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
         var selectionStartTime = new Date(gridStartTime.getTime() + (selectedIdx * bucketSize * 1000));
         var selectionEndTime = new Date(selectionStartTime.getTime() + (bucketSize * 1000));
-        $(this.el).trigger('blob:selected', [selectedPair, toISOString(selectionStartTime), toISOString(selectionEndTime)]);
+        $(this.el).trigger('blob:selected', [selectedPair, Diffa.Helpers.DatesHelper.toISOString(selectionStartTime), Diffa.Helpers.DatesHelper.toISOString(selectionEndTime)]);
       }
     } else {
       if (Math.abs(this.o_x) >= this.rightLimit) {
@@ -1180,7 +1171,7 @@ function nearestHour() {
 
 $('.diffa-heatmap').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
-  new Diffa.Views.Heatmap({el: $(this), model: domain.blobs});
+  new Diffa.Views.Heatmap({el: $(this), model: new Diffa.Models.HeatmapConfig({aggregates: domain.aggregates})});
 });
 $('.diffa-difflist').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
