@@ -56,16 +56,15 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   watchInterval: 5000,      // How frequently we poll for blob updates
   defaultZoomLevel:4,       // HOURLY
   defaultMaxRows: 10,       // Will change as more pairs arrive
-  defaultBucketCount: 12,   // Default number of buckets. Will be overriden once heatmap is ready
+  defaultBucketCount: 31,   // Default number of buckets. Will be overriden once heatmap is ready
 
   initialize: function() {
-    _.bindAll(this, "sync", "stopPolling", "startPolling");
+    _.bindAll(this, "sync");
 
     this.set({
       zoomLevel: this.defaultZoomLevel,
       bucketSize: this.calculateBucketSize(this.defaultZoomLevel),
       maxRows: this.defaultMaxRows,
-      polling: true,
       lastEndTime: nearestHour(),
       bucketCount: this.defaultBucketCount
     });
@@ -82,9 +81,6 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   },
 
   sync: function() {
-    // Don't do the poll if we're not polling
-//    if (!this.get('polling')) return;
-
     var self = this;
 
     var endTime = nearestHour();
@@ -102,14 +98,6 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
       self.set({'lastEndTime': endTime});
       self.aggregates.change();   // Queue all change events till everything is completed
     }, {silent: true});
-  },
-
-  startPolling: function() {
-    this.set({polling: true});
-  },
-
-  stopPolling: function() {
-    this.set({polling: false});
   },
 
   zoomOut: function() {
@@ -452,9 +440,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
     this.model.watch($(this.el));
 
-    this.model.bind('change:buckets',         this.update);
-    this.model.bind('change:maxRows',         this.update);
-    this.model.bind('change:polling',         this.pollAndUpdate);
+    this.model.bind('change:buckets', this.update);
 
     this.render();
     this.zoomControls = new Diffa.Views.ZoomControls({el: this.$('.heatmap-controls'), model: this.model});
@@ -592,10 +578,11 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     }
 
     // draw "live" / "click to poll" text
-    var pollText = this.model.get('polling') ? " LIVE " : " CLICK TO POLL ";
+    var isLive = this.model.isAtRightLimit() && this.o_x == 0;
+    var pollText = isLive ? " LIVE " : " LOCKED ";
     var textWidth = this.underlayContext.measureText(pollText).width;
     var textSpacer = 20;
-    this.underlayContext.fillStyle = colours.red;
+    this.underlayContext.fillStyle = isLive ? colours.red : colours.darkGrey;
     this.underlayContext.fillRect(this.canvas.width - textWidth - textSpacer, 0, textWidth + textSpacer, 20);
     this.underlayContext.fillStyle = colours.white;
     this.underlayContext.font = "12px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
@@ -838,17 +825,6 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     return false;
   },
 
-  togglePolling: function(c) {
-    // TODO: Re-enable
-
-    if (c.x > this.toggleX && c.y < this.toggleY) {
-      if (this.model.get('polling')) {
-        this.model.stopPolling();
-      } else {
-        this.model.startPolling();
-      }
-    }
-  },
 
   mouseDown: function(e) {
     this.dragging = e;
@@ -862,7 +838,6 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     if (!this.dragged) {
       if (e.target.tagName == "CANVAS") {
         var c = this.coords(e);
-        this.togglePolling(c);
         c.x -= this.o_x;
 
         // Perform a navigation
@@ -877,9 +852,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         $(this.el).trigger('blob:selected', [selectedPair, Diffa.Helpers.DatesHelper.toISOString(selectionStartTime), Diffa.Helpers.DatesHelper.toISOString(selectionEndTime)]);
       }
     } else {
-      if (this.model.isAtRightLimit() && this.o_x == 0) {
-        this.model.startPolling();
-      }
+      this.pollAndUpdate();
     }
     this.dragged = false;
     e.target.style.cursor = "default";
@@ -887,7 +860,6 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
   mouseMove: function(e) {
     if (this.dragging) {
-      this.model.stopPolling();
       this.dragged = true;
       this.clearEverything();
       var m_coords = this.coords(e);
