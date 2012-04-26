@@ -52,22 +52,22 @@ Diffa.Routers.Blobs = Backbone.Router.extend({
   }
 });
 
-Diffa.Models.HeatmapConfig = Backbone.Model.extend(Diffa.Collections.Watchable).extend({
+Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchable).extend({
   watchInterval: 5000,      // How frequently we poll for blob updates
-  maxColumns: 96,           // Maybe make variable?
-  defaultBucketSize: 3600,
   defaultZoomLevel:4,       // HOURLY
   defaultMaxRows: 10,       // Will change as more pairs arrive
+  defaultBucketCount: 12,   // Default number of buckets. Will be overriden once heatmap is ready
 
   initialize: function() {
     _.bindAll(this, "sync", "stopPolling", "startPolling");
 
     this.set({
       zoomLevel: this.defaultZoomLevel,
-      bucketSize: this.defaultBucketSize,
+      bucketSize: this.calculateBucketSize(this.defaultZoomLevel),
       maxRows: this.defaultMaxRows,
       polling: true,
-      startTime: nearestHour().add({seconds: -1 * this.defaultBucketSize * this.maxColumns}),
+      lastEndTime: nearestHour(),
+      bucketCount: this.defaultBucketCount
     });
     this.aggregates = this.get('aggregates');   // Pull the aggregates collection out as a top-level attribute
 
@@ -75,24 +75,33 @@ Diffa.Models.HeatmapConfig = Backbone.Model.extend(Diffa.Collections.Watchable).
     var fireBucketChange = function() { self.trigger('change:buckets'); };
     this.aggregates.on('add', fireBucketChange);
     this.aggregates.on('change', fireBucketChange);
+
+    // The two different end time properties should event out as changes to the start time
+    this.on('change:fixedEndTime', function() { self.trigger('change:startTime'); });
+    this.on('change:lastEndTime', function() { self.trigger('change:startTime'); });
   },
 
   sync: function() {
     // Don't do the poll if we're not polling
-    if (!this.get('polling')) return;
+//    if (!this.get('polling')) return;
 
     var self = this;
 
     var endTime = nearestHour();
-    var startTime = new Date(endTime.getTime() - self.get('bucketSize') * ( self.maxColumns -1 ) * 1000);
+    if (this.get('fixedEndTime')) {
+      endTime = this.get('fixedEndTime');
+    }
+
+    var startTime = this.startTimeFromEndTime(endTime);
 
     this.aggregates.subscribeAggregate('map', {startTime: startTime, endTime: endTime, bucketing: (self.get('bucketSize') / 60)});
     this.aggregates.subscribeAggregate('left', {endTime: startTime});
     this.aggregates.subscribeAggregate('right', {startTime: endTime});
 
     this.aggregates.sync(function() {
-      self.set('startTime', startTime);
-    });
+      self.set({'lastEndTime': endTime});
+      self.aggregates.change();   // Queue all change events till everything is completed
+    }, {silent: true});
   },
 
   startPolling: function() {
@@ -119,6 +128,10 @@ Diffa.Models.HeatmapConfig = Backbone.Model.extend(Diffa.Collections.Watchable).
     }
   },
 
+  getBucketSize: function() {
+    return this.calculateBucketSize(this.get('zoomLevel'));
+  },
+
   calculateBucketSize: function(zoomLevel) {
     switch(zoomLevel) {
       case 0 : return 24 *60 * 60;  // DAILY
@@ -142,7 +155,28 @@ Diffa.Models.HeatmapConfig = Backbone.Model.extend(Diffa.Collections.Watchable).
 
   getRow: function(row) {
     if (this.aggregates.length > row) {
-      return (this.aggregates.at(row).get('map') || []);
+      var pairAggs = this.aggregates.at(row).get('map') || [];
+      var bucketCount = this.get('bucketCount');
+
+      // Determine how many buckets different the projection is to the currently loaded data
+      var timeOffsetBuckets = (this.get('lastEndTime').getTime() - this.getProjectionEndTime().getTime()) / 1000 / this.get('bucketSize');
+      var lengthOffsetBuckets = bucketCount - pairAggs.length;
+      var offsetBuckets = timeOffsetBuckets + lengthOffsetBuckets;
+      
+      if (offsetBuckets == 0) {
+        return pairAggs;
+      } else if (Math.abs(offsetBuckets) >= bucketCount) {
+        // The aggregates are completely out of range. Return an empty array.
+        return [];
+      } else if (offsetBuckets > 0) {
+        // We need to insert 0 entries
+        var prefix = [];
+        for (var i = 0; i < offsetBuckets; ++i) prefix.push(0);
+
+        return prefix.concat(pairAggs).slice(0, bucketCount);
+      } else {
+        return pairAggs.slice(-offsetBuckets);
+      }
     } else {
       return [];
     }
@@ -162,6 +196,38 @@ Diffa.Models.HeatmapConfig = Backbone.Model.extend(Diffa.Collections.Watchable).
     } else {
       return 0;
     }
+  },
+
+  getProjectionStartTime: function() {
+    return this.startTimeFromEndTime(this.getProjectionEndTime());
+  },
+
+  getProjectionEndTime: function() {
+    if (this.get('fixedEndTime')) return this.get('fixedEndTime');
+    return this.get('lastEndTime');
+  },
+
+  startTimeFromEndTime: function(endTime) {
+    return new Date(endTime.getTime() - this.get('bucketSize') * this.get('bucketCount') * 1000)
+  },
+
+  scrollView: function(offset) {
+    if (!this.get('fixedEndTime')) this.set({fixedEndTime: this.get('lastEndTime')}, {silent: true});
+
+    var newFixedTime = new Date(this.get('fixedEndTime').getTime() + offset * 1000);
+    if (newFixedTime.getTime() > this.rightLimit().getTime()) {
+      this.unset('fixedEndTime');
+    } else {
+      this.set({fixedEndTime: newFixedTime});
+    }
+  },
+
+  isAtRightLimit: function() {
+    return !this.has('fixedEndTime');
+  },
+
+  rightLimit: function() {
+    return nearestHour();
   }
 });
 
@@ -373,14 +439,13 @@ Diffa.Views.Heatmap = Backbone.View.extend({
   toggleY: false,
   show_grid: false,
 
-  rightLimit: 0,
   o_x: 0,
   o_y: 0,
 
   highlighted: null,
 
   initialize: function() {
-    _.bindAll(this, "render", "update", "mouseUp", "mouseMove", "mouseDown");
+    _.bindAll(this, "render", "update", "pollAndUpdate", "mouseUp", "mouseMove", "mouseDown");
 
     $(document).mouseup(this.mouseUp);
     $(document).mousemove(this.mouseMove);
@@ -389,7 +454,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
 
     this.model.bind('change:buckets',         this.update);
     this.model.bind('change:maxRows',         this.update);
-    this.model.bind('change:polling',         this.update);
+    this.model.bind('change:polling',         this.pollAndUpdate);
 
     this.render();
     this.zoomControls = new Diffa.Views.ZoomControls({el: this.$('.heatmap-controls'), model: this.model});
@@ -417,10 +482,14 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     return this;
   },
 
+  pollAndUpdate: function() {
+    this.update();
+    this.model.sync();
+  },
+
   update: function() {
     this.clearEverything();
     this.recalibrateHeatmap();
-    this.o_x = -1 * this.rightLimit;
     this.context.translate(this.o_x, this.o_y);
     this.scaleContext.translate(this.o_x, this.o_y);
     this.drawGrid();
@@ -441,7 +510,8 @@ Diffa.Views.Heatmap = Backbone.View.extend({
   calibrateHeatmap: function() {
     this.scale.width = this.scale.offsetWidth;
     this.scale.height = this.scaleHeight;
-    this.rightLimit = (this.model.maxColumns * this.gridSize) - this.canvas.width;
+    this.visibleColumns = this.truncateInt(this.canvas.width / this.gridSize);
+    this.model.set({bucketCount: this.visibleColumns});
 
     this.$('.heatmap-controls').
         show().
@@ -479,7 +549,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
   },
 
   drawGrid: function() {
-    var region_width = this.model.maxColumns * this.gridSize;
+    var region_width = this.visibleColumns * this.gridSize;
     // draw grid lines
     if (this.show_grid) {
       for (var x = 0.5; x < region_width; x += this.gridSize) {
@@ -542,17 +612,28 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     }
 
     // draw scale
-    var startTime = this.model.get('startTime');
+    var every = 3;
+    var startTime = this.model.getProjectionStartTime();
     var bucketSize = this.model.get('bucketSize');
     var zoomLevel = this.model.get('zoomLevel');
     this.scaleContext.font = "9px sans-serif";
-    for (var sc = 0; sc < this.model.maxColumns; sc++) {
-      if (sc % 3 == 0) {
-        var tick = new Date(startTime.getTime() + (sc * bucketSize * 1000));
-        this.scaleContext.fillText(tick.toString("dd/MM"), sc * this.gridSize, 10);
-        this.scaleContext.fillText(tick.toString("HH:mm"), sc * this.gridSize, 20);
+    var alignedStart = this.align(startTime, every);
+    var alignOffset = (alignedStart.getTime() - startTime.getTime()) / 1000 / bucketSize * this.gridSize;
+
+    for (var sc = 0; sc < this.visibleColumns; sc++) {
+      if (sc % every == 0) {
+        var tick = new Date(alignedStart.getTime() + (sc * bucketSize * 1000));
+        this.scaleContext.fillText(tick.toString("dd/MM"), sc * this.gridSize + alignOffset, 10);
+        this.scaleContext.fillText(tick.toString("HH:mm"), sc * this.gridSize + alignOffset, 20);
       }
     }
+  },
+
+  align: function(time, skip) {
+    var millis = time.getTime();
+    var divisions = this.model.get('bucketSize') * skip;
+    var next = Math.ceil(millis / 1000 / divisions) * divisions * 1000;
+    return new Date(next);
   },
 
   dashedLine: function(ctx, x1, y1, x2, y2, dashLen) {
@@ -592,7 +673,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
   drawCircle: function(i, j) {
     var cell = this.coordsToCell({"x":i, "y":j});
 
-    if (cell.column < this.model.maxColumns && cell.row < this.model.get('maxRows')) {
+    if (cell.column < this.visibleColumns && cell.row < this.model.get('maxRows')) {
       var cell_x = i + Math.floor(this.gridSize / 2);
       var cell_y = j + this.gutterSize + Math.floor(this.gridSize / 2);
       var bucketSize = this.model.getRow(cell.row)[cell.column] || 0;
@@ -657,36 +738,6 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         this.overlayContext.fillText(value, c_x + Math.floor(this.gridSize / 2) - Math.floor(width / 2), c_y);
       }
     }
-  },
-
-  /**
-   * Finds a cell with a fully- or partially-visible blob at the given coordinates.
-   * The "dir" parameter controls whether blob visibility is determined with respect
-   * to the left or right of the x position.
-   */
-  findCellWithVisibleBlob: function(x, y, dir) {
-    var cell = this.coordsToCell({"x": x, "y": y});
-    var radius = this.limit(this.model.getRow(cell.row)[cell.column], Math.floor((this.gridSize - 1) / 2));
-    if (radius.value > 0) {
-      var cutoff = this.cellToCoords(cell).x + (this.gridSize / 2) + (dir == directions.left ? radius.value : -1 * radius.value);
-      if (dir == directions.left && x > cutoff) {
-        // nudge to the right if the leftmost cell's blob is no longer visible
-        cell.column++;
-      } else if (dir == directions.right && x < cutoff) {
-        // nudge to the left if the rightmost cell's blob is no longer visible
-        cell.column--;
-      }
-    }
-    return cell;
-  },
-
-  nonEmptyCellExists: function(row, startColumn, endColumn) {
-    var cols = this.model.getRow(row);
-    for (var i = startColumn; i < endColumn; i++) {
-      if (cols[i] > 0)
-        return true;
-    }
-    return false;
   },
 
   coords: function(e) {
@@ -817,7 +868,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         // Perform a navigation
         var cell = this.coordsToCell(c);
         var selectedPair = this.model.getSwimlaneLabels()[cell.row];
-        var gridStartTime = this.model.get('startTime');
+        var gridStartTime = this.model.getProjectionStartTime();
         var selectedIdx = cell.column;
         var bucketSize = this.model.get('bucketSize');
 
@@ -831,7 +882,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         $(this.el).trigger('blob:selected', [selectedPair, Diffa.Helpers.DatesHelper.toISOString(selectionStartTime), Diffa.Helpers.DatesHelper.toISOString(selectionEndTime)]);
       }
     } else {
-      if (Math.abs(this.o_x) >= this.rightLimit) {
+      if (this.model.isAtRightLimit() && this.o_x == 0) {
         this.model.startPolling();
       }
     }
@@ -847,13 +898,20 @@ Diffa.Views.Heatmap = Backbone.View.extend({
       var m_coords = this.coords(e);
       var d_coords = this.coords(this.dragging);
       this.o_x += m_coords.x - d_coords.x;
-      if (this.o_x > 0) {
+
+      // Calculate the number of cumulative buckets we've changed, along with the remaining positional offset
+      var bucketsChange = this.truncateInt(this.o_x / this.gridSize);
+      this.o_x %= this.gridSize;
+
+      var secondsChange = (bucketsChange * this.model.getBucketSize());
+      if (secondsChange != 0) {
+        this.model.scrollView(-secondsChange);
+      }
+
+      if (this.model.isAtRightLimit() && this.o_x < 0) {
         this.o_x = 0;
       }
 
-      if (Math.abs(this.o_x) > this.rightLimit) {
-        this.o_x = -1 * this.rightLimit;
-      }
       this.context.translate(this.o_x, this.o_y);
       this.scaleContext.translate(this.o_x, 0);
       this.drawGrid();
@@ -864,6 +922,11 @@ Diffa.Views.Heatmap = Backbone.View.extend({
       this.overlayContext.translate(this.o_x, this.o_y);
       this.mouseOver(e);
     }
+  },
+
+  truncateInt: function(d) {
+    if (d < 0) return Math.ceil(d);
+    return Math.floor(d);
   },
 
   mouseOver: function(e) {
@@ -1171,7 +1234,7 @@ function nearestHour() {
 
 $('.diffa-heatmap').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
-  new Diffa.Views.Heatmap({el: $(this), model: new Diffa.Models.HeatmapConfig({aggregates: domain.aggregates})});
+  new Diffa.Views.Heatmap({el: $(this), model: new Diffa.Models.HeatmapProjection({aggregates: domain.aggregates})});
 });
 $('.diffa-difflist').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));

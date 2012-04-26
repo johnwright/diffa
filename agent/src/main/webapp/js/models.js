@@ -412,18 +412,18 @@ Diffa.Models.PairAggregates = Backbone.Model.extend(Diffa.Models.Aggregator).ext
     this.pair = this.get('pair');
   },
 
-  sync: function(callback) {
+  sync: function(callback, opts) {
     var self = this;
 
     this.retrieveAggregates(function(result) {
-      self.applyAggregateResult(result);
+      self.applyAggregateResult(result, opts);
 
       if (callback) callback();
     });
   },
 
-  applyAggregateResult: function(result) {
-    this.set(result);
+  applyAggregateResult: function(result, opts) {
+    this.set(result, opts);
   }
 });
 Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Aggregator).extend({
@@ -440,7 +440,7 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
   /** Sort contained pairs by id to give stable iteration */
   comparator: function(pair) { return pair.id; },
 
-  sync: function(callback) {
+  sync: function(callback, opts) {
     var self = this;
 
     this.retrieveAggregates(function(data) {
@@ -448,13 +448,17 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
         var pairAggregates = self.get(pair);
         if (!pairAggregates) {
           pairAggregates = new Diffa.Models.PairAggregates({domain: self.domain, pair: pair});
-          self.add(pairAggregates);
+          self.add(pairAggregates, opts);
         }
-        pairAggregates.applyAggregateResult(data[pair]);
+        pairAggregates.applyAggregateResult(data[pair], opts);
       }
 
       if (callback) callback();
     });
+  },
+
+  change: function() {
+    this.forEach(function(pair) { pair.change(); });
   }
 });
 
