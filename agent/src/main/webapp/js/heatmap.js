@@ -872,11 +872,6 @@ Diffa.Views.Heatmap = Backbone.View.extend({
         var selectedIdx = cell.column;
         var bucketSize = this.model.get('bucketSize');
 
-        // Workaround for daily granularity
-        if (bucketSize == 86400) {
-          selectedIdx--;
-        }
-
         var selectionStartTime = new Date(gridStartTime.getTime() + (selectedIdx * bucketSize * 1000));
         var selectionEndTime = new Date(selectionStartTime.getTime() + (bucketSize * 1000));
         $(this.el).trigger('blob:selected', [selectedPair, Diffa.Helpers.DatesHelper.toISOString(selectionStartTime), Diffa.Helpers.DatesHelper.toISOString(selectionEndTime)]);
