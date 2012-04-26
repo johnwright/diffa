@@ -22,7 +22,7 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     'change select[name=endpoint]': 'selectEndpoint'
   },
   templates: {
-    rangeConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
+    rangeConstraint: _.template('<div class="category" data-constraint="<%= name %>" data-constraint-type="<%= dataType %>">' +
                       '<h5 class="name"><%= name %> (<%= dataType %> range)</h5>' +
                       '<label for="<%= name %>_range_start">Start:</label>' +
                       '<input id="<%= name %>_range_start" type="text" name="start"></label>' +
@@ -97,6 +97,26 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 
     selectedEndpoint.rangeCategories.each(function(rangeCat) {
       constraints.append(self.templates.rangeConstraint(rangeCat.toJSON()));
+
+      // add date picking to the range inputs
+      $(".category[data-constraint-type=date] input").glDatePicker({
+        allowOld: true, // as far back as possible
+        startDate: new Date(),
+        endDate: -1, // no last selectable date
+        selectedDate: -1, // no default selected date
+        onChange: function(target, newDate) {
+          var result, year, month, day;
+
+          // helper to pad our month/day values if needed
+          var pad = function(s) { s = s.toString(); if (s.length < 2) { s = "0" + s; }; return s };
+          year = newDate.getFullYear();
+          month = pad(newDate.getMonth() + 1);
+          day = pad(newDate.getDate());
+          result = year + "-" + month + "-" + day;
+
+          target.val(result);
+        }
+      });
     });
     selectedEndpoint.setCategories.each(function(setCat) {
       constraints.append(self.templates.setConstraint(setCat.toJSON()));
