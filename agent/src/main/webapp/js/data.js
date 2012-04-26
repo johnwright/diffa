@@ -23,18 +23,19 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   },
   templates: {
     rangeConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
-                      '<span class="name"><%= name %> Range</span>' +
-                      '<input type="text" name="start">' +
-                      ' -> ' +
-                      '<input type="text" name="end">' +
+                      '<h5 class="name"><%= name %> Range</h5>' +
+                      '<label for="<%= name %>_range_start">Start:</label>' +
+                      '<input id="<%= name %>_range_start" type="text" name="start"></label>' +
+                      '<br>' +
+                      '<label for="<%= name %>_range_end">End:</label>' +
+                      '<input id="<%= name %>_range_end" type="text" name="end"></label>' +
                      '</div>'),
     prefixConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
-                        '<span class="name"><%= name %> Prefix</span>' +
+                        '<h5 class="name"><%= name %> Prefix</h5>' +
                         '<input type="text" name="prefix">' +
                       '</div>'),
     setConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
-                        '<span class="name"><%= name %> Values</span>' +
-                        '<br>' +
+                        '<h5 class="name"><%= name %> Values</h5>' +
                         '<% _.each(values, function(value) { %>' +
                           '<input type="checkbox" value="<%= value %>" id="constraint_<%= name %>_<%= value %>">' +
                           '<label for="constraint_<%= name %>_<%= value %>"><%= value %></label>' +
