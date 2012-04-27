@@ -901,7 +901,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     c.x -= this.o_x;
     var cell = this.coordsToCell(c);
 
-    if (cell.row >= 0 && cell.row < this.model.get('maxRows') && cell.column >= 0 && cell.column < this.model.maxColumns) {
+    if (cell.row >= 0 && cell.row < this.model.get('maxRows') && cell.column >= 0 && cell.column < this.visibleColumns) {
       this.highlighted = cell;
       this.drawOverlay();
     }
