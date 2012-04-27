@@ -31,6 +31,7 @@ import scala.collection.JavaConversions._
 
 class Configuration(val configStore: DomainConfigStore,
                     val systemConfigStore: SystemConfigStore,
+                    val serviceLimitsStore: ServiceLimitsStore,
                     val matchingManager: MatchingManager,
                     val versionCorrelationStoreFactory: VersionCorrelationStoreFactory,
                     val supervisor:ActivePairManager,
@@ -42,7 +43,7 @@ class Configuration(val configStore: DomainConfigStore,
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
-  def applyConfiguration(domain:String, diffaConfig:DiffaConfig) = {
+  def applyConfiguration(domain:String, diffaConfig:DiffaConfig) {
 
     // Ensure that the configuration is valid upfront
     diffaConfig.validate()
@@ -116,7 +117,7 @@ class Configuration(val configStore: DomainConfigStore,
   def declareEndpoint(domain:String, endpoint: EndpointDef): Unit = createOrUpdateEndpoint(domain, endpoint)
 
   def createOrUpdateEndpoint(domain:String, endpointDef: EndpointDef, restartPairs:Boolean = true) = {
-    log.debug("[%s] Processing endpoint declare/update request: %s".format(domain, endpointDef.name))
+
     endpointDef.validate()
 
     // Ensure that the data stored for each pair can be upgraded.
@@ -143,7 +144,6 @@ class Configuration(val configStore: DomainConfigStore,
   }
 
   def deleteEndpoint(domain:String, endpoint: String) = {
-    log.debug("[%s] Processing endpoint delete request: %s".format(domain,endpoint))
     configStore.deleteEndpoint(domain, endpoint)
     endpointListener.onEndpointRemoved(domain, endpoint)
   }
@@ -163,12 +163,10 @@ class Configuration(val configStore: DomainConfigStore,
   def getUser(x:String) = systemConfigStore.getUser(x)
 
   def createOrUpdateUser(domain:String, u: User): Unit = {
-    log.debug("Processing user declare/update request: %s".format(u))
     systemConfigStore.createOrUpdateUser(u)
   }
 
   def deleteUser(name: String): Unit = {
-    log.debug("Processing user delete request: %s".format(name))
     systemConfigStore.deleteUser(name)
   }
   /*
@@ -177,42 +175,25 @@ class Configuration(val configStore: DomainConfigStore,
   def declarePair(domain:String, pairDef: PairDef): Unit = createOrUpdatePair(domain, pairDef)
 
   def createOrUpdatePair(domain:String, pairDef: PairDef): Unit = {
-
-    val pairRef = DiffaPairRef(pairDef.key, domain)
-    log.info("%s -> Processing pair declare/update request ....".format(pairRef))
-
     pairDef.validate(null, configStore.listEndpoints(domain).toSet)
     configStore.createOrUpdatePair(domain, pairDef)
     withCurrentPair(domain, pairDef.key, notifyPairUpdate(_))
-
-    log.info("%s -> Completed pair declare/update request".format(pairRef))
   }
 
   def deletePair(domain:String, key: String): Unit = {
 
-    val pairRef = DiffaPairRef(key,domain)
-    log.info("%s -> Processing pair delete request ...".format(pairRef))
-
     withCurrentPair(domain, key, (p:DiffaPair) => {
       val pair = p.asRef
-      log.info("%s -> Stopping pair actor  (%s)".format(pair, benchmark( () => supervisor.stopActor(pair)) ))
-      log.info("%s -> Removing from matching manager (%s)".format(pair, benchmark( () => matchingManager.onDeletePair(p)) ))
-      log.info("%s -> Removing from correlation store (%s)".format(pair, benchmark( () => versionCorrelationStoreFactory.remove(pair)) ))
-      log.info("%s -> Unregistering from scheduler (%s)".format(pair, benchmark( () => scanScheduler.onDeletePair(p)) ))
-      log.info("%s -> Removing from differences store (%s)".format(pair, benchmark( () => differencesManager.onDeletePair(pair)) ))
-      log.info("%s -> Unregistering from diagnostics (%s)".format(pair, benchmark( () => diagnostics.onDeletePair(pair)) ))
+      supervisor.stopActor(pair)
+      matchingManager.onDeletePair(p)
+      versionCorrelationStoreFactory.remove(pair)
+      scanScheduler.onDeletePair(p)
+      differencesManager.onDeletePair(pair)
+      diagnostics.onDeletePair(pair)
     })
 
+    serviceLimitsStore.deletePairLimitsByDomain(domain)
     configStore.deletePair(domain, key)
-
-    log.info("%s -> Completed pair delete request".format(pairRef))
-  }
-
-  private def benchmark(f:() => Unit) : Period = {
-    val start = new DateTime()
-    f()
-    val end = new DateTime()
-    new Interval(start,end).toPeriod()
   }
 
   /**
@@ -243,18 +224,15 @@ class Configuration(val configStore: DomainConfigStore,
   }
 
   def createOrUpdateRepairAction(domain:String, action: RepairActionDef) {
-    log.debug("Processing repair action declare/update request: " + action.name)
     action.validate()
     configStore.createOrUpdateRepairAction(domain, action)
   }
 
   def deleteRepairAction(domain:String, name: String, pairKey: String) {
-    log.debug("Processing repair action delete request: (name="+name+", pairKey="+pairKey+")")
     configStore.deleteRepairAction(domain, name, pairKey)
   }
 
   def listRepairActions (domain:String) : Seq[RepairActionDef] = {
-    log.debug("Processing repair action list request")
     configStore.listRepairActions(domain)
   }
 
@@ -263,18 +241,15 @@ class Configuration(val configStore: DomainConfigStore,
   }
 
   def createOrUpdateEscalation(domain:String, escalation: EscalationDef) {
-    log.debug("Processing escalation declare/update request: " + escalation.name)
     escalation.validate()
     configStore.createOrUpdateEscalation(domain, escalation)
   }
 
   def deleteEscalation(domain:String, name: String, pairKey: String) {
-    log.debug("Processing escalation delete request: (name="+name+", pairKey="+pairKey+")")
     configStore.deleteEscalation(domain, name, pairKey)
   }
 
   def listEscalations(domain:String) : Seq[EscalationDef] = {
-    log.debug("Processing escalation list request")
     configStore.listEscalations(domain)
   }
 
@@ -283,12 +258,10 @@ class Configuration(val configStore: DomainConfigStore,
   }
 
   def deleteReport(domain:String, name: String, pairKey: String) {
-    log.debug("Processing report delete request: (name="+name+", pairKey="+pairKey+")")
     configStore.deleteReport(domain, name, pairKey)
   }
 
   def createOrUpdateReport(domain:String, report: PairReportDef) {
-    log.debug("Processing report declare/update request: " + report.name)
     report.validate()
     configStore.createOrUpdateReport(domain, report)
   }
@@ -299,11 +272,10 @@ class Configuration(val configStore: DomainConfigStore,
 
   def notifyPairUpdate(p:DiffaPair) {
     val pairRef = p.asRef
-
-    log.info("%s -> Starting pair actor  (%s)".format(pairRef, benchmark( () => supervisor.startActor(p)) ))
-    log.info("%s -> Adding to matching manager (%s)".format(pairRef, benchmark( () => matchingManager.onUpdatePair(p)) ))
-    log.info("%s -> Adding to differences store (%s)".format(pairRef, benchmark( () => differencesManager.onUpdatePair(pairRef)) ))
-    log.info("%s -> Registering with scheduler (%s)".format(pairRef, benchmark( () => scanScheduler.onUpdatePair(p)) ))
-    log.info("%s -> Running initial difference (%s)".format(pairRef, benchmark( () => pairPolicyClient.difference(pairRef)) ))
+    supervisor.startActor(p)
+    matchingManager.onUpdatePair(p)
+    differencesManager.onUpdatePair(pairRef)
+    scanScheduler.onUpdatePair(p)
+    pairPolicyClient.difference(pairRef)
   }
 }

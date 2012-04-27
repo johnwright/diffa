@@ -50,7 +50,7 @@ class HibernateConfigStorePreparationStep
    */
   def prepare(sf: SessionFactory, config: Configuration) {
     config.getProperties filterKeys(p => p.startsWith("hibernate")) foreach {
-      prop => log.info("Preparing database [%s: %s]".format(prop._1, prop._2))
+      prop => log.debug("Preparing database [%s: %s]".format(prop._1, prop._2))
     }
 
     val version = detectVersion(sf, config)
@@ -217,6 +217,7 @@ object HibernateConfigStorePreparationStep {
    * Note that these steps should be executed in strictly ascending order.
    */
   val migrationSteps = Seq(
-    HibernateMigrationStep0022
+    HibernateMigrationStep0022,
+    HibernateMigrationStep0023
   )
 }

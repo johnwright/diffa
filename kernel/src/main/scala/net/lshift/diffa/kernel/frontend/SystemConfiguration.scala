@@ -20,15 +20,20 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.differencing.DifferencesManager
+import net.lshift.diffa.kernel.config.{User, ServiceLimitsStore}
 
 
 /**
  * Frontend component that wraps all of the events that surround system configuration changes.
  */
-class SystemConfiguration(val systemConfigStore: SystemConfigStore, differencesManager:DifferencesManager,
+class SystemConfiguration(val systemConfigStore: SystemConfigStore,
+                          serviceLimitsStore: ServiceLimitsStore,
+                          differencesManager:DifferencesManager,
                           listener:SystemConfigListener, configuration:Configuration) {
 
   val log = LoggerFactory.getLogger(getClass)
+
+  def listDomains = systemConfigStore.listDomains
 
   def createOrUpdateDomain(domain: DomainDef) = {
     log.info("Processing domain declare/update request: %s".format(domain))
@@ -41,6 +46,7 @@ class SystemConfiguration(val systemConfigStore: SystemConfigStore, differencesM
     log.info("Processing domain delete request: %s".format(domain))
     configuration.clearDomain(domain)
     differencesManager.onDeleteDomain(domain)
+    serviceLimitsStore.deleteDomainLimits(domain)
     systemConfigStore.deleteDomain(domain)
   }
 
@@ -51,6 +57,7 @@ class SystemConfiguration(val systemConfigStore: SystemConfigStore, differencesM
   }
   def deleteUser(username: String) = systemConfigStore.deleteUser(username)
   def listUsers : Seq[UserDef] = systemConfigStore.listUsers.map(toUserDef(_))
+  def listFullUsers : Seq[User] = systemConfigStore.listUsers
   def getUserToken(username:String) = systemConfigStore.getUserToken(username)
   def clearUserToken(username:String) {
     systemConfigStore.clearUserToken(username)
