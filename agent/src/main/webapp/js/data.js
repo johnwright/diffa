@@ -99,11 +99,29 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
       constraints.append(self.templates.rangeConstraint(rangeCat.toJSON()));
 
       // add date picking to the range inputs
+
+      var lowerBound = rangeCat.attributes.lower;
+      var upperBound = rangeCat.attributes.upper;
+
+      if (lowerBound) {
+        var allowOld = false;
+        var startDate = new Date(lowerBound);
+      } else {
+        var allowOld = true;
+        var startDate = new Date();
+      }
+
+      if (upperBound) {
+        var endDate = new Date(upperBound);
+      } else {
+        var endDate = -1;
+      }
+
       $(".category[data-constraint-type=date] input").glDatePicker({
-        allowOld: true, // as far back as possible
-        startDate: new Date(),
-        endDate: -1, // no last selectable date
-        selectedDate: -1, // no default selected date
+        allowOld: allowOld, // as far back as possible or not
+        startDate: startDate,
+        endDate: endDate, // latest selectable date, days since start date (int), or no limit (-1)
+        selectedDate: -1, // default select date, or nothing set (-1)
         onChange: function(target, newDate) {
           var result, year, month, day;
 
