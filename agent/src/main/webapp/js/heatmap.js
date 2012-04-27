@@ -599,7 +599,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     }
 
     // draw scale
-    var every = 3;
+    var every = 3;      // At what column intervals labels will be placed
     var startTime = this.model.getProjectionStartTime();
     var bucketSize = this.model.get('bucketSize');
     var zoomLevel = this.model.get('zoomLevel');
@@ -607,6 +607,7 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     var alignedStart = this.align(startTime, every);
     var alignOffset = (alignedStart.getTime() - startTime.getTime()) / 1000 / bucketSize * this.gridSize;
 
+    // Iterate the columns, and place a label at the 'every' interval
     for (var sc = 0; sc < this.visibleColumns; sc++) {
       if (sc % every == 0) {
         var tick = new Date(alignedStart.getTime() + (sc * bucketSize * 1000));
