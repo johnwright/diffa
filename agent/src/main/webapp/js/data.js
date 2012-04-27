@@ -118,8 +118,8 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 
       // add date picking to the range inputs
 
-      var lowerBound = rangeCat.attributes.lower;
-      var upperBound = rangeCat.attributes.upper;
+      var lowerBound = rangeCat.get("lower");
+      var upperBound = rangeCat.get("upper");
 
       if (lowerBound) {
         var allowOld = false;
