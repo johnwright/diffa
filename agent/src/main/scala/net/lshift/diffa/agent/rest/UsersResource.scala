@@ -112,11 +112,11 @@ class UsersResource {
     def generateVersion(user:User) = ScannableUtils.generateDigest(user.name, user.token)
 
     val constraintsBuilder = new ConstraintsBuilder(request)
-    constraintsBuilder.maybeAddStringPrefixConstraint("user")
+    constraintsBuilder.maybeAddStringPrefixConstraint("name")
     val constraints = constraintsBuilder.toList
 
     val aggregationsBuilder = new AggregationBuilder(request)
-    aggregationsBuilder.maybeAddStringPrefixAggregation("user")
+    aggregationsBuilder.maybeAddStringPrefixAggregation("name")
     val aggregations = aggregationsBuilder.toList
 
     val users = ScannableUtils.filterByKey[User](systemConfig.listFullUsers, constraints, _.name)
