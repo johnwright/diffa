@@ -15,35 +15,35 @@
  */
 package net.lshift.diffa.agent.itest.config
 
-import org.junit.Assert._
-import net.lshift.diffa.agent.itest.support.TestConstants._
-import scala.collection.JavaConversions._
-import net.lshift.diffa.client.ScanningParticipantRestClient
-import net.lshift.diffa.participant.scanning.StringPrefixConstraint
 import org.junit.Test
+import net.lshift.diffa.participant.scanning.StringPrefixConstraint
+import org.junit.Assert._
+import net.lshift.diffa.client.ScanningParticipantRestClient
+import net.lshift.diffa.agent.itest.support.TestConstants._
 
-class UsersScanningTest {
-  val participant = new ScanningParticipantRestClient(agentURL + "/security/scan")
+class DomainsScanningTest {
+
+  val participant = new ScanningParticipantRestClient(agentURL + "/root/domains/scan")
 
   @Test
-  def aggregationShouldIncludeGuestUser {
+  def aggregationShouldIncludeDefaultDomain {
 
-    val constraints = Seq(new StringPrefixConstraint("name", "g"))
+    val constraints = Seq(new StringPrefixConstraint("name", "di"))
     val bucketing = Seq()
 
     val results = participant.scan(constraints, bucketing).toSeq
 
-    assertFalse(results.filter( r => {r.getId == "guest"} ).isEmpty)
+    assertFalse(results.filter( r => {r.getId == "diffa"} ).isEmpty)
   }
 
   @Test
-  def aggregationShouldNotIncludeGuestUser {
+  def aggregationShouldNotIncludeDefaultDomain {
 
-    val constraints = Seq(new StringPrefixConstraint("name", "x"))
+    val constraints = Seq(new StringPrefixConstraint("name", "fa"))
     val bucketing = Seq()
 
     val results = participant.scan(constraints, bucketing).toSeq
 
-    assertTrue(results.filter( r => {r.getId == "guest"} ).isEmpty)
+    assertTrue(results.filter( r => {r.getId == "diffa"} ).isEmpty)
   }
 }
