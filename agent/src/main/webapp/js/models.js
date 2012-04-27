@@ -219,10 +219,12 @@ Diffa.Collections.Watchable = {
   // Indicates that the given element is watching this collection, and it should periodically update itself.
   watch: function(listenerEl) {
     if (!this.watched) {
+      var self = this;
+
       this.watched = true;
       this.sync();
 
-      this.registeredWatchIntervalId = setInterval(this.sync, this.watchInterval);
+      this.registeredWatchIntervalId = setInterval(function() { self.sync(); }, this.watchInterval);
 
       // TODO: If we want to support listening elements coming and going, we should keep track of the listener element
       //       and only keep polling if we have at least one that is still in the DOM.
@@ -400,8 +402,9 @@ Diffa.Models.Aggregator = {
   }
 };
 
-Diffa.Models.PairAggregates = Backbone.Model.extend(Diffa.Models.Aggregator).extend({
+Diffa.Models.PairAggregates = Backbone.Model.extend(Diffa.Collections.Watchable).extend(Diffa.Models.Aggregator).extend({
   idAttribute: 'pair',
+  watchInterval: 5000,
 
   initialize: function() {
     Diffa.Models.Aggregator.initialize.call(this);
@@ -445,16 +448,21 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
 
     this.retrieveAggregates(function(data) {
       for(var pair in data) {
-        var pairAggregates = self.get(pair);
-        if (!pairAggregates) {
-          pairAggregates = new Diffa.Models.PairAggregates({domain: self.domain, pair: pair});
-          self.add(pairAggregates, opts);
-        }
-        pairAggregates.applyAggregateResult(data[pair], opts);
+        self.forPair(pair).applyAggregateResult(data[pair], opts);
       }
 
       if (callback) callback();
     });
+  },
+
+  forPair: function(pair, opts) {
+    var pairAggregates = this.get(pair);
+    if (!pairAggregates) {
+      pairAggregates = new Diffa.Models.PairAggregates({domain: this.domain, pair: pair});
+      this.add(pairAggregates, opts);
+    }
+
+    return pairAggregates;
   },
 
   change: function() {
