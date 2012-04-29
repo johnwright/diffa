@@ -30,18 +30,21 @@ Diffa.Helpers.Viz = {
    *   f(1)   = a = m
    *   f(100) = m + b*log(100) = M  =>  b = (M-m)/log(100)
    */
-  transformBucketSize: function(size, maximum) {
+  transformBucketSize: function(size, opts) {
+    // Validate the options
+    if (!opts.minSize) throw "Missing minSize option";
+    if (!opts.maxSize) throw "Missing minSize option";
+    if (!opts.maxValue) throw "Missing minSize option";
+
     var minimumIn = 1; // anything non-zero below this gets raised to valueFloor
-    var valueFloor = 2;
-    var maximumCutOff = 100; // anything over this is capped to the maximum
 
     if (size == 0)             { return 0; }
-    if (size <= minimumIn)     { return valueFloor; }
+    if (size <= minimumIn)     { return opts.minSize; }
 
-    var a = valueFloor;
-    var b = (maximum - valueFloor)/Math.log(maximumCutOff);
+    var a = opts.minSize;
+    var b = (opts.maxSize - opts.minSize)/Math.log(opts.maxValue);
 
-    return a + b*Math.log(size);
+    return Diffa.Helpers.Viz.limit(a + b*Math.log(size), opts.maxSize);
   },
 
   /**

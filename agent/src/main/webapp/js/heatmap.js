@@ -667,7 +667,11 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       var bucketSize = this.model.getRow(cell.row)[cell.column] || 0;
       var maximum = Math.floor((this.gridSize - 1) / 2);
 
-      var cappedSize = this.limit(this.transformBucketSize(bucketSize, maximum), maximum);
+      var cappedSize = this.transformBucketSize(bucketSize, {
+        minSize: 2,
+        maxSize: maximum,
+        maxValue: 100
+      });
       var size = cappedSize.value;
       var isOverMaximum = cappedSize.limited;
 

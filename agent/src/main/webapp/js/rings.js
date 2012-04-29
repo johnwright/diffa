@@ -17,6 +17,21 @@
 $(function() {
 
 Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
+  colours: {
+    current: {          // Orange
+      line: '#ff9440',
+      fill: '#ffb073'
+    },
+    previous: {         // Yellow
+      line: '#f4fb40',
+      fill: '#fafda4'
+    },
+    before: {           // Blue
+      line: '#43adde',
+      fill: '#99d3ed'
+    }
+  },
+
   initialize: function() {
     var self = this;
 
@@ -70,31 +85,46 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
   update: function() {
     var singleValue = function(l) { return (l || [0])[0]; };
 
+    this.clearCanvas();
+
     var currentHour = singleValue(this.model.get('currentHour'));
     var previousHour = singleValue(this.model.get('previousHour'));
     var before = singleValue(this.model.get('before'));
 
-    var currentSize = this.limit(this.transformBucketSize(currentHour + previousHour + before, 20), 20);
-    var previousSize = this.limit(this.transformBucketSize(previousHour + before, 20), 20);
-    var beforeSize = this.limit(this.transformBucketSize(before, 20), 20);
+    var bucketOpts = {
+      minSize: 10,
+      maxSize: (this.width / 2) - 5,
+      maxValue: 100
+    };
 
-    this.drawCircle(currentSize.value, "#ff1f0d");
-    this.drawCircle(previousSize.value, "#ffba40");
-    this.drawCircle(beforeSize.value, "#f4fb3f");
+    var currentSize = this.transformBucketSize(currentHour + previousHour + before, bucketOpts);
+    var previousSize = this.transformBucketSize(previousHour + before, bucketOpts);
+    var beforeSize = this.transformBucketSize(before, bucketOpts);
+
+    this.drawCircle(currentSize.value, this.colours.current);
+    this.drawCircle(previousSize.value, this.colours.previous);
+    this.drawCircle(beforeSize.value, this.colours.before);
   },
 
-  drawCircle: function(value, colour) {
+  clearCanvas: function() {
+    this.layer.width = this.layer.width;
+  },
+
+  drawCircle: function(value, colours) {
     this.context.lineWidth = 2;
-    this.context.strokeStyle = colour;
-    this.context.fillStyle = colour;
+    this.context.strokeStyle = colours.line;
+    this.context.fillStyle = colours.fill;
     this.context.beginPath();
     this.context.arc(this.width / 2, this.width / 2, value, 0, Math.PI * 2, false);
     this.context.closePath();
     this.context.fill();
+    this.context.stroke();
   }
 });
 
 Diffa.Views.RingSet = Backbone.View.extend({
+  template: window.JST['rings/ringset-entry'],
+
   initialize: function() {
     _.bindAll(this, "addPair", "addAllPairs");
 
@@ -108,8 +138,8 @@ Diffa.Views.RingSet = Backbone.View.extend({
   },
 
   addPair: function(pair) {
-    var pairEl = $('<div class="diffa-ringset"></div>').appendTo($(this.el));
-    new Diffa.Views.Rings({el: pairEl, model: this.model.aggregates.forPair(pair.id)});
+    var pairEl = $(this.template({key: pair.id})).appendTo($(this.el));
+    new Diffa.Views.Rings({el: $('.diffa-rings', pairEl), model: this.model.aggregates.forPair(pair.id)});
   }
 });
 
