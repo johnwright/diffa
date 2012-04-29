@@ -29,13 +29,18 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     before: {           // Blue
       line: '#43adde',
       fill: '#99d3ed'
+    },
+
+    hovered: {          // Grey
+      line: '#8e9690',
+      fill: '#c3c7c4'
     }
   },
 
   initialize: function() {
     var self = this;
 
-    _.bindAll(this, 'update');
+    _.bindAll(this, 'update', 'onMouseOver', 'onMouseMove', 'onMouseOut');
 
     // Subscribe to aggregates for the various rings
     this.model.subscribeAggregate('currentHour', function() {
@@ -50,6 +55,12 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
     // Render the basic widget
     this.setupWidget();
+
+    // Listen for events within the canvas
+    $(this.layer).
+      mouseover(this.onMouseOver).
+      mousemove(this.onMouseMove).
+      mouseout(this.onMouseOut);
 
     // Listen for changes to the various properties
     this.model.on('change:currentHour',   this.update);
@@ -70,6 +81,8 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
   setupWidget: function() {
     $(this.el).html(JST['rings/ring']());
     this.resize();
+
+    this.ringInfo = this.$('.ring-info');
   },
 
   resize: function() {
@@ -84,12 +97,13 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
   update: function() {
     var singleValue = function(l) { return (l || [0])[0]; };
-
+    var self = this;
+    
     this.clearCanvas();
 
-    var currentHour = singleValue(this.model.get('currentHour'));
-    var previousHour = singleValue(this.model.get('previousHour'));
-    var before = singleValue(this.model.get('before'));
+    this.currentHour = singleValue(this.model.get('currentHour'));
+    this.previousHour = singleValue(this.model.get('previousHour'));
+    this.before = singleValue(this.model.get('before'));
 
     var bucketOpts = {
       minSize: 10,
@@ -97,13 +111,20 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       maxValue: 100
     };
 
-    var currentSize = this.transformBucketSize(currentHour + previousHour + before, bucketOpts);
-    var previousSize = this.transformBucketSize(previousHour + before, bucketOpts);
-    var beforeSize = this.transformBucketSize(before, bucketOpts);
+    this.currentSize = this.transformBucketSize(this.currentHour + this.previousHour + this.before, bucketOpts);
+    this.previousSize = this.transformBucketSize(this.previousHour + this.before, bucketOpts);
+    this.beforeSize = this.transformBucketSize(this.before, bucketOpts);
 
-    this.drawCircle(currentSize.value, this.colours.current);
-    this.drawCircle(previousSize.value, this.colours.previous);
-    this.drawCircle(beforeSize.value, this.colours.before);
+    var maybeHilightCircle = function(size, normalColour, ringName) {
+      self.drawCircle(size,
+        (ringName == self.hoverRing) ?
+          {line: normalColour.line, fill: self.colours.hovered.fill} :
+          normalColour);
+    };
+
+    maybeHilightCircle(this.currentSize.value, this.colours.current, 'current');
+    maybeHilightCircle(this.previousSize.value, this.colours.previous, 'previous');
+    maybeHilightCircle(this.beforeSize.value, this.colours.before, 'before');
   },
 
   clearCanvas: function() {
@@ -119,6 +140,84 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     this.context.closePath();
     this.context.fill();
     this.context.stroke();
+  },
+
+  onMouseOver: function(e) {
+    this.onMouseMove(e);    // Treat entry and movement as the same event
+  },
+  onMouseMove: function(e) {
+    var maybePuralDiffs = function(count) {
+      if (count == 1) return count + " difference";
+      return count + " differences";
+    };
+
+    var globalPos = this.pageCoords(e);
+    var widgetPos = this.widgetCoords(globalPos);
+
+    // Work out if we're within the bounds of our widget
+    var msg = null;
+    var previousHoverRing = this.hoverRing;
+    if (this.isInCircle(this.beforeSize.value, widgetPos)) {
+      msg = maybePuralDiffs(this.before) + " more than 2 hours ago";
+      this.hoverRing = 'before';
+    } else if (this.isInCircle(this.previousSize.value, widgetPos)) {
+      msg = maybePuralDiffs(this.previousHour) + " between 1 and 2 hours ago";
+      this.hoverRing = 'previous';
+    } else if (this.isInCircle(this.currentSize.value, widgetPos)) {
+      msg = maybePuralDiffs(this.currentHour) + " in the last hour";
+      this.hoverRing = 'current';
+    } else {
+      this.hoverRing = null;
+    }
+
+    if (msg) {
+      this.showDetails(msg, globalPos);
+    } else {
+      this.hideDetails();
+    }
+
+    if (previousHoverRing != this.hoverRing) {
+      this.update();
+    }
+  },
+  onMouseOut: function(e) {
+    this.hideDetails();
+
+    if (this.hoverRing) {
+      this.hoverRing = null;
+      this.update();
+    }
+  },
+
+  pageCoords: function(e) {
+    if (e.pageX != undefined && e.pageY != undefined) {
+      return {x: e.pageX, y: e.pageY};
+    } else {
+      return {
+        x: e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft,
+        y: e.clientY + document.body.scrollTop + document.documentElement.scrollTop
+      };
+    }
+  },
+  widgetCoords: function(coords) {
+    return {x: coords.x - this.layer.offsetLeft, y: coords.y - this.layer.offsetTop};
+  },
+
+  isInCircle: function(radius, point) {
+    var circleX = this.width / 2, circleY = this.width / 2;
+
+    return Math.pow(point.x - circleX, 2) + Math.pow(point.y - circleY, 2) < Math.pow(radius, 2);
+  },
+
+  showDetails: function(text, position) {
+    this.ringInfo.
+      text(text).
+      css('left', position.x).
+      css('top', position.y).
+      show();
+  },
+  hideDetails: function() {
+    this.ringInfo.hide();
   }
 });
 
