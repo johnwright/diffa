@@ -74,9 +74,9 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var previousHour = singleValue(this.model.get('previousHour'));
     var before = singleValue(this.model.get('before'));
 
-    var currentSize = this.limit(this.transformBucketSize(currentHour + previousHour + before, 100), 100);
-    var previousSize = this.limit(this.transformBucketSize(previousHour + before, 100), 100);
-    var beforeSize = this.limit(this.transformBucketSize(before, 100), 100);
+    var currentSize = this.limit(this.transformBucketSize(currentHour + previousHour + before, 20), 20);
+    var previousSize = this.limit(this.transformBucketSize(previousHour + before, 20), 20);
+    var beforeSize = this.limit(this.transformBucketSize(before, 20), 20);
 
     this.drawCircle(currentSize.value, "#ff1f0d");
     this.drawCircle(previousSize.value, "#ffba40");
