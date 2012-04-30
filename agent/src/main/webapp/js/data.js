@@ -156,24 +156,27 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
         var endDate = -1;
       }
 
-      $(".category[data-constraint-type=date] input[type=text]").glDatePicker({
-        allowOld: allowOld, // as far back as possible or not
-        startDate: startDate,
-        endDate: endDate, // latest selectable date, days since start date (int), or no limit (-1)
-        selectedDate: -1, // default select date, or nothing set (-1)
-        onChange: function(target, newDate) {
-          var result, year, month, day;
+      // if the category we're adding is a date range, apply datepickers
+      if (type == "date") {
+        $(".category:last-child input[type=text]").glDatePicker({
+          allowOld: allowOld, // as far back as possible or not
+          startDate: startDate,
+          endDate: endDate, // latest selectable date, days since start date (int), or no limit (-1)
+          selectedDate: -1, // default select date, or nothing set (-1)
+          onChange: function(target, newDate) {
+            var result, year, month, day;
 
-          // helper to pad our month/day values if needed
-          var pad = function(s) { s = s.toString(); if (s.length < 2) { s = "0" + s; }; return s };
-          year = newDate.getFullYear();
-          month = pad(newDate.getMonth() + 1);
-          day = pad(newDate.getDate());
-          result = year + "-" + month + "-" + day;
+            // helper to pad our month/day values if needed
+            var pad = function(s) { s = s.toString(); if (s.length < 2) { s = "0" + s; }; return s };
+            year = newDate.getFullYear();
+            month = pad(newDate.getMonth() + 1);
+            day = pad(newDate.getDate());
+            result = year + "-" + month + "-" + day;
 
-          target.val(result);
-        }
-      });
+            target.val(result);
+          }
+        });
+      }
 
       $(".clearable_input .clear").click(function() {
         $(this).siblings("input").val("");
