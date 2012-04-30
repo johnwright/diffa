@@ -124,12 +124,16 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 
     selectedEndpoint.rangeCategories.each(function(rangeCat) {
       var templateVars = rangeCat.toJSON();
+      var type = rangeCat.get("dataType");
+      var placeholder = "";
 
-      if (rangeCat.get("dataType") == "date") {
-        templateVars["placeholder"] = "Unbounded date";
-      } else {
-        templateVars["placeholder"] = "";
+      switch(type) {
+        case "date":     placeholder = "Unbounded date";     break;
+        case "datetime": placeholder = "Unbounded datetime"; break;
+        case "int":      placeholder = "Unbounded";     break;
       }
+
+      templateVars["placeholder"] = placeholder;
 
       constraints.append(self.templates.rangeConstraint(templateVars));
 
