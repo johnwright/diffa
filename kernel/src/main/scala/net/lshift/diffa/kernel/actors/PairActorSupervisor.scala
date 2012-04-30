@@ -88,6 +88,13 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   }
 
   def startActor(pair: DiffaPair) = {
+    // This block is essentially an atomic replace with delayed initialization
+    // of the pair actor.  Initialization (Future(...)) must be performed
+    // outside the critical section, since it involves expensive
+    // (time-consuming) database calls.
+    // The return value of the block is the actor that was replaced, or null if
+    // there was no actor previously registered.
+    // TODO: replace this with oldActor = ConcurrentHashMap.replace(key, value)
     val oldActor = pairActors.synchronized {
       val oldActor = unregisterActor(pair.asRef)
       val future = Future(createPairActor(pair) map { actor =>
@@ -98,18 +105,25 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
       pairActors.put(pair.identifier, future)
       oldActor
     }
-    
-    // If there was an existing actor that needs to be stopped, do it outside the synchronized block
+
+    // If there was an existing actor that needs to be stopped, do it outside
+    // the synchronized block.  Stopping the actor can cause actions such as
+    // scans to fail, which is expected.
     if (oldActor != null) {
       oldActor.get.map(_.stop())
       log.info("{} Stopping existing actor for key: {}",
-            formatAlertCode(pair.asRef, ACTOR_STOPPED), pair.identifier)
+        formatAlertCode(pair.asRef, ACTOR_STOPPED), pair.identifier)
     }
   }
 
   def stopActor(pair: DiffaPairRef) = {
+    // TODO: replace this with actor = ConcurrentHashMap.remove(key)
     val actor = unregisterActor(pair)
 
+    // Another thread may have obtained a reference to this actor prior to the
+    // unregisterActor call, but the only such cases are safe cases such as
+    // pair scans which will fail as expected if the actor is stopped just
+    // before the scan attempts to use it.
     if (actor != null) {
       actor.get.map(_.stop())
       log.info("{} actor stopped", formatAlertCode(pair, ACTOR_STOPPED))
