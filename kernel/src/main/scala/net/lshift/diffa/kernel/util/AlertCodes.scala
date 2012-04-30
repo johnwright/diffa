@@ -111,8 +111,10 @@ object AlertCodes {
   val MISSING_ACTOR_FOR_KEY = 713
   // Occurs when multiple actors are registered with the same key. This indicates a bug in Diffa.
   val MULTIPLE_ACTORS_FOR_KEY = 714
+  // Occurs when it wasn't possible to initialize an actor
+  val BAD_ACTOR = 715
 
   // 72x Potential auth bugs
   val SPURIOUS_AUTH_TOKEN = 720
-
 }
+
