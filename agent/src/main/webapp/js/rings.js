@@ -125,6 +125,12 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     maybeHilightCircle(this.currentSize.value, this.colours.current, 'current');
     maybeHilightCircle(this.previousSize.value, this.colours.previous, 'previous');
     maybeHilightCircle(this.beforeSize.value, this.colours.before, 'before');
+
+    var hasDiffs = (this.currentHour + this.previousHour + this.before) == 0;
+    this.$('.no-differences-panel').
+      css('height', this.width).
+      toggle(hasDiffs);
+    $(this.layer).toggle(!hasDiffs);
   },
 
   clearCanvas: function() {
