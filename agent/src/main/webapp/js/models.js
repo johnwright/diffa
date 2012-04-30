@@ -370,12 +370,14 @@ Diffa.Models.Aggregator = {
   retrieveAggregates: function(callback) {
     var self = this;
 
+    var lastRequestDetails = {};
     var params = $.map(this.aggregateRequests, function(request, name) {
       // Allow requests to be functions
       var requestDetails = request;
       if (_.isFunction(request)) {
         requestDetails = request();
       }
+      lastRequestDetails[name] = requestDetails;
 
       var aggString = "";
       if (requestDetails.startTime) aggString += Diffa.Helpers.DatesHelper.toISOString(requestDetails.startTime);
@@ -390,7 +392,7 @@ Diffa.Models.Aggregator = {
     if (self.pair) path += "/" + self.pair;
 
     $.getJSON(path + "?" + params, function(data) {
-      callback(data);
+      callback(lastRequestDetails, data);
     });
   },
 
@@ -418,15 +420,17 @@ Diffa.Models.PairAggregates = Backbone.Model.extend(Diffa.Collections.Watchable)
   sync: function(callback, opts) {
     var self = this;
 
-    this.retrieveAggregates(function(result) {
-      self.applyAggregateResult(result, opts);
+    this.retrieveAggregates(function(requestDetails, result) {
+      self.applyAggregateResult(requestDetails, result, opts);
 
       if (callback) callback();
     });
   },
 
-  applyAggregateResult: function(result, opts) {
+  applyAggregateResult: function(requestDetails, result, opts) {
     this.set(result, opts);
+    
+    this.lastRequests = requestDetails;
   }
 });
 Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Aggregator).extend({
@@ -446,9 +450,9 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
   sync: function(callback, opts) {
     var self = this;
 
-    this.retrieveAggregates(function(data) {
+    this.retrieveAggregates(function(requestDetails, data) {
       for(var pair in data) {
-        self.forPair(pair).applyAggregateResult(data[pair], opts);
+        self.forPair(pair).applyAggregateResult(requestDetails, data[pair], opts);
       }
 
       if (callback) callback();

@@ -40,7 +40,7 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
   initialize: function() {
     var self = this;
 
-    _.bindAll(this, 'update', 'onMouseOver', 'onMouseMove', 'onMouseOut');
+    _.bindAll(this, 'update', 'onMouseOver', 'onMouseMove', 'onMouseOut', 'onClick');
 
     // Subscribe to aggregates for the various rings
     this.model.subscribeAggregate('currentHour', function() {
@@ -60,7 +60,8 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     $(this.layer).
       mouseover(this.onMouseOver).
       mousemove(this.onMouseMove).
-      mouseout(this.onMouseOut);
+      mouseout(this.onMouseOut).
+      click(this.onClick);
 
     // Listen for changes to the various properties
     this.model.on('change:currentHour',   this.update);
@@ -122,8 +123,8 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
           normalColour);
     };
 
-    maybeHilightCircle(this.currentSize.value, this.colours.current, 'current');
-    maybeHilightCircle(this.previousSize.value, this.colours.previous, 'previous');
+    maybeHilightCircle(this.currentSize.value, this.colours.current, 'currentHour');
+    maybeHilightCircle(this.previousSize.value, this.colours.previous, 'previousHour');
     maybeHilightCircle(this.beforeSize.value, this.colours.before, 'before');
 
     var hasDiffs = (this.currentHour + this.previousHour + this.before) == 0;
@@ -168,10 +169,10 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       this.hoverRing = 'before';
     } else if (this.isInCircle(this.previousSize.value, widgetPos)) {
       msg = maybePuralDiffs(this.previousHour) + " between 1 and 2 hours ago";
-      this.hoverRing = 'previous';
+      this.hoverRing = 'previousHour';
     } else if (this.isInCircle(this.currentSize.value, widgetPos)) {
       msg = maybePuralDiffs(this.currentHour) + " in the last hour";
-      this.hoverRing = 'current';
+      this.hoverRing = 'currentHour';
     } else {
       this.hoverRing = null;
     }
@@ -193,6 +194,13 @@ Diffa.Views.Rings = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       this.hoverRing = null;
       this.update();
     }
+  },
+  onClick: function(e) {
+    if (!this.hoverRing) return;      // Ignore clicks if we're not hovering anything
+
+    // If we're hovering a ring, generate an event
+    var details = $.extend({pair: this.model.id, ring: this.hoverRing}, this.model.lastRequests[this.hoverRing]);
+    $(this.el).trigger('ring-clicked', [details]);
   },
 
   pageCoords: function(e) {
