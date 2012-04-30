@@ -16,7 +16,10 @@
 
 package net.lshift.diffa.kernel.actors
 
+import java.util.HashMap
+
 import akka.actor._
+import akka.dispatch.Future
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
@@ -44,54 +47,89 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
     with AgentLifecycleAware {
 
+  private type PotentialActor = Future[Option[ActorRef]]
+
   private val log = LoggerFactory.getLogger(getClass)
+  private val pairActors = new HashMap[String, PotentialActor]()
 
   override def onAgentAssemblyCompleted = {
     // Initialize actors for any persistent pairs
     systemConfig.listPairs.foreach(p => startActor(p))
   }
 
-  def startActor(pair:DiffaPair) = {
-    val actors = Actor.registry.actorsFor(pair.identifier)
-    actors.length match {
-      case 0 => {
-        policyManager.lookupPolicy(pair.versionPolicyName) match {
-          case Some(pol) => {
-            val us = domainConfig.getEndpoint(pair.domain.name,  pair.upstream)
-            val ds = domainConfig.getEndpoint(pair.domain.name,  pair.downstream)
+  private def createPairActor(pair: DiffaPair) = policyManager.lookupPolicy(pair.versionPolicyName) match {
+    case Some(pol) =>
+      val us = domainConfig.getEndpoint(pair.domain.name,  pair.upstream)
+      val ds = domainConfig.getEndpoint(pair.domain.name,  pair.downstream)
 
-            val usp = participantFactory.createUpstreamParticipant(us)
-            val dsp = participantFactory.createDownstreamParticipant(ds)
-            val pairActor = Actor.actorOf(
-              new PairActor(pair, us, ds, usp, dsp, pol, stores(pair.asRef),
-                            differencesManager, pairScanListener,
-                            diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
-            )
-            pairActor.start
-            log.info(formatAlertCode(pair.asRef, ACTOR_STARTED) +  " actor started")
-          }
-          case None    => log.error("Failed to find policy for name: " + pair.versionPolicyName)
-        }
+      val usp = participantFactory.createUpstreamParticipant(us)
+      val dsp = participantFactory.createDownstreamParticipant(ds)
+      Some(Actor.actorOf(
+        new PairActor(pair, us, ds, usp, dsp, pol, stores(pair.asRef),
+          differencesManager, pairScanListener,
+          diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
+      ))
+    case None =>
+      log.error("Failed to find policy for name: " + pair.versionPolicyName)
+      None
+  }
 
-      }
-      case 1    =>
-        log.info("Initiating restart of actor for key: " + pair.identifier)
-        stopActor(pair.asRef)
-        startActor(pair)
-      case x    => log.error("Too many actors for key: " + pair.identifier + "; actors = " + x)
+  /**
+   * Removes an actor from the map in a critical section.
+   *
+   * @return the actor for the given pair, or null if there was no actor in the map
+   */
+  private def unregisterActor(pair: DiffaPairRef) = pairActors.synchronized {
+    val actor = pairActors.get(pair.identifier)
+    if (actor != null) {
+      pairActors.remove(pair.identifier)
+    }
+    actor
+  }
+
+  def startActor(pair: DiffaPair) = {
+    // This block is essentially an atomic replace with delayed initialization
+    // of the pair actor.  Initialization (Future(...)) must be performed
+    // outside the critical section, since it involves expensive
+    // (time-consuming) database calls.
+    // The return value of the block is the actor that was replaced, or null if
+    // there was no actor previously registered.
+    // TODO: replace this with oldActor = ConcurrentHashMap.replace(key, value)
+    val oldActor = pairActors.synchronized {
+      val oldActor = unregisterActor(pair.asRef)
+      val future = Future(createPairActor(pair) map { actor =>
+        actor.start()
+        log.info("{} actor started", formatAlertCode(pair.asRef, ACTOR_STARTED))
+        actor
+      })
+      pairActors.put(pair.identifier, future)
+      oldActor
+    }
+
+    // If there was an existing actor that needs to be stopped, do it outside
+    // the synchronized block.  Stopping the actor can cause actions such as
+    // scans to fail, which is expected.
+    if (oldActor != null) {
+      oldActor.get.map(_.stop())
+      log.info("{} Stopping existing actor for key: {}",
+        formatAlertCode(pair.asRef, ACTOR_STOPPED), pair.identifier)
     }
   }
 
-  def stopActor(pair:DiffaPairRef) = {
-    val actors = Actor.registry.actorsFor(pair.identifier)
-    actors.length match {
-      case 1 => {
-        val actor = actors(0)
-        actor.stop
-        log.info(formatAlertCode(pair, ACTOR_STOPPED) +  " actor stopped")
-      }
-      case 0    => log.warn("Could not resolve actor for key: " + pair.identifier)
-      case x    => log.error("Too many actors for key: " + pair.identifier + "; actors = " + x)
+  def stopActor(pair: DiffaPairRef) = {
+    // TODO: replace this with actor = ConcurrentHashMap.remove(key)
+    val actor = unregisterActor(pair)
+
+    // Another thread may have obtained a reference to this actor prior to the
+    // unregisterActor call, but the only such cases are safe cases such as
+    // pair scans which will fail as expected if the actor is stopped just
+    // before the scan attempts to use it.
+    if (actor != null) {
+      actor.get.map(_.stop())
+      log.info("{} actor stopped", formatAlertCode(pair, ACTOR_STOPPED))
+    } else {
+      log.warn("{} Could not resolve actor for key: {}",
+        formatAlertCode(pair,  MISSING_ACTOR_FOR_KEY), pair.identifier)
     }
   }
 
@@ -127,15 +165,19 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   def findActor(id:VersionID) : ActorRef = findActor(id.pair)
 
-  def findActor(pair:DiffaPairRef) = {
-    val key = ActorUtils.ActorKey(pair, (p: DiffaPairRef) => p.identifier)
-
-    ActorUtils.findActor(key).getOrElse {
+  def findActor(pair: DiffaPairRef) = {
+    val actor = pairActors.get(pair.identifier)
+    if (actor == null) {
       log.error("{} Could not resolve actor for key: {}; registry contains {} actors: {}",
-        Array[Object](formatAlertCode(pair, MISSING_ACTOR_FOR_KEY), key,
+        Array[Object](formatAlertCode(pair, MISSING_ACTOR_FOR_KEY), pair.identifier,
                       Integer.valueOf(Actor.registry.size), Actor.registry.actors))
-      throw new MissingObjectException(key.toString)
+      throw new MissingObjectException(pair.identifier)
+    }
+    actor.get.getOrElse {
+      log.error("{} Unusable actor due to failure to look up policy during actor creation",
+        formatAlertCode(pair, BAD_ACTOR))
+      throw new MissingObjectException(pair.identifier)
     }
   }
-
 }
+
