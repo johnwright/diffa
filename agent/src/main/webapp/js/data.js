@@ -25,11 +25,20 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   templates: {
     rangeConstraint: _.template('<div class="category" data-constraint="<%= name %>" data-constraint-type="<%= dataType %>">' +
                       '<h5 class="name"><%= name %> (<%= dataType %> range)</h5>' +
-                      '<label for="<%= name %>_range_start">Start:</label>' +
-                      '<input id="<%= name %>_range_start" type="text" name="start"></label>' +
-                      '<br>' +
-                      '<label for="<%= name %>_range_end">End:</label>' +
-                      '<input id="<%= name %>_range_end" type="text" name="end"></label>' +
+                      '<div>' +
+                        '<label for="<%= name %>_range_start">Start:</label>' +
+                        '<span class="clearable_input">' +
+                          '<input id="<%= name %>_range_start" type="text" name="start" placeholder="<%= placeholder %>">' +
+                          '<span class="clear"></span>' +
+                        '</span>' +
+                      '</div>' +
+                      '<div>' +
+                        '<label for="<%= name %>_range_end">End:</label>' +
+                        '<span class="clearable_input">' +
+                          '<input id="<%= name %>_range_end" type="text" name="end" placeholder="<%= placeholder %>">' +
+                          '<span class="clear"></span>' +
+                        '</span>' +
+                      '</div>' +
                      '</div>'),
     prefixConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
                         '<h5 class="name"><%= name %> (prefix)</h5>' +
@@ -114,7 +123,15 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     if (!selectedEndpoint) return;
 
     selectedEndpoint.rangeCategories.each(function(rangeCat) {
-      constraints.append(self.templates.rangeConstraint(rangeCat.toJSON()));
+      var templateVars = rangeCat.toJSON();
+
+      if (rangeCat.get("dataType") == "date") {
+        templateVars["placeholder"] = "Unbounded date";
+      } else {
+        templateVars["placeholder"] = "";
+      }
+
+      constraints.append(self.templates.rangeConstraint(templateVars));
 
       // add date picking to the range inputs
 
@@ -135,7 +152,7 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
         var endDate = -1;
       }
 
-      $(".category[data-constraint-type=date] input").glDatePicker({
+      $(".category[data-constraint-type=date] input[type=text]").glDatePicker({
         allowOld: allowOld, // as far back as possible or not
         startDate: startDate,
         endDate: endDate, // latest selectable date, days since start date (int), or no limit (-1)
@@ -152,6 +169,10 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 
           target.val(result);
         }
+      });
+
+      $(".clearable_input .clear").click(function() {
+        $(this).siblings("input").val("");
       });
     });
 
