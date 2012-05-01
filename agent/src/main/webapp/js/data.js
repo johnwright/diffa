@@ -174,12 +174,22 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
             result = year + "-" + month + "-" + day;
 
             target.val(result);
+            target.change(); // fire the event as though we just typed it in
           }
         });
       }
 
+      $(".category:last-child input").bind("change keydown focus blur", function() {
+        if ($(this).val().length > 0) {
+          $(this).addClass("nonempty");
+        } else {
+          $(this).removeClass("nonempty");
+        }
+      });
+
       $(".clearable_input .clear").click(function() {
         $(this).siblings("input").val("");
+        $(this).siblings(".nonempty").removeClass("nonempty");
       });
     });
 
