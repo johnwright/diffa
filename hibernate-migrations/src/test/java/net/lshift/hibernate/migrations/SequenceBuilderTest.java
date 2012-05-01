@@ -39,14 +39,58 @@ public class SequenceBuilderTest {
   }
 
   @Test
-  public void shouldCreateSequence() throws Exception {
+  public void shouldCreateSimpleSequence() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.sequence("some_sequence");
+
+    Connection conn = createStrictMock(Connection.class);
+    expect(conn.prepareStatement("create sequence some_sequence")).
+        andReturn(mockExecutablePreparedStatement());
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
+
+  @Test
+  public void shouldCreateSequenceWithStartValue() throws Exception {
     MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
     mb.sequence("some_sequence")
-      .incrementBy(10)
       .startWith(1001);
 
     Connection conn = createStrictMock(Connection.class);
-    expect(conn.prepareStatement("create sequence some_sequence increment by 10 start with 1001")).
+    expect(conn.prepareStatement("create sequence some_sequence start with 1001")).
+        andReturn(mockExecutablePreparedStatement());
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
+
+  @Test
+  public void shouldCreateSequenceWithIncrement() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.sequence("some_sequence")
+        .incrementBy(11);
+
+    Connection conn = createStrictMock(Connection.class);
+    expect(conn.prepareStatement("create sequence some_sequence increment by 11")).
+        andReturn(mockExecutablePreparedStatement());
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
+
+  @Test
+  public void shouldCreateSequenceWithIncrementAndStartValue() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.sequence("some_sequence")
+        .incrementBy(14)
+        .startWith(2001);
+
+    Connection conn = createStrictMock(Connection.class);
+    expect(conn.prepareStatement("create sequence some_sequence increment by 14 start with 2001")).
         andReturn(mockExecutablePreparedStatement());
     replay(conn);
 
