@@ -9,7 +9,6 @@ import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanResultEntry, 
 
 
 class UserResourceScan (systemConfig: SystemConfiguration)  {
-  // def perform() = {};
 
   def perform(constraints:Seq[ScanConstraint], aggregation:Seq[ScanAggregation]): Seq[ScanResultEntry] = {
     def generateVersion(user:User) = ScannableUtils.generateDigest(user.name, user.token)

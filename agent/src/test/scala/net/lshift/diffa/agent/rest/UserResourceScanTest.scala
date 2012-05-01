@@ -42,7 +42,6 @@ class UserResourceScanTest {
     userResourceScan.perform(scenario.constraints, scenario.aggregation)
 
     verify(systemConfig)
-    //throw new RuntimeException("Kaboom!")
   }
 
   @Theory
