@@ -16,6 +16,7 @@
 
 package net.lshift.diffa.kernel.config
 
+import migrations.{HibernateMigrationStep0023, HibernateMigrationStep0022}
 import org.hibernate.SessionFactory
 import org.hibernate.jdbc.Work
 import org.slf4j.{LoggerFactory, Logger}
