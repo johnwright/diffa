@@ -61,29 +61,29 @@ object UserResourceScanTest {
 
 
   @DataPoint def nullExample = Scenario(List(), List(), List(), List())
-  val user_abc = User("abc")
-  val user_abd = User("abd")
-  val user_bcd = User("bcd")
+  val userAbc = User("abc")
+  val userAbd = User("abd")
+  val userBcd = User("bcd")
 
   @DataPoint def singleUserNoAggregation = Scenario(
-    List(user_abc),
+    List(userAbc),
     List(),// Constraints
     List(), // Aggregation.
-    List(ScanResultEntry.forEntity(user_abc.name,
-      ScannableUtils.generateDigest(user_abc.name, user_abc.token),
-      null, Map("name" -> user_abc.name)))
+    List(ScanResultEntry.forEntity(userAbc.name,
+      ScannableUtils.generateDigest(userAbc.name, userAbc.token),
+      null, Map("name" -> userAbc.name)))
   )
 
   @DataPoint def twoUsersWithPrefixFilter = Scenario(
-    List(user_abc, user_bcd),
+    List(userAbc, userBcd),
     List(new StringPrefixConstraint("name", "b")),
     List(), // Aggregation.
-    List(ScanResultEntry.forEntity(user_bcd.name,
-      ScannableUtils.generateDigest(user_bcd.name, user_bcd.token),
-      null, Map("name" -> user_bcd.name)))
+    List(ScanResultEntry.forEntity(userBcd.name,
+      ScannableUtils.generateDigest(userBcd.name, userBcd.token),
+      null, Map("name" -> userBcd.name)))
   )
 
-  def aggregated_versions(vsns: Seq[String]) = {
+  def aggregate_versions(vsns: Seq[String]) = {
 
     val md = MessageDigest.getInstance("MD5")
     vsns.foreach { s => md.update(s.getBytes(Charset.forName("UTF-8"))) }
@@ -91,17 +91,17 @@ object UserResourceScanTest {
   }
 
   @DataPoint def twoUsersWithPrefixFilterAndAggregation = {
-    var matching_users = List(user_abc, user_abd)
+    var matching_users = List(userAbc, userAbd)
     val versions: List[String] = matching_users.map { user =>
       ScannableUtils.generateDigest(user.name, user.token)
     }
-    var agg_version = aggregated_versions(versions)
+    var aggregated_version = aggregate_versions(versions)
     Scenario(
-      List(user_abc, user_abd, user_bcd),
+      List(userAbc, userAbd, userBcd),
       List(new StringPrefixConstraint("name", "a")),
       List(StringPrefixCategoryFunction("name", 1, 3, 1)),
       List(ScanResultEntry.forAggregate(
-      agg_version,
+      aggregated_version,
       Map("name" -> "a")))
   )
   }
@@ -110,7 +110,7 @@ object UserResourceScanTest {
   @DataPoint def singleUserWithPrefixAggregation = {
     val agg = ScanResultEntry.forAggregate("ec0405c5aef93e771cd80e0db180b88b", Map("name" -> "a"))
     Scenario(
-      List(user_abc),
+      List(userAbc),
       List(),// Constraints
       List(StringPrefixCategoryFunction("name", 1, 3, 1)),
       List(agg))
