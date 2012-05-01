@@ -115,7 +115,4 @@ object UserResourceScanTest {
       List(StringPrefixCategoryFunction("name", 1, 3, 1)),
       List(agg))
   }
-
-   // Result ordering?
-
 }
