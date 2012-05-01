@@ -27,16 +27,9 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.differencing._
 import net.lshift.diffa.kernel.events.{VersionID, PairChangeEvent}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, DiffaPair}
-import net.lshift.diffa.kernel.util.{EndpointSide, MissingObjectException}
+import net.lshift.diffa.kernel.util.{EndpointSide, Lazy, MissingObjectException}
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
-import java.util.concurrent.{Callable, Future, FutureTask}
 import net.lshift.diffa.kernel.util.AlertCodes._
-
-
-class Lazy[T](valueFn: => T) extends (() => T) {
-  def apply() = value
-  lazy val value = valueFn
-}
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -118,7 +111,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     // the synchronized block.  Stopping the actor can cause actions such as
     // scans to fail, which is expected.
     if (oldActor != null) {
-      oldActor.value.map(_.stop())
+      oldActor().map(_.stop())
       log.info("{} Stopping existing actor for key: {}",
         formatAlertCode(pair.asRef, ACTOR_STOPPED), pair.identifier)
     }
@@ -133,7 +126,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     // pair scans which will fail as expected if the actor is stopped just
     // before the scan attempts to use it.
     if (actor != null) {
-      actor.value.map(_.stop())
+      actor().map(_.stop())
       log.info("{} actor stopped", formatAlertCode(pair, ACTOR_STOPPED))
     } else {
       log.warn("{} Could not resolve actor for key: {}",
@@ -181,7 +174,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
                       Integer.valueOf(pairActors.size()), pairActors.keySet()))
       throw new MissingObjectException(pair.identifier)
     }
-    actor.value.getOrElse {
+    actor().getOrElse {
       log.error("{} Unusable actor due to failure to look up policy during actor creation",
         formatAlertCode(pair, BAD_ACTOR))
       throw new MissingObjectException(pair.identifier)
