@@ -465,6 +465,8 @@ Diffa.Views.Heatmap = Backbone.View.extend({
     this.underlayContext = this.underlay.getContext("2d");
     this.scaleContext = this.scale.getContext("2d");
 
+    this.update();
+
     return this;
   },
 
