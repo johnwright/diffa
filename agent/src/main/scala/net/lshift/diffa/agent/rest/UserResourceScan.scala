@@ -8,11 +8,13 @@ import net.lshift.diffa.kernel.frontend.SystemConfiguration
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanResultEntry, ScanConstraint}
 
 
-// This class performs a very similar function to a derivation of
-// ScanningParticipantRef, but at this point, we're operating in terms of the
-// front-end interface, rather than being in the kernel.
-
-// Currently this is called directly from net.lshift.diffa.agent.rest.UsersResource.
+/**
+ * This class performs a very similar function to a derivation of
+ * ScanningParticipantRef, but at this point, we're operating in terms of the
+ * front-end interface, rather than being in the kernel.
+ *
+ * Currently this is called directly from net.lshift.diffa.agent.rest.UsersResource.
+ */
 
 class UserResourceScan (systemConfig: SystemConfiguration)  {
 
