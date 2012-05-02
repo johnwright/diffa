@@ -370,7 +370,7 @@ Diffa.Models.Domain = Backbone.Model.extend({
         remaining -= 1;
 
         if (remaining == 0) {
-          callback();
+          if (callback) { callback(); }
         }
       });
     });

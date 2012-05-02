@@ -312,12 +312,35 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   }
 });
 
-$('.diffa-inventory-uploader').each(function() {
-  var domain = Diffa.DomainManager.get($(this).data('domain'));
+var pairSelectTemplate = _.template('<label>Pair:</label>' +
+  '<select>' +
+  '<% _.each(pairs.models, function(pair) { %>' +
+    '<option>Select pair</opion>' +
+    '<option><%= pair.get("key") %></option>' +
+  '<% }); %> ' +
+  '</select>');
 
-  new Diffa.Views.InventoryUploader({
-    el: $(this),
-    collection: domain.endpoints
+var panel = $('.inventory-panel');
+var domain = Diffa.DomainManager.get(panel.data("domain"));
+
+var pairChanged = function(pairName) {
+  var pair = domain.pairs.get(pairName);
+  console.log(pair.get("downstreamName"));
+  console.log(pair.get("upstreamName"));
+  console.log(domain.endpoints.get(pair.get("downstreamName")));
+
+  $('.diffa-inventory-uploader').each(function() {
+    var domain = Diffa.DomainManager.get($(this).data('domain'));
+
+    new Diffa.Views.InventoryUploader({
+      el: $(this),
+      collection: domain.endpoints
+    });
   });
+}
+
+domain.loadAll(["pairs"], function() {
+  panel.prepend(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
+  panel.find("select").change(function() { pairChanged(panel.find("select option:selected").text()); });
 });
 });
