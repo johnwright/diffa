@@ -27,7 +27,7 @@ import java.nio.charset.Charset
 class UserScanningParticipantTest {
   val systemConfig = createStrictMock("systemConfiguration", classOf[SystemConfiguration])
 
-  var userResourceScan = new UserScanningParticipant(systemConfig)
+  var userScanningParticipant = new UserScanningParticipant(systemConfig)
 
 
   def setup(scenario: Scenario) {
@@ -39,7 +39,7 @@ class UserScanningParticipantTest {
   def shouldFetchUsersListFromConfigStore(scenario:Scenario) {
     setup(scenario)
 
-    userResourceScan.perform(scenario.constraints, scenario.aggregation)
+    userScanningParticipant.perform(scenario.constraints, scenario.aggregation)
 
     verify(systemConfig)
   }
@@ -48,7 +48,7 @@ class UserScanningParticipantTest {
   def shouldAggregateUsers(scenario:Scenario) {
     setup(scenario)
     assertEquals(scenario.results,
-      userResourceScan.perform(scenario.constraints, scenario.aggregation))
+      userScanningParticipant.perform(scenario.constraints, scenario.aggregation))
   }
 
 }
