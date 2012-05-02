@@ -10,7 +10,7 @@ import org.junit.Assert._
 import org.easymock.EasyMock.{expect}
 import org.easymock.classextension.EasyMock.{replay,createStrictMock,verify}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
-import net.lshift.diffa.agent.rest.UserResourceScanTest.Scenario
+import net.lshift.diffa.agent.rest.UserScanningParticipantTest.Scenario
 import net.lshift.diffa.kernel.config.User
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.participants.{StringPrefixCategoryFunction, CategoryFunction}
@@ -24,10 +24,10 @@ import java.nio.charset.Charset
 
 
 @RunWith(classOf[Theories])
-class UserResourceScanTest {
+class UserScanningParticipantTest {
   val systemConfig = createStrictMock("systemConfiguration", classOf[SystemConfiguration])
 
-  var userResourceScan = new UserResourceScan(systemConfig)
+  var userResourceScan = new UserScanningParticipant(systemConfig)
 
 
   def setup(scenario: Scenario) {
@@ -53,7 +53,7 @@ class UserResourceScanTest {
 
 }
 
-object UserResourceScanTest {
+object UserScanningParticipantTest {
   case class Scenario(userList:Seq[User],
                       constraints:Seq[ScanConstraint],
                       aggregation:Seq[CategoryFunction],

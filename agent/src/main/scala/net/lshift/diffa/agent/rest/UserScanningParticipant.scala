@@ -16,7 +16,7 @@ import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanResultEntry, 
  * Currently this is called directly from net.lshift.diffa.agent.rest.UsersResource.
  */
 
-class UserResourceScan (systemConfig: SystemConfiguration)  {
+class UserScanningParticipant (systemConfig: SystemConfiguration)  {
 
   def perform(constraints:Seq[ScanConstraint], aggregation:Seq[ScanAggregation]): Seq[ScanResultEntry] = {
     def generateVersion(user:User) = ScannableUtils.generateDigest(user.name, user.token)
