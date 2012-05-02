@@ -69,7 +69,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
           diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
       ))
     case None =>
-      log.error("Failed to find policy for name: " + pair.versionPolicyName)
+      log.error("Failed to find policy for name: {}", formatAlertCode(pair.versionPolicyName, INVALID_VERSION_POLICY))
       None
   }
 
