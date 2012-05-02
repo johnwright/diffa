@@ -13,6 +13,7 @@
 * [111] - Support arbitrary limiting of operations in participant scanning, real-time event submission and inventory submission.
 * [107] - Added the ability to initiate a scan from behind a firewall
 * [84]  - If we've got at least two endpoints defined, then try to make selecting the endpoints in the settings page sensible
+* [138] - Auto-focus on newly added constraint rows in the settings page 
 
 ## General Maintenance
 
