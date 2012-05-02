@@ -160,7 +160,7 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
       }
 
       // if the category we're adding is a date range, apply datepickers
-      if (type == "date") {
+      if (type == "date" || type == "datetime") {
         $(".category:last-child input[type=text]").glDatePicker({
           allowOld: allowOld, // as far back as possible or not
           startDate: startDate,
@@ -175,6 +175,10 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
             month = pad(newDate.getMonth() + 1);
             day = pad(newDate.getDate());
             result = year + "-" + month + "-" + day;
+
+            if (type == "datetime") {
+              result = result + " 00:00:00";
+            }
 
             target.val(result);
             target.change(); // fire the event as though we just typed it in
