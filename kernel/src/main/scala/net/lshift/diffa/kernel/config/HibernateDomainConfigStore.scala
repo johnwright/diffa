@@ -45,7 +45,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
     e.views.foreach(v => s.saveOrUpdate(fromEndpointViewDef(endpoint, v)))
 
     endpoint
-  })
+  }, Some(upgradeConfigVersion(domainName) _ ))
 
   def deleteEndpoint(domain:String, name: String): Unit = sessionFactory.withSession(s => {
 
@@ -60,7 +60,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
     endpoint.views.foreach(s.delete(_))
 
     s.delete(endpoint)
-  })
+  }, Some(upgradeConfigVersion(domain) _ ))
 
   def listEndpoints(domain:String): Seq[EndpointDef] = sessionFactory.withSession(s => {
     listQuery[Endpoint](s, "endpointsByDomain", Map("domain_name" -> domain)).map(toEndpointDef(_))
@@ -94,7 +94,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
       val viewsToRemove = existingViews.filter(existing => p.views.find(v => v.name == existing.name).isEmpty)
       viewsToRemove.foreach(r => s.delete(r))
       p.views.foreach(v => s.saveOrUpdate(fromPairViewDef(toUpdate, v)))
-    })
+    }, Some(upgradeConfigVersion(domain) _ ))
 
     hook.pairCreated(domain, p.key)
   }
@@ -106,7 +106,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
 
       val pair = getPair(s, domain, key)
       deletePairInSession(s, domain, pair)
-    })
+    }, Some(upgradeConfigVersion(domain) _ ))
 
     hook.pairRemoved(domain, key)
   }
@@ -179,20 +179,25 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   def listRepairActions(domain:String) : Seq[RepairActionDef] = sessionFactory.withSession(s =>
     listQuery[RepairAction](s, "repairActionsByDomain", Map("domain_name" -> domain)).map(toRepairActionDef(_)))
 
-  /*
-  def getPairsForEndpoint(domain:String, epName:String):Seq[Pair] = sessionFactory.withSession(s => {
-    val q = s.createQuery("SELECT p FROM Pair p WHERE p.upstream.name = :epName OR p.downstream.name = :epName")
-    q.setParameter("epName", epName)
-
-    q.list.map(_.asInstanceOf[Pair]).toSeq
-  })
-  */
-
   def getEndpointDef(domain:String, name: String) = sessionFactory.withSession(s => toEndpointDef(getEndpoint(s, domain, name)))
   def getEndpoint(domain:String, name: String) = sessionFactory.withSession(s => getEndpoint(s, domain, name))
   def getPairDef(domain:String, key: String) = sessionFactory.withSession(s => toPairDef(getPair(s, domain, key)))
   def getRepairActionDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toRepairActionDef(getRepairAction(s, domain, name, pairKey)))
   def getPairReportDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toPairReportDef(getReport(s, domain, name, pairKey)))
+
+  def getConfigVersion(domain:String) = sessionFactory.withSession(s => {
+    singleQueryOpt[Int](s, "configVersionByDomain", Map("domain" -> domain)) match {
+      case Some(version) => version
+      case None          => upgradeConfigVersion(domain)(s)
+    }
+  })
+
+  private def upgradeConfigVersion(domain:String)(s:Session) = {
+    s.getNamedQuery("deleteConfigVersionByDomain").setString("domain", domain).executeUpdate()
+    val configVersion = DomainConfigVersion(domain)
+    s.save(configVersion)
+    configVersion.version
+  }
 
   def allConfigOptions(domain:String) = {
     sessionFactory.withSession(s => {

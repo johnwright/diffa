@@ -34,12 +34,15 @@ object Step0024 extends HibernateMigrationStep {
      * column to the domains table, but without introducing any overhead in maintaining that table.
      */
     migration.createTable("domain_config_version").
-      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
+      column("domain", Types.VARCHAR, 50, false).
       column("version", Types.INTEGER, false, 0). // Start with version 0
-      pk("domain")
+      pk("version").
+      withNativeIdentityGenerator()
 
     migration.alterTable("domain_config_version").
-      addForeignKey("fk_cfvs_dmns", "domain", "domains", "name")
+      addForeignKey("fk_cfvs_dmns", "domain", "domains", "name").
+      addUniqueConstraint("domain")
+
 
     migration
   }

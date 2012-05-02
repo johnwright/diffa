@@ -39,6 +39,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory, val pairCach
 
     pairCache.invalidate(domain)
 
+    deleteByDomain[DomainConfigVersion](s, domain, "domainConfigVersionByDomain")
     deleteByDomain[EndpointView](s, domain, "endpointViewsByDomain")
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
     deleteByDomain[PairReport](s, domain, "reportsByDomain")

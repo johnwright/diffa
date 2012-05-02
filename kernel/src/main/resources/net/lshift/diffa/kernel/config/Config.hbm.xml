@@ -253,6 +253,15 @@
     <property name="target" type="string" column="target" not-null="true" length="1024" />
   </class>
 
+  <class name="DomainConfigVersion" table="domain_config_version" abstract="false">
+    <id name="version" column="version">
+      <generator class="native">
+        <param name="sequence">domain_config_version_sequence</param>
+      </generator>
+    </id>
+    <property type="string" column="domain" name="domain" unique="true" not-null="true"/>
+  </class>
+
   <query name="userByName" cacheable="true">
     select u from User u where u.name = :name
   </query>
@@ -360,6 +369,18 @@
 
   <query name="configOptionsByDomain" cacheable="true">
     select o from ConfigOption o where o.domain.name = :domain_name
+  </query>
+
+  <query name="configVersionByDomain" cacheable="false">
+    select v.version from DomainConfigVersion v where v.domain = :domain
+  </query>
+
+  <query name="domainConfigVersionByDomain" cacheable="false">
+    select v from DomainConfigVersion v where v.domain = :domain_name
+  </query>
+
+  <query name="deleteConfigVersionByDomain" cacheable="false">
+    delete from DomainConfigVersion v where v.domain = :domain
   </query>
 
   <!-- Query by pair with domain -->

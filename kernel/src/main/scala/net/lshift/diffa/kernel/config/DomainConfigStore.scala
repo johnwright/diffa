@@ -63,6 +63,8 @@ trait DomainConfigStore {
   def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
   def getPairReportDef(domain:String, name:String, pairKey:String):PairReportDef
 
+  def getConfigVersion(domain:String) : Int
+
   /**
    * Retrieves all (domain-specific, non-internal) agent configuration options.
    */
@@ -289,6 +291,20 @@ object Domain {
   val DEFAULT_DOMAIN = Domain(name = "diffa")
 }
 
+case class DomainConfigVersion(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var version: java.lang.Integer = null
+)
+{
+  def this() = this(domain = null)
+
+  override def equals(that:Any) = that match {
+    case d:Domain => d.name == domain
+    case _        => false
+  }
+
+  override def hashCode = domain.hashCode
+}
 
 case class RepairAction(
   @BeanProperty var name: String = null,
