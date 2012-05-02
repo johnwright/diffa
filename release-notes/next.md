@@ -24,6 +24,7 @@
 * [123] - Matched entities are now updated in caches immediately
 * [124] - Replacement mechanism for caching results of aggregation.
 * [127] - Support for infinite panning on the heatmap
+* [134] - Reduce startup and pair registration time by using Apache httpclient instead of Jersey.
 
 ## Library Upgrades
 
