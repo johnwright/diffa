@@ -22,6 +22,7 @@ import net.lshift.diffa.agent.client.ConfigurationRestClient
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpGet
 import org.junit.Assert._
+import org.apache.http.auth.{AuthScope, Credentials, UsernamePasswordCredentials}
 
 class EtagTest {
 
@@ -48,9 +49,13 @@ class EtagTest {
 
   private def getAggregatesEtag = {
     val httpClient = new DefaultHttpClient
+    val creds = new UsernamePasswordCredentials(agentUsername, agentPassword)
+
+    httpClient.getCredentialsProvider().setCredentials(new AuthScope(agentHost, agentPort), creds);
+
     val httpResponse = httpClient.execute(new HttpGet(agentURL + "/domains/diffa/diffs/aggregates"))
     val etag = httpResponse.getLastHeader("ETag")
     httpClient.getConnectionManager.shutdown()
-    etag
+    etag.getValue
   }
 }
