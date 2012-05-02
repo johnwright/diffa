@@ -42,7 +42,7 @@ class EtagTest {
 
     val newTag = getAggregatesEtag
 
-    assertNotSame(oldTag, newTag)
+    assertNotSame("Old etag was %s, new etag was %s".format(oldTag,newTag), oldTag, newTag)
 
   }
 
