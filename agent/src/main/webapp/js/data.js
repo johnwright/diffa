@@ -42,7 +42,10 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
                      '</div>'),
     prefixConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
                         '<h5 class="name"><%= name %> (prefix)</h5>' +
-                        '<input type="text" name="prefix">' +
+                        '<span class="clearable_input">' +
+                          '<input type="text" name="prefix">' +
+                          '<span class="clear"></span>' +
+                        '</span>' +
                       '</div>'),
     setConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
                         '<h5 class="name"><%= name %> (set)</h5>' +
@@ -178,19 +181,6 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
           }
         });
       }
-
-      $(".category:last-child input").bind("change keydown focus blur", function() {
-        if ($(this).val().length > 0) {
-          $(this).addClass("nonempty");
-        } else {
-          $(this).removeClass("nonempty");
-        }
-      });
-
-      $(".clearable_input .clear").click(function() {
-        $(this).siblings("input").val("");
-        $(this).siblings(".nonempty").removeClass("nonempty");
-      });
     });
 
     selectedEndpoint.setCategories.each(function(setCat) {
@@ -217,6 +207,19 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 
     selectedEndpoint.prefixCategories.each(function(prefixCat) {
       constraints.append(self.templates.prefixConstraint(prefixCat.toJSON()));
+    });
+
+    $(".category input").bind("change keydown focus blur", function() {
+      if ($(this).val().length > 0) {
+        $(this).addClass("nonempty");
+      } else {
+        $(this).removeClass("nonempty");
+      }
+    });
+
+    $(".clearable_input .clear").click(function() {
+      $(this).siblings("input").val("");
+      $(this).siblings(".nonempty").removeClass("nonempty");
     });
   },
 
