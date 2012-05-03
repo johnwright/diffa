@@ -78,6 +78,8 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 
     _.bindAll(this, "render", "onEndpointListUpdate");
 
+    this.el.view = this;
+
     this.model.bind('reset', this.render);
     this.model.bind('remove', this.onEndpointListUpdate);
 
@@ -364,7 +366,20 @@ var pairChanged = function(pairName) {
 var endpointChanged = function(endpointName) {
   $("select.pair").val("");
 
-  $(".diffa-inventory-uploader").empty();
+  $(".diffa-inventory-uploader").each(function(i, e) {
+    var v = this.view;
+
+    // if there's an associated view, make sure we remove
+    // its events so that forms which are used on the same
+    // DOM element don't fire more than one inventory
+    // upload event from the backbone view.
+    if (v) {
+      v.unbind();
+      $(e).unbind();
+    }
+
+    $(e).empty();
+  });
 
   // abort if there's nothing to do
   if (endpointName.length == 0) { return; }
