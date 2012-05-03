@@ -51,7 +51,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     e.views.foreach(v => s.saveOrUpdate(fromEndpointViewDef(endpoint, v)))
 
     endpoint
-  }, Some(upgradeConfigVersion(domainName) _ ))
+  }, Some(upgradeConfigVersion(domainName) _ ),
+     Some(() => cachedConfigVersions.remove(domainName))
+  )
 
   def deleteEndpoint(domain:String, name: String): Unit = sessionFactory.withSession(s => {
 
@@ -66,7 +68,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     endpoint.views.foreach(s.delete(_))
 
     s.delete(endpoint)
-  }, Some(upgradeConfigVersion(domain) _ ))
+  }, Some(upgradeConfigVersion(domain) _ ),
+     Some(() => cachedConfigVersions.remove(domain))
+  )
 
   def listEndpoints(domain:String): Seq[EndpointDef] = sessionFactory.withSession(s => {
     listQuery[Endpoint](s, "endpointsByDomain", Map("domain_name" -> domain)).map(toEndpointDef(_))
@@ -100,7 +104,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       val viewsToRemove = existingViews.filter(existing => p.views.find(v => v.name == existing.name).isEmpty)
       viewsToRemove.foreach(r => s.delete(r))
       p.views.foreach(v => s.saveOrUpdate(fromPairViewDef(toUpdate, v)))
-    }, Some(upgradeConfigVersion(domain) _ ))
+    }, Some(upgradeConfigVersion(domain) _ ),
+       Some(() => cachedConfigVersions.remove(domain))
+    )
 
     hook.pairCreated(domain, p.key)
   }
@@ -112,7 +118,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
       val pair = getPair(s, domain, key)
       deletePairInSession(s, domain, pair)
-    }, Some(upgradeConfigVersion(domain) _ ))
+    }, Some(upgradeConfigVersion(domain) _ ),
+       Some(() => cachedConfigVersions.remove(domain))
+    )
 
     hook.pairRemoved(domain, key)
   }
@@ -197,8 +205,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   private def upgradeConfigVersion(domain:String)(s:Session) = {
     s.getNamedQuery("upgradeConfigVersionByDomain").setString("domain", domain).executeUpdate()
-    // RACE CONDITION - because the cache invalidation happens before the commit, it may refresh itself with stale data
-    cachedConfigVersions.remove(domain)
   }
 
   def allConfigOptions(domain:String) = {
