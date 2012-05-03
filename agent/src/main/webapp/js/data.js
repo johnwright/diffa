@@ -81,7 +81,9 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     this.model.bind('reset', this.render);
     this.model.bind('remove', this.onEndpointListUpdate);
 
-    $(this.el).html(window.JST['data/inventory-upload'])
+    var inventoryUploadTemplate = window.JST['data/inventory-upload'];
+
+    $(this.el).append(inventoryUploadTemplate({name: this.model.get("name") }));
     this.delegateEvents(this.events);
 
     this.endpoint = this.model;
