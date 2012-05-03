@@ -333,9 +333,27 @@ var endpointSelectTemplate = _.template('<label>Endpoint:</label>' +
 var panel = $('.inventory-panel');
 var domain = Diffa.DomainManager.get(panel.data("domain"));
 
+var emptyAndUnbindUploaders = function() {
+  $(".diffa-inventory-uploader").each(function(i, e) {
+    var v = this.view;
+
+    // if there's an associated view, make sure we remove
+    // its events so that forms which are used on the same
+    // DOM element don't fire more than one inventory
+    // upload event from the backbone view.
+    if (v) {
+      v.unbind();
+      $(e).unbind();
+    }
+
+    $(e).empty();
+  });
+};
+
 var pairChanged = function(pairName) {
   panel.find("select.endpoint").val("");
-  $(".diffa-inventory-uploader").empty();
+
+  emptyAndUnbindUploaders();
 
   // abort if there's nothing to do
   if (pairName.length == 0) { return; }
@@ -366,20 +384,7 @@ var pairChanged = function(pairName) {
 var endpointChanged = function(endpointName) {
   $("select.pair").val("");
 
-  $(".diffa-inventory-uploader").each(function(i, e) {
-    var v = this.view;
-
-    // if there's an associated view, make sure we remove
-    // its events so that forms which are used on the same
-    // DOM element don't fire more than one inventory
-    // upload event from the backbone view.
-    if (v) {
-      v.unbind();
-      $(e).unbind();
-    }
-
-    $(e).empty();
-  });
+  emptyAndUnbindUploaders();
 
   // abort if there's nothing to do
   if (endpointName.length == 0) { return; }
