@@ -62,10 +62,6 @@ public class MigrationBuilder {
     return register(new InsertBuilder(dialect, table));
   }
 
-  public SequenceBuilder sequence(String name) {
-    return register(new SequenceBuilder(name));
-  }
-
   public AlterTableBuilder alterTable(String table) {
     return register(new AlterTableBuilder(config, dialect, dialectExtension, table));
   }
