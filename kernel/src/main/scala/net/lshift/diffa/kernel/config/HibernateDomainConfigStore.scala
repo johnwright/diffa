@@ -20,15 +20,21 @@ import net.lshift.diffa.kernel.util.SessionHelper._
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.hooks.HookManager
+import net.sf.ehcache.CacheManager
+import net.lshift.diffa.kernel.util.{CacheWrapper, HibernateQueryUtils}
 
-class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:PairCache, hookManager:HookManager)
+class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
+                                 pairCache:PairCache,
+                                 hookManager:HookManager,
+                                 cacheManager:CacheManager)
     extends DomainConfigStore
     with HibernateQueryUtils {
 
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
+
+  private val cachedConfigVersions = new CacheWrapper[String,Int]("configVersions", cacheManager)
 
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = sessionFactory.withSession(s => {
 
@@ -185,12 +191,14 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   def getRepairActionDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toRepairActionDef(getRepairAction(s, domain, name, pairKey)))
   def getPairReportDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toPairReportDef(getReport(s, domain, name, pairKey)))
 
-  def getConfigVersion(domain:String) = sessionFactory.withSession(s => {
+  def getConfigVersion(domain:String) = cachedConfigVersions.readThrough(domain, () => sessionFactory.withSession(s => {
     s.getNamedQuery("configVersionByDomain").setString("domain", domain).uniqueResult().asInstanceOf[Int]
-  })
+  }))
 
   private def upgradeConfigVersion(domain:String)(s:Session) = {
     s.getNamedQuery("upgradeConfigVersionByDomain").setString("domain", domain).executeUpdate()
+    // RACE CONDITION - because the cache invalidation happens before the commit, it may refresh itself with stale data
+    cachedConfigVersions.remove(domain)
   }
 
   def allConfigOptions(domain:String) = {
