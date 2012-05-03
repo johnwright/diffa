@@ -54,6 +54,13 @@ public class AlterTableBuilderTest {
   }
 
   @Test
+  public void shouldGenerateAddColumnWithDefaultLength() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+    mb.alterTable("foo").addColumn("bar", Types.INTEGER, false, 0);
+    VerificationUtil.verifyMigrationBuilder(mb, "alter table foo add column bar integer default 0 not null");
+  }
+
+  @Test
   public void shouldGenerateAlterColumn() throws Exception {
     MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
     mb.alterTable("foo").alterColumn("bar", Types.VARCHAR, 1024, false, "baz");

@@ -274,7 +274,8 @@ object DiffaPair {
 }
 
 case class Domain (
-  @BeanProperty var name: String = null
+  @BeanProperty var name: String = null,
+  @BeanProperty var configVersion: java.lang.Integer = 0
 ) {
   def this() = this(name = null)
 
@@ -289,21 +290,6 @@ case class Domain (
 
 object Domain {
   val DEFAULT_DOMAIN = Domain(name = "diffa")
-}
-
-case class DomainConfigVersion(
-  @BeanProperty var domain: String = null,
-  @BeanProperty var version: java.lang.Integer = null
-)
-{
-  def this() = this(domain = null)
-
-  override def equals(that:Any) = that match {
-    case d:Domain => d.name == domain
-    case _        => false
-  }
-
-  override def hashCode = domain.hashCode
 }
 
 case class RepairAction(

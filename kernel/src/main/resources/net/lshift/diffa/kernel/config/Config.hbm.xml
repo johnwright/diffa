@@ -143,6 +143,7 @@
   <class name="Domain" table="domains" abstract="false">
     <cache usage="read-write"/>
     <id name="name" type="string" column="name"/>
+    <property name="configVersion" type="int" column="config_version" not-null="true"/>
   </class>
 
   <class name="User" table="users" abstract="false">
@@ -251,15 +252,6 @@
     </composite-id>
     <property name="reportType" type="string" column="report_type" not-null="true" />
     <property name="target" type="string" column="target" not-null="true" length="1024" />
-  </class>
-
-  <class name="DomainConfigVersion" table="domain_config_version" abstract="false">
-    <id name="version" column="version">
-      <generator class="native">
-        <param name="sequence">domain_config_version_sequence</param>
-      </generator>
-    </id>
-    <property type="string" column="domain" name="domain" unique="true" not-null="true"/>
   </class>
 
   <query name="userByName" cacheable="true">
@@ -372,15 +364,11 @@
   </query>
 
   <query name="configVersionByDomain" cacheable="false">
-    select v.version from DomainConfigVersion v where v.domain = :domain
+    select d.configVersion from Domain d where d.name = :domain
   </query>
 
-  <query name="domainConfigVersionByDomain" cacheable="false">
-    select v from DomainConfigVersion v where v.domain = :domain_name
-  </query>
-
-  <query name="deleteConfigVersionByDomain" cacheable="false">
-    delete from DomainConfigVersion v where v.domain = :domain
+  <query name="upgradeConfigVersionByDomain" cacheable="false">
+    update Domain d set d.configVersion = d.configVersion + 1 where d.name = :domain
   </query>
 
   <!-- Query by pair with domain -->

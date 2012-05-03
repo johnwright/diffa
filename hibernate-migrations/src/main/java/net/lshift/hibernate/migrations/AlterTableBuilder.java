@@ -57,8 +57,18 @@ public class AlterTableBuilder extends TraceableMigrationElement {
 
   public AlterTableBuilder addColumn(String name, int sqlType, int length, boolean nullable, Object defaultVal) {
     Column col = buildColumnDefinition(name, sqlType, length, nullable, defaultVal);
-    alterFragments.add(dialectExtension.addColumnString() + " " + generateColumnString(dialect, col, false));
+    addColumnFragment(col);
     return this;
+  }
+
+  public AlterTableBuilder addColumn(String name, int sqlType, boolean nullable, Object defaultVal) {
+    Column col = buildColumnDefinition(name, sqlType, nullable, defaultVal);
+    addColumnFragment(col);
+    return this;
+  }
+
+  private void addColumnFragment(Column col) {
+    alterFragments.add(dialectExtension.addColumnString() + " " + generateColumnString(dialect, col, false));
   }
 
   public AlterTableBuilder alterColumn(String name, int sqlType, int length, boolean nullable, Object defaultVal) {
@@ -76,6 +86,10 @@ public class AlterTableBuilder extends TraceableMigrationElement {
             + String.format("%snull", nullable ? "" : "not "),
             dialectExtension.shouldBracketAlterColumnStatement()));
     return this;
+  }
+
+  private static Column buildColumnDefinition(String name, int sqlType, boolean nullable, Object defaultVal) {
+    return buildColumnDefinition(name, sqlType, Column.DEFAULT_LENGTH, nullable, defaultVal);
   }
 
   private static Column buildColumnDefinition(String name, int sqlType, int length, boolean nullable, Object defaultVal) {

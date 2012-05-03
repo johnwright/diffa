@@ -29,20 +29,8 @@ object Step0024 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    /**
-     * Create a table that effectively is the same thing as adding an extra
-     * column to the domains table, but without introducing any overhead in maintaining that table.
-     */
-    migration.createTable("domain_config_version").
-      column("domain", Types.VARCHAR, 50, false).
-      column("version", Types.INTEGER, false, 0). // Start with version 0
-      pk("version").
-      withNativeIdentityGenerator()
-
-    migration.alterTable("domain_config_version").
-      addForeignKey("fk_cfvs_dmns", "domain", "domains", "name").
-      addUniqueConstraint("domain")
-
+    migration.alterTable("domains").
+      addColumn("config_version", Types.INTEGER, false, 0)
 
     migration
   }

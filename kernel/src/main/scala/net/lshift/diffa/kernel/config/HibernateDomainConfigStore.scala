@@ -186,17 +186,11 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory, pairCache:P
   def getPairReportDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toPairReportDef(getReport(s, domain, name, pairKey)))
 
   def getConfigVersion(domain:String) = sessionFactory.withSession(s => {
-    singleQueryOpt[Int](s, "configVersionByDomain", Map("domain" -> domain)) match {
-      case Some(version) => version
-      case None          => upgradeConfigVersion(domain)(s)
-    }
+    s.getNamedQuery("configVersionByDomain").setString("domain", domain).uniqueResult().asInstanceOf[Int]
   })
 
   private def upgradeConfigVersion(domain:String)(s:Session) = {
-    s.getNamedQuery("deleteConfigVersionByDomain").setString("domain", domain).executeUpdate()
-    val configVersion = DomainConfigVersion(domain)
-    s.save(configVersion)
-    configVersion.version
+    s.getNamedQuery("upgradeConfigVersionByDomain").setString("domain", domain).executeUpdate()
   }
 
   def allConfigOptions(domain:String) = {
