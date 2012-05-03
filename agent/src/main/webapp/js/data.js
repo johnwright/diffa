@@ -310,16 +310,16 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 });
 
 var pairSelectTemplate = _.template('<label>Pair:</label>' +
-  '<select class="pair">' +
-    '<option value="">Select pair</option>' +
+  '<select class="pair" data-placeholder="Select pair">' +
+    '<option value="" selected="selected">Select pair</option>' +
   '<% _.each(pairs.models, function(pair) { %>' +
     '<option value="<%= pair.get("key") %>"><%= pair.get("key") %></option>' +
   '<% }); %> ' +
   '</select>');
 
 var endpointSelectTemplate = _.template('<label>Endpoint:</label>' +
-  '<select class="endpoint">' +
-    '<option value="">Select endpoint</option>' +
+  '<select class="endpoint" data-placeholder="Select endpoint">' +
+    '<option value="" selected="selected">Select endpoint</option>' +
   '<% _.each(endpoints.models, function(endpoint) { %>' +
     '<option value="<%= endpoint.get("name") %>"><%= endpoint.get("name") %></option>' +
   '<% }); %>' +
@@ -382,5 +382,17 @@ domain.loadAll(["endpoints", "pairs"], function() {
   panel.find("#inventory-selection").prepend(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
   panel.find("select.pair").change(function() { pairChanged(panel.find("select.pair option:selected").val()); });
   panel.find("select.endpoint").change(function() { endpointChanged(panel.find("select.endpoint option:selected").val()); });
+
+  $("#inventory-selection select").each(function(i, el) {
+    // remove the empty-value <option> which is fine without Select2, but
+    // with Select2 it causes problems because it's not a real choice which
+    // should be listed in the Select2 dropdown; Select2 gives us what we need
+    // with a placeholder.
+    $(el).find("option:first-child").replaceWith("<option></option>");
+    $(el).css("width", "20em");
+    $(el).select2({
+      allowClear: true
+    });
+  });
 });
 });
