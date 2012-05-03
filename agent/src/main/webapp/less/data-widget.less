@@ -20,9 +20,14 @@
   clear: both;
   border: @dotted-border;
   padding: 10px;
+  width: 100%;
+  overflow: hidden;
+  min-height: 30em;
 }
 
-#inventory-uploader {
+.diffa-inventory-uploader {
+ padding-top: 1em;
+
  .category {
    clear: both;
    width: 100%;
@@ -64,4 +69,12 @@
  .inventory_submit {
    margin-top: 1em;
  }
+}
+
+#inventory-uploader-downstream {
+  float: left;
+}
+
+#inventory-uploader-upstream {
+  float: right;
 }

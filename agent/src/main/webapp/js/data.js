@@ -19,7 +19,6 @@ $(function() {
 Diffa.Views.InventoryUploader = Backbone.View.extend({
   events: {
     'submit form': 'uploadInventory',
-    'change select[name=endpoint]': 'selectEndpoint'
   },
   setListColumnThreshold: 10,
   templates: {
@@ -77,45 +76,35 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   initialize: function() {
     var self = this;
 
-    _.bindAll(this, "render", "addOne", "onEndpointListUpdate");
+    _.bindAll(this, "render", "onEndpointListUpdate");
 
-    this.collection.bind('reset', this.render);
-    this.collection.bind('add', this.addOne);
-    this.collection.bind('remove', this.onEndpointListUpdate);
+    this.model.bind('reset', this.render);
+    this.model.bind('remove', this.onEndpointListUpdate);
 
     $(this.el).html(window.JST['data/inventory-upload'])
     this.delegateEvents(this.events);
-    
-    this.selectList = this.$('select[name=endpoint]');
+
+    this.endpoint = this.model;
 
     this.render();
-    this.collection.ensureFetched();
+    this.model.fetch();
   },
 
   render: function() {
-    var self = this;
-
-    this.selectList.empty();
-    this.collection.each(this.addOne);
-
     this.onEndpointListUpdate();
 
     return this;
   },
 
-  addOne: function(e) {
-    $('<option value="' + e.id + '">' + e.get('name') + '</option>').appendTo(this.selectList);
-    this.onEndpointListUpdate();
-  },
-
   onEndpointListUpdate: function() {
-    this.selectEndpoint();    // Trigger an endpoint selection to ensure the attributes are shown
+    this.loadEndpoint();    // Trigger an endpoint selection to ensure the attributes are shown
   },
 
-  selectEndpoint: function(e) {
+  loadEndpoint: function(e) {
     var self = this;
 
-    var selectedEndpoint = this.collection.get(this.selectList.val());
+    var selectedEndpoint = this.model;
+
     if (selectedEndpoint && this.currentEndpoint && selectedEndpoint.id == this.currentEndpoint.id) return;
 
     this.currentEndpoint = selectedEndpoint;
@@ -262,7 +251,7 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   uploadInventory: function(e) {
     e.preventDefault();
 
-    var endpoint = this.collection.get(this.selectList.val());
+    var endpoint = this.endpoint;
     var inventoryFiles = this.$('input[type=file]')[0].files;
     if (inventoryFiles.length < 1) {
       alert("No inventory files selected for upload");
@@ -313,11 +302,19 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
 });
 
 var pairSelectTemplate = _.template('<label>Pair:</label>' +
-  '<select>' +
+  '<select class="pair">' +
+    '<option value="">Select pair</option>' +
   '<% _.each(pairs.models, function(pair) { %>' +
-    '<option>Select pair</opion>' +
-    '<option><%= pair.get("key") %></option>' +
+    '<option value="<%= pair.get("key") %>"><%= pair.get("key") %></option>' +
   '<% }); %> ' +
+  '</select>');
+
+var endpointSelectTemplate = _.template('<label>Endpoint:</label>' +
+  '<select class="endpoint">' +
+    '<option value="">Select endpoint</option>' +
+  '<% _.each(endpoints.models, function(endpoint) { %>' +
+    '<option value="<%= endpoint.get("name") %>"><%= endpoint.get("name") %></option>' +
+  '<% }); %>' +
   '</select>');
 
 var panel = $('.inventory-panel');
@@ -325,22 +322,51 @@ var domain = Diffa.DomainManager.get(panel.data("domain"));
 
 var pairChanged = function(pairName) {
   var pair = domain.pairs.get(pairName);
-  console.log(pair.get("downstreamName"));
-  console.log(pair.get("upstreamName"));
-  console.log(domain.endpoints.get(pair.get("downstreamName")));
+  var downstream = domain.endpoints.get(pair.get("downstreamName"));
+  var upstream   = domain.endpoints.get(pair.get("upstreamName"));
 
-  $('.diffa-inventory-uploader').each(function() {
+  panel.find("select.endpoint").val("");
+  $(".diffa-inventory-uploader").empty();
+
+  $('#inventory-uploader-upstream').each(function() {
     var domain = Diffa.DomainManager.get($(this).data('domain'));
 
     new Diffa.Views.InventoryUploader({
       el: $(this),
-      collection: domain.endpoints
+      model: upstream
+    });
+  });
+
+  $('#inventory-uploader-downstream').each(function() {
+    var domain = Diffa.DomainManager.get($(this).data('domain'));
+
+    new Diffa.Views.InventoryUploader({
+      el: $(this),
+      model: downstream
+    });
+  });
+};
+
+var endpointChanged = function(endpointName) {
+  var endpoint = domain.endpoints.get(endpointName);
+
+  $("select.pair").val("");
+  $(".diffa-inventory-uploader").empty();
+
+  $('#inventory-uploader').each(function() {
+    var domain = Diffa.DomainManager.get($(this).data('domain'));
+
+    new Diffa.Views.InventoryUploader({
+      el: $(this),
+      model: endpoint
     });
   });
 }
 
-domain.loadAll(["pairs"], function() {
+domain.loadAll(["endpoints", "pairs"], function() {
+  panel.prepend(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
   panel.prepend(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
-  panel.find("select").change(function() { pairChanged(panel.find("select option:selected").text()); });
+  panel.find("select.pair").change(function() { pairChanged(panel.find("select.pair option:selected").text()); });
+  panel.find("select.endpoint").change(function() { endpointChanged(panel.find("select.endpoint option:selected").text()); });
 });
 });
