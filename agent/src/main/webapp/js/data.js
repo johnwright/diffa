@@ -309,6 +309,9 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   }
 });
 
+
+(function() {
+
 var pairSelectTemplate = _.template('<label>Pair:</label>' +
   '<select class="pair" data-placeholder="Select pair">' +
     '<option value="" selected="selected">Select pair</option>' +
@@ -395,4 +398,7 @@ domain.loadAll(["endpoints", "pairs"], function() {
     });
   });
 });
+
+})();
+
 });
