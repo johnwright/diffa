@@ -321,12 +321,12 @@ var panel = $('.inventory-panel');
 var domain = Diffa.DomainManager.get(panel.data("domain"));
 
 var pairChanged = function(pairName) {
+  panel.find("select.endpoint").val("");
+  $(".diffa-inventory-uploader").empty();
+
   var pair = domain.pairs.get(pairName);
   var downstream = domain.endpoints.get(pair.get("downstreamName"));
   var upstream   = domain.endpoints.get(pair.get("upstreamName"));
-
-  panel.find("select.endpoint").val("");
-  $(".diffa-inventory-uploader").empty();
 
   $('#inventory-uploader-upstream').each(function() {
     var domain = Diffa.DomainManager.get($(this).data('domain'));
@@ -348,10 +348,10 @@ var pairChanged = function(pairName) {
 };
 
 var endpointChanged = function(endpointName) {
-  var endpoint = domain.endpoints.get(endpointName);
-
   $("select.pair").val("");
   $(".diffa-inventory-uploader").empty();
+
+  var endpoint = domain.endpoints.get(endpointName);
 
   $('#inventory-uploader').each(function() {
     var domain = Diffa.DomainManager.get($(this).data('domain'));
