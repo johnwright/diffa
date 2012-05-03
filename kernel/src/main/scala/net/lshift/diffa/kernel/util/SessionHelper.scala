@@ -31,6 +31,10 @@ class SessionHelper(val sessionFactory:SessionFactory) {
   def withSession[T](dbCommands:Function1[Session, T]) : T = withSession(dbCommands, None, None)
 
   def withSession[T](dbCommands:Function1[Session, T],
+                     beforeCommit:Function1[Session,_],
+                     afterCommit:Function0[_]) : T = withSession(dbCommands, Some(beforeCommit), Some(afterCommit))
+
+  def withSession[T](dbCommands:Function1[Session, T],
                      beforeCommit:Option[Function1[Session,_]],
                      afterCommit:Option[Function0[_]]) : T = {
     val session = sessionFactory.openSession

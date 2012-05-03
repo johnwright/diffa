@@ -36,7 +36,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   private val cachedConfigVersions = new CacheWrapper[String,Int]("configVersions", cacheManager)
 
-  def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = sessionFactory.withSession(s => {
+  def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = withVersionUpgrade(domainName, s => {
 
     pairCache.invalidate(domainName)
 
@@ -51,11 +51,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     e.views.foreach(v => s.saveOrUpdate(fromEndpointViewDef(endpoint, v)))
 
     endpoint
-  }, Some(upgradeConfigVersion(domainName) _ ),
-     Some(() => cachedConfigVersions.remove(domainName))
-  )
+  })
 
-  def deleteEndpoint(domain:String, name: String): Unit = sessionFactory.withSession(s => {
+  def deleteEndpoint(domain:String, name: String): Unit = withVersionUpgrade(domain, s => {
 
     pairCache.invalidate(domain)
 
@@ -68,9 +66,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     endpoint.views.foreach(s.delete(_))
 
     s.delete(endpoint)
-  }, Some(upgradeConfigVersion(domain) _ ),
-     Some(() => cachedConfigVersions.remove(domain))
-  )
+  })
 
   def listEndpoints(domain:String): Seq[EndpointDef] = sessionFactory.withSession(s => {
     listQuery[Endpoint](s, "endpointsByDomain", Map("domain_name" -> domain)).map(toEndpointDef(_))
@@ -89,7 +85,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   }
 
   def createOrUpdatePair(domain:String, p: PairDef): Unit = {
-    sessionFactory.withSession(s => {
+    withVersionUpgrade(domain, s => {
       p.validate()
 
       pairCache.invalidate(domain)
@@ -104,23 +100,19 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       val viewsToRemove = existingViews.filter(existing => p.views.find(v => v.name == existing.name).isEmpty)
       viewsToRemove.foreach(r => s.delete(r))
       p.views.foreach(v => s.saveOrUpdate(fromPairViewDef(toUpdate, v)))
-    }, Some(upgradeConfigVersion(domain) _ ),
-       Some(() => cachedConfigVersions.remove(domain))
-    )
+    })
 
     hook.pairCreated(domain, p.key)
   }
 
   def deletePair(domain:String, key: String) {
-    sessionFactory.withSession(s => {
+    withVersionUpgrade(domain, s => {
 
       pairCache.invalidate(domain)
 
       val pair = getPair(s, domain, key)
       deletePairInSession(s, domain, pair)
-    }, Some(upgradeConfigVersion(domain) _ ),
-       Some(() => cachedConfigVersions.remove(domain))
-    )
+    })
 
     hook.pairRemoved(domain, key)
   }
@@ -203,9 +195,22 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     s.getNamedQuery("configVersionByDomain").setString("domain", domain).uniqueResult().asInstanceOf[Int]
   }))
 
+  /**
+   * Force the DB to uprev the config version column for this particular domain
+   */
   private def upgradeConfigVersion(domain:String)(s:Session) = {
     s.getNamedQuery("upgradeConfigVersionByDomain").setString("domain", domain).executeUpdate()
   }
+
+  /**
+   * Force an upgrade of the domain config version in the db and the cache after the DB work has executed successfully.
+   */
+  private def withVersionUpgrade[T](domain:String, dbCommands:Function1[Session, T]) : T =
+    sessionFactory.withSession(
+      s => dbCommands(s),
+      upgradeConfigVersion(domain) _ ,
+      () => cachedConfigVersions.remove(domain)
+    )
 
   def allConfigOptions(domain:String) = {
     sessionFactory.withSession(s => {
