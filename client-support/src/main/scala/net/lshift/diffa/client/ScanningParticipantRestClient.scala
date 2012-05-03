@@ -49,7 +49,7 @@ class ScanningParticipantRestClient(serviceLimitsView: PairServiceLimitsView,
                                     pair: DiffaPairRef = DiffaPairRef("", ""))
   extends ScanningParticipantRef {
 
-  implicit private val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
   private final val ACCEPTABLE_STATUS_CODE = 200
   private val uri = new URI(scanUrl)
 
