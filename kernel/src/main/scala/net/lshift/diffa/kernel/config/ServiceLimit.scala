@@ -4,6 +4,8 @@ import reflect.BeanProperty
 
 object ServiceLimit {
   final val UNLIMITED = -1
+  final val SCAN_CONNECT_TIMEOUT_SETTING = "scan.connect.timeout"
+  final val SCAN_READ_TIMEOUT_SETTING = "scan.read.timeout"
 }
 
 case class ServiceLimitDefinitions(@BeanProperty var limitName: String = null,

@@ -18,7 +18,6 @@ package net.lshift.diffa.client
 
 import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.util.AlertCodes._
-import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpGet
 import org.apache.http.client.HttpClient
@@ -32,46 +31,70 @@ import net.lshift.diffa.kernel.participants.{ScanningParticipantRef, CategoryFun
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
-import java.net.URI
+import net.lshift.diffa.kernel.config.{ServiceLimit, DiffaPairRef, PairServiceLimitsView}
+import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
+import javax.ws.rs.core.MediaType.APPLICATION_JSON
+import org.apache.http.Header
+import java.net.{ConnectException, SocketException, URI}
+import net.lshift.diffa.kernel.differencing.ScanFailedException
 
 
 /**
  * A ScanningParticipantRestClient is responsible for issuing scan queries to
  * Participants and mapping the JSON response to an Object.
  */
-class ScanningParticipantRestClient(scanUrl: String, params: RestClientParams = RestClientParams.default)
+class ScanningParticipantRestClient(serviceLimitsView: PairServiceLimitsView,
+                                    scanUrl: String,
+                                    params: RestClientParams = RestClientParams.default,
+                                    pair: DiffaPairRef = DiffaPairRef("", ""))
   extends ScanningParticipantRef {
 
   implicit private val logger = LoggerFactory.getLogger(getClass)
   private final val ACCEPTABLE_STATUS_CODE = 200
   private val uri = new URI(scanUrl)
 
+  /**
+   * Issue a single query to a participant.
+   *
+   * @return upon successful receipt of a valid JSON response from the
+   * participant which can be deserialized to a sequence of ScanResultEntry
+   * objects, that sequence of objects is returned.
+   * @throws ScanFailedException if normal exceptional conditions occur which
+   * should be exposed via the UI.
+   * @throws Exception if abnormal exceptional conditions occur which should
+   * not be exposed via the UI.
+   */
   def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]): Seq[ScanResultEntry] = {
     val httpClient = createHttpClient(new BasicHttpParams)
-    httpClient.getCredentialsProvider.setCredentials(
-      new AuthScope(uri.getHost, uri.getPort),
-      new UsernamePasswordCredentials(params.username.get, params.password.get)
-    )
     val httpGet = setQueryParams(constraints, aggregations)
 
-    // TODO: set Content-Type: application/JSON
-    val response = try {
-      httpClient.execute(httpGet)
-      // Note that ScanFailedException is no longer thrown on connect failure.
-      // Instead, any exception thrown by execute is propagated up the stack.
+    try {
+      val response = httpClient.execute(httpGet)
+
+      val statusCode = response.getStatusLine.getStatusCode
+      statusCode match {
+        case ACCEPTABLE_STATUS_CODE =>
+          JSONHelper.readQueryResult(response.getEntity.getContent)
+        case _ =>
+          logger.error("{} External scan error, response code: {}",
+            Array(formatAlertCode(EXTERNAL_SCAN_ERROR), statusCode))
+          throw new ScanFailedException("Participant scan failed: %s\n%s".format(
+            statusCode, EntityUtils.toString(response.getEntity)))
+      }
+    } catch {
+      case ex: ConnectException =>
+        logger.error("%s Connection to %s refused".format(SCAN_CONNECTION_REFUSED, scanUrl))
+        // NOTICE: ScanFailedException is handled specially (see its class documentation).
+        throw new ScanFailedException("Could not connect to " + scanUrl)
+      case ex: SocketException =>
+        logger.error("Socket closed to %s closed".format(SCAN_CONNECTION_CLOSED, scanUrl))
+        // NOTICE: ScanFailedException is handled specially (see its class documentation).
+        throw new ScanFailedException("Connection to %s closed unexpectedly, query %s".format(
+          scanUrl, uri.getQuery))
     } finally {
       shutdownImmediate(httpClient)
     }
 
-    val statusCode = response.getStatusLine.getStatusCode
-    statusCode match {
-      case ACCEPTABLE_STATUS_CODE => JSONHelper.readQueryResult(response.getEntity.getContent)
-      case _ =>
-        logger.error("{} External scan error, response code: {}",
-          Array(formatAlertCode(EXTERNAL_SCAN_ERROR), statusCode))
-        throw new Exception("Participant scan failed: %s\n%s".format(
-          statusCode, EntityUtils.toString(response.getEntity)))
-    }
   }
 
   def setQueryParams(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) = {
@@ -89,10 +112,27 @@ class ScanningParticipantRestClient(scanUrl: String, params: RestClientParams = 
     httpGet
   }
 
+  private def zeroIfUnlimited(limitName: String) = {
+    serviceLimitsView.getEffectiveLimitByNameForPair(
+      limitName, pair.domain, pair.key) match {
+      case ServiceLimit.UNLIMITED => 0
+      case timeout => timeout
+    }
+  }
+
   private def createHttpClient(httpParams: BasicHttpParams): DefaultHttpClient = {
-    params.connectTimeout foreach { HttpConnectionParams.setConnectionTimeout(httpParams, _) }
-    params.readTimeout foreach { HttpConnectionParams.setSoTimeout(httpParams, _) }
-    new DefaultHttpClient(httpParams)
+    HttpConnectionParams.setConnectionTimeout(httpParams,
+      zeroIfUnlimited(ServiceLimit.SCAN_CONNECT_TIMEOUT_SETTING))
+    HttpConnectionParams.setSoTimeout(httpParams,
+      zeroIfUnlimited(ServiceLimit.SCAN_READ_TIMEOUT_SETTING))
+
+    val httpClient = new DefaultHttpClient(httpParams)
+
+    httpClient.getCredentialsProvider.setCredentials(
+      new AuthScope(uri.getHost, uri.getPort),
+      new UsernamePasswordCredentials(params.username.get, params.password.get)
+    )
+    httpClient
   }
 
   private def shutdownImmediate(client: HttpClient) {

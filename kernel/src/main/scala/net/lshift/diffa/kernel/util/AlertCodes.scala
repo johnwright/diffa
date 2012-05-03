@@ -94,6 +94,7 @@ object AlertCodes {
   // 61x External scan errors
   val SCAN_CONNECTION_REFUSED = 610
   val EXTERNAL_SCAN_ERROR = 611
+  val SCAN_CONNECTION_CLOSED = 612
 
   // 65x Problems with messaging systems
   
