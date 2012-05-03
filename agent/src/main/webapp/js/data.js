@@ -363,6 +363,7 @@ var pairChanged = function(pairName) {
 
 var endpointChanged = function(endpointName) {
   $("select.pair").val("");
+
   $(".diffa-inventory-uploader").empty();
 
   // abort if there's nothing to do
@@ -379,6 +380,7 @@ var endpointChanged = function(endpointName) {
     });
   });
 }
+
 
 domain.loadAll(["endpoints", "pairs"], function() {
   panel.find("#inventory-selection").prepend(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
