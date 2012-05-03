@@ -30,7 +30,7 @@ object Step0024 extends HibernateMigrationStep {
     val migration = new MigrationBuilder(config)
 
     migration.alterTable("domains").
-      addColumn("config_version", Types.INTEGER, false, 0)
+      addColumn("config_version", Types.INTEGER, 11, false, 0)
 
     migration
   }
