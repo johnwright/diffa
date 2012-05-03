@@ -324,6 +324,9 @@ var pairChanged = function(pairName) {
   panel.find("select.endpoint").val("");
   $(".diffa-inventory-uploader").empty();
 
+  // abort if there's nothing to do
+  if (pairName.length == 0) { return; }
+
   var pair = domain.pairs.get(pairName);
   var downstream = domain.endpoints.get(pair.get("downstreamName"));
   var upstream   = domain.endpoints.get(pair.get("upstreamName"));
@@ -351,6 +354,9 @@ var endpointChanged = function(endpointName) {
   $("select.pair").val("");
   $(".diffa-inventory-uploader").empty();
 
+  // abort if there's nothing to do
+  if (endpointName.length == 0) { return; }
+
   var endpoint = domain.endpoints.get(endpointName);
 
   $('#inventory-uploader').each(function() {
@@ -366,7 +372,7 @@ var endpointChanged = function(endpointName) {
 domain.loadAll(["endpoints", "pairs"], function() {
   panel.prepend(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
   panel.prepend(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
-  panel.find("select.pair").change(function() { pairChanged(panel.find("select.pair option:selected").text()); });
-  panel.find("select.endpoint").change(function() { endpointChanged(panel.find("select.endpoint option:selected").text()); });
+  panel.find("select.pair").change(function() { pairChanged(panel.find("select.pair option:selected").val()); });
+  panel.find("select.endpoint").change(function() { endpointChanged(panel.find("select.endpoint option:selected").val()); });
 });
 });
