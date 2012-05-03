@@ -119,7 +119,7 @@ class UsersResource {
     aggregationsBuilder.maybeAddStringPrefixAggregation("name")
     val aggregations = aggregationsBuilder.toList
 
-    val aggregated = new UserScanningParticipant(systemConfig).perform(constraints, aggregations)
+    val aggregated = new UserScanningParticipant(systemConfig).perform(constraints, aggregations).toArray
 
     Response.ok(aggregated).build()
   }
