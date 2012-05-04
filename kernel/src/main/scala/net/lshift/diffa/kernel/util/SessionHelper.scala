@@ -28,15 +28,15 @@ class SessionHelper(val sessionFactory:SessionFactory) {
 
   val log = LoggerFactory.getLogger(getClass)
 
-  def withSession[T](dbCommands:Function1[Session, T]) : T = withSession(dbCommands, None, None)
+  def withSession[T](dbCommands:Function1[Session, T]) : T = withSessionInternal(dbCommands, None, None)
 
-  def withSession[T](dbCommands:Function1[Session, T],
-                     beforeCommit:Function1[Session,_],
-                     afterCommit:Function0[_]) : T = withSession(dbCommands, Some(beforeCommit), Some(afterCommit))
+  def withSession[T](beforeCommit:Function1[Session,_],
+                     dbCommands:Function1[Session, T],
+                     afterCommit:Function0[_]) : T = withSessionInternal(dbCommands, Some(beforeCommit), Some(afterCommit))
 
-  def withSession[T](dbCommands:Function1[Session, T],
-                     beforeCommit:Option[Function1[Session,_]],
-                     afterCommit:Option[Function0[_]]) : T = {
+  private def withSessionInternal[T](dbCommands:Function1[Session, T],
+                                     beforeCommit:Option[Function1[Session,_]],
+                                     afterCommit:Option[Function0[_]]) : T = {
     val session = sessionFactory.openSession
 
     try {

@@ -205,12 +205,18 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   /**
    * Force an upgrade of the domain config version in the db and the cache after the DB work has executed successfully.
    */
-  private def withVersionUpgrade[T](domain:String, dbCommands:Function1[Session, T]) : T =
+  private def withVersionUpgrade[T](domain:String, dbCommands:Function1[Session, T]) : T = {
+
+    def beforeCommit(session:Session) = upgradeConfigVersion(domain)(session)
+    def commandsToExecute(session:Session) = dbCommands(session)
+    def afterCommit() = cachedConfigVersions.remove(domain)
+
     sessionFactory.withSession(
-      s => dbCommands(s),
-      upgradeConfigVersion(domain) _ ,
-      () => cachedConfigVersions.remove(domain)
+      beforeCommit _,
+      commandsToExecute,
+      afterCommit _
     )
+  }
 
   def allConfigOptions(domain:String) = {
     sessionFactory.withSession(s => {
