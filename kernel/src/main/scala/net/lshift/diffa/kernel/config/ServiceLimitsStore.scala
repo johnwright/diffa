@@ -61,11 +61,3 @@ trait PairServiceLimitsView {
   def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int
 }
 
-/**
- * This should only be used carefully, typically for tests that don't want limits to interfere
- * with results.
- */
-object UnlimitedPairServiceLimitsView extends PairServiceLimitsView {
-  def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int =
-    ServiceLimit.UNLIMITED
-}
