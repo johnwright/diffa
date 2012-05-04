@@ -443,25 +443,26 @@ var endpointChanged = function(endpointName) {
   if (flashNames) { flashEndpointNames(); }
 }
 
+if ($(".inventory-panel").length > 0) {
+  domain.loadAll(["endpoints", "pairs"], function() {
+    panel.find("#inventory-selection").append(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
+    panel.find("#inventory-selection").append(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
+    panel.find("select.pair").change(function() { pairChanged(panel.find("select.pair option:selected").val()); });
+    panel.find("select.endpoint").change(function() { endpointChanged(panel.find("select.endpoint option:selected").val()); });
 
-domain.loadAll(["endpoints", "pairs"], function() {
-  panel.find("#inventory-selection").append(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
-  panel.find("#inventory-selection").append(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
-  panel.find("select.pair").change(function() { pairChanged(panel.find("select.pair option:selected").val()); });
-  panel.find("select.endpoint").change(function() { endpointChanged(panel.find("select.endpoint option:selected").val()); });
-
-  $("#inventory-selection select").each(function(i, el) {
-    // remove the empty-value <option> which is fine without Select2, but
-    // with Select2 it causes problems because it's not a real choice which
-    // should be listed in the Select2 dropdown; Select2 gives us what we need
-    // with a placeholder.
-    $(el).find("option:first-child").replaceWith("<option></option>");
-    $(el).css("width", "20em");
-    $(el).select2({
-      allowClear: true
+    $("#inventory-selection select").each(function(i, el) {
+      // remove the empty-value <option> which is fine without Select2, but
+      // with Select2 it causes problems because it's not a real choice which
+      // should be listed in the Select2 dropdown; Select2 gives us what we need
+      // with a placeholder.
+      $(el).find("option:first-child").replaceWith("<option></option>");
+      $(el).css("width", "20em");
+      $(el).select2({
+        allowClear: true
+      });
     });
   });
-});
+}
 
 })();
 
