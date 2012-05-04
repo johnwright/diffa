@@ -87,12 +87,15 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     var inventoryUploadTemplate = window.JST['data/inventory-upload'];
 
     var name = this.model.get("name");
+    var endpointDescription = "Endpoint";
+    var pairHalf = $(this.el).data("pair-half");
 
-    if ($(this.el).data("pair-half")) {
-      name = name + " (" + $(this.el).data("pair-half") + ")";
+    if (pairHalf) {
+      name = name + " (" + pairHalf + ")";
+      endpointDescription = pairHalf.charAt(0).toUpperCase() + pairHalf.substr(1);
     }
 
-    $(this.el).append(inventoryUploadTemplate({name: name }));
+    $(this.el).append(inventoryUploadTemplate({ name: name, endpointDescription: endpointDescription }));
     this.delegateEvents(this.events);
 
     this.endpoint = this.model;
