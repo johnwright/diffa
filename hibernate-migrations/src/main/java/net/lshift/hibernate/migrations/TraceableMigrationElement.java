@@ -36,13 +36,13 @@ abstract public class TraceableMigrationElement implements MigrationElement {
   }
 
   protected PreparedStatement prepareAndLog(Connection conn, String sql) throws SQLException {
-    // TODO Should demote this to TRACE level
-    log.debug("Preparing statement: " + sql);
+    log.trace("Preparing statement: " + sql);
     logStatement(sql);
     return conn.prepareStatement(sql);
   }
 
   protected void prepareAndLogAndExecute(Connection conn, String sql) throws SQLException {
+
     PreparedStatement stmt = prepareAndLog(conn, sql);
     stmt.execute();
     stmt.close();
