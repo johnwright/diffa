@@ -33,8 +33,6 @@ import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
 import net.lshift.diffa.kernel.config.{ServiceLimit, DiffaPairRef, PairServiceLimitsView}
 import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
-import javax.ws.rs.core.MediaType.APPLICATION_JSON
-import org.apache.http.Header
 import java.net.{ConnectException, SocketException, URI}
 import net.lshift.diffa.kernel.differencing.ScanFailedException
 
@@ -122,9 +120,9 @@ class ScanningParticipantRestClient(serviceLimitsView: PairServiceLimitsView,
 
   private def createHttpClient(httpParams: BasicHttpParams): DefaultHttpClient = {
     HttpConnectionParams.setConnectionTimeout(httpParams,
-      zeroIfUnlimited(ServiceLimit.SCAN_CONNECT_TIMEOUT_SETTING))
+      zeroIfUnlimited(ServiceLimit.SCAN_CONNECT_TIMEOUT_KEY))
     HttpConnectionParams.setSoTimeout(httpParams,
-      zeroIfUnlimited(ServiceLimit.SCAN_READ_TIMEOUT_SETTING))
+      zeroIfUnlimited(ServiceLimit.SCAN_READ_TIMEOUT_KEY))
 
     val httpClient = new DefaultHttpClient(httpParams)
 
