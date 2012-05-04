@@ -25,16 +25,16 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     rangeConstraint: _.template('<div class="category" data-constraint="<%= name %>" data-constraint-type="<%= dataType %>">' +
                       '<h5 class="name"><%= name %> (<%= dataType %> range)</h5>' +
                       '<div>' +
-                        '<label for="<%= name %>_range_start">Start:</label>' +
+                        '<label for="<%= name %>_range_start">Start <%= descriptiveDataType %>:</label>' +
                         '<span class="clearable_input">' +
-                          '<input id="<%= name %>_range_start" type="text" name="start" placeholder="<%= placeholder %>">' +
+                          '<input id="<%= name %>_range_start" type="text" name="start" placeholder="Unbounded <%= descriptiveDataType %>">' +
                           '<span class="clear"></span>' +
                         '</span>' +
                       '</div>' +
                       '<div>' +
-                        '<label for="<%= name %>_range_end">End:</label>' +
+                        '<label for="<%= name %>_range_end">End <%= descriptiveDataType %>:</label>' +
                         '<span class="clearable_input">' +
-                          '<input id="<%= name %>_range_end" type="text" name="end" placeholder="<%= placeholder %>">' +
+                          '<input id="<%= name %>_range_end" type="text" name="end" placeholder="Unbounded <%= descriptiveDataType %>">' +
                           '<span class="clear"></span>' +
                         '</span>' +
                       '</div>' +
@@ -127,15 +127,15 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     selectedEndpoint.rangeCategories.each(function(rangeCat) {
       var templateVars = rangeCat.toJSON();
       var type = rangeCat.get("dataType");
-      var placeholder = "";
+      var descriptiveDataType;
 
       switch(type) {
-        case "date":     placeholder = "Unbounded date";     break;
-        case "datetime": placeholder = "Unbounded datetime"; break;
-        case "int":      placeholder = "Unbounded";     break;
+        case "date":     descriptiveDataType = "date";     break;
+        case "datetime": descriptiveDataType = "datetime"; break;
+        case "int":      descriptiveDataType = "integer";  break;
       }
 
-      templateVars["placeholder"] = placeholder;
+      templateVars["descriptiveDataType"] = descriptiveDataType;
 
       constraints.append(self.templates.rangeConstraint(templateVars));
 
