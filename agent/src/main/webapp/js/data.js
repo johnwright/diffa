@@ -401,8 +401,8 @@ var endpointChanged = function(endpointName) {
 
 
 domain.loadAll(["endpoints", "pairs"], function() {
-  panel.find("#inventory-selection").prepend(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
-  panel.find("#inventory-selection").prepend(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
+  panel.find("#inventory-selection").append(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
+  panel.find("#inventory-selection").append(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
   panel.find("select.pair").change(function() { pairChanged(panel.find("select.pair option:selected").val()); });
   panel.find("select.endpoint").change(function() { endpointChanged(panel.find("select.endpoint option:selected").val()); });
 
