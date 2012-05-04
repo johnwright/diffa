@@ -153,7 +153,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     this.model.bind('fetch', this.render);
 
     this.render();
-    // :visible because a form may its first input as hidden
+    // :visible because a form may have its first input as hidden
     this.$("input:visible").first().focus();
   },
 
