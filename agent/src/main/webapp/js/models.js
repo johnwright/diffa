@@ -239,19 +239,25 @@ Diffa.Collections.CollectionBase = Backbone.Collection.extend(Diffa.Collections.
   },
 
   ensureFetched: function(cb) {
+    var self = this;
+
     var complete = function() { if (cb) cb(); };
     if (this.initialLoadComplete) {
       complete();
       return;
     }
 
-    if (!this.startedInitialFetch) {
-      this.startedInitialFetch = true;
+    if (!this.initialFetchFuture) {
+      self.initialFetchFuture = new $.Deferred();
+      self.initialFetchFuture.done(complete);
+
       this.fetch({
         success: function() {
-          complete();
+          self.initialFetchFuture.resolve();
         }
       });
+    } else {
+      self.initialFetchFuture.done(complete);
     }
   }
 });
