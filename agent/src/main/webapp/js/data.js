@@ -91,7 +91,6 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
     var pairHalf = $(this.el).data("pair-half");
 
     if (pairHalf) {
-      name = name + " (" + pairHalf + ")";
       endpointDescription = pairHalf.charAt(0).toUpperCase() + pairHalf.substr(1);
     }
 
