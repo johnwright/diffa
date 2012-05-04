@@ -444,6 +444,12 @@ var endpointChanged = function(endpointName) {
 }
 
 if ($(".inventory-panel").length > 0) {
+  panel.html('<h2>Upload an Inventory</h2>' +
+    '<div id="inventory-selection"><p>Select a pair or an individual endpoint.</p></div>' +
+    '<div id="inventory-uploader" class="diffa-inventory-uploader"></div>' +
+    '<div id="inventory-uploader-downstream" class="diffa-inventory-uploader" data-pair-half="downstream"></div>' +
+    '<div id="inventory-uploader-upstream" class="diffa-inventory-uploader" data-pair-half="upstream"></div>')
+
   domain.loadAll(["endpoints", "pairs"], function() {
     panel.find("#inventory-selection").append(pairSelectTemplate({pairs: domain.pairs, domain: domain}));
     panel.find("#inventory-selection").append(endpointSelectTemplate({endpoints: domain.endpoints, domain: domain}));
