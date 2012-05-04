@@ -41,8 +41,9 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
                      '</div>'),
     prefixConstraint: _.template('<div class="category" data-constraint="<%= name %>">' +
                         '<h5 class="name"><%= name %> (prefix)</h5>' +
+                        '<label for="<%= name %>_prefix">Prefix:</label>' +
                         '<span class="clearable_input">' +
-                          '<input type="text" name="prefix">' +
+                          '<input type="text" name="prefix" id="<%= name %>_prefix" placeholder="Unbounded prefix">' +
                           '<span class="clear"></span>' +
                         '</span>' +
                       '</div>'),
