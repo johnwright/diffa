@@ -351,9 +351,42 @@ var emptyAndUnbindUploaders = function() {
   });
 };
 
+// returns 1 if an endpoint is being displayed, or 2 if a pair is being displayed.
+// returns 0 if nothing is displayed.
+var displayedUploaderCount = function() {
+  if ($("#inventory-uploader-upstream").html().trim().length > 0) { return 2; }
+  if ($("#inventory-uploader").html().trim().length > 0) { return 1; }
+
+  return 0;
+};
+
+var nothingDisplayed = function() {
+  return displayedUploaderCount() == 0;
+};
+
+var pairDisplayed = function() {
+  return displayedUploaderCount() == 2;
+};
+
+var endpointDisplayed = function() {
+  return displayedUploaderCount() == 1;
+}
+
+// flashes the endpoint names. useful when changing between
+// one endpoint and another endpoint, where nothing much changes.
+var flashEndpointNames = function() {
+  $(".diffa-inventory-uploader .endpoint-heading .endpoint-name").each(function() {
+    var el = $(this);
+    el.stop().css("opacity", "0.0").animate({ opacity: "1.0"}, 300);
+  });
+};
+
 var pairChanged = function(pairName) {
   panel.find("select.endpoint").val("");
   panel.find("select.endpoint").select2("val", "");
+
+  var flashNames = false;
+  if (pairDisplayed()) { flashNames = true; }
 
   emptyAndUnbindUploaders();
 
@@ -380,11 +413,16 @@ var pairChanged = function(pairName) {
       model: m
     });
   });
+
+  if (flashNames) { flashEndpointNames(); }
 };
 
 var endpointChanged = function(endpointName) {
   $("select.pair").val("");
   $("select.pair").select2("val", "");
+
+  var flashNames = false;
+  if (endpointDisplayed()) { flashNames = true; }
 
   emptyAndUnbindUploaders();
 
@@ -399,6 +437,8 @@ var endpointChanged = function(endpointName) {
       model: endpoint
     });
   });
+
+  if (flashNames) { flashEndpointNames(); }
 }
 
 
