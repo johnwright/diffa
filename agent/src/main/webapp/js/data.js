@@ -391,8 +391,6 @@ var endpointChanged = function(endpointName) {
   var endpoint = domain.endpoints.get(endpointName);
 
   $('#inventory-uploader').each(function() {
-    var domain = Diffa.DomainManager.get($(this).data('domain'));
-
     new Diffa.Views.InventoryUploader({
       el: $(this),
       model: endpoint
