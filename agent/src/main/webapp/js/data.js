@@ -353,6 +353,7 @@ var emptyAndUnbindUploaders = function() {
 
 var pairChanged = function(pairName) {
   panel.find("select.endpoint").val("");
+  panel.find("select.endpoint").select2("val", "");
 
   emptyAndUnbindUploaders();
 
@@ -383,6 +384,7 @@ var pairChanged = function(pairName) {
 
 var endpointChanged = function(endpointName) {
   $("select.pair").val("");
+  $("select.pair").select2("val", "");
 
   emptyAndUnbindUploaders();
 
