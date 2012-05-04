@@ -334,7 +334,7 @@ var endpointSelectTemplate = _.template('<label>Endpoint:</label>' +
   '</select>');
 
 var panel = $('.inventory-panel');
-var domain = Diffa.DomainManager.get(panel.data("domain"));
+var domain = Diffa.DomainManager.get(currentDiffaDomain);
 
 var emptyAndUnbindUploaders = function() {
   $(".diffa-inventory-uploader").each(function(i, e) {
