@@ -363,8 +363,6 @@ var pairChanged = function(pairName) {
   var upstream   = domain.endpoints.get(pair.get("upstreamName"));
 
   $('#inventory-uploader-upstream').each(function() {
-    var domain = Diffa.DomainManager.get($(this).data('domain'));
-
     new Diffa.Views.InventoryUploader({
       el: $(this),
       model: upstream
@@ -372,8 +370,6 @@ var pairChanged = function(pairName) {
   });
 
   $('#inventory-uploader-downstream').each(function() {
-    var domain = Diffa.DomainManager.get($(this).data('domain'));
-
     new Diffa.Views.InventoryUploader({
       el: $(this),
       model: downstream
