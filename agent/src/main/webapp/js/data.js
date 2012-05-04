@@ -362,17 +362,20 @@ var pairChanged = function(pairName) {
   var downstream = domain.endpoints.get(pair.get("downstreamName"));
   var upstream   = domain.endpoints.get(pair.get("upstreamName"));
 
-  $('#inventory-uploader-upstream').each(function() {
-    new Diffa.Views.InventoryUploader({
-      el: $(this),
-      model: upstream
-    });
-  });
+  $('#inventory-uploader-upstream, #inventory-uploader-downstream').each(function() {
+    var pairHalf = $(this).data("pair-half");
 
-  $('#inventory-uploader-downstream').each(function() {
+    if (pairHalf == "upstream") {
+      var m = upstream;
+    } else if (pairHalf == "downstream") {
+      var m = downstream;
+    } else {
+      throw 'Unknown half of pair "' + pairHalf + '", expected either "upstream" or "downstream"';
+    }
+
     new Diffa.Views.InventoryUploader({
       el: $(this),
-      model: downstream
+      model: m
     });
   });
 };
