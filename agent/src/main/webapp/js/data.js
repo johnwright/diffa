@@ -23,7 +23,7 @@ Diffa.Views.InventoryUploader = Backbone.View.extend({
   setListColumnThreshold: 10,
   templates: {
     rangeConstraint: _.template('<div class="category" data-constraint="<%= name %>" data-constraint-type="<%= dataType %>">' +
-                      '<h5 class="name"><%= name %> (<%= dataType %> range)</h5>' +
+                      '<h5 class="name"><%= name %> (<%= descriptiveDataType %> range)</h5>' +
                       '<div>' +
                         '<label for="<%= name %>_range_start">Start <%= descriptiveDataType %>:</label>' +
                         '<span class="clearable_input">' +
