@@ -22,14 +22,30 @@ import net.lshift.diffa.participant.content.{ContentParticipantHandler, ContentP
 import net.lshift.diffa.participant.scanning.ScanningParticipantRequestHandler
 import net.lshift.diffa.participant.correlation.{VersioningParticipantHandler, VersioningParticipantDelegator}
 import net.lshift.diffa.participant.common.ServletHelper
-import org.eclipse.jetty.server.handler.{HandlerCollection, AbstractHandler}
+import org.eclipse.jetty.server.handler.AbstractHandler
 import org.eclipse.jetty.security.authentication.BasicAuthenticator
 import org.eclipse.jetty.security.{HashLoginService, ConstraintMapping, ConstraintSecurityHandler}
 import org.eclipse.jetty.http.security.{Credential, Constraint}
 
+/**
+ * Indicates what sort of authentication strategy the server should implement
+ */
 trait AuthenticationMechanism
+
+/**
+ * This signals to the server that it doesn't need to perform any authentication at all.
+ */
 object NoAuthentication extends AuthenticationMechanism
+
+/**
+ * The server will perform HTTP Basic Auth allowing the specified username/password combinations only access to the
+ * underlying resource.
+ */
 case class BasicAuthenticationMechanism(users:Map[String,String]) extends AuthenticationMechanism
+
+/**
+ * This instructs the server to verify the value of a particular query parameter when authenticating requests.
+ */
 case class QueryParameterAuthenticationMechanism(name:String, value:String) extends AuthenticationMechanism
 
 
