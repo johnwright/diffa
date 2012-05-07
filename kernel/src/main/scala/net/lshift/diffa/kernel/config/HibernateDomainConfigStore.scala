@@ -263,4 +263,21 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     listQuery[EndpointView](s, "endpointViewsByEndpoint", Map("domain_name" -> domain, "endpoint_name" -> endpointName))
   def listPairViews(s:Session, domain:String, pairKey:String) =
     listQuery[PairView](s, "pairViewsByPair", Map("domain_name" -> domain, "pair_key" -> pairKey))
+
+  def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) = sessionFactory.withSession( s => {
+    s.saveOrUpdate(fromInboundExternalHttpCredentialsDef(domain, creds))
+  })
+
+  def deleteExternalHttpCredentials(domain:String, url:String, credentialType:String) = sessionFactory.withSession( s => {
+    s.getNamedQuery("deleteExternalHttpCredentials").
+      setString("domain", domain).
+      setString("url", url).
+      setString("type", credentialType).
+      executeUpdate()
+  })
+
+  def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef] = sessionFactory.withSession( s => {
+    val creds = s.getNamedQuery("externalHttpCredentialsByDomain").setString("domain", domain).list()
+    null
+  })
 }

@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.util.{MissingObjectException}
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import org.slf4j.LoggerFactory
-import org.junit.{AfterClass, Test, Before}
+import org.junit.{Test, AfterClass, Before}
 
 class HibernateDomainConfigStoreTest {
   private val log = LoggerFactory.getLogger(getClass)
@@ -595,6 +595,18 @@ class HibernateDomainConfigStoreTest {
     } catch {
       case ex:MissingObjectException => // Expected
     }
+  }
+
+  @Test
+  def externalHttpCredsShouldBeWriteOnly() {
+
+    systemConfigStore.createOrUpdateDomain(domain)
+
+    val creds = InboundExternalHttpCredentialsDef(url = "a", key = "k", value = "v", `type` = "basic_auth")
+    domainConfigStore.addExternalHttpCredentials(domainName, creds)
+
+    // TODO verify something here
+
   }
 
   @Test

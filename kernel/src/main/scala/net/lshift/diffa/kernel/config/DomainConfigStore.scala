@@ -106,6 +106,10 @@ trait DomainConfigStore {
    * Lists all of the members of the given domain
    */
   def listDomainMembers(domain:String) : Seq[Member]
+
+  def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) : Unit
+  def deleteExternalHttpCredentials(domain:String, url:String, credentialType:String) : Unit
+  def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef]
 }
 
 case class Endpoint(
@@ -374,6 +378,44 @@ case class User(@BeanProperty var name: String = null,
 
   override def hashCode = name.hashCode
   override def toString = name
+}
+
+case class ExternalHttpCredentials(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var url: String = null,
+  @BeanProperty var key: String = null,
+  @BeanProperty var value: String = null,
+  @BeanProperty var credentialType: String = null
+) {
+
+  import ExternalHttpCredentials._
+
+  def this() = this(domain = null)
+
+  override def equals(that:Any) = that match {
+    case e:ExternalHttpCredentials =>
+      e.domain == domain && e.url == url && e.credentialType == credentialType
+    case _                         => false
+  }
+
+  def validate(path:String = null) {
+    val credsPath = ValidationUtil.buildPath(
+      ValidationUtil.buildPath(path, "domain", Map("name" -> domain)),
+      "external-http-credentials", Map("url" -> url))
+
+    // Ensure that the credential type is supported
+    this.credentialType = credentialType match {
+      case BASIC_AUTH | QUERY_PARAMETER => credentialType
+      case _ => throw new ConfigValidationException(credsPath, "Invalid credential type: "+ credentialType)
+    }
+  }
+
+  override def hashCode = 31 * (31 * (31 + domain.hashCode) + url.hashCode) + credentialType.hashCode
+}
+
+object ExternalHttpCredentials {
+  val BASIC_AUTH = "basic_auth"
+  val QUERY_PARAMETER = "query_parameter"
 }
 
 /**

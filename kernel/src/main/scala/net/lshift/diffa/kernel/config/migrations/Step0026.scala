@@ -20,22 +20,23 @@ import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import java.sql.Types
 
-object Step0025 extends HibernateMigrationStep {
+object Step0026 extends HibernateMigrationStep {
 
-  def versionId = 25
+  def versionId = 26
 
   def name = "Break out external http credentials"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.createTable("external_http_creds").
+    migration.createTable("external_http_credentials").
       column("domain", Types.VARCHAR, 50, false).
-      column("key", Types.VARCHAR, 50, false).
-      column("value", Types.VARCHAR, 255, false).
-      column("scope", Types.VARCHAR, 20, false)
+      column("url", Types.VARCHAR, 1024, false).
+      column("cred_key", Types.VARCHAR, 50, false).
+      column("cred_value", Types.VARCHAR, 255, false).
+      column("cred_type", Types.VARCHAR, 20, false)
 
-    migration.alterTable("external_http_creds").
+    migration.alterTable("external_http_credentials").
       addForeignKey("fk_domain_http_creds", "domain", "domains", "name")
 
     migration
