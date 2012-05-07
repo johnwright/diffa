@@ -34,7 +34,8 @@ object Step0026 extends HibernateMigrationStep {
       column("url", Types.VARCHAR, 1024, false).
       column("cred_key", Types.VARCHAR, 50, false).
       column("cred_value", Types.VARCHAR, 255, false).
-      column("cred_type", Types.VARCHAR, 20, false)
+      column("cred_type", Types.VARCHAR, 20, false).
+      pk("domain", "url", "cred_type")
 
     migration.alterTable("external_http_credentials").
       addForeignKey("fk_domain_http_creds", "domain", "domains", "name")

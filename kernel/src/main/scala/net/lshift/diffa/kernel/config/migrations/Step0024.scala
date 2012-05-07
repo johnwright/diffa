@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.config.migrations
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import java.sql.Types
-import net.lshift.diffa.kernel.config.{Domain, HibernateMigrationStep}
+import net.lshift.diffa.kernel.config.HibernateMigrationStep
 
 object Step0024 extends HibernateMigrationStep {
 
