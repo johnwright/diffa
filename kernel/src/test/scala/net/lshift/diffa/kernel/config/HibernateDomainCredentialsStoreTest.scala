@@ -84,7 +84,7 @@ class HibernateDomainCredentialsStoreTest {
 
     val creds = domainCredentialsStore.credentialsForUrl(domainName, "https://acme.com:8080/foo/bar/baz")
 
-    assertEquals(BasicAuthCredentials(username = "scott", password = "tiger"), creds)
+    assertEquals(Some(BasicAuthCredentials(username = "scott", password = "tiger")), creds)
 
   }
 }

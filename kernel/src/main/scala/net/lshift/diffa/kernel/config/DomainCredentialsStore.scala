@@ -44,7 +44,7 @@ trait DomainCredentialsStore extends LimitedDomainCredentialsStore {
   /**
    * Returns the most specific credentials that matches the given URL
    */
-  def credentialsForUrl(domain:String, url:String) : HttpCredentials
+  def credentialsForUrl(domain:String, url:String) : Option[HttpCredentials]
 }
 
 trait HttpCredentials

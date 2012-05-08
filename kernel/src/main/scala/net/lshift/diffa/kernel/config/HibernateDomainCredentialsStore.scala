@@ -54,23 +54,36 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extend
 
   def credentialsForUrl(domain:String, url:String) = sessionFactory.withSession( s => {
 
-    val uri = new URI(url)
-    val baseUrl = uri.getScheme + "://" + uri.getAuthority + "%"
+    val searchURI = new URI(url)
+    val baseUrl = searchURI.getScheme + "://" + searchURI.getAuthority + "%"
     val results = listQuery[ExternalHttpCredentials](s, "externalHttpCredentialsByDomainAndUrl",
                                                      Map("domain" -> domain, "base_url" -> baseUrl))
-    val candidateCredentials = results.map(c =>  {
-      c.credentialType match {
-        case ExternalHttpCredentials.BASIC_AUTH      => BasicAuthCredentials(c.key, c.value)
-        case ExternalHttpCredentials.QUERY_PARAMETER => QueryParameterCredentials(c.key, c.value)
-        case _                                       =>
-          // Be very careful not to log a password
-          val message = "%s - Wrong credential type for url: %s".format(formatAlertCode(domain, INVALID_EXTERNAL_CREDENTIAL_TYPE), url)
-          logger.error(message)
-          throw new Exception("Wrong credential type")
+
+    if (results.isEmpty) {
+      None
+    }
+    else {
+
+      val candidateCredentials = results.map(c =>  {
+        c.credentialType match {
+          case ExternalHttpCredentials.BASIC_AUTH      => ( new URI(c.url), BasicAuthCredentials(c.key, c.value) )
+          case ExternalHttpCredentials.QUERY_PARAMETER => ( new URI(c.url), QueryParameterCredentials(c.key, c.value) )
+          case _                                       =>
+            // Be very careful not to log a password
+            val message = "%s - Wrong credential type for url: %s".format(formatAlertCode(domain, INVALID_EXTERNAL_CREDENTIAL_TYPE), url)
+            logger.error(message)
+            throw new Exception("Wrong credential type")
+        }
+      }).filter( c => searchURI.getPath.startsWith(c._1.getPath))
+
+      if (candidateCredentials.isEmpty) {
+        None
       }
-    })
+      else {
+        val sortedByNumberOfPathSegments = candidateCredentials.sortBy( c => c._1.getPath.split("/").length)
+        Some(sortedByNumberOfPathSegments.head._2)
+      }
 
-    candidateCredentials.head
-
+    }
   })
 }
