@@ -272,6 +272,10 @@
     delete from ExternalHttpCredentials c where c.domain = :domain and c.credentialType = :type and c.url = :url
   </query>
 
+  <query name="deleteExternalHttpCredentialsByDomain" cacheable="false">
+    delete from ExternalHttpCredentials c where c.domain = :domain
+  </query>
+
   <query name="userByName" cacheable="true">
     select u from User u where u.name = :name
   </query>
