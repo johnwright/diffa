@@ -106,10 +106,6 @@ trait DomainConfigStore {
    * Lists all of the members of the given domain
    */
   def listDomainMembers(domain:String) : Seq[Member]
-
-  def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) : Unit
-  def deleteExternalHttpCredentials(domain:String, url:String, credentialType:String) : Unit
-  def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef]
 }
 
 case class Endpoint(
