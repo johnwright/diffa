@@ -24,6 +24,8 @@ import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.{CacheWrapper, HibernateQueryUtils}
+import org.hibernate.transform.ResultTransformer
+import java.util.List
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  pairCache:PairCache,
@@ -277,7 +279,13 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   })
 
   def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef] = sessionFactory.withSession( s => {
-    val creds = s.getNamedQuery("externalHttpCredentialsByDomain").setString("domain", domain).list()
-    null
+    val resultSet = s.getNamedQuery("externalHttpCredentialsByDomain").setString("domain", domain).list()
+
+    // Result set ordering: select url, key, credential_type from ....
+
+    resultSet.map(result => {
+      val row = result.asInstanceOf[Array[_]].map(e => e.asInstanceOf[String])
+      OutboundExternalHttpCredentialsDef(url = row(0), key = row(1), `type` = row(2))
+    })
   })
 }

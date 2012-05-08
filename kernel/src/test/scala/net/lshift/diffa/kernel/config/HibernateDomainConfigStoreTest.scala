@@ -602,10 +602,34 @@ class HibernateDomainConfigStoreTest {
 
     systemConfigStore.createOrUpdateDomain(domain)
 
-    val creds = InboundExternalHttpCredentialsDef(url = "a", key = "k", value = "v", `type` = "basic_auth")
-    domainConfigStore.addExternalHttpCredentials(domainName, creds)
+    val basicAuthIn = InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", value = "tiger", `type` = "basic_auth")
+    val queryParamIn = InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "authToken", value = "a987bg6", `type` = "query_parameter")
 
-    // TODO verify something here
+    val basicAuthOut = OutboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", `type` = "basic_auth")
+    val queryParamOut = OutboundExternalHttpCredentialsDef(url = "https://acme.com", key = "authToken", `type` = "query_parameter")
+
+    domainConfigStore.addExternalHttpCredentials(domainName, basicAuthIn)
+    domainConfigStore.addExternalHttpCredentials(domainName, queryParamIn)
+
+    val creds1 = domainConfigStore.listCredentials(domainName)
+
+    assertEquals(2, creds1.length)
+    assertTrue(creds1.contains(basicAuthOut))
+    assertTrue(creds1.contains(queryParamOut))
+
+    domainConfigStore.deleteExternalHttpCredentials(domainName, "https://acme.com", "basic_auth")
+
+    val creds2 = domainConfigStore.listCredentials(domainName)
+
+    assertEquals(1, creds2.length)
+    assertFalse(creds2.contains(basicAuthOut))
+    assertTrue(creds2.contains(queryParamOut))
+
+    domainConfigStore.deleteExternalHttpCredentials(domainName, "https://acme.com", "query_parameter")
+
+    val creds3 = domainConfigStore.listCredentials(domainName)
+
+    assertTrue(creds3.isEmpty)
 
   }
 

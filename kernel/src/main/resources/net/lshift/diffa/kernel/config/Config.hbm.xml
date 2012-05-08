@@ -265,7 +265,7 @@
   </class>
 
   <query name="externalHttpCredentialsByDomain" cacheable="false">
-    select c.url, c.credentialType, c.key from ExternalHttpCredentials c where c.domain = :domain
+    select c.url, c.key, c.credentialType from ExternalHttpCredentials c where c.domain = :domain
   </query>
 
   <query name="deleteExternalHttpCredentials" cacheable="false">
