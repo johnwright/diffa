@@ -74,15 +74,15 @@ class HibernateDomainCredentialsStoreTest {
     systemConfigStore.createOrUpdateDomain(domain)
 
     Seq(
-      "https://acme.com/foo/bar",
-      "https://acme.com",
-      "https://acme.com/foo"
+      "https://acme.com:8080/foo/bar",
+      "https://acme.com:8080",
+      "https://acme.com:8080/foo"
       ).foreach(u => {
       val creds = InboundExternalHttpCredentialsDef(url = u, key = "scott", value = "tiger", `type` = "basic_auth")
       domainCredentialsStore.addExternalHttpCredentials(domainName, creds)
     })
 
-    val creds = domainCredentialsStore.credentialsForUrl(domainName, "https://acme.com/foo/bar/baz")
+    val creds = domainCredentialsStore.credentialsForUrl(domainName, "https://acme.com:8080/foo/bar/baz")
 
     assertEquals(BasicAuthCredentials(username = "scott", password = "tiger"), creds)
 

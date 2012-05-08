@@ -23,6 +23,7 @@ import scala.collection.JavaConversions._
 import org.hibernate.SessionFactory
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.AlertCodes._
+import java.net.URI
 
 class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extends DomainCredentialsStore with HibernateQueryUtils {
 
@@ -53,8 +54,8 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extend
 
   def credentialsForUrl(domain:String, url:String) = sessionFactory.withSession( s => {
 
-    //val baseUrl = url + "%s"
-    val baseUrl = "https://acme.com"
+    val uri = new URI(url)
+    val baseUrl = uri.getScheme + "://" + uri.getAuthority + "%"
     val results = listQuery[ExternalHttpCredentials](s, "externalHttpCredentialsByDomainAndUrl",
                                                      Map("domain" -> domain, "base_url" -> baseUrl))
     val candidateCredentials = results.map(c =>  {

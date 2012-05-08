@@ -18,9 +18,11 @@ package net.lshift.diffa.kernel.config
 import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
 
 /**
- * Interface the administration and retrieval of external credentials
+ * Interface the administration and retrieval of external credentials.
+ * This interface is split into a basic interface that will not
+ * return any secrets from the database and an interface that only internal components can use.
  */
-trait DomainCredentialsStore {
+trait LimitedDomainCredentialsStore {
 
   /**
    * Adds a new set of external HTTP credentials for the given domain.
@@ -36,7 +38,9 @@ trait DomainCredentialsStore {
    * Lists all credentials in the current domain.
    */
   def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef]
+}
 
+trait DomainCredentialsStore extends LimitedDomainCredentialsStore {
   /**
    * Returns the most specific credentials that matches the given URL
    */
