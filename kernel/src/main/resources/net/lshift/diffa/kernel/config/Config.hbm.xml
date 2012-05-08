@@ -268,6 +268,11 @@
     select c.url, c.key, c.credentialType from ExternalHttpCredentials c where c.domain = :domain
   </query>
 
+  <query name="externalHttpCredentialsByDomainAndUrl" cacheable="false">
+    select c from ExternalHttpCredentials c
+    where c.domain = :domain and c.url like :base_url
+  </query>
+
   <query name="deleteExternalHttpCredentials" cacheable="false">
     delete from ExternalHttpCredentials c where c.domain = :domain and c.credentialType = :type and c.url = :url
   </query>

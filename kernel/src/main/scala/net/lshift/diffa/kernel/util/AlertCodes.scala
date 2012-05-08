@@ -65,6 +65,8 @@ object AlertCodes {
   val INVALID_DOMAIN = 501
   // Indicates that a pair has been configured with an invalid version correlation policy
   val INVALID_VERSION_POLICY = 502
+  // Indicates the use of a bogus form of external credentials
+  val INVALID_EXTERNAL_CREDENTIAL_TYPE = 503
 
   // 51x General scan errors
   val UPSTREAM_SCAN_FAILURE = 510

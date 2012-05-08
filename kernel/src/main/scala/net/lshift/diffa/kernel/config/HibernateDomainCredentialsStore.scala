@@ -21,8 +21,12 @@ import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import net.lshift.diffa.kernel.util.SessionHelper._
 import scala.collection.JavaConversions._
 import org.hibernate.SessionFactory
+import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.util.AlertCodes._
 
 class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extends DomainCredentialsStore with HibernateQueryUtils {
+
+  val logger = LoggerFactory.getLogger(getClass)
 
   def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) = sessionFactory.withSession( s => {
     s.saveOrUpdate(fromInboundExternalHttpCredentialsDef(domain, creds))
@@ -45,5 +49,27 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extend
       val row = result.asInstanceOf[Array[_]].map(e => e.asInstanceOf[String])
       OutboundExternalHttpCredentialsDef(url = row(0), key = row(1), `type` = row(2))
     })
+  })
+
+  def credentialsForUrl(domain:String, url:String) = sessionFactory.withSession( s => {
+
+    //val baseUrl = url + "%s"
+    val baseUrl = "https://acme.com"
+    val results = listQuery[ExternalHttpCredentials](s, "externalHttpCredentialsByDomainAndUrl",
+                                                     Map("domain" -> domain, "base_url" -> baseUrl))
+    val candidateCredentials = results.map(c =>  {
+      c.credentialType match {
+        case ExternalHttpCredentials.BASIC_AUTH      => BasicAuthCredentials(c.key, c.value)
+        case ExternalHttpCredentials.QUERY_PARAMETER => QueryParameterCredentials(c.key, c.value)
+        case _                                       =>
+          // Be very careful not to log a password
+          val message = "%s - Wrong credential type for url: %s".format(formatAlertCode(domain, INVALID_EXTERNAL_CREDENTIAL_TYPE), url)
+          logger.error(message)
+          throw new Exception("Wrong credential type")
+      }
+    })
+
+    candidateCredentials.head
+
   })
 }

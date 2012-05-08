@@ -36,4 +36,14 @@ trait DomainCredentialsStore {
    * Lists all credentials in the current domain.
    */
   def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef]
+
+  /**
+   * Returns the most specific credentials that matches the given URL
+   */
+  def credentialsForUrl(domain:String, url:String) : HttpCredentials
 }
+
+trait HttpCredentials
+case class BasicAuthCredentials(username:String, password:String) extends HttpCredentials
+case class QueryParameterCredentials(name:String, value:String) extends HttpCredentials
+

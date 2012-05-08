@@ -33,7 +33,7 @@ class HibernateDomainCredentialsStoreTest {
   def setUp = storeReferences.clearConfiguration(domainName)
 
   @Test
-  def externalHttpCredsShouldBeWriteOnly() {
+  def externalHttpCredentialsShouldBeWriteOnly() {
 
     systemConfigStore.createOrUpdateDomain(domain)
 
@@ -65,6 +65,26 @@ class HibernateDomainCredentialsStoreTest {
     val creds3 = domainCredentialsStore.listCredentials(domainName)
 
     assertTrue(creds3.isEmpty)
+
+  }
+
+  @Test
+  def shouldReturnMostSpecificCredentials() {
+
+    systemConfigStore.createOrUpdateDomain(domain)
+
+    Seq(
+      "https://acme.com/foo/bar",
+      "https://acme.com",
+      "https://acme.com/foo"
+      ).foreach(u => {
+      val creds = InboundExternalHttpCredentialsDef(url = u, key = "scott", value = "tiger", `type` = "basic_auth")
+      domainCredentialsStore.addExternalHttpCredentials(domainName, creds)
+    })
+
+    val creds = domainCredentialsStore.credentialsForUrl(domainName, "https://acme.com/foo/bar/baz")
+
+    assertEquals(BasicAuthCredentials(username = "scott", password = "tiger"), creds)
 
   }
 }
