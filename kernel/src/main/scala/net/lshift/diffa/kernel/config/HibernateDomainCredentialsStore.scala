@@ -80,7 +80,7 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extend
         None
       }
       else {
-        val sortedByNumberOfPathSegments = candidateCredentials.sortBy( c => c._1.getPath.split("/").length)
+        val sortedByNumberOfPathSegments = candidateCredentials.sortBy( c => c._1.getPath.split("/").length).reverse
         Some(sortedByNumberOfPathSegments.head._2)
       }
 
