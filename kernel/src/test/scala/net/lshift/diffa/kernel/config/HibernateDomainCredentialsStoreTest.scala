@@ -74,6 +74,8 @@ class HibernateDomainCredentialsStoreTest {
     systemConfigStore.createOrUpdateDomain(domain)
 
     Seq(
+      InboundExternalHttpCredentialsDef(url = "https://acme.com:8081/foo/bar", key = "wendy", value = "shell", `type` = "basic_auth"),
+      InboundExternalHttpCredentialsDef(url = "http://acme.com:8080/foo/bar",  key = "jolly", value = "river", `type` = "basic_auth"),
       InboundExternalHttpCredentialsDef(url = "https://acme.com:8080/foo/bar", key = "scott", value = "tiger", `type` = "basic_auth"),
       InboundExternalHttpCredentialsDef(url = "https://acme.com:8080",         key = "alice", value = "seven", `type` = "basic_auth"),
       InboundExternalHttpCredentialsDef(url = "https://acme.com:8080/foo",     key = "shane", value = "yetti", `type` = "basic_auth"),
