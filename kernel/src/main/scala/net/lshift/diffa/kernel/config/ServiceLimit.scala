@@ -6,6 +6,8 @@ object ServiceLimit {
   final val UNLIMITED = -1
   final val SCAN_CONNECT_TIMEOUT_KEY = "scan.connect.timeout"
   final val SCAN_READ_TIMEOUT_KEY = "scan.read.timeout"
+  final val DIAGNOSTIC_EVENT_BUFFER_SIZE = "diagnostic.event.buffer.size"
+  final val MAX_EXPLAIN_FILES = "max.explain.files"
 }
 
 case class ServiceLimitDefinitions(@BeanProperty var limitName: String = null,
