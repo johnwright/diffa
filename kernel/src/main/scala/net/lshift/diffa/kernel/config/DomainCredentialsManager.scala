@@ -23,7 +23,7 @@ import java.net.URI
  * This interface is split into a basic interface that will not
  * return any secrets from the database and an interface that only internal components can use.
  */
-trait LimitedDomainCredentialsStore {
+trait DomainCredentialsManager {
 
   /**
    * Adds a new set of external HTTP credentials for the given domain.
@@ -41,7 +41,12 @@ trait LimitedDomainCredentialsStore {
   def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef]
 }
 
-trait DomainCredentialsStore extends LimitedDomainCredentialsStore {
+/**
+ * This provides a mechanism for internal components to retrieve credentials for an external URL.
+ * Note that this interface is designed exclusively for internal consumption, since it can supply
+ * a client with sensitive credentials.
+ */
+trait DomainCredentialsLookup {
   /**
    * Returns the most specific credentials that matches the given URL
    */

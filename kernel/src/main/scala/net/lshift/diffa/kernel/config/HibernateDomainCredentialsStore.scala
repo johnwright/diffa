@@ -25,7 +25,10 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.net.URI
 
-class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extends DomainCredentialsStore with HibernateQueryUtils {
+class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory)
+  extends DomainCredentialsManager
+  with DomainCredentialsLookup
+  with HibernateQueryUtils {
 
   val logger = LoggerFactory.getLogger(getClass)
 

@@ -17,14 +17,14 @@
 package net.lshift.diffa.client
 
 import net.lshift.diffa.kernel.participants._
-import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainCredentialsStore, PairServiceLimitsView}
+import net.lshift.diffa.kernel.config.{DomainCredentialsLookup, DiffaPairRef, DomainCredentialsManager, PairServiceLimitsView}
 
 trait ParticipantRestClientFactory {
 
   def supportsAddress(address: String) = address.startsWith("http://") || address.startsWith("https://")
 }
 
-class ScanningParticipantRestClientFactory(credentialsStore:DomainCredentialsStore, limits: PairServiceLimitsView)
+class ScanningParticipantRestClientFactory(credentialsStore:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pair:DiffaPairRef) =
@@ -34,7 +34,7 @@ class ScanningParticipantRestClientFactory(credentialsStore:DomainCredentialsSto
                                       pair = pair)
 }
 
-class ContentParticipantRestClientFactory(credentialsStore:DomainCredentialsStore, limits: PairServiceLimitsView)
+class ContentParticipantRestClientFactory(credentialsStore:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ContentParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pair:DiffaPairRef)
@@ -44,7 +44,7 @@ class ContentParticipantRestClientFactory(credentialsStore:DomainCredentialsStor
                                        pair = pair)
 }
 
-class VersioningParticipantRestClientFactory(credentialsStore:DomainCredentialsStore, limits: PairServiceLimitsView)
+class VersioningParticipantRestClientFactory(credentialsStore:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends VersioningParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pair:DiffaPairRef)

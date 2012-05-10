@@ -44,7 +44,7 @@ import net.lshift.diffa.kernel.config._
 class ScanningParticipantRestClient(pair: DiffaPairRef,
                                     scanUrl: String,
                                     serviceLimitsView: PairServiceLimitsView,
-                                    credentialsStore: DomainCredentialsStore)
+                                    credentialsStore: DomainCredentialsLookup)
   extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsStore)
   with ScanningParticipantRef {
 

@@ -21,10 +21,10 @@ import net.lshift.diffa.kernel.participants._
 import com.sun.jersey.api.client.ClientResponse
 import org.apache.commons.io.IOUtils
 import net.lshift.diffa.kernel.util.MissingObjectException
-import net.lshift.diffa.kernel.config.{QueryParameterCredentials, PairServiceLimitsView, DiffaPairRef, DomainCredentialsStore}
 import net.lshift.diffa.kernel.util.AlertCodes._
 import org.apache.http.util.EntityUtils
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.config._
 
 /**
  * JSON/REST content participant client.
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory
 class ContentParticipantRestClient(pair: DiffaPairRef,
                                    scanUrl: String,
                                    serviceLimitsView: PairServiceLimitsView,
-                                   credentialsStore:DomainCredentialsStore)
+                                   credentialsStore:DomainCredentialsLookup)
   extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsStore)
   with ContentParticipantRef {
 

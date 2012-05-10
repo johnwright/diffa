@@ -23,11 +23,11 @@ import org.apache.commons.io.IOUtils
 import javax.ws.rs.core.MediaType
 import net.lshift.diffa.participant.common.JSONHelper
 import net.lshift.diffa.participant.correlation.ProcessingResponse
-import net.lshift.diffa.kernel.config.{QueryParameterCredentials, PairServiceLimitsView, DiffaPairRef, DomainCredentialsStore}
 import org.apache.http.util.EntityUtils
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.util.AlertCodes._
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.kernel.config._
 
 /**
  * JSON/REST versioning participant client.
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory
 class VersioningParticipantRestClient(pair: DiffaPairRef,
                                       scanUrl: String,
                                       serviceLimitsView: PairServiceLimitsView,
-                                      credentialsStore:DomainCredentialsStore)
+                                      credentialsStore:DomainCredentialsLookup)
   extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsStore)
   with VersioningParticipantRef {
 

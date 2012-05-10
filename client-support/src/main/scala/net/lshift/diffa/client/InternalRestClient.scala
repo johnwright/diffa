@@ -40,7 +40,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity
 abstract class InternalRestClient(pair: DiffaPairRef,
                                   url: String,
                                   serviceLimitsView: PairServiceLimitsView,
-                                  credentialsStore:DomainCredentialsStore) {
+                                  credentialsStore:DomainCredentialsLookup) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

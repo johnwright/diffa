@@ -21,7 +21,7 @@ import org.junit.Assert._
 import net.lshift.diffa.client.ScanningParticipantRestClient
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import org.easymock.EasyMock._
-import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainCredentialsStore, ServiceLimit, PairServiceLimitsView}
+import net.lshift.diffa.kernel.config._
 
 class DomainsScanningTest {
 
@@ -29,10 +29,10 @@ class DomainsScanningTest {
     def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int = ServiceLimit.UNLIMITED
   }
 
-  val domainCredentialsStore = createStrictMock("domainCredentialsStore", classOf[DomainCredentialsStore])
+  val domainCredentialsLookup = createStrictMock("domainCredentialsLookup", classOf[DomainCredentialsLookup])
   val pair = DiffaPairRef("foo","bar")
 
-  val participant = new ScanningParticipantRestClient(pair, agentURL + "/root/domains/scan", limits, domainCredentialsStore)
+  val participant = new ScanningParticipantRestClient(pair, agentURL + "/root/domains/scan", limits, domainCredentialsLookup)
 
   @Test
   def aggregationShouldIncludeDefaultDomain {
