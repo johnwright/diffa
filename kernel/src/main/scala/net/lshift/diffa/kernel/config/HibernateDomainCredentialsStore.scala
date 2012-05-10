@@ -17,13 +17,13 @@ package net.lshift.diffa.kernel.config
 
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
-import net.lshift.diffa.kernel.util.HibernateQueryUtils
 import net.lshift.diffa.kernel.util.SessionHelper._
 import scala.collection.JavaConversions._
 import org.hibernate.SessionFactory
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.net.URI
+import net.lshift.diffa.kernel.util.{MissingObjectException, HibernateQueryUtils}
 
 class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory)
   extends DomainCredentialsManager
@@ -37,11 +37,14 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory)
   })
 
   def deleteExternalHttpCredentials(domain:String, url:String, credentialType:String) = sessionFactory.withSession( s => {
-    s.getNamedQuery("deleteExternalHttpCredentials").
-      setString("domain", domain).
-      setString("url", url).
-      setString("type", credentialType).
-      executeUpdate()
+    val deleted = s.getNamedQuery("deleteExternalHttpCredentials").
+                    setString("domain", domain).
+                    setString("url", url).
+                    setString("type", credentialType).
+                    executeUpdate()
+    if (deleted == 0) {
+      throw new MissingObjectException(url + "/" + credentialType)
+    }
   })
 
   def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef] = sessionFactory.withSession( s => {

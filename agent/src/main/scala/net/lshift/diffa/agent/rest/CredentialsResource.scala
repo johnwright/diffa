@@ -19,7 +19,7 @@ import net.lshift.diffa.kernel.config.DomainCredentialsManager
 import net.lshift.diffa.docgen.annotations.Description
 import net.lshift.diffa.kernel.frontend.InboundExternalHttpCredentialsDef
 import javax.ws.rs._
-import core.UriInfo
+import core.{Response, UriInfo}
 import net.lshift.diffa.agent.rest.ResponseUtils._
 
 
@@ -45,6 +45,9 @@ class CredentialsResource(val credentialsManager:DomainCredentialsManager,
   @DELETE
   @Path("/{url}/{type}")
   @Description("Removes the specified credential From the current domain.")
-  def deleteCredentials(@PathParam("url") url:String, @PathParam("type") credentialType:String) =
+  def deleteCredentials(@PathParam("url") url:String, @PathParam("type") credentialType:String) = {
     credentialsManager.deleteExternalHttpCredentials(domain, url, credentialType)
+    Response.noContent().build()
+  }
+
 }
