@@ -35,6 +35,12 @@ object AlertCodes {
   val SCAN_QUERY_EVENT = 121
   val SCAN_REQUEST_IGNORED = 122
 
+  // 13x Internal stages of a scan (for benchmarking purposes)
+  val SCAN_STARTED_BENCHMARK = 130
+  val SCAN_COMPLETED_BENCHMARK = 131
+  val UPSTREAM_SCAN_COMPLETED_BENCHMARK = 132
+  val DOWNSTREAM_SCAN_COMPLETED_BENCHMARK = 133
+
   // 2xx Successful
 
   // 22x Successful manual scan events
