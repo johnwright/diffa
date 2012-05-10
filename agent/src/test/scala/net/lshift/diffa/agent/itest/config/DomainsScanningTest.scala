@@ -22,6 +22,8 @@ import net.lshift.diffa.client.ScanningParticipantRestClient
 import net.lshift.diffa.agent.itest.support.TestConstants._
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.config._
+import org.easymock.EasyMock
+import java.net.URI
 
 class DomainsScanningTest {
 
@@ -29,8 +31,15 @@ class DomainsScanningTest {
     def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int = ServiceLimit.UNLIMITED
   }
 
-  val domainCredentialsLookup = createStrictMock("domainCredentialsLookup", classOf[DomainCredentialsLookup])
   val pair = DiffaPairRef("foo","bar")
+
+  val domainCredentialsLookup = createStrictMock("domainCredentialsLookup", classOf[DomainCredentialsLookup])
+  expect(domainCredentialsLookup.credentialsForUri(EasyMock.eq(pair.domain),
+                                                   EasyMock.isA(classOf[URI]))).
+                                 andStubReturn(Some(BasicAuthCredentials("guest", "guest")))
+
+  replay(domainCredentialsLookup)
+
 
   val participant = new ScanningParticipantRestClient(pair, agentURL + "/root/domains/scan", limits, domainCredentialsLookup)
 
