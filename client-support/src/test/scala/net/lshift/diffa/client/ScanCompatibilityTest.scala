@@ -29,7 +29,7 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
-import net.lshift.diffa.kernel.config.{ServiceLimit, PairServiceLimitsView}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, ServiceLimit, PairServiceLimitsView}
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -261,8 +261,15 @@ object ScanCompatibilityTest {
   val scanningParticipant = createStrictMock(classOf[ScanningParticipantHandler])
   val serverPort = 41255
 
+  val pair = new DiffaPairRef("foo", "bar")
+
   lazy val server = new ParticipantServer(serverPort, scanningParticipant)
-  lazy val scanningRestClient = new ScanningParticipantRestClient(limits, "http://localhost:" + serverPort + "/scan")
+  lazy val scanningRestClient = new ScanningParticipantRestClient(
+    pair,
+    "http://localhost:" + serverPort + "/scan",
+    limits,
+    null // TODO Split out DomainCredsStore in order to mock this out
+  )
 
   def stubAggregationBuilder(a:(HttpServletRequest) => AggregationBuilder) {
     expect(scanningParticipant.determineAggregations(anyObject.asInstanceOf[HttpServletRequest])).andStubAnswer(new IAnswer[java.util.List[ScanAggregation]] {
