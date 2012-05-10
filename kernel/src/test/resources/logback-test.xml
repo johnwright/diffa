@@ -26,6 +26,7 @@
   </appender>
 
   <logger name="org.hibernate" level="WARN" />
+  <logger name="org.apache" level="WARN" />
 
    <!--
     EHCache produces a lot of warnings on boot, and we create a lot of session factories in the various
