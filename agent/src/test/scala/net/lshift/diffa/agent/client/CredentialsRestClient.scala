@@ -17,13 +17,15 @@ package net.lshift.diffa.agent.client
 
 import net.lshift.diffa.client.RestClientParams
 import net.lshift.diffa.kernel.frontend.{InboundExternalHttpCredentialsDef, OutboundExternalHttpCredentialsDef}
+import java.net.URLEncoder
 
 class CredentialsRestClient(serverRootUrl:String, domain:String, params: RestClientParams = RestClientParams.default)
   extends DomainAwareRestClient(serverRootUrl, domain, "domains/{domain}/credentials/", params) {
 
   def addCredentials(creds:InboundExternalHttpCredentialsDef) = create("/", creds)
 
-  def deleteCredentials(url:String, credentialType:String) = delete(url + "/" + credentialType)
+  def deleteCredentials(url:String, credentialType:String)
+    = delete(URLEncoder.encode(url, "UTF-8") + "/" + credentialType)
 
   def listCredentials = rpc("/",classOf[Array[OutboundExternalHttpCredentialsDef]])
 }

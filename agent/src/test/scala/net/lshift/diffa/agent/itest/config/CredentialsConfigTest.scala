@@ -32,8 +32,10 @@ class CredentialsConfigTest {
   def credentialsShouldRoundTrip(scenario:Scenario) = {
 
     client.addCredentials(scenario.inbound)
-
     assertTrue(client.listCredentials.contains(scenario.outbound))
+
+    client.deleteCredentials(scenario.inbound.url, scenario.inbound.`type`)
+    assertFalse(client.listCredentials.contains(scenario.outbound))
   }
 }
 
