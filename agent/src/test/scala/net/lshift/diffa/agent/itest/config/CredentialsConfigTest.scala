@@ -22,6 +22,7 @@ import org.junit.Assert._
 import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
+import net.lshift.diffa.kernel.config.ExternalHttpCredentials
 
 @RunWith(classOf[Theories])
 class CredentialsConfigTest {
@@ -44,8 +45,13 @@ case class Scenario(inbound:InboundExternalHttpCredentialsDef, outbound:Outbound
 object CredentialsConfigTest {
 
   @DataPoint def basicAuth = Scenario(
-    InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", value = "tiger", `type` = "basic_auth"),
-    OutboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", `type` = "basic_auth")
+    InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", value = "tiger", `type` = ExternalHttpCredentials.BASIC_AUTH),
+    OutboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", `type` = ExternalHttpCredentials.BASIC_AUTH)
+  )
+
+  @DataPoint def queryParameters = Scenario(
+    InboundExternalHttpCredentialsDef(url = "http://foo.acme.com:9090", key = "mandy", value = "water", `type` = ExternalHttpCredentials.QUERY_PARAMETER),
+    OutboundExternalHttpCredentialsDef(url = "http://foo.acme.com:9090", key = "mandy", `type` = ExternalHttpCredentials.QUERY_PARAMETER)
   )
 
 }
