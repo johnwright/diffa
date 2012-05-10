@@ -19,14 +19,31 @@ import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.agent.client.CredentialsRestClient
 import org.junit.Test
 import org.junit.Assert._
+import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 
+@RunWith(classOf[Theories])
 class CredentialsConfigTest {
 
   val client = new CredentialsRestClient(agentURL, domain)
 
-  @Test
-  def credentialsShouldRoundtrip = {
-    val creds = client.listCredentials
-    assertNotNull(creds)
+  @Theory
+  def credentialsShouldRoundTrip(scenario:Scenario) = {
+
+    client.addCredentials(scenario.inbound)
+
+    assertTrue(client.listCredentials.contains(scenario.outbound))
   }
+}
+
+case class Scenario(inbound:InboundExternalHttpCredentialsDef, outbound:OutboundExternalHttpCredentialsDef)
+
+object CredentialsConfigTest {
+
+  @DataPoint def basicAuth = Scenario(
+    InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", value = "tiger", `type` = "basic_auth"),
+    OutboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", `type` = "basic_auth")
+  )
+
 }
