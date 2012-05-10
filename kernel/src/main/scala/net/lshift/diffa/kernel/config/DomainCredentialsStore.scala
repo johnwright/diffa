@@ -16,6 +16,7 @@
 package net.lshift.diffa.kernel.config
 
 import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
+import java.net.URI
 
 /**
  * Interface the administration and retrieval of external credentials.
@@ -45,6 +46,11 @@ trait DomainCredentialsStore extends LimitedDomainCredentialsStore {
    * Returns the most specific credentials that matches the given URL
    */
   def credentialsForUrl(domain:String, url:String) : Option[HttpCredentials]
+
+  /**
+   * Returns the most specific credentials that matches the given URI
+   */
+  def credentialsForUri(domain:String, uri:URI) : Option[HttpCredentials]
 }
 
 trait HttpCredentials

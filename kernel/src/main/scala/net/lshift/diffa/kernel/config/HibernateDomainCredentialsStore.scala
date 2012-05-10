@@ -52,9 +52,10 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extend
     })
   })
 
-  def credentialsForUrl(domain:String, url:String) = sessionFactory.withSession( s => {
+  def credentialsForUrl(domain:String, url:String) : Option[HttpCredentials] = credentialsForUri(domain, new URI(url))
 
-    val searchURI = new URI(url)
+  def credentialsForUri(domain:String, searchURI:URI) = sessionFactory.withSession( s => {
+
     val baseUrl = searchURI.getScheme + "://" + searchURI.getAuthority + "%"
     val results = listQuery[ExternalHttpCredentials](s, "externalHttpCredentialsByDomainAndUrl",
                                                      Map("domain" -> domain, "base_url" -> baseUrl))
@@ -70,7 +71,8 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory) extend
           case ExternalHttpCredentials.QUERY_PARAMETER => ( new URI(c.url), QueryParameterCredentials(c.key, c.value) )
           case _                                       =>
             // Be very careful not to log a password
-            val message = "%s - Wrong credential type for url: %s".format(formatAlertCode(domain, INVALID_EXTERNAL_CREDENTIAL_TYPE), url)
+            val message = "%s - Wrong credential type for url: %s".
+              format(formatAlertCode(domain, INVALID_EXTERNAL_CREDENTIAL_TYPE), searchURI)
             logger.error(message)
             throw new Exception("Wrong credential type")
         }

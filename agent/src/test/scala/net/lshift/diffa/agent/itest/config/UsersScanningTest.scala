@@ -21,13 +21,18 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.client.ScanningParticipantRestClient
 import net.lshift.diffa.participant.scanning.StringPrefixConstraint
 import org.junit.Test
-import net.lshift.diffa.kernel.config.{ServiceLimit, PairServiceLimitsView}
+import org.easymock.EasyMock._
+import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainCredentialsStore, ServiceLimit, PairServiceLimitsView}
 
 class UsersScanningTest {
   val limits = new PairServiceLimitsView {
     def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int = ServiceLimit.UNLIMITED
   }
-  val participant = new ScanningParticipantRestClient(limits, agentURL + "/security/scan")
+
+  val domainCredentialsStore = createStrictMock("domainCredentialsStore", classOf[DomainCredentialsStore])
+  val pair = DiffaPairRef("foo","bar")
+
+  val participant = new ScanningParticipantRestClient(pair, agentURL + "/security/scan", limits, domainCredentialsStore)
 
   @Test
   def aggregationShouldIncludeGuestUser {
