@@ -40,7 +40,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity
 abstract class InternalRestClient(pair: DiffaPairRef,
                                   url: String,
                                   serviceLimitsView: PairServiceLimitsView,
-                                  credentialsStore:DomainCredentialsLookup) {
+                                  credentialsLookup:DomainCredentialsLookup) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -56,7 +56,7 @@ abstract class InternalRestClient(pair: DiffaPairRef,
   protected def maybeAuthenticate(prepareRequest:Option[QueryParameterCredentials] => HttpUriRequest) = {
     val httpClient = createHttpClient(new BasicHttpParams)
 
-    val request = credentialsStore.credentialsForUri(pair.domain, uri) match {
+    val request = credentialsLookup.credentialsForUri(pair.domain, uri) match {
       case None        => prepareRequest(None)
       case Some(creds) => creds match {
         case query:QueryParameterCredentials  => prepareRequest(Some(query))

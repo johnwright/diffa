@@ -24,32 +24,32 @@ trait ParticipantRestClientFactory {
   def supportsAddress(address: String) = address.startsWith("http://") || address.startsWith("https://")
 }
 
-class ScanningParticipantRestClientFactory(credentialsStore:DomainCredentialsLookup, limits: PairServiceLimitsView)
+class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pair:DiffaPairRef) =
     new ScanningParticipantRestClient(serviceLimitsView = limits,
                                       scanUrl = address,
-                                      credentialsStore = credentialsStore,
+                                      credentialsLookup = credentialsLookup,
                                       pair = pair)
 }
 
-class ContentParticipantRestClientFactory(credentialsStore:DomainCredentialsLookup, limits: PairServiceLimitsView)
+class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ContentParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pair:DiffaPairRef)
     = new ContentParticipantRestClient(serviceLimitsView = limits,
                                        scanUrl = address,
-                                       credentialsStore = credentialsStore,
+                                       credentialsLookup = credentialsLookup,
                                        pair = pair)
 }
 
-class VersioningParticipantRestClientFactory(credentialsStore:DomainCredentialsLookup, limits: PairServiceLimitsView)
+class VersioningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends VersioningParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pair:DiffaPairRef)
     = new VersioningParticipantRestClient(serviceLimitsView = limits,
                                           scanUrl = address,
-                                          credentialsStore = credentialsStore,
+                                          credentialsLookup = credentialsLookup,
                                           pair = pair)
 }

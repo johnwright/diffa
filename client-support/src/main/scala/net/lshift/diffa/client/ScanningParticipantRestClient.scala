@@ -44,12 +44,11 @@ import net.lshift.diffa.kernel.config._
 class ScanningParticipantRestClient(pair: DiffaPairRef,
                                     scanUrl: String,
                                     serviceLimitsView: PairServiceLimitsView,
-                                    credentialsStore: DomainCredentialsLookup)
-  extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsStore)
+                                    credentialsLookup: DomainCredentialsLookup)
+  extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsLookup)
   with ScanningParticipantRef {
 
   private val log = LoggerFactory.getLogger(getClass)
-  private final val ACCEPTABLE_STATUS_CODE = 200
 
   /**
    * Issue a single query to a participant.
@@ -77,9 +76,8 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
 
       val statusCode = response.getStatusLine.getStatusCode
       statusCode match {
-        case ACCEPTABLE_STATUS_CODE =>
-          JSONHelper.readQueryResult(response.getEntity.getContent)
-        case _ =>
+        case 200 => JSONHelper.readQueryResult(response.getEntity.getContent)
+        case _   =>
           log.error("{} External scan error, response code: {}",
             Array(formatAlertCode(EXTERNAL_SCAN_ERROR), statusCode))
           throw new ScanFailedException("Participant scan failed: %s\n%s".format(

@@ -29,7 +29,8 @@ import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
-import net.lshift.diffa.kernel.config.{DiffaPairRef, ServiceLimit, PairServiceLimitsView}
+import net.lshift.diffa.kernel.config._
+import java.net.URI
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -258,17 +259,24 @@ object ScanCompatibilityTest {
     def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int = ServiceLimit.UNLIMITED
   }
 
-  val scanningParticipant = createStrictMock(classOf[ScanningParticipantHandler])
   val serverPort = 41255
 
-  val pair = new DiffaPairRef("foo", "bar")
+  val scanningParticipant = createStrictMock(classOf[ScanningParticipantHandler])
+
+  val pair = new DiffaPairRef("some-domain", "some-pair")
+
+  val domainCredentialsLookup = createStrictMock(classOf[DomainCredentialsLookup])
+  expect(domainCredentialsLookup.credentialsForUri(EasyMock.eq(pair.domain),
+                                                   EasyMock.isA(classOf[URI]))).andStubReturn(None)
+
+  replay(domainCredentialsLookup)
 
   lazy val server = new ParticipantServer(serverPort, scanningParticipant)
   lazy val scanningRestClient = new ScanningParticipantRestClient(
     pair,
     "http://localhost:" + serverPort + "/scan",
     limits,
-    null // TODO Split out DomainCredsStore in order to mock this out
+    domainCredentialsLookup
   )
 
   def stubAggregationBuilder(a:(HttpServletRequest) => AggregationBuilder) {

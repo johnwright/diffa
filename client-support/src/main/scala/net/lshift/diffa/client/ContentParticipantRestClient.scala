@@ -32,8 +32,8 @@ import net.lshift.diffa.kernel.config._
 class ContentParticipantRestClient(pair: DiffaPairRef,
                                    scanUrl: String,
                                    serviceLimitsView: PairServiceLimitsView,
-                                   credentialsStore:DomainCredentialsLookup)
-  extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsStore)
+                                   credentialsLookup:DomainCredentialsLookup)
+  extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsLookup)
   with ContentParticipantRef {
 
   val log = LoggerFactory.getLogger(getClass)
