@@ -488,8 +488,8 @@ case class PairActor(pair:DiffaPair,
     }
   }
 
-  private def timeSince(pastTime: Long) = new Ordered {
-    def compare(pastTime: Long) = (System.currentTimeMillis() - pastTime) > interval
+  private def timeSince(pastTime: Long) = new Ordered[Long] {
+    def compare(interval: Long) = if (System.currentTimeMillis() - pastTime > interval) 1 else -1
   }
   
   private def handleScanError(actor:ActorRef, scanId:UUID, upOrDown:UpOrDown, x:Exception) = {
