@@ -62,3 +62,21 @@ trait HttpCredentials
 case class BasicAuthCredentials(username:String, password:String) extends HttpCredentials
 case class QueryParameterCredentials(name:String, value:String) extends HttpCredentials
 
+/**
+ * Stubbed out provider of the DomainCredentialsLookup interface that always responds with the same
+ * credentials. This is used for testing purposes.
+ */
+class FixedDomainCredentialsLookup(domain:String, credentials:Option[HttpCredentials]) extends DomainCredentialsLookup {
+
+  def credentialsForUrl(domainName: String, url: String) = credentialsForUri(domainName, new URI(url))
+
+  def credentialsForUri(domainName: String, uri: URI) = {
+    if (domainName == domain) {
+      credentials
+    }
+    else {
+      throw new IllegalArgumentException("Wrong domain: supported = " + domain + "; requested = " + domainName)
+    }
+  }
+}
+

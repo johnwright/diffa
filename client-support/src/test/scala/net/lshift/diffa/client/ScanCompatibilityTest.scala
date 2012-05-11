@@ -30,7 +30,6 @@ import net.lshift.diffa.participant.scanning._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import net.lshift.diffa.kernel.config._
-import java.net.URI
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -265,11 +264,8 @@ object ScanCompatibilityTest {
 
   val pair = new DiffaPairRef("some-domain", "some-pair")
 
-  val domainCredentialsLookup = createStrictMock(classOf[DomainCredentialsLookup])
-  expect(domainCredentialsLookup.credentialsForUri(EasyMock.eq(pair.domain),
-                                                   EasyMock.isA(classOf[URI]))).andStubReturn(None)
 
-  replay(domainCredentialsLookup)
+  val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, None)
 
   lazy val server = new ParticipantServer(serverPort, scanningParticipant)
   lazy val scanningRestClient = new ScanningParticipantRestClient(

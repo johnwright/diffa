@@ -20,11 +20,7 @@ import net.lshift.diffa.participant.scanning.StringPrefixConstraint
 import org.junit.Assert._
 import net.lshift.diffa.client.ScanningParticipantRestClient
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.config._
-import org.easymock.EasyMock
-import java.net.URI
-
 class DomainsScanningTest {
 
   val limits = new PairServiceLimitsView {
@@ -33,14 +29,7 @@ class DomainsScanningTest {
 
   val pair = DiffaPairRef("foo","bar")
 
-  val domainCredentialsLookup = createStrictMock("domainCredentialsLookup", classOf[DomainCredentialsLookup])
-  expect(domainCredentialsLookup.credentialsForUri(EasyMock.eq(pair.domain),
-                                                   EasyMock.isA(classOf[URI]))).
-                                 andStubReturn(Some(BasicAuthCredentials("guest", "guest")))
-
-  replay(domainCredentialsLookup)
-
-
+  val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, Some(BasicAuthCredentials("guest", "guest")))
   val participant = new ScanningParticipantRestClient(pair, agentURL + "/root/domains/scan", limits, domainCredentialsLookup)
 
   @Test
