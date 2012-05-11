@@ -124,13 +124,13 @@ class DefaultDifferencesManager(
         withValidEvent(domain, evtSeqId,
                       {e:DifferenceEvent => e.upstreamVsn != null},
                       {p:DiffaPair => p.upstream},
-                      {(e:Endpoint, p:DiffaPairRef) => participantFactory.createUpstreamParticipant(e,p)})
+                      participantFactory.createUpstreamParticipant)
       }
       case ParticipantType.DOWNSTREAM => {
         withValidEvent(domain, evtSeqId,
                       {e:DifferenceEvent => e.downstreamVsn != null},
                       {p:DiffaPair => p.downstream},
-                      {(e:Endpoint, p:DiffaPairRef) => participantFactory.createDownstreamParticipant(e,p)})
+                      participantFactory.createDownstreamParticipant)
       }
     }
   }
