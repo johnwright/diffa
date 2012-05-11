@@ -31,7 +31,7 @@ object Step0026 extends HibernateMigrationStep {
 
     migration.createTable("external_http_credentials").
       column("domain", Types.VARCHAR, 50, false).
-      column("url", Types.VARCHAR, 1024, false).
+      column("url", Types.VARCHAR, 255, false).
       column("cred_key", Types.VARCHAR, 50, false).
       column("cred_value", Types.VARCHAR, 255, false).
       column("cred_type", Types.VARCHAR, 20, false).

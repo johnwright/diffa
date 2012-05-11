@@ -34,7 +34,7 @@ case class InboundExternalHttpCredentialsDef(@BeanProperty var url: String = nul
     ValidationUtil.requiredAndNotEmpty(credsPath, "value", value)
     ValidationUtil.requiredAndNotEmpty(credsPath, "type", `type`)
 
-    ValidationUtil.ensureLengthLimit(credsPath, "url", url, DefaultLimits.URL_LENGTH_LIMIT)
+    ValidationUtil.ensureLengthLimit(credsPath, "url", url, DefaultLimits.MYSQL_VARCHAR_PK_LIMIT)
     ValidationUtil.ensureLengthLimit(credsPath, "key", key, DefaultLimits.KEY_LENGTH_LIMIT)
     ValidationUtil.ensureLengthLimit(credsPath, "value", value, DefaultLimits.VALUE_LENGTH_LIMIT)
 
