@@ -258,8 +258,8 @@
     <composite-id mapped="false">
       <key-property name="domain" type="string" column="domain" />
       <key-property name="url"    type="string" column="url" />
-      <key-property name="credentialType" type="string" column="cred_type" />
     </composite-id>
+    <property name="credentialType" type="string" column="cred_type" not-null="true"/>
     <property name="key" type="string" column="cred_key" not-null="true" />
     <property name="value" type="string" column="cred_value" not-null="true" />
   </class>
@@ -274,7 +274,7 @@
   </query>
 
   <query name="deleteExternalHttpCredentials" cacheable="false">
-    delete from ExternalHttpCredentials c where c.domain = :domain and c.credentialType = :type and c.url = :url
+    delete from ExternalHttpCredentials c where c.domain = :domain and c.url = :url
   </query>
 
   <query name="deleteExternalHttpCredentialsByDomain" cacheable="false">

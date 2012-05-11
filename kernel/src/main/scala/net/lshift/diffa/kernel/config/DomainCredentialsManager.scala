@@ -31,9 +31,9 @@ trait DomainCredentialsManager {
   def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef)
 
   /**
-   * Removes the external HTTP credentials for the given domain, url and credential type.
+   * Removes the external HTTP credentials for the given domain and url
    */
-  def deleteExternalHttpCredentials(domain:String, url:String, credentialType:String)
+  def deleteExternalHttpCredentials(domain:String, url:String)
 
   /**
    * Lists all credentials in the current domain.

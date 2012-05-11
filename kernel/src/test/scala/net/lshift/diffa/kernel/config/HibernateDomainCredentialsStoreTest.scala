@@ -37,11 +37,11 @@ class HibernateDomainCredentialsStoreTest {
 
     systemConfigStore.createOrUpdateDomain(domain)
 
-    val basicAuthIn = InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", value = "tiger", `type` = "basic_auth")
-    val queryParamIn = InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "authToken", value = "a987bg6", `type` = "query_parameter")
+    val basicAuthIn = InboundExternalHttpCredentialsDef(url = "https://acme.com/foo", key = "scott", value = "tiger", `type` = "basic_auth")
+    val queryParamIn = InboundExternalHttpCredentialsDef(url = "https://acme.com/bar", key = "authToken", value = "a987bg6", `type` = "query_parameter")
 
-    val basicAuthOut = OutboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", `type` = "basic_auth")
-    val queryParamOut = OutboundExternalHttpCredentialsDef(url = "https://acme.com", key = "authToken", `type` = "query_parameter")
+    val basicAuthOut = OutboundExternalHttpCredentialsDef(url = "https://acme.com/foo", key = "scott", `type` = "basic_auth")
+    val queryParamOut = OutboundExternalHttpCredentialsDef(url = "https://acme.com/bar", key = "authToken", `type` = "query_parameter")
 
     domainCredentialsStore.addExternalHttpCredentials(domainName, basicAuthIn)
     domainCredentialsStore.addExternalHttpCredentials(domainName, queryParamIn)
@@ -52,7 +52,7 @@ class HibernateDomainCredentialsStoreTest {
     assertTrue(creds1.contains(basicAuthOut))
     assertTrue(creds1.contains(queryParamOut))
 
-    domainCredentialsStore.deleteExternalHttpCredentials(domainName, "https://acme.com", "basic_auth")
+    domainCredentialsStore.deleteExternalHttpCredentials(domainName, "https://acme.com/foo")
 
     val creds2 = domainCredentialsStore.listCredentials(domainName)
 
@@ -60,7 +60,7 @@ class HibernateDomainCredentialsStoreTest {
     assertFalse(creds2.contains(basicAuthOut))
     assertTrue(creds2.contains(queryParamOut))
 
-    domainCredentialsStore.deleteExternalHttpCredentials(domainName, "https://acme.com", "query_parameter")
+    domainCredentialsStore.deleteExternalHttpCredentials(domainName, "https://acme.com/bar")
 
     val creds3 = domainCredentialsStore.listCredentials(domainName)
 

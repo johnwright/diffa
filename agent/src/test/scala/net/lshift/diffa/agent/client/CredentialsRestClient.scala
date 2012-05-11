@@ -24,8 +24,7 @@ class CredentialsRestClient(serverRootUrl:String, domain:String, params: RestCli
 
   def addCredentials(creds:InboundExternalHttpCredentialsDef) = create("/", creds)
 
-  def deleteCredentials(url:String, credentialType:String)
-    = delete(URLEncoder.encode(url, "UTF-8") + "/" + credentialType)
+  def deleteCredentials(url:String) = delete(URLEncoder.encode(url, "UTF-8"))
 
   def listCredentials = rpc("/",classOf[Array[OutboundExternalHttpCredentialsDef]])
 }

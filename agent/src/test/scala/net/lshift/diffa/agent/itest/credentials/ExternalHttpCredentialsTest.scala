@@ -47,7 +47,7 @@ class ExternalHttpCredentialsTest {
     // Make that the creds do not exist the DB before this test is run (e.g. from a previosu test run)
 
     try {
-      credentialsClient.deleteCredentials(baseUrl, ExternalHttpCredentials.BASIC_AUTH)
+      credentialsClient.deleteCredentials(baseUrl)
     }
     catch {
       case _ => // ignore

@@ -36,14 +36,13 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory)
     s.saveOrUpdate(fromInboundExternalHttpCredentialsDef(domain, creds))
   })
 
-  def deleteExternalHttpCredentials(domain:String, url:String, credentialType:String) = sessionFactory.withSession( s => {
+  def deleteExternalHttpCredentials(domain:String, url:String) = sessionFactory.withSession( s => {
     val deleted = s.getNamedQuery("deleteExternalHttpCredentials").
                     setString("domain", domain).
                     setString("url", url).
-                    setString("type", credentialType).
                     executeUpdate()
     if (deleted == 0) {
-      throw new MissingObjectException(url + "/" + credentialType)
+      throw new MissingObjectException(url)
     }
   })
 

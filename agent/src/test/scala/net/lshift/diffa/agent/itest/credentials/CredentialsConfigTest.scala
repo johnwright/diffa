@@ -35,7 +35,7 @@ class CredentialsConfigTest {
     client.addCredentials(scenario.inbound)
     assertTrue(client.listCredentials.contains(scenario.outbound))
 
-    client.deleteCredentials(scenario.inbound.url, scenario.inbound.`type`)
+    client.deleteCredentials(scenario.inbound.url)
     assertFalse(client.listCredentials.contains(scenario.outbound))
   }
 }

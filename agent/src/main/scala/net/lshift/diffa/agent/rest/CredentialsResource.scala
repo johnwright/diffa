@@ -43,10 +43,10 @@ class CredentialsResource(val credentialsManager:DomainCredentialsManager,
   }
 
   @DELETE
-  @Path("/{url}/{type}")
-  @Description("Removes the specified credential From the current domain.")
-  def deleteCredentials(@PathParam("url") url:String, @PathParam("type") credentialType:String) = {
-    credentialsManager.deleteExternalHttpCredentials(domain, url, credentialType)
+  @Path("/{url}")
+  @Description("Removes the credential for the given url from the current domain.")
+  def deleteCredentials(@PathParam("url") url:String) = {
+    credentialsManager.deleteExternalHttpCredentials(domain, url)
     Response.noContent().build()
   }
 
