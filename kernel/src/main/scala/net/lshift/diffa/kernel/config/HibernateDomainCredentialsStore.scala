@@ -33,6 +33,7 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory)
   val logger = LoggerFactory.getLogger(getClass)
 
   def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) = sessionFactory.withSession( s => {
+    creds.validate()
     s.saveOrUpdate(fromInboundExternalHttpCredentialsDef(domain, creds))
   })
 

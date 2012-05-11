@@ -394,18 +394,6 @@ case class ExternalHttpCredentials(
     case _                         => false
   }
 
-  def validate(path:String = null) {
-    val credsPath = ValidationUtil.buildPath(
-      ValidationUtil.buildPath(path, "domain", Map("name" -> domain)),
-      "external-http-credentials", Map("url" -> url))
-
-    // Ensure that the credential type is supported
-    this.credentialType = credentialType match {
-      case BASIC_AUTH | QUERY_PARAMETER => credentialType
-      case _ => throw new ConfigValidationException(credsPath, "Invalid credential type: "+ credentialType)
-    }
-  }
-
   override def hashCode = 31 * (31 * (31 + domain.hashCode) + url.hashCode) + credentialType.hashCode
 }
 
