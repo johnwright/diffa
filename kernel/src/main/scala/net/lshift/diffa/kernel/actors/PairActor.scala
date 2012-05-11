@@ -336,6 +336,8 @@ case class PairActor(pair:DiffaPair,
     // data.
     diagnostics.checkpointExplanations(pair.asRef)
 
+    logger.info(formatAlertCode(pairRef, SCAN_COMPLETED_BENCHMARK))
+
     // Leave the scan state
     unbecome()
   }
@@ -412,6 +414,8 @@ case class PairActor(pair:DiffaPair,
   def handleScanMessage(scanView:Option[String]) : Boolean = {
     val createdScan = OutstandingScan(new UUID)
 
+    logger.info(formatAlertCode(pairRef, SCAN_STARTED_BENCHMARK))
+
     // allocate a writer proxy
     val writerProxy = createWriterProxy(createdScan.uuid)
 
@@ -436,6 +440,7 @@ case class PairActor(pair:DiffaPair,
         try {
           policy.scanUpstream(pairRef, us, scanView, writerProxy, usp, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Up, Success)
+          logger.info(formatAlertCode(pairRef, UPSTREAM_SCAN_COMPLETED_BENCHMARK))
         }
         catch {
           case c:ScanCancelledException => {
@@ -450,6 +455,7 @@ case class PairActor(pair:DiffaPair,
         try {
           policy.scanDownstream(pairRef, ds, scanView, writerProxy, usp, dsp, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Down, Success)
+          logger.info(formatAlertCode(pairRef, DOWNSTREAM_SCAN_COMPLETED_BENCHMARK))
         }
         catch {
           case c:ScanCancelledException => {
