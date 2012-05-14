@@ -145,7 +145,7 @@ trait LimitedVersionCorrelationWriter {
  * Extends the high level <code>LimitedVersionCorrelationWriter</code> interface by adding low level commands
  * to commit queued up write commands into the store.
  */
-trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter {
+trait ExtendedVersionCorrelationWriter extends LimitedVersionCorrelationWriter with Closeable {
   /**
    * Indicates whether there are any pending changes to be flushed to the store.
    */
