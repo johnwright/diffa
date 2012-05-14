@@ -386,6 +386,11 @@ case class PairActor(pair:DiffaPair,
 
     // always flush after an inventory
     writer.flush()
+
+    if (timeSinceLastStoreCleanup > maxCleanupInterval) {
+      cleanupIndexFilesIfCorrelationStoreBackedByLucene
+    }
+
     lastEventTime = System.currentTimeMillis()
 
     // Play events from the correlation store into the differences manager
@@ -484,7 +489,7 @@ case class PairActor(pair:DiffaPair,
     if (store.isInstanceOf[LuceneVersionCorrelationStore]) {
       logger.debug("Closing Version Correlation Store")
       lastStoreCleanup = System.currentTimeMillis()
-      store.close()
+      store.openWriter.close
     }
   }
 
