@@ -26,7 +26,7 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.AlertCodes._
 import com.eaio.uuid.UUID
 import akka.actor._
-import collection.mutable.{SynchronizedQueue, Queue}
+import collection.mutable.Queue
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
@@ -34,6 +34,7 @@ import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, Endpoint, DiffaPair}
 import net.lshift.diffa.kernel.util.{EndpointSide, DownstreamEndpoint, UpstreamEndpoint}
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
+import net.lshift.diffa.kernel.indexing.LuceneVersionCorrelationStore
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -58,8 +59,15 @@ case class PairActor(pair:DiffaPair,
 
   private val pairRef = pair.asRef
 
+  private val maxCleanupInterval = PairActorConstants.MAX_CLEANUP_INTERVAL
+
+  private var lastStoreCleanup = 0L
   private var lastEventTime: Long = 0
   private var scheduledFlushes: ScheduledFuture[_] = _
+
+  private val timeSinceLastStoreCleanup = new Ordered[Long] {
+    def compare(interval: Long) = if (System.currentTimeMillis() - lastStoreCleanup > interval) 1 else -1
+  }
 
   /**
    * Flag that can be used to signal that scanning should be cancelled.
@@ -337,6 +345,7 @@ case class PairActor(pair:DiffaPair,
     diagnostics.checkpointExplanations(pair.asRef)
 
     logger.info(formatAlertCode(pairRef, SCAN_COMPLETED_BENCHMARK))
+    cleanupIndexFilesIfCorrelationStoreBackedByLucene
 
     // Leave the scan state
     unbecome()
@@ -358,9 +367,14 @@ case class PairActor(pair:DiffaPair,
   def handleChangeMessage(message:ChangeMessage) = {
     policy.onChange(writer, message.event)
     // if no events have arrived within the timeout period, flush and clear the buffer
-    if (lastEventTime < (System.currentTimeMillis() - changeEventBusyTimeoutMillis)) {
+    if (timeSince(lastEventTime) > changeEventBusyTimeoutMillis) {
       writer.flush()
     }
+
+    if (timeSinceLastStoreCleanup > maxCleanupInterval) {
+      cleanupIndexFilesIfCorrelationStoreBackedByLucene
+    }
+
     lastEventTime = System.currentTimeMillis()
   }
 
@@ -384,6 +398,11 @@ case class PairActor(pair:DiffaPair,
 
     // always flush after an inventory
     writer.flush()
+
+    if (timeSinceLastStoreCleanup > maxCleanupInterval) {
+      cleanupIndexFilesIfCorrelationStoreBackedByLucene
+    }
+
     lastEventTime = System.currentTimeMillis()
 
     // Play events from the correlation store into the differences manager
@@ -484,6 +503,18 @@ case class PairActor(pair:DiffaPair,
     }
   }
 
+  private def cleanupIndexFilesIfCorrelationStoreBackedByLucene {
+    if (store.isInstanceOf[LuceneVersionCorrelationStore]) {
+      logger.debug("Closing Version Correlation Store")
+      lastStoreCleanup = System.currentTimeMillis()
+      store.openWriter.close
+    }
+  }
+
+  private def timeSince(pastTime: Long) = new Ordered[Long] {
+    def compare(interval: Long) = if (System.currentTimeMillis() - pastTime > interval) 1 else -1
+  }
+  
   private def handleScanError(actor:ActorRef, scanId:UUID, upOrDown:UpOrDown, x:Exception) = {
 
     val (prefix, marker) = upOrDown match {
@@ -578,3 +609,9 @@ case object CancelMessage
  * An internal command that indicates to the actor that the underlying writer should be flushed
  */
 private case object FlushWriterMessage extends Deferrable
+
+object PairActorConstants {
+  final val MAX_CLEANUP_INTERVAL = minutesToMs(60) // 1 hour, expressed in milliseconds
+  
+  private def minutesToMs(minutes: Int) = minutes * 60 * 1000L
+}

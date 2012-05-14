@@ -37,9 +37,46 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
   private val maxBufferSize = 10000
 
   private val updatedDocs = HashMap[VersionID, Document]()
+  private var isClosed = false // IndexWriter doesn't have an isClosed method but we need
+                               // to conditionally recreate the IndexWriter.
   private var writer = createIndexWriter
+  private final val writerLock = new Object
 
-  def getReader : IndexReader = IndexReader.open(writer, true)
+  private def createIndexWriter() = {
+    val version = Version.LUCENE_34
+    val config = new IndexWriterConfig(version, new StandardAnalyzer(version))
+    new IndexWriter(index, config)
+  }
+
+  private def getWriter = {
+    writerLock.synchronized {
+      if (isClosed) {
+        writer = createIndexWriter
+        isClosed = false
+      }
+    }
+    // Understood and accepted: if close is invoked here, then use of the writer will fail.
+    writer
+  }
+
+  def rollback() = {
+    writerLock.synchronized {
+      getWriter.rollback()
+      isClosed = true
+    }
+    // TODO: we don't really need to eagerly create a new writer, since it will be created as needed on next use.
+    getWriter    // We need to create a new writer, since rollback will have closed the previous one
+    log.info("Writer rolled back")
+  }
+
+  def close() {
+    writerLock.synchronized {
+      writer.close
+      isClosed = true
+    }
+  }
+
+  def getReader : IndexReader = IndexReader.open(getWriter, true)
 
   private val VERSION_LABEL = "latest.store.version"
   private var latestVersion : Long = getReader.getCommitUserData match {
@@ -108,15 +145,9 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
 
   def isDirty = updatedDocs.size > 0
 
-  def rollback() = {
-    writer.rollback()
-    writer = createIndexWriter    // We need to create a new writer, since rollback will have closed the previous one
-    log.info("Writer rolled back")
-  }
-
   def clearTombstones() {
     prepareFlush()
-    writer.deleteDocuments(createTombstoneQuery)
+    getWriter.deleteDocuments(createTombstoneQuery)
     flushInternal()
   }
 
@@ -127,20 +158,9 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
   }
 
   def reset() {
-    writer.deleteAll()
-    writer.commit()
+    getWriter.deleteAll()
+    getWriter.commit()
     updatedDocs.clear()
-  }
-
-  def close() {
-    writer.close()
-  }
-
-  private def createIndexWriter() = {
-    val version = Version.LUCENE_34
-    val config = new IndexWriterConfig(version, new StandardAnalyzer(version))
-    val writer = new IndexWriter(index, config)
-    writer
   }
 
   private def prepareUpdate(id: VersionID, doc: Document) = {
@@ -300,7 +320,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
   private def prepareFlush() = {
     if (isDirty) {
       updatedDocs.foreach { case (id, doc) =>
-        writer.updateDocument(new Term("id", id.id), doc)
+        getWriter.updateDocument(new Term("id", id.id), doc)
       }
       true
     } else {
@@ -309,7 +329,7 @@ class LuceneWriter(index: Directory, diagnostics:DiagnosticsManager) extends Ext
   }
 
   private def flushInternal() {
-    writer.commit(Map(VERSION_LABEL -> latestVersion.toString))
+    getWriter.commit(Map(VERSION_LABEL -> latestVersion.toString))
       updatedDocs.clear()
       log.trace("Writer flushed")
   }
