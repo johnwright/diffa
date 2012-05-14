@@ -324,6 +324,14 @@ trait CommonDifferenceTests {
     env.withActionsServer {
       env.upstream.addEntity("abc", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
       runScanAndWaitForCompletion(yearAgo, today)
+      def tally = env.entityResendTally.getOrElse("abc", 0)
+      var maxIterationsToFailure = 100
+      while (tally != 1) {
+        Thread.sleep(100)
+        if (maxIterationsToFailure <= 0) {
+          fail("Resend tally was zero, but should have been 1")
+        }
+      }
       assertEquals(1, env.entityResendTally("abc"))
     }
   }
