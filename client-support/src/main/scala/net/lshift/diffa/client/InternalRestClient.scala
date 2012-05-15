@@ -92,9 +92,9 @@ abstract class InternalRestClient(pair: DiffaPairRef,
 
   protected def buildGetRequest(queryParams:MultivaluedMapImpl,
                                 credentials:Option[QueryParameterCredentials]) = {
-
-    val queryString = constructQueryString(queryParams, credentials)
-    new HttpGet("%s?%s".format(url, queryString))
+    val queryUrl = UriCredentialsUtil.buildQueryUri(url, queryParams, credentials)
+    // val queryString = constructQueryString(queryParams, credentials)
+    new HttpGet(queryUrl)
 
   }
 
