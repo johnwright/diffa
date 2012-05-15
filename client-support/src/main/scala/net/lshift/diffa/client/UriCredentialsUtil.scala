@@ -34,15 +34,12 @@ object UriCredentialsUtil {
       case "" => None
       case q => Some(q)
     }
-
-    (queryPrefix, extraQueryString) match {
-      case (None, None) => path
-      case (Some(a), None) => "%s?%s".format(path, a)
-      case (None, Some(b)) => "%s?%s".format(path, b)
-      case (Some(a), Some(b)) => "%s?%s&%s".format(path, a, b)
+    val completeQuery = List(
+      queryPrefix, extraQueryString).flatMap(_.toSeq) match {
+      case List() => None
+      case query => Some(query.mkString("&"))
     }
-    // path + "?" + queryPrefix + constructQueryString(query)
-
+    List(Some(path), completeQuery).flatMap(_.toSeq).mkString("?")
   }
 
   private def constructQueryString(queryParams: MultivaluedMapImpl) = {
