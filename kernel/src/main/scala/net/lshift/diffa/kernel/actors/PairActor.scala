@@ -51,7 +51,8 @@ case class PairActor(pair:DiffaPair,
                      diagnostics:DiagnosticsManager,
                      domainConfigStore:DomainConfigStore,
                      changeEventBusyTimeoutMillis: Long,
-                     changeEventQuietTimeoutMillis: Long) extends Actor {
+                     changeEventQuietTimeoutMillis: Long,
+                     indexWriterCloseInterval: Int) extends Actor {
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
@@ -59,15 +60,9 @@ case class PairActor(pair:DiffaPair,
 
   private val pairRef = pair.asRef
 
-  private val maxCleanupInterval = PairActorConstants.MAX_CLEANUP_INTERVAL
-
-  private var lastStoreCleanup = 0L
+  private var actionsRemainingUntilClose = indexWriterCloseInterval
   private var lastEventTime: Long = 0
   private var scheduledFlushes: ScheduledFuture[_] = _
-
-  private val timeSinceLastStoreCleanup = new Ordered[Long] {
-    def compare(interval: Long) = if (System.currentTimeMillis() - lastStoreCleanup > interval) 1 else -1
-  }
 
   /**
    * Flag that can be used to signal that scanning should be cancelled.
@@ -371,7 +366,8 @@ case class PairActor(pair:DiffaPair,
       writer.flush()
     }
 
-    if (timeSinceLastStoreCleanup > maxCleanupInterval) {
+    actionsRemainingUntilClose -= 1
+    if (actionsRemainingUntilClose <= 0) {
       cleanupIndexFilesIfCorrelationStoreBackedByLucene
     }
 
@@ -399,7 +395,8 @@ case class PairActor(pair:DiffaPair,
     // always flush after an inventory
     writer.flush()
 
-    if (timeSinceLastStoreCleanup > maxCleanupInterval) {
+    actionsRemainingUntilClose -= 1
+    if (actionsRemainingUntilClose <= 0) {
       cleanupIndexFilesIfCorrelationStoreBackedByLucene
     }
 
@@ -504,11 +501,9 @@ case class PairActor(pair:DiffaPair,
   }
 
   private def cleanupIndexFilesIfCorrelationStoreBackedByLucene {
-    if (store.isInstanceOf[LuceneVersionCorrelationStore]) {
-      logger.debug("Closing Version Correlation Store")
-      lastStoreCleanup = System.currentTimeMillis()
-      store.openWriter.close
-    }
+    logger.debug("Closing Version Correlation Store")
+    actionsRemainingUntilClose = indexWriterCloseInterval
+    store.openWriter.close
   }
 
   private def timeSince(pastTime: Long) = new Ordered[Long] {
