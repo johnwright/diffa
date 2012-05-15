@@ -33,18 +33,13 @@ class InternalRestClientTest {
 
   import InternalRestClientTest._
 
-//  @Before
-//  def ensureServerStarted {
-//    if (!server.isRunning) server.start()
-//  }
-
   @Theory
   def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryString(ex: Example) = {
     val query = new MultivaluedMapImpl()
     for ((k, v) <- ex.query) query.add(k, v)
     val client = clientFor(ex.requestUrl)
 
-    assertEquals(serverRootUrl + ex.expected,
+    assertEquals(rootUrl + ex.expected,
       client.queryRequestUrlFor(query, None))
   }
 
@@ -54,7 +49,7 @@ class InternalRestClientTest {
     for ((k, v) <- ex.query) query.add(k, v)
     val client = clientFor(ex.requestUrl)
 
-    assertEquals(serverRootUrl + ex.expected,
+    assertEquals(rootUrl + ex.expected,
       client.querySubmissionUrlFor(query, None))
   }
 }
@@ -74,17 +69,15 @@ object InternalRestClientTest {
   @DataPoint def baseWithAuthPlusQuery = Example(
     "/?auth=dummy", Map("query" -> "value"), "/?auth=dummy&query=value")
 
-  val serverPort = 41256
-
  // lazy val server = new DummyServer(serverPort)
   val pair = new DiffaPairRef("some-domain", "some-pair")
   val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, None)
   val limits = new PairServiceLimitsView {
     def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int = ServiceLimit.UNLIMITED
   }
-  val serverRootUrl = "http://localhost:" + serverPort
+  val rootUrl = "http://localhost"
 
-  def clientFor(baseUrl: String) = new InternalRestClient(pair, serverRootUrl + baseUrl, limits, domainCredentialsLookup) {
+  def clientFor(baseUrl: String) = new InternalRestClient(pair, rootUrl + baseUrl, limits, domainCredentialsLookup) {
     def queryRequestUrlFor(queryParams: MultivaluedMapImpl,
                            credentials: Option[QueryParameterCredentials]) = {
       buildGetRequest(queryParams, credentials).getURI().toString
@@ -100,33 +93,4 @@ object InternalRestClientTest {
   }
 
 
-}
-
-class DummyServer(port: Int) {
-  private val server = new Server(port)
-  var lastQueryReceived: Option[Map[String, String]] = None
-  server.setHandler(new AbstractHandler {
-    def urlDecode(s: String) = {
-      URLDecoder.decode(s, "UTF-8")
-    }
-
-    override def handle(target: String, jettyReq: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
-      System.out.println("Request target qs: %s".format(request.getParameterMap()))
-      response.setStatus(HttpServletResponse.SC_NO_CONTENT)
-      jettyReq.setHandled(true)
-
-      //        val query = request.getParameterMap().foldLeft(Map[String, String]()) {
-      //          case (map, (key, value)) => (map + (key -> value))
-      //        }
-      lastQueryReceived = Some(
-        Map[String, String]())
-    }
-  })
-  server.setStopAtShutdown(true)
-
-  def start() {
-    server.start()
-  }
-
-  def isRunning = server.isRunning
 }
