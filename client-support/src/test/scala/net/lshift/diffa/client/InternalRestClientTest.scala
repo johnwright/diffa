@@ -33,10 +33,10 @@ class InternalRestClientTest {
 
   import InternalRestClientTest._
 
-  @Before
-  def ensureServerStarted {
-    if (!server.isRunning) server.start()
-  }
+//  @Before
+//  def ensureServerStarted {
+//    if (!server.isRunning) server.start()
+//  }
 
   @Theory
   def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryString(ex: Example) = {
@@ -75,7 +75,8 @@ object InternalRestClientTest {
     "/?auth=dummy", Map("query" -> "value"), "/?auth=dummy&query=value")
 
   val serverPort = 41256
-  lazy val server = new DummyServer(serverPort)
+
+ // lazy val server = new DummyServer(serverPort)
   val pair = new DiffaPairRef("some-domain", "some-pair")
   val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, None)
   val limits = new PairServiceLimitsView {
