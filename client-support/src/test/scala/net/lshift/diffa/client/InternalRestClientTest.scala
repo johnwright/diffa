@@ -47,6 +47,16 @@ class InternalRestClientTest {
     assertEquals(serverRootUrl + ex.expected,
       client.queryRequestUrlFor(query, None))
   }
+
+  @Theory
+  def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryStringForSubmission(ex: Example) = {
+    val query = new MultivaluedMapImpl()
+    for ((k, v) <- ex.query) query.add(k, v)
+    val client = clientFor(ex.requestUrl)
+
+    assertEquals(serverRootUrl + ex.expected,
+      client.querySubmissionUrlFor(query, None))
+  }
 }
 
 object InternalRestClientTest {
@@ -79,6 +89,13 @@ object InternalRestClientTest {
       buildGetRequest(queryParams, credentials).getURI().toString
 
     }
+
+    def querySubmissionUrlFor(queryParams: MultivaluedMapImpl,
+                           credentials: Option[QueryParameterCredentials]) = {
+      buildPostRequest(queryParams, Map(), credentials).getURI().toString
+
+    }
+
   }
 
 
