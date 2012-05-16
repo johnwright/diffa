@@ -30,9 +30,6 @@ class HazelcastCacheProvider extends CacheProvider {
 
 class HazelcastBackedMap[K,V](underlying:IMap[K,V]) extends CachedMap[K,V] {
 
-  val ttl = 5
-  val timeunit = TimeUnit.MINUTES
-
   def size = underlying.size
 
   def evictAll = underlying.clear()
@@ -45,7 +42,7 @@ class HazelcastBackedMap[K,V](underlying:IMap[K,V]) extends CachedMap[K,V] {
     }
   }
 
-  def put(key:K, value:V) = underlying.putIfAbsent(key, value, ttl, timeunit)
+  def put(key:K, value:V) = underlying.putIfAbsent(key, value)
 
   def get(key:K) = underlying.get(key)
 
