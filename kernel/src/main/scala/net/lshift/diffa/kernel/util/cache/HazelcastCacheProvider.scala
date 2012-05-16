@@ -33,6 +33,8 @@ class HazelcastBackedMap[K,V](underlying:IMap[K,V]) extends CachedMap[K,V] {
   val ttl = 5
   val timeunit = TimeUnit.MINUTES
 
+  def size = underlying.size
+
   def evictAll = underlying.clear()
 
   def subset(keyPredicate:KeyPredicate[K]) = {

@@ -28,6 +28,7 @@ trait CacheProvider {
 
 trait CachedMap[K,V] {
 
+  def size() : Int
   def get(key:K) : V
   def put(key:K, value:V)
   def evict(key:K)

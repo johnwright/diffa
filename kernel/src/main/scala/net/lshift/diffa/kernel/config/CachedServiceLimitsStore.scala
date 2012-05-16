@@ -106,7 +106,7 @@ class CachedServiceLimitsStore(underlying:ServiceLimitsStore,
 
 }
 
-// Objects that need to retrieved from a Java library
+// All of these beans need to be serializable
 
 case class PairLimitKey(
   @BeanProperty var domainName: String = null,
