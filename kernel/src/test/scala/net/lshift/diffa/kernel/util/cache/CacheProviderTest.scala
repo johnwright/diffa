@@ -18,8 +18,6 @@ package net.lshift.diffa.kernel.util.cache
 import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
-import reflect.BeanProperty
-import net.lshift.diffa.kernel.util.client.{TestKeyPredicate, TestCacheKey}
 
 @RunWith(classOf[Theories])
 class CacheProviderTest {
@@ -40,12 +38,12 @@ class CacheProviderTest {
 
   @Theory
   def shouldSupportRemovalBasedOnKeyQuery(provider:CacheProvider) {
-    val cache = provider.getCachedMap[TestCacheKey,String]("another-cache")
+    val cache = provider.getCachedMap[NonProductionCacheKey,String]("another-cache")
 
     reset(cache)
 
-    val fooKey = new TestCacheKey("foo", 1)
-    val barKey = new TestCacheKey("bar", 2)
+    val fooKey = NonProductionCacheKey("foo", 1)
+    val barKey = NonProductionCacheKey("bar", 2)
 
     cache.put(fooKey, "first-value")
     cache.put(barKey, "second-value")
@@ -54,7 +52,7 @@ class CacheProviderTest {
     assertEquals("first-value", cache.get(fooKey))
     assertEquals("second-value", cache.get(barKey))
 
-    cache.subset(new TestKeyPredicate("foo")).evictAll
+    cache.subset(NonProductionKeyPredicate("foo")).evictAll
 
     assertEquals(1, cache.size())
     assertNull(cache.get(fooKey))
@@ -63,11 +61,11 @@ class CacheProviderTest {
 
   @Theory
   def shouldSupportRemovalBasedOnExplicitKey(provider:CacheProvider) {
-    val cache = provider.getCachedMap[TestCacheKey,String]("new-cache")
+    val cache = provider.getCachedMap[NonProductionCacheKey,String]("new-cache")
 
     reset(cache)
 
-    val key = new TestCacheKey("baz", 888)
+    val key = new NonProductionCacheKey("baz", 888)
 
     cache.put(key, "baz-value")
     assertEquals(1, cache.size())
