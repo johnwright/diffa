@@ -19,6 +19,7 @@ import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
 import reflect.BeanProperty
+import net.lshift.diffa.kernel.util.client.{TestKeyPredicate, TestCacheKey}
 
 @RunWith(classOf[Theories])
 class CacheProviderTest {
@@ -43,18 +44,21 @@ class CacheProviderTest {
 
     reset(cache)
 
-    cache.put(TestCacheKey("foo", 1), "first-value")
-    cache.put(TestCacheKey("bar", 2), "second-value")
+    val fooKey = new TestCacheKey("foo", 1)
+    val barKey = new TestCacheKey("bar", 2)
+
+    cache.put(fooKey, "first-value")
+    cache.put(barKey, "second-value")
 
     assertEquals(2, cache.size())
-    assertEquals("first-value", cache.get(TestCacheKey("foo", 1)))
-    assertEquals("second-value", cache.get(TestCacheKey("bar", 2)))
+    assertEquals("first-value", cache.get(fooKey))
+    assertEquals("second-value", cache.get(barKey))
 
-    cache.subset(TestKeyPredicate("foo")).evictAll
+    cache.subset(new TestKeyPredicate("foo")).evictAll
 
     assertEquals(1, cache.size())
-    assertNull(cache.get(TestCacheKey("foo", 1)))
-    assertEquals("second-value", cache.get(TestCacheKey("bar", 2)))
+    assertNull(cache.get(fooKey))
+    assertEquals("second-value", cache.get(barKey))
   }
 
   @Theory
@@ -63,7 +67,7 @@ class CacheProviderTest {
 
     reset(cache)
 
-    val key = TestCacheKey("baz", 888)
+    val key = new TestCacheKey("baz", 888)
 
     cache.put(key, "baz-value")
     assertEquals(1, cache.size())
