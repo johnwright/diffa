@@ -69,11 +69,21 @@ trait ServiceLimitsStore extends PairServiceLimitsView {
   def getDomainDefaultLimitForDomainAndName(domainName: String, limitName: String): Option[Int]
   def getPairLimitForPairAndName(domainName: String, pairKey: String, limitName: String): Option[Int]
 
-  def getEffectiveLimitByName(limitName: String): Int
-  def getEffectiveLimitByNameForDomain(limitName: String, domainName: String): Int
+  def getEffectiveLimitByNameForDomain(limitName: String, domainName: String) =
+    getDomainDefaultLimitForDomainAndName(domainName, limitName).getOrElse(
+      getEffectiveLimitByName(limitName))
+
+  def getEffectiveLimitByName(limitName: String) =
+    getSystemDefaultLimitForName(limitName).getOrElse(
+      ServiceLimit.UNLIMITED)
+
+  def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String) =
+    getPairLimitForPairAndName(domainName, pairKey, limitName).getOrElse(
+      getEffectiveLimitByNameForDomain(limitName, domainName))
 }
 
 trait PairServiceLimitsView {
+  // TODO Reorder the parameters to be consistent
   def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int
 }
 

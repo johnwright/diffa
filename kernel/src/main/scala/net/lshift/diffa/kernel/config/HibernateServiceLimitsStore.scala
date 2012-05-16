@@ -2,21 +2,12 @@ package net.lshift.diffa.kernel.config
 
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.{CachedMap, CacheProvider, HibernateQueryUtils}
+import net.lshift.diffa.kernel.util.HibernateQueryUtils
 
 
-class HibernateServiceLimitsStore(val sessionFactory: SessionFactory, val cacheProvider:CacheProvider)
+class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
   extends ServiceLimitsStore
   with HibernateQueryUtils {
-
-  val pairScopedLimitCache = cacheProvider.getCachedMap[Option[Int]]("service.limits.pair.scope")
-  val domainScopedDefaultValues = cacheProvider.getCachedMap[Option[Int]]("service.defaults.domain.scope")
-  val domainScopedHardLimits = cacheProvider.getCachedMap[Option[Int]]("service.limits.domain.scope")
-  val systemScopedDefaultValues = cacheProvider.getCachedMap[Option[Int]]("service.defaults.system.scope")
-  val systemScopedHardLimits = cacheProvider.getCachedMap[Option[Int]]("service.limits.system.scope")
-
-  private def getPairScopedKey(domain:String, pair:String, limit:String) = "%s.%s.%s".format(domain,pair,limit)
-  private def getDomainScopedKey(domain:String, limit:String) = "%s.%s".format(domain,limit)
 
   private def validate(limitValue: Int) {
     if (limitValue < 0 && limitValue != ServiceLimit.UNLIMITED)
@@ -35,29 +26,22 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory, val cacheP
   }
 
   def deleteDomainLimits(domainName: String) {
-    def eviction() = {
-      domainScopedHardLimits.evictByPrefix(domainName)
-      domainScopedDefaultValues.evictByPrefix(domainName)
-    }
     deletePairLimitsByDomain(domainName)
-    deleteLimitsByDomain[DomainServiceLimits](domainName, "domainServiceLimitsByDomain", eviction)
+    deleteLimitsByDomain[DomainServiceLimits](domainName, "domainServiceLimitsByDomain")
   }
 
   def deletePairLimitsByDomain(domainName: String) {
-    def eviction() = {
-      pairScopedLimitCache.evictByPrefix(domainName)
-    }
-    deleteLimitsByDomain[PairServiceLimits](domainName, "pairServiceLimitsByDomain", eviction)
+    deleteLimitsByDomain[PairServiceLimits](domainName, "pairServiceLimitsByDomain")
   }
 
-  private def deleteLimitsByDomain[T](domainName: String, queryName: String, cacheEviction:Function0[_]) {
+  private def deleteLimitsByDomain[T](domainName: String, queryName: String) {
     sessionFactory.withSession(session => {
       listQuery[T](
         session, queryName, Map("domain_name" -> domainName)
       ).foreach(
         session.delete
       )
-    }, cacheEviction)
+    })
   }
 
   def setSystemHardLimit(limitName: String, limitValue: Int) {
@@ -95,52 +79,21 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory, val cacheP
     )
   }
 
-  def getSystemHardLimitForName(limitName: String) = {
-    systemScopedHardLimits.readThrough(
-      limitName,
-      () => getLimit("systemHardLimitByName", Map("limit_name" -> limitName))
-    )
-  }
+  def getSystemHardLimitForName(limitName: String) =
+    getLimit("systemHardLimitByName", Map("limit_name" -> limitName))
 
-  def getSystemDefaultLimitForName(limitName: String) = {
-    systemScopedDefaultValues.readThrough(
-      limitName,
-      () => getLimit("systemDefaultLimitByName", Map("limit_name" -> limitName))
-    )
-  }
 
-  def getDomainHardLimitForDomainAndName(domainName: String, limitName: String) = {
-    domainScopedHardLimits.readThrough(
-      getDomainScopedKey(domainName,limitName),
-      () => getLimit("domainHardLimitByDomainAndName", Map("limit_name" -> limitName, "domain_name" -> domainName))
-    )
-  }
+  def getSystemDefaultLimitForName(limitName: String) =
+    getLimit("systemDefaultLimitByName", Map("limit_name" -> limitName))
 
-  def getDomainDefaultLimitForDomainAndName(domainName: String, limitName: String) = {
-    domainScopedDefaultValues.readThrough(
-      getDomainScopedKey(domainName,limitName),
-      () => getLimit("domainDefaultLimitByDomainAndName",Map("limit_name" -> limitName, "domain_name" -> domainName))
-    )
-  }
+  def getDomainHardLimitForDomainAndName(domainName: String, limitName: String) =
+    getLimit("domainHardLimitByDomainAndName", Map("limit_name" -> limitName, "domain_name" -> domainName))
 
-  def getPairLimitForPairAndName(domainName: String, pairKey: String, limitName: String) = {
-    pairScopedLimitCache.readThrough(
-      getPairScopedKey(domainName, pairKey, limitName),
-      () => getLimit("pairLimitByPairAndName", Map("limit_name" -> limitName, "domain_name" -> domainName, "pair_key" -> pairKey))
-    )
-  }
+  def getDomainDefaultLimitForDomainAndName(domainName: String, limitName: String) =
+    getLimit("domainDefaultLimitByDomainAndName",Map("limit_name" -> limitName, "domain_name" -> domainName))
 
-  def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String) =
-    getPairLimitForPairAndName(domainName, pairKey, limitName).getOrElse(
-      getEffectiveLimitByNameForDomain(limitName, domainName))
-
-  def getEffectiveLimitByNameForDomain(limitName: String, domainName: String) =
-    getDomainDefaultLimitForDomainAndName(domainName, limitName).getOrElse(
-      getEffectiveLimitByName(limitName))
-
-  def getEffectiveLimitByName(limitName: String) =
-    getSystemDefaultLimitForName(limitName).getOrElse(
-      ServiceLimit.UNLIMITED)
+  def getPairLimitForPairAndName(domainName: String, pairKey: String, limitName: String) =
+    getLimit("pairLimitByPairAndName", Map("limit_name" -> limitName, "domain_name" -> domainName, "pair_key" -> pairKey))
 
   private def getLimit(queryName: String, params: Map[String, String]) = sessionFactory.withSession(session =>
     singleQueryOpt[Int](

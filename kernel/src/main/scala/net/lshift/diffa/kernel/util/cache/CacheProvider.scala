@@ -13,29 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.util
+package net.lshift.diffa.kernel.util.cache
+
+import scala.collection.JavaConversions._
+import java.io.Serializable
 
 trait CacheProvider {
 
-  def getCachedMap[V](name:String) : CachedMap[V]
+  def getCachedMap[K,V](name:String) : CachedMap[K,V]
 
 }
 
-case class CacheConfig(ttl:Int)
+//case class CacheConfig(ttl:Int)
 
-trait CachedMap[V] {
+trait CachedMap[K,V] {
 
-  def get(key:String) : V
-  def put(key:String, value:V)
-  def evict(key:String)
+  def get(key:K) : V
+  def put(key:K, value:V)
+  def evict(key:K)
   def evictAll
+  def subset(predicate:KeyPredicate[K]) : CachedSubset[K,V]
 
-  /**
-   * Potentially very expensive operation, use with caution
-   */
-  def evictByPrefix(prefix:String)
-
-  def readThrough(key:String, f:() => V ) : V = {
+  def readThrough(key:K, f:() => V ) : V = {
     val cached = get(key)
     if (null == cached) {
       val value = f()
@@ -46,4 +45,12 @@ trait CachedMap[V] {
       cached
     }
   }
+}
+
+trait CachedSubset[K,V] {
+  def evictAll
+}
+
+trait KeyPredicate[K] extends Serializable {
+  def constrain(key:K) : Boolean
 }
