@@ -23,10 +23,10 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.participant.scanning.{ScanningParticipantDelegator, ScanningParticipantHandler}
 import org.eclipse.jetty.server.handler.AbstractHandler
 import org.eclipse.jetty.server.{Request, Server}
-import org.junit.experimental.theories.{Theories, DataPoint, Theory}
 import org.junit.runner.RunWith
 import org.junit.{Before, Test}
 import org.junit.Assert._
+import org.junit.experimental.theories.{DataPoints, Theories, DataPoint, Theory}
 
 @RunWith(classOf[Theories])
 class InternalRestClientTest {
@@ -34,39 +34,42 @@ class InternalRestClientTest {
   import InternalRestClientTest._
 
   @Theory
-  def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryString(ex: Example) = {
-    val query = new MultivaluedMapImpl()
-    for ((k, v) <- ex.query) query.add(k, v)
-    val client = clientFor(ex.requestUrl)
+  def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryString(example: (String, Example)) =
+    example match { case (rootUrl, ex) =>
 
-    assertEquals(rootUrl + ex.expected,
-      client.queryRequestUrlFor(query, None))
+      val query = new MultivaluedMapImpl()
+      for ((k, v) <- ex.query) query.add(k, v)
+      val client = clientFor(rootUrl, ex.requestUrl)
+
+      assertEquals(rootUrl + ex.expected,
+        client.queryRequestUrlFor(query, None))
   }
 
-  @Theory
-  def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryStringForSubmission(ex: Example) = {
-    val query = new MultivaluedMapImpl()
-    for ((k, v) <- ex.query) query.add(k, v)
-    val client = clientFor(ex.requestUrl)
+ // @Theory
+  def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryStringForSubmission(example: (String, Example)) =
+    example match { case (rootUrl, ex) =>
+      val query = new MultivaluedMapImpl()
+      for ((k, v) <- ex.query) query.add(k, v)
+      val client = clientFor(rootUrl, ex.requestUrl)
 
-    assertEquals(rootUrl + ex.expected,
-      client.querySubmissionUrlFor(query, None))
+      assertEquals(rootUrl + ex.expected,
+        client.querySubmissionUrlFor(query, None))
   }
 }
 
 object InternalRestClientTest {
-
+  val rootUrl:String =  null
   case class Example(requestUrl: String,
                      query: Map[String, String],
                      expected: String)
 
-  @DataPoint def nullExample = Example("/", Map(), "/")
+  def nullExample = Example("/", Map(), "/")
 
-  @DataPoint def simpleExample = Example("/", Map("dummy" -> "value"), "/?dummy=value")
+  def simpleExample = Example("/", Map("dummy" -> "value"), "/?dummy=value")
 
-  @DataPoint def baseWithAuth = Example("/?auth=dummy", Map(), "/?auth=dummy")
+  def baseWithAuth = Example("/?auth=dummy", Map(), "/?auth=dummy")
 
-  @DataPoint def baseWithAuthPlusQuery = Example(
+  def baseWithAuthPlusQuery = Example(
     "/?auth=dummy", Map("query" -> "value"), "/?auth=dummy&query=value")
 
   val pair = new DiffaPairRef("some-domain", "some-pair")
@@ -74,9 +77,20 @@ object InternalRestClientTest {
   val limits = new PairServiceLimitsView {
     def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int = ServiceLimit.UNLIMITED
   }
-  val rootUrl = "http://localhost"
+  val protocols = List("http", "https")
+  val authorities = List("localhost", "localhost:534")
 
-  def clientFor(baseUrl: String) = new InternalRestClient(pair, rootUrl + baseUrl, limits, domainCredentialsLookup) {
+  @DataPoints
+  def data = {
+    val cases = for {
+      protocol <- protocols
+      authority <- authorities
+      example <- List(nullExample, simpleExample, baseWithAuth, baseWithAuthPlusQuery)
+    } yield ("%s://%s".format(protocol, authority), example)
+    cases.toArray
+  }
+
+  def clientFor(baseUrl: String, reqUrl:String) = new InternalRestClient(pair, baseUrl + reqUrl, limits, domainCredentialsLookup) {
     def queryRequestUrlFor(queryParams: MultivaluedMapImpl,
                            credentials: Option[QueryParameterCredentials]) = {
       buildGetRequest(queryParams, credentials).getURI().toString
