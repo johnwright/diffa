@@ -39,6 +39,7 @@ import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util._
 import net.lshift.diffa.participant.scanning._
+import akka.dispatch.{ExecutionContext, Future}
 
 class PairActorTest {
   import PairActorTest._
@@ -384,11 +385,13 @@ class PairActorTest {
     val event = buildUpstreamEvent()
 
     val timeToWait = 2000L
+    implicit val system = ActorSystem("dummysystem")
+    implicit val ec = ExecutionContext.defaultExecutionContext
 
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall     // Expect once when the pair actor starts the call
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = {
-        Actor.spawn {
+        Future {
           // Request a cancellation in a background thread so that the pair actor can be scheduled
           // in to process the cancellation. Notifying the main test thread that the request
           // returned true is the same thing as assertTrue(supervisor.cancelScans(pairKey))

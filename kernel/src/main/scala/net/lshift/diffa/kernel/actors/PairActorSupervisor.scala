@@ -19,6 +19,7 @@ package net.lshift.diffa.kernel.actors
 import java.util.HashMap
 
 import akka.actor._
+import akka.migration._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
@@ -30,6 +31,7 @@ import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, DiffaPai
 import net.lshift.diffa.kernel.util.{EndpointSide, Lazy, MissingObjectException}
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.util.AlertCodes._
+import akka.dispatch.Await
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -64,7 +66,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
       val usp = participantFactory.createUpstreamParticipant(us, pair.asRef)
       val dsp = participantFactory.createDownstreamParticipant(ds, pair.asRef)
 
-      Some(Actor.actorOf(
+      Some(OldActor.actorOf(
         new PairActor(pair, us, ds, usp, dsp, pol, stores(pair.asRef),
           differencesManager, pairScanListener,
           diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
@@ -142,7 +144,9 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   }
 
   def submitInventory(pair:DiffaPairRef, side:EndpointSide, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]) = {
-    (findActor(pair) ? InventoryMessage(side, constraints, aggregations, entries)).as[Seq[ScanRequest]].get
+    val res = (findActor(pair) ? InventoryMessage(side, constraints, aggregations, entries))
+    println("submitInventory: %s".format(res.get))
+    res.as[(Seq[ScanRequest], Any)].get._1
   }
 
   def difference(pairRef:DiffaPairRef) =
@@ -159,9 +163,8 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   }
 
   def cancelScans(pairRef:DiffaPairRef) = {
-    (findActor(pairRef) !! CancelMessage) match {
-      case Some(flag) => true
-      case None       => false
+    (findActor(pairRef) ? CancelMessage).get match {
+      case (flag, _) => true
     }
   }
 

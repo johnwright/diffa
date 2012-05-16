@@ -26,6 +26,11 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.AlertCodes._
 import com.eaio.uuid.UUID
 import akka.actor._
+import akka.actor.OldActor
+import akka.dispatch.{Await, ExecutionContext, Future}
+import akka.pattern.AskTimeoutException
+
+// import akka.migration.OldActorRef
 import collection.mutable.{SynchronizedQueue, Queue}
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
@@ -34,6 +39,9 @@ import org.slf4j.{LoggerFactory, Logger}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, Endpoint, DiffaPair}
 import net.lshift.diffa.kernel.util.{EndpointSide, DownstreamEndpoint, UpstreamEndpoint}
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
+import akka.util.Timeout
+import akka.util.duration._
+
 
 /**
  * This actor serializes access to the underlying version policy from concurrent processes.
@@ -50,16 +58,18 @@ case class PairActor(pair:DiffaPair,
                      diagnostics:DiagnosticsManager,
                      domainConfigStore:DomainConfigStore,
                      changeEventBusyTimeoutMillis: Long,
-                     changeEventQuietTimeoutMillis: Long) extends Actor {
+                     changeEventQuietTimeoutMillis: Long) extends OldActor {
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
-  self.id_=(pair.identifier)
+  // TODO: This is used to set the id, as used in registries, &c.
+  // self.id_=(pair.identifier)
+  // val myActor = context.actorOf(Props[PairActor], name = pair.identifier)
 
   private val pairRef = pair.asRef
 
   private var lastEventTime: Long = 0
-  private var scheduledFlushes: ScheduledFuture[_] = _
+  private var scheduledFlushes: Cancellable = _
 
   /**
    * Flag that can be used to signal that scanning should be cancelled.
@@ -88,7 +98,7 @@ case class PairActor(pair:DiffaPair,
   /**
    * This is the address of the client that requested the last cancellation
    */
-  private var cancellationRequester:Channel[Any] = null
+  // private var cancellationRequester:Channel[Any] = null
 
   /**
    * This allows tracing of spurious messages, but is only enabled in when the log level is set to TRACE
@@ -142,7 +152,9 @@ case class PairActor(pair:DiffaPair,
   private def createWriterProxy(scanUuid:UUID) = new LimitedVersionCorrelationWriter() {
 
     // The receive timeout in seconds
-    val timeout = domainConfigStore.configOptionOrDefault(pairRef.domain, CorrelationWriterProxy.TIMEOUT_KEY, CorrelationWriterProxy.TIMEOUT_DEFAULT_VALUE)
+    val timeout = domainConfigStore.configOptionOrDefault(
+      pairRef.domain, CorrelationWriterProxy.TIMEOUT_KEY,
+      CorrelationWriterProxy.TIMEOUT_DEFAULT_VALUE).toInt
 
     def clearUpstreamVersion(id: VersionID) = call( _.clearUpstreamVersion(id) )
     def clearDownstreamVersion(id: VersionID) = call( _.clearDownstreamVersion(id) )
@@ -152,12 +164,17 @@ case class PairActor(pair:DiffaPair,
       = call( _.storeUpstreamVersion(id, attributes, lastUpdated, vsn) )
     def call(command:(LimitedVersionCorrelationWriter => Correlation)) = {
       val message = VersionCorrelationWriterCommand(scanUuid, command)
-      (self !!(message, 1000L * timeout.toInt)) match {
-        case Some(CancelMessage)  => throw new ScanCancelledException(pairRef)
-        case Some(result)         => result.asInstanceOf[Correlation]
-        case None                 =>
+      val future = self.ask(message)
+      try {
+        Await.result(future, timeout seconds) match {
+          case (CancelMessage, _)  => throw new ScanCancelledException(pairRef)
+          case (result:Any, _)         =>
+            println("Result in createWriterProxy: %s".format(result))
+            result.asInstanceOf[Correlation]
+        }
+      } catch { case e: AskTimeoutException =>
           logger.error("%s Writer proxy timed out after %s seconds processing command: %s "
-                       .format(formatAlertCode(pairRef, MESSAGE_RECEIVE_TIMEOUT), timeout, message), new Exception().fillInStackTrace())
+                       .format(formatAlertCode(pairRef, MESSAGE_RECEIVE_TIMEOUT), timeout, message), e)
           throw new RuntimeException("Writer proxy timeout")
       }
     }
@@ -192,10 +209,11 @@ case class PairActor(pair:DiffaPair,
 
   override def preStart = {
     // schedule a recurring message to flush the writer
-    scheduledFlushes = Scheduler.schedule(self, FlushWriterMessage, 0, changeEventQuietTimeoutMillis, MILLISECONDS)
-  }
+    scheduledFlushes = context.system.scheduler.schedule(
+      1 second, 200 milliseconds, self, FlushWriterMessage)
+    }
 
-  override def postStop = scheduledFlushes.cancel(true)
+  override def postStop = scheduledFlushes.cancel
 
   /**
    * Main receive loop of this actor. This is effectively a FSM.
@@ -330,7 +348,7 @@ case class PairActor(pair:DiffaPair,
     feedbackHandle = null
 
     // Make sure there is no dangling back address
-    cancellationRequester = null
+    // cancellationRequester = null
 
     // Inform the diagnostics manager that we've completed a major operation, so it should checkpoint the explanation
     // data.
@@ -435,8 +453,9 @@ case class PairActor(pair:DiffaPair,
       }
 
       diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, infoMsg)
-
-      Actor.spawn {
+      implicit val system = ActorSystem("hackysystem")
+      implicit val ec = ExecutionContext.defaultExecutionContext
+      Future {
         try {
           policy.scanUpstream(pairRef, us, scanView, writerProxy, usp, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Up, Success)
@@ -451,7 +470,7 @@ case class PairActor(pair:DiffaPair,
         }
       }
 
-      Actor.spawn {
+      Future {
         try {
           policy.scanDownstream(pairRef, ds, scanView, writerProxy, usp, dsp, bufferingListener, currentFeedbackHandle)
           self ! ChildActorCompletionMessage(createdScan.uuid, Down, Success)

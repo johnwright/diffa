@@ -16,10 +16,10 @@
 
 package net.lshift.diffa.kernel.actors
 
-import akka.actor.{ActorRef, Actor}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.util.AlertCodes._
+import akka.actor.{ActorSystem, ActorRef, OldActor}
 
 object ActorUtils {
 
@@ -30,12 +30,5 @@ object ActorUtils {
 
   val log = LoggerFactory.getLogger(getClass)
 
-  def findActor(actorKey: ActorKey): Option[ActorRef] = Actor.registry.actorsFor(actorKey.key) match {
-    case Array()            => None
-    case Array(actor)       => Some(actor)
-    case Array(actors @ _*) =>
-        log.error("{} Too many actors for key: {}; actors = {}",
-          Array[Object](formatAlertCode(actorKey.pair, MULTIPLE_ACTORS_FOR_KEY), actorKey, actors))
-        throw new RuntimeException("Too many actors for key: " + actorKey)
-  }
+  def findActor(actorKey: ActorKey, system:ActorSystem): Option[ActorRef] = Some(system.actorFor(actorKey.key))
 }

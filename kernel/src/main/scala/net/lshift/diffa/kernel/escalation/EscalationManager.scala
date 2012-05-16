@@ -58,7 +58,7 @@ class EscalationManager(val config:DomainConfigStore,
   val log = LoggerFactory.getLogger(getClass)
 
   private class EscalationActor(pair: DiffaPairRef) extends Actor {
-    self.id = EscalationActor.key(pair)
+//    self.id = EscalationActor.key(pair)
     
     def receive = {
       case (UpstreamMissing, id: VersionID)     => escalateEntityEvent(id, UPSTREAM_MISSING)
@@ -91,7 +91,7 @@ class EscalationManager(val config:DomainConfigStore,
                  origin: MatchOrigin, level:DifferenceFilterLevel) = origin match {
     case TriggeredByScan =>
       val differenceType = DifferenceUtils.differenceType(upstreamVsn, downstreamVsn)
-      findOrCreateActor(id.pair) ! (differenceType, id)
+      // findOrCreateActor(id.pair) ! (differenceType, id)
 
     case _               => // ignore this for now
   }
@@ -123,17 +123,17 @@ class EscalationManager(val config:DomainConfigStore,
       filter(e => e.event == eventType && actionTypes.contains(e.actionType))
 
   def close() {
-    Actor.registry.actorsFor[EscalationActor].foreach(_.stop())
+    // Actor.registry.actorsFor[EscalationActor].foreach(_.stop())
   }
 
   private def findOrCreateActor(pair: DiffaPairRef) = {
-    val key = ActorUtils.ActorKey(pair, EscalationActor.key(_))
-
-    ActorUtils.findActor(key).getOrElse {
-      val actor = Actor.actorOf(new EscalationActor(pair))
-      actor.start()
-      log.info("{} Escalations actor started", formatAlertCode(pair, ACTOR_STARTED))
-      actor
-    }
+//    val key = ActorUtils.ActorKey(pair, EscalationActor.key(_))
+//
+//    ActorUtils.findActor(key).getOrElse {
+//      val actor = Actor.actorOf(new EscalationActor(pair))
+//      actor.start()
+//      log.info("{} Escalations actor started", formatAlertCode(pair, ACTOR_STARTED))
+//      actor
+//    }
   }
 }

@@ -33,9 +33,10 @@ import org.junit.Assume._
 import org.hamcrest.CoreMatchers._
 import net.lshift.diffa.kernel.lifecycle.NotificationCentre
 import org.easymock.{IAnswer, EasyMock}
-import org.junit.After
+import org.junit.{Ignore, After}
 
 @RunWith(classOf[Theories])
+@Ignore
 class EscalationManagerTest {
 
   val domain = "domain"
