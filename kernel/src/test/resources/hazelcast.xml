@@ -2,4 +2,10 @@
   <map name="default">
     <backup-count>0</backup-count>
   </map>
+  <network>
+    <join>
+      <multicast enabled="false"></multicast>
+      <tcp-ip enabled="false"></tcp-ip>
+    </join>
+  </network>
 </hazelcast>
