@@ -55,7 +55,6 @@ class CachedServiceLimitStoreTest {
     expect(underlying.getSystemDefaultLimitForName("some-bogus-limit")).andReturn(None).once()
     replay(underlying)
 
-    // TODO Note inconsistent parameters for this the getEffective call
     val firstCall = cachedServiceLimitStore.getEffectiveLimitByNameForPair("domain", "pair-1", "some-bogus-limit")
     assertEquals(ServiceLimit.UNLIMITED, firstCall)
 
@@ -79,7 +78,6 @@ class CachedServiceLimitStoreTest {
     val secondCall = cachedServiceLimitStore.getPairLimitForPairAndName("domain", "pair-1", "some-limit")
     assertEquals(657567, secondCall.get)
 
-    // TODO Note inconsistent parameters for this the getEffective call
     val effectiveLimit = cachedServiceLimitStore.getEffectiveLimitByNameForPair("domain", "pair-1", "some-limit")
     assertEquals(657567, effectiveLimit)
 
@@ -97,7 +95,6 @@ class CachedServiceLimitStoreTest {
 
     cachedServiceLimitStore.setDomainDefaultLimit("domain", "some-limit", 543)
 
-    // TODO Note inconsistent parameters for this the getEffective call
     val firstCall = cachedServiceLimitStore.getEffectiveLimitByNameForPair("domain", "pair-1", "some-limit")
     assertEquals(543, firstCall)
 
@@ -118,7 +115,6 @@ class CachedServiceLimitStoreTest {
 
     cachedServiceLimitStore.setSystemDefaultLimit("some-limit", 1169)
 
-    // TODO Note inconsistent parameters for this the getEffective call
     val firstCall = cachedServiceLimitStore.getEffectiveLimitByNameForPair("domain", "pair-1", "some-limit")
     assertEquals(1169, firstCall)
 
@@ -142,7 +138,6 @@ class CachedServiceLimitStoreTest {
     cachedServiceLimitStore.setPairLimit("domain-1", "pair-1", "some-limit", 23)
     cachedServiceLimitStore.setPairLimit("domain-2", "pair-2", "some-limit", 24)
 
-    // TODO Note inconsistent parameters for this the getEffective call
     val firstDomain = cachedServiceLimitStore.getEffectiveLimitByNameForPair("domain-1", "pair-1", "some-limit")
     assertEquals(23, firstDomain)
 
@@ -174,7 +169,6 @@ class CachedServiceLimitStoreTest {
     cachedServiceLimitStore.setPairLimit("domain-1", "pair-1", "some-limit", 3128)
     cachedServiceLimitStore.setPairLimit("domain-2", "pair-2", "some-limit", 3129)
 
-    // TODO Note inconsistent parameters for this the getEffective call
     val firstDomain = cachedServiceLimitStore.getEffectiveLimitByNameForPair("domain-1", "pair-1", "some-limit")
     assertEquals(3128, firstDomain)
 
