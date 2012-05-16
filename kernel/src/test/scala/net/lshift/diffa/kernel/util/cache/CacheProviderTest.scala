@@ -38,7 +38,7 @@ class CacheProviderTest {
   }
 
   @Theory
-  def shouldSupportRemovalBasedOnKeys(provider:CacheProvider) {
+  def shouldSupportRemovalBasedOnKeyQuery(provider:CacheProvider) {
     val cache = provider.getCachedMap[TestCacheKey,String]("another-cache")
 
     reset(cache)
@@ -55,6 +55,24 @@ class CacheProviderTest {
     assertEquals(1, cache.size())
     assertNull(cache.get(TestCacheKey("foo", 1)))
     assertEquals("second-value", cache.get(TestCacheKey("bar", 2)))
+  }
+
+  @Theory
+  def shouldSupportRemovalBasedOnExplicitKey(provider:CacheProvider) {
+    val cache = provider.getCachedMap[TestCacheKey,String]("new-cache")
+
+    reset(cache)
+
+    val key = TestCacheKey("baz", 888)
+
+    cache.put(key, "baz-value")
+    assertEquals(1, cache.size())
+    assertEquals("baz-value", cache.get(key))
+
+    cache.evict(key)
+    assertEquals(0, cache.size())
+    assertNull(cache.get(key))
+
   }
 
   private def reset(cache:CachedMap[_,_]) = {
