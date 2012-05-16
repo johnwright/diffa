@@ -69,7 +69,6 @@ object InternalRestClientTest {
   @DataPoint def baseWithAuthPlusQuery = Example(
     "/?auth=dummy", Map("query" -> "value"), "/?auth=dummy&query=value")
 
- // lazy val server = new DummyServer(serverPort)
   val pair = new DiffaPairRef("some-domain", "some-pair")
   val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, None)
   val limits = new PairServiceLimitsView {

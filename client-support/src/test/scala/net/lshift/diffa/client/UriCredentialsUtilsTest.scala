@@ -23,21 +23,10 @@ import net.lshift.diffa.kernel.config.QueryParameterCredentials
 import org.junit.experimental.theories.{DataPoint, Theory, Theories}
 import org.junit.Assert._
 
-/**
- * Created with IntelliJ IDEA.
- * User: ceri
- * Date: 14/05/12
- * Time: 18:04
- * To change this template use File | Settings | File Templates.
- */
-
-
 @RunWith(classOf[Theories])
 class UriCredentialsUtilsTest {
   import UriCredentialsUtilsTest._
   val uri = "/foo?bar"
-
-  //  queryParameters.add("query", "parameter")
 
   @Theory
   def testUriConstruction(scenario: Scenario) = {
@@ -50,7 +39,6 @@ object UriCredentialsUtilsTest {
 
   case class Scenario(baseUri: String,
                       query: MultivaluedMapImpl,
-
                       expectedResult: String)
 
   val nullQueryParameters = new MultivaluedMapImpl
@@ -58,7 +46,6 @@ object UriCredentialsUtilsTest {
   basicQueryParameters.add("query", "value")
 
   @DataPoint def nullExample = Scenario("/test", nullQueryParameters, "/test")
-
   @DataPoint def singleQueryParam = Scenario("/test", basicQueryParameters, "/test?query=value")
   @DataPoint def queryInBase = Scenario("/test?foo=bar", basicQueryParameters, "/test?foo=bar&query=value")
 }
