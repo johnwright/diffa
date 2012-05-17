@@ -20,6 +20,6 @@ import net.lshift.diffa.kernel.config.ServiceLimit
 object ScanReadTimeout extends ServiceLimit {
   def key = "scan.read.timeout"
   def description = "When reading query response data from a scan participant, timeout after not receiving data for this many milliseconds"
-  def defaultLimit = seconds_to_ms(30)
-  def hardLimit = minutes_to_ms(2)
+  def defaultLimit = secondsToMs(30)
+  def hardLimit = minutesToMs(2)
 }

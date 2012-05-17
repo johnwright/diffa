@@ -16,8 +16,8 @@ trait ServiceLimit {
   private final val MS_PER_S = 1000
 
   /// Return type is java.lang.Integer since InsertBuilder.values requires a map of AnyRef
-  protected def minutes_to_ms(minutes: Int): java.lang.Integer = minutes * SEC_PER_MIN * MS_PER_S
-  protected def seconds_to_ms(seconds: Int): java.lang.Integer = seconds * MS_PER_S
+  protected def minutesToMs(minutes: Int): java.lang.Integer = minutes * SEC_PER_MIN * MS_PER_S
+  protected def secondsToMs(seconds: Int): java.lang.Integer = seconds * MS_PER_S
 }
 
 case class ServiceLimitDefinitions(@BeanProperty var limitName: String = null,
