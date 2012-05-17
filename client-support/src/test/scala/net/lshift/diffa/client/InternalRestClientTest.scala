@@ -45,7 +45,7 @@ class InternalRestClientTest {
         client.queryRequestUrlFor(query, None))
   }
 
- // @Theory
+  @Theory
   def shouldBeAbleToCorrectlyAddQueryStringToBaseUrlWithQueryStringForSubmission(example: (String, Example)) =
     example match { case (rootUrl, ex) =>
       val query = new MultivaluedMapImpl()
