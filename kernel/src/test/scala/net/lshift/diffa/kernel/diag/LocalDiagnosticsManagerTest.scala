@@ -260,7 +260,7 @@ class LocalDiagnosticsManagerTest {
   private def expectEventBufferLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
 
     expect(serviceLimitsStore.
-      getEffectiveLimitByNameForPair("diagnostic.event.buffer.size", domain, pairKey)).
+      getEffectiveLimitByNameForPair(ServiceLimit.DIAGNOSTIC_EVENT_BUFFER_SIZE, domain, pairKey)).
       andReturn(eventBufferSize).atLeastOnce()
 
     replay(serviceLimitsStore)
@@ -269,7 +269,7 @@ class LocalDiagnosticsManagerTest {
   private def expectMaxExplainFilesLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
 
     expect(serviceLimitsStore.
-      getEffectiveLimitByNameForPair("max.explain.files", domain, pairKey)).
+      getEffectiveLimitByNameForPair(ServiceLimit.EXPLAIN_FILES, domain, pairKey)).
       andReturn(eventBufferSize).atLeastOnce()
 
     replay(serviceLimitsStore)

@@ -116,7 +116,7 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
     private var explanationWriter:PrintWriter = null
 
     private def getEventBufferSize = limits.getEffectiveLimitByNameForPair(DIAGNOSTIC_EVENT_BUFFER_SIZE, pair.domain, pair.key)
-    private def getMaxExplainFiles = limits.getEffectiveLimitByNameForPair(MAX_EXPLAIN_FILES, pair.domain, pair.key)
+    private def getMaxExplainFiles = limits.getEffectiveLimitByNameForPair(EXPLAIN_FILES, pair.domain, pair.key)
 
     def logPairEvent(evt:PairEvent) {
       log.synchronized {

@@ -17,8 +17,8 @@ package net.lshift.diffa.kernel.config.migrations
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.kernel.config.ConfigOption
-
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.{ServiceLimit, ConfigOption}
 
 object Step0027 {
 
@@ -31,6 +31,28 @@ object Step0027 {
 
     migration.delete("system_config_options").where("opt_key").is(ConfigOption.eventExplanationLimitKey)
     migration.delete("system_config_options").where("opt_key").is(ConfigOption.explainFilesLimitKey)
+
+    migration.insert("limit_definitions").values(Map(
+      "name" -> ServiceLimit.DIAGNOSTIC_EVENT_BUFFER_SIZE,
+      "description" -> "The number of events that the DiagnosicsManager should buffer"
+    ))
+
+    migration.insert("system_limits").values(Map(
+      "name" -> ServiceLimit.DIAGNOSTIC_EVENT_BUFFER_SIZE,
+      "default_limit" -> new Integer(100),
+      "hard_limit" -> new Integer(100)
+    ))
+
+    migration.insert("limit_definitions").values(Map(
+      "name" -> ServiceLimit.EXPLAIN_FILES,
+      "description" -> "The number of explain files that should be retained for later analysis"
+    ))
+
+    migration.insert("system_limits").values(Map(
+      "name" -> ServiceLimit.EXPLAIN_FILES,
+      "default_limit" -> new Integer(0),
+      "hard_limit" -> new Integer(5)
+    ))
 
     migration
   }
