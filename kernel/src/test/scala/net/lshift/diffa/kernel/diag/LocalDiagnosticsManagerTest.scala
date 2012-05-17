@@ -40,9 +40,11 @@ class LocalDiagnosticsManagerTest {
 
   @Test
   def shouldAcceptAndStoreLogEventForPair() {
-    val key = "moderateLoggingPair"
-    val pair = DiffaPairRef(key, domainName)
-    setPairExplainLimits(key, 10, 1)
+    val pairKey = "moderateLoggingPair"
+    val pair = DiffaPairRef(pairKey, domainName)
+
+    expectEventBufferLimitQuery(domainName, pairKey, 10)
+
     diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Some msg")
 
     val events = diagnostics.queryEvents(pair, 100)
@@ -55,9 +57,13 @@ class LocalDiagnosticsManagerTest {
 
   @Test
   def shouldLimitNumberOfStoredLogEventsToMax() {
-    val key = "maxLoggingPair"
-    val pair = DiffaPairRef(key, domainName)
-    setPairExplainLimits(key, 100, 1)
+
+    val pairKey = "maxLoggingPair"
+
+    expectEventBufferLimitQuery(domainName, pairKey, 100)
+
+    val pair = DiffaPairRef(pairKey, domainName)
+
     for (i <- 1 until 1000)
       diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Some msg")
 
@@ -119,14 +125,15 @@ class LocalDiagnosticsManagerTest {
 
   @Test
   def shouldGenerateOutputWhenExplanationsHaveBeenLogged() {
-    val key = "explained"
-    val pair = DiffaPairRef(key, domainName)
+    val pairKey = "explained"
+    val pair = DiffaPairRef(pairKey, domainName)
 
-    setPairExplainLimits(key, 1, 1)
+    expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
+
     diagnostics.logPairExplanation(pair, "Test Case", "Diffa did something")
     diagnostics.checkpointExplanations(pair)
 
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, key))
+    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
     val zips = pairDir.listFiles()
 
     assertEquals(1, zips.length)
@@ -142,16 +149,17 @@ class LocalDiagnosticsManagerTest {
 
   @Test
   def shouldIncludeContentsOfObjectsAdded() {
-    val key = "explainedobj"
-    val pair = DiffaPairRef(key, domainName)
-    setPairExplainLimits(key, 1, 1)
+    val pairKey = "explainedobj"
+    val pair = DiffaPairRef(pairKey, domainName)
+
+    expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
 
     diagnostics.writePairExplanationObject(pair, "Test Case", "upstream.123.json", os => {
       os.write("{a: 1}".getBytes("UTF-8"))
     })
     diagnostics.checkpointExplanations(pair)
 
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, key))
+    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
     val zips = pairDir.listFiles()
 
     assertEquals(1, zips.length)
@@ -170,16 +178,17 @@ class LocalDiagnosticsManagerTest {
 
   @Test
   def shouldAddLogMessageIndicatingObjectWasAttached() {
-    val key = "explainedobj"
-    val pair = DiffaPairRef(key, domainName)
-    setPairExplainLimits(key, 1, 1)
+    val pairKey = "explainedobj"
+    val pair = DiffaPairRef(pairKey, domainName)
+
+    expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
 
     diagnostics.writePairExplanationObject(pair, "Test Case", "upstream.123.json", os => {
       os.write("{a: 1}".getBytes("UTF-8"))
     })
     diagnostics.checkpointExplanations(pair)
 
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, key))
+    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
     val zips = pairDir.listFiles()
 
     assertEquals(1, zips.length)
@@ -198,9 +207,11 @@ class LocalDiagnosticsManagerTest {
 
   @Test
   def shouldCreateMultipleOutputsWhenMultipleNonQuietRunsHaveBeenMade() {
-    val key = "explained_20_2"
-    val pair = DiffaPairRef(key, domainName)
-    setPairExplainLimits(key, 50, 2)
+    val pairKey = "explained_20_2"
+
+    expectMaxExplainFilesLimitQuery(domainName, pairKey, 2)
+
+    val pair = DiffaPairRef(pairKey, domainName)
 
     diagnostics.logPairExplanation(pair, "Test Case", "Diffa did something")
     diagnostics.checkpointExplanations(pair)
@@ -208,7 +219,7 @@ class LocalDiagnosticsManagerTest {
     diagnostics.logPairExplanation(pair, "Test Case" , "Diffa did something else")
     diagnostics.checkpointExplanations(pair)
 
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, key))
+    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
     val zips = pairDir.listFiles()
 
     assertEquals(2, zips.length)
@@ -218,16 +229,17 @@ class LocalDiagnosticsManagerTest {
   def shouldKeepNumberOfExplanationFilesUnderControl() {
     val filesToKeep = 20
     val generateCount = 100
-    val key = "controlled_100_20"
-    val pair = DiffaPairRef(key, domainName)
-    setPairExplainLimits(key, generateCount, filesToKeep)
+    val pairKey = "controlled_100_20"
+    val pair = DiffaPairRef(pairKey, domainName)
+
+    expectMaxExplainFilesLimitQuery(domainName, pairKey, filesToKeep)
 
     for (i <- 1 until generateCount) {
       diagnostics.logPairExplanation(pair, "Test Case", i.toString)
       diagnostics.checkpointExplanations(pair)
     }
 
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, key))
+    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
     val zips = pairDir.listFiles()
 
     assertEquals(filesToKeep, zips.length)
@@ -245,46 +257,22 @@ class LocalDiagnosticsManagerTest {
     assertThat(new Integer(entryNum), is(greaterThanOrEqualTo(new Integer(earliestEntryNum))))
   }
 
-  @Test
-  def shouldMakeOnlyAsManyExplanationFilesAsConfiguredForPair {
-    val someExtra = 100 // a few more than the limit, to ensure that the limit works.
+  private def expectEventBufferLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
 
-    List(0, 1, 2, 3, 5, 10, 20) foreach { i =>
-      val key = "limited_to_%d_%d".format(i + someExtra, i)
-      setPairExplainLimits(key, i + someExtra, i)
-      verifyExplanationFileCount(i, DiffaPairRef(key, domainName))
-      reset(domainConfigStore)
-    }
+    expect(serviceLimitsStore.
+      getEffectiveLimitByNameForPair("diagnostic.event.buffer.size", domain, pairKey)).
+      andReturn(eventBufferSize).atLeastOnce()
+
+    replay(serviceLimitsStore)
   }
 
-  @Test
-  def shouldMakeNoExplanationFilesForDefaultConfiguredPair {
-    val key = "limited_to_0_by_default"
-    setDefaultPairExplainLimits(key)
-    verifyExplanationFileCount(0, DiffaPairRef(key, domainName))
-  }
+  private def expectMaxExplainFilesLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
 
-  @Test
-  def shouldLimitExplanationFilesDespitePairConfiguration {
-    val key = "limited_to_fixed_file_count"
-    setPairExplainLimits(key, 500, 22)
-    verifyExplanationFileCount(20, DiffaPairRef(key, domainName))
-  }
+    expect(serviceLimitsStore.
+      getEffectiveLimitByNameForPair("max.explain.files", domain, pairKey)).
+      andReturn(eventBufferSize).atLeastOnce()
 
-  @Test
-  def shouldUsePairConfigurationToLimitExplanations {
-    val key = "limited_by_pair_to_0_files"
-    setDefaultPairExplainLimits(key)
-
-    verifyExplanationFileCount(0, DiffaPairRef(key, domainName))
-  }
-  
-  @Test
-  def shouldLimitExplanationFilesToSystemLimit {
-    val key = "limited_to_2_by_system_config"
-    val systemExplanationFileLimit = 2
-    setPairExplainLimitsWithSystemLimits(key, 50, 10, 20, systemExplanationFileLimit)
-    verifyExplanationFileCount(systemExplanationFileLimit, DiffaPairRef(key, domainName))
+    replay(serviceLimitsStore)
   }
 
   private def expectPairListFromConfigStore(pairs: Seq[DiffaPair]) {
@@ -298,76 +286,6 @@ class LocalDiagnosticsManagerTest {
     }
     replayDomainConfig
   }
-
-  private def setDefaultPairExplainLimits(key: String) {
-    val pair = makeDiffaPair(key)
-
-    expect(domainConfigStore.getPairDef(pair.domain.name, pair.key)).
-      andStubReturn(FrontendConversions.toPairDef(pair))
-    replayDomainConfig
-  }
-
-  private def setPairExplainLimitsWithSystemLimits(key: String,
-                                                   pairEventsToLog: Int,
-                                                   pairMaxExplainFiles: Int,
-                                                   systemEventsToLog: Int,
-                                                   systemMaxExplainFiles: Int) {
-    val pair = makeDiffaPairWithLimits(key, pairEventsToLog, pairMaxExplainFiles)
-
-    expect(domainConfigStore.getPairDef(pair.domain.name, pair.key)).
-      andStubReturn(FrontendConversions.toPairDef(pair))
-
-    expect(systemConfigStore.maybeSystemConfigOption(ConfigOption.eventExplanationLimitKey)).
-      andStubReturn(Some(String.valueOf(systemEventsToLog)))
-    expect(systemConfigStore.maybeSystemConfigOption(ConfigOption.explainFilesLimitKey)).
-      andStubReturn(Some(String.valueOf(systemMaxExplainFiles)))
-
-    replay(domainConfigStore, systemConfigStore)
-  }
-
-  private def setPairExplainLimits(key: String, eventsToLog: Int, maxExplainFiles: Int) {
-    val pair = makeDiffaPairWithLimits(key, eventsToLog, maxExplainFiles)
-
-    expect(domainConfigStore.getPairDef(pair.domain.name, pair.key)).
-      andStubReturn(FrontendConversions.toPairDef(pair))
-    replayDomainConfig
-  }
-
-  private def verifyExplanationFileCount(expectedCount: Int, diffaPair: DiffaPairRef) {
-    val key = diffaPair.key
-    val domain = diffaPair.domain
-    val generationCount = 21
-
-    for (i <- 1 to generationCount) {
-      diagnostics.logPairExplanation(diffaPair, "Non-standard explanation count", "Test action %d".format(i))
-      diagnostics.checkpointExplanations(diffaPair)
-      // a hack to allow time for the filesystem to write the file and
-      // provide discrete timestamps on the explanation files.
-      Thread.sleep(2)
-    }
-
-    val pairDir = new File(explainRoot, "%s/%s".format(domain, key))
-    val zips = pairDir.listFiles
-    val zipsFound = zips match {
-      case null => 0
-      case _ => zips.length
-    }
-
-    assertEquals(expectedCount, zipsFound)
-
-    if (zips != null) {
-      zips foreach verifyZipContent(generationCount - zipsFound)
-    }
-  }
-
-  private def makeDiffaPair(key: String) = DiffaPair(
-    domain = testDomain, key = key, versionPolicyName = "policy", upstream = u.name, downstream = d.name
-  )
-
-  private def makeDiffaPairWithLimits(key: String, eventsToLog: Int, maxExplainFiles: Int) = DiffaPair(
-    domain = testDomain, key = key, versionPolicyName = "policy", upstream = u.name, downstream = d.name,
-    eventsToLog = eventsToLog, maxExplainFiles = maxExplainFiles
-  )
 
   def replayDomainConfig {
     replay(domainConfigStore)
