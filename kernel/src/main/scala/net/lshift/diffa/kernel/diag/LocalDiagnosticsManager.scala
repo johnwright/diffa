@@ -11,7 +11,7 @@ import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
 import org.joda.time.{DateTimeZone, DateTime}
 import net.lshift.diffa.kernel.config.{PairServiceLimitsView, ConfigOption, DiffaPairRef, DomainConfigStore}
-import net.lshift.diffa.kernel.config.ServiceLimit._
+import net.lshift.diffa.kernel.config.limits._
 
 /**
  * Local in-memory implementation of the DiagnosticsManager.
@@ -115,8 +115,8 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
     private var explainDir:File = null
     private var explanationWriter:PrintWriter = null
 
-    private def getEventBufferSize = limits.getEffectiveLimitByNameForPair(DIAGNOSTIC_EVENT_BUFFER_SIZE, pair.domain, pair.key)
-    private def getMaxExplainFiles = limits.getEffectiveLimitByNameForPair(EXPLAIN_FILES, pair.domain, pair.key)
+    private def getEventBufferSize = limits.getEffectiveLimitByNameForPair(pair.domain, pair.key, DiagnosticEventBufferSize)
+    private def getMaxExplainFiles = limits.getEffectiveLimitByNameForPair(pair.domain, pair.key, ExplainFiles)
 
     def logPairEvent(evt:PairEvent) {
       log.synchronized {

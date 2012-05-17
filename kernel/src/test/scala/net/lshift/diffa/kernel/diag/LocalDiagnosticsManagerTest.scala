@@ -14,6 +14,7 @@ import java.util.zip.ZipInputStream
 import org.junit.experimental.theories.{DataPoints, DataPoint, Theory}
 import net.lshift.diffa.kernel.frontend.{PairDef, FrontendConversions}
 import net.lshift.diffa.kernel.config._
+import limits.{ExplainFiles, DiagnosticEventBufferSize, Unlimited}
 import system.SystemConfigStore
 
 class LocalDiagnosticsManagerTest {
@@ -260,7 +261,7 @@ class LocalDiagnosticsManagerTest {
   private def expectEventBufferLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
 
     expect(serviceLimitsStore.
-      getEffectiveLimitByNameForPair(ServiceLimit.DIAGNOSTIC_EVENT_BUFFER_SIZE, domain, pairKey)).
+      getEffectiveLimitByNameForPair(domain, pairKey, DiagnosticEventBufferSize)).
       andReturn(eventBufferSize).atLeastOnce()
 
     replay(serviceLimitsStore)
@@ -269,7 +270,7 @@ class LocalDiagnosticsManagerTest {
   private def expectMaxExplainFilesLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
 
     expect(serviceLimitsStore.
-      getEffectiveLimitByNameForPair(ServiceLimit.EXPLAIN_FILES, domain, pairKey)).
+      getEffectiveLimitByNameForPair(domain, pairKey, ExplainFiles)).
       andReturn(eventBufferSize).atLeastOnce()
 
     replay(serviceLimitsStore)
