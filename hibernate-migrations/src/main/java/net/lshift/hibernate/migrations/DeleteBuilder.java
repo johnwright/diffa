@@ -38,6 +38,25 @@ public class DeleteBuilder extends SingleStatementMigrationElement {
 
   @Override
   protected String getSQL() {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+    if (table== null || table.length() == 0) {
+      throw new IllegalArgumentException("Table name must be specified");
+    }
+
+    if (where == null) {
+      if (is == null) {
+        return String.format("delete from %s", table );
+      }
+      else {
+        throw new IllegalArgumentException("Predicate value was specified (" + is + "), but predicate column was null");
+      }
+    }
+    else {
+      if (is == null) {
+        throw new IllegalArgumentException("Predicate column was specified (" + where + "), but predicate value was null");
+      }
+      else {
+        return String.format("delete from %s where %s = '%s'", table, where, is);
+      }
+    }
   }
 }
