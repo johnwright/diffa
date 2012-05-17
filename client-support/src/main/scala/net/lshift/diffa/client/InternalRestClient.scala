@@ -115,7 +115,7 @@ abstract class InternalRestClient(pair: DiffaPairRef,
 
   protected def zeroIfUnlimited(limitName: String) = {
     serviceLimitsView.getEffectiveLimitByNameForPair(
-      limitName, pair.domain, pair.key) match {
+      pair.domain, pair.key, limitName) match {
       case ServiceLimit.UNLIMITED => 0
       case timeout => timeout
     }

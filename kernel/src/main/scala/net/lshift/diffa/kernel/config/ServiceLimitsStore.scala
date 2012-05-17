@@ -74,6 +74,6 @@ trait ServiceLimitsStore extends PairServiceLimitsView {
 }
 
 trait PairServiceLimitsView {
-  def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int
+  def getEffectiveLimitByNameForPair(domainName: String, pairKey: String, limitName: String): Int
 }
 
