@@ -66,8 +66,12 @@
       <Arg>jdbc/diffaDS</Arg>
       <Arg>
         <New class="com.jolbox.bonecp.BoneCPDataSource">
-          <Set name="driverClassName">org.hsqldb.jdbc.JDBCDriver</Set>
-          <Set name="url">jdbc:hsqldb:file:<Ref id="dbPath" /></Set>
+	      <Arg>
+	        <New class="com.jolbox.bonecp.BoneCPConfig">
+	          <Set name="jdbcUrl">jdbc:hsqldb:file:<Ref id="dbPath" /></Set>
+	        </New>
+	      </Arg>
+          <Set name="driverClass">org.hsqldb.jdbc.JDBCDriver</Set>
         </New>
       </Arg>
     </New>
