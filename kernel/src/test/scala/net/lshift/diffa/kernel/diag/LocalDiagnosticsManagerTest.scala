@@ -19,9 +19,10 @@ import system.SystemConfigStore
 class LocalDiagnosticsManagerTest {
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock(classOf[SystemConfigStore])
+  val serviceLimitsStore = createStrictMock(classOf[ServiceLimitsStore])
 
   val explainRoot = new File("target/explain")
-  val diagnostics = new LocalDiagnosticsManager(systemConfigStore, domainConfigStore, explainRoot.getPath)
+  val diagnostics = new LocalDiagnosticsManager(systemConfigStore, domainConfigStore, serviceLimitsStore, explainRoot.getPath)
 
   val domainName = "domain"
   val testDomain = Domain(name=domainName)
