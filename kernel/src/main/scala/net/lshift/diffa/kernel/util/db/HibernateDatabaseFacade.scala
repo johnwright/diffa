@@ -26,7 +26,8 @@ class HibernateDatabaseFacade(factory:SessionFactory) extends DatabaseFacade {
     factory.withSession(s => HQU.listQuery(s, queryName, params, firstResult, maxResults))
   }
 
-  def delete(queryName: String, params: Map[String, Any]) = {
-    factory.withSession( s => HQU.listQuery(s, queryName, params).foreach( x => s.delete(x) ) )
+  def execute(queryName: String, params: Map[String, Any]) : Int = {
+    factory.withSession(s => HQU.executeUpdate(s, queryName, params))
   }
+
 }

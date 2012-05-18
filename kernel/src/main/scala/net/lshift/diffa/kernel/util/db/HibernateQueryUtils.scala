@@ -261,10 +261,23 @@ object HibernateQueryUtils {
    * return type.
    */
   def listQuery[ReturnType](s: Session, queryName: String, params: Map[String, Any], firstResult:Option[Int] = None, maxResults:Option[Int] = None): Seq[ReturnType] = {
-    val query: Query = s.getNamedQuery(queryName)
-    params foreach {case (param, value) => query.setParameter(param, value)}
+    val query = buildQuery(s, queryName, params)
     firstResult.map(f => query.setFirstResult(f))
     maxResults.map(m => query.setMaxResults(m))
     query.list map (item => item.asInstanceOf[ReturnType])
+  }
+
+  /**
+   * Run the specified query against the DB, returning the row count
+   */
+  def executeUpdate(s: Session, queryName: String, params: Map[String, Any]) : Int = {
+    val query = buildQuery(s, queryName, params)
+    query.executeUpdate()
+  }
+
+  private def buildQuery(s: Session, queryName: String, params: Map[String, Any]) = {
+    val query = s.getNamedQuery(queryName)
+    params foreach {case (param, value) => query.setParameter(param, value)}
+    query
   }
 }

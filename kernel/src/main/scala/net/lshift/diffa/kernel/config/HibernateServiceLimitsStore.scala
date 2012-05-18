@@ -27,17 +27,14 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory,
     )
   }
 
-  def deleteDomainLimits(domainName: String) {
-    deletePairLimitsByDomain(domainName)
-    deleteLimitsByDomain[DomainServiceLimits](domainName, "domainServiceLimitsByDomain")
+  def deleteDomainLimits(domain: String) {
+    deletePairLimitsByDomain(domain)
+    db.execute("deleteDomainServiceLimitsByDomain", Map("domain" -> domain))
   }
 
-  def deletePairLimitsByDomain(domainName: String) {
-    deleteLimitsByDomain[PairServiceLimits](domainName, "pairServiceLimitsByDomain")
+  def deletePairLimitsByDomain(domain: String) {
+    db.execute("deletePairServiceLimitsByDomain", Map("domain" -> domain))
   }
-
-  private def deleteLimitsByDomain[T](domainName: String, queryName: String) =
-    db.delete(queryName, Map("domain_name" -> domainName))
 
   def setSystemHardLimit(limit: ServiceLimit, limitValue: Int) {
     validate(limitValue)

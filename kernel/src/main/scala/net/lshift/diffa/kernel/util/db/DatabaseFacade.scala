@@ -27,5 +27,5 @@ trait DatabaseFacade {
                             firstResult:Option[Int] = None,
                             maxResults:Option[Int] = None): Seq[ReturnType]
 
-  def delete(queryName: String, params: Map[String, Any])
+  def execute(queryName: String, params: Map[String, Any]) : Int
 }
