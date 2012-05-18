@@ -16,17 +16,17 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils, DatabaseFacade}
+import net.lshift.diffa.kernel.util.db.SessionHelper._
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.{CacheWrapper, HibernateQueryUtils}
+import net.lshift.diffa.kernel.util.CacheWrapper
 import org.hibernate.transform.ResultTransformer
 import java.util.List
-import net.lshift.diffa.kernel.util.db.DatabaseFacade
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  db:DatabaseFacade,

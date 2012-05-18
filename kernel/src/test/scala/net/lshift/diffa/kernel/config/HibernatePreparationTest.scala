@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.config
 import java.sql._
 import org.junit.runner.RunWith
 import org.junit.Assert._
-import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.util.db.SessionHelper._
 import org.slf4j.LoggerFactory
 import org.hibernate.dialect.Dialect
 import org.hibernate.cfg.{Configuration, Environment}

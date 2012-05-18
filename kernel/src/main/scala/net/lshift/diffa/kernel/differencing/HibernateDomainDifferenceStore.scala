@@ -19,10 +19,10 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import reflect.BeanProperty
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.util.db.{Cursor, HibernateQueryUtils, DatabaseFacade}
+import net.lshift.diffa.kernel.util.db.SessionHelper._
 import org.hibernate.Session
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.{Cursor, HibernateQueryUtils}
 import scala.collection.JavaConversions._
 import org.hibernate.transform.ResultTransformer
 import org.joda.time.{DateTimeZone, DateTime, Interval}
@@ -37,7 +37,6 @@ import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, DiffaPairRef, Di
 import org.hibernate.dialect.{Oracle10gDialect, Dialect}
 import net.lshift.hibernate.migrations.dialects.{MySQL5DialectExtension, OracleDialectExtension, DialectExtensionSelector}
 import org.hibernate.criterion.{Projections, Restrictions}
-import net.lshift.diffa.kernel.util.db.DatabaseFacade
 
 /**
  * Hibernate backed Domain Cache provider.

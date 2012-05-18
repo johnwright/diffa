@@ -1,10 +1,9 @@
 package net.lshift.diffa.kernel.config
 
 import limits.Unlimited
-import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils, DatabaseFacade}
+import net.lshift.diffa.kernel.util.db.SessionHelper._
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.HibernateQueryUtils
-import net.lshift.diffa.kernel.util.db.DatabaseFacade
 
 
 class HibernateServiceLimitsStore(val sessionFactory: SessionFactory,

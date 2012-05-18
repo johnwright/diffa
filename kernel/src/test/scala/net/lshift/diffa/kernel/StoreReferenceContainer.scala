@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 import util.db.HibernateDatabaseFacade
 import util.{MissingObjectException, SchemaCleaner, DatabaseEnvironment}
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
+import net.lshift.diffa.kernel.util.db.SessionHelper.sessionFactoryToSessionHelper
 import collection.JavaConversions._
 
 object StoreReferenceContainer {

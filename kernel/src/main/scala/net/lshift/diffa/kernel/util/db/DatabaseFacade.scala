@@ -16,6 +16,10 @@
 
 package net.lshift.diffa.kernel.util.db
 
+/**
+ * Abstraction that hopefully lends itself to multiple implementations and allows DiffStore implementations
+ * to be slightly less coupled to the underlying database, in terms of access and caching.
+ */
 trait DatabaseFacade {
 
   def listQuery[ReturnType](queryName: String,

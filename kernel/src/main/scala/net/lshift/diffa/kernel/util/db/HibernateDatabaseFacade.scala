@@ -15,8 +15,9 @@
  */
 package net.lshift.diffa.kernel.util.db
 
-import net.lshift.diffa.kernel.util.{HibernateQueryUtils => HQU}
-import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils => HQU}
+import net.lshift.diffa.kernel.util.db.SessionHelper._
+
 import org.hibernate.SessionFactory
 
 class HibernateDatabaseFacade(factory:SessionFactory) extends DatabaseFacade {
@@ -26,6 +27,6 @@ class HibernateDatabaseFacade(factory:SessionFactory) extends DatabaseFacade {
   }
 
   def delete(queryName: String, params: Map[String, Any]) = {
-    factory.withSession( s => HQU.listQuery(s, queryName, params).foreach( s.delete(_) ) )
+    factory.withSession( s => HQU.listQuery(s, queryName, params).foreach( x => s.delete(x) ) )
   }
 }
