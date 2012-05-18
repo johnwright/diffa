@@ -272,7 +272,7 @@ class Configuration(val configStore: DomainConfigStore,
 
   def notifyPairUpdate(p:DiffaPair) {
     val pairRef = p.asRef
-    supervisor.startActor(p)
+    supervisor.startActor(pairRef)
     matchingManager.onUpdatePair(p)
     differencesManager.onUpdatePair(pairRef)
     scanScheduler.onUpdatePair(p)
