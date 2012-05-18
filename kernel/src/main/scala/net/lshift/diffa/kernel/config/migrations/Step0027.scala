@@ -18,10 +18,10 @@ package net.lshift.diffa.kernel.config.migrations
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.{MigrationUtil, ConfigOption}
 import net.lshift.diffa.kernel.config.limits.{ExplainFiles, DiagnosticEventBufferSize}
+import net.lshift.diffa.kernel.config.{HibernateMigrationStep, MigrationUtil, ConfigOption}
 
-object Step0027 {
+object Step0027 extends HibernateMigrationStep {
 
   def versionId = 27
 
