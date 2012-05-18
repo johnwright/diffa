@@ -39,6 +39,10 @@ abstract class AbstractActorSupervisor
   private val pairActors = new HashMap[DiffaPairRef, PotentialActor]()
 
 
+  /**
+   * Creates a topical actor for the given pair - supervising actor subclasses need to
+   * define the concrete actor behavior they require.
+   */
   def createPairActor(pair:DiffaPairRef) : Option[ActorRef]
 
   def close = pairActors.foreach{ case (pairRef,_) => stopActor(pairRef) }
