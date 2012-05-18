@@ -94,7 +94,7 @@ class EscalationManager(val config:DomainConfigStore,
                  origin: MatchOrigin, level:DifferenceFilterLevel) = origin match {
     case TriggeredByScan =>
       val differenceType = DifferenceUtils.differenceType(upstreamVsn, downstreamVsn)
-      findOrCreateActor(id.pair) ! (differenceType, id)
+      findActor(id) ! (differenceType, id)
 
     case _               => // ignore this for now
   }
@@ -125,11 +125,4 @@ class EscalationManager(val config:DomainConfigStore,
     config.listEscalationsForPair(pair.domain, pair.key).
       filter(e => e.event == eventType && actionTypes.contains(e.actionType))
 
-  private def findOrCreateActor(pair: DiffaPairRef) = maybeFindActor(pair) match {
-    case Some(actor) => actor
-    case None        =>
-      // TODO Check whether there is a race condition here
-      startActor(pair)
-      findActor(pair)
-  }
 }

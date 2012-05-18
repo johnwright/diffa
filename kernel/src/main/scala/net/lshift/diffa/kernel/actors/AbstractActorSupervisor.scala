@@ -47,7 +47,7 @@ abstract class AbstractActorSupervisor
 
   def close = pairActors.foreach{ case (pairRef,_) => stopActor(pairRef) }
 
-  def startActor(pair: DiffaPairRef) = {
+  def startActor(pair: DiffaPairRef) {
 
     def createAndStartPairActor = createPairActor(pair) map { actor =>
       actor.start()
@@ -79,7 +79,7 @@ abstract class AbstractActorSupervisor
     }
   }
 
-  def stopActor(pair: DiffaPairRef) = {
+  def stopActor(pair: DiffaPairRef) {
     // TODO: replace this with actor = ConcurrentHashMap.remove(key)
     val actor = unregisterActor(pair)
 
@@ -111,28 +111,23 @@ abstract class AbstractActorSupervisor
 
   def findActor(id:VersionID) : ActorRef = findActor(id.pair)
 
-  def findActor(pair: DiffaPairRef) = maybeFindActor(pair) match {
-    case Some(actor) => actor
-    case None        =>
-      logger.error("{} Could not resolve actor for key: {}; {} registered actors: {}",
-        Array[Object](formatAlertCode(pair, MISSING_ACTOR_FOR_KEY), pair.identifier,
-          Integer.valueOf(pairActors.size()), pairActors.keySet()))
-      throw new MissingObjectException(pair.identifier)
-  }
-
-  def maybeFindActor(pair: DiffaPairRef) : Option[ActorRef] = {
+  def findActor(pair: DiffaPairRef) = {
 
     val actor = pairActors.get(pair)
 
     if (actor == null) {
-      None
+      logger.error("{} Could not resolve actor for key: {}; {} registered actors: {}",
+        Array[Object](formatAlertCode(pair, MISSING_ACTOR_FOR_KEY), pair.identifier,
+          Integer.valueOf(pairActors.size()), pairActors.keySet()))
+      throw new MissingObjectException(pair.identifier)
     }
-    else {
-      Some(actor().getOrElse {
-        logger.error("{} Unusable actor due to failure to look up policy during actor creation",
-          formatAlertCode(pair, BAD_ACTOR))
-        throw new MissingObjectException(pair.identifier)
-      })
+
+    actor().getOrElse {
+      logger.error("{} Unusable actor due to failure to look up policy during actor creation",
+        formatAlertCode(pair, BAD_ACTOR))
+      throw new MissingObjectException(pair.identifier)
     }
+
   }
+
 }

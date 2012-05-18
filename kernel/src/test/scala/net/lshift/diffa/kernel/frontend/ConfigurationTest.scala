@@ -60,7 +60,7 @@ class ConfigurationTest {
                                                 serviceLimitsStore,
                                                 matchingManager,
                                                 versionCorrelationStoreFactory,
-                                                pairManager,
+                                                List(pairManager),
                                                 differencesManager,
                                                 endpointListener,
                                                 scanScheduler,
