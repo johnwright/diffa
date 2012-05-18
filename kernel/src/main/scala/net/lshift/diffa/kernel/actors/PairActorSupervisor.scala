@@ -16,7 +16,7 @@
 
 package net.lshift.diffa.kernel.actors
 
-import akka.actor._
+import akka.actor.Actor
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.participants.ParticipantFactory
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
