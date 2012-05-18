@@ -1,3 +1,19 @@
+/**
+ * Copyright (C) 2010-2012 LShift Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package net.lshift.diffa.kernel.config
 
 /**
@@ -36,24 +52,38 @@ package net.lshift.diffa.kernel.config
    limit.</li>
  </ol>
  */
-trait ServiceLimitsStore {
-  def defineLimit(limitName: String, description: String): Unit
+
+import net.lshift.diffa.kernel.config.limits.Unlimited
+
+trait ServiceLimitsStore extends PairServiceLimitsView {
+  def defineLimit(limit: ServiceLimit): Unit
   def deleteDomainLimits(domainName: String): Unit
   def deletePairLimitsByDomain(domainName: String): Unit
 
-  def setSystemHardLimit(limitName: String, limitValue: Int): Unit
-  def setSystemDefaultLimit(limitName: String, limitValue: Int): Unit
-  def setDomainHardLimit(domainName: String, limitName: String, limitValue: Int): Unit
-  def setDomainDefaultLimit(domainName: String, limitName: String, limitValue: Int): Unit
-  def setPairLimit(domainName: String, pairKey: String, limitName: String, limitValue: Int): Unit
+  def setSystemHardLimit(limit: ServiceLimit, limitValue: Int): Unit
+  def setSystemDefaultLimit(limit: ServiceLimit, limitValue: Int): Unit
+  def setDomainHardLimit(domainName: String, limit: ServiceLimit, limitValue: Int): Unit
+  def setDomainDefaultLimit(domainName: String, limit: ServiceLimit, limitValue: Int): Unit
+  def setPairLimit(domainName: String, pairKey: String, limit: ServiceLimit, limitValue: Int): Unit
   
-  def getSystemHardLimitForName(limitName: String): Option[Int]
-  def getSystemDefaultLimitForName(limitName: String): Option[Int]
-  def getDomainHardLimitForDomainAndName(domainName: String, limitName: String): Option[Int]
-  def getDomainDefaultLimitForDomainAndName(domainName: String, limitName: String): Option[Int]
-  def getPairLimitForPairAndName(domainName: String, pairKey: String, limitName: String): Option[Int]
+  def getSystemHardLimitForName(limit: ServiceLimit): Option[Int]
+  def getSystemDefaultLimitForName(limit: ServiceLimit): Option[Int]
+  def getDomainHardLimitForDomainAndName(domainName: String, limit: ServiceLimit): Option[Int]
+  def getDomainDefaultLimitForDomainAndName(domainName: String, limit: ServiceLimit): Option[Int]
+  def getPairLimitForPairAndName(domainName: String, pairKey: String, limit: ServiceLimit): Option[Int]
 
-  def getEffectiveLimitByName(limitName: String): Int
-  def getEffectiveLimitByNameForDomain(limitName: String, domainName: String): Int
-  def getEffectiveLimitByNameForPair(limitName: String, domainName: String, pairKey: String): Int
+  def getEffectiveLimitByNameForDomain(domainName: String, limit: ServiceLimit) : Int =
+    getDomainDefaultLimitForDomainAndName(domainName, limit).getOrElse(
+      getEffectiveLimitByName(limit))
+
+  def getEffectiveLimitByName(limit: ServiceLimit) : Int = getSystemDefaultLimitForName(limit).getOrElse(Unlimited.value)
+
+  def getEffectiveLimitByNameForPair(domainName: String, pairKey: String, limit: ServiceLimit) : Int =
+    getPairLimitForPairAndName(domainName, pairKey, limit).getOrElse(
+      getEffectiveLimitByNameForDomain(domainName, limit))
 }
+
+trait PairServiceLimitsView {
+  def getEffectiveLimitByNameForPair(domainName: String, pairKey: String, limit:ServiceLimit) : Int
+}
+

@@ -26,6 +26,7 @@ object AlertCodes {
   def formatAlertCode(pair:DiffaPairRef, code:Int) = "%s [%s/%s]".format(code, pair.domain, pair.key)
   def formatAlertCode(domain:String, pair:String, code:Int) = "%s [%s/%s]".format(code, domain, pair)
   def formatAlertCode(domain:String, code:Int) = "%s [%s]".format(code, domain)
+  def formatAlertCode(code: Int) = "%d".format(code)
 
   // 1xx Informational
 
@@ -33,6 +34,12 @@ object AlertCodes {
   val CANCELLATION_REQUEST_RECEIVED = 120
   val SCAN_QUERY_EVENT = 121
   val SCAN_REQUEST_IGNORED = 122
+
+  // 13x Internal stages of a scan (for benchmarking purposes)
+  val SCAN_STARTED_BENCHMARK = 130
+  val SCAN_COMPLETED_BENCHMARK = 131
+  val UPSTREAM_SCAN_COMPLETED_BENCHMARK = 132
+  val DOWNSTREAM_SCAN_COMPLETED_BENCHMARK = 133
 
   // 2xx Successful
 
@@ -62,6 +69,10 @@ object AlertCodes {
   val INVALID_SYSTEM_CONFIGURATION = 500
   // Indicates a given domain is not valid or does not exist.
   val INVALID_DOMAIN = 501
+  // Indicates that a pair has been configured with an invalid version correlation policy
+  val INVALID_VERSION_POLICY = 502
+  // Indicates the use of a bogus form of external credentials
+  val INVALID_EXTERNAL_CREDENTIAL_TYPE = 503
 
   // 51x General scan errors
   val UPSTREAM_SCAN_FAILURE = 510
@@ -91,6 +102,9 @@ object AlertCodes {
   // 61x External scan errors
   val SCAN_CONNECTION_REFUSED = 610
   val EXTERNAL_SCAN_ERROR = 611
+  val SCAN_CONNECTION_CLOSED = 612
+  val CONTENT_RETRIEVAL_FAILED = 613
+  val VERSION_GENERATION_FAILED = 614
 
   // 65x Problems with messaging systems
   
@@ -111,8 +125,10 @@ object AlertCodes {
   val MISSING_ACTOR_FOR_KEY = 713
   // Occurs when multiple actors are registered with the same key. This indicates a bug in Diffa.
   val MULTIPLE_ACTORS_FOR_KEY = 714
+  // Occurs when it wasn't possible to initialize an actor
+  val BAD_ACTOR = 715
 
   // 72x Potential auth bugs
   val SPURIOUS_AUTH_TOKEN = 720
-
 }
+

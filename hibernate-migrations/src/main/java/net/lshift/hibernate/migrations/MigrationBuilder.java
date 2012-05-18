@@ -62,6 +62,10 @@ public class MigrationBuilder {
     return register(new InsertBuilder(dialect, table));
   }
 
+  public DeleteBuilder delete(String table) {
+    return register(new DeleteBuilder(table));
+  }
+
   public AlterTableBuilder alterTable(String table) {
     return register(new AlterTableBuilder(config, dialect, dialectExtension, table));
   }
@@ -126,7 +130,13 @@ public class MigrationBuilder {
         metaDataRs = conn.getMetaData().getTables(null, null, preconditionTable, null);
         if (metaDataRs.next()) {
           statement = conn.createStatement();
-          countRs = statement.executeQuery(buildQueryString(preconditionTable, preconditionPredicate));
+          String sql = buildQueryString(preconditionTable, preconditionPredicate);
+
+          if (log.isTraceEnabled()) {
+            log.trace("Executing migration precondition statement: " + sql);
+          }
+
+          countRs = statement.executeQuery(sql);
 
           if (countRs.next()) {
             count = countRs.getInt(1);

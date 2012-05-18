@@ -354,6 +354,7 @@
     <constructor-arg value="lastDomainSequence"/>
   </bean>
 
+  <bean id="hazelcastCacheProvider" class="net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider"></bean>
 
   <!--
     ===========
@@ -374,6 +375,11 @@
     <constructor-arg ref="diffaSessionFactory" />
     <constructor-arg ref="pairCache" />
     <constructor-arg ref="hookManager" />
+    <constructor-arg>
+      <bean class="net.sf.ehcache.CacheManager">
+        <constructor-arg type="java.net.URL" value="classpath:ehcache-config-versions.xml"/>
+      </bean>
+    </constructor-arg>
   </bean>
 
   <bean id="systemConfigStore" class="net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore">
@@ -381,7 +387,22 @@
     <constructor-arg ref="pairCache" />
   </bean>
 
-  <bean id="serviceLimitsStore" class="net.lshift.diffa.kernel.config.HibernateServiceLimitsStore">
+  <bean id="underlyingServiceLimitsStore" class="net.lshift.diffa.kernel.config.HibernateServiceLimitsStore">
+    <constructor-arg ref="diffaSessionFactory" />
+  </bean>
+
+  <bean id="serviceLimitsStore" class="net.lshift.diffa.kernel.config.CachedServiceLimitsStore">
+    <constructor-arg ref="underlyingServiceLimitsStore" />
+    <constructor-arg ref="hazelcastCacheProvider" />
+  </bean>
+
+  <!--
+    ===========
+      Credentials
+    ===========
+  -->
+
+  <bean id="domainCredentialsStore" class="net.lshift.diffa.kernel.config.HibernateDomainCredentialsStore">
     <constructor-arg ref="diffaSessionFactory" />
   </bean>
 
@@ -404,13 +425,14 @@
 
   <!--
     ===========
-      Indexing
+      Diagnostics
     ===========
   -->
 
   <bean id="diagnosticsManager" class="net.lshift.diffa.kernel.diag.LocalDiagnosticsManager">
     <constructor-arg ref="systemConfigStore" />
     <constructor-arg ref="domainConfigStore" />
+    <constructor-arg ref="serviceLimitsStore" />
     <constructor-arg>
       <bean class="org.springframework.jndi.JndiObjectFactoryBean">
         <property name="jndiName" value="java:comp/env/diffaExplainDir"/>
@@ -437,37 +459,6 @@
     </property>
   </bean>
 
-  <!-- get REST client parameters -->
-  <bean id="restClientParams" class="net.lshift.diffa.client.RestClientParams">
-    <constructor-arg value="guest" />
-    <constructor-arg value="guest" />
-    <constructor-arg><null /></constructor-arg>
-    <constructor-arg>
-      <bean id="restClientConnectTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="systemConfigStore"/>
-        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
-        <property name="arguments">
-          <list>
-            <value>rest.client.connect.timeout</value>
-            <value>0</value>
-          </list>
-        </property>
-      </bean>
-    </constructor-arg>
-    <constructor-arg>
-      <bean id="restClientReadTimeout" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="systemConfigStore"/>
-        <property name="targetMethod" value="systemConfigOptionOrDefault"/>
-        <property name="arguments">
-          <list>
-            <value>rest.client.read.timeout</value>
-            <value>0</value>
-          </list>
-        </property>
-      </bean>
-    </constructor-arg>
-  </bean>
-
   <!-- register REST client support for participants -->
   <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
     <property name="targetObject" ref="participantFactory" />
@@ -475,7 +466,8 @@
     <property name="arguments">
       <list>
         <bean class="net.lshift.diffa.client.ScanningParticipantRestClientFactory">
-          <constructor-arg ref="restClientParams" />
+          <constructor-arg ref="domainCredentialsStore" />
+          <constructor-arg ref="serviceLimitsStore" />
         </bean>
       </list>
     </property>
@@ -486,7 +478,8 @@
     <property name="arguments">
       <list>
         <bean class="net.lshift.diffa.client.ContentParticipantRestClientFactory">
-          <constructor-arg ref="restClientParams" />
+          <constructor-arg ref="domainCredentialsStore" />
+          <constructor-arg ref="serviceLimitsStore" />
         </bean>
       </list>
     </property>
@@ -497,7 +490,8 @@
     <property name="arguments">
       <list>
         <bean class="net.lshift.diffa.client.VersioningParticipantRestClientFactory">
-          <constructor-arg ref="restClientParams" />
+          <constructor-arg ref="domainCredentialsStore" />
+          <constructor-arg ref="serviceLimitsStore" />
         </bean>
       </list>
     </property>

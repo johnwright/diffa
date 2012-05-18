@@ -63,6 +63,8 @@ trait DomainConfigStore {
   def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
   def getPairReportDef(domain:String, name:String, pairKey:String):PairReportDef
 
+  def getConfigVersion(domain:String) : Int
+
   /**
    * Retrieves all (domain-specific, non-internal) agent configuration options.
    */
@@ -272,7 +274,8 @@ object DiffaPair {
 }
 
 case class Domain (
-  @BeanProperty var name: String = null
+  @BeanProperty var name: String = null,
+  @BeanProperty var configVersion: java.lang.Integer = 0
 ) {
   def this() = this(name = null)
 
@@ -288,7 +291,6 @@ case class Domain (
 object Domain {
   val DEFAULT_DOMAIN = Domain(name = "diffa")
 }
-
 
 case class RepairAction(
   @BeanProperty var name: String = null,
@@ -374,6 +376,32 @@ case class User(@BeanProperty var name: String = null,
   override def toString = name
 }
 
+case class ExternalHttpCredentials(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var url: String = null,
+  @BeanProperty var key: String = null,
+  @BeanProperty var value: String = null,
+  @BeanProperty var credentialType: String = null
+) {
+
+  import ExternalHttpCredentials._
+
+  def this() = this(domain = null)
+
+  override def equals(that:Any) = that match {
+    case e:ExternalHttpCredentials =>
+      e.domain == domain && e.url == url && e.credentialType == credentialType
+    case _                         => false
+  }
+
+  override def hashCode = 31 * (31 * (31 + domain.hashCode) + url.hashCode) + credentialType.hashCode
+}
+
+object ExternalHttpCredentials {
+  val BASIC_AUTH = "basic_auth"
+  val QUERY_PARAMETER = "query_parameter"
+}
+
 /**
  * Defines a user's membership to a domain
  */
@@ -432,6 +460,6 @@ case class PairScopedName(@BeanProperty var name:String = null,
 }
 
 object ConfigOption {
-  val eventExplanationLimitKey = "maxEventsToExplainPerPair"
-  val explainFilesLimitKey = "maxExplainFilesPerPair"
+  @Deprecated val eventExplanationLimitKey = "maxEventsToExplainPerPair"
+  @Deprecated val explainFilesLimitKey = "maxExplainFilesPerPair"
 }

@@ -71,7 +71,7 @@ class AmqpProducerConsumerTest {
     assertTrue(messageProcessed)
   }
 
-  @Test(timeout = 5000)
+  //@Test(timeout = 15000)
   def applicationExceptionsShouldBeRejected() = {
 
     val con = new AccentConnection(factory, failureHandler)

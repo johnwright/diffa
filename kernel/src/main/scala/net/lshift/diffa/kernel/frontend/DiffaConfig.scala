@@ -48,7 +48,10 @@ case class DiffaConfig(
 
 object DefaultLimits {
   val KEY_LENGTH_LIMIT = 50
+  val VALUE_LENGTH_LIMIT = 255
   val URL_LENGTH_LIMIT = 1024
+  // This appears to be the limit of column size that MySQL will let you set a PK varchar to be
+  val MYSQL_VARCHAR_PK_LIMIT = 255
 }
 
 /**

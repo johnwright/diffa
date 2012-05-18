@@ -17,26 +17,39 @@
 package net.lshift.diffa.client
 
 import net.lshift.diffa.kernel.participants._
+import net.lshift.diffa.kernel.config.{DomainCredentialsLookup, DiffaPairRef, DomainCredentialsManager, PairServiceLimitsView}
 
 trait ParticipantRestClientFactory {
 
   def supportsAddress(address: String) = address.startsWith("http://") || address.startsWith("https://")
 }
 
-class ScanningParticipantRestClientFactory(params: RestClientParams)
+class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
 
-  def createParticipantRef(address: String) = new ScanningParticipantRestClient(address, params)
+  def createParticipantRef(address: String, pair:DiffaPairRef) =
+    new ScanningParticipantRestClient(serviceLimitsView = limits,
+                                      scanUrl = address,
+                                      credentialsLookup = credentialsLookup,
+                                      pair = pair)
 }
 
-class ContentParticipantRestClientFactory(params: RestClientParams)
+class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ContentParticipantFactory with ParticipantRestClientFactory {
 
-  def createParticipantRef(address: String) = new ContentParticipantRestClient(address, params)
+  def createParticipantRef(address: String, pair:DiffaPairRef)
+    = new ContentParticipantRestClient(serviceLimitsView = limits,
+                                       scanUrl = address,
+                                       credentialsLookup = credentialsLookup,
+                                       pair = pair)
 }
 
-class VersioningParticipantRestClientFactory(params: RestClientParams)
+class VersioningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends VersioningParticipantFactory with ParticipantRestClientFactory {
 
-  def createParticipantRef(address: String) = new VersioningParticipantRestClient(address, params)
+  def createParticipantRef(address: String, pair:DiffaPairRef)
+    = new VersioningParticipantRestClient(serviceLimitsView = limits,
+                                          scanUrl = address,
+                                          credentialsLookup = credentialsLookup,
+                                          pair = pair)
 }
