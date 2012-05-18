@@ -57,11 +57,11 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
        val us = domainConfig.getEndpoint(pair.domain.name,  pair.upstream)
        val ds = domainConfig.getEndpoint(pair.domain.name,  pair.downstream)
 
-       val usp = participantFactory.createUpstreamParticipant(us, pair.asRef)
-       val dsp = participantFactory.createDownstreamParticipant(ds, pair.asRef)
+       val usp = participantFactory.createUpstreamParticipant(us, pairRef)
+       val dsp = participantFactory.createDownstreamParticipant(ds, pairRef)
 
        Some(Actor.actorOf(
-         new PairActor(pair, us, ds, usp, dsp, pol, stores(pair.asRef),
+         new PairActor(pair, us, ds, usp, dsp, pol, stores(pairRef),
            differencesManager, pairScanListener,
            diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis)
        ))
