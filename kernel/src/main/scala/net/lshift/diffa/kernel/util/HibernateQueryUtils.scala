@@ -42,20 +42,6 @@ trait HibernateQueryUtils {
   }
 
   /**
-   * Executes a list query in the given session, forcing the result type into a typed list of the given
-   * return type.
-   */
-  def listQuery[ReturnType](s: Session, queryName: String, params: Map[String, Any], firstResult:Option[Int] = None, maxResults:Option[Int] = None): Seq[ReturnType] = {
-    sessionFactory.withSession(s => {
-      val query: Query = s.getNamedQuery(queryName)
-      params foreach {case (param, value) => query.setParameter(param, value)}
-      firstResult.map(f => query.setFirstResult(f))
-      maxResults.map(m => query.setMaxResults(m))
-      query.list map (item => item.asInstanceOf[ReturnType])
-    })
-  }
-
-  /**
    * Returns a handle to a scrollable cursor. Note that this requires the caller to manage the session for themselves.
    */
   def scrollableQuery[T](s: Session, queryName: String, params: Map[String, Any]) : Cursor[T] = {
@@ -240,7 +226,7 @@ trait HibernateQueryUtils {
                             Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
                             "report %s for pair %s in domain %s".format(name, pairKey, domain))
 
-  def listPairsInDomain(domain:String) = sessionFactory.withSession(s => listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)))
+  def listPairsInDomain(domain:String) = sessionFactory.withSession(s => HibernateQueryUtils.listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)))
 
 }
 
@@ -258,4 +244,21 @@ trait Cursor[T] extends Closeable {
    * Moves the cursor along and if the end of the result has not been reached
    */
   def next : Boolean
+}
+
+/**
+ * This is the beginning of trying to extract Hibernate out of every store
+ */
+object HibernateQueryUtils {
+  /**
+   * Executes a list query in the given session, forcing the result type into a typed list of the given
+   * return type.
+   */
+  def listQuery[ReturnType](s: Session, queryName: String, params: Map[String, Any], firstResult:Option[Int] = None, maxResults:Option[Int] = None): Seq[ReturnType] = {
+    val query: Query = s.getNamedQuery(queryName)
+    params foreach {case (param, value) => query.setParameter(param, value)}
+    firstResult.map(f => query.setFirstResult(f))
+    maxResults.map(m => query.setMaxResults(m))
+    query.list map (item => item.asInstanceOf[ReturnType])
+  }
 }

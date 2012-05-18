@@ -4,9 +4,11 @@ import limits.Unlimited
 import net.lshift.diffa.kernel.util.SessionHelper._
 import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.HibernateQueryUtils
+import net.lshift.diffa.kernel.util.db.DatabaseFacade
 
 
-class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
+class HibernateServiceLimitsStore(val sessionFactory: SessionFactory,
+                                  db:DatabaseFacade)
   extends ServiceLimitsStore
   with HibernateQueryUtils {
 
@@ -35,15 +37,8 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
     deleteLimitsByDomain[PairServiceLimits](domainName, "pairServiceLimitsByDomain")
   }
 
-  private def deleteLimitsByDomain[T](domainName: String, queryName: String) {
-    sessionFactory.withSession(session => {
-      listQuery[T](
-        session, queryName, Map("domain_name" -> domainName)
-      ).foreach(
-        session.delete
-      )
-    })
-  }
+  private def deleteLimitsByDomain[T](domainName: String, queryName: String) =
+    db.delete(queryName, Map("domain_name" -> domainName))
 
   def setSystemHardLimit(limit: ServiceLimit, limitValue: Int) {
     validate(limitValue)
@@ -116,9 +111,8 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
   }
   
   private def cascadeLimitToDomainHardLimit(limit: ServiceLimit, limitValue: Int) {
-    sessionFactory.withSession(
-      session => listQuery[DomainServiceLimits](session, "domainServiceLimitsByName", Map("limit_name" -> limit.key))
-    ).foreach { domainLimit =>
+    val limits = db.listQuery[DomainServiceLimits]("domainServiceLimitsByName", Map("limit_name" -> limit.key))
+    limits.foreach { domainLimit =>
       cascadeLimit(
         domainLimit.hardLimit,
         (limitName, limitValue) => setDomainHardLimit(domainLimit.domain.name, limit, limitValue),
@@ -128,9 +122,8 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
   }
 
   private def cascadeLimitToDomainDefaultLimit(limit: ServiceLimit, limitValue: Int) {
-    sessionFactory.withSession(
-      session => listQuery[DomainServiceLimits](session, "domainServiceLimitsByName", Map("limit_name" -> limit.key))
-    ).foreach { domainLimit =>
+    val limits = db.listQuery[DomainServiceLimits]("domainServiceLimitsByName", Map("limit_name" -> limit.key))
+    limits.foreach { domainLimit =>
       cascadeLimit(
         domainLimit.defaultLimit,
         (limitName, limitValue) => setDomainDefaultLimit(domainLimit.domain.name, limit, limitValue),
@@ -140,9 +133,8 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory)
   }
   
   private def cascadeLimitToPair(limit: ServiceLimit, limitValue: Int) {
-    sessionFactory.withSession(
-      session => listQuery[PairServiceLimits](session, "pairServiceLimitsByName", Map("limit_name" -> limit.key))
-    ).foreach { pairLimit =>
+    val limits = db.listQuery[PairServiceLimits]("pairServiceLimitsByName", Map("limit_name" -> limit.key))
+    limits.foreach { pairLimit =>
       cascadeLimit(
         pairLimit.limitValue,
         (limitName, limitValue) => setPairLimit(pairLimit.pair.domain.name, pairLimit.pair.key, limit, limitValue),

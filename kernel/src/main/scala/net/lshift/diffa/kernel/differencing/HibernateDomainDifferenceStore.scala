@@ -1,3 +1,19 @@
+/**
+ * Copyright (C) 2010-2012 LShift Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.kernel.events.VersionID
@@ -21,11 +37,16 @@ import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, DiffaPairRef, Di
 import org.hibernate.dialect.{Oracle10gDialect, Dialect}
 import net.lshift.hibernate.migrations.dialects.{MySQL5DialectExtension, OracleDialectExtension, DialectExtensionSelector}
 import org.hibernate.criterion.{Projections, Restrictions}
+import net.lshift.diffa.kernel.util.db.DatabaseFacade
 
 /**
  * Hibernate backed Domain Cache provider.
  */
-class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cacheManager:CacheManager, val dialect:Dialect, val hookManager:HookManager)
+class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
+                                     db:DatabaseFacade,
+                                     val cacheManager:CacheManager,
+                                     val dialect:Dialect,
+                                     val hookManager:HookManager)
     extends DomainDifferenceStore
     with HibernateQueryUtils {
 
@@ -231,7 +252,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def retrieveUnmatchedEvents(domain:String, interval: Interval) = sessionFactory.withSession(s => {
-    listQuery[ReportedDifferenceEvent](s, "unmatchedEventsInIntervalByDomain",
+    db.listQuery[ReportedDifferenceEvent]("unmatchedEventsInIntervalByDomain",
       Map("domain" -> domain, "start" -> interval.getStart, "end" -> interval.getEnd)).map(_.asDifferenceEvent)
   })
 
@@ -260,7 +281,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
       "unmatchedEventsInIntervalByDomainAndPair"
     }
 
-    listQuery[ReportedDifferenceEvent](s, queryName,
+    db.listQuery[ReportedDifferenceEvent](queryName,
         Map("domain" -> pair.domain, "pair" -> pair.key, "start" -> interval.getStart, "end" -> interval.getEnd),
         Some(offset), Some(length)).
       map(_.asDifferenceEvent)
@@ -281,7 +302,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory, val cach
   })
 
   def retrieveEventsSince(domain: String, evtSeqId: String) = sessionFactory.withSession(s => {
-    listQuery[ReportedDifferenceEvent](s, "eventsSinceByDomain",
+    db.listQuery[ReportedDifferenceEvent]("eventsSinceByDomain",
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
   })
 
@@ -394,27 +415,16 @@ case class PendingDifferenceEvent(
 }
 
 /**
- * This is an internal type that represents the structure of the SQL result set that aggregates mismatch events.
- */
-case class AggregateEventsRow(
-  @BeanProperty var year:java.lang.Integer = null,
-  @BeanProperty var month:java.lang.Integer = null,
-  @BeanProperty var day:java.lang.Integer = null,
-  @BeanProperty var hour:java.lang.Integer = null,
-  @BeanProperty var minute:java.lang.Integer = null,
-  @BeanProperty var aggregate:java.lang.Integer = null
-) {
-  def this() = this(year = null)
-}
-
-/**
  * Workaround for injecting JNDI string - basically because I couldn't find a way to due this just with the Spring XML file.
  */
-class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory, val cacheManager:CacheManager, val dialectString:String, val hookManager:HookManager) {
+class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory,
+                                            val db:DatabaseFacade,
+                                            val cacheManager:CacheManager,
+                                            val dialectString:String, val hookManager:HookManager) {
 
   def create = {
     val dialect = Class.forName(dialectString).newInstance().asInstanceOf[Dialect]
-    new HibernateDomainDifferenceStore(sessionFactory, cacheManager, dialect, hookManager)
+    new HibernateDomainDifferenceStore(sessionFactory, db, cacheManager, dialect, hookManager)
   }
 }
 
@@ -423,7 +433,6 @@ case class StoreCheckpoint(
   @BeanProperty var latestVersion:java.lang.Long = null
 ) {
   def this() = this(pair = null)
-  //def this(pairRef:DiffaPairRef, latestVersion:java.lang.Long) = this(pairRef.domain, pairRef.key, latestVersion)
 }
 
 /**
