@@ -20,7 +20,7 @@ import net.lshift.diffa.kernel.config.migrations._
 import org.hibernate.SessionFactory
 import org.hibernate.jdbc.Work
 import org.slf4j.{LoggerFactory, Logger}
-import net.lshift.diffa.kernel.util.SessionHelper._
+import net.lshift.diffa.kernel.util.db.SessionHelper._
 import org.hibernate.tool.hbm2ddl.DatabaseMetadata
 import org.hibernate.cfg.{Environment, Configuration}
 import java.sql.{Types, Connection}
@@ -222,6 +222,7 @@ object HibernateConfigStorePreparationStep {
     Step0023,
     Step0024,
     Step0025,
-    Step0026
+    Step0026,
+    Step0027
   )
 }

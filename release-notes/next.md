@@ -32,6 +32,7 @@
 * [134] - Reduce startup and pair registration time by using Apache httpclient instead of Jersey.
 * [151] - Curtail accumulation of open file descriptors by closing the IndexWriter of each pair on a regular basis.
 * [152] - Ensure that we do not generate malformed URLs when performing aggregate scans on an endpoint URL specified with a query string.
+* [155] - Re-instated the diagnostic log buffering
 
 ## Library Upgrades
 

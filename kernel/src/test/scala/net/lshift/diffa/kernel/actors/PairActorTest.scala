@@ -205,7 +205,7 @@ class PairActorTest {
 
     replay(versionPolicy, store, diffWriter, writer)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.difference(pair.asRef)
 
     monitor.synchronized {
@@ -235,7 +235,7 @@ class PairActorTest {
 
     replay(writer, store, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     monitor.synchronized {
       monitor.wait(1000)
@@ -285,7 +285,7 @@ class PairActorTest {
 
     replay(writer, store, versionPolicy, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pairRef, None)
 
     scanMonitor.synchronized {
@@ -356,7 +356,7 @@ class PairActorTest {
 
     replay(writer, store, diffWriter, versionPolicy, scanListener)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
 
     flushMonitor.synchronized {
@@ -375,8 +375,7 @@ class PairActorTest {
     writer.flush(); expectLastCall.asStub()
     replay(store, writer, diffWriter, versionPolicy)
 
-
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     assertTrue(supervisor.cancelScans(pair.asRef))
   }
 
@@ -430,7 +429,7 @@ class PairActorTest {
 
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
 
     responseMonitor.synchronized {
@@ -460,7 +459,7 @@ class PairActorTest {
 
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     monitor.synchronized {
       monitor.wait(1000)
@@ -486,7 +485,7 @@ class PairActorTest {
 
     replay(writer, store, diffWriter, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
@@ -517,7 +516,7 @@ class PairActorTest {
 
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     
     assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
@@ -590,7 +589,7 @@ class PairActorTest {
 
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pairRef, None)
 
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
@@ -615,7 +614,7 @@ class PairActorTest {
     })
     replay(store, diffWriter, versionPolicy, writer)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.propagateChangeEvent(event)
 
     // propagateChangeEvent is an aysnc call, so yield the test thread to allow the actor to invoke the policy
@@ -643,7 +642,7 @@ class PairActorTest {
 
     replay(store, diffWriter, versionPolicy, writer)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.submitInventory(pairRef, side, constraints, aggregations, entries)
 
     // submitInventory is an aysnc call, so yield the test thread to allow the actor to invoke the policy
@@ -677,7 +676,7 @@ class PairActorTest {
     replay(writer, store, diffWriter, versionPolicy)
 
     // When
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     (1 to scenario.actionCount) foreach { n =>
       supervisor.propagateChangeEvent(event)
     }
@@ -702,7 +701,7 @@ class PairActorTest {
     })
     replay(writer, store, diffWriter)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
 
     // TODO Commented out because this is killing the vibe
     //mailbox.poll(5, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }

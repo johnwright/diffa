@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2010-2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.actors
+package net.lshift.diffa.kernel.config.limits
 
-import net.lshift.diffa.kernel.config.DiffaPairRef
+import net.lshift.diffa.kernel.config.ServiceLimit
 
-/**
- * Trait supported by components that manage active pairs.
- */
-trait ActivePairManager {
-
-  /**
-   * Activates resources necessary to manage the given pair.
-   */
-  def startActor(pair:DiffaPairRef)
-
-  /**
-   * De-activates any resources associated with the pair.
-   */
-  def stopActor(pair:DiffaPairRef)
+object ExplainFiles extends ServiceLimit {
+  def key = "explain.files"
+  def description = "The number of explain files that should be retained for later analysis"
+  def defaultLimit = 0
+  def hardLimit = 5
 }

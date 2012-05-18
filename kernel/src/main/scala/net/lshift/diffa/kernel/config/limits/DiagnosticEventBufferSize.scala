@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2010-2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.actors
+package net.lshift.diffa.kernel.config.limits
 
-import net.lshift.diffa.kernel.config.DiffaPairRef
+import net.lshift.diffa.kernel.config.ServiceLimit
 
-/**
- * Trait supported by components that manage active pairs.
- */
-trait ActivePairManager {
-
-  /**
-   * Activates resources necessary to manage the given pair.
-   */
-  def startActor(pair:DiffaPairRef)
-
-  /**
-   * De-activates any resources associated with the pair.
-   */
-  def stopActor(pair:DiffaPairRef)
+object DiagnosticEventBufferSize extends ServiceLimit {
+  def key = "diagnostic.event.buffer.sizes"
+  def description = "The number of events that the DiagnosicsManager should buffer"
+  def defaultLimit = 100
+  def hardLimit = 100
 }
