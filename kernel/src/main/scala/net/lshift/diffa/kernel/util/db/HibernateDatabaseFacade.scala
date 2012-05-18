@@ -20,6 +20,9 @@ import net.lshift.diffa.kernel.util.db.SessionHelper._
 
 import org.hibernate.SessionFactory
 
+/**
+ * Hibernate backed implementation of the low level DB facade.
+ */
 class HibernateDatabaseFacade(factory:SessionFactory) extends DatabaseFacade {
 
   def listQuery[ReturnType](queryName: String, params: Map[String, Any], firstResult: Option[Int], maxResults: Option[Int]) = {

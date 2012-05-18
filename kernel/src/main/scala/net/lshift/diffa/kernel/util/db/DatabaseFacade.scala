@@ -22,10 +22,16 @@ package net.lshift.diffa.kernel.util.db
  */
 trait DatabaseFacade {
 
+  /**
+   * Executes the named SELECT query with the specified parameters and binds the results to the expected type.
+   */
   def listQuery[ReturnType](queryName: String,
                             params: Map[String, Any],
                             firstResult:Option[Int] = None,
                             maxResults:Option[Int] = None): Seq[ReturnType]
 
+  /**
+   * Executes the named UPDATE, DELETE or INSERT query with the specified parameters and the row count
+   */
   def execute(queryName: String, params: Map[String, Any]) : Int
 }
