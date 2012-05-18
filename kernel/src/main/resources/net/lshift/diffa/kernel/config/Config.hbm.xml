@@ -512,12 +512,4 @@
     where v.pair.domain.name = :domain_name and v.pair.key = :pair_key
   </query>
 
-  <sql-query name="deleteDomainServiceLimitsByDomain">
-    delete from domain_limits where domain = :domain
-  </sql-query>
-
-  <sql-query name="deletePairServiceLimitsByDomain">
-    delete from pair_limits where domain = :domain
-  </sql-query>
-
 </hibernate-mapping>
