@@ -23,21 +23,28 @@ import net.lshift.diffa.kernel.config.DiffaPairRef
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.util.{MissingObjectException, Lazy}
+import java.io.Closeable
+import scala.collection.JavaConversions._
 
 /**
  * Common superclass for components that need to manage actors.
  */
-abstract class AbstractActorSupervisor extends ActivePairManager {
+abstract class AbstractActorSupervisor
+  extends ActivePairManager
+  with Closeable {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   private type PotentialActor = Lazy[Option[ActorRef]]
-  private val pairActors = new HashMap[String, PotentialActor]()
+  private val pairActors = new HashMap[DiffaPairRef, PotentialActor]()
 
 
   def createPairActor(pair:DiffaPairRef) : Option[ActorRef]
 
+  def close = pairActors.foreach{ case (pairRef,_) => stopActor(pairRef) }
+
   def startActor(pair: DiffaPairRef) = {
+
     def createAndStartPairActor = createPairActor(pair) map { actor =>
       actor.start()
       logger.info("{} actor started", formatAlertCode(pair, ACTOR_STARTED))
@@ -54,7 +61,7 @@ abstract class AbstractActorSupervisor extends ActivePairManager {
     val oldActor = pairActors.synchronized {
       val oldActor = unregisterActor(pair)
       val lazyActor = new Lazy(createAndStartPairActor)
-      pairActors.put(pair.identifier, lazyActor)
+      pairActors.put(pair, lazyActor)
       oldActor
     }
 
@@ -91,27 +98,37 @@ abstract class AbstractActorSupervisor extends ActivePairManager {
    * @return the actor for the given pair, or null if there was no actor in the map
    */
   protected def unregisterActor(pair:DiffaPairRef) = pairActors.synchronized {
-    val actor = pairActors.get(pair.identifier)
+    val actor = pairActors.get(pair)
     if (actor != null) {
-      pairActors.remove(pair.identifier)
+      pairActors.remove(pair)
     }
     actor
   }
 
   def findActor(id:VersionID) : ActorRef = findActor(id.pair)
 
-  def findActor(pair: DiffaPairRef) = {
-    val actor = pairActors.get(pair.identifier)
-    if (actor == null) {
+  def findActor(pair: DiffaPairRef) = maybeFindActor(pair) match {
+    case Some(actor) => actor
+    case None        =>
       logger.error("{} Could not resolve actor for key: {}; {} registered actors: {}",
         Array[Object](formatAlertCode(pair, MISSING_ACTOR_FOR_KEY), pair.identifier,
           Integer.valueOf(pairActors.size()), pairActors.keySet()))
       throw new MissingObjectException(pair.identifier)
+  }
+
+  def maybeFindActor(pair: DiffaPairRef) : Option[ActorRef] = {
+
+    val actor = pairActors.get(pair)
+
+    if (actor == null) {
+      None
     }
-    actor().getOrElse {
-      logger.error("{} Unusable actor due to failure to look up policy during actor creation",
-        formatAlertCode(pair, BAD_ACTOR))
-      throw new MissingObjectException(pair.identifier)
+    else {
+      Some(actor().getOrElse {
+        logger.error("{} Unusable actor due to failure to look up policy during actor creation",
+          formatAlertCode(pair, BAD_ACTOR))
+        throw new MissingObjectException(pair.identifier)
+      })
     }
   }
 }
