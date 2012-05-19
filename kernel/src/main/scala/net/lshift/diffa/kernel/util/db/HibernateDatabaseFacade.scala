@@ -30,7 +30,7 @@ class HibernateDatabaseFacade(factory:SessionFactory) extends DatabaseFacade {
   }
 
   def singleQuery[T](queryName: String, params: Map[String, Any], entityName: String)  = {
-    factory.withSession(s => HQU.singleQuery(s, queryName, params, entityName))
+    factory.withSession(s => HQU.singleQuery[T](s, queryName, params, entityName))
   }
 
   def singleQueryMaybe[T](queryName: String, params: Map[String, Any])  = {

@@ -27,7 +27,7 @@
     where entity_id = :entity_id
     and pair = :pair
     and domain = :domain
-    and ( upstream = :version or downstream = :version )
+    and ( upstream_vsn = :version or downstream_vsn = :version )
   </sql-query>
 
   <sql-query name="deleteDiffById">
