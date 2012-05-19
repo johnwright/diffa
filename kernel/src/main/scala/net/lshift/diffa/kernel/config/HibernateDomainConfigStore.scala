@@ -222,7 +222,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   }
 
   def maybeConfigOption(domain:String, key:String) =
-    sessionFactory.withSession(s => singleQueryOpt[String](s, "configOptionByNameAndKey", Map("key" -> key, "domain_name" -> domain)))
+    db.singleQueryMaybe[String]("configOptionByNameAndKey", Map("key" -> key, "domain_name" -> domain))
 
   def configOptionOrDefault(domain:String, key: String, defaultVal: String) =
     maybeConfigOption(domain, key) match {

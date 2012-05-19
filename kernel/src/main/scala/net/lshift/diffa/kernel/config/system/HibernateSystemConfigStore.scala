@@ -78,7 +78,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
 
   def createOrUpdateUser(u: User) = sessionFactory.withSession(s => {
-    singleQueryOpt[User](s, "userByName", Map("name" -> u.name)) match {
+    db.singleQueryMaybe[User]("userByName", Map("name" -> u.name)) match {
       case Some(oldUser) => {
         u.token = oldUser.token
         s.merge(u)
@@ -111,8 +111,10 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
   })
 
   def getUser(name: String) : User = sessionFactory.withSession(getUser(_,name))
-  def getUserByToken(token: String) : User = sessionFactory.withSession(s =>
-    singleQuery[User](s, "userByToken", Map("token" -> token), "user token %s".format(token)))
+
+  // TODO This needs to be cached
+  def getUserByToken(token: String) : User
+    = db.singleQuery[User]("userByToken", Map("token" -> token), "user token %s".format(token))
 
   def listUsers : Seq[User] = db.listQuery[User]("allUsers", Map())
   def listDomainMemberships(username: String) : Seq[Member] =
