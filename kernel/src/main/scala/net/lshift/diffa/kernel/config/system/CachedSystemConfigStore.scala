@@ -22,7 +22,11 @@ import net.lshift.diffa.kernel.util.cache.CacheProvider
 class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheProvider)
   extends SystemConfigStore {
 
-  def reset = {}
+  val userTokenCache = cacheProvider.getCachedMap[String, User]("user.tokens")
+
+  def reset {
+    userTokenCache.evictAll()
+  }
 
   def createOrUpdateDomain(domain:Domain) = underlying.createOrUpdateDomain(domain)
   def deleteDomain(domain:String) = underlying.deleteDomain(domain)
@@ -45,8 +49,10 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   def listUsers = underlying.listUsers
   def listDomainMemberships(username: String) = underlying.listDomainMemberships(username)
   def getUser(name: String) = underlying.getUser(name)
+
   def getUserByToken(token: String) = {
-    underlying.getUserByToken(token)
+    userTokenCache.readThrough(token, () => underlying.getUserByToken(token))
   }
+
   def containsRootUser(names: Seq[String]) = underlying.containsRootUser(names)
 }

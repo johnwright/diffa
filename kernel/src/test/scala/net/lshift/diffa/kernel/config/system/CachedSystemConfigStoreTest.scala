@@ -40,11 +40,13 @@ class CachedSystemConfigStoreTest {
     val user = new User(name = "username", email = "", superuser = false, passwordEnc = "")
 
     expect(underlying.getUserByToken("6f4g4b3c")).andReturn(user).once()
-
     replay(underlying)
 
     val retrieved1 = cachedSystemConfigStore.getUserByToken("6f4g4b3c")
     assertEquals(user, retrieved1)
+
+    val retrieved2 = cachedSystemConfigStore.getUserByToken("6f4g4b3c")
+    assertEquals(user, retrieved2)
 
     verify(underlying)
   }
