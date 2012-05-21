@@ -23,8 +23,10 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   extends SystemConfigStore {
 
   val userTokenCache = cacheProvider.getCachedMap[String, User]("user.tokens")
+  val usersCache = cacheProvider.getCachedMap[String, User]("users")
 
   def reset {
+    usersCache.evictAll()
     userTokenCache.evictAll()
   }
 
@@ -48,7 +50,10 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   def deleteUser(name: String) = underlying.deleteUser(name)
   def listUsers = underlying.listUsers
   def listDomainMemberships(username: String) = underlying.listDomainMemberships(username)
-  def getUser(name: String) = underlying.getUser(name)
+
+  def getUser(username: String) = {
+    usersCache.readThrough(username, () => underlying.getUser(username))
+  }
 
   def getUserByToken(token: String) = {
     userTokenCache.readThrough(token, () => underlying.getUserByToken(token))
