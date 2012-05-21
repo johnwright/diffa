@@ -32,7 +32,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  db:DatabaseFacade,
                                  pairCache:PairCache,
                                  hookManager:HookManager,
-                                 cacheManager:CacheManager)
+                                 cacheManager:CacheManager,
+                                 membershipListener:DomainMembershipAware)
     extends DomainConfigStore
     with HibernateQueryUtils {
 
@@ -242,15 +243,28 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     s.delete(pair)
   }
 
-  def makeDomainMember(domain:String, userName:String) = sessionFactory.withSession(s => {
-    val member = Member(User(name = userName), Domain(name = domain))
-    s.saveOrUpdate(member)
-    member
-  })
+  def makeDomainMember(domain:String, userName:String) = {
 
-  def removeDomainMembership(domain:String, userName:String) = sessionFactory.withSession(s => {
-    s.delete(Member(User(name = userName), Domain(name = domain)))
-  })
+    val member = Member(User(name = userName), Domain(name = domain))
+
+    // TODO This update is unnecessary -> we should just handle a constraint exception with the insert instead
+    val rows = db.execute("updateDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
+
+    if (rows == 0) {
+      db.execute("createDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
+    }
+
+    membershipListener.onMembershipCreated(member)
+    member
+  }
+
+  def removeDomainMembership(domain:String, userName:String) = {
+    val member = Member(User(name = userName), Domain(name = domain))
+
+    db.execute("deleteDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
+
+    membershipListener.onMembershipRemoved(member)
+  }
 
   def listDomainMembers(domain:String) = sessionFactory.withSession(s => {
     db.listQuery[Member]("membersByDomain", Map("domain_name" -> domain))

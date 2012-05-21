@@ -16,18 +16,33 @@
 
 package net.lshift.diffa.kernel.config.system
 
-import net.lshift.diffa.kernel.config.{Domain, DiffaPairRef, User}
 import net.lshift.diffa.kernel.util.cache.CacheProvider
+import net.lshift.diffa.kernel.config._
+import scala.collection.JavaConversions._
 
 class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheProvider)
-  extends SystemConfigStore {
+  extends SystemConfigStore
+  with DomainMembershipAware{
 
   val userTokenCache = cacheProvider.getCachedMap[String, User]("user.tokens")
   val usersCache = cacheProvider.getCachedMap[String, User]("users")
+  val membershipCache = cacheProvider.getCachedMap[String, java.util.List[Member]]("user.domain.memberships")
 
   def reset {
     usersCache.evictAll()
     userTokenCache.evictAll()
+    membershipCache.evictAll()
+  }
+
+  def onMembershipCreated(member: Member) = {
+    // For simplicity's sake, just evict this user from the cache and let it
+    // get read through the next time it is required
+    // A future implementation could actually manage the memberships in the map.
+    evictMember(member)
+  }
+  def onMembershipRemoved(member: Member) = {
+    // See note about onMembershipCreated/1
+    evictMember(member)
   }
 
   def createOrUpdateDomain(domain:Domain) = underlying.createOrUpdateDomain(domain)
@@ -60,7 +75,11 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   }
 
   def listUsers = underlying.listUsers
-  def listDomainMemberships(username: String) = underlying.listDomainMemberships(username)
+
+  def listDomainMemberships(username: String) = {
+    membershipCache.readThrough(username,
+      () => underlying.listDomainMemberships(username).toList)
+  }
 
   def getUser(username: String) = {
     usersCache.readThrough(username, () => underlying.getUser(username))
@@ -91,5 +110,10 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
       user.token = null
       usersCache.put(username, user)
     }
+  }
+
+  private def evictMember(member: Member) = {
+    val username = member.user.name
+    membershipCache.evict(username)
   }
 }

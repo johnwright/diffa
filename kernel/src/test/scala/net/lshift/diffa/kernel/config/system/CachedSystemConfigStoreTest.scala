@@ -18,12 +18,12 @@ package net.lshift.diffa.kernel.config.system
 
 import org.junit.Assert._
 import org.easymock.EasyMock._
-import net.lshift.diffa.kernel.config.User
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
+import net.lshift.diffa.kernel.config.{Domain, Member, User}
 
 @RunWith(classOf[Theories])
 class CachedSystemConfigStoreTest {
@@ -43,14 +43,14 @@ class CachedSystemConfigStoreTest {
   @Theory
   def shouldCacheLookupByToken(scenario:SimpleCacheScenario) {
 
-    expect(scenario.cachingOperation(underlying)).andReturn(user).once()
+    expect(scenario.cachingOperation(underlying)).andReturn(scenario.expectedResult).once()
     replay(underlying)
 
     val retrieved1 = scenario.cachingOperation(cachedSystemConfigStore)
-    assertEquals(user, retrieved1)
+    assertEquals(scenario.expectedResult, retrieved1)
 
     val retrieved2 = scenario.cachingOperation(cachedSystemConfigStore)
-    assertEquals(user, retrieved2)
+    assertEquals(scenario.expectedResult, retrieved2)
 
     verify(underlying)
   }
@@ -79,11 +79,23 @@ class CachedSystemConfigStoreTest {
     verify(underlying)
   }
 
+  /*
+  @Test
+  def should = {
+
+    expect(underlying.listDomainMemberships(user.name)).andReturn(members).once()
+    replay(underlying)
+
+    cachedSystemConfigStore.listDomainMemberships(user.name)
+  }
+  */
+
 }
 
 case class SimpleCacheScenario(
   user:User,
-  cachingOperation:SystemConfigStore => User
+  cachingOperation:SystemConfigStore => Any,
+  expectedResult:Any
 )
 
 case class CacheScenarioWithRemoval(
@@ -102,14 +114,24 @@ object CachedSystemConfigStoreTest {
     token = "6f4g4b3c"
   )
 
+  val members = Seq(Member(user, Domain("domain")))
+
   @DataPoint def shouldCacheUserToken = SimpleCacheScenario(
     user,
-    (c:SystemConfigStore) => c.getUserByToken(user.token)
+    (c:SystemConfigStore) => c.getUserByToken(user.token),
+    user
   )
 
   @DataPoint def shouldCacheFullUser = SimpleCacheScenario(
     user,
-    (c:SystemConfigStore) => c.getUser(user.name)
+    (c:SystemConfigStore) => c.getUser(user.name),
+    user
+  )
+
+  @DataPoint def shouldCacheMemberships = SimpleCacheScenario(
+    user,
+    (c:SystemConfigStore) => c.listDomainMemberships(user.name),
+    members
   )
 
   @DataPoint def clearUserTokenShouldClearTokenCache = CacheScenarioWithRemoval(
