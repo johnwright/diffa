@@ -23,7 +23,7 @@ import org.junit.{Before, Test}
 import net.lshift.diffa.kernel.util.MissingObjectException
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
-import net.lshift.diffa.kernel.config.{Domain, Member, User}
+import net.lshift.diffa.kernel.config.{DomainMembershipAware, Domain, Member, User}
 
 @RunWith(classOf[Theories])
 class CachedSystemConfigStoreTest {
@@ -79,16 +79,34 @@ class CachedSystemConfigStoreTest {
     verify(underlying)
   }
 
-  /*
-  @Test
-  def should = {
 
-    expect(underlying.listDomainMemberships(user.name)).andReturn(members).once()
+  @Test
+  def addingMemberShouldInvalidateCache = {
+    membershipEventsShouldInvalidateCache(
+      (d:DomainMembershipAware, m:Member) => d.onMembershipCreated(m)
+    )
+  }
+
+  @Test
+  def removingMemberShouldInvalidateCache = {
+    membershipEventsShouldInvalidateCache(
+      (d:DomainMembershipAware, m:Member) => d.onMembershipRemoved(m)
+    )
+  }
+
+  private def membershipEventsShouldInvalidateCache(eventHandler:(DomainMembershipAware,Member) => Unit) = {
+
+    expect(underlying.listDomainMemberships(user.name)).andReturn(members).times(2)
     replay(underlying)
 
     cachedSystemConfigStore.listDomainMemberships(user.name)
+
+    eventHandler(cachedSystemConfigStore, members(0))
+
+    cachedSystemConfigStore.listDomainMemberships(user.name)
+
+    verify(underlying)
   }
-  */
 
 }
 
