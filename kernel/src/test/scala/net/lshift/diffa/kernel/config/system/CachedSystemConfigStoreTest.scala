@@ -16,43 +16,36 @@
 
 package net.lshift.diffa.kernel.config.system
 
-import org.junit.Test
 import org.junit.Assert._
 import org.easymock.EasyMock._
-import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.db.DatabaseFacade
-import net.lshift.diffa.kernel.config.{User, PairCache}
-import org.easymock.classextension.{EasyMock => EasyMock4Classes}
-import org.easymock.EasyMock
+import net.lshift.diffa.kernel.config.User
+import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
+import org.junit.{Before, Test}
 
 
 class CachedSystemConfigStoreTest {
 
+  val underlying = createStrictMock(classOf[SystemConfigStore])
+  val cacheProvider = new HazelcastCacheProvider()
 
-  @Deprecated val sessionFactory = createStrictMock(classOf[SessionFactory])
-  val pairCache = EasyMock4Classes.createStrictMock(classOf[PairCache])
-  val db = createStrictMock(classOf[DatabaseFacade])
+  val cachedSystemConfigStore = new CachedSystemConfigStore(underlying, cacheProvider)
 
-  val systemConfigStore = new HibernateSystemConfigStore(sessionFactory, db, pairCache)
+  @Before
+  def resetCache {
+    cachedSystemConfigStore.reset
+  }
 
   @Test
   def shouldCacheLookupByToken {
-    val user = new User(name = "username", email = "", superuser = false, passwordEnc = "", token = "6f4g4b3c")
+    val user = new User(name = "username", email = "", superuser = false, passwordEnc = "")
 
-    expect(db.singleQueryMaybe[User]("userByName", Map("name" -> user.name))).andReturn(None).once()
-    expect(db.execute(EasyMock.eq("insertNewUser"), EasyMock.anyObject[Map[String,Any]])).andReturn(1).once()
-    expect(db.singleQuery[User](
-      EasyMock.eq("userByToken"),
-      EasyMock.eq(Map("token" -> user.token)),
-      EasyMock.anyObject[String])).andReturn(user).once()
-    replay(db)
+    expect(underlying.getUserByToken("6f4g4b3c")).andReturn(user).once()
 
-    systemConfigStore.createOrUpdateUser(user)
-    val retrieved1 = systemConfigStore.getUserByToken("6f4g4b3c")
+    replay(underlying)
+
+    val retrieved1 = cachedSystemConfigStore.getUserByToken("6f4g4b3c")
     assertEquals(user, retrieved1)
-    //val retrieved2 = systemConfigStore.getUserByToken("6f4g4b3c")
-    //assertEquals(user, retrieved2)
 
-    verify(db)
+    verify(underlying)
   }
 }

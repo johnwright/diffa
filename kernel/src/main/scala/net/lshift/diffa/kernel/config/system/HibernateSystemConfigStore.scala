@@ -77,22 +77,26 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
   def listEndpoints = db.listQuery[Endpoint]("allEndpoints", Map())
 
 
-  def createOrUpdateUser(u: User) = db.singleQueryMaybe[User]("userByName", Map("name" -> u.name)) match {
-    case Some(oldUser) =>
-      db.execute("updateUserAttributes", Map(
-        "name" -> u.name,
-        "password_enc" -> u.passwordEnc,
-        "email" -> u.email,
-        "superuser" -> u.superuser
-      ))
-    case None =>
-      db.execute("insertNewUser", Map(
-        "name" -> u.name,
-        "password_enc" -> u.passwordEnc,
-        "email" -> u.email,
-        "superuser" -> u.superuser
-      ))
+  @Deprecated
+  def createOrUpdateUser(user: User) = {
+    if (updateUser(user) == 0) {
+      createUser(user)
+    }
   }
+
+  def createUser(user: User) = db.execute("insertUser", Map(
+    "name" -> user.name,
+    "password_enc" -> user.passwordEnc,
+    "email" -> user.email,
+    "superuser" -> user.superuser
+  ))
+
+  def updateUser(user: User) = db.execute("updateUser", Map(
+    "name" -> user.name,
+    "password_enc" -> user.passwordEnc,
+    "email" -> user.email,
+    "superuser" -> user.superuser
+  ))
 
   def getUserToken(username: String) = {
     sessionFactory.withSession(s => {

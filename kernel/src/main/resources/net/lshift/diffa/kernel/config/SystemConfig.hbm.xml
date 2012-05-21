@@ -22,16 +22,17 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
 
-  <sql-query name="updateUserAttributes">
+  <sql-query name="updateUser">
     update users
-    set email = :email
-    and superuser = :superuser
-    and password_enc = :password_enc
+    set
+      email = :email,
+      superuser = :superuser,
+      password_enc = :password_enc
     where name = :name
   </sql-query>
 
-  <sql-query name="insertNewUser">
-    insert into users values (name, email, superuser, password_enc)
+  <sql-query name="insertUser">
+    insert into users (name, email, superuser, password_enc)
     values (:name, :email, :superuser, :password_enc)
   </sql-query>
 
