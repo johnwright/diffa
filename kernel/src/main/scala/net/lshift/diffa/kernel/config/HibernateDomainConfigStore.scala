@@ -27,6 +27,7 @@ import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.util.CacheWrapper
 import org.hibernate.transform.ResultTransformer
 import java.util.List
+import java.sql.SQLIntegrityConstraintViolationException
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  db:DatabaseFacade,
@@ -244,16 +245,18 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   }
 
   def makeDomainMember(domain:String, userName:String) = {
-
-    val member = Member(User(name = userName), Domain(name = domain))
-
-    // TODO This update is unnecessary -> we should just handle a constraint exception with the insert instead
-    val rows = db.execute("updateDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
-
-    if (rows == 0) {
+    try {
       db.execute("createDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
     }
+    catch {
+      case x:SQLIntegrityConstraintViolationException =>
+        handleMemberConstraintViolation(domain, userName)
+      case e:Exception if e.getCause.isInstanceOf[SQLIntegrityConstraintViolationException] =>
+        handleMemberConstraintViolation(domain, userName)
+      // Otherwise just let the exception get thrown further
+    }
 
+    val member = Member(User(name = userName), Domain(name = domain))
     membershipListener.onMembershipCreated(member)
     member
   }
@@ -264,6 +267,10 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     db.execute("deleteDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
 
     membershipListener.onMembershipRemoved(member)
+  }
+
+  private def handleMemberConstraintViolation(domain:String, userName:String) = {
+    log.info("Ignoring integrity constraint violation for domain = %s and user = %s".format(domain,userName))
   }
 
   def listDomainMembers(domain:String) = sessionFactory.withSession(s => {

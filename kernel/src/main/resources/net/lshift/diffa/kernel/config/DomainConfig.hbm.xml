@@ -22,19 +22,6 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping package="net.lshift.diffa.kernel.config">
 
-  <!--
-      TODO Really this update is unnecessary, but until the app layer can handle the unique
-      constraint consistently, we'll leave this in here
-  -->
-  <sql-query name="updateDomainMembership">
-    update members
-      set
-        domain_name = :domain_name,
-        user_name = :user_name
-    where domain_name = :domain_name
-    and user_name = :user_name
-  </sql-query>
-
   <sql-query name="createDomainMembership">
     insert into members (domain_name, user_name) values (:domain_name, :user_name)
   </sql-query>
