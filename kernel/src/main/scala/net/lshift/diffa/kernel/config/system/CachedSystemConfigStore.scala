@@ -45,6 +45,10 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
     evictMember(member)
   }
 
+  // TODO Currently the only operations that are cached are the frequently invoked
+  // lookups of users by username, token and their respective memeberships for authentication purposes
+  // Ultimately, all operations on this store should get cached
+
   def createOrUpdateDomain(domain:Domain) = underlying.createOrUpdateDomain(domain)
   def deleteDomain(domain:String) = underlying.deleteDomain(domain)
   def doesDomainExist(name: String) = underlying.doesDomainExist(name)
