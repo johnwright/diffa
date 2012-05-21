@@ -36,8 +36,8 @@ Diffa.Helpers.Viz = {
     if (!opts.inputMin) throw "Missing inputMin option";   // the minimum input value. any value <= this results in outputMin
     if (!opts.inputMax) throw "Missing inputMax option";   // the maximum input value. f(x) = outputMax if x >= inputMax
 
-    if (size == 0)             { return 0; }
-    if (size <= opts.inputMin) { return opts.outputMin; }
+    if (size == 0)             { return {value: 0, limited: false}; }
+    if (size <= opts.inputMin) { return {value: opts.outputMin, limited: false}; }
 
     var a = opts.outputMin;
     var b = (opts.outputMax - opts.outputMin)/Math.log(opts.inputMax);
