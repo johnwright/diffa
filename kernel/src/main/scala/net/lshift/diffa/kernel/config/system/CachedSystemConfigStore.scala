@@ -42,12 +42,23 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   def getPair(pair: DiffaPairRef) = underlying.getPair(pair)
   def listPairs = underlying.listPairs
   def listEndpoints = underlying.listEndpoints
+
   @Deprecated def createOrUpdateUser(user: User) = underlying.createOrUpdateUser(user)
   def createUser(user: User) = underlying.createUser(user)
   def updateUser(user: User) = underlying.updateUser(user)
   def getUserToken(username: String) = underlying.getUserToken(username)
-  def clearUserToken(username: String) = underlying.clearUserToken(username)
-  def deleteUser(name: String) = underlying.deleteUser(name)
+
+  def clearUserToken(username: String) = {
+    evictFromCachesByUsername(username)
+    underlying.clearUserToken(username)
+  }
+
+  def deleteUser(username: String) = {
+    evictFromTokenCacheByUsername(username)
+    usersCache.evict(username)
+    underlying.deleteUser(username)
+  }
+
   def listUsers = underlying.listUsers
   def listDomainMemberships(username: String) = underlying.listDomainMemberships(username)
 
@@ -60,4 +71,25 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   }
 
   def containsRootUser(names: Seq[String]) = underlying.containsRootUser(names)
+
+  private def evictFromCachesByUsername(username:String) = {
+    // First update the users cache
+    evictFromUserCacheByUsername(username)
+    // Then invalidate the user token cache
+    evictFromTokenCacheByUsername(username)
+  }
+
+  private def evictFromTokenCacheByUsername(username:String) = {
+    val users = userTokenCache.valueSubset("name", username)
+    // In this scenario, this should only be a list with 1 element
+    users.foreach(u => userTokenCache.evict(u.token))
+  }
+
+  private def evictFromUserCacheByUsername(username:String) = {
+    val user = usersCache.get(username)
+    if (user != null) {
+      user.token = null
+      usersCache.put(username, user)
+    }
+  }
 }

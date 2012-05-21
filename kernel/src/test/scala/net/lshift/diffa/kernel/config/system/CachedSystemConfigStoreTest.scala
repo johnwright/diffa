@@ -21,9 +21,14 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.config.User
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.junit.{Before, Test}
+import net.lshift.diffa.kernel.util.MissingObjectException
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{DataPoint, Theories, Theory}
 
-
+@RunWith(classOf[Theories])
 class CachedSystemConfigStoreTest {
+
+  import CachedSystemConfigStoreTest._
 
   val underlying = createStrictMock(classOf[SystemConfigStore])
   val cacheProvider = new HazelcastCacheProvider()
@@ -35,35 +40,93 @@ class CachedSystemConfigStoreTest {
     cachedSystemConfigStore.reset
   }
 
-  @Test
-  def shouldCacheLookupByToken {
-    val user = new User(name = "username", email = "", superuser = false, passwordEnc = "")
+  @Theory
+  def shouldCacheLookupByToken(scenario:SimpleCacheScenario) {
 
-    expect(underlying.getUserByToken("6f4g4b3c")).andReturn(user).once()
+    expect(scenario.cachingOperation(underlying)).andReturn(user).once()
     replay(underlying)
 
-    val retrieved1 = cachedSystemConfigStore.getUserByToken("6f4g4b3c")
+    val retrieved1 = scenario.cachingOperation(cachedSystemConfigStore)
     assertEquals(user, retrieved1)
 
-    val retrieved2 = cachedSystemConfigStore.getUserByToken("6f4g4b3c")
+    val retrieved2 = scenario.cachingOperation(cachedSystemConfigStore)
     assertEquals(user, retrieved2)
 
     verify(underlying)
   }
 
-  @Test
-  def shouldCacheLookupByName {
-    val user = new User(name = "username", email = "", superuser = false, passwordEnc = "")
+  @Theory
+  def clearingOperationShouldClearTokenCache(scenario:CacheScenarioWithRemoval) {
 
-    expect(underlying.getUser("username")).andReturn(user).once()
+    expect(scenario.cachingOperation(underlying)).andReturn(scenario.user).once()
+    expect(scenario.clearingOperation(underlying)).once()
+    expect(scenario.cachingOperation(underlying)).andThrow(new MissingObjectException("user")).once()
     replay(underlying)
 
-    val retrieved1 = cachedSystemConfigStore.getUser("username")
-    assertEquals(user, retrieved1)
+    val retrieved = scenario.cachingOperation(cachedSystemConfigStore)
+    assertEquals(scenario.user, retrieved)
 
-    val retrieved2 = cachedSystemConfigStore.getUser("username")
-    assertEquals(user, retrieved2)
+    scenario.clearingOperation(cachedSystemConfigStore)
+
+    try {
+      scenario.cachingOperation(cachedSystemConfigStore)
+      fail("Lookup for user (%s) should throw exception".format(scenario.user))
+    }
+    catch {
+      case x:MissingObjectException => // This is expected
+    }
 
     verify(underlying)
   }
+
+}
+
+case class SimpleCacheScenario(
+  user:User,
+  cachingOperation:SystemConfigStore => User
+)
+
+case class CacheScenarioWithRemoval(
+  user:User,
+  clearingOperation:SystemConfigStore => Unit,
+  cachingOperation:SystemConfigStore => User
+)
+
+object CachedSystemConfigStoreTest {
+
+  val user = new User(
+    name = "username",
+    email = "dev_null@acme.com",
+    superuser = false,
+    passwordEnc = "2309jfsd",
+    token = "6f4g4b3c"
+  )
+
+  @DataPoint def shouldCacheUserToken = SimpleCacheScenario(
+    user,
+    (c:SystemConfigStore) => c.getUserByToken(user.token)
+  )
+
+  @DataPoint def shouldCacheFullUser = SimpleCacheScenario(
+    user,
+    (c:SystemConfigStore) => c.getUser(user.name)
+  )
+
+  @DataPoint def clearUserTokenShouldClearTokenCache = CacheScenarioWithRemoval(
+    user,
+    (c:SystemConfigStore) => c.clearUserToken(user.name),
+    (c:SystemConfigStore) => c.getUserByToken(user.token)
+  )
+
+  @DataPoint def deleteUserShouldClearTokenCache = CacheScenarioWithRemoval(
+    user,
+    (c:SystemConfigStore) => c.deleteUser(user.name),
+    (c:SystemConfigStore) => c.getUserByToken(user.token)
+  )
+
+  @DataPoint def deleteUserTokenShouldClearUserCache = CacheScenarioWithRemoval(
+    user,
+    (c:SystemConfigStore) => c.deleteUser(user.name),
+    (c:SystemConfigStore) => c.getUser(user.name)
+  )
 }
