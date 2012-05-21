@@ -58,7 +58,7 @@ trait CachedMap[K,V] extends CachedSubset[K,V] {
   /**
    * Retrieves a subset of the cache based on the supplied key predicate.
    */
-  def subset(predicate:KeyPredicate[K]) : CachedSubset[K,V]
+  def keySubset(predicate:KeyPredicate[K]) : CachedSubset[K,V]
 
   /**
    * Retrieves a subset by retrieving map values where the attribute of the map value matches the supplied value.

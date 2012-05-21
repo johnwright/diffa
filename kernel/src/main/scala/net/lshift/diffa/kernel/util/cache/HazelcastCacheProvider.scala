@@ -34,7 +34,7 @@ class HazelcastBackedMap[K,V](underlying:IMap[K,V]) extends CachedMap[K,V] {
 
   def evictAll = underlying.clear()
 
-  def subset(keyPredicate:KeyPredicate[K]) = {
+  def keySubset(keyPredicate:KeyPredicate[K]) = {
     val predicate = new HazelcastKeyPredicate(keyPredicate)
     val projectedKeys = underlying.keySet(predicate)
     new CachedSubset[K,V] {

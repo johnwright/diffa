@@ -76,7 +76,7 @@ class CacheProviderTest {
     assertEquals("first-value", cache.get(fooKey))
     assertEquals("second-value", cache.get(barKey))
 
-    cache.subset(NonProductionKeyPredicate("foo")).evictAll
+    cache.keySubset(NonProductionKeyPredicate("foo")).evictAll
 
     assertEquals(1, cache.size())
     assertNull(cache.get(fooKey))
