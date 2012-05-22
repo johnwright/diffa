@@ -41,4 +41,11 @@ class HibernateDatabaseFacade(factory:SessionFactory) extends DatabaseFacade {
     factory.withSession(s => HQU.executeUpdate(s, queryName, params))
   }
 
+  def insert[T](o:T) : T  = {
+    factory.withSession(s => {
+      s.save(o)
+      o
+    })
+  }
+
 }

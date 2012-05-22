@@ -48,4 +48,12 @@ trait DatabaseFacade {
    * Executes the named UPDATE, DELETE or INSERT query with the specified parameters and the row count
    */
   def execute(queryName: String, params: Map[String, Any]) : Int
+
+  /**
+   * This is a thin wrapper around the Hibernate Session save/1 call.
+   * Ideally, we don't want to use this at all, since Hibernate will issue a SELECT to get the new primary back,
+   * hence costing us an extra network round trip. However, until we can replace the current key generation wiring
+   * in Hibernate, we're going to have to remain dependent on Hibernate.
+   */
+  @Deprecated def insert[T](o:T) : T
 }
