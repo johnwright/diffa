@@ -46,6 +46,15 @@
     where oid = :oid
   </sql-query>
 
+  <sql-query name="updateReportedDiffLastSeen">
+    update diffs
+      set
+        last_seen = :last_seen
+    where seq_id = :seq_id
+    and domain = :domain
+    and pair = :pair
+  </sql-query>
+
   <sql-query name="deletePendingDiffByOid">
     delete from pending_diffs
     where oid = :oid
