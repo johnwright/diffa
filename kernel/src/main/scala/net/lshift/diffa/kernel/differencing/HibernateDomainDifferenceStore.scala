@@ -255,20 +255,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     processAsStream[ReportedDifferenceEvent]("unmatchedEventsByDomainAndPair",
       Map("domain" -> pairRef.domain, "pair" -> pairRef.key), (s, diff) => handler(diff))
 
-  // TODO consider removing this in favor of aggregateUnmatchedEvents/3
-  @Deprecated
-  def retrieveUnmatchedEvents(pair:DiffaPairRef, interval:Interval, f:ReportedDifferenceEvent => Unit) = {
-
-    def processEvent(s:Session, e:ReportedDifferenceEvent) = f(e)
-
-    val params = Map("domain" -> pair.domain,
-                      "pair"  -> pair.key,
-                      "start" -> interval.getStart,
-                      "end"   -> interval.getEnd)
-
-    processAsStream[ReportedDifferenceEvent]("unmatchedEventsInIntervalByDomainAndPair", params, processEvent)
-  }
-
   def retrievePagedEvents(pair: DiffaPairRef, interval: Interval, offset: Int, length: Int, options:EventOptions = EventOptions()) = sessionFactory.withSession(s => {
     val queryName = if (options.includeIgnored) {
       "unmatchedEventsInIntervalByDomainAndPairWithIgnored"
