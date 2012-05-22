@@ -75,8 +75,8 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   private val pairCache = new PairCache(cacheManager)
   private val hookManager = new HookManager(applicationConfig)
   private val membershipListener = new DomainMembershipAware {
-    def onMembershipCreated(member: Member) = null
-    def onMembershipRemoved(member: Member) = null
+    def onMembershipCreated(member: Member) {}
+    def onMembershipRemoved(member: Member) {}
   }
 
   def sessionFactory = _sessionFactory match {
