@@ -56,10 +56,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
 
   val pendingEvents = cacheProvider.getCachedMap[VersionID, PendingDifferenceEvent]("pending.difference.events")
 
-  // Since we cannot use scala Options in the map, we need to denote a non-existent event
-  val NON_EXISTENT_PENDING_EVENT = PendingDifferenceEvent
-  val NON_EXISTENT_EVENT_KEY = -1
-
   /**
    * This is a heuristic that allows the cache to get prefilled if the agent is booted and
    * there were persistent pending diffs. The motivation is to reduce cache misses in subsequent calls.
@@ -130,7 +126,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     addReportableMismatch(ReportedDifferenceEvent(null, id, lastUpdate, false, upstreamVsn, downstreamVsn, seen))
 
 
-  def upgradePendingUnmatchedEvent(id: VersionID) = sessionFactory.withSession(s => {
+  def upgradePendingUnmatchedEvent(id: VersionID) = {
 
     val pending = getPendingEvent(id)
 
@@ -144,7 +140,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       null
     }
 
-  })
+  }
 
   def cancelPendingUnmatchedEvent(id: VersionID, vsn: String) = {
     val pending = getPendingEvent(id)
@@ -167,13 +163,11 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     sessionFactory.withSession(s => {
 
       // Remove any pending events with the given id
-      // TODO This is probably over eager: we should do a cache look up to see whether this is necessary
-      db.execute("deletePendingDiffsForUpstreamOrDownstream", Map(
-        "entity_id" -> id.id,
-        "pair" -> id.pair.key,
-        "domain" -> id.pair.domain,
-        "version" -> vsn
-      ))
+      val pending = getPendingEvent(id)
+
+      if (pending.exists()) {
+        removePendingEvent(pending)
+      }
 
       // Find any existing events we've got for this ID
       getEventById(id) match {
@@ -316,10 +310,9 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     count.getOrElse(new java.lang.Long(0L)).intValue
   })
 
-  def retrieveEventsSince(domain: String, evtSeqId: String) = sessionFactory.withSession(s => {
+  def retrieveEventsSince(domain: String, evtSeqId: String) =
     db.listQuery[ReportedDifferenceEvent]("eventsSinceByDomain",
       Map("domain" -> domain, "seqId" -> Integer.parseInt(evtSeqId))).map(_.asDifferenceEvent)
-  })
 
   def retrieveAggregates(pair:DiffaPairRef, start:DateTime, end:DateTime, aggregateMinutes:Option[Int]):Seq[AggregateTile] =
     aggregationCache.retrieveAggregates(pair, start, end, aggregateMinutes)
@@ -369,7 +362,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   }
 
   private def removePendingEvent(pending:PendingDifferenceEvent) = {
-    db.execute("deletePendingDiffById", Map("oid" -> pending.oid))
+    db.execute("deletePendingDiffByOid", Map("oid" -> pending.oid))
     pendingEvents.evict(pending.objId)
   }
 
@@ -462,11 +455,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     res
   }
 
-  private def deletePreviouslyReportedEvent(event:ReportedDifferenceEvent) = db.execute("deleteDiffById", Map(
-    "seq_id" -> event.seqId,
-    "pair"   -> event.objId.pair.key,
-    "domain" -> event.objId.pair.domain
-  ))
+  private def deletePreviouslyReportedEvent(event:ReportedDifferenceEvent) =
+    db.execute("deleteDiffById", Map(
+      "seq_id" -> event.seqId,
+      "pair"   -> event.objId.pair.key,
+      "domain" -> event.objId.pair.domain
+    ))
 
   private def persistAndConvertEventInternal(s:Session, evt:ReportedDifferenceEvent) = {
     val seqId = s.save(evt).asInstanceOf[java.lang.Integer]
@@ -492,11 +486,18 @@ case class PendingDifferenceEvent(
 
   def convertToUnmatched = ReportedDifferenceEvent(null, objId, detectedAt, false, upstreamVsn, downstreamVsn, lastSeen)
 
+  /**
+   * Indicates whether a cache entry is a real pending event or just a marker to mean something other than null
+   */
   def exists() = oid > -1
 
 }
 
 object PendingDifferenceEvent {
+
+  /**
+   * Since we cannot use scala Options in the map, we need to denote a non-existent event
+   */
   val nonExistent = PendingDifferenceEvent(oid = -1)
 }
 
