@@ -160,32 +160,31 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   }
 
   def addMatchedEvent(id: VersionID, vsn: String) = {
-    sessionFactory.withSession(s => {
 
-      // Remove any pending events with the given id
-      val pending = getPendingEvent(id)
+    // Remove any pending events with the given id
+    val pending = getPendingEvent(id)
 
-      if (pending.exists()) {
-        removePendingEvent(pending)
-      }
+    if (pending.exists()) {
+      removePendingEvent(pending)
+    }
 
-      // Find any existing events we've got for this ID
-      getEventById(id) match {
-          // No unmatched event. Nothing to do.
-        case None           => null
-        case Some(existing) =>
-          existing.state match {
-            case MatchState.MATCHED => // Ignore. We've already got an event for what we want.
-              existing.asDifferenceEvent
-            case MatchState.UNMATCHED | MatchState.IGNORED =>
-              // A difference has gone away. Remove the difference, and add in a match
-              deletePreviouslyReportedEvent(existing)
+    // Find any existing events we've got for this ID
+    getEventById(id) match {
+        // No unmatched event. Nothing to do.
+      case None           => null
+      case Some(existing) =>
+        existing.state match {
+          case MatchState.MATCHED => // Ignore. We've already got an event for what we want.
+            existing.asDifferenceEvent
+          case MatchState.UNMATCHED | MatchState.IGNORED =>
+            // A difference has gone away. Remove the difference, and add in a match
+            deletePreviouslyReportedEvent(existing)
 
-              val previousDetectionTime = existing.detectedAt
-              saveAndConvertEvent(ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), previousDetectionTime)
-          }
-      }
-    })
+            val previousDetectionTime = existing.detectedAt
+            saveAndConvertEvent(ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), previousDetectionTime)
+        }
+    }
+
   }
 
   /**
