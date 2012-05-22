@@ -32,8 +32,8 @@ import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.config.{DomainScopedKey, Domain, DiffaPairRef, DiffaPair}
 import org.hibernate.dialect.{Oracle10gDialect, Dialect}
 import org.hibernate.criterion.{Projections, Restrictions}
-import net.lshift.diffa.kernel.util.cache.CacheProvider
 import java.io.Serializable
+import net.lshift.diffa.kernel.util.cache.{CachedMap, CacheProvider}
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -349,22 +349,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   })
 
   private def getPendingEvent(id: VersionID) = {
-
-    def eventOrNonExistentMarker() = {
-      db.singleQueryMaybe[PendingDifferenceEvent](
-        "pendingByDomainIdAndVersionID",
-        Map(
-          "domain" -> id.pair.domain,
-          "pair"   -> id.pair.key,
-          "objId"  -> id.id
-        )
-      ) match {
-        case None    => PendingDifferenceEvent.nonExistent
-        case Some(e) => e
-      }
-    }
-
-    pendingEvents.readThrough(id, eventOrNonExistentMarker)
+    getEventInternal[PendingDifferenceEvent](id, pendingEvents, "pendingByDomainIdAndVersionID", PendingDifferenceEvent.nonExistent)
   }
 
   private def createPendingEvent(pending:PendingDifferenceEvent) {
@@ -408,22 +393,28 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   }
 
   private def getEventById(id: VersionID) = {
-    // TODO refactor, this is code duplication with get Pending
+    getEventInternal[ReportedDifferenceEvent](id, reportedEvents, "eventByDomainAndVersionID", nonExistentReportedEvent)
+  }
+
+  private def getEventInternal[T](id: VersionID,
+                                  cache:CachedMap[VersionID,T],
+                                  query:String,
+                                  nonExistentMarker:T) = {
+
     def eventOrNonExistentMarker() = {
-      db.singleQueryMaybe[ReportedDifferenceEvent](
-        "eventByDomainAndVersionID",
+      db.singleQueryMaybe[T](query,
         Map(
           "domain" -> id.pair.domain,
           "pair"   -> id.pair.key,
           "objId"  -> id.id
         )
       ) match {
-        case None    => nonExistentReportedEvent
+        case None    => nonExistentMarker
         case Some(e) => e
       }
     }
 
-    reportedEvents.readThrough(id, eventOrNonExistentMarker)
+    cache.readThrough(id, eventOrNonExistentMarker)
 
   }
 
