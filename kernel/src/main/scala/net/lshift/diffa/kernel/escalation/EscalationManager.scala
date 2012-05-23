@@ -26,10 +26,10 @@ import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAwar
 import net.lshift.diffa.kernel.differencing._
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore}
 import net.lshift.diffa.kernel.reporting.ReportManager
-import akka.actor.Actor
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.io.Closeable
 import net.lshift.diffa.kernel.actors.AbstractActorSupervisor
+import akka.actor.{Props, GlobalActorSystem, Actor}
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -75,7 +75,8 @@ class EscalationManager(val config:DomainConfigStore,
     def key(pair: DiffaPairRef) = "escalations:" + pair.identifier
   }
  // TODO: Check for akka 2.0
-  def createPairActor(pair: DiffaPairRef) = Some(OldActor.actorOf(new EscalationActor(pair)))
+  def createPairActor(pair: DiffaPairRef) = Some(GlobalActorSystem.actorOf(
+   Props(new EscalationActor(pair))))
 
   /**
    * Since escalations are currently only driven off mismatches, matches can be safely ignored.
