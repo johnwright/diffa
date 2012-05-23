@@ -32,6 +32,7 @@ import akka.pattern.AskTimeoutException
 
 // import akka.migration.OldActorRef
 import collection.mutable.{SynchronizedQueue, Queue}
+import collection.mutable.Queue
 import concurrent.SyncVar
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
@@ -58,7 +59,8 @@ case class PairActor(pair:DiffaPair,
                      diagnostics:DiagnosticsManager,
                      domainConfigStore:DomainConfigStore,
                      changeEventBusyTimeoutMillis: Long,
-                     changeEventQuietTimeoutMillis: Long) extends OldActor {
+                     changeEventQuietTimeoutMillis: Long,
+                     indexWriterCloseInterval: Int) extends OldActor {
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
@@ -68,6 +70,7 @@ case class PairActor(pair:DiffaPair,
 
   private val pairRef = pair.asRef
 
+  private var actionsRemainingUntilClose = indexWriterCloseInterval
   private var lastEventTime: Long = 0
   private var scheduledFlushes: Cancellable = _
 
@@ -98,6 +101,8 @@ case class PairActor(pair:DiffaPair,
   /**
    * This is the address of the client that requested the last cancellation
    */
+   // TODO: Check if we need this.
+
   // private var cancellationRequester:Channel[Any] = null
 
   private implicit val system = GlobalActorSystem
@@ -172,7 +177,6 @@ case class PairActor(pair:DiffaPair,
         Await.result(future, timeout seconds) match {
           case (CancelMessage, _)  => throw new ScanCancelledException(pairRef)
           case (result:Any, _)         =>
-            println("Result in createWriterProxy: %s".format(result))
             result.asInstanceOf[Correlation]
         }
       } catch { case e: AskTimeoutException =>
@@ -213,7 +217,7 @@ case class PairActor(pair:DiffaPair,
   override def preStart = {
     // schedule a recurring message to flush the writer
     scheduledFlushes = context.system.scheduler.schedule(
-      1 second, 200 milliseconds, self, FlushWriterMessage)
+      1 second, changeEventQuietTimeoutMillis milliseconds, self, FlushWriterMessage)
     }
 
   override def postStop = scheduledFlushes.cancel
@@ -358,6 +362,7 @@ case class PairActor(pair:DiffaPair,
     diagnostics.checkpointExplanations(pair.asRef)
 
     logger.info(formatAlertCode(pairRef, SCAN_COMPLETED_BENCHMARK))
+    cleanupIndexFilesIfCorrelationStoreBackedByLucene
 
     // Leave the scan state
     unbecome()
@@ -379,9 +384,15 @@ case class PairActor(pair:DiffaPair,
   def handleChangeMessage(message:ChangeMessage) = {
     policy.onChange(writer, message.event)
     // if no events have arrived within the timeout period, flush and clear the buffer
-    if (lastEventTime < (System.currentTimeMillis() - changeEventBusyTimeoutMillis)) {
+    if (timeSince(lastEventTime) > changeEventBusyTimeoutMillis) {
       writer.flush()
     }
+
+    actionsRemainingUntilClose -= 1
+    if (actionsRemainingUntilClose <= 0) {
+      cleanupIndexFilesIfCorrelationStoreBackedByLucene
+    }
+
     lastEventTime = System.currentTimeMillis()
   }
 
@@ -405,6 +416,12 @@ case class PairActor(pair:DiffaPair,
 
     // always flush after an inventory
     writer.flush()
+
+    actionsRemainingUntilClose -= 1
+    if (actionsRemainingUntilClose <= 0) {
+      cleanupIndexFilesIfCorrelationStoreBackedByLucene
+    }
+
     lastEventTime = System.currentTimeMillis()
 
     // Play events from the correlation store into the differences manager
@@ -504,6 +521,14 @@ case class PairActor(pair:DiffaPair,
       }
     }
   }
+
+  private def cleanupIndexFilesIfCorrelationStoreBackedByLucene {
+    logger.debug("Closing Version Correlation Store")
+    actionsRemainingUntilClose = indexWriterCloseInterval
+    store.openWriter.close
+  }
+
+  private def timeSince(pastTime: Long) = System.currentTimeMillis() - pastTime
 
   private def handleScanError(actor:ActorRef, scanId:UUID, upOrDown:UpOrDown, x:Exception) = {
 

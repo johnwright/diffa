@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.actors
 
-import org.junit.{Test, After, Before}
 import org.easymock.EasyMock._
 import org.junit.Assert._
 import net.lshift.diffa.kernel.differencing._
@@ -35,12 +34,16 @@ import concurrent.{SyncVar}
 import net.lshift.diffa.kernel.diag.{DiagnosticLevel, DiagnosticsManager}
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Domain, Endpoint, DiffaPair}
 import net.lshift.diffa.kernel.frontend.FrontendConversions
-import java.util.concurrent.{TimeUnit, LinkedBlockingQueue}
+import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util._
 import net.lshift.diffa.participant.scanning._
 import akka.dispatch.{ExecutionContext, Future}
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{DataPoint, Theories, Theory}
+import org.junit.{Test, After, Before}
 
+@RunWith(classOf[Theories])
 class PairActorTest {
   import PairActorTest._
 
@@ -114,7 +117,7 @@ class PairActorTest {
   expect(differencesManager.lastRecordedVersion(pairRef)).andStubReturn(None)
   replay(differencesManager)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100)
+  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100, closeInterval)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
   
@@ -203,7 +206,7 @@ class PairActorTest {
 
     replay(versionPolicy, store, diffWriter, writer)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.difference(pair.asRef)
 
     monitor.synchronized {
@@ -233,7 +236,7 @@ class PairActorTest {
 
     replay(writer, store, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     monitor.synchronized {
       monitor.wait(1000)
@@ -264,6 +267,8 @@ class PairActorTest {
         })
 
     writer.flush(); expectLastCall.asStub()
+    writer.close
+    expectLastCall.asStub
 
     expect(diagnostics.logPairEvent(DiagnosticLevel.INFO,
                                     pairRef,
@@ -281,7 +286,7 @@ class PairActorTest {
 
     replay(writer, store, versionPolicy, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pairRef, None)
 
     scanMonitor.synchronized {
@@ -315,7 +320,6 @@ class PairActorTest {
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
       def answer = { flushMonitor.synchronized { flushMonitor.notifyAll } }
     })
-    replay(scanListener)
 
     expect(versionPolicy.onChange(writer, event))
     .andAnswer(new IAnswer[Unit] {
@@ -349,10 +353,11 @@ class PairActorTest {
            EasyMock.isA(classOf[FeedbackHandle])))
 
     expectDifferencesReplay()
+    expect(writer.close).anyTimes
 
-    replay(writer, store, diffWriter, versionPolicy)
+    replay(writer, store, diffWriter, versionPolicy, scanListener)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
 
     flushMonitor.synchronized {
@@ -371,7 +376,7 @@ class PairActorTest {
     writer.flush(); expectLastCall.asStub()
     replay(store, writer, diffWriter, versionPolicy)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     assertTrue(supervisor.cancelScans(pair.asRef))
   }
 
@@ -420,13 +425,14 @@ class PairActorTest {
 
     writer.flush(); expectLastCall.asStub()
     expect(writer.rollback); expectLastCall
+    expect(writer.close).times(1)
 
     val numberOfScans = 1
     expectScanCommencement(numberOfScans)
 
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
 
     responseMonitor.synchronized {
@@ -452,10 +458,11 @@ class PairActorTest {
 
     val numberOfScans = 1
     expectScanCommencement(numberOfScans)
+    expect(writer.close).anyTimes
 
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     monitor.synchronized {
       monitor.wait(1000)
@@ -477,10 +484,11 @@ class PairActorTest {
 
     val numberOfScans = 1
     expectScanCommencement(numberOfScans)
+    writer.close
 
     replay(writer, store, diffWriter, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     assertTrue(wasMarkedAsCancelled.get(10000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
@@ -507,10 +515,11 @@ class PairActorTest {
 
     val numberOfScans = 1
     expectScanCommencement(numberOfScans)
+    writer.close
 
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     
     assertTrue(proxyDidGenerateException.get(10000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
@@ -577,12 +586,13 @@ class PairActorTest {
       }
     }).once()
 
+    expect(writer.close).anyTimes
     val numberOfScans = 2
     expectScanCommencement(numberOfScans)
 
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.scanPair(pairRef, None)
 
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
@@ -597,7 +607,7 @@ class PairActorTest {
     val monitor = new Object
 
     expect(writer.flush()).atLeastOnce
-    replay(writer)
+    writer.close
     expect(versionPolicy.onChange(writer, event)).andAnswer(new IAnswer[Unit] {
       def answer = {
         monitor.synchronized {
@@ -605,9 +615,9 @@ class PairActorTest {
         }
       }
     })
-    replay(store, diffWriter, versionPolicy)
+    replay(store, diffWriter, versionPolicy, writer)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.propagateChangeEvent(event)
 
     // propagateChangeEvent is an aysnc call, so yield the test thread to allow the actor to invoke the policy
@@ -635,7 +645,7 @@ class PairActorTest {
 
     replay(store, diffWriter, versionPolicy, writer)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
     supervisor.submitInventory(pairRef, side, constraints, aggregations, entries)
 
     // submitInventory is an aysnc call, so yield the test thread to allow the actor to invoke the policy
@@ -646,7 +656,41 @@ class PairActorTest {
     verify(versionPolicy, writer, diffWriter)
   }
 
+  @Theory
+  def versionCorrelationWriterShouldCloseAfterConfiguredCloseInterval(scenario: Scenario) {
+    val event = buildUpstreamEvent()
+    val monitor = new Object
 
+    reset(writer)
+    expect(writer.flush).anyTimes
+    expect(versionPolicy.onChange(writer, event)).times(scenario.actionCount).andAnswer(new IAnswer[Unit] {
+      def answer = {
+        monitor.synchronized {
+          monitor.notifyAll
+        }
+      }
+    })
+
+    // Pre-declared Then
+    if (scenario.expectedCloses > 0) {
+      expect(writer.close).times(scenario.expectedCloses)
+    }
+
+    replay(writer, store, diffWriter, versionPolicy)
+
+    // When
+    supervisor.startActor(pair.asRef)
+    (1 to scenario.actionCount) foreach { n =>
+      supervisor.propagateChangeEvent(event)
+    }
+
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
+
+    // Then
+    verify(writer)
+  }
 
   @Test
   def scheduledFlush {
@@ -660,7 +704,7 @@ class PairActorTest {
     })
     replay(writer, store, diffWriter)
 
-    supervisor.startActor(pair)
+    supervisor.startActor(pair.asRef)
 
     // TODO Commented out because this is killing the vibe
     //mailbox.poll(5, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
@@ -695,13 +739,21 @@ class PairActorTest {
   }
 }
 
+case class Scenario(actionCount: Int, expectedCloses: Int)
+
 object PairActorTest {
   private var pairIdCounter = 0
+  private[PairActorTest] val closeInterval = 3
 
   def nextPairId = {
     pairIdCounter += 1
     "some-pairing-" + pairIdCounter
   }
+  
+  @DataPoint def doNotCloseWriterBeforeIntervalReached = Scenario(actionCount = closeInterval - 1, expectedCloses = 0)
+  @DataPoint def closeWriterOnce = Scenario(actionCount = closeInterval, expectedCloses = 1)
+  @DataPoint def closeWriterOnceOnly = Scenario(actionCount = closeInterval + 1, expectedCloses = 1)
+  @DataPoint def closeWriterTwice = Scenario(actionCount = closeInterval * 2, expectedCloses = 2)
 }
 
 /**

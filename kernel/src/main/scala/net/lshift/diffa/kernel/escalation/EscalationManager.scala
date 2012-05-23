@@ -18,7 +18,6 @@ package net.lshift.diffa.kernel.escalation
 
 import net.lshift.diffa.kernel.events.VersionID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.actors.ActorUtils
 import net.lshift.diffa.kernel.config.EscalationEvent._
 import net.lshift.diffa.kernel.config.EscalationActionType._
 import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
@@ -30,6 +29,7 @@ import net.lshift.diffa.kernel.reporting.ReportManager
 import akka.actor.Actor
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.io.Closeable
+import net.lshift.diffa.kernel.actors.AbstractActorSupervisor
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -50,7 +50,8 @@ import java.io.Closeable
 class EscalationManager(val config:DomainConfigStore,
                         val actionsClient:ActionsClient,
                         val reportManager:ReportManager)
-    extends DifferencingListener
+    extends AbstractActorSupervisor
+    with DifferencingListener
     with AgentLifecycleAware
     with PairScanListener
     with Closeable {
@@ -73,6 +74,8 @@ class EscalationManager(val config:DomainConfigStore,
   private object EscalationActor {
     def key(pair: DiffaPairRef) = "escalations:" + pair.identifier
   }
+ // TODO: Check for akka 2.0
+  def createPairActor(pair: DiffaPairRef) = Some(OldActor.actorOf(new EscalationActor(pair)))
 
   /**
    * Since escalations are currently only driven off mismatches, matches can be safely ignored.
@@ -91,7 +94,7 @@ class EscalationManager(val config:DomainConfigStore,
                  origin: MatchOrigin, level:DifferenceFilterLevel) = origin match {
     case TriggeredByScan =>
       val differenceType = DifferenceUtils.differenceType(upstreamVsn, downstreamVsn)
-      // findOrCreateActor(id.pair) ! (differenceType, id)
+      findActor(id) ! (differenceType, id)
 
     case _               => // ignore this for now
   }
@@ -111,10 +114,10 @@ class EscalationManager(val config:DomainConfigStore,
     })
   }
 
-  def escalatePairEvent(pair: DiffaPairRef, eventType:String) = {
-    findEscalations(pair, eventType, REPORT).foreach(e => {
+  def escalatePairEvent(pairRef: DiffaPairRef, eventType:String) = {
+    findEscalations(pairRef, eventType, REPORT).foreach(e => {
       log.debug("Escalating pair event as report %s".format(e.name))
-      reportManager.executeReport(pair, e.action)
+      reportManager.executeReport(pairRef, e.action)
     })
   }
 
@@ -122,6 +125,7 @@ class EscalationManager(val config:DomainConfigStore,
     config.listEscalationsForPair(pair.domain, pair.key).
       filter(e => e.event == eventType && actionTypes.contains(e.actionType))
 
+<<<<<<< HEAD
   def close() {
     // Actor.registry.actorsFor[EscalationActor].foreach(_.stop())
   }
@@ -136,4 +140,6 @@ class EscalationManager(val config:DomainConfigStore,
 //      actor
 //    }
   }
+=======
+>>>>>>> master
 }

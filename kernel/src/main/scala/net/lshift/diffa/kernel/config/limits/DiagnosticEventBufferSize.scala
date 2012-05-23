@@ -13,22 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.diffa.kernel.config.limits
 
-package net.lshift.diffa.kernel.actors
+import net.lshift.diffa.kernel.config.ServiceLimit
 
-import org.slf4j.LoggerFactory
-import net.lshift.diffa.kernel.config.DiffaPairRef
-import net.lshift.diffa.kernel.util.AlertCodes._
-import akka.actor.{ActorSystem, ActorRef, OldActor}
-
-object ActorUtils {
-
-  case class ActorKey(pair: DiffaPairRef, keyFunc: DiffaPairRef => String) {
-    lazy val key = keyFunc(pair)
-    override def toString = key
-  }
-
-  val log = LoggerFactory.getLogger(getClass)
-
-  def findActor(actorKey: ActorKey, system:ActorSystem): Option[ActorRef] = Some(system.actorFor(actorKey.key))
+object DiagnosticEventBufferSize extends ServiceLimit {
+  def key = "diagnostic.event.buffer.sizes"
+  def description = "The number of events that the DiagnosicsManager should buffer"
+  def defaultLimit = 100
+  def hardLimit = 100
 }

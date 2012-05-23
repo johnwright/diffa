@@ -7,9 +7,10 @@ import hooks.HookManager
 import org.hibernate.dialect.Dialect
 import net.sf.ehcache.CacheManager
 import org.slf4j.LoggerFactory
+import util.db.HibernateDatabaseFacade
 import util.{MissingObjectException, SchemaCleaner, DatabaseEnvironment}
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.SessionHelper.sessionFactoryToSessionHelper
+import net.lshift.diffa.kernel.util.db.SessionHelper.sessionFactoryToSessionHelper
 import collection.JavaConversions._
 
 object StoreReferenceContainer {
@@ -73,6 +74,10 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   private val cacheManager = new CacheManager
   private val pairCache = new PairCache(cacheManager)
   private val hookManager = new HookManager(applicationConfig)
+  private val membershipListener = new DomainMembershipAware {
+    def onMembershipCreated(member: Member) {}
+    def onMembershipRemoved(member: Member) {}
+  }
 
   def sessionFactory = _sessionFactory match {
     case Some(sf) => sf
@@ -87,19 +92,19 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   }
 
   private lazy val _serviceLimitsStore =
-    makeStore[ServiceLimitsStore](sf => new HibernateServiceLimitsStore(sf), "ServiceLimitsStore")
+    makeStore[ServiceLimitsStore](sf => new HibernateServiceLimitsStore(sf, new HibernateDatabaseFacade(sf)), "ServiceLimitsStore")
 
   private lazy val _systemConfigStore =
-    makeStore(sf => new HibernateSystemConfigStore(sf, pairCache), "SystemConfigStore")
+    makeStore(sf => new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf), pairCache), "SystemConfigStore")
 
   private lazy val _domainConfigStore =
-    makeStore(sf => new HibernateDomainConfigStore(sf, pairCache, hookManager, cacheManager), "domainConfigStore")
+    makeStore(sf => new HibernateDomainConfigStore(sf, new HibernateDatabaseFacade(sf), pairCache, hookManager, cacheManager, membershipListener), "domainConfigStore")
 
   private lazy val _domainCredentialsStore =
-    makeStore(sf => new HibernateDomainCredentialsStore(sf), "domainCredentialsStore")
+    makeStore(sf => new HibernateDomainCredentialsStore(sf, new HibernateDatabaseFacade(sf)), "domainCredentialsStore")
 
   private lazy val _domainDifferenceStore =
-    makeStore(sf => new HibernateDomainDifferenceStore(sf, cacheManager, dialect, hookManager), "DomainDifferenceStore")
+    makeStore(sf => new HibernateDomainDifferenceStore(sf, new HibernateDatabaseFacade(sf), cacheManager, dialect, hookManager), "DomainDifferenceStore")
 
   def serviceLimitsStore: ServiceLimitsStore = _serviceLimitsStore
   def systemConfigStore: HibernateSystemConfigStore = _systemConfigStore

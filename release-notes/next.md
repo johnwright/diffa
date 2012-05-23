@@ -16,10 +16,12 @@
 * [111] - Support arbitrary limiting of operations in participant scanning, real-time event submission and inventory submission.
 * [107] - Added the ability to initiate a scan from behind a firewall
 * [84]  - If we've got at least two endpoints defined, then try to make selecting the endpoints in the settings page sensible
-* [138] - Auto-focus on newly added constraint rows in the settings page 
+* [138] - Auto-focus on newly added constraint rows in the settings page
+* [159] - Authentication lookups no longer hit the database on every poll
 
 ## General Maintenance
 
+* [154] - Introduced a (generic) layer to cache calls to the service limits store and provided a Hazelcast backed implementation.
 * [109] - Log a summary of each Query triggered by a participant scan.
 * [113] - Improve validation of pair definitions.
 * [114] - Ensure that changes without attributes are processed.
@@ -29,6 +31,10 @@
 * [127] - Support for infinite panning on the heat map
 * [132] - Made sure that a change to a pair or endpoint config results in a change the Etag returned when querying for differences
 * [134] - Reduce startup and pair registration time by using Apache httpclient instead of Jersey.
+* [151] - Curtail accumulation of open file descriptors by closing the IndexWriter of each pair on a regular basis.
+* [152] - Ensure that we do not generate malformed URLs when performing aggregate scans on an endpoint URL specified with a query string.
+* [155] - Re-instated the diagnostic log buffering
+* [156] - The demo participants config file had bit rotten slightly 
 
 ## Library Upgrades
 
