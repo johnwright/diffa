@@ -65,11 +65,11 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
        val usp = participantFactory.createUpstreamParticipant(us, pairRef)
        val dsp = participantFactory.createDownstreamParticipant(ds, pairRef)
 
-       Some(Actor.actorOf(
+       Some(GlobalActorSystem.actorOf(Props(
          new PairActor(pair, us, ds, usp, dsp, pol, stores(pairRef),
            differencesManager, pairScanListener,
            diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis, indexWriterCloseInterval)
-       ))
+       )))
      case None =>
        log.error("Failed to find policy for name: {}", formatAlertCode(pair.versionPolicyName, INVALID_VERSION_POLICY))
        None

@@ -125,6 +125,7 @@ class EscalationManager(val config:DomainConfigStore,
     config.listEscalationsForPair(pair.domain, pair.key).
       filter(e => e.event == eventType && actionTypes.contains(e.actionType))
 
+/*
 <<<<<<< HEAD
   def close() {
     // Actor.registry.actorsFor[EscalationActor].foreach(_.stop())
@@ -142,4 +143,6 @@ class EscalationManager(val config:DomainConfigStore,
   }
 =======
 >>>>>>> master
+
+*/
 }
