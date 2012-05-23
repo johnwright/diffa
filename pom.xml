@@ -354,7 +354,6 @@
       <version>${hazelcast.version}</version>
     </dependency>
     <dependency>
-      <groupId>se.scalablesolutions.akka</groupId>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-actor</artifactId>
       <version>${akka.version}</version>
