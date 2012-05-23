@@ -17,8 +17,8 @@ package net.lshift.diffa.kernel.util.db
 
 import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils => HQU}
 import net.lshift.diffa.kernel.util.db.SessionHelper._
+import org.hibernate.{Session, SessionFactory}
 
-import org.hibernate.SessionFactory
 
 /**
  * Hibernate backed implementation of the low level DB facade.
@@ -48,4 +48,58 @@ class HibernateDatabaseFacade(factory:SessionFactory) extends DatabaseFacade {
     })
   }
 
+  def beginTransaction = new SessionBasedTransaction(factory)
+
+}
+
+class SessionBasedTransaction(factory:SessionFactory) extends Transaction {
+
+  val session = factory.openSession()
+  val tx = session.beginTransaction()
+
+
+  def singleQueryMaybe[T](command:DatabaseCommand) = executeInternal(s => {
+    HQU.singleQueryOpt(s, command.queryName, command.params)
+  })
+
+  def execute(command:DatabaseCommand) = executeInternal(s => {
+    Some(HQU.executeUpdate(s, command.queryName, command.params))
+  }).get
+
+  def commit() {
+    try {
+      if (tx != null && tx.isActive) {
+        tx.commit()
+      }
+      else {
+        throw new RuntimeException("Invalid transation state")
+      }
+    }
+    finally {
+      session.close()
+    }
+  }
+
+  private def executeInternal[T](hqu:Session => Option[T]) = {
+    try {
+      hqu(session)
+    }
+    catch {
+      case x:Exception => {
+        if (tx != null) {
+          try {
+            tx.rollback()
+          }
+          finally {
+            session.close()
+          }
+
+        }
+        else {
+          session.close()
+        }
+        throw x
+      }
+    }
+  }
 }

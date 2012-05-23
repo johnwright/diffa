@@ -56,4 +56,20 @@ trait DatabaseFacade {
    * in Hibernate, we're going to have to remain dependent on Hibernate.
    */
   @Deprecated def insert[T](o:T) : T
+
+  def beginTransaction : Transaction
 }
+
+trait DatabaseCommand {
+  def queryName : String
+  def params : Map[String, Any]
+}
+
+trait Transaction {
+
+  def singleQueryMaybe[T](command:DatabaseCommand) : Option[T]
+  def execute(command:DatabaseCommand) : Int
+  def commit()
+
+}
+
