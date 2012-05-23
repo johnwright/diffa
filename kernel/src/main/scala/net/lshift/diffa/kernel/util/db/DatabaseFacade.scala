@@ -60,16 +60,22 @@ trait DatabaseFacade {
   def beginTransaction : Transaction
 }
 
-trait DatabaseCommand {
-  def queryName : String
-  def params : Map[String, Any]
-}
+case class DatabaseCommand(
+  queryName:String,
+  params:Map[String, Any]
+)
 
 trait Transaction {
 
   def singleQueryMaybe[T](command:DatabaseCommand) : Option[T]
   def execute(command:DatabaseCommand) : Int
+  @Deprecated def insert[T](o:T) : T
   def commit()
+  def registerRollbackHandler(h:RollbackHandler)
 
+}
+
+trait RollbackHandler {
+  def onRollback()
 }
 
