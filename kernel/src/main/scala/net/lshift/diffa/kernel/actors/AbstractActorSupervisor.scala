@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.actors
 
-import akka.actor.ActorRef
 import java.util.HashMap
 import net.lshift.diffa.kernel.util.AlertCodes._
 import net.lshift.diffa.kernel.config.DiffaPairRef
@@ -25,6 +24,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.util.{MissingObjectException, Lazy}
 import java.io.Closeable
 import scala.collection.JavaConversions._
+import akka.actor.{GlobalActorSystem, ActorRef}
 
 /**
  * Common superclass for components that need to manage actors.
