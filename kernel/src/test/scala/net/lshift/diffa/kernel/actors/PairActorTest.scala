@@ -392,7 +392,7 @@ class PairActorTest {
     val event = buildUpstreamEvent()
 
     val timeToWait = 2000L
-    implicit val system = GlobalActorSystem
+    implicit val actorSystem = supervisor.actorSystem
     implicit val ec = ExecutionContext.defaultExecutionContext
 
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall     // Expect once when the pair actor starts the call

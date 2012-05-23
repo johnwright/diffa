@@ -55,7 +55,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     systemConfig.listPairs.foreach(p => startActor(p.asRef))
   }
 
- def createPairActor(pairRef: DiffaPairRef) = {
+  def createPairActor(pairRef: DiffaPairRef) = {
    val pair = systemConfig.getPair(pairRef)
    policyManager.lookupPolicy(pair.versionPolicyName) match {
      case Some(pol) =>
@@ -65,10 +65,11 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
        val usp = participantFactory.createUpstreamParticipant(us, pairRef)
        val dsp = participantFactory.createDownstreamParticipant(ds, pairRef)
 
-       Some(GlobalActorSystem.actorOf(Props(
+       Some(actorSystem.actorOf(Props(
          new PairActor(pair, us, ds, usp, dsp, pol, stores(pairRef),
            differencesManager, pairScanListener,
-           diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis, indexWriterCloseInterval)
+           diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis,
+           indexWriterCloseInterval, actorSystem)
        )))
      case None =>
        log.error("Failed to find policy for name: {}", formatAlertCode(pair.versionPolicyName, INVALID_VERSION_POLICY))

@@ -39,6 +39,9 @@ abstract class AbstractActorSupervisor
   private val pairActors = new HashMap[DiffaPairRef, PotentialActor]()
 
 
+  val actorSystem = GlobalActorSystem
+
+
   /**
    * Creates a topical actor for the given pair - supervising actor subclasses need to
    * define the concrete actor behavior they require.
@@ -72,7 +75,7 @@ abstract class AbstractActorSupervisor
     // the synchronized block.  Stopping the actor can cause actions such as
     // scans to fail, which is expected.
     if (oldActor != null) {
-      oldActor().map(GlobalActorSystem.stop(_))
+      oldActor().map(actorSystem.stop(_))
       logger.info("{} Stopping existing actor for key: {}",
         formatAlertCode(pair, ACTOR_STOPPED), pair.identifier)
     }
@@ -87,7 +90,7 @@ abstract class AbstractActorSupervisor
     // pair scans which will fail as expected if the actor is stopped just
     // before the scan attempts to use it.
     if (actor != null) {
-      actor().map(GlobalActorSystem.stop(_))
+      actor().map(actorSystem.stop(_))
       logger.info("{} actor stopped", formatAlertCode(pair, ACTOR_STOPPED))
     } else {
       logger.warn("{} Could not resolve actor for key: {}",

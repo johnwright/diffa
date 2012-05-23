@@ -60,7 +60,8 @@ case class PairActor(pair:DiffaPair,
                      domainConfigStore:DomainConfigStore,
                      changeEventBusyTimeoutMillis: Long,
                      changeEventQuietTimeoutMillis: Long,
-                     indexWriterCloseInterval: Int) extends OldActor {
+                     indexWriterCloseInterval: Int,
+                     actorSystem: ActorSystem) extends OldActor {
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
@@ -105,7 +106,7 @@ case class PairActor(pair:DiffaPair,
 
   // private var cancellationRequester:Channel[Any] = null
 
-  private implicit val system = GlobalActorSystem
+  private implicit val system = actorSystem
   private implicit val ec = ExecutionContext.defaultExecutionContext
 
   /**

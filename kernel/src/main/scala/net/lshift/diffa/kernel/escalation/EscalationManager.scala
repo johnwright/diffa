@@ -29,7 +29,7 @@ import net.lshift.diffa.kernel.reporting.ReportManager
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.io.Closeable
 import net.lshift.diffa.kernel.actors.AbstractActorSupervisor
-import akka.actor.{Props, GlobalActorSystem, Actor}
+import akka.actor.{Props, Actor}
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -74,8 +74,8 @@ class EscalationManager(val config:DomainConfigStore,
   private object EscalationActor {
     def key(pair: DiffaPairRef) = "escalations:" + pair.identifier
   }
- // TODO: Check for akka 2.0
-  def createPairActor(pair: DiffaPairRef) = Some(GlobalActorSystem.actorOf(
+
+  def createPairActor(pair: DiffaPairRef) = Some(actorSystem.actorOf(
    Props(new EscalationActor(pair))))
 
   /**
