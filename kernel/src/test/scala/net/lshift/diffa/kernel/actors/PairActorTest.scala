@@ -77,7 +77,9 @@ class PairActorTest {
   val versionPolicy = createMock("versionPolicy", classOf[VersionPolicy])
   checkOrder(versionPolicy, false)
 
-  expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy))
+  // TODO: We use at least once here, because seemingly, we get called on the actor create code path.
+  // And because in Akka2; creating an actor starts it, we end up running this code (again?) in the @After block,
+  expect(versionPolicyManager.lookupPolicy(policyName)).andReturn(Some(versionPolicy)).atLeastOnce()
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
