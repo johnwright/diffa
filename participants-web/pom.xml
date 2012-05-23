@@ -130,17 +130,17 @@
             <artifactId>bonecp</artifactId>
             <version>${bonecp.version}</version>
           </dependency>
-	  <!-- needed for BoneCP -->
-	  <dependency>
-	    <groupId>org.slf4j</groupId>
-	    <artifactId>slf4j-api</artifactId>
-	    <version>${slf4j.version}</version>
-	  </dependency>
-	  <dependency>
-	    <groupId>ch.qos.logback</groupId>
-	    <artifactId>logback-classic</artifactId>
-	    <version>${logback.version}</version>
-	  </dependency>
+          <!-- needed for BoneCP -->
+          <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+          </dependency>
 
           <dependency>
             <groupId>com.rabbitmq</groupId>
