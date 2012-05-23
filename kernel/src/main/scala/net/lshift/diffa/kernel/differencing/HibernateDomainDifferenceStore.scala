@@ -19,7 +19,6 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import reflect.BeanProperty
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.db.{Cursor, HibernateQueryUtils, DatabaseFacade}
 import net.lshift.diffa.kernel.util.db.SessionHelper._
 import org.hibernate.Session
 import net.sf.ehcache.CacheManager
@@ -34,6 +33,7 @@ import org.hibernate.dialect.{Oracle10gDialect, Dialect}
 import org.hibernate.criterion.{Projections, Restrictions}
 import java.io.Serializable
 import net.lshift.diffa.kernel.util.cache.{CachedMap, CacheProvider}
+import net.lshift.diffa.kernel.util.db._
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -132,7 +132,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   }
 
   def addReportableUnmatchedEvent(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, seen: DateTime) =
-    addReportableMismatch(ReportedDifferenceEvent(null, id, lastUpdate, false, upstreamVsn, downstreamVsn, seen))
+    addReportableMismatch(None, ReportedDifferenceEvent(null, id, lastUpdate, false, upstreamVsn, downstreamVsn, seen))
 
 
   def upgradePendingUnmatchedEvent(id: VersionID) = {
@@ -140,9 +140,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     val pending = getPendingEvent(id)
 
     if (pending.exists()) {
+
       // Remove the pending and report a mismatch
-      removePendingEvent(pending)
-      addReportableMismatch(pending.convertToUnmatched)
+      inTransaction((tx:Transaction) => {
+        removePendingEvent(Some(tx), pending)
+        addReportableMismatch(Some(tx), pending.convertToUnmatched)
+      })
+
     }
     else {
       // No pending difference, nothing to do
@@ -156,7 +160,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
 
     if (pending.exists()) {
       if (pending.upstreamVsn == vsn || pending.downstreamVsn == vsn) {
-        removePendingEvent(pending)
+        removePendingEvent(None, pending)
         true
       } else {
         false
@@ -174,7 +178,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     val pending = getPendingEvent(id)
 
     if (pending.exists()) {
-      removePendingEvent(pending)
+      removePendingEvent(None, pending)
     }
 
     // Find any existing events we've got for this ID
@@ -186,10 +190,15 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
           event.asDifferenceEvent
         case MatchState.UNMATCHED | MatchState.IGNORED =>
           // A difference has gone away. Remove the difference, and add in a match
-          deletePreviouslyReportedEvent(event)
 
-          val previousDetectionTime = event.detectedAt
-          saveAndConvertEvent(ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime), previousDetectionTime)
+          inTransaction[DifferenceEvent]((tx:Transaction) => {
+            deletePreviouslyReportedEvent(Some(tx), event)
+
+            val previousDetectionTime = event.detectedAt
+            val newEvent = ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, new DateTime)
+            saveAndConvertEvent(Some(tx), newEvent, previousDetectionTime)
+          })
+
       }
     }
     else {
@@ -211,11 +220,14 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
      * Converting from unmatched to matched means setting its matched value to 'true'.
      */
     def convertOldEvent(s:Session, old:ReportedDifferenceEvent) {
+
+      // NOTE That this still uses the deprecated Hibernate API
+
       s.delete(old)
       val lastSeen = new DateTime
       val detectedAt = lastSeen
       val matched = true // 'convert' to matched
-      saveAndConvertEvent(ReportedDifferenceEvent(null, old.objId, detectedAt, matched, old.upstreamVsn, old.upstreamVsn, lastSeen) )
+      saveAndConvertEvent(s, ReportedDifferenceEvent(null, old.objId, detectedAt, matched, old.upstreamVsn, old.upstreamVsn, lastSeen) )
     }
 
      val params = Map("domain" -> pair.domain,
@@ -239,7 +251,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
         // Remove this event, and replace it with a new event. We do this to ensure that consumers watching the updates
         // (or even just monitoring sequence ids) see a noticeable change.
         s.delete(evt)
-        saveAndConvertEvent(ReportedDifferenceEvent(null, evt.objId, evt.detectedAt, false,
+        saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, evt.detectedAt, false,
           evt.upstreamVsn, evt.downstreamVsn, evt.lastSeen, ignored = true))
       } else {
         evt.asDifferenceEvent
@@ -263,7 +275,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       // Generate a new event with the same details but the ignored flag cleared. This will ensure consumers
       // that are monitoring for changes will see one.
       s.delete(evt)
-      saveAndConvertEvent(ReportedDifferenceEvent(null, evt.objId, evt.detectedAt,
+      saveAndConvertEvent(s, ReportedDifferenceEvent(null, evt.objId, evt.detectedAt,
         false, evt.upstreamVsn, evt.downstreamVsn, new DateTime))
     })
   }
@@ -357,8 +369,16 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     pendingEvents.put(pending.objId,pending)
   }
 
-  private def removePendingEvent(pending:PendingDifferenceEvent) = {
-    db.execute("deletePendingDiffByOid", Map("oid" -> pending.oid))
+  private def removePendingEvent(tx:Option[Transaction], pending:PendingDifferenceEvent) = {
+
+    val query = "deletePendingDiffByOid"
+    val params = Map("oid" -> pending.oid)
+
+    tx match {
+      case None    => db.execute(query,params)
+      case Some(x) => x.execute(DatabaseCommand(query, params))
+    }
+
     pendingEvents.evict(pending.objId)
   }
 
@@ -420,7 +440,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
 
   private def reportedEventExists(event:ReportedDifferenceEvent) = event.seqId != NON_EXISTENT_SEQUENCE_ID
 
-  private def addReportableMismatch(reportableUnmatched:ReportedDifferenceEvent) = {
+  private def addReportableMismatch(existing:Option[Transaction], reportableUnmatched:ReportedDifferenceEvent) = {
     val event = getEventById(reportableUnmatched.objId)
 
     if (reportedEventExists(event)) {
@@ -432,9 +452,11 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
             updatePreviouslyReportedEvent(event, reportableUnmatched.lastSeen)
             event.asDifferenceEvent
           } else {
-            deletePreviouslyReportedEvent(event)
-            reportableUnmatched.ignored = true
-            saveAndConvertEvent(reportableUnmatched)
+            inTransaction(existing, (tx:Transaction) => {
+              deletePreviouslyReportedEvent(Some(tx), event)
+              reportableUnmatched.ignored = true
+              saveAndConvertEvent(Some(tx), reportableUnmatched)
+            })
           }
         case MatchState.UNMATCHED =>
           // We've already got an unmatched event. See if it matches all the criteria.
@@ -445,18 +467,24 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
             // No need to update the aggregate cache, since it won't affect the aggregate counts
             event.asDifferenceEvent
           } else {
-            deletePreviouslyReportedEvent(event)
-            saveAndConvertEvent(reportableUnmatched)
+            inTransaction(existing, (tx:Transaction) => {
+              deletePreviouslyReportedEvent(Some(tx), event)
+              saveAndConvertEvent(Some(tx), reportableUnmatched)
+            })
+
           }
 
         case MatchState.MATCHED =>
           // The difference has re-occurred. Remove the match, and add a difference.
-          deletePreviouslyReportedEvent(event)
-          saveAndConvertEvent(reportableUnmatched)
+          inTransaction(existing, (tx:Transaction) => {
+            deletePreviouslyReportedEvent(Some(tx), event)
+            saveAndConvertEvent(Some(tx), reportableUnmatched)
+          })
+
       }
     }
     else {
-      saveAndConvertEvent(reportableUnmatched)
+      saveAndConvertEvent(None, reportableUnmatched)
     }
 
   }
@@ -465,14 +493,21 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     first.upstreamVsn == second.upstreamVsn && first.downstreamVsn == second.downstreamVsn
 
 
-  private def saveAndConvertEvent(evt:ReportedDifferenceEvent) = {
-    val res = persistAndConvertEventInternal(evt)
+  private def saveAndConvertEvent(tx:Option[Transaction], evt:ReportedDifferenceEvent) = {
+    val res = persistAndConvertEventInternal(tx, evt)
     updateAggregateCache(evt.objId.pair, evt.detectedAt)
     res
   }
 
-  private def saveAndConvertEvent(evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
-    val res = persistAndConvertEventInternal(evt)
+  @Deprecated
+  private def saveAndConvertEvent(s:Session, evt:ReportedDifferenceEvent) = {
+    val res = persistAndConvertEventInternal(s, evt)
+    updateAggregateCache(evt.objId.pair, evt.detectedAt)
+    res
+  }
+
+  private def saveAndConvertEvent(tx:Option[Transaction], evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
+    val res = persistAndConvertEventInternal(tx, evt)
     updateAggregateCache(evt.objId.pair, previousDetectionTime)
     res
   }
@@ -488,23 +523,66 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     reportedEvents.put(event.objId, event)
   }
 
-  private def deletePreviouslyReportedEvent(event:ReportedDifferenceEvent) = {
-    db.execute("deleteDiffById", Map(
+  private def deletePreviouslyReportedEvent(tx:Option[Transaction], event:ReportedDifferenceEvent) = {
+
+    val query = "deleteDiffById"
+    val params = Map(
       "seq_id" -> event.seqId,
       "pair"   -> event.objId.pair.key,
       "domain" -> event.objId.pair.domain
-    ))
+    )
+
+    tx match {
+      case None => db.execute(query,params)
+      case Some(tx) => tx.execute(DatabaseCommand(query, params))
+    }
+
     reportedEvents.evict(event.objId)
   }
 
-  private def persistAndConvertEventInternal(evt:ReportedDifferenceEvent) = {
-    db.insert(evt)
+  private def persistAndConvertEventInternal(tx:Option[Transaction], evt:ReportedDifferenceEvent) = {
+    tx match {
+      case None => {
+        db.insert(evt)
+      }
+      case Some(tx) => {
+        tx.registerRollbackHandler(new RollbackHandler {
+          def onRollback() = reportedEvents.evict(evt.objId)
+        })
+        tx.insert(evt)
+      }
+    }
+
+    reportedEvents.put(evt.objId, evt)
+    evt.asDifferenceEvent
+  }
+
+  @Deprecated
+  private def persistAndConvertEventInternal(s:Session, evt:ReportedDifferenceEvent) = {
+    s.save(evt)
     reportedEvents.put(evt.objId, evt)
     evt.asDifferenceEvent
   }
 
   private def updateAggregateCache(pair:DiffaPairRef, detectedAt:DateTime) =
     aggregationCache.onStoreUpdate(pair, detectedAt)
+
+  private def inTransaction[T](tx:Option[Transaction], f:Transaction => T) : T = tx match {
+    case Some(x) => inCurrrentTransaction(x,f)
+    case None    => inTransaction(f)
+  }
+
+  private def inTransaction[T](f:Transaction => T) : T = {
+    val tx = db.beginTransaction
+    val result = f(tx)
+    tx.commit()
+    result
+  }
+
+  private def inCurrrentTransaction[T](tx:Transaction, f:Transaction => T) : T = {
+    f(tx)
+  }
+
 }
 
 case class PendingDifferenceEvent(
