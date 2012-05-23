@@ -18,6 +18,7 @@
 * [84]  - If we've got at least two endpoints defined, then try to make selecting the endpoints in the settings page sensible
 * [138] - Auto-focus on newly added constraint rows in the settings page
 * [159] - Authentication lookups no longer hit the database on every poll
+* [162] - Replace DBCP with BoneCP for DB connection pooling 
 
 ## General Maintenance
 
