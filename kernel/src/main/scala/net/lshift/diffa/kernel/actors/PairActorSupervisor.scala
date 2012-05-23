@@ -43,7 +43,8 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                diagnostics:DiagnosticsManager,
                                changeEventBusyTimeoutMillis:Long,
                                changeEventQuietTimeoutMillis:Long,
-                               indexWriterCloseInterval: Int)
+                               indexWriterCloseInterval: Int,
+                               actorSystem: ActorSystem)
     extends AbstractActorSupervisor
     with PairPolicyClient
     with AgentLifecycleAware {

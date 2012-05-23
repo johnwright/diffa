@@ -119,7 +119,9 @@ class PairActorTest {
   expect(differencesManager.lastRecordedVersion(pairRef)).andStubReturn(None)
   replay(differencesManager)
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100, closeInterval)
+  val actorSystem = ActorSystem("EscalationManagerTestAt%#x".format(hashCode()))
+
+  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100, closeInterval, actorSystem)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
   
@@ -392,7 +394,7 @@ class PairActorTest {
     val event = buildUpstreamEvent()
 
     val timeToWait = 2000L
-    implicit val actorSystem = supervisor.actorSystem
+    implicit val system =  actorSystem
     implicit val ec = ExecutionContext.defaultExecutionContext
 
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall     // Expect once when the pair actor starts the call

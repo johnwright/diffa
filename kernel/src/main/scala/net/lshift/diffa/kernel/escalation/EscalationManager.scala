@@ -29,7 +29,7 @@ import net.lshift.diffa.kernel.reporting.ReportManager
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.io.Closeable
 import net.lshift.diffa.kernel.actors.AbstractActorSupervisor
-import akka.actor.{Props, Actor}
+import akka.actor.{ActorSystem, Props, Actor}
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -49,7 +49,8 @@ import akka.actor.{Props, Actor}
  */
 class EscalationManager(val config:DomainConfigStore,
                         val actionsClient:ActionsClient,
-                        val reportManager:ReportManager)
+                        val reportManager:ReportManager,
+                        val actorSystem: ActorSystem)
     extends AbstractActorSupervisor
     with DifferencingListener
     with AgentLifecycleAware
