@@ -18,6 +18,7 @@
 * [84]  - If we've got at least two endpoints defined, then try to make selecting the endpoints in the settings page sensible
 * [138] - Auto-focus on newly added constraint rows in the settings page
 * [159] - Authentication lookups no longer hit the database on every poll
+* [162] - Replace DBCP with BoneCP for DB connection pooling 
 
 ## General Maintenance
 
@@ -34,7 +35,8 @@
 * [151] - Curtail accumulation of open file descriptors by closing the IndexWriter of each pair on a regular basis.
 * [152] - Ensure that we do not generate malformed URLs when performing aggregate scans on an endpoint URL specified with a query string.
 * [155] - Re-instated the diagnostic log buffering
-* [156] - The demo participants config file had bit rotten slightly 
+* [156] - The demo participants config file had bit rotten slightly
+* [161] - Eliminated some DB calls that were slowing down the differences store.
 
 ## Library Upgrades
 

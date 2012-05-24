@@ -33,18 +33,14 @@ trait HibernateQueryUtils {
 
   protected val log: Logger = LoggerFactory.getLogger(getClass)
 
-  def getOrFail[ReturnType](s: Session, c: Class[ReturnType], id: java.io.Serializable, entityName: String): ReturnType = {
-    s.get(c, id) match {
-      case null => throw new MissingObjectException(entityName)
-      case e => e.asInstanceOf[ReturnType]
-    }
-  }
-
   /**
    * Returns a handle to a scrollable cursor. Note that this requires the caller to manage the session for themselves.
    */
-  def scrollableQuery[T](s: Session, queryName: String, params: Map[String, Any]): Cursor[T] = {
+  def scrollableQuery[T](s: Session, queryName: String, params: Map[String, Any], maxResults:Option[Int] = None): Cursor[T] = {
     val query: Query = s.getNamedQuery(queryName)
+
+    maxResults.map(m => query.setMaxResults(m))
+
     params foreach {
       case (param, value) => query.setParameter(param, value)
     }
@@ -63,13 +59,13 @@ trait HibernateQueryUtils {
   /**
    * Apply the closure to the query result set in a streaming fashion.
    */
-  def processAsStream[T](queryName: String, params: Map[String, Any], f: (Session, T) => Unit) = {
+  def processAsStream[T](queryName: String, params: Map[String, Any], f: (Session, T) => Unit, maxResults:Option[Int] = None) = {
 
     val session = sessionFactory.openSession
     var cursor: Cursor[T] = null
 
     try {
-      cursor = scrollableQuery[T](session, queryName, params)
+      cursor = scrollableQuery[T](session, queryName, params, maxResults)
 
       var count = 0
       while (cursor.next) {
@@ -255,6 +251,13 @@ object HibernateQueryUtils {
    */
   def limitedSingleQueryOpt[T](s: Session, queryName: String, params: Map[String, Any]): Option[T] =
     singleQueryOptBuilder(s, queryName, params, (q: Query) => q.setMaxResults(1))
+
+  def getOrFail[T](s: Session, c: Class[T], id: java.io.Serializable, entityName: String): T = {
+    s.get(c, id) match {
+      case null => throw new MissingObjectException(entityName)
+      case e => e.asInstanceOf[T]
+    }
+  }
 
   private def singleQueryOptBuilder[ReturnType](s: Session, queryName: String, params: Map[String, Any], f: Query => Unit): Option[ReturnType] = {
 
