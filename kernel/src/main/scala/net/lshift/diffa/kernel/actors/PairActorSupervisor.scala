@@ -81,7 +81,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id) ! ChangeMessage(event)
 
   // TODO: Pick more appropriate value.
-  implicit val waitTimeout : Timeout = new Timeout(10 seconds)
+  implicit val waitTimeout = Timeout(10 seconds)
   def startInventory(pair: DiffaPairRef, side: EndpointSide, view:Option[String]): Seq[ScanRequest] = {
     val future = (findActor(pair) ? StartInventoryMessage(side, view))
 
