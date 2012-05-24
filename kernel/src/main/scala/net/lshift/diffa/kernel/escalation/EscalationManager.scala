@@ -127,24 +127,5 @@ class EscalationManager(val config:DomainConfigStore,
     config.listEscalationsForPair(pair.domain, pair.key).
       filter(e => e.event == eventType && actionTypes.contains(e.actionType))
 
-/*
-<<<<<<< HEAD
-  def close() {
-    // Actor.registry.actorsFor[EscalationActor].foreach(_.stop())
-  }
 
-  private def findOrCreateActor(pair: DiffaPairRef) = {
-//    val key = ActorUtils.ActorKey(pair, EscalationActor.key(_))
-//
-//    ActorUtils.findActor(key).getOrElse {
-//      val actor = Actor.actorOf(new EscalationActor(pair))
-//      actor.start()
-//      log.info("{} Escalations actor started", formatAlertCode(pair, ACTOR_STARTED))
-//      actor
-//    }
-  }
-=======
->>>>>>> master
-
-*/
 }
