@@ -102,7 +102,7 @@ class PairActorTest {
 
   replay(domainConfigStore)
 
-  val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
+  val writer = createMock("ExtendedVersionCorrelationWriter", classOf[ExtendedVersionCorrelationWriter])
 
   val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
   expect(store.openWriter()).andStubReturn(writer)
