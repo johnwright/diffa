@@ -497,7 +497,7 @@ class PairActorTest {
 
     supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
-    assertTrue(wasMarkedAsCancelled.get(10000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
+    assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
   }
 
@@ -529,7 +529,7 @@ class PairActorTest {
     supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
     
-    assertTrue(proxyDidGenerateException.get(10000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
+    assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
   }
 
@@ -544,8 +544,8 @@ class PairActorTest {
     val proxyDidGenerateException = new SyncVar[Boolean]
     val secondScanIsRunning = new SyncVar[Boolean]
     val completionMonitor = new Object
-    val waitForSecondScanToStartDelay = 4000    // Wait up to 2 seconds for the first scan to fail and the second to start
-    val waitForStragglerToFinishDelay = 4000    // Wait up to 2 seconds for the "straggler" to finish once we've unblocked it
+    val waitForSecondScanToStartDelay = 2000    // Wait up to 2 seconds for the first scan to fail and the second to start
+    val waitForStragglerToFinishDelay = 2000    // Wait up to 2 seconds for the "straggler" to finish once we've unblocked it
     val overallProcessWait = waitForSecondScanToStartDelay + waitForStragglerToFinishDelay + 1000
       // The overall process could take up to both delays, plus a bit of breathing room
 
@@ -603,7 +603,7 @@ class PairActorTest {
     supervisor.scanPair(pairRef, None)
 
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
-    completionMonitor.synchronized { completionMonitor.wait(4000) }   // Wait for the scan to complete too
+    completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too
 
     verify(scanListener, diagnostics)
   }
