@@ -100,9 +100,6 @@ case class PairActor(pair:DiffaPair,
 
   // private var cancellationRequester:Channel[Any] = null
 
-  private implicit val system = actorSystem
-  private implicit val ec = ExecutionContext.defaultExecutionContext
-
   /**
    * This allows tracing of spurious messages, but is only enabled in when the log level is set to TRACE
    */
@@ -446,6 +443,9 @@ case class PairActor(pair:DiffaPair,
    */
   def handleScanMessage(scanView:Option[String]) : Boolean = {
     val createdScan = OutstandingScan(new UUID)
+    implicit val system = actorSystem
+    implicit val executionContext = ExecutionContext.defaultExecutionContext
+
 
     logger.info(formatAlertCode(pairRef, SCAN_STARTED_BENCHMARK))
 
