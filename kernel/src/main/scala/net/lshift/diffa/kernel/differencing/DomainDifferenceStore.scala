@@ -45,7 +45,7 @@ trait DomainDifferenceStore {
    * Retrieves the maximum sequence id of all events within the current time range. If no events are available within
    * the given range, 0 is returned.
    */
-  def maxSequenceId(pair: DiffaPairRef, start:DateTime, end:DateTime):Int
+  def maxSequenceId(pair: DiffaPairRef, start:DateTime, end:DateTime) : Long
 
   /**
    * Adds a pending event for the given version id into the cache.
@@ -81,7 +81,7 @@ trait DomainDifferenceStore {
    * Indicates that all differences in the cache older than the given date should be marked as matched. This is generally
    * invoked upon a scan being completed, and allows for events that have disappeared to be removed.
    */
-  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime)
+  //def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime)
 
   /**
    * Indicates that the given event should be ignored, and not returned in any query. Returns the regenerated object
@@ -104,7 +104,7 @@ trait DomainDifferenceStore {
   /**
    * Removes the entry for the latest correlation store that was recorded with the diffs store.
    */
-  def removeLatestRecordedVersion(pair:DiffaPairRef)
+  //def removeLatestRecordedVersion(pair:DiffaPairRef)
 
   /**
    * Registers the latest correlation store version with the diff store.
@@ -140,7 +140,7 @@ trait DomainDifferenceStore {
    * @throws SequenceOutOfDateException if the provided sequence id is too old, and necessary scan information cannot be
    *    provided. A client will need to recover by calling retrieveAllEvents and re-process all events.
    */
-  def retrieveEventsSince(domain:String, evtSeqId:String):Seq[DifferenceEvent]
+  //def retrieveEventsSince(domain:String, evtSeqId:String):Seq[DifferenceEvent]
 
   /**
    * Retrieves a single event by its id.
@@ -177,7 +177,7 @@ case class AggregateEvents(
 )
 
 case class ReportedDifferenceEvent(
-  @BeanProperty var seqId:java.lang.Integer = null,
+  @BeanProperty var seqId:java.lang.Long = null,
   @BeanProperty var objId:VersionID = null,
   @BeanProperty var detectedAt:DateTime = null,
   @BeanProperty var isMatch:Boolean = false,
@@ -188,6 +188,15 @@ case class ReportedDifferenceEvent(
 ) {
 
   def this() = this(seqId = null)
+
+  def getFoo() = {
+    if (lastSeen == null) {
+      null
+    }
+    else {
+      lastSeen.toDate
+    }
+  }
 
   def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
   def state = if (isMatch) {

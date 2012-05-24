@@ -34,6 +34,7 @@ class BaselineConfiguration extends SessionFactoryObserver {
   def sessionFactoryCreated(factory:SessionFactory) = {
     // The config store will not have been constructed at this point in Spring
     // So just create a throw away instance in order to produce this baseline
+    /*
     val cacheManager = new CacheManager()
     val membershipListener = new DomainMembershipAware {
       def onMembershipCreated(member: Member) {}
@@ -45,6 +46,7 @@ class BaselineConfiguration extends SessionFactoryObserver {
                                                 new HookManager,
                                                 cacheManager,
                                                 membershipListener)
+    */
     log.debug("Diffa baseline configuration created")
   }
 

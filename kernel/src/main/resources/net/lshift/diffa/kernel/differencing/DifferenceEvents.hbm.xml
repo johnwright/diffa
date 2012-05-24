@@ -115,10 +115,7 @@
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.seqId > :seqId
   </query>
-  <query name="maxSeqIdByDomain">
-    select max(e.seqId) from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain
-  </query>
+
   <query name="unmatchedEventsInIntervalByDomain"><![CDATA[
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and
