@@ -119,14 +119,17 @@ class PairActorTest {
   expect(differencesManager.lastRecordedVersion(pairRef)).andStubReturn(None)
   replay(differencesManager)
 
-  val actorSystem = ActorSystem("EscalationManagerTestAt%#x".format(hashCode()))
+  val actorSystem = ActorSystem("PairActorSTest%#x".format(hashCode()))
 
   val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100, closeInterval, actorSystem)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
   
   @After
-  def stop = supervisor.stopActor(pair.asRef)
+  def stop = {
+    supervisor.stopActor(pair.asRef)
+    actorSystem.shutdown()
+  }
 
   // Check for spurious actor events
   val spuriousEventAppender = new SpuriousEventAppender
