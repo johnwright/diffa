@@ -132,6 +132,7 @@
     <constructor-arg ref="domainConfigStore" />
     <constructor-arg ref="actionsFrontend" />
     <constructor-arg ref="reportManager" />
+    <constructor-arg ref="actorSystem" />
   </bean>
 
   <bean id="reportManager" class="net.lshift.diffa.kernel.reporting.ReportManager">
@@ -219,6 +220,9 @@
     <constructor-arg ref="systemConfigStore" />
   </bean>
 
+  <bean id="actorSystem" class="akka.actor.ActorSystem" factory-method="create">
+    <constructor-arg value="diffaActorSystem" />
+  </bean>
   <!--
     =============
       Supervision
@@ -270,6 +274,7 @@
         </property>
       </bean>
     </constructor-arg>
+    <constructor-arg ref="actorSystem" />
   </bean>
 
   <!--
