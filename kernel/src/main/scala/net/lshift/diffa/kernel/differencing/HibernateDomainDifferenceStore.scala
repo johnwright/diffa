@@ -47,8 +47,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     extends DomainDifferenceStore
     with HibernateQueryUtils {
 
-  val dateTimeMapper = new TimestampColumnDateTimeMapper
-
   val aggregationCache = new DifferenceAggregationCache(this, cacheManager)
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
 
@@ -404,7 +402,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       Map(
         "upstream_vsn"   -> upstreamVsn,
         "downstream_vsn" -> downstreamVsn,
-        "last_seen"      -> dateTimeMapper.toNonNullValue(seenAt),
+        "last_seen"      -> columnMapper.toNonNullValue(seenAt),
         "oid"            -> pending.oid
     ))
 
@@ -530,7 +528,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       "seq_id"    -> event.seqId,
       "pair"      -> event.objId.pair.key,
       "domain"    -> event.objId.pair.domain,
-      "last_seen" -> dateTimeMapper.toNonNullValue(lastSeen)
+      "last_seen" -> columnMapper.toNonNullValue(lastSeen)
     ))
     event.lastSeen = lastSeen
     reportedEvents.put(event.objId, event)
