@@ -16,8 +16,6 @@
 
 package net.lshift.diffa.kernel.actors
 
-import java.util.HashMap
-
 import akka.actor._
 import akka.migration._
 import org.slf4j.LoggerFactory

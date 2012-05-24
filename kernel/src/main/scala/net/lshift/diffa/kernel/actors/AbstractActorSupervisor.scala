@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.events.VersionID
 import net.lshift.diffa.kernel.util.{MissingObjectException, Lazy}
 import java.io.Closeable
 import scala.collection.JavaConversions._
-import akka.actor.{ActorSystem, GlobalActorSystem, ActorRef}
+import akka.actor.{ActorSystem, ActorRef}
 
 /**
  * Common superclass for components that need to manage actors.
@@ -39,7 +39,7 @@ abstract class AbstractActorSupervisor
   private val pairActors = new HashMap[DiffaPairRef, PotentialActor]()
 
 
-  val actorSystem: ActorSystem //  = GlobalActorSystem
+  val actorSystem: ActorSystem
 
 
   /**

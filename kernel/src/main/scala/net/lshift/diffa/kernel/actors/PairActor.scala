@@ -63,10 +63,6 @@ case class PairActor(pair:DiffaPair,
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
-  // TODO: This is used to set the id, as used in registries, &c.
-  // self.id_=(pair.identifier)
-  // val myActor = context.actorOf(Props[PairActor], name = pair.identifier)
-
   private val pairRef = pair.asRef
 
   private var actionsRemainingUntilClose = indexWriterCloseInterval
