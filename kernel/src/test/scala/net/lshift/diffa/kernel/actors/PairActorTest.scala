@@ -102,7 +102,7 @@ class PairActorTest {
 
   replay(domainConfigStore)
 
-  val writer = createMock("ExtendedVersionCorrelationWriter", classOf[ExtendedVersionCorrelationWriter])
+  val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
 
   val store = createMock("versionCorrelationStore", classOf[VersionCorrelationStore])
   expect(store.openWriter()).andStubReturn(writer)
@@ -124,7 +124,7 @@ class PairActorTest {
   val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100, closeInterval, actorSystem)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
-  
+
   @After
   def stop = {
     supervisor.stopActor(pair.asRef)
@@ -484,7 +484,9 @@ class PairActorTest {
     expectFailingUpstreamScanAndUseProvidedDownstreamHandler(downstreamHandler = new IAnswer[Unit] {
       def answer() {
         val feedbackHandle = EasyMock.getCurrentArguments()(7).asInstanceOf[FeedbackHandle]
+        println("Marking as cancelled for %s".format(feedbackHandle))
         awaitFeedbackHandleCancellation(feedbackHandle)
+        println("Feedbackhandle %s cancelled? %s".format(feedbackHandle, feedbackHandle.isCancelled))
         wasMarkedAsCancelled.set(feedbackHandle.isCancelled)
       }
     })
@@ -508,9 +510,21 @@ class PairActorTest {
     expectFailingUpstreamScanAndUseProvidedDownstreamHandler(downstreamHandler = new IAnswer[Unit] {
       def answer() {
         val feedbackHandle = EasyMock.getCurrentArguments()(7).asInstanceOf[FeedbackHandle]
+        println("Awaiting %s;  args:%s".format(feedbackHandle,
+          EasyMock.getCurrentArguments().toList))
         awaitFeedbackHandleCancellation(feedbackHandle)
 
+        println("Feedbackhandle %s cancelled? %s;".format(feedbackHandle,
+          feedbackHandle.isCancelled
+        ))
+
+        // Seemingly, what we're being passed in here as a writer instance is
+        // a mock object; which we haven't (at this point) configured to
+        // understand the message "clearDownstreamVersion"
+        // But only sometimes.Most of the time we get an instance of PairActor$$anon$2 (or something)
+
         val writer = EasyMock.getCurrentArguments()(3).asInstanceOf[LimitedVersionCorrelationWriter]
+        println("writer (args(3))#getClass() -> %s".format(writer.getClass()))
         try {
           writer.clearDownstreamVersion(VersionID(DiffaPairRef("p1","domain"), "abc"))
           proxyDidGenerateException.set(false)
@@ -528,7 +542,7 @@ class PairActorTest {
 
     supervisor.startActor(pair.asRef)
     supervisor.scanPair(pair.asRef, None)
-    
+
     assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
   }
@@ -573,7 +587,7 @@ class PairActorTest {
             supervisor.scanPair(pair.asRef, None)      // Run a second scan when the first one fails
           }
         })
-    
+
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall().atLeastOnce()
     expectUpstreamScan().once()  // Succeed on second
     expectDownstreamScan().andAnswer(new IAnswer[Unit] {
@@ -649,7 +663,6 @@ class PairActorTest {
 
     expect(versionPolicy.processInventory(pairRef, endpoint, writer, side, constraints, aggregations, entries)).andReturn(Seq())
     expectDifferencesReplay(assertFlush = true, writerCloseMonitor = monitor)
-    writer.close; expectLastCall.asStub
 
     replay(store, diffWriter, versionPolicy, writer)
 
