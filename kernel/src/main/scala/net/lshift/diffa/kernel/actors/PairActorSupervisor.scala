@@ -32,6 +32,7 @@ import net.lshift.diffa.kernel.util.EndpointSide
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanRequest, ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.util.AlertCodes._
 import akka.dispatch.Await
+import akka.util.Duration._
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -80,14 +81,17 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
 
   def propagateChangeEvent(event:PairChangeEvent) = findActor(event.id) ! ChangeMessage(event)
 
+  val waitTimeout = Inf
   def startInventory(pair: DiffaPairRef, side: EndpointSide, view:Option[String]): Seq[ScanRequest] = {
-    (findActor(pair) ? StartInventoryMessage(side, view)).as[Seq[ScanRequest]].get
+    val future = (findActor(pair) ? StartInventoryMessage(side, view))
+
+    Await.result(future, waitTimeout).asInstanceOf[Seq[ScanRequest]]
   }
 
   def submitInventory(pair:DiffaPairRef, side:EndpointSide, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]) = {
     val res = (findActor(pair) ? InventoryMessage(side, constraints, aggregations, entries))
-    println("submitInventory: %s".format(res.get))
-    res.as[(Seq[ScanRequest], Any)].get._1
+
+    Await.result(res, waitTimeout).asInstanceOf[Seq[ScanRequest]]
   }
 
   def difference(pairRef:DiffaPairRef) =
@@ -104,8 +108,9 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   }
 
   def cancelScans(pairRef:DiffaPairRef) = {
-    (findActor(pairRef) ? CancelMessage).get match {
-      case (flag, _) => true
+    val future = findActor(pairRef) ? CancelMessage
+    Await.result(future, Inf) match {
+      case flag => true
     }
   }
 

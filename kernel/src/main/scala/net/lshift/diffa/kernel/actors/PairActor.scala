@@ -26,11 +26,9 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.util.AlertCodes._
 import com.eaio.uuid.UUID
 import akka.actor._
-import akka.actor.OldActor
 import akka.dispatch.{Await, ExecutionContext, Future}
-import akka.pattern.AskTimeoutException
+import akka.pattern.{ask, AskTimeoutException}
 
-// import akka.migration.OldActorRef
 import collection.mutable.{SynchronizedQueue, Queue}
 import collection.mutable.Queue
 import concurrent.SyncVar
@@ -61,7 +59,7 @@ case class PairActor(pair:DiffaPair,
                      changeEventBusyTimeoutMillis: Long,
                      changeEventQuietTimeoutMillis: Long,
                      indexWriterCloseInterval: Int,
-                     actorSystem: ActorSystem) extends OldActor {
+                     actorSystem: ActorSystem) extends Actor {
 
   val logger:Logger = LoggerFactory.getLogger(getClass)
 
@@ -172,13 +170,13 @@ case class PairActor(pair:DiffaPair,
     def storeUpstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, vsn: String)
       = call( _.storeUpstreamVersion(id, attributes, lastUpdated, vsn) )
     def call(command:(LimitedVersionCorrelationWriter => Correlation)) = {
+      implicit val askTimeout : Timeout = timeout
       val message = VersionCorrelationWriterCommand(scanUuid, command)
       val future = self.ask(message)
       try {
         Await.result(future, timeout seconds) match {
-          case (CancelMessage, _)  => throw new ScanCancelledException(pairRef)
-          case (result:Any, _)         =>
-            result.asInstanceOf[Correlation]
+          case CancelMessage  => throw new ScanCancelledException(pairRef)
+          case result:Any     => result.asInstanceOf[Correlation]
         }
       } catch { case e: AskTimeoutException =>
           logger.error("%s Writer proxy timed out after %s seconds processing command: %s "
@@ -232,17 +230,17 @@ case class PairActor(pair:DiffaPair,
     case ScanMessage(scanView) => {
       if (handleScanMessage(scanView)) {
         // Go into the scanning state
-        become(receiveWhilstScanning)
+        context.become(receiveWhilstScanning)
       }
     }
     case c:ChangeMessage                   => handleChangeMessage(c)
-    case i:InventoryMessage                => self.reply(handleInventoryMessage(i))
-    case i:StartInventoryMessage           => self.reply(handleStartInventoryMessage(i))
+    case i:InventoryMessage                => sender ! handleInventoryMessage(i)
+    case i:StartInventoryMessage           => sender ! handleStartInventoryMessage(i)
     case DifferenceMessage                 => handleDifferenceMessage()
     case FlushWriterMessage                => writer.flush()
     case c:VersionCorrelationWriterCommand => {
       logger.trace("Received writer command (%s) in non-scanning state - sending cancellation".format(c), c.exception)
-      self.reply(CancelMessage)
+      sender ! CancelMessage
     }
     case camsg:ChildActorScanMessage if isOwnedByOutstandingScan(camsg) =>
       updateOutstandingScans(camsg)     // Allow outstanding cancelled scans to clean themselves up nicely
@@ -250,7 +248,7 @@ case class PairActor(pair:DiffaPair,
       if (logger.isDebugEnabled) {
           logger.debug(formatAlertCode(pairRef, CANCELLATION_REQUEST_RECEIVED)  + " Received cancellation request in non-scanning state, ignoring")
       }
-      self.reply(true)
+      sender ! true
     }
     case a:ChildActorCompletionMessage     =>
       a.logMessage(logger, Ready, OUT_OF_ORDER_MESSAGE)
@@ -267,13 +265,13 @@ case class PairActor(pair:DiffaPair,
     case FlushWriterMessage                 => // ignore flushes in this state - we may want to roll the index back
     case CancelMessage                      =>
       handleCancellation()
-      self.reply(true)
+      sender ! true
     case c: VersionCorrelationWriterCommand =>
       if (isOwnedByActiveScan(c)) {
-        self.reply(c.invokeWriter(writer))
+        sender ! c.invokeWriter(writer)
       } else {
         logger.trace("Received writer command (%s) for different scan worker - sending cancellation".format(c), c.exception)
-        self.reply(CancelMessage)
+        sender ! CancelMessage
       }
     case ScanMessage(scanView)              =>
       // ignore any scan requests whilst scanning
@@ -366,7 +364,7 @@ case class PairActor(pair:DiffaPair,
     cleanupIndexFilesIfCorrelationStoreBackedByLucene
 
     // Leave the scan state
-    unbecome()
+    context.unbecome()
   }
 
   /**
