@@ -457,7 +457,7 @@ class PairActorTest {
   def shouldReportScanFailure = {
     val monitor = new Object
 
-    expectFailingScan(
+    expectFailingUpstreamScanAndUseProvidedDownstreamHandler(
       downstreamHandler = EasyMockScalaUtils.emptyAnswer,
       failStateHandler = new IAnswer[Unit] {
           def answer { monitor.synchronized { monitor.notifyAll } }
@@ -481,7 +481,7 @@ class PairActorTest {
   def shouldCancelFeedbackHandleWhenAParticipantFails = {
     val wasMarkedAsCancelled = new SyncVar[Boolean]
 
-    expectFailingScan(downstreamHandler = new IAnswer[Unit] {
+    expectFailingUpstreamScanAndUseProvidedDownstreamHandler(downstreamHandler = new IAnswer[Unit] {
       def answer() {
         val feedbackHandle = EasyMock.getCurrentArguments()(7).asInstanceOf[FeedbackHandle]
         awaitFeedbackHandleCancellation(feedbackHandle)
@@ -505,7 +505,7 @@ class PairActorTest {
   def shouldGenerateExceptionInVersionCorrelationWriterProxyWhenAParticipantFails = {
     val proxyDidGenerateException = new SyncVar[Boolean]
 
-    expectFailingScan(downstreamHandler = new IAnswer[Unit] {
+    expectFailingUpstreamScanAndUseProvidedDownstreamHandler(downstreamHandler = new IAnswer[Unit] {
       def answer() {
         val feedbackHandle = EasyMock.getCurrentArguments()(7).asInstanceOf[FeedbackHandle]
         awaitFeedbackHandleCancellation(feedbackHandle)
@@ -549,7 +549,7 @@ class PairActorTest {
     val overallProcessWait = waitForSecondScanToStartDelay + waitForStragglerToFinishDelay + 1000
       // The overall process could take up to both delays, plus a bit of breathing room
 
-    expectFailingScan(
+    expectFailingUpstreamScanAndUseProvidedDownstreamHandler(
       downstreamHandler = new IAnswer[Unit] {
           def answer() {
             if (secondScanIsRunning.get(waitForSecondScanToStartDelay).isDefined) {
@@ -719,7 +719,7 @@ class PairActorTest {
     //mailbox.poll(5, TimeUnit.SECONDS) match { case null => fail("Flush not called"); case _ => () }
   }
 
-  def expectFailingScan(downstreamHandler:IAnswer[Unit], failStateHandler:IAnswer[Unit] = EasyMockScalaUtils.emptyAnswer) {
+  def expectFailingUpstreamScanAndUseProvidedDownstreamHandler(downstreamHandler:IAnswer[Unit], failStateHandler:IAnswer[Unit] = EasyMockScalaUtils.emptyAnswer) {
     expectWriterRollback()
 
     scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall.atLeastOnce()
