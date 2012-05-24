@@ -649,6 +649,7 @@ class PairActorTest {
 
     expect(versionPolicy.processInventory(pairRef, endpoint, writer, side, constraints, aggregations, entries)).andReturn(Seq())
     expectDifferencesReplay(assertFlush = true, writerCloseMonitor = monitor)
+    writer.close; expectLastCall.asStub
 
     replay(store, diffWriter, versionPolicy, writer)
 
