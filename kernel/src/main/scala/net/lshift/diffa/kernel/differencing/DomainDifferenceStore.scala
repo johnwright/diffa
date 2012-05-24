@@ -189,15 +189,6 @@ case class ReportedDifferenceEvent(
 
   def this() = this(seqId = null)
 
-  def getFoo() = {
-    if (lastSeen == null) {
-      null
-    }
-    else {
-      lastSeen.toDate
-    }
-  }
-
   def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
   def state = if (isMatch) {
       MatchState.MATCHED
