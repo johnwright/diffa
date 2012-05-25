@@ -87,7 +87,10 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     // If difference partitioning is enabled, ask the hook to clean up each pair. Note that we'll end up running a
     // delete over all pair differences later anyway, so we won't record the result of the removal operation.
     if (hook.isDifferencePartitioningEnabled) {
-      listPairsInDomain(domain).foreach(p => hook.removeAllPairDifferences(domain, p.key))
+      listPairsInDomain(domain).foreach(p => {
+        hook.removeAllPairDifferences(domain, p.key)
+        removeLatestRecordedVersion(p.asRef)
+      })
     }
 
     removeDomainDifferences(domain)
@@ -191,7 +194,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
         case MatchState.UNMATCHED | MatchState.IGNORED =>
           // A difference has gone away. Remove the difference, and add in a match
           val previousDetectionTime = event.detectedAt
-          val newEvent = ReportedDifferenceEvent(event.seqId, id, new DateTime, true, vsn, vsn, new DateTime)
+          val newEvent = ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, event.lastSeen)
           updateAndConvertEvent(newEvent, previousDetectionTime)
       }
     }
@@ -201,38 +204,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     }
 
   }
-
-  /**
-   * Convert all unmatched DifferenceEvents with a lastSeen time earlier
-   * than the cut-off to matched DifferenceEvents (matched: false -> true).
-   */
-  /*
-  def matchEventsOlderThan(pair:DiffaPairRef, cutoff: DateTime) = {
-
-    /**
-     * Convert an unmatched difference event to a matched difference event
-     * and set its lastSeen and detectedAt values to the current time.
-     * Converting from unmatched to matched means setting its matched value to 'true'.
-     */
-    def convertOldEvent(s:Session, old:ReportedDifferenceEvent) {
-
-      // NOTE That this still uses the deprecated Hibernate API
-
-      val lastSeen = new DateTime
-      val detectedAt = lastSeen
-      val matched = true // 'convert' to matched
-      val event = ReportedDifferenceEvent(old.seqId, old.objId, detectedAt, matched, old.upstreamVsn, old.upstreamVsn, lastSeen)
-
-      upgradePreviouslyReportedEvent(event)
-    }
-
-     val params = Map("domain" -> pair.domain,
-                      "pair"   -> pair.key,
-                      "cutoff" -> cutoff)
-
-     processAsStream[ReportedDifferenceEvent]("unmatchedEventsOlderThanCutoffByDomainAndPair", params, convertOldEvent)
-  }
-  */
 
   def ignoreEvent(domain:String, seqId:String) = {
 
@@ -284,15 +255,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     case Some(checkpoint) => Some(checkpoint.latestVersion)
   }
 
-
-  private def removeLatestRecordedVersion(pair:DiffaPairRef) = sessionFactory.withSession(s => {
-    getStoreCheckpoint(pair) match {
-      case Some(checkpoint) => s.delete(checkpoint)
-      case None             => //
-    }
-  })
-
-
   def recordLatestVersion(pairRef:DiffaPairRef, version:Long) = sessionFactory.withSession(s => {
     val pair = getPair(s, pairRef.domain, pairRef.key)
     s.saveOrUpdate(new StoreCheckpoint(pair, version))
@@ -334,12 +296,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     count.getOrElse(new java.lang.Long(0L)).intValue
   })
 
-  /*
-  def retrieveEventsSince(domain: String, evtSeqId: String) =
-    db.listQuery[ReportedDifferenceEvent]("eventsSinceByDomain",
-      Map("domain" -> domain, "seqId" -> java.lang.Long.parseLong(evtSeqId))).map(_.asDifferenceEvent)
-
-*/
   def retrieveAggregates(pair:DiffaPairRef, start:DateTime, end:DateTime, aggregateMinutes:Option[Int]):Seq[AggregateTile] =
     aggregationCache.retrieveAggregates(pair, start, end, aggregateMinutes)
 
@@ -686,6 +642,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   private def updateAggregateCache(pair:DiffaPairRef, detectedAt:DateTime) =
     aggregationCache.onStoreUpdate(pair, detectedAt)
 
+
+  private def removeLatestRecordedVersion(pair:DiffaPairRef) = sessionFactory.withSession(s => {
+    getStoreCheckpoint(pair) match {
+      case Some(checkpoint) => s.delete(checkpoint)
+      case None             => //
+    }
+  })
 
 }
 
