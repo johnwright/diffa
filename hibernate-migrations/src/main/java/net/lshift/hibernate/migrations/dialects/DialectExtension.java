@@ -18,6 +18,8 @@ package net.lshift.hibernate.migrations.dialects;
 import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.Dialect;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -130,5 +132,16 @@ public abstract class DialectExtension {
   
   public boolean supportsFractionalSeconds() {
     return true;
+  }
+
+  /**
+   * Provides a series of statements that can perform a column widening operation
+   * for a particular dialect, under the assumption there are no foreign keys on the column to be widened.
+   */
+  public List<String> widenIntColumn(String table, String column) {
+    List<String> statements =  new ArrayList<String>();
+    String template = "alter table %s alter column %s bigint";
+    statements.add(String.format(template, table, column));
+    return statements;
   }
 }

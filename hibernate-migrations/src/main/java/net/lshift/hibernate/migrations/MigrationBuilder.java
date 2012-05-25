@@ -98,6 +98,10 @@ public class MigrationBuilder {
     return register(new RawSqlBuilder(sql));
   }
 
+  public IntColumnWidener widenColumnInTable(String table) {
+    return register(new IntColumnWidener(dialectExtension, table));
+  }
+
   private <T extends MigrationElement> T register(T el) {
     elements.add(el);
     return el;

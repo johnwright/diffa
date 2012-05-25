@@ -18,6 +18,8 @@ package net.lshift.hibernate.migrations.dialects;
 import com.google.common.base.Joiner;
 import org.hibernate.cfg.Environment;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -100,5 +102,13 @@ public class OracleDialectExtension extends DialectExtension {
   @Override
   public String schemaPropertyName() {
     return Environment.USER;
+  }
+
+  @Override
+  public List<String> widenIntColumn(String table, String column) {
+    List<String> statements =  new ArrayList<String>();
+    String template = "alter table %s modify (%s number(38))";
+    statements.add(String.format(template, table, column));
+    return statements;
   }
 }

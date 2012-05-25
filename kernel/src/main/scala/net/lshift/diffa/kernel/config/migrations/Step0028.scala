@@ -29,9 +29,7 @@ object Step0028 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    // TODO What should the length be here?
-    // Also, should we need to specify a default value?
-    migration.alterTable("diffs").alterColumn("seq_id", Types.BIGINT,  11, false, 0)
+    migration.widenColumnInTable("diffs").column("seq_id")
 
     migration
   }
