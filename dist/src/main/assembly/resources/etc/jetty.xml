@@ -141,9 +141,9 @@
         <Arg>
           <New class="com.jolbox.bonecp.BoneCPConfig">
             <Set name="jdbcUrl">jdbc:hsqldb:<Ref id="dbPath"/></Set>
-	    </New>
-	  </Arg>
-	  <Set name="driverClass">org.hsqldb.jdbc.JDBCDriver</Set>
+            </New>
+          </Arg>
+          <Set name="driverClass">org.hsqldb.jdbc.JDBCDriver</Set>
         </New>
       </Arg>
     </New>
