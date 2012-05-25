@@ -94,13 +94,6 @@ case class PairActor(pair:DiffaPair,
   private val outstandingScans = collection.mutable.Map[UUID, OutstandingScan]()
 
   /**
-   * This is the address of the client that requested the last cancellation
-   */
-   // TODO: Check if we need this.
-
-  // private var cancellationRequester:Channel[Any] = null
-
-  /**
    * This allows tracing of spurious messages, but is only enabled in when the log level is set to TRACE
    */
   abstract class TraceableCommand(uuid:UUID) {
@@ -345,9 +338,6 @@ case class PairActor(pair:DiffaPair,
 
     // Make sure that this flag is zeroed out
     feedbackHandle = null
-
-    // Make sure there is no dangling back address
-    // cancellationRequester = null
 
     // Inform the diagnostics manager that we've completed a major operation, so it should checkpoint the explanation
     // data.
