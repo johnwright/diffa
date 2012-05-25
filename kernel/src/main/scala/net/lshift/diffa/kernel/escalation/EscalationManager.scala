@@ -60,7 +60,6 @@ class EscalationManager(val config:DomainConfigStore,
   val log = LoggerFactory.getLogger(getClass)
 
   private class EscalationActor(pair: DiffaPairRef) extends Actor {
-//    self.id = EscalationActor.key(pair)
     
     def receive = {
       case (UpstreamMissing, id: VersionID)     => escalateEntityEvent(id, UPSTREAM_MISSING)
