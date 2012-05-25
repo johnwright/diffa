@@ -34,7 +34,7 @@ import org.hamcrest.CoreMatchers._
 import net.lshift.diffa.kernel.lifecycle.NotificationCentre
 import org.easymock.{IAnswer, EasyMock}
 import org.junit.{Ignore, Before, After}
-import akka.actor.{GlobalActorSystem, ActorSystem}
+import akka.actor.ActorSystem
 
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
@@ -44,8 +44,6 @@ class EscalationManagerTest {
   val pair = DiffaPair(key = pairKey, domain = Domain(name=domain))
   val actorSystem = ActorSystem("EscalationManagerTestAt%#x".format(hashCode()))
   actorSystem.registerOnTermination(println("Per-test actor system shutdown; %s".format(this)))
-
-  GlobalActorSystem.registerOnTermination(println("Global actor system shutdown; %s".format(this)))
 
   val notificationCentre = new NotificationCentre
   val configStore = createMock(classOf[DomainConfigStore])
