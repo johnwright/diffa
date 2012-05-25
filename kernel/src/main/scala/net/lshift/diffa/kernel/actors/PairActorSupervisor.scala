@@ -56,7 +56,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
     systemConfig.listPairs.foreach(p => startActor(p.asRef))
   }
 
-  def createPairActor(pairRef: DiffaPairRef) = {
+ def createPairActor(pairRef: DiffaPairRef) = {
    val pair = systemConfig.getPair(pairRef)
    policyManager.lookupPolicy(pair.versionPolicyName) match {
      case Some(pol) =>
