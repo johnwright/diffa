@@ -30,6 +30,7 @@ object Step0028 extends HibernateMigrationStep {
     val migration = new MigrationBuilder(config)
 
     migration.widenColumnInTable("diffs").column("seq_id")
+    migration.widenColumnInTable("pending_diffs").column("oid")
 
     migration
   }
