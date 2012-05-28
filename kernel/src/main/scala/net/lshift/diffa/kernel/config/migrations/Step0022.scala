@@ -48,19 +48,7 @@ object Step0022 extends HibernateMigrationStep {
       column("opt_val", Types.VARCHAR, 255, true).
       pk("opt_key", "domain")
 
-    val diffsTable = migration.createTable("diffs").
-      column("seq_id", Types.INTEGER, false).
-      column("domain", Types.VARCHAR, 50, false).
-      column("pair", Types.VARCHAR, 50, false).
-      column("entity_id", Types.VARCHAR, 255, false).
-      column("is_match", Types.BIT, false).
-      column("detected_at", Types.TIMESTAMP, false).
-      column("last_seen", Types.TIMESTAMP, false).
-      column("upstream_vsn", Types.VARCHAR, 255, true).
-      column("downstream_vsn", Types.VARCHAR, 255, true).
-      column("ignored", Types.BIT, false).
-      pk("seq_id", "domain", "pair").
-      withNativeIdentityGenerator()
+    val diffsTable = CommonSteps.buildDiffsTable(migration.createTable("diffs"))
 
     // N.B. include the partition info table on all DBs (support may be added in future)
     DefinePartitionInformationTable.defineTable(migration)
@@ -152,17 +140,7 @@ object Step0022 extends HibernateMigrationStep {
       column("scan_cron_spec", Types.VARCHAR, 50, true).
       pk("domain", "pair", "name")
 
-    migration.createTable("pending_diffs").
-      column("oid", Types.INTEGER, false).
-      column("domain", Types.VARCHAR, 50, false).
-      column("pair", Types.VARCHAR, 50, false).
-      column("entity_id", Types.VARCHAR, 50, false).
-      column("detected_at", Types.TIMESTAMP, false).
-      column("last_seen", Types.TIMESTAMP, false).
-      column("upstream_vsn", Types.VARCHAR, 255, true).
-      column("downstream_vsn", Types.VARCHAR, 255, true).
-      pk("oid").
-      withNativeIdentityGenerator()
+    CommonSteps.buildPendingDiffsTable(migration.createTable("pending_diffs"))
 
     migration.createTable("prefix_category_descriptor").
       column("id", Types.INTEGER, false).

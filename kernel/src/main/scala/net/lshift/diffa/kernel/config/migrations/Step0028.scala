@@ -29,8 +29,11 @@ object Step0028 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.widenColumnInTable("diffs").column("seq_id")
-    migration.widenColumnInTable("pending_diffs").column("oid")
+    val diffsWidener = migration.widenColumnInTable("diffs").column("seq_id")
+    val pendingDiffswidener = migration.widenColumnInTable("pending_diffs").column("oid")
+
+    CommonSteps.buildDiffsTable(diffsWidener.getTempTable)
+    CommonSteps.buildPendingDiffsTable(pendingDiffswidener.getTempTable)
 
     migration
   }

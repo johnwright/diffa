@@ -54,29 +54,8 @@ public class IntColumnWidener implements MigrationElement {
     return table + "_temp";
   }
 
-  public IntColumnWidener primaryKeys(String ... pks) {
-    this.tempTable.pk(pks);
-    return this;
-  }
-
-  public IntColumnWidener column(String name, int sqlType, boolean nullable) {
-    this.tempTable.column(name, sqlType, nullable);
-    return this;
-  }
-
-  public IntColumnWidener column(String name, int sqlType, boolean nullable, Object defaultVal) {
-    this.tempTable.column(name, sqlType, nullable, defaultVal);
-    return this;
-  }
-
-  public IntColumnWidener column(String name, int sqlType, int length, boolean nullable) {
-    this.tempTable.column(name, sqlType, length, nullable);
-    return this;
-  }
-
-  public IntColumnWidener column(String name, int sqlType, int length, boolean nullable, Object defaultVal) {
-    this.tempTable.column(name, sqlType, length, nullable, defaultVal);
-    return this;
+  public CreateTableBuilder getTempTable() {
+    return tempTable;
   }
 
   @Override
