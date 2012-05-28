@@ -66,18 +66,6 @@
     and pair = :pair
   </sql-query>
 
-  <!--
-  <sql-query name="updateReportedDiffLastSeen">
-    update diffs
-    set
-    seq_id = :new_seq_id
-    last_seen = :last_seen
-    where seq_id = :seq_id
-    and domain = :domain
-    and pair = :pair
-  </sql-query>
-  -->
-
   <sql-query name="deletePendingDiffByOid">
     delete from pending_diffs
     where oid = :oid
@@ -88,6 +76,13 @@
       (seq_id, domain, pair, entity_id, is_match, detected_at, last_seen, upstream_vsn, downstream_vsn, ignored)
     values
       (:seq_id, :domain, :pair, :entity_id, :is_match, :detected_at, :last_seen, :upstream_vsn, :downstream_vsn, :ignored)
+  </sql-query>
+
+  <sql-query name="createNewPendingDiff">
+    insert into pending_diffs
+    (oid, domain, pair, entity_id, detected_at, last_seen, upstream_vsn, downstream_vsn)
+    values
+    (:oid, :domain, :pair, :entity_id, :detected_at, :last_seen, :upstream_vsn, :downstream_vsn)
   </sql-query>
 
   <sql-query name="upgradePreviouslyReportedEvent">

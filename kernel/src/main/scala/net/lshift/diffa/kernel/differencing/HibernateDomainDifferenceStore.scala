@@ -38,6 +38,7 @@ import java.security.Provider
 import net.lshift.diffa.kernel.util.sequence.SequenceProvider
 import java.sql.ResultSet
 import java.util.Date
+import net.lshift.diffa.kernel.util.AlertCodes._
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -149,7 +150,11 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     if (pending.exists()) {
 
       // Remove the pending and report a mismatch
-      upgradePreviouslyReportedEvent(pending.convertToUnmatched)
+      inTransaction(tx => {
+        removePendingEvent(Some(tx), pending)
+        saveAndConvertEvent(Some(tx), pending.convertToUnmatched)
+      })
+
     }
     else {
       // No pending difference, nothing to do
@@ -194,7 +199,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
         case MatchState.UNMATCHED | MatchState.IGNORED =>
           // A difference has gone away. Remove the difference, and add in a match
           val previousDetectionTime = event.detectedAt
-          val newEvent = ReportedDifferenceEvent(null, id, new DateTime, true, vsn, vsn, event.lastSeen)
+          val newEvent = ReportedDifferenceEvent(event.seqId, id, new DateTime, true, vsn, vsn, event.lastSeen)
           updateAndConvertEvent(newEvent, previousDetectionTime)
       }
     }
@@ -310,12 +315,18 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   }
 
   def expireMatches(cutoff:DateTime) {
-    db.execute("expireMatches", Map("cutoff" -> cutoff))
+    val rows = db.execute("expireMatches", Map("cutoff" -> cutoff))
 
-    // TODO Index the cache and add a date predicate
+    if (rows > 0) {
+      val cachedEvents = reportedEvents.valueSubset("isMatch")
+      // TODO Index the cache and add a date predicate rather than doing this manually
+      cachedEvents.foreach(e => {
+        if (e.lastSeen.isBefore(cutoff)){
+          reportedEvents.evict(e.objId)
+        }
+      })
+    }
 
-    val cachedEvents = reportedEvents.valueSubset("isMatch")
-    cachedEvents.foreach(e => reportedEvents.evict(e.objId))
   }
 
   def clearAllDifferences = sessionFactory.withSession(s => {
@@ -326,11 +337,11 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
 
   private def intializeExistingSequences() = {
 
-    def initializer = new ResultSetCallback {
+    def initializer(generateKeyName:String => String) = new ResultSetCallback {
       def onRow(rs: ResultSet) {
         val domain  = rs.getString("domain")
         val persistentValue  = rs.getLong("max_seq_id")
-        val key = eventSequenceKey(domain)
+        val key = generateKeyName(domain)
         val currentValue = sequenceProvider.currentSequenceValue(key)
         if (persistentValue > currentValue) {
           sequenceProvider.upgradeSequenceValue(key, currentValue, persistentValue)
@@ -338,18 +349,42 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       }
     }
 
-    db.forEachRow("select domain, max(seq_id) as max_seq_id from diffs group by domain", initializer)
+    // TODO This hand cranked SQL is very naughty
+    db.forEachRow("select domain, max(seq_id) as max_seq_id from diffs group by domain", initializer(eventSequenceKey))
+    db.forEachRow("select domain, max(oid) as max_seq_id from pending_diffs group by domain", initializer(pendingEventSequenceKey))
 
   }
 
   private def eventSequenceKey(domain:String) = "%s.events".format(domain)
+  private def pendingEventSequenceKey(domain:String) = "%s.pending.events".format(domain)
 
   private def getPendingEvent(id: VersionID) = {
     getEventInternal[PendingDifferenceEvent](id, pendingEvents, "pendingByDomainIdAndVersionID", PendingDifferenceEvent.nonExistent)
   }
 
   private def createPendingEvent(pending:PendingDifferenceEvent) {
-    db.insert(pending)
+
+    val domain = pending.objId.pair.domain
+    val pair = pending.objId.pair.key
+    val nextSeqId = nextPendingEventSequenceValue(domain)
+
+
+    val query = "createNewPendingDiff"
+    val params = Map(
+      "oid" -> nextSeqId,
+      "domain" -> domain,
+      "pair" -> pair,
+      "entity_id" -> pending.objId.id,
+      "detected_at" -> columnMapper.toNonNullValue(pending.detectedAt),
+      "last_seen" -> columnMapper.toNonNullValue(pending.lastSeen),
+      "upstream_vsn" -> pending.upstreamVsn,
+      "downstream_vsn"-> pending.downstreamVsn
+    )
+
+    db.execute(query,params)
+
+    pending.oid = nextSeqId
+
     pendingEvents.put(pending.objId,pending)
   }
 
@@ -445,6 +480,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
             // No need to update the aggregate cache, since it won't affect the aggregate counts
             updatedEvent.asDifferenceEvent
           } else {
+            reportableUnmatched.seqId = event.seqId
             upgradePreviouslyReportedEvent(reportableUnmatched)
           }
 
@@ -541,6 +577,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
 
     val rows = db.execute(query, params)
 
+    // TODO Theorectically this should never happen ....
+    if (rows == 0) {
+      val alert = formatAlertCode(domain, pair, INCONSISTENT_DIFF_STORE)
+      val msg = " %s No rows updated for pending event %s, next sequence id was %s".format(alert, reportableUnmatched, nextSeqId)
+      log.error(msg)
+    }
+
     updateSequenceValueAndCache(reportableUnmatched, nextSeqId)
   }
 
@@ -595,6 +638,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   */
 
   private def nextEventSequenceValue(domain:String) = sequenceProvider.nextSequenceValue(eventSequenceKey(domain))
+  private def nextPendingEventSequenceValue(domain:String) = sequenceProvider.nextSequenceValue(pendingEventSequenceKey(domain))
 
   private def persistAndConvertEventInternal(tx:Option[Transaction], evt:ReportedDifferenceEvent) = {
 
@@ -632,13 +676,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     updateSequenceValueAndCache(evt, nextSeqId)
   }
 
-  @Deprecated
-  private def persistAndConvertEventInternal(s:Session, evt:ReportedDifferenceEvent) = {
-    s.save(evt)
-    reportedEvents.put(evt.objId, evt)
-    evt.asDifferenceEvent
-  }
-
   private def updateAggregateCache(pair:DiffaPairRef, detectedAt:DateTime) =
     aggregationCache.onStoreUpdate(pair, detectedAt)
 
@@ -649,6 +686,13 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       case None             => //
     }
   })
+
+  private def inTransaction[T](f:Transaction => T) = {
+    val tx = db.beginTransaction
+    val result = f(tx)
+    tx.commit()
+    result
+  }
 
 }
 

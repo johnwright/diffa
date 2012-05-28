@@ -134,5 +134,8 @@ object AlertCodes {
 
   // 72x Potential auth bugs
   val SPURIOUS_AUTH_TOKEN = 720
+
+  // There is a bug in the diffs store
+  val INCONSISTENT_DIFF_STORE = 730
 }
 
