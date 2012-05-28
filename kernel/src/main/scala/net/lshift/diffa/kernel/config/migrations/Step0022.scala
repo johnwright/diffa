@@ -48,7 +48,8 @@ object Step0022 extends HibernateMigrationStep {
       column("opt_val", Types.VARCHAR, 255, true).
       pk("opt_key", "domain")
 
-    val diffsTable = CommonSteps.buildDiffsTable(migration.createTable("diffs"))
+    // In this DB version, the PK of this table is an integer -> defaults to bigint otherwise
+    val diffsTable = CommonSteps.buildDiffsTable(migration.createTable("diffs"), Types.INTEGER)
 
     // N.B. include the partition info table on all DBs (support may be added in future)
     DefinePartitionInformationTable.defineTable(migration)
@@ -140,7 +141,8 @@ object Step0022 extends HibernateMigrationStep {
       column("scan_cron_spec", Types.VARCHAR, 50, true).
       pk("domain", "pair", "name")
 
-    CommonSteps.buildPendingDiffsTable(migration.createTable("pending_diffs"))
+    // In this DB version, the PK of this table is an integer -> defaults to bigint otherwise
+    CommonSteps.buildPendingDiffsTable(migration.createTable("pending_diffs"), Types.INTEGER)
 
     migration.createTable("prefix_category_descriptor").
       column("id", Types.INTEGER, false).

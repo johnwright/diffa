@@ -20,8 +20,8 @@ import net.lshift.hibernate.migrations.CreateTableBuilder
 
 object CommonSteps {
 
-  def buildPendingDiffsTable(builder:CreateTableBuilder) = {
-    builder.column("oid", Types.INTEGER, false).
+  def buildPendingDiffsTable(builder:CreateTableBuilder, pkType:Int = Types.BIGINT) = {
+    builder.column("oid", pkType, false).
             column("domain", Types.VARCHAR, 50, false).
             column("pair", Types.VARCHAR, 50, false).
             column("entity_id", Types.VARCHAR, 50, false).
@@ -33,8 +33,8 @@ object CommonSteps {
             withNativeIdentityGenerator()
   }
 
-  def buildDiffsTable(builder:CreateTableBuilder) = {
-    builder.column("seq_id", Types.INTEGER, false).
+  def buildDiffsTable(builder:CreateTableBuilder, pkType:Int = Types.BIGINT) = {
+    builder.column("seq_id", pkType, false).
             column("domain", Types.VARCHAR, 50, false).
             column("pair", Types.VARCHAR, 50, false).
             column("entity_id", Types.VARCHAR, 255, false).
