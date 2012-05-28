@@ -39,7 +39,7 @@ public class DropTableBuilder extends SingleStatementMigrationElement {
   }
 
   @Override
-  protected String getSQL() {
+  public String getSQL() {
     return "drop table " + qualifyName(config, dialect, table);
   }
 }

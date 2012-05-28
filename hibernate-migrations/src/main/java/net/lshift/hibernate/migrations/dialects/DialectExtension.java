@@ -15,9 +15,15 @@
  */
 package net.lshift.hibernate.migrations.dialects;
 
+import net.lshift.hibernate.migrations.MigrationBuilder;
+import net.lshift.hibernate.migrations.MigrationElement;
+import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.Dialect;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -134,14 +140,20 @@ public abstract class DialectExtension {
     return true;
   }
 
+  public boolean supportsColumnTypeChanges() {
+    return true;
+  }
+
   /**
    * Provides a series of statements that can perform a column widening operation
    * for a particular dialect, under the assumption there are no foreign keys on the column to be widened.
    */
-  public List<String> widenIntColumn(String table, String column) {
-    List<String> statements =  new ArrayList<String>();
+  public void widenIntColumn(Connection conn, String table, String column) throws SQLException{
     String template = "alter table %s alter column %s bigint";
-    statements.add(String.format(template, table, column));
-    return statements;
+    String sql = String.format(template, table, column);
+
+    PreparedStatement stmt = conn.prepareStatement(sql);
+    stmt.execute();
+    stmt.close();
   }
 }

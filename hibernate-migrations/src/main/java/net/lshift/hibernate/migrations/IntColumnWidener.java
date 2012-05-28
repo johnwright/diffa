@@ -16,37 +16,84 @@
 package net.lshift.hibernate.migrations;
 
 import net.lshift.hibernate.migrations.dialects.DialectExtension;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.mapping.Column;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class IntColumnWidener implements MigrationElement {
 
+  private final Dialect dialect;
   private final DialectExtension dialectExtension;
+  private final Configuration config;
   private final String table;
   private String column = null;
-  private List<String> statements = null;
+  private List<String> statements = new ArrayList<String>();
 
-  public IntColumnWidener(DialectExtension dialectExtension, String table) {
+  private CreateTableBuilder tempTable = null;
+
+  public IntColumnWidener(Configuration config, Dialect dialect, DialectExtension dialectExtension, String table) {
+    this.config = config;
     this.dialectExtension = dialectExtension;
+    this.dialect = dialect;
     this.table = table;
+    this.tempTable = new CreateTableBuilder(dialect, dialectExtension, getTempTableName());
   }
 
   public IntColumnWidener column(String column) {
     this.column = column;
-    this.statements = dialectExtension.widenIntColumn(table, column);
+    return this;
+  }
+
+  private String getTempTableName() {
+    return table + "_temp";
+  }
+
+  public IntColumnWidener primaryKeys(String ... pks) {
+    this.tempTable.pk(pks);
+    return this;
+  }
+
+  public IntColumnWidener column(String name, int sqlType, boolean nullable) {
+    this.tempTable.column(name, sqlType, nullable);
+    return this;
+  }
+
+  public IntColumnWidener column(String name, int sqlType, boolean nullable, Object defaultVal) {
+    this.tempTable.column(name, sqlType, nullable, defaultVal);
+    return this;
+  }
+
+  public IntColumnWidener column(String name, int sqlType, int length, boolean nullable) {
+    this.tempTable.column(name, sqlType, length, nullable);
+    return this;
+  }
+
+  public IntColumnWidener column(String name, int sqlType, int length, boolean nullable, Object defaultVal) {
+    this.tempTable.column(name, sqlType, length, nullable, defaultVal);
     return this;
   }
 
   @Override
   public void apply(Connection conn) throws SQLException {
-    for (String sql : statements) {
-      PreparedStatement stmt = conn.prepareStatement(sql);
-      stmt.execute();
-      stmt.close();
+
+    if (dialectExtension.supportsColumnTypeChanges()) {
+      dialectExtension.widenIntColumn(conn, table, column);
     }
+    else {
+
+      TransplantTableBuilder transplantTableBuilder =
+          new TransplantTableBuilder(config, dialect, dialectExtension, table, tempTable);
+
+      transplantTableBuilder.apply(conn);
+
+    }
+
   }
 
   @Override

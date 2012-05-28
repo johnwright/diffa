@@ -16,8 +16,13 @@
 package net.lshift.hibernate.migrations.dialects;
 
 import com.google.common.base.Joiner;
+import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
+import org.hibernate.dialect.Dialect;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -105,10 +110,13 @@ public class OracleDialectExtension extends DialectExtension {
   }
 
   @Override
-  public List<String> widenIntColumn(String table, String column) {
-    List<String> statements =  new ArrayList<String>();
+  public void widenIntColumn(Connection conn, String table, String column) throws SQLException {
+
     String template = "alter table %s modify (%s number(38))";
-    statements.add(String.format(template, table, column));
-    return statements;
+    String sql = String.format(template, table, column);
+
+    PreparedStatement stmt = conn.prepareStatement(sql);
+    stmt.execute();
+    stmt.close();
   }
 }
