@@ -18,8 +18,17 @@ package net.lshift.diffa.kernel.config.migrations
 import java.sql.Types
 import net.lshift.hibernate.migrations.{MigrationBuilder, CreateTableBuilder}
 
-object CommonSteps {
+/**
+ * This centralizes a bunch of DDL operations that are shared across multiple steps,
+ * for example because tables need to be dropped and re-created.
+ *
+ * TODO When the database is next sunset, this helper class needs to disappear
+ */
+@Deprecated object CommonSteps {
 
+  /**
+   * By default, the new PK should be a bigint
+   */
   def buildPendingDiffsTable(builder:CreateTableBuilder, pkType:Int = Types.BIGINT) = {
     builder.column("oid", pkType, false).
             column("domain", Types.VARCHAR, 50, false).
@@ -33,6 +42,9 @@ object CommonSteps {
             withNativeIdentityGenerator()
   }
 
+  /**
+   * By default, the new PK should be a bigint
+   */
   def buildDiffsTable(builder:CreateTableBuilder, pkType:Int = Types.BIGINT) = {
     builder.column("seq_id", pkType, false).
             column("domain", Types.VARCHAR, 50, false).
