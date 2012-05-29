@@ -132,8 +132,18 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       updatePendingEvent(pending, upstreamVsn, downstreamVsn, seen)
     }
     else {
-      val pendingUnmatched = PendingDifferenceEvent(null, id, lastUpdate, upstreamVsn, downstreamVsn, seen)
-      createPendingEvent(pendingUnmatched)
+
+      val reported = getEventById(id)
+
+      if (reportedEventExists(reported)) {
+        val reportable = new ReportedDifferenceEvent(null, id, lastUpdate, false, upstreamVsn, downstreamVsn, seen)
+        addReportableMismatch(None, reportable)
+      }
+      else {
+        val pendingUnmatched = PendingDifferenceEvent(null, id, lastUpdate, upstreamVsn, downstreamVsn, seen)
+        createPendingEvent(pendingUnmatched)
+      }
+
     }
   }
 
@@ -379,7 +389,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       "downstream_vsn"-> pending.downstreamVsn
     )
 
-    db.execute(query,params)
+    val rows = db.execute(query,params)
 
     pending.oid = nextSeqId
 
@@ -391,7 +401,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     val query = "deletePendingDiffByOid"
     val params = Map("oid" -> pending.oid)
 
-    tx match {
+    val rows = tx match {
       case None    => db.execute(query,params)
       case Some(x) => x.execute(DatabaseCommand(query, params))
     }
@@ -613,7 +623,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       "ignored" -> evt.ignored
     )
 
-    tx match {
+    val rows = tx match {
       case None => {
         db.execute(query, params)
       }
