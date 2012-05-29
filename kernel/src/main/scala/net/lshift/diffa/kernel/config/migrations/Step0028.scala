@@ -35,6 +35,17 @@ object Step0028 extends HibernateMigrationStep {
     CommonSteps.buildDiffsTable(diffsWidener.getTempTable)
     CommonSteps.buildPendingDiffsTable(pendingDiffswidener.getTempTable)
 
+    if (diffsWidener.requiresNewTable()) {
+      CommonSteps.applyConstraintsToDiffsTable(migration)
+      CommonSteps.applyIndexesToDiffsTable(migration)
+      CommonSteps.analyzeDiffsTable(migration)
+    }
+
+    if (pendingDiffswidener.requiresNewTable()) {
+      CommonSteps.applyConstraintsToPendingDiffsTable(migration)
+      CommonSteps.applyIndexesToPendingDiffsTable(migration)
+    }
+
     migration
   }
 }

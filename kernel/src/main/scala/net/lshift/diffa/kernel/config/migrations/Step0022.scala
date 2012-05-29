@@ -200,8 +200,7 @@ object Step0022 extends HibernateMigrationStep {
     migration.alterTable("config_options").
       addForeignKey("fk_cfop_dmns", "domain", "domains", "name")
 
-    migration.alterTable("diffs")
-      .addForeignKey("fk_diff_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
+    CommonSteps.applyConstraintsToDiffsTable(migration)
 
     migration.alterTable("endpoint").
       addForeignKey("fk_edpt_dmns", "domain", "domains", "name")
@@ -234,8 +233,7 @@ object Step0022 extends HibernateMigrationStep {
       addForeignKey("fk_mmbs_dmns", "domain_name", "domains", "name").
       addForeignKey("fk_mmbs_user", "user_name", "users", "name")
 
-    migration.alterTable("pending_diffs")
-      .addForeignKey("fk_pddf_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
+    CommonSteps.applyConstraintsToPendingDiffsTable(migration)
 
     migration.alterTable("prefix_category_descriptor").
       addForeignKey("fk_pfcd_ctds", "id", "category_descriptor", "category_id")
@@ -259,12 +257,8 @@ object Step0022 extends HibernateMigrationStep {
       addUniqueConstraint("token")
 
 
-    migration.createIndex("diff_last_seen", "diffs", "last_seen")
-    migration.createIndex("diff_detection", "diffs", "detected_at")
-    migration.createIndex("rdiff_is_matched", "diffs", "is_match")
-    migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
-
-    migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
+    CommonSteps.applyIndexesToDiffsTable(migration)
+    CommonSteps.applyIndexesToPendingDiffsTable(migration)
 
 
     migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
@@ -290,9 +284,7 @@ object Step0022 extends HibernateMigrationStep {
       values(Map("version" -> new java.lang.Integer(versionId)))
 
 
-    if (migration.canAnalyze) {
-      migration.analyzeTable("diffs");
-    }
+    CommonSteps.analyzeDiffsTable(migration)
 
 
     migration

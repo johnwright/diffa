@@ -58,18 +58,26 @@ public class IntColumnWidener implements MigrationElement {
     return tempTable;
   }
 
+  public boolean requiresNewTable() {
+    return !dialectExtension.supportsColumnTypeChanges();
+  }
+
+
+
   @Override
   public void apply(Connection conn) throws SQLException {
 
-    if (dialectExtension.supportsColumnTypeChanges()) {
-      dialectExtension.widenIntColumn(conn, table, column);
-    }
-    else {
+    if (requiresNewTable()) {
 
       TransplantTableBuilder transplantTableBuilder =
           new TransplantTableBuilder(config, dialect, dialectExtension, table, tempTable);
 
       transplantTableBuilder.apply(conn);
+
+    }
+    else {
+
+      dialectExtension.widenIntColumn(conn, table, column);
 
     }
 

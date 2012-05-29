@@ -16,7 +16,7 @@
 package net.lshift.diffa.kernel.config.migrations
 
 import java.sql.Types
-import net.lshift.hibernate.migrations.CreateTableBuilder
+import net.lshift.hibernate.migrations.{MigrationBuilder, CreateTableBuilder}
 
 object CommonSteps {
 
@@ -46,5 +46,32 @@ object CommonSteps {
             column("ignored", Types.BIT, false).
             pk("seq_id", "domain", "pair").
             withNativeIdentityGenerator()
+  }
+
+  def applyConstraintsToDiffsTable(migration:MigrationBuilder) {
+    migration.alterTable("diffs")
+             .addForeignKey("fk_diff_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
+  }
+
+  def applyConstraintsToPendingDiffsTable(migration:MigrationBuilder) {
+    migration.alterTable("pending_diffs")
+      .addForeignKey("fk_pddf_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key"))
+  }
+
+  def applyIndexesToDiffsTable(migration:MigrationBuilder) {
+    migration.createIndex("diff_last_seen", "diffs", "last_seen")
+    migration.createIndex("diff_detection", "diffs", "detected_at")
+    migration.createIndex("rdiff_is_matched", "diffs", "is_match")
+    migration.createIndex("rdiff_domain_idx", "diffs", "entity_id", "domain", "pair")
+  }
+
+  def applyIndexesToPendingDiffsTable(migration:MigrationBuilder) {
+    migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
+  }
+
+  def analyzeDiffsTable(migration:MigrationBuilder) {
+    if (migration.canAnalyze) {
+      migration.analyzeTable("diffs");
+    }
   }
 }
