@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.config
+package net.lshift.diffa.schema.migrations
 
 import org.hibernate.cfg.Configuration
 import org.hibernate.SessionFactory

@@ -13,27 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config
+package net.lshift.diffa.schema.migrations
 
-import scala.collection.JavaConversions._
+import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
+import java.sql.Types
 
-object MigrationUtil {
+object Step0024 extends HibernateMigrationStep {
 
-  /**
-   * Inserts the limit definition into the DB migration
-   */
-  def insertLimit(migration:MigrationBuilder, limit:ServiceLimit) = {
+  def versionId = 24
 
-    migration.insert("limit_definitions").values(Map(
-      "name" -> limit.key,
-      "description" -> limit.description
-    ))
+  def name = "Add configuration versioning"
 
-    migration.insert("system_limits").values(Map(
-      "name" -> limit.key,
-      "default_limit" -> limit.defaultLimit,
-      "hard_limit" -> limit.defaultLimit
-    ))
+  def createMigration(config: Configuration) = {
+    val migration = new MigrationBuilder(config)
+
+    migration.alterTable("domains").
+      addColumn("config_version", Types.INTEGER, 11, false, 0)
+
+    migration
   }
 }

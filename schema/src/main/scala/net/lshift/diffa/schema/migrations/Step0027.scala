@@ -13,13 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config.migrations
+package net.lshift.diffa.schema.migrations
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.limits.{ExplainFiles, DiagnosticEventBufferSize}
-import net.lshift.diffa.kernel.config.{HibernateMigrationStep, MigrationUtil, ConfigOption}
 
 object Step0027 extends HibernateMigrationStep {
 
@@ -30,11 +27,20 @@ object Step0027 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.delete("system_config_options").where("opt_key").is(ConfigOption.eventExplanationLimitKey)
-    migration.delete("system_config_options").where("opt_key").is(ConfigOption.explainFilesLimitKey)
+    migration.delete("system_config_options").where("opt_key").is(Step0022.eventExplanationLimitKey)
+    migration.delete("system_config_options").where("opt_key").is(Step0022.explainFilesLimitKey)
 
-    MigrationUtil.insertLimit(migration, DiagnosticEventBufferSize)
-    MigrationUtil.insertLimit(migration, ExplainFiles)
+    MigrationUtil.insertLimit(migration,
+      key = "diagnostic.event.buffer.sizes",
+      description = "The number of events that the DiagnosicsManager should buffer",
+      defaultLimit = 100,
+      hardLimit = 100)
+
+    MigrationUtil.insertLimit(migration,
+      key = "explain.files",
+      description = "The number of explain files that should be retained for later analysis",
+      defaultLimit = 0,
+      hardLimit = 5)
 
     migration
   }

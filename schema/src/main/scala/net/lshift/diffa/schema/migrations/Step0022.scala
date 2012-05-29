@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config.migrations
+package net.lshift.diffa.schema.migrations
 
 import org.hibernate.cfg.Configuration
 import java.sql.Types
 import scala.collection.JavaConversions._
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.kernel.config.{ConfigOption, DefinePartitionInformationTable, Domain, HibernateMigrationStep}
 
 /**
  * This Step 'migrates' a schema/database to version 22 -
@@ -29,6 +28,10 @@ object Step0022 extends HibernateMigrationStep {
   def versionId = 22
 
   def name = "Create schema"
+
+  @Deprecated val eventExplanationLimitKey = "maxEventsToExplainPerPair"
+  @Deprecated val explainFilesLimitKey = "maxExplainFilesPerPair"
+  val defaultDomainName = "diffa"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
@@ -43,7 +46,7 @@ object Step0022 extends HibernateMigrationStep {
       withNativeIdentityGenerator()
 
     migration.createTable("config_options").
-      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
+      column("domain", Types.VARCHAR, 50, false, defaultDomainName).
       column("opt_key", Types.VARCHAR, 255, false).
       column("opt_val", Types.VARCHAR, 255, true).
       pk("opt_key", "domain")
@@ -72,7 +75,7 @@ object Step0022 extends HibernateMigrationStep {
 
       DefinePartitionInformationTable.applyPartitionVersion(migration, "diffs", versionId)
 
-      migration.executeDatabaseScript("sync_pair_diff_partitions", "net.lshift.diffa.kernel.config.procedures")
+      migration.executeDatabaseScript("sync_pair_diff_partitions", "net.lshift.diffa.schema.procedures")
     }
 
     migration.createTable("domains").
@@ -80,7 +83,7 @@ object Step0022 extends HibernateMigrationStep {
       pk("name")
 
     migration.createTable("endpoint").
-      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
+      column("domain", Types.VARCHAR, 50, false, defaultDomainName).
       column("name", Types.VARCHAR, 50, false).
       column("scan_url", Types.VARCHAR, 1024, true).
       column("content_retrieval_url", Types.VARCHAR, 1024, true).
@@ -89,7 +92,7 @@ object Step0022 extends HibernateMigrationStep {
       pk("domain", "name")
 
     migration.createTable("endpoint_categories").
-      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
+      column("domain", Types.VARCHAR, 50, false, defaultDomainName).
       column("id", Types.VARCHAR, 50, false).
       column("category_descriptor_id", Types.INTEGER, false).
       column("name", Types.VARCHAR, 50, false).
@@ -110,7 +113,7 @@ object Step0022 extends HibernateMigrationStep {
       pk("domain", "endpoint", "category_name", "name")
 
     migration.createTable("escalations").
-      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
+      column("domain", Types.VARCHAR, 50, false, defaultDomainName).
       column("name", Types.VARCHAR, 50, false).
       column("pair_key", Types.VARCHAR, 50, false).
       column("action", Types.VARCHAR, 50, false).
@@ -125,7 +128,7 @@ object Step0022 extends HibernateMigrationStep {
       pk("domain_name", "user_name")
 
     migration.createTable("pair").
-      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
+      column("domain", Types.VARCHAR, 50, false, defaultDomainName).
       column("pair_key", Types.VARCHAR, 50, false).
       column("upstream", Types.VARCHAR, 50, false).
       column("downstream", Types.VARCHAR, 50, false).
@@ -177,7 +180,7 @@ object Step0022 extends HibernateMigrationStep {
       pk("id")
 
     migration.createTable("repair_actions").
-      column("domain", Types.VARCHAR, 50, false, Domain.DEFAULT_DOMAIN.name).
+      column("domain", Types.VARCHAR, 50, false, defaultDomainName).
       column("pair_key", Types.VARCHAR, 50, false).
       column("name", Types.VARCHAR, 50, false).
       column("url", Types.VARCHAR, 1024, true).
@@ -287,17 +290,17 @@ object Step0022 extends HibernateMigrationStep {
     migration.createIndex("pdiff_domain_idx", "pending_diffs", "entity_id", "domain", "pair")
 
 
-    migration.insert("domains").values(Map("name" -> Domain.DEFAULT_DOMAIN.name))
+    migration.insert("domains").values(Map("name" -> defaultDomainName))
 
     migration.insert("config_options").
-      values(Map("domain" -> Domain.DEFAULT_DOMAIN.name, "opt_key" -> "configStore.schemaVersion", "opt_val" -> "0"))
+      values(Map("domain" -> defaultDomainName, "opt_key" -> "configStore.schemaVersion", "opt_val" -> "0"))
 
     migration.insert("system_config_options").values(Map(
-      "opt_key" -> ConfigOption.eventExplanationLimitKey,
+      "opt_key" -> eventExplanationLimitKey,
       "opt_val" -> "100"))
 
     migration.insert("system_config_options").values(Map(
-      "opt_key" -> ConfigOption.explainFilesLimitKey,
+      "opt_key" -> explainFilesLimitKey,
       "opt_val" -> "20"))
 
     migration.insert("users").

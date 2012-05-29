@@ -1,6 +1,6 @@
 package net.lshift.diffa.schema;
 
-import net.lshift.diffa.kernel.config.HibernateConfigStorePreparationStep;
+import net.lshift.diffa.schema.migrations.HibernateConfigStorePreparationStep;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 

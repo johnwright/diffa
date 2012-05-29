@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config.migrations
+package net.lshift.diffa.schema.migrations
 
-import net.lshift.diffa.kernel.config.HibernateMigrationStep
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import java.sql.Types

@@ -13,7 +13,7 @@
   <version>1.4.5-SNAPSHOT</version>
 
   <name>Diffa Schema</name>
-  <description>Schema and migrations handling</description>
+  <description>Database schema and migrations</description>
 
   <packaging>jar</packaging>
 
@@ -23,15 +23,48 @@
 
   <dependencies>
     <dependency>
-      <groupId>net.lshift.diffa</groupId>
-      <artifactId>diffa-kernel</artifactId>
-      <version>${project.version}</version>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.lshift</groupId>
+      <artifactId>hibernate-migrations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
     </dependency>
   </dependencies>
 
   <build>
     <finalName>${project.artifactId}-${buildVersion}</finalName>    
     <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <!--
+          We're using Scala classes in the Java code, so we need to let Scala do its compilation first. To achieve
+          that, we'll remove the default compilation execution, then create a new one. Since we've already added
+          the Scala plugin above here, it will then be before this Java compilation in the build sequence.
+        -->
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
+            <id>after-scala-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
