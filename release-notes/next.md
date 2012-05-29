@@ -37,6 +37,7 @@
 * [155] - Re-instated the diagnostic log buffering
 * [156] - The demo participants config file had bit rotten slightly
 * [161] - Eliminated some DB calls that were slowing down the differences store.
+* [169] - The Oracle-specific hook calling IndexRebuilder was not correctly wired in certain circumstances.
 
 ## Library Upgrades
 
