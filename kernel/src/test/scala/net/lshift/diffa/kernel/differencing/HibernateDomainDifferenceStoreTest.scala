@@ -616,6 +616,29 @@ class HibernateDomainDifferenceStoreTest {
     assertEquals(0, unmatched.length)
   }
 
+  @Test
+  def pendingEventShouldUpgradePreviouslyReportedEvent() {
+
+    val timestamp = new DateTime()
+
+    val event = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", null, timestamp)
+    domainDiffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+
+    try {
+      domainDiffStore.getEvent("domain", event.seqId.toString)
+      fail("Should have generated an InvalidSequenceNumberException for sequence id " + event.seqId)
+    }
+    catch {
+      case i:InvalidSequenceNumberException => // expected
+    }
+
+    val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
+    val unmatched = domainDiffStore.retrieveUnmatchedEvents("domain", interval)
+
+    assertEquals(1, unmatched.length)
+    assertEquals(event.sequenceId + 1, unmatched(0).sequenceId)
+  }
+
   /**
    * Oracle DB throws a BatchUpdateException with ORA-14400 when attempting to
    * insert a partition key that does not map to any partition.  This exception
