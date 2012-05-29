@@ -620,9 +620,13 @@ class HibernateDomainDifferenceStoreTest {
   def pendingEventShouldUpgradePreviouslyReportedEvent() {
 
     val timestamp = new DateTime()
+    val detectedAt = timestamp.plusSeconds(1)
+    val seenFirst = timestamp.plusSeconds(2)
+    val unmatchedAt = timestamp.plusSeconds(3)
+    val seenNext = timestamp.plusSeconds(4)
 
-    val event = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), timestamp, "uV", null, timestamp)
-    domainDiffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val event = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), detectedAt, "uV", null, seenFirst)
+    domainDiffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), unmatchedAt, "uV", "dV", seenNext)
 
     try {
       domainDiffStore.getEvent("domain", event.seqId.toString)
@@ -637,6 +641,7 @@ class HibernateDomainDifferenceStoreTest {
 
     assertEquals(1, unmatched.length)
     assertEquals(event.sequenceId + 1, unmatched(0).sequenceId)
+    assertEquals(detectedAt, unmatched(0).detectedAt)
   }
 
   /**
