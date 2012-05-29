@@ -633,7 +633,7 @@ class HibernateDomainDifferenceStoreTest {
       case cve: org.hibernate.exception.ConstraintViolationException =>
         throw cve
       case ex => ex.getCause match {
-        case batchUpdateEx: java.sql.BatchUpdateException =>
+        case batchUpdateEx: java.sql.SQLException =>
           if (batchUpdateEx.getMessage.contains("ORA-14400"))
             throw new ConstraintViolationException(batchUpdateEx.getMessage, batchUpdateEx, "")
         case unexpected =>
