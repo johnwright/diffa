@@ -27,6 +27,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This is used to transplant the contents of one table into another table
+ * for example if you need to alter some columns in a way that your database
+ * doesn't allow you to do.
+ */
 public class TransplantTableBuilder implements MigrationElement {
 
   private final String source;
@@ -57,11 +62,10 @@ public class TransplantTableBuilder implements MigrationElement {
   public void apply(Connection conn) throws SQLException {
 
     // Create the temporary table
-    //statements.addAll(tempTable.getStatements());
     tempTable.apply(conn);
 
 
-    // Copy the data from the old table to the tempory table
+    // Copy the data from the old table to the temporary table
     List<String> sourceCols = new ArrayList<String>();
     List<String> destCols = new ArrayList<String>();
 
@@ -77,19 +81,16 @@ public class TransplantTableBuilder implements MigrationElement {
     }
 
     CopyTableBuilder copyTableBuilder = new CopyTableBuilder(source, tempTable.getTableName(), sourceCols, destCols);
-    //statements.addAll(copyTableBuilder.getStatements());
     copyTableBuilder.apply(conn);
 
     // Delete the source table
 
     DropTableBuilder dropTableBuilder = new DropTableBuilder(configuration, dialect, source);
-    //statements.addAll(dropTableBuilder.getStatements());
     dropTableBuilder.apply(conn);
 
     // Rename the destination table to the source table's original name
     AlterTableBuilder alterTableBuilder = new AlterTableBuilder(configuration, dialect, dialectExtension, tempTable.getTableName());
     alterTableBuilder.renameTo(source);
-    //statements.addAll(alterTableBuilder.getStatements());
     alterTableBuilder.apply(conn);
 
   }
