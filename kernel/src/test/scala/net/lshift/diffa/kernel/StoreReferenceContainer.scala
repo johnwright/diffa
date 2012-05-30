@@ -9,9 +9,12 @@ import net.sf.ehcache.CacheManager
 import org.slf4j.LoggerFactory
 import util.cache.HazelcastCacheProvider
 import util.db.HibernateDatabaseFacade
-import util.{MissingObjectException, SchemaCleaner, DatabaseEnvironment}
+import util.MissingObjectException
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.db.SessionHelper.sessionFactoryToSessionHelper
+import net.lshift.diffa.schema.hibernate.SessionHelper.sessionFactoryToSessionHelper
+import net.lshift.diffa.schema.cleaner.SchemaCleaner
+import net.lshift.diffa.schema.environment.{DatabaseEnvironment, TestDatabaseEnvironments}
+import net.lshift.diffa.schema.migrations.HibernateConfigStorePreparationStep
 import collection.JavaConversions._
 
 object StoreReferenceContainer {

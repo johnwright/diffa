@@ -8,7 +8,7 @@
     <version>1.4.5-SNAPSHOT</version>
   </parent>
 
-  <groupId>net.lshift</groupId>
+  <groupId>net.lshift.diffa</groupId>
   <artifactId>diffa-schema-bindings</artifactId>
   <version>1.4.5-SNAPSHOT</version>
 

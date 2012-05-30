@@ -362,7 +362,7 @@
     </property>
     <property name="preparationSteps">
       <list>
-        <bean class="net.lshift.diffa.kernel.config.HibernateConfigStorePreparationStep" />
+        <bean class="net.lshift.diffa.schema.migrations.HibernateConfigStorePreparationStep" />
       </list>
     </property>
     <property name="hookManager" ref="hookManager" />

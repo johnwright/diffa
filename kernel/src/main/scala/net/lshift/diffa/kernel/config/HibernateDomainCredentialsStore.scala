@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.config
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
 import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils, DatabaseFacade}
-import net.lshift.diffa.kernel.util.db.SessionHelper._
+import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
 import org.hibernate.SessionFactory
 import org.slf4j.LoggerFactory

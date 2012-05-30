@@ -19,7 +19,7 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import reflect.BeanProperty
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.db.SessionHelper._
+import net.lshift.diffa.schema.hibernate.SessionHelper._
 import org.hibernate.Session
 import net.sf.ehcache.CacheManager
 import scala.collection.JavaConversions._

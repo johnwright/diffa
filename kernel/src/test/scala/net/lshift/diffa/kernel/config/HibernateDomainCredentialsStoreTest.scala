@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.config
 import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.StoreReferenceContainer
+import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import org.junit.{Before, AfterClass, Test}
 
 class HibernateDomainCredentialsStoreTest {
