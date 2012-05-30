@@ -646,7 +646,7 @@ class HibernateDomainDifferenceStoreTest {
   }
 
   /**
-   * Oracle DB throws a BatchUpdateException with ORA-14400 when attempting to
+   * Oracle DB throws an SQLException with ORA-14400 when attempting to
    * insert a partition key that does not map to any partition.  This exception
    * pre-empts what would otherwise happen if the table were not partitioned
    * (ConstraintViolationException).
