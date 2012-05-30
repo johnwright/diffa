@@ -625,7 +625,7 @@ class HibernateDomainDifferenceStoreTest {
     val unmatchedAt = timestamp.plusSeconds(3)
     val seenNext = timestamp.plusSeconds(4)
 
-    val event = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id1"), detectedAt, "uV", null, seenFirst)
+    val event = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), detectedAt, "uV", null, seenFirst)
     domainDiffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), unmatchedAt, "uV", "dV", seenNext)
 
     try {

@@ -136,7 +136,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       val reported = getEventById(id)
 
       if (reportedEventExists(reported)) {
-        val reportable = new ReportedDifferenceEvent(null, id, lastUpdate, false, upstreamVsn, downstreamVsn, seen)
+        val reportable = new ReportedDifferenceEvent(null, id, reported.detectedAt, false, upstreamVsn, downstreamVsn, seen)
         addReportableMismatch(None, reportable)
       }
       else {
