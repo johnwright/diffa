@@ -25,16 +25,39 @@ class HazelcastSequenceProviderTest {
 
 
   @Test
-  def shouldSetAndIncrementSequence {
+  def shouldSetSequenceGivenKnowledgeOfTheCurrentValue {
     val id  = "HazelcastSequenceProviderTest." + new UUID().toString
 
+    // Given that we know what the current value is
+    assertEquals(0, provider.currentSequenceValue(id))
+
+    // We should be able to upgrade the value
     assertTrue(provider.upgradeSequenceValue(id, 0, 100))
-    assertFalse(provider.upgradeSequenceValue(id, 0, 100))
+  }
 
-    assertEquals(100, provider.currentSequenceValue(id))
-    assertEquals(101, provider.nextSequenceValue(id))
+  @Test
+  def shouldNotSetSequenceWithoutKnowledgeOfTheCurrentValue {
+    val id  = "HazelcastSequenceProviderTest." + new UUID().toString
 
-    assertTrue(provider.upgradeSequenceValue(id, 101, 1001))
+    // Given that we know what the current value _really_is
+    assertEquals(0, provider.currentSequenceValue(id))
+
+    // We can pretend we don't know what the actual value is
+    // and hence we should not be able to upgrade the value from a bogus
+    assertFalse(provider.upgradeSequenceValue(id, 1, 100))
+  }
+
+  @Test
+  def shouldIncrementSequenceValue {
+
+    val id  = "HazelcastSequenceProviderTest." + new UUID().toString
+
+    // Given that we know what the current value is
+    assertEquals(0, provider.currentSequenceValue(id))
+
+    // We can increment the value and test the result
+    assertEquals(1, provider.nextSequenceValue(id))
+
   }
 
 }
