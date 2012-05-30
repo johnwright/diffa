@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.util.db
+package net.lshift.diffa.schema.hibernate
 
 import org.hibernate.{Session, SessionFactory}
 import org.slf4j.LoggerFactory

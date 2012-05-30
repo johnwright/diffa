@@ -22,13 +22,14 @@ import org.hibernate.tool.hbm2ddl.DatabaseMetadata
 import org.hibernate.cfg.{Environment, Configuration}
 import java.sql.{Types, Connection}
 
+import net.lshift.diffa.schema.hibernate.SessionHelper.sessionFactoryToSessionHelper
 import net.lshift.hibernate.migrations.MigrationBuilder
 
 import scala.collection.JavaConversions._
 import org.hibernate.`type`.IntegerType
 import org.hibernate.dialect.Dialect
 import net.lshift.hibernate.migrations.dialects.DialectExtensionSelector
-import org.hibernate.{Session, SessionFactory}
+import org.hibernate.{SessionFactory}
 
 /**
  * Preparation step to ensure that the configuration for the Hibernate Config Store is in place.
@@ -63,43 +64,45 @@ class HibernateConfigStorePreparationStep
 
     val migrations = migrationSteps.filter(s => s.versionId >= nextVersion)
 
-    withSession(sf, s => s.doWork(new Work {
-      def execute(connection: Connection) {
-        migrations.foreach(step => {
-          val migration = step.createMigration(config)
+    sf.withSession(s => {
+      s.doWork(new Work {
+        def execute(connection: Connection) {
+          migrations.foreach(step => {
+            val migration = step.createMigration(config)
 
-          try {
-            migration.apply(connection)
-            if (step.versionId > 1) {
+            try {
+              migration.apply(connection)
+              if (step.versionId > 1) {
 
-              // Make sure that this really does get written to the underlying DB
+                // Make sure that this really does get written to the underlying DB
 
-              val tx = s.beginTransaction()
-              try {
-                s.createSQLQuery(HibernatePreparationUtils.schemaVersionUpdateStatement(step.versionId)).executeUpdate()
-                tx.commit()
-              }
-              catch {
-                case x => {
-                  tx.rollback()
-                  throw x
+                val tx = s.beginTransaction()
+                try {
+                  s.createSQLQuery(HibernatePreparationUtils.schemaVersionUpdateStatement(step.versionId)).executeUpdate()
+                  tx.commit()
+                }
+                catch {
+                  case x => {
+                    tx.rollback()
+                    throw x
+                  }
                 }
               }
+              log.info("Upgraded database to version %s (%s)".format(step.versionId, step.name))
+            } catch {
+              case ex =>
+                println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
+                println("_" * 80)
+                println()
+                migration.getStatements.foreach(println(_))
+                println("_" * 80)
+                println()
+                throw ex      // Higher level code will log the exception
             }
-            log.info("Upgraded database to version %s (%s)".format(step.versionId, step.name))
-          } catch {
-            case ex =>
-              println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
-              println("_" * 80)
-              println()
-              migration.getStatements.foreach(println(_))
-              println("_" * 80)
-              println()
-              throw ex      // Higher level code will log the exception
-          }
-        })
-      }
-    }))
+          })
+        }
+      })
+    })
   }
 
   /**
@@ -108,20 +111,22 @@ class HibernateConfigStorePreparationStep
   def tableExists(sf: SessionFactory, config:Configuration, tableName:String) : Boolean = {
     var hasTable:Boolean = false
 
-    withSession(sf, _.doWork(new Work {
-      def execute(connection: Connection) = {
-        val props = config.getProperties
-        val dialect = Dialect.getDialect(props)
-        val dialectExtension = DialectExtensionSelector.select(dialect)
+    sf.withSession(s => {
+      s.doWork(new Work {
+        def execute(connection: Connection) = {
+          val props = config.getProperties
+          val dialect = Dialect.getDialect(props)
+          val dialectExtension = DialectExtensionSelector.select(dialect)
 
-        val dbMetadata = new DatabaseMetadata(connection, dialect)
+          val dbMetadata = new DatabaseMetadata(connection, dialect)
 
-        val defaultCatalog = props.getProperty(Environment.DEFAULT_CATALOG)
-        val defaultSchema = props.getProperty(dialectExtension.schemaPropertyName)
+          val defaultCatalog = props.getProperty(Environment.DEFAULT_CATALOG)
+          val defaultSchema = props.getProperty(dialectExtension.schemaPropertyName)
 
-        hasTable = (dbMetadata.getTableMetadata(tableName, defaultSchema, defaultCatalog, false) != null)
-      }
-    }))
+          hasTable = (dbMetadata.getTableMetadata(tableName, defaultSchema, defaultCatalog, false) != null)
+        }
+      })
+    })
 
     hasTable
   }
@@ -132,23 +137,12 @@ class HibernateConfigStorePreparationStep
   def detectVersion(sf: SessionFactory, config:Configuration) : Option[Int] = {
     // Attempt to read the schema_version table, if it exists
     if (tableExists(sf, config, "schema_version") ) {
-      Some(withSession(sf, _.createSQLQuery("select max(version) as max_version from schema_version")
+      Some(sf.withSession(_.createSQLQuery("select max(version) as max_version from schema_version")
                            .addScalar("max_version", IntegerType.INSTANCE)
                            .uniqueResult().asInstanceOf[Int]))
     } else {
       // No known table was available to read a schema version
       None
-    }
-  }
-
-  // N.B. this function does the same job as SessionHelper in the kernel, but if we're eventually
-  // ditching Hibernate then SessionHelper will go away
-  private def withSession[T](sf: SessionFactory, f: (Session) => T) = {
-    val session = sf.openSession()
-    try {
-      f(session)
-    } finally {
-      session.close()
     }
   }
 }

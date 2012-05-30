@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config.limits
-
-import net.lshift.diffa.kernel.config.ServiceLimit
+package net.lshift.diffa.schema.servicelimits
 
 object Unlimited extends ServiceLimit {
   val value = -1

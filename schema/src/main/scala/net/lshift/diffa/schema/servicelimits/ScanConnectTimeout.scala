@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *         http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config.limits
+package net.lshift.diffa.schema.servicelimits
 
-import net.lshift.diffa.kernel.config.ServiceLimit
-
-object ExplainFiles extends ServiceLimit {
-  def key = "explain.files"
-  def description = "The number of explain files that should be retained for later analysis"
-  def defaultLimit = 0
-  def hardLimit = 5
+object ScanConnectTimeout extends ServiceLimit {
+  def key = "scan.connect.timeout"
+  def description = "When attempting to open a connection to scan a participant, timeout after this many milliseconds"
+  def defaultLimit = secondsToMs(30)
+  def hardLimit = minutesToMs(2)
 }

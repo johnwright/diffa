@@ -17,6 +17,7 @@ package net.lshift.diffa.schema.migrations
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
+import net.lshift.diffa.schema.servicelimits.{DiagnosticEventBufferSize, ExplainFiles}
 
 object Step0027 extends HibernateMigrationStep {
 
@@ -30,17 +31,9 @@ object Step0027 extends HibernateMigrationStep {
     migration.delete("system_config_options").where("opt_key").is(Step0022.eventExplanationLimitKey)
     migration.delete("system_config_options").where("opt_key").is(Step0022.explainFilesLimitKey)
 
-    MigrationUtil.insertLimit(migration,
-      key = "diagnostic.event.buffer.sizes",
-      description = "The number of events that the DiagnosicsManager should buffer",
-      defaultLimit = 100,
-      hardLimit = 100)
+    MigrationUtil.insertLimit(migration, DiagnosticEventBufferSize)
 
-    MigrationUtil.insertLimit(migration,
-      key = "explain.files",
-      description = "The number of explain files that should be retained for later analysis",
-      defaultLimit = 0,
-      hardLimit = 5)
+    MigrationUtil.insertLimit(migration, ExplainFiles)
 
     migration
   }

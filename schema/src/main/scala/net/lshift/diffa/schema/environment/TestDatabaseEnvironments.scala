@@ -1,13 +1,10 @@
-package net.lshift.diffa.kernel.config
+package net.lshift.diffa.schema.environment
 
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
-import org.junit.Ignore
 import net.lshift.hibernate.migrations.dialects.OracleDialectExtension
 
 /**
  * These database environments are intended for use in testing.
  */
-@Ignore
 object TestDatabaseEnvironments {
   def adminEnvironment: DatabaseEnvironment = AdminEnvironment
   def hsqldbEnvironment(path: String): DatabaseEnvironment = new HsqldbEnvironment(path)
@@ -32,7 +29,6 @@ class UniqueEnvironment(path: String) extends DatabaseEnvironment(path) {
 /**
  * This is intended for testing purposes only.
  */
-@Ignore
 object AdminEnvironment extends DatabaseEnvironment("") {
   override def username = System.getProperty("diffa.jdbc.sys.username", "sys")
   override def password = System.getProperty("diffa.jdbc.sys.password", "")
@@ -48,7 +44,6 @@ object AdminEnvironment extends DatabaseEnvironment("") {
 /**
  * This is intended for testing purposes only.
  */
-@Ignore
 class HsqldbEnvironment(path: String) extends DatabaseEnvironment(path) {
   override def url = substitutableURL(path, """jdbc:hsqldb:mem:%s""")
   override def dialect = "org.hibernate.dialect.HSQLDialect"

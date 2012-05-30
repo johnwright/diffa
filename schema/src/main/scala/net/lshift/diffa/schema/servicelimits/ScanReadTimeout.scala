@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config.limits
+package net.lshift.diffa.schema.servicelimits
 
-import net.lshift.diffa.kernel.config.ServiceLimit
-
-object DiagnosticEventBufferSize extends ServiceLimit {
-  def key = "diagnostic.event.buffer.sizes"
-  def description = "The number of events that the DiagnosicsManager should buffer"
-  def defaultLimit = 100
-  def hardLimit = 100
+object ScanReadTimeout extends ServiceLimit {
+  def key = "scan.read.timeout"
+  def description = "When reading query response data from a scan participant, timeout after not receiving data for this many milliseconds"
+  def defaultLimit = secondsToMs(30)
+  def hardLimit = minutesToMs(2)
 }

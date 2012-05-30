@@ -1,5 +1,6 @@
-package net.lshift.diffa.kernel.util
+package net.lshift.diffa.schema.cleaner
 
+import net.lshift.diffa.schema.environment.DatabaseEnvironment
 import org.hibernate.dialect.{MySQL5Dialect, Oracle10gDialect, Dialect}
 
 /**

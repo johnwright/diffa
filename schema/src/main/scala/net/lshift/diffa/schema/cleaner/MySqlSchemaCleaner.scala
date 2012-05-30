@@ -1,7 +1,7 @@
-package net.lshift.diffa.kernel.util
+package net.lshift.diffa.schema.cleaner
 
-import db.SessionHelper
-import net.lshift.diffa.kernel.util.db.SessionHelper.sessionFactoryToSessionHelper
+import net.lshift.diffa.schema.hibernate.SessionHelper.sessionFactoryToSessionHelper
+import net.lshift.diffa.schema.environment.DatabaseEnvironment
 
 /**
  * Implements SchemaCleaner for MySQL databases.

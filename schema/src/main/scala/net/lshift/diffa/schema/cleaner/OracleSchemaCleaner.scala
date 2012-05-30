@@ -1,6 +1,7 @@
-package net.lshift.diffa.kernel.util
+package net.lshift.diffa.schema.cleaner
 
-import net.lshift.diffa.kernel.util.db.SessionHelper.sessionFactoryToSessionHelper
+import net.lshift.diffa.schema.environment.DatabaseEnvironment
+import net.lshift.diffa.schema.hibernate.SessionHelper.sessionFactoryToSessionHelper
 import org.hibernate.jdbc.Work
 import java.sql.Connection
 import org.hibernate.SessionFactory

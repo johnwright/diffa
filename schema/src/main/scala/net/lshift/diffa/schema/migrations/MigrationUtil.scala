@@ -15,34 +15,26 @@
  */
 package net.lshift.diffa.schema.migrations
 
-import scala.collection.JavaConversions._
 import net.lshift.hibernate.migrations.MigrationBuilder
-import org.apache.commons.lang.time.DateUtils.{MILLIS_PER_SECOND, MILLIS_PER_MINUTE}
+import net.lshift.diffa.schema.servicelimits.ServiceLimit
+import scala.collection.JavaConversions._
 
 object MigrationUtil {
 
   /**
    * Inserts the limit definition into the DB migration
    */
-  def insertLimit(migration:MigrationBuilder,
-                  key: String,
-                  description: String,
-                  defaultLimit: java.lang.Integer,
-                  hardLimit: java.lang.Integer) = {
+  def insertLimit(migration:MigrationBuilder, limit:ServiceLimit) = {
 
     migration.insert("limit_definitions").values(Map(
-      "name" -> key,
-      "description" -> description
+      "name" -> limit.key,
+      "description" -> limit.description
     ))
 
     migration.insert("system_limits").values(Map(
-      "name" -> key,
-      "default_limit" -> defaultLimit,
-      "hard_limit" -> hardLimit
+      "name" -> limit.key,
+      "default_limit" -> limit.defaultLimit,
+      "hard_limit" -> limit.defaultLimit
     ))
   }
-
-  /// Return type is java.lang.Integer since InsertBuilder.values requires a map of AnyRef
-  def minutesToMs(minutes: Int): java.lang.Integer = minutes * MILLIS_PER_MINUTE.toInt
-  def secondsToMs(seconds: Int): java.lang.Integer = seconds * MILLIS_PER_SECOND.toInt
 }

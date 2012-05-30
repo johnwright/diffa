@@ -19,16 +19,19 @@ package net.lshift.diffa.kernel.config
 import java.sql._
 import org.junit.runner.RunWith
 import org.junit.Assert._
-import net.lshift.diffa.kernel.util.db.SessionHelper._
+import org.junit.experimental.theories.Theories
+import org.junit.Test
 import org.slf4j.LoggerFactory
 import org.hibernate.dialect.Dialect
 import org.hibernate.cfg.{Configuration, Environment}
 import org.hibernate.jdbc.Work
 import org.hibernate.tool.hbm2ddl.DatabaseMetadata
-import org.junit.experimental.theories.Theories
+
 import org.hibernate.{Session, SessionFactory}
-import org.junit.Test
-import net.lshift.diffa.kernel.util.{SchemaCleaner, DatabaseEnvironment}
+import net.lshift.diffa.schema.cleaner.SchemaCleaner
+import net.lshift.diffa.schema.environment.{DatabaseEnvironment, TestDatabaseEnvironments}
+import net.lshift.diffa.schema.migrations.HibernateConfigStorePreparationStep
+import net.lshift.diffa.schema.hibernate.SessionHelper.sessionFactoryToSessionHelper
 
 /**
  * Test cases for ensuring that preparation steps apply to database schemas at various levels, and allow us to upgrade
@@ -83,7 +86,7 @@ class HibernatePreparationTest {
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
     
-    val dbConfig = databaseEnvironment.getHibernateConfiguration
+    val dbConfig = databaseEnvironment.getHibernateConfigurationWithoutMappingResources
     val sessionFactory = dbConfig.buildSessionFactory
 
     // When
@@ -108,7 +111,7 @@ class HibernatePreparationTest {
     // Given
     cleanSchema(adminEnvironment, databaseEnvironment)
 
-    val dbConfig = databaseEnvironment.getHibernateConfiguration
+    val dbConfig = databaseEnvironment.getHibernateConfigurationWithoutMappingResources
     val sessionFactory = dbConfig.buildSessionFactory
 
     log.info("Installing schema and upgrading to latest version")
@@ -160,7 +163,7 @@ class HibernatePreparationTest {
    * Drop and recreate the named schema/database in order to provide a clean slate to test from.
    */
   private def cleanSchema(sysenv: DatabaseEnvironment, appenv: DatabaseEnvironment) {
-    val sysConfig = sysenv.getHibernateConfiguration
+    val sysConfig = sysenv.getHibernateConfigurationWithoutMappingResources
 
     val cleaner = SchemaCleaner.forDialect(Dialect.getDialect(sysConfig.getProperties))
     cleaner.clean(sysenv, appenv)
