@@ -619,7 +619,8 @@ class HibernateDomainDifferenceStoreTest {
   @Test
   def pendingEventShouldUpgradePreviouslyReportedEvent() {
 
-    val timestamp = new DateTime()
+    // Coarsen the time precision to seconds to workaround MySQL timestamp granularity limitation :-(
+    val timestamp = new DateTime().withMillisOfSecond(0)
     val detectedAt = timestamp.plusSeconds(1)
     val seenFirst = timestamp.plusSeconds(2)
     val unmatchedAt = timestamp.plusSeconds(3)
