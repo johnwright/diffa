@@ -32,7 +32,7 @@ public class CopyTableBuilder extends SingleStatementMigrationElement{
   }
   
   @Override
-  public String getSQL() {
+  protected String getSQL() {
     Joiner joiner = Joiner.on(",").skipNulls();
     String sourceColumnNames = joiner.join(sourceCols);
     String destColumnNames = joiner.join(destCols);
