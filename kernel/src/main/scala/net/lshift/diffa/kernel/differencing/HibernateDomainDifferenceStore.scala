@@ -625,7 +625,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
 
     val rows = tx match {
       case None => {
-        db.execute(query, params)
+        try {
+          db.execute(query, params)
+        }
+        catch {
+          case x:Exception => {
+
+            val alert = formatAlertCode(domain, pair, INCONSISTENT_DIFF_STORE)
+            val msg = " %s Could not insert event %s, next sequence id was %s".format(alert, evt, nextSeqId)
+            log.error(msg)
+
+            throw x
+          }
+
+        }
       }
       case Some(tx) => {
         tx.registerRollbackHandler(new RollbackHandler {
