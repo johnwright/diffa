@@ -78,7 +78,7 @@ class ChangeEventRateLimiterTest {
     scenario.data match {
       case RateLimit(n) =>
         setRateLimit(n)
-        setClock(2001)
+        setClock(oneSecondAfterInitialization)
         (1 to n).foreach(i =>
           limiter.accept()
         )
@@ -92,7 +92,7 @@ class ChangeEventRateLimiterTest {
     scenario.data match {
       case RateLimit(n) =>
         setRateLimit(n)
-        setClock(2001)
+        setClock(oneSecondAfterInitialization)
         (1 to n).foreach( i =>
           Assert.assertTrue("%d events should be accepted each second for this configuration".format(n), limiter.accept())
         )
@@ -116,6 +116,8 @@ class ChangeEventRateLimiterTest {
 
 object ChangeEventRateLimiterTest {
   private[ChangeEventRateLimiterTest] val yesterday = (new DateTime) minusDays 1
+  // See the Important Note in RateLimiter regarding delayed effect of rate limit changes.
+  private[ChangeEventRateLimiterTest] val oneSecondAfterInitialization = 1000L
 
   implicit def long2Data(l: Long): Data = if (l < 1000L) {
     WithinLimitInterval(l)
