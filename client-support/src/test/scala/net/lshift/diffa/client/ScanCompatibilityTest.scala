@@ -21,7 +21,6 @@ import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
 import net.lshift.diffa.participant.common.ServletHelper
 import org.easymock.EasyMock._
 import org.easymock.{EasyMock, IAnswer}
-import org.junit.{Before, Test}
 import java.util.ArrayList
 import scala.collection.JavaConversions._
 import org.joda.time.{DateTimeZone, DateTime, LocalDate}
@@ -30,7 +29,9 @@ import net.lshift.diffa.participant.scanning._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import net.lshift.diffa.kernel.config._
-import limits.Unlimited
+import limits.{ScanReadTimeout, ScanConnectTimeout, ResponseSizeLimit, Unlimited}
+import net.lshift.diffa.kernel.differencing.ScanFailedException
+import org.junit.{After, Before, Test}
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -241,8 +242,102 @@ class ScanCompatibilityTest {
     scanningRestClient.scan(Seq(), Seq(StringPrefixCategoryFunction("someString", 2, 10, 2)))
     verifyAll()
   }
+
 }
 
+object ScanLimitsTest {
+
+  val pair = new DiffaPairRef("some-domain", "some-pair")
+
+
+  val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, None)
+
+  lazy val server = new ParticipantServer(serverPort, scanningParticipant)
+  lazy val scanningRestClient = new ScanningParticipantRestClient(
+    pair,
+    "http://localhost:" + serverPort + "/scan",
+    limits,
+    domainCredentialsLookup
+  )
+
+  def stubAggregationBuilder(a:(HttpServletRequest) => AggregationBuilder) {
+    expect(scanningParticipant.determineAggregations(anyObject.asInstanceOf[HttpServletRequest])).andStubAnswer(new IAnswer[java.util.List[ScanAggregation]] {
+      def answer() = {
+        val req = EasyMock.getCurrentArguments()(0).asInstanceOf[HttpServletRequest]
+        a(req).toList
+      }
+    })
+  }
+
+  def stubConstraintBuilder(c:(HttpServletRequest) => ConstraintsBuilder) {
+    expect(scanningParticipant.determineConstraints(anyObject.asInstanceOf[HttpServletRequest])).andStubAnswer(new IAnswer[java.util.List[ScanConstraint]] {
+      def answer() = {
+        val req = EasyMock.getCurrentArguments()(0).asInstanceOf[HttpServletRequest]
+        c(req).toList
+      }
+    })
+  }
+
+  def ensureServerStarted {
+    if (!server.isRunning) server.start()
+  }
+
+  val limits = createMock(classOf[PairServiceLimitsView])
+}
+
+class ScanLimitsTest {
+  import ScanLimitsTest._
+
+  val serverPort = 41557
+
+  // val scanningParticipant = createMock(classOf[ScanningParticipantHandler])
+  object scanningParticipant extends ScanningParticipantHandler {
+    def determineAggregations(req:HttpServletRequest) = List ()
+    def determineConstraints(req:HttpServletRequest) = List ()
+    def doQuery(constraints: java.util.List[ScanConstraint], aggregations: java.util.List[ScanAggregation]) = List()
+
+  }
+  @Before def startServer() = ensureServerStarted
+
+  @Test
+  def shouldQueryResponseLimitsForPair {
+    var arbitrarilyLargeResponseSize = 10 * 1024 * 1024
+    expect(limits.getEffectiveLimitByNameForPair(pair.domain, pair.key, ResponseSizeLimit)).
+      andReturn(arbitrarilyLargeResponseSize)
+
+    // We don't really care about this bit here.
+    List(ScanConnectTimeout, ScanReadTimeout).foreach { limit =>
+      expect(limits.getEffectiveLimitByNameForPair(pair.domain, pair.key, limit)).
+        andReturn(limit.defaultLimit)
+    }
+
+    replay(limits)
+    scanningRestClient.scan(Seq(), Seq())
+  }
+
+  @Test(expected=classOf[ScanFailedException])
+  def shouldThrowExceptionWhenResponseSizeLimitBreached {
+
+    expect(limits.getEffectiveLimitByNameForPair(
+      pair.domain, pair.key, ResponseSizeLimit)).
+      andReturn(0) // .anyTimes()
+
+    List(ScanConnectTimeout, ScanReadTimeout).foreach { limit =>
+      expect(limits.getEffectiveLimitByNameForPair(pair.domain, pair.key, limit)).
+        andReturn(limit.defaultLimit)
+    }
+
+
+    replay(limits)
+
+    scanningRestClient.scan(Seq(), Seq())
+  }
+
+  @Test
+  def shouldNotifyDiagnosticsManagerWhenResponseSizeLimitBreached {
+    // TODO
+  }
+}
 object ScanCompatibilityTest {
 
   @DataPoint def lowerUnboundedDate = new DateRangeConstraint("bizDate", null, new LocalDate(2011, 7, 31))
