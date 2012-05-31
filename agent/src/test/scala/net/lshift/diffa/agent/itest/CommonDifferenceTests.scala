@@ -321,7 +321,7 @@ trait CommonDifferenceTests {
     assertEquals(NO_CONTENT, down1)
 
     env.addAndNotifyDownstream("abc", down, someDate = yesterday, someString = "ss")
-    Thread.sleep(2000)
+    Thread.sleep(5000)
     val diffs2 = env.differencesHelper.pollForAllDifferences(yearAgo, nextYear)
     assertEquals(1, diffs2.length)
     val seqId2 = diffs2(0).seqId
@@ -386,7 +386,7 @@ trait CommonDifferenceTests {
     }
   }
 
-  def runScanAndWaitForCompletion(from:DateTime, until:DateTime, n:Int = 30, wait:Int = 100, view:Option[String] = None) {
+  def runScanAndWaitForCompletion(from:DateTime, until:DateTime, n:Int = 100, wait:Int = 200, view:Option[String] = None) {
     env.scanningClient.startScan(env.pairKey, view = view)
 
     ScanningHelper.waitForScanStatus(env.scanningClient, env.pairKey, PairScanState.UP_TO_DATE, n, wait)

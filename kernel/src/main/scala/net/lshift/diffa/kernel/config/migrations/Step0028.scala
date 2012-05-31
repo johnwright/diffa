@@ -1,5 +1,9 @@
 /**
+<<<<<<< HEAD
  * Copyright (C) 2010-2011 LShift Ltd.
+=======
+ * Copyright (C) 2010-2012 LShift Ltd.
+>>>>>>> 0139afd905dba66d107e673d91269d6bb46ecb4d
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +21,33 @@ package net.lshift.diffa.kernel.config.migrations
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.kernel.config.{MigrationUtil, HibernateMigrationStep}
-import net.lshift.diffa.kernel.config.limits.ChangeEventRate
+import net.lshift.diffa.kernel.config.HibernateMigrationStep
 
 object Step0028 extends HibernateMigrationStep {
+
   def versionId = 28
-  def name = "Configure system-wide change event rate limit"
+
+  def name = "Widen sequence column type"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    MigrationUtil.insertLimit(migration, ChangeEventRate)
+    val diffsWidener = migration.widenColumnInTable("diffs").column("seq_id")
+    val pendingDiffswidener = migration.widenColumnInTable("pending_diffs").column("oid")
+
+    CommonSteps.buildDiffsTable(diffsWidener.getTempTable)
+    CommonSteps.buildPendingDiffsTable(pendingDiffswidener.getTempTable)
+
+    if (diffsWidener.requiresNewTable()) {
+      CommonSteps.applyConstraintsToDiffsTable(migration)
+      CommonSteps.applyIndexesToDiffsTable(migration)
+      CommonSteps.analyzeDiffsTable(migration)
+    }
+
+    if (pendingDiffswidener.requiresNewTable()) {
+      CommonSteps.applyConstraintsToPendingDiffsTable(migration)
+      CommonSteps.applyIndexesToPendingDiffsTable(migration)
+    }
 
     migration
   }
