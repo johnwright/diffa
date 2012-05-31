@@ -116,8 +116,6 @@ class DomainResource {
 
   @Path("/changes")
   def getChangesResource(@PathParam("domain") domain:String) = {
-    if (changeEventRateLimiterFactory == null)
-      log.error("Rate Limiter Factory was not injected!")
     withValidDomain(domain, new ChangesResource(changes, domain, changeEventRateLimiterFactory))
   }
 
