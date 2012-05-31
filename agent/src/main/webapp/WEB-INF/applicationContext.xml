@@ -110,7 +110,7 @@
     <constructor-arg ref="databaseFacade" />
     <constructor-arg ref="hazelcastCacheProvider" />
     <constructor-arg ref="zoomCacheManager"/>
-    <constructor-arg ref="dialect"/>
+    <constructor-arg ref="hibernateDialect"/>
     <constructor-arg ref="hookManager" />
   </bean>
   <bean id="domainDifferenceStore"
@@ -326,13 +326,27 @@
       Data
     ========
   -->
-  <bean id="dialect" class="org.springframework.jndi.JndiObjectFactoryBean">
+  <bean id="hibernateDialect" class="org.springframework.jndi.JndiObjectFactoryBean">
     <property name="jndiName" value="java:comp/env/diffaHibernateDialect"/>
   </bean>
+
+  <bean id="jooqDialect" class="org.springframework.jndi.JndiObjectFactoryBean">
+    <property name="jndiName" value="java:comp/env/diffaJooqDialect"/>
+  </bean>
+
   <bean id="hookManager" class="net.lshift.diffa.kernel.hooks.HookManager" />
 
   <bean id="databaseFacade" class="net.lshift.diffa.kernel.util.db.HibernateDatabaseFacade">
     <constructor-arg ref="diffaSessionFactory" />
+  </bean>
+
+  <bean id="jooqDatabaseFacade" class="net.lshift.diffa.schema.jooq.DatabaseFacade">
+    <constructor-arg>
+      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
+            <property name="jndiName" value="java:comp/env/jdbc/diffaDS"/>
+      </bean>
+    </constructor-arg>
+    <constructor-arg ref="jooqDialect"/>
   </bean>
 
   <bean id="diffaSessionFactory" class="net.lshift.diffa.agent.util.ListeningLocalSessionFactoryBean">
@@ -346,7 +360,7 @@
     </property>
     <property name="hibernateProperties">
       <bean class="net.lshift.diffa.agent.util.HibernatePropertiesFactory">
-        <constructor-arg ref="dialect"/>
+        <constructor-arg ref="hibernateDialect"/>
         <constructor-arg value="net.sf.ehcache.hibernate.EhCacheRegionFactory"/>
       </bean>
     </property>
@@ -443,9 +457,8 @@
     ===========
   -->
 
-  <bean id="domainCredentialsStore" class="net.lshift.diffa.kernel.config.HibernateDomainCredentialsStore">
-    <constructor-arg ref="diffaSessionFactory" />
-    <constructor-arg ref="databaseFacade" />
+  <bean id="domainCredentialsStore" class="net.lshift.diffa.kernel.config.JooqDomainCredentialsStore">
+    <constructor-arg ref="jooqDatabaseFacade" />
   </bean>
 
   <!--

@@ -26,7 +26,8 @@ object DatabaseEnvironment {
 
   val DBNAME = System.getProperty("diffa.jdbc.dbname", "")
   val URL = System.getProperty("diffa.jdbc.url", "jdbc:hsqldb:mem")
-  val DIALECT = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
+  val HIBERNATE_DIALECT = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
+  val JOOQ_DIALECT = System.getProperty("diffa.jooq.dialect", "HSQLDB")
   val DRIVER = System.getProperty("diffa.jdbc.driver", "org.hsqldb.jdbc.JDBCDriver")
   val USERNAME = System.getProperty("diffa.jdbc.username", "SA")
   val PASSWORD = System.getProperty("diffa.jdbc.password", "")
@@ -53,7 +54,8 @@ object StandardEnvironment extends DatabaseEnvironment("")
 class DatabaseEnvironment(path: String) {
   def dbName: String = _dbName
   def url: String = substitutableURL(path, System.getProperty("diffa.jdbc.url", "jdbc:hsqldb:mem:%s"))
-  def dialect: String = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
+  def hibernateDialect: String = System.getProperty("diffa.hibernate.dialect", "org.hibernate.dialect.HSQLDialect")
+  def jooqDialect: String = System.getProperty("diffa.jooq.dialect", "HSQLDB")
   def driver: String = System.getProperty("diffa.jdbc.driver", "org.hsqldb.jdbc.JDBCDriver")
   def username: String = System.getProperty("diffa.jdbc.username", "SA")
   def password: String = System.getProperty("diffa.jdbc.password", "")
@@ -85,7 +87,7 @@ class DatabaseEnvironment(path: String) {
 
   def getHibernateConfigurationWithoutMappingResources: Configuration = {
     val config = new Configuration().
-      setProperty("hibernate.dialect", dialect).
+      setProperty("hibernate.dialect", hibernateDialect).
       setProperty("hibernate.connection.url", url).
       setProperty("hibernate.connection.driver_class", driver).
       setProperty("hibernate.connection.username", username).

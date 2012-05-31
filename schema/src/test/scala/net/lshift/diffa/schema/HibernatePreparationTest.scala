@@ -138,7 +138,7 @@ class HibernatePreparationTest {
       addResource("net/lshift/diffa/kernel/config/DomainConfig.hbm.xml").
       addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
       addResource("net/lshift/diffa/kernel/differencing/Differences.hbm.xml").
-      setProperty("hibernate.dialect", DatabaseEnvironment.DIALECT).
+      setProperty("hibernate.dialect", DatabaseEnvironment.HIBERNATE_DIALECT).
       setProperty("hibernate.connection.url", DatabaseEnvironment.substitutableURL("configStore-export")).
       setProperty("hibernate.connection.driver_class", DatabaseEnvironment.DRIVER).
       setProperty("hibernate.connection.username", DatabaseEnvironment.USERNAME).

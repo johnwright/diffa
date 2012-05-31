@@ -13,7 +13,7 @@ object TestDatabaseEnvironments {
 
 class UniqueEnvironment(path: String) extends DatabaseEnvironment(path) {
   override def username = {
-    if (dialect.toUpperCase.contains((new OracleDialectExtension).getDialectName.toUpperCase))
+    if (hibernateDialect.toUpperCase.contains((new OracleDialectExtension).getDialectName.toUpperCase))
       makeUniqueUsername(super.username)
     else
       super.username
@@ -46,7 +46,7 @@ object AdminEnvironment extends DatabaseEnvironment("") {
  */
 class HsqldbEnvironment(path: String) extends DatabaseEnvironment(path) {
   override def url = substitutableURL(path, """jdbc:hsqldb:mem:%s""")
-  override def dialect = "org.hibernate.dialect.HSQLDialect"
+  override def hibernateDialect = "org.hibernate.dialect.HSQLDialect"
   override def driver = "org.hsqldb.jdbc.JDBCDriver"
   override def username = System.getProperty("diffa.jdbc.username", "SA")
   override def password = System.getProperty("diffa.jdbc.password", "")

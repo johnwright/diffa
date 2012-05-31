@@ -96,7 +96,6 @@
               <includes>.*</includes>
               <excludes></excludes>
               <inputSchema>PUBLIC</inputSchema>
-              <outputSchema>Schema</outputSchema>
             </database>
             <generate>
               <relations>true</relations>
@@ -104,7 +103,7 @@
             </generate>
             <target>
               <packageName>net.lshift.diffa.schema</packageName>
-              <directory>target/generated-sources/jooq</directory>
+              <directory>${basedir}/target/generated-sources/jooq</directory>
             </target>
           </generator>
         </configuration>
@@ -118,7 +117,7 @@
             <goals><goal>add-source</goal></goals>
             <configuration>
               <sources>
-                <source>target/generated-sources/jooq</source>
+                <source>${basedir}/target/generated-sources/jooq</source>
               </sources>
             </configuration>
           </execution>

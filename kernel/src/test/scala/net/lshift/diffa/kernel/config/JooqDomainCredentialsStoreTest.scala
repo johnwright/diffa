@@ -21,9 +21,9 @@ import net.lshift.diffa.kernel.StoreReferenceContainer
 import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import org.junit.{Before, AfterClass, Test}
 
-class HibernateDomainCredentialsStoreTest {
+class JooqDomainCredentialsStoreTest {
 
-  private val storeReferences = HibernateDomainCredentialsStoreTest.storeReferences
+  private val storeReferences = JooqDomainCredentialsStoreTest.storeReferences
   private val systemConfigStore = storeReferences.systemConfigStore
   private val domainCredentialsStore = storeReferences.domainCredentialsStore
 
@@ -90,11 +90,11 @@ class HibernateDomainCredentialsStoreTest {
   }
 }
 
-object HibernateDomainCredentialsStoreTest {
-  private[HibernateDomainCredentialsStoreTest] val env =
+object JooqDomainCredentialsStoreTest {
+  private[JooqDomainCredentialsStoreTest] val env =
     TestDatabaseEnvironments.uniqueEnvironment("target/domainCredentialsStore")
 
-  private[HibernateDomainCredentialsStoreTest] val storeReferences =
+  private[JooqDomainCredentialsStoreTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)
 
   @AfterClass

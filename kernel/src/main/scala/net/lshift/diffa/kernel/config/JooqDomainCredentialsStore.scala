@@ -15,63 +15,84 @@
  */
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.frontend.FrontendConversions._
+import net.lshift.diffa.schema.Tables._
 import net.lshift.diffa.kernel.frontend.{OutboundExternalHttpCredentialsDef, InboundExternalHttpCredentialsDef}
-import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils, DatabaseFacade}
-import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
-import org.hibernate.SessionFactory
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.net.URI
 import net.lshift.diffa.kernel.util.MissingObjectException
+import net.lshift.diffa.schema.tables.ExternalHttpCredentials.{EXTERNAL_HTTP_CREDENTIALS => e}
+import net.lshift.diffa.schema.jooq.DatabaseFacade
 
-class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory, db:DatabaseFacade)
+class JooqDomainCredentialsStore(val db: DatabaseFacade)
   extends DomainCredentialsManager
-  with DomainCredentialsLookup
-  with HibernateQueryUtils {
+  with DomainCredentialsLookup {
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) = sessionFactory.withSession( s => {
+  def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) = db.execute { t =>
     creds.validate()
-    s.saveOrUpdate(fromInboundExternalHttpCredentialsDef(domain, creds))
-  })
 
-  def deleteExternalHttpCredentials(domain:String, url:String) = sessionFactory.withSession( s => {
-    val deleted = s.getNamedQuery("deleteExternalHttpCredentials").
-                    setString("domain", domain).
-                    setString("url", url).
-                    executeUpdate()
+    t.insertInto(e).
+      set(e.DOMAIN, domain).
+      set(e.URL, creds.url).
+      set(e.CRED_TYPE, creds.`type`).
+      set(e.CRED_KEY, creds.key).
+      set(e.CRED_VALUE, creds.value).
+    onDuplicateKeyUpdate().
+      set(e.CRED_TYPE, creds.`type`).
+      set(e.CRED_KEY, creds.key).
+      set(e.CRED_VALUE, creds.value).
+    execute()
+  }
+
+  def deleteExternalHttpCredentials(domain:String, url:String) = db.execute { t =>
+    // TODO convert to delete-by-key?
+    val deleted =
+      t.delete(EXTERNAL_HTTP_CREDENTIALS).
+        where(e.DOMAIN.equal(domain)).
+        and(e.URL.equal(url)).
+      execute()
+
     if (deleted == 0) {
       throw new MissingObjectException(url)
     }
-  })
+  }
 
-  def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef] = sessionFactory.withSession( s => {
-    val resultSet = s.getNamedQuery("externalHttpCredentialsByDomain").setString("domain", domain).list()
-
-    // Result set ordering: select url, key, credential_type from ....
-
-    resultSet.map(result => {
-      val row = result.asInstanceOf[Array[_]].map(e => e.asInstanceOf[String])
-      OutboundExternalHttpCredentialsDef(url = row(0), key = row(1), `type` = row(2))
-    })
-  })
+  def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef] = db.execute { t =>
+    t.select().from(e).where(e.DOMAIN.equal(domain)).fetch().map { r =>
+      OutboundExternalHttpCredentialsDef(
+        url = r.getValue(e.URL),
+        key = r.getValue(e.CRED_KEY),
+        `type` = r.getValue(e.CRED_TYPE)
+      )
+    }
+  }
 
   def credentialsForUrl(domain:String, url:String) : Option[HttpCredentials] = credentialsForUri(domain, new URI(url))
 
-  def credentialsForUri(domain:String, searchURI:URI) = sessionFactory.withSession( s => {
+  def credentialsForUri(domain:String, searchURI:URI) = db.execute { t =>
 
     val baseUrl = searchURI.getScheme + "://" + searchURI.getAuthority + "%"
-    val results = db.listQuery[ExternalHttpCredentials]("externalHttpCredentialsByDomainAndUrl",
-                                                     Map("domain" -> domain, "base_url" -> baseUrl))
+
+    val results = t.select().from(e).
+      where(e.DOMAIN.equal(domain)).
+      and(e.URL.like(baseUrl)).
+      fetch().map { r =>
+        ExternalHttpCredentials(
+          domain = r.getValue(e.DOMAIN),
+          url = r.getValue(e.URL),
+          key = r.getValue(e.CRED_KEY),
+          value = r.getValue(e.CRED_VALUE),
+          credentialType = r.getValue(e.CRED_TYPE)
+        )
+      }
 
     if (results.isEmpty) {
       None
     }
     else {
-
       val candidateCredentials = results.map(c =>  {
         c.credentialType match {
           case ExternalHttpCredentials.BASIC_AUTH      => ( new URI(c.url), BasicAuthCredentials(c.key, c.value) )
@@ -94,5 +115,5 @@ class HibernateDomainCredentialsStore(val sessionFactory: SessionFactory, db:Dat
       }
 
     }
-  })
+  }
 }
