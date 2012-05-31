@@ -1,9 +1,5 @@
 /**
-<<<<<<< HEAD
- * Copyright (C) 2010-2011 LShift Ltd.
-=======
  * Copyright (C) 2010-2012 LShift Ltd.
->>>>>>> 0139afd905dba66d107e673d91269d6bb46ecb4d
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
