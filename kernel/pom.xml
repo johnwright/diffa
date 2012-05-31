@@ -35,6 +35,20 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>net.lshift.diffa</groupId>
+      <artifactId>diffa-schema</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.lshift.diffa</groupId>
+      <artifactId>diffa-schema-bindings</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+    </dependency>
+    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
     </dependency>

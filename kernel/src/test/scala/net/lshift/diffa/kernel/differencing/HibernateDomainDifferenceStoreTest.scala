@@ -27,7 +27,7 @@ import runner.RunWith
 import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
 import org.joda.time.{DateTime, Interval, DateTimeZone}
 import org.hibernate.dialect.Dialect
-import net.lshift.diffa.kernel.util.DatabaseEnvironment
+import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import net.lshift.hibernate.migrations.dialects.DialectExtensionSelector
 

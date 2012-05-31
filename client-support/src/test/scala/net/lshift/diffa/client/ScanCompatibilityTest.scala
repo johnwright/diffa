@@ -27,10 +27,10 @@ import scala.collection.JavaConversions._
 import org.joda.time.{DateTimeZone, DateTime, LocalDate}
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.participant.scanning._
+import net.lshift.diffa.schema.servicelimits._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import net.lshift.diffa.kernel.config._
-import limits.Unlimited
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.

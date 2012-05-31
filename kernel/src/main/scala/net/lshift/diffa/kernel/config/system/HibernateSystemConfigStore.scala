@@ -17,7 +17,7 @@
 package net.lshift.diffa.kernel.config.system
 
 import net.lshift.diffa.kernel.util.db.{DatabaseFacade,HibernateQueryUtils}
-import net.lshift.diffa.kernel.util.db.SessionHelper._
+import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
