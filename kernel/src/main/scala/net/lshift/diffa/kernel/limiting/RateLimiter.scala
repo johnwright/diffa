@@ -34,6 +34,10 @@ trait RateLimiterFactory[T] {
  * Limit the rate at which actions of the specified type are permitted.
  * Any action that should be rate limited should call RateLimiter.accept before executing the
  * rate limited action.
+ *
+ * Important Note
+ * If the rate definition changes (eventsPerSecondFn), then there is a one second delay
+ * before the new definition takes effect.
  */
 class RateLimiter(eventsPerSecondFn: () => Int, clock: Clock = SystemClock) extends Limiter {
   private val params = new TokenBucketParameters {
