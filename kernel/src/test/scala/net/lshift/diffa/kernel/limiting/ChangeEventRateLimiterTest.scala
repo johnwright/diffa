@@ -50,7 +50,7 @@ class ChangeEventRateLimiterTest {
   }
 
   @Theory
-  def rateLimiterShouldRejectSubsequentEventsWhileLimited(scenario: Scenario) {
+  def `rate limiter should reject subsequent events while limited in default configuration`(scenario: Scenario) {
     limiter.accept()
 
     scenario.data match {
@@ -62,39 +62,40 @@ class ChangeEventRateLimiterTest {
   }
 
   @Theory
-  def rateLimiterShouldAcceptSubsequentEventAfterLimitExpires(scenario: Scenario) {
+  def `rate limiter should accept subsequent event after limit expires`(scenario: Scenario) {
     limiter.accept()
 
     scenario.data match {
-      case _: WithinLimitInterval =>
       case after: AfterLimitInterval =>
         setClock(after.relativeTime)
         Assert.assertTrue("An event received after the limit expires should be accepted", limiter.accept())
+      case _ =>
     }
   }
 
   @Theory
-  def allowedRateShouldMatchConfigurationAndRejectEventsWithinLimitWindow(scenario: Scenario) {
-    limiter.accept()
-
+  def shouldRejectMoreThanConfiguredRateWithinASecond(scenario: Scenario) {
     scenario.data match {
       case RateLimit(n) =>
         setRateLimit(n)
-        setClock(1000 / n - 1)
+        setClock(2001)
+        (1 to n).foreach(i =>
+          limiter.accept()
+        )
         Assert.assertFalse("Event received within configured limit window should be refused", limiter.accept())
       case _ =>
     }
   }
 
   @Theory
-  def allowedRateShouldMatchConfigurationAndAcceptEventsAfterLimitExpires(scenario: Scenario) {
-    limiter.accept()
-
+  def shouldAllowConfiguredRateEachSecond(scenario: Scenario) {
     scenario.data match {
       case RateLimit(n) =>
         setRateLimit(n)
-        setClock(1000 / n + 1)
-        Assert.assertTrue("Event received after configured limit window should be accepted", limiter.accept())
+        setClock(2001)
+        (1 to n).foreach( i =>
+          Assert.assertTrue("%d events should be accepted each second for this configuration".format(n), limiter.accept())
+        )
       case _ =>
     }
   }
@@ -102,7 +103,7 @@ class ChangeEventRateLimiterTest {
   private def setRateLimit(eventsPerSecond: Int) {
     reset(rateLimitView)
     expect(rateLimitView.getEffectiveLimitByNameForDomain(dummyDomain, ChangeEventRate)).
-      andReturn(1).anyTimes()
+      andReturn(eventsPerSecond).anyTimes()
     replay(rateLimitView)
   }
 
@@ -123,21 +124,21 @@ object ChangeEventRateLimiterTest {
   }
 
   @DataPoints
-  def unacceptableEventTimes = List(
+  def unacceptableEventTimes = Array(
     Scenario(1L),
     Scenario(100L),
     Scenario(999L)
-  ).toArray
+  )
 
   @DataPoints
-  def acceptableTimes = List(
+  def acceptableTimes = Array(
     Scenario(1000L),
     Scenario(1001L),
     Scenario(1100L)
-  ).toArray
+  )
 
   @DataPoints
-  def rateLimits = List(
+  def rateLimits = Array(
     Scenario(RateLimit(1)),
     Scenario(RateLimit(2)),
     Scenario(RateLimit(3)),
