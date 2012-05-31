@@ -50,7 +50,7 @@ class ChangeEventRateLimiterTest {
   }
 
   @Theory
-  def `rate limiter should reject subsequent events while limited in default configuration`(scenario: Scenario) {
+  def givenDefaultConfigurationRateLimiterShouldRejectSubsequentEventsWhileLimited(scenario: Scenario) {
     limiter.accept()
 
     scenario.data match {
@@ -62,7 +62,7 @@ class ChangeEventRateLimiterTest {
   }
 
   @Theory
-  def `rate limiter should accept subsequent event after limit expires`(scenario: Scenario) {
+  def givenDefaultConfigurationRateLimiterShouldAcceptSubsequentEventAfterLimitExpires(scenario: Scenario) {
     limiter.accept()
 
     scenario.data match {
