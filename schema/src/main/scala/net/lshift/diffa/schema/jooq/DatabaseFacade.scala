@@ -25,10 +25,14 @@ import org.springframework.transaction.support.{TransactionCallback, Transaction
 import java.sql.Connection
 import org.springframework.transaction.TransactionStatus
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
+import org.jooq.conf.{RenderNameStyle, RenderMapping, Settings}
 
 class DatabaseFacade(dataSource: DataSource, dialect: String) {
 
-  val resolvedDialect = SQLDialect.valueOf(dialect)
+  private val resolvedDialect = SQLDialect.valueOf(dialect)
+  private val settings = new Settings()
+    .withRenderSchema(false)
+    .withRenderNameStyle(RenderNameStyle.LOWER)
 
   private val jdbcTemplate = new JdbcTemplate(dataSource)
   private val txTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource))
@@ -38,7 +42,7 @@ class DatabaseFacade(dataSource: DataSource, dialect: String) {
       def doInTransaction(status: TransactionStatus) = {
         jdbcTemplate.execute(new ConnectionCallback[T] {
           def doInConnection(conn: Connection) = {
-            f(new Factory(conn, resolvedDialect))
+            f(new Factory(conn, resolvedDialect, settings))
           }
         })
       }
