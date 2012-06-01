@@ -82,7 +82,7 @@ class ScanLimitsTest {
 
 
   def configureLimitsWithResponseSizeOf(responseSize: Int) {
-    expect(limits.getEffectiveLimitByNameForPair(pair.domain, pair.key, ResponseSizeLimit)).
+    expect(limits.getEffectiveLimitByNameForPair(pair.domain, pair.key, ScanResponseSizeLimit)).
       andReturn(responseSize).anyTimes()
 
     List(ScanConnectTimeout, ScanReadTimeout).foreach {
