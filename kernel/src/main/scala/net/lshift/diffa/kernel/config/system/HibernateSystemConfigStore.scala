@@ -44,7 +44,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
     // TODO Why is do we not just do a DELETE CASCADE?
 
-    s.getNamedQuery("deleteExternalHttpCredentialsByDomain").setString("domain",domain).executeUpdate()
+    db.execute("deleteExternalHttpCredentialsByDomain", Map("domain" -> domain))
 
     deleteByDomain[EndpointView](s, domain, "endpointViewsByDomain")
     deleteByDomain[Escalation](s, domain, "escalationsByDomain")
