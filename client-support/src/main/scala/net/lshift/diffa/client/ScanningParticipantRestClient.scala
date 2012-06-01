@@ -35,6 +35,9 @@ import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
 import java.net.{ConnectException, SocketException, URI}
 import net.lshift.diffa.kernel.differencing.ScanFailedException
 import net.lshift.diffa.kernel.config._
+import java.io.InputStream
+import limits.ResponseSizeLimit
+import org.apache.http.HttpResponse
 
 
 /**
@@ -78,7 +81,7 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
 
       val statusCode = response.getStatusLine.getStatusCode
       statusCode match {
-        case 200 => JSONHelper.readQueryResult(response.getEntity.getContent)
+        case 200 => handleJsonResponse(response)
         case _   =>
           log.error("{} External scan error, response code: {}",
             Array(formatAlertCode(EXTERNAL_SCAN_ERROR), statusCode))
@@ -99,5 +102,19 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
       shutdownImmediate(httpClient)
     }
 
+
+
+  }
+
+  def handleJsonResponse(response: HttpResponse) : Seq[ScanResultEntry] = {
+    val responseSizeLimit = serviceLimitsView.getEffectiveLimitByNameForPair(
+      pair.domain, pair.key, ResponseSizeLimit)
+    log.info("Response size: %d bytes; limit:%d bytes".format(response.getEntity.getContentLength, responseSizeLimit))
+    if (response.getEntity.getContentLength > responseSizeLimit) {
+      val msg = "Response size of %d bytes for pair %s exceeded configured limit of %d".format(
+        response.getEntity.getContentLength, pair, responseSizeLimit)
+      throw new ScanFailedException(msg)
+    }
+    JSONHelper.readQueryResult(response.getEntity.getContent)
   }
 }
