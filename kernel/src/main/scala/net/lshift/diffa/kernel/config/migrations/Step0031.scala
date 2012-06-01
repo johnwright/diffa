@@ -19,31 +19,17 @@ import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import net.lshift.diffa.kernel.config.HibernateMigrationStep
 
-object Step0028 extends HibernateMigrationStep {
 
-  def versionId = 28
+object Step0031 extends HibernateMigrationStep {
 
-  def name = "Widen sequence column type"
+  def versionId = 31
+  def name = "Remove deprecated event buffer and explain file limit setttings from pair definitions"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    val diffsWidener = migration.widenColumnInTable("diffs").column("seq_id")
-    val pendingDiffswidener = migration.widenColumnInTable("pending_diffs").column("oid")
-
-    CommonSteps.buildDiffsTable(diffsWidener.getTempTable)
-    CommonSteps.buildPendingDiffsTable(pendingDiffswidener.getTempTable)
-
-    if (diffsWidener.requiresNewTable()) {
-      CommonSteps.applyConstraintsToDiffsTable(migration)
-      CommonSteps.applyIndexesToDiffsTable(migration)
-      CommonSteps.analyzeDiffsTable(migration)
-    }
-
-    if (pendingDiffswidener.requiresNewTable()) {
-      CommonSteps.applyConstraintsToPendingDiffsTable(migration)
-      CommonSteps.applyIndexesToPendingDiffsTable(migration)
-    }
+    migration.alterTable("pair").dropColumn("events_to_log")
+    migration.alterTable("pair").dropColumn("max_explain_files")
 
     migration
   }
