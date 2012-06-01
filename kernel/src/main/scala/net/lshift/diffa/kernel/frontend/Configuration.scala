@@ -43,6 +43,13 @@ class Configuration(val configStore: DomainConfigStore,
 
   private val log:Logger = LoggerFactory.getLogger(getClass)
 
+  /**
+   * This is used to re-assert the state of a domain's configuration.
+   * You can optionally supply a calling user - if this is supplied, then if that user accidentally
+   * asserts a set of domain members that doesn't include themselves, they will not get deleted (or  re-added)
+   * as part of the config application. This is to prevent a non-superuser domain member from inadvertently locking themselves
+   * out of the domain they are attempting to configure.
+   */
   def applyConfiguration(domain:String, diffaConfig:DiffaConfig, callingUser:Option[String] = None) {
 
     // Ensure that the configuration is valid upfront
