@@ -33,11 +33,11 @@ import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
 import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
 import java.net.{ConnectException, SocketException, URI}
-import net.lshift.diffa.kernel.differencing.ScanFailedException
 import net.lshift.diffa.kernel.config._
-import java.io.InputStream
 import limits.ResponseSizeLimit
 import org.apache.http.HttpResponse
+import java.io.{IOException, InputStream}
+import net.lshift.diffa.kernel.differencing.{ScanLimitBreached, ScanFailedException}
 
 
 /**
@@ -61,6 +61,8 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
    * objects, that sequence of objects is returned.
    * @throws ScanFailedException if normal exceptional conditions occur which
    * should be exposed via the UI.
+   * @throws ScanLimitBreached if we go over a scan limit, such as response
+   * size.
    * @throws Exception if abnormal exceptional conditions occur which should
    * not be exposed via the UI.
    */
@@ -109,12 +111,36 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
   def handleJsonResponse(response: HttpResponse) : Seq[ScanResultEntry] = {
     val responseSizeLimit = serviceLimitsView.getEffectiveLimitByNameForPair(
       pair.domain, pair.key, ResponseSizeLimit)
-    log.info("Response size: %d bytes; limit:%d bytes".format(response.getEntity.getContentLength, responseSizeLimit))
-    if (response.getEntity.getContentLength > responseSizeLimit) {
-      val msg = "Response size of %d bytes for pair %s exceeded configured limit of %d".format(
-        response.getEntity.getContentLength, pair, responseSizeLimit)
-      throw new ScanFailedException(msg)
+    log.info("Response size limit from %s for %s is %d".format(serviceLimitsView, ResponseSizeLimit, responseSizeLimit))
+
+    val responseStream = response.getEntity.getContent
+    var lengthError : Option[String] = None
+    val countedInputStream = new InputStream {
+      var nbytes = 0;
+      def read() = {
+        val byte = responseStream.read()
+        nbytes += 1
+        log.info("Read %d/%d bytes from stream: %s".format(nbytes,responseSizeLimit, responseStream))
+
+        if (nbytes > responseSizeLimit) {
+          val msg = "Read of %d bytes for pair %s exceeded configured limit of %d".format(
+            nbytes, pair, responseSizeLimit)
+
+          lengthError = Some(msg)
+          throw new IOException(msg)
+        }
+
+        byte
+      }
+      override def close() {
+        log.info("Read %d bytes from stream: %s".format(nbytes, responseStream))
+
+      }
     }
-    JSONHelper.readQueryResult(response.getEntity.getContent)
+    try {
+      JSONHelper.readQueryResult(countedInputStream)
+    } catch { case e:IOException =>
+      throw new ScanLimitBreached(e.getMessage)
+    }
   }
 }

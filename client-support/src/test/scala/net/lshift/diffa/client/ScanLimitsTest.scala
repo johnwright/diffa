@@ -23,8 +23,8 @@ import net.lshift.diffa.kernel.config.{PairServiceLimitsView, FixedDomainCredent
 import net.lshift.diffa.participant.scanning._
 import org.junit.{Test, Before}
 import net.lshift.diffa.kernel.config.limits.{ScanReadTimeout, ScanConnectTimeout, ResponseSizeLimit}
-import net.lshift.diffa.kernel.differencing.ScanFailedException
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.differencing.{ScanLimitBreached, ScanFailedException}
 
 
 object ScanLimitsTest {
@@ -74,7 +74,7 @@ class ScanLimitsTest {
     scanningRestClient.scan(Seq(), Seq())
   }
 
-  @Test(expected=classOf[ScanFailedException])
+  @Test(expected=classOf[ScanLimitBreached])
   def shouldThrowExceptionWhenResponseSizeLimitBreached {
     configureLimitsWithResponseSizeOf(0)
     scanningRestClient.scan(Seq(), Seq())
