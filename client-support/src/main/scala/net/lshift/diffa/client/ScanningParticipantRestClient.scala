@@ -37,7 +37,7 @@ import net.lshift.diffa.kernel.config._
 import limits.ScanResponseSizeLimit
 import org.apache.http.HttpResponse
 import java.io.{IOException, InputStream}
-import net.lshift.diffa.kernel.differencing.{ScanLimitBreached, ScanFailedException}
+import net.lshift.diffa.kernel.differencing.{ScanLimitBreachedException, ScanFailedException}
 
 
 /**
@@ -111,36 +111,35 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
   def handleJsonResponse(response: HttpResponse) : Seq[ScanResultEntry] = {
     val responseSizeLimit = serviceLimitsView.getEffectiveLimitByNameForPair(
       pair.domain, pair.key, ScanResponseSizeLimit)
-    log.info("Response size limit from %s for %s is %d".format(serviceLimitsView, ScanResponseSizeLimit, responseSizeLimit))
+    // log.info("Response size limit from %s for %s is %d".format(serviceLimitsView, ScanResponseSizeLimit, responseSizeLimit))
 
     val responseStream = response.getEntity.getContent
     var lengthError : Option[String] = None
     val countedInputStream = new InputStream {
-      var nbytes = 0;
+      var numBytes = 0;
       def read() = {
         val byte = responseStream.read()
-        nbytes += 1
-        log.info("Read %d/%d bytes from stream: %s".format(nbytes,responseSizeLimit, responseStream))
+        numBytes += 1
 
-        if (nbytes > responseSizeLimit) {
-          val msg = "Read of %d bytes for pair %s exceeded configured limit of %d".format(
-            nbytes, pair, responseSizeLimit)
+        if (numBytes > responseSizeLimit) {
+          val msg = "Scan response size for pair %s exceeded configured limit of %d bytes".format(
+            pair.key, responseSizeLimit)
 
           lengthError = Some(msg)
-          throw new IOException(msg)
+          throw new IOException(msg, new ScanLimitBreachedException(msg))
         }
 
         byte
       }
-      override def close() {
-        log.info("Read %d bytes from stream: %s".format(nbytes, responseStream))
-
-      }
     }
+
     try {
       JSONHelper.readQueryResult(countedInputStream)
     } catch { case e:IOException =>
-      throw new ScanLimitBreached(e.getMessage)
+      e.getCause match {
+        case scanError : ScanLimitBreachedException => throw scanError
+        case _ => throw e
+      }
     }
   }
 }
