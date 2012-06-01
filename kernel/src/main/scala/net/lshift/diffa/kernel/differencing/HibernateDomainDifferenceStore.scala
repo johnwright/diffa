@@ -37,12 +37,18 @@ import net.lshift.diffa.kernel.util.db._
 import net.lshift.diffa.kernel.util.sequence.SequenceProvider
 import java.sql.ResultSet
 import net.lshift.diffa.kernel.util.AlertCodes._
+import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
+import net.lshift.diffa.schema.jooq.DatabaseFacade.{timestampToDateTime, dateTimeToTimestamp}
+import net.lshift.diffa.schema.Tables._
+import net.lshift.diffa.schema.tables.records.{PendingDiffsRecord, DiffsRecord}
+import org.jooq.impl.Factory._
 
 /**
  * Hibernate backed Domain Cache provider.
  */
 class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
                                      db:DatabaseFacade,
+                                     db2: JooqDatabaseFacade,
                                      cacheProvider:CacheProvider,
                                      sequenceProvider:SequenceProvider,
                                      val cacheManager:CacheManager,
@@ -99,11 +105,11 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   def removePair(pair: DiffaPairRef) = {
     val hookHelped = hook.removeAllPairDifferences(pair.domain, pair.key)
 
-    sessionFactory.withSession { s =>
+    db2.execute { t =>
       if (!hookHelped) {
-        executeUpdate(s, "removeDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+        t.delete(DIFFS).where(DIFFS.PAIR.equal(pair.key)).and(DIFFS.DOMAIN.equal(pair.domain)).execute()
       }
-      executeUpdate(s, "removePendingDiffsByPairAndDomain", Map("pairKey" -> pair.key, "domain" -> pair.domain))
+      t.delete(PENDING_DIFFS).where(PENDING_DIFFS.PAIR.equal(pair.key)).and(PENDING_DIFFS.DOMAIN.equal(pair.domain)).execute()
       removeLatestRecordedVersion(pair)
     }
 
@@ -112,17 +118,20 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   
   def currentSequenceId(domain:String) = sequenceProvider.currentSequenceValue(eventSequenceKey(domain)).toString
 
-  def maxSequenceId(pair: DiffaPairRef, start:DateTime, end:DateTime) = sessionFactory.withSession(s => {
-    val c = s.createCriteria(classOf[ReportedDifferenceEvent])
-    c.add(Restrictions.eq("objId.pair.domain", pair.domain))
-    c.add(Restrictions.eq("objId.pair.key", pair.key))
-    if (start != null) c.add(Restrictions.ge("detectedAt", start))
-    if (end != null) c.add(Restrictions.lt("detectedAt", end))
-    c.setProjection(Projections.max("seqId"))
+  def maxSequenceId(pair: DiffaPairRef, start:DateTime, end:DateTime) = db2.execute { t =>
+    var query = t.select(max(DIFFS.SEQ_ID)).
+      from(DIFFS).
+      where(DIFFS.DOMAIN.equal(pair.domain)).
+      and(DIFFS.PAIR.equal(pair.key))
 
-    val count:Option[java.lang.Long] = Option(c.uniqueResult().asInstanceOf[java.lang.Long])
-    count.getOrElse(new java.lang.Long(0)).longValue()
-  })
+    if (start != null)
+      query = query.and(DIFFS.DETECTED_AT.greaterOrEqual(dateTimeToTimestamp(start)))
+    if (end != null)
+      query = query.and(DIFFS.DETECTED_AT.lessThan(dateTimeToTimestamp(end)))
+
+    Option(query.fetchOne().getValue(0).asInstanceOf[java.lang.Long])
+      .getOrElse(java.lang.Long.valueOf(0)).longValue()
+  }
 
   def addPendingUnmatchedEvent(id: VersionID, lastUpdate: DateTime, upstreamVsn: String, downstreamVsn: String, seen: DateTime) = {
 
@@ -670,6 +679,28 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
     result
   }
 
+  private def recordToReportedDifferenceEvent = (r: DiffsRecord) =>
+    ReportedDifferenceEvent(seqId = r.getValue(DIFFS.SEQ_ID),
+      objId = VersionID(pair = DiffaPairRef(domain = r.getValue(DIFFS.DOMAIN),
+        key = r.getValue(DIFFS.PAIR)),
+        id = r.getValue(DIFFS.ENTITY_ID)),
+      isMatch = r.getValue(DIFFS.IS_MATCH),
+      detectedAt = timestampToDateTime(r.getValue(DIFFS.DETECTED_AT)),
+      lastSeen = timestampToDateTime(r.getValue(DIFFS.LAST_SEEN)),
+      upstreamVsn = r.getValue(DIFFS.UPSTREAM_VSN),
+      downstreamVsn = r.getValue(DIFFS.DOWNSTREAM_VSN),
+      ignored = r.getValue(DIFFS.IGNORED))
+
+  private def recordToPendingDifferenceEvent = (r: PendingDiffsRecord) =>
+    PendingDifferenceEvent(oid = r.getValue(PENDING_DIFFS.OID),
+      objId = VersionID(pair = DiffaPairRef(domain = r.getValue(PENDING_DIFFS.DOMAIN),
+        key = r.getValue(PENDING_DIFFS.PAIR)),
+        id = r.getValue(PENDING_DIFFS.ENTITY_ID)),
+      detectedAt = timestampToDateTime(r.getValue(PENDING_DIFFS.DETECTED_AT)),
+      lastSeen = timestampToDateTime(r.getValue(PENDING_DIFFS.LAST_SEEN)),
+      upstreamVsn = r.getValue(PENDING_DIFFS.UPSTREAM_VSN),
+      downstreamVsn = r.getValue(PENDING_DIFFS.DOWNSTREAM_VSN))
+
 }
 
 case class PendingDifferenceEvent(
@@ -707,6 +738,7 @@ object PendingDifferenceEvent {
  */
 class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory,
                                             val db:DatabaseFacade,
+                                            val db2: JooqDatabaseFacade,
                                             val cacheProvider:CacheProvider,
                                             sequenceProvider:SequenceProvider,
                                             val cacheManager:CacheManager,
@@ -715,7 +747,7 @@ class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory,
 
   def create = {
     val dialect = Class.forName(dialectString).newInstance().asInstanceOf[Dialect]
-    new HibernateDomainDifferenceStore(sessionFactory, db, cacheProvider, sequenceProvider, cacheManager, dialect, hookManager)
+    new HibernateDomainDifferenceStore(sessionFactory, db, db2, cacheProvider, sequenceProvider, cacheManager, dialect, hookManager)
   }
 }
 

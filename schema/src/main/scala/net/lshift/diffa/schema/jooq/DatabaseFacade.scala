@@ -17,15 +17,16 @@ package net.lshift.diffa.schema.jooq
 
 import org.jooq.impl.Factory
 import org.jooq.SQLDialect
-import org.jooq.UpdatableRecord
 import javax.sql.DataSource
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.ConnectionCallback
 import org.springframework.transaction.support.{TransactionCallback, TransactionTemplate}
-import java.sql.Connection
 import org.springframework.transaction.TransactionStatus
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
-import org.jooq.conf.{RenderNameStyle, RenderMapping, Settings}
+import org.jooq.conf.{RenderNameStyle, Settings}
+import java.sql.{Timestamp, Connection}
+import org.joda.time.format.DateTimeFormatterBuilder
+import org.joda.time.DateTime
 
 class DatabaseFacade(dataSource: DataSource, dialect: String) {
 
@@ -49,4 +50,18 @@ class DatabaseFacade(dataSource: DataSource, dialect: String) {
     })
   }
   
+}
+
+object DatabaseFacade {
+
+  private val timestampFormatter = new DateTimeFormatterBuilder()
+    .appendPattern("yyyy-MM-dd HH:mm:ss'.'").appendFractionOfSecond(0, 9).toFormatter()
+
+  def timestampToDateTime(timestamp: Timestamp) =
+    timestampFormatter.parseDateTime(timestamp.toString)
+
+  def dateTimeToTimestamp(dateTime: DateTime) = {
+    val str = timestampFormatter.print(dateTime)
+    Timestamp.valueOf(if (str.endsWith(".")) str.substring(0, str.length - 1) else str)
+  }
 }

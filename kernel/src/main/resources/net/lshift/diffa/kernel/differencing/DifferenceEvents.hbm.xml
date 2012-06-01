@@ -86,13 +86,6 @@
     delete from ReportedDifferenceEvent where lastSeen < :cutoff and isMatch = true
   ]]></query>
 
-  <query name="removeDiffsByPairAndDomain">
-    delete from ReportedDifferenceEvent where objId.pair.key = :pairKey and objId.pair.domain = :domain
-  </query>
-  <query name="removePendingDiffsByPairAndDomain">
-    delete from PendingDifferenceEvent where objId.pair.key = :pairKey and objId.pair.domain = :domain
-  </query>
-
   <query name="pendingByDomainIdAndVersionID">
     select e from PendingDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.objId.id = :objId
