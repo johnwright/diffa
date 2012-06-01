@@ -18,7 +18,7 @@ package net.lshift.diffa.kernel.config.limits
 
 import net.lshift.diffa.kernel.config.ServiceLimit
 
-object ResponseSizeLimit extends ServiceLimit {
+object ScanResponseSizeLimit extends ServiceLimit {
   def key = "scan.response.size"
   def description = "The maximum size (in bytes) of the response for a single scan request"
   def defaultLimit = 2 * 1024 * 1024

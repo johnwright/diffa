@@ -29,7 +29,7 @@ import net.lshift.diffa.participant.scanning._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import net.lshift.diffa.kernel.config._
-import limits.{ScanReadTimeout, ScanConnectTimeout, ResponseSizeLimit, Unlimited}
+import limits.{ScanReadTimeout, ScanConnectTimeout, ScanResponseSizeLimit, Unlimited}
 import net.lshift.diffa.kernel.differencing.ScanFailedException
 import org.junit.{After, Before, Test}
 

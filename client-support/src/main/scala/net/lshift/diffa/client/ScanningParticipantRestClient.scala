@@ -34,7 +34,7 @@ import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
 import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
 import java.net.{ConnectException, SocketException, URI}
 import net.lshift.diffa.kernel.config._
-import limits.ResponseSizeLimit
+import limits.ScanResponseSizeLimit
 import org.apache.http.HttpResponse
 import java.io.{IOException, InputStream}
 import net.lshift.diffa.kernel.differencing.{ScanLimitBreached, ScanFailedException}
@@ -110,8 +110,8 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
 
   def handleJsonResponse(response: HttpResponse) : Seq[ScanResultEntry] = {
     val responseSizeLimit = serviceLimitsView.getEffectiveLimitByNameForPair(
-      pair.domain, pair.key, ResponseSizeLimit)
-    log.info("Response size limit from %s for %s is %d".format(serviceLimitsView, ResponseSizeLimit, responseSizeLimit))
+      pair.domain, pair.key, ScanResponseSizeLimit)
+    log.info("Response size limit from %s for %s is %d".format(serviceLimitsView, ScanResponseSizeLimit, responseSizeLimit))
 
     val responseStream = response.getEntity.getContent
     var lengthError : Option[String] = None
