@@ -989,7 +989,7 @@ Diffa.Views.DiffList = Backbone.View.extend({
 
 Diffa.Views.DiffListItem = Backbone.View.extend({
   tagName: 'div',
-  className: 'span-14',
+  className: 'difflist-row',
 
   events: {
     "click": "select"
@@ -1005,19 +1005,19 @@ Diffa.Views.DiffListItem = Backbone.View.extend({
     var time = new Date(this.model.get('detectedAt')).toString("HH:mm:ss");
     var date = new Date(this.model.get('detectedAt')).toString("dd/MM/yyyy");
     var row = $(this.el)
-        .append("<div class='span-2'>" + date + "</div>")
-        .append("<div class='span-2'>" + time + "</div>")
-        .append("<div class='span-3 wrappable'>" + this.model.get('objId').pair.key + "</div>")
-        .append("<div class='span-3 wrappable'>" + this.model.get('objId').id + "</div>");
+        .append("<div class='date-col'>" + date + "</div>")
+        .append("<div class='time-col'>" + time + "</div>")
+        .append("<div class='pairing-col wrappable'>" + this.model.get('objId').pair.key + "</div>")
+        .append("<div class='item-id-col wrappable'>" + this.model.get('objId').id + "</div>");
 
     if (!this.model.get('upstreamVsn')) {
-      row.append("<div class='span-4 last'>Missing from upstream</div>");
+      row.append("<div class='difference-col last'>Missing from upstream</div>");
     }
     else if (!this.model.get('downstreamVsn')) {
-      row.append("<div class='span-4 last'>Missing from downstream</div>");
+      row.append("<div class='difference-col last'>Missing from downstream</div>");
     }
     else {
-      row.append("<div class='span-4 last'>Data difference</div>");
+      row.append("<div class='difference-col last'>Data difference</div>");
     }
 
     this.updateSelected(this.collection.selectedEvent);
