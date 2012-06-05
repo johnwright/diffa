@@ -20,6 +20,7 @@
 * [159] - Authentication lookups no longer hit the database on every poll
 * [162] - Replace DBCP with BoneCP for DB connection pooling 
 * [168] - Rate limit the submission of Real Time Events (Change Events).
+* [180] - Replace the codeboxes from the content viewer with a lightbox that shows when a diff row item is double-clicked.
 
 ## General Maintenance
 
