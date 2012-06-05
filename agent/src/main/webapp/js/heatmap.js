@@ -1102,7 +1102,7 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
         upstreamContent = event.get("upstreamContent"),
         downstreamContent = event.get("downstreamContent");
 
-    this.$('.content-label').text('Content for item ID: ' + itemID);
+    this.$('.content-label').text('Versions for item ID: ' + itemID);
 
     this.$('.item1 .upstreamLabel').text(upstreamLabel);
     this.$('.item1 .diff-hash').text(upstreamVersion);
