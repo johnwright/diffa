@@ -20,6 +20,7 @@
 * [159] - Authentication lookups no longer hit the database on every poll
 * [162] - Replace DBCP with BoneCP for DB connection pooling 
 * [168] - Rate limit the submission of Real Time Events (Change Events).
+* [180] - Replace the codeboxes from the content viewer with a lightbox that shows when a diff row item is double-clicked.
 
 ## General Maintenance
 
@@ -43,6 +44,7 @@
 * [172] - Add a constraint to the diffs and pending diffs tables to make sure that entity id, domain and pair are unique
 * [174] - Make sure that a user cannot king pin themselves when applying a domain config.
 * [175] - Remove event buffer and max files fields from pair definitions
+* [178] - Fixed a bug in the rate limiter which unfairly rejected some actions which should have been accepted.
 
 ## Library Upgrades
 
