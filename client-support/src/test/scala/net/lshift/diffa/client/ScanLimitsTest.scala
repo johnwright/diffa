@@ -37,7 +37,6 @@ object ScanLimitsTest {
 
   object scanningParticipant extends ScanningParticipantHandler {
     import java.util.List
-    //. def determineAggregations(req:HttpServletRequest) : java.util.List<ScanAggregation> = { List[ScanAggregation] ().toList }
     var response : List[ScanResultEntry] = Seq[ScanResultEntry]()
     def determineConstraints(req : HttpServletRequest) : List[ScanConstraint] = Seq()
     def determineAggregations(req : HttpServletRequest) : List[ScanAggregation] = Seq ()
@@ -54,7 +53,6 @@ object ScanLimitsTest {
 class ScanLimitsTest {
   import ScanLimitsTest._
 
-
   val limits = createMock(classOf[PairServiceLimitsView])
   lazy val scanningRestClient = new ScanningParticipantRestClient(
     pair,
@@ -62,8 +60,6 @@ class ScanLimitsTest {
     limits,
     domainCredentialsLookup
   )
-
-  // val scanningParticipant = createMock(classOf[ScanningParticipantHandler])
 
   @Before def startServer() = ensureServerStarted
 

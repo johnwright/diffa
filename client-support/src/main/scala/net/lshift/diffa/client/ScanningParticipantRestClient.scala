@@ -101,18 +101,13 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
     } finally {
       shutdownImmediate(httpClient)
     }
-
-
-
   }
 
   def handleJsonResponse(response: HttpResponse) : Seq[ScanResultEntry] = {
     val responseSizeLimit = serviceLimitsView.getEffectiveLimitByNameForPair(
       pair.domain, pair.key, ScanResponseSizeLimit)
-    // log.info("Response size limit from %s for %s is %d".format(serviceLimitsView, ScanResponseSizeLimit, responseSizeLimit))
 
     val responseStream = response.getEntity.getContent
-    var lengthError : Option[String] = None
     val countedInputStream = new InputStream {
       var numBytes = 0;
       def read() = {
@@ -123,7 +118,6 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
           val msg = "Scan response size for pair %s exceeded configured limit of %d bytes".format(
             pair.key, responseSizeLimit)
 
-          lengthError = Some(msg)
           throw new IOException(msg, new ScanLimitBreachedException(msg))
         }
 
