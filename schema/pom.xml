@@ -47,6 +47,10 @@
       <artifactId>joda-convert</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.jadira.usertype</groupId>
+      <artifactId>usertype.jodatime</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
     </dependency>

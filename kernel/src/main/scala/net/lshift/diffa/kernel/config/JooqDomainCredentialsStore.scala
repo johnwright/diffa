@@ -48,7 +48,6 @@ class JooqDomainCredentialsStore(val db: DatabaseFacade)
   }
 
   def deleteExternalHttpCredentials(domain:String, url:String) = db.execute { t =>
-    // TODO convert to delete-by-key?
     val deleted =
       t.delete(EXTERNAL_HTTP_CREDENTIALS).
         where(e.DOMAIN.equal(domain)).
@@ -76,7 +75,7 @@ class JooqDomainCredentialsStore(val db: DatabaseFacade)
 
     val baseUrl = searchURI.getScheme + "://" + searchURI.getAuthority + "%"
 
-    val results = t.select().from(e).
+    val results = t.selectFrom(e).
       where(e.DOMAIN.equal(domain)).
       and(e.URL.like(baseUrl)).
       fetch().map { r =>

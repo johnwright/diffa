@@ -82,55 +82,10 @@
     delete from PendingDifferenceEvent where objId.pair.domain = :domain
   </query>
 
-  <query name="expireMatches"><![CDATA[
-    delete from ReportedDifferenceEvent where lastSeen < :cutoff and isMatch = true
-  ]]></query>
-
-  <query name="pendingByDomainIdAndVersionID">
-    select e from PendingDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.objId.id = :objId
-  </query>
-  <query name="eventByDomainAndVersionID">
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and e.objId.id = :objId
-  </query>
-
-  <query name="eventByDomainAndSeqId">
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.seqId = :seqId
-  </query>
   <query name="eventsSinceByDomain">
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.seqId > :seqId
   </query>
-
-  <query name="unmatchedEventsInIntervalByDomain"><![CDATA[
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and
-      e.detectedAt >= :start and e.detectedAt < :end and
-      e.isMatch = false and
-      e.ignored = false
-  ]]></query>
-  <query name="unmatchedEventsByDomainAndPair"><![CDATA[
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
-      e.isMatch = false and
-      e.ignored = false
-  ]]></query>
-  <query name="unmatchedEventsInIntervalByDomainAndPair"><![CDATA[
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
-      e.detectedAt >= :start and e.detectedAt < :end and
-      e.isMatch = false and
-      e.ignored = false
-  ]]></query>
-  <query name="unmatchedEventsInIntervalByDomainAndPairWithIgnored"><![CDATA[
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
-      e.detectedAt >= :start and e.detectedAt < :end and
-      e.isMatch = false
-      order by e.seqId asc
-  ]]></query>
   <query name="unmatchedEventsOlderThanCutoffByDomainAndPair"><![CDATA[
     select e from ReportedDifferenceEvent e where
       e.objId.pair.domain = :domain and e.objId.pair.key = :pair and

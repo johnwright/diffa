@@ -30,6 +30,8 @@ import org.hibernate.dialect.Dialect
 import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import net.lshift.diffa.kernel.StoreReferenceContainer
 import net.lshift.hibernate.migrations.dialects.DialectExtensionSelector
+import org.jooq.exception.DataAccessException
+import java.sql.SQLIntegrityConstraintViolationException
 
 /**
  * Test cases for the HibernateDomainDifferenceStore.
@@ -671,12 +673,18 @@ class HibernateDomainDifferenceStoreTest {
     }
   }
 
-  @Test(expected = classOf[ConstraintViolationException])
   def shouldFailToAddPendingEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
 
-    domainDiffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+    try {
+      domainDiffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair2", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+      fail("No DataAccessException was thrown")
+    } catch {
+      case e: DataAccessException =>
+        assertTrue("Cause must be an SQLIntegrityConstraintViolationException",
+          e.getCause.isInstanceOf[SQLIntegrityConstraintViolationException])
+    }
   }
 
   @Test

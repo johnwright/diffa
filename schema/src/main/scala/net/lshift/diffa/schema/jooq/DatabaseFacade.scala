@@ -15,8 +15,7 @@
  */
 package net.lshift.diffa.schema.jooq
 
-import org.jooq.impl.Factory
-import org.jooq.SQLDialect
+import java.sql.{Timestamp, Connection}
 import javax.sql.DataSource
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.ConnectionCallback
@@ -24,9 +23,11 @@ import org.springframework.transaction.support.{TransactionCallback, Transaction
 import org.springframework.transaction.TransactionStatus
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import org.jooq.conf.{RenderNameStyle, Settings}
-import java.sql.{Timestamp, Connection}
-import org.joda.time.format.DateTimeFormatterBuilder
+import org.jooq.impl.Factory
+import org.jooq._
 import org.joda.time.DateTime
+import org.jadira.usertype.dateandtime.joda.columnmapper.TimestampColumnDateTimeMapper
+import java.lang.reflect.UndeclaredThrowableException
 
 class DatabaseFacade(dataSource: DataSource, dialect: String) {
 
@@ -38,30 +39,47 @@ class DatabaseFacade(dataSource: DataSource, dialect: String) {
   private val jdbcTemplate = new JdbcTemplate(dataSource)
   private val txTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource))
 
-  def execute[T](f: Factory => T): T = {
-    txTemplate.execute(new TransactionCallback[T] {
-      def doInTransaction(status: TransactionStatus) = {
-        jdbcTemplate.execute(new ConnectionCallback[T] {
-          def doInConnection(conn: Connection) = {
-            f(new Factory(conn, resolvedDialect, settings))
-          }
-        })
-      }
-    })
+  private val nullRollbackHandler = () => ()
+
+  def execute[T](f: Factory => T): T =
+    try {
+      txTemplate.execute(new TransactionCallback[T] {
+        def doInTransaction(status: TransactionStatus) =
+          jdbcTemplate.execute(new ConnectionCallback[T] {
+            def doInConnection(conn: Connection) = {
+              f(new Factory(conn, resolvedDialect, settings))
+            }
+          })
+      })
+    } catch {
+      // N.B. TransactionTemplate wraps checked exceptions in UndeclaredThrowableException
+      case e: UndeclaredThrowableException if e.getCause != null =>
+        throw e.getCause
+    }
+
+  def processAsStream[R <: Record](cursor: Cursor[R], handler: R => Unit) = try {
+    while (cursor.hasNext) {
+      handler(cursor.fetchOne())
+    }
+  } finally {
+    if (! cursor.isClosed) cursor.close()
   }
+
+  def getById[K, R <: Record, O](f: Factory, table: Table[R], keyColumn: Field[K], id: K, converter: R => O) =
+    Option(f.selectFrom(table).where(keyColumn.equal(id)).fetchOne()).map(converter)
+
+  def getById[K1, K2, R <: Record, O](f: Factory, table: Table[R], keyColumn1: Field[K1], keyColumn2: Field[K2], id1: K1, id2: K2, converter: R => O) =
+    Option(f.selectFrom(table).where(keyColumn1.equal(id1).and(keyColumn2.equal(id2))).fetchOne()).map(converter)
   
 }
 
 object DatabaseFacade {
 
-  private val timestampFormatter = new DateTimeFormatterBuilder()
-    .appendPattern("yyyy-MM-dd HH:mm:ss'.'").appendFractionOfSecond(0, 9).toFormatter()
+  private val columnMapper = new TimestampColumnDateTimeMapper()
 
   def timestampToDateTime(timestamp: Timestamp) =
-    timestampFormatter.parseDateTime(timestamp.toString)
+    columnMapper.fromNonNullValue(timestamp)
 
-  def dateTimeToTimestamp(dateTime: DateTime) = {
-    val str = timestampFormatter.print(dateTime)
-    Timestamp.valueOf(if (str.endsWith(".")) str.substring(0, str.length - 1) else str)
-  }
+  def dateTimeToTimestamp(dateTime: DateTime) =
+    columnMapper.toNonNullValue(dateTime)
 }
