@@ -74,7 +74,7 @@ class ScanLimitsTest {
     scanningRestClient.scan(Seq(), Seq())
   }
 
-  @Test(expected=classOf[ScanLimitBreached])
+  @Test(expected=classOf[ScanLimitBreachedException])
   def shouldThrowExceptionWhenResponseSizeLimitBreached {
     configureLimitsWithResponseSizeOf(0)
     scanningRestClient.scan(Seq(), Seq())
