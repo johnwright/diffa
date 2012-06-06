@@ -70,8 +70,6 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
 
     val params = new MultivaluedMapImpl
 
-    //serviceLimitsView.getEffectiveLimitByNameForPair()
-
     RequestBuildingHelper.constraintsToQueryArguments(params, constraints)
     RequestBuildingHelper.aggregationsToQueryArguments(params, aggregations)
 

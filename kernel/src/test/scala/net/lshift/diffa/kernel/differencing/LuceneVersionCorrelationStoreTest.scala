@@ -43,7 +43,6 @@ import org.junit.{Ignore, Before, Test}
  * Test cases for the Hibernate backed VersionCorrelationStore.
  */
 @RunWith(classOf[Theories])
-@Ignore
 class LuceneVersionCorrelationStoreTest {
   import LuceneVersionCorrelationStoreTest._
 

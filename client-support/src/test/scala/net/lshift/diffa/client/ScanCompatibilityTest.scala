@@ -242,7 +242,6 @@ class ScanCompatibilityTest {
     scanningRestClient.scan(Seq(), Seq(StringPrefixCategoryFunction("someString", 2, 10, 2)))
     verifyAll()
   }
-
 }
 
 object ScanCompatibilityTest {
