@@ -93,9 +93,4 @@ class ScanLimitsTest {
     replay(limits)
 
   }
-
-  @Test
-  def shouldNotifyDiagnosticsManagerWhenResponseSizeLimitBreached {
-    // TODO
-  }
 }
