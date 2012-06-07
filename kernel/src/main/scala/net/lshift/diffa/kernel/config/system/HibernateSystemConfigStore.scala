@@ -128,7 +128,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
   def getUserByToken(token: String) : User
     = db.singleQuery[User]("userByToken", Map("token" -> token), "user token %s".format(token))
 
-  def listUsers : Seq[User] = db.listQuery[User]("allUsers", Map())
+  def listUsers : Seq[User] = db.listQuery[User]("allUsers", Map()).sortBy(_.getName)
   def listDomainMemberships(username: String) : Seq[Member] =
     db.listQuery[Member]("membersByUser", Map("user_name" -> username))
 
