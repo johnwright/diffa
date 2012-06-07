@@ -70,11 +70,9 @@
   <query name="storeCheckpointByPairAndDomain">
     select c from StoreCheckpoint c where c.pair.domain.name = :domain_name and c.pair.key = :pair_key
   </query>
-
   <query name="removeDomainCheckpoints">
     delete from StoreCheckpoint where domain = :domain_name
   </query>
-
   <query name="removeDomainDiffs">
     delete from ReportedDifferenceEvent where objId.pair.domain = :domain
   </query>
@@ -82,14 +80,4 @@
     delete from PendingDifferenceEvent where objId.pair.domain = :domain
   </query>
 
-  <query name="eventsSinceByDomain">
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.seqId > :seqId
-  </query>
-  <query name="unmatchedEventsOlderThanCutoffByDomainAndPair"><![CDATA[
-    select e from ReportedDifferenceEvent e where
-      e.objId.pair.domain = :domain and e.objId.pair.key = :pair and
-      e.isMatch = false and
-      e.lastSeen < :cutoff
-  ]]></query>
 </hibernate-mapping>

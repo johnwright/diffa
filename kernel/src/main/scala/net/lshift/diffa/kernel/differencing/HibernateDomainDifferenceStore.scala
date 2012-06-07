@@ -19,13 +19,11 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.kernel.events.VersionID
 import reflect.BeanProperty
 import org.hibernate.SessionFactory
-import net.lshift.diffa.schema.hibernate.SessionHelper._
 import net.sf.ehcache.CacheManager
 import scala.collection.JavaConversions._
 import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DiffaPair}
-import org.hibernate.dialect.Dialect
 import net.lshift.diffa.kernel.util.cache.{CachedMap, CacheProvider}
 import net.lshift.diffa.kernel.util.db.HibernateQueryUtils
 import net.lshift.diffa.kernel.util.sequence.SequenceProvider
@@ -47,7 +45,6 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
                                      cacheProvider:CacheProvider,
                                      sequenceProvider:SequenceProvider,
                                      val cacheManager:CacheManager,
-                                     val dialect:Dialect,
                                      val hookManager:HookManager)
     extends DomainDifferenceStore
     with HibernateQueryUtils {
@@ -744,23 +741,6 @@ object PendingDifferenceEvent {
    * Since we cannot use scala Options in the map, we need to denote a non-existent event
    */
   val nonExistent = PendingDifferenceEvent(oid = -1)
-}
-
-/**
- * Workaround for injecting JNDI string - basically because I couldn't find a way to due this just with the Spring XML file.
- */
-class HibernateDomainDifferenceStoreFactory(val sessionFactory:SessionFactory,
-                                            val db: DatabaseFacade,
-                                            val cacheProvider:CacheProvider,
-                                            sequenceProvider:SequenceProvider,
-                                            val cacheManager:CacheManager,
-                                            val dialectString:String,
-                                            val hookManager:HookManager) {
-
-  def create = {
-    val dialect = Class.forName(dialectString).newInstance().asInstanceOf[Dialect]
-    new HibernateDomainDifferenceStore(sessionFactory, db, cacheProvider, sequenceProvider, cacheManager, dialect, hookManager)
-  }
 }
 
 case class StoreCheckpoint(

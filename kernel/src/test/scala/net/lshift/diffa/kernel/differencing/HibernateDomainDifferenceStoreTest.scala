@@ -812,7 +812,7 @@ class HibernateDomainDifferenceStoreTest {
   //
 
   private def currentDateTime = {
-    if (DialectExtensionSelector.select(domainDiffStore.dialect).supportsFractionalSeconds) {
+    if (DialectExtensionSelector.select(storeReferences.dialect).supportsFractionalSeconds) {
       DateTime.now
     } else {
       // Truncate the DateTime to the nearest second in order to work around
