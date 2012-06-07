@@ -653,26 +653,26 @@ class HibernateDomainDifferenceStoreTest {
    * pre-empts what would otherwise happen if the table were not partitioned
    * (ConstraintViolationException).
    */
-  @Test(expected = classOf[ConstraintViolationException])
+  @Test
   def shouldFailToAddReportableEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
 
     try {
       domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("nonexistent-pair1", "domain"), "id1"), lastUpdate, "uV", "dV", seen)
+      fail("No DataAccessException was thrown")
     } catch {
-      case cve: org.hibernate.exception.ConstraintViolationException =>
-        throw cve
-      case ex => ex.getCause match {
-        case batchUpdateEx: java.sql.SQLException =>
-          if (batchUpdateEx.getMessage.contains("ORA-14400"))
-            throw new ConstraintViolationException(batchUpdateEx.getMessage, batchUpdateEx, "")
-        case unexpected =>
-          throw unexpected
-      }
+      case e: DataAccessException =>
+        assertTrue("Cause must be an SQLIntegrityConstraintViolationException or ORA-14400",
+          e.getCause.isInstanceOf[SQLIntegrityConstraintViolationException]
+          || e.getMessage.contains("ORA-14400"))
+      case unexpected =>
+        throw unexpected
     }
   }
 
+
+  @Test
   def shouldFailToAddPendingEventForNonExistentPair() {
     val lastUpdate = new DateTime()
     val seen = lastUpdate.plusSeconds(5)
