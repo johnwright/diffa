@@ -19,6 +19,7 @@ import net.lshift.diffa.schema.migrations.HibernateConfigStorePreparationStep
 import collection.JavaConversions._
 import com.jolbox.bonecp.BoneCPDataSource
 import net.lshift.diffa.schema.jooq.DatabaseFacade
+import javax.sql.DataSource
 
 object StoreReferenceContainer {
   def withCleanDatabaseEnvironment(env: DatabaseEnvironment) = {
@@ -78,12 +79,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
                                                             // otherwise the preparation step will not get committed
   val dialect = Dialect.getDialect(applicationConfig.getProperties)
   private var _sessionFactory: Option[SessionFactory] = None
-
-  private val ds = new BoneCPDataSource()
-  ds.setJdbcUrl(applicationEnvironment.url)
-  ds.setUsername(applicationEnvironment.username)
-  ds.setPassword(applicationEnvironment.password)
-  ds.setDriverClass(applicationEnvironment.driver)
+  private var _ds: Option[BoneCPDataSource] = None
 
   def facade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
 
@@ -97,9 +93,12 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   private def cacheProvider = new HazelcastCacheProvider
   private def sequenceProvider = new HazelcastSequenceProvider
 
-  def sessionFactory = _sessionFactory match {
-    case Some(sf) => sf
-    case None => throw new IllegalStateException("Failed to initialize environment before using SessionFactory")
+  def sessionFactory = _sessionFactory.getOrElse {
+    throw new IllegalStateException("Failed to initialize environment before using SessionFactory")
+  }
+
+  def ds = _ds.getOrElse {
+    throw new IllegalStateException("Failed to initialize environment before using DataSource")
   }
 
   private def makeStore[T](consFn: SessionFactory => T, className: String): T = _sessionFactory match {
@@ -138,6 +137,14 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
       (new HibernateConfigStorePreparationStep).prepare(sf, applicationConfig)
       log.info("Schema created")
     }
+    _ds = Some({
+      val ds = new BoneCPDataSource()
+      ds.setJdbcUrl(applicationEnvironment.url)
+      ds.setUsername(applicationEnvironment.username)
+      ds.setPassword(applicationEnvironment.password)
+      ds.setDriverClass(applicationEnvironment.driver)
+      ds
+    })
   }
 
   def tearDown {
@@ -149,6 +156,8 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     }
     _sessionFactory.get.close()
     _sessionFactory = None
+    _ds.get.close()
+    _ds = None
   }
 
   private def performCleanerAction(action: SchemaCleaner => (DatabaseEnvironment, DatabaseEnvironment) => Unit) {
