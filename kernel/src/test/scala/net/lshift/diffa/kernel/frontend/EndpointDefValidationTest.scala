@@ -3,6 +3,7 @@ package net.lshift.diffa.kernel.frontend
 import org.junit.Test
 import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
+import org.junit.Assert.assertEquals
 
 /**
  * Verify that EndpointDef constraints are enforced.
@@ -67,4 +68,30 @@ class EndpointDefValidationTest extends DefValidationTestBase {
       new EndpointDef(name = "e1", categories = Map("cat1" -> new RangeCategoryDescriptor())),
       "config/endpoint[name=e1]/category[name=cat1]: dataType cannot be null or empty")
   }
+
+  @Test
+  def shouldDefaultToAsciiOrdering() = {
+    val endpoint = EndpointDef(name="dummy")
+    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.collation)
+  }
+
+  def shouldAcceptEndpointWithAsciiCollation {
+    val endpoint = EndpointDef(name="dummy", collation="ascii")
+    assertIsValid(endpoint)
+
+    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.collation)
+  }
+  @Test
+  def shouldAcceptEndpointWithUnicodeCollation {
+    val endpoint = EndpointDef(name="dummy", collation="unicode")
+    assertIsValid(endpoint)
+    assertEquals(DiffaConfig.UNICODE_COLLATION, endpoint.collation)
+  }
+
+  @Test
+  def shouldRejectInvalidCollation {
+    val endpoint = EndpointDef(name="dummy", collation="dummy")
+    validateError(endpoint, "config/endpoint[name=dummy]: collation is invalid. dummy is not a member of the set Set(ascii, unicode)")
+  }
+
 }
