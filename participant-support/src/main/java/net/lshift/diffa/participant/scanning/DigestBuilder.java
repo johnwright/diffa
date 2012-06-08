@@ -25,11 +25,18 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+
 /**
  * Utility for building digests based on a series of entities.
  *
  * This caches each id that is added to it, in order to ensure that id re-ordering is detected.
  * The downside of the current implementation is that the id cache is not thread safe.
+ *
+ * The 2-argument constructor is present to support non-codepoint ordered
+ * collations--eg: most locale-specific orderings will group upper-and lower
+ * case letters together, eg:
+ * [a b A B].sortBy(unicodeOrdering) -> [A a B b]
+ * [a b A B].sortBy(asciiOrdering) -> [A B a b]
  *
  */
 @NotThreadSafe

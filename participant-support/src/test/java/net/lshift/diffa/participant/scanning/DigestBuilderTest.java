@@ -132,6 +132,10 @@ public class DigestBuilderTest {
 
   @Test
   public void shouldAcceptAlternateCollationOrdering() {
+    // Create a collator which supports the Unicode Collation Algorithm; see either
+    // http://unicode.org/reports/tr10/ if you want all of the detail, or
+    // http://wiki.apache.org/couchdb/View_collation for the practical ramifications of this.
+
     Collator collation = Collator.getInstance(java.util.Locale.ROOT);
 
     DigestBuilder builder = new DigestBuilder(aggregations, collation);
