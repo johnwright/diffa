@@ -59,8 +59,18 @@ class SystemConfigTest {
   }
 
   @Test(expected = classOf[NotFoundException])
-  def unknownLimitNameShouldRaiseErrorWhenSettingLimit {
+  def unknownLimitNameShouldRaiseErrorWhenSettingHardLimit {
     client.setHardSystemLimit(new UUID().toString, 111)
+  }
+
+  @Test(expected = classOf[NotFoundException])
+  def unknownLimitNameShouldRaiseErrorWhenSettingDefaultLimit {
+    client.setDefaultSystemLimit(new UUID().toString, 111)
+  }
+
+  @Test(expected = classOf[NotFoundException])
+  def unknownLimitNameShouldRaiseErrorWhenGettingEffectiveLimit {
+    client.getEffectiveSystemLimit(new UUID().toString)
   }
 
   @Test
