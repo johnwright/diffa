@@ -68,27 +68,8 @@ class SystemConfigRestClient(rootUrl:String, params: RestClientParams = RestClie
     }
   }
 
-  def setHardSystemLimit(name:String, value:Int) = {
-    val path = resource.path("/system/limits/" + name + "/hard")
-    val response = path.`type`(MediaType.TEXT_PLAIN).put(classOf[ClientResponse], value.toString)
-    val status = response.getClientResponseStatus
-    status.getStatusCode match {
-      case 204 | 304    => ()
-      case 404   => throw new NotFoundException(path.toString)
-      case x:Int => handleHTTPError(x, path, status)
-    }
-  }
-
-  def setDefaultSystemLimit(name:String, value:Int) = {
-    val path = resource.path("/system/limits/" + name + "/default")
-    val response = path.`type`(MediaType.TEXT_PLAIN).put(classOf[ClientResponse], value.toString)
-    val status = response.getClientResponseStatus
-    status.getStatusCode match {
-      case 204 | 304    => ()
-      case 404   => throw new NotFoundException(path.toString)
-      case x:Int => handleHTTPError(x, path, status)
-    }
-  }
+  def setHardSystemLimit(name:String, value:Int) = setValue("/system/limits/" + name + "/hard", value)
+  def setDefaultSystemLimit(name:String, value:Int) = setValue("/system/limits/" + name + "/default", value)
 
   def getEffectiveSystemLimit(name:String) : Int = {
     val path = resource.path("/system/limits/" + name)
@@ -109,6 +90,17 @@ class SystemConfigRestClient(rootUrl:String, params: RestClientParams = RestClie
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 200   => response.getEntity(classOf[String])
+      case 404   => throw new NotFoundException(path.toString)
+      case x:Int => handleHTTPError(x, path, status)
+    }
+  }
+
+  private def setValue(resourcePath:String, value:Int) = {
+    val path = resource.path(resourcePath)
+    val response = path.`type`(MediaType.TEXT_PLAIN).put(classOf[ClientResponse], value.toString)
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 204 | 304    => ()
       case 404   => throw new NotFoundException(path.toString)
       case x:Int => handleHTTPError(x, path, status)
     }
