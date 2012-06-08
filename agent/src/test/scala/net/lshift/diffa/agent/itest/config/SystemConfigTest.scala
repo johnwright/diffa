@@ -23,6 +23,7 @@ import org.junit.Assert._
 import com.eaio.uuid.UUID
 import net.lshift.diffa.kernel.frontend.DomainDef
 import net.lshift.diffa.client.NotFoundException
+import net.lshift.diffa.kernel.config.limits.ChangeEventRate
 
 class SystemConfigTest {
 
@@ -55,5 +56,19 @@ class SystemConfigTest {
     client.setConfigOptions(Map("foo" -> "bar", "foz" -> "boz"))
     assertEquals("bar", client.getConfigOption("foo"))
     assertEquals("boz", client.getConfigOption("foz"))
+  }
+
+  @Test
+  def shouldSetSystemLimits {
+    val domain = DomainDef(name = new UUID().toString)
+    client.declareDomain(domain)
+
+    client.setDefaultSystemLimit(ChangeEventRate.key, 19)
+
+    val limit = client.getEffectiveSystemLimit(ChangeEventRate.key)
+
+    assertEquals(19, limit)
+
+    client.removeDomain(domain.name)
   }
 }
