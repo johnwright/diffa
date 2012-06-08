@@ -20,6 +20,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
+import com.ibm.icu.text.Collator;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -128,7 +129,19 @@ public class DigestBuilderTest {
 
   }
 
-  private static Map<String, String> createAttrMap(DateTime bizDate, String ss) {
+
+  @Test
+  public void shouldAcceptAlternateCollationOrdering() {
+    Collator collation = Collator.getInstance(java.util.Locale.ROOT);
+
+    DigestBuilder builder = new DigestBuilder(aggregations, collation);
+
+    builder.add(ScanResultEntry.forEntity("bar", "vsn2", null, createAttrMap(JUN_7_2009_1, "b")));
+    builder.add(ScanResultEntry.forEntity("Foo", "vsn1", null, createAttrMap(JUN_6_2009_1, "a")));
+
+  }
+
+    private static Map<String, String> createAttrMap(DateTime bizDate, String ss) {
     return createAttrMap(bizDate.toString(), ss);
   }
   private static Map<String, String> createAttrMap(String bizDate, String ss) {

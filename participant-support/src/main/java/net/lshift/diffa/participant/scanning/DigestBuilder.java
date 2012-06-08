@@ -37,11 +37,28 @@ public class DigestBuilder {
   private final static Logger log = LoggerFactory.getLogger(DigestBuilder.class);
   private final Map<BucketKey, Bucket> digestBuckets;
   private final List<ScanAggregation> aggregations;
+  // this should be a Comparator<String>, but both ICU and the JDK's Collators
+  // implement Comparator<Object>. Even  though they both compare strings.
+  // So much for Type safety.
+  private final Comparator<Object> comparator;
   private String previousId = null;
 
+
+  private static Comparator<Object> defaultComparison = new Comparator<Object>() {
+      public int compare(Object a, Object b) {
+          return ((String)a).compareTo((String)b);
+      }
+
+  };
+
   public DigestBuilder(List<ScanAggregation> aggregations) {
+
+      this(aggregations, defaultComparison);
+  }
+  public DigestBuilder(List<ScanAggregation> aggregations, Comparator<Object> coll) {
     this.aggregations = aggregations;
     this.digestBuckets = new HashMap<BucketKey, Bucket>();
+    this.comparator = coll;
   }
 
   /**
@@ -64,7 +81,7 @@ public class DigestBuilder {
     log.trace("Adding to bucket: " + id + ", " + attributes + ", " + vsn);
 
     if (previousId != null) {
-      if (id.compareTo(previousId) < 1) {
+      if (comparator.compare(id, previousId) < 1) {
         throw new OutOfOrderException(previousId,id);
       }
     }
