@@ -39,8 +39,6 @@ class DatabaseFacade(dataSource: DataSource, dialect: String) {
   private val jdbcTemplate = new JdbcTemplate(dataSource)
   private val txTemplate = new TransactionTemplate(new DataSourceTransactionManager(dataSource))
 
-  private val nullRollbackHandler = () => ()
-
   def execute[T](f: Factory => T): T =
     try {
       txTemplate.execute(new TransactionCallback[T] {
