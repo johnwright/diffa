@@ -258,6 +258,7 @@ class DefaultDifferencesManager(
   //
 
   def reportPending(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
+    log.trace("Report pending for %s at %s, upstream %s, downstream %s, origin %s".format(id,lastUpdate, upstreamVsn, downstreamVsn, origin))
     // TODO: Record origin as well
     domainDifferenceStore.addPendingUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
 
@@ -266,12 +267,13 @@ class DefaultDifferencesManager(
 
 
   def reportUnmatched(id:VersionID, lastUpdate:DateTime, upstreamVsn: String, downstreamVsn: String, origin: MatchOrigin) {
+    log.trace("Report unmatched for %s at %s, upstream %s, downstream %s, origin %s".format(id,lastUpdate, upstreamVsn, downstreamVsn, origin))
     domainDifferenceStore.addReportableUnmatchedEvent(id, lastUpdate, upstreamVsn, downstreamVsn, new DateTime)
-
     differenceListener.onMismatch(id, lastUpdate, upstreamVsn, downstreamVsn, origin, MatcherFiltered)
   }
 
   def addMatched(id:VersionID, vsn:String) {
+    log.trace("Add matched, id = %s, vsn = %s".format(id,vsn))
     domainDifferenceStore.addMatchedEvent(id, vsn)
 
     // TODO: Generate external event for matched? (Interested parties will already have seen the raw event)

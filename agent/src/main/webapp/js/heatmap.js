@@ -963,15 +963,15 @@ Diffa.Views.DiffList = Backbone.View.extend({
   rebuildDiffList: function() {
     var self = this;
 
-    this.$('.difflist-row').empty();   // Empty the current difflist out since we'll re-render everything
+    this.$('.difflist-body').empty();   // Empty the current difflist out since we'll re-render everything
 
     this.model.forEach(function(diff) {
       var view = new Diffa.Views.DiffListItem({model: diff, collection: self.model});
-      this.$('.difflist-row').append(view.render().el);
+      this.$('.difflist-body').append(view.render().el);
     });
 
-    if ($('.difflist-row').children().length == 0) {
-      $('.difflist-row').html("No differences.");
+    if ($('.difflist-body').children().length == 0) {
+      $('.difflist-body').html("No differences.");
     }
   },
 
@@ -989,10 +989,11 @@ Diffa.Views.DiffList = Backbone.View.extend({
 
 Diffa.Views.DiffListItem = Backbone.View.extend({
   tagName: 'div',
-  className: 'span-14',
+  className: 'difflist-row',
 
   events: {
-    "click": "select"
+    "click": "select",
+    "dblclick": "expand"
   },
 
   initialize: function() {
@@ -1005,19 +1006,19 @@ Diffa.Views.DiffListItem = Backbone.View.extend({
     var time = new Date(this.model.get('detectedAt')).toString("HH:mm:ss");
     var date = new Date(this.model.get('detectedAt')).toString("dd/MM/yyyy");
     var row = $(this.el)
-        .append("<div class='span-2'>" + date + "</div>")
-        .append("<div class='span-2'>" + time + "</div>")
-        .append("<div class='span-3 wrappable'>" + this.model.get('objId').pair.key + "</div>")
-        .append("<div class='span-3 wrappable'>" + this.model.get('objId').id + "</div>");
+        .append("<div class='date-col'>" + date + "</div>")
+        .append("<div class='time-col'>" + time + "</div>")
+        .append("<div class='pairing-col wrappable'>" + this.model.get('objId').pair.key + "</div>")
+        .append("<div class='item-id-col wrappable'>" + this.model.get('objId').id + "</div>");
 
     if (!this.model.get('upstreamVsn')) {
-      row.append("<div class='span-4 last'>Missing from upstream</div>");
+      row.append("<div class='difference-col last'>Missing from upstream</div>");
     }
     else if (!this.model.get('downstreamVsn')) {
-      row.append("<div class='span-4 last'>Missing from downstream</div>");
+      row.append("<div class='difference-col last'>Missing from downstream</div>");
     }
     else {
-      row.append("<div class='span-4 last'>Data difference</div>");
+      row.append("<div class='difference-col last'>Data difference</div>");
     }
 
     this.updateSelected(this.collection.selectedEvent);
@@ -1027,6 +1028,19 @@ Diffa.Views.DiffListItem = Backbone.View.extend({
 
   select: function() {
     this.collection.selectEvent(this.model.id);
+  },
+
+  expand: function(e) {
+    $(this.el).trigger('expand-event', [this.model]);
+
+    // Double clicking results in the text being selected. We don't actually want that, so we'll
+    // clear the selection.
+    if(document.selection && document.selection.empty) {
+        document.selection.empty();
+    } else if(window.getSelection) {
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+    }
   },
 
   updateSelected: function(selectedEvent) {
@@ -1074,8 +1088,6 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
       this.$('.item1 .diff-hash').text('');
       this.$('.item2 .downstreamLabel').text('downstream');
       this.$('.item2 .diff-hash').text('');
-      this.$('.item1 pre').text('');
-      this.$('.item2 pre').text('');
 
       this.$(".controllist").hide();
       this.$(".actionlist").empty();
@@ -1090,7 +1102,7 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
         upstreamContent = event.get("upstreamContent"),
         downstreamContent = event.get("downstreamContent");
 
-    this.$('.content-label').text('Content for item ID: ' + itemID);
+    this.$('.content-label').text('Versions for item ID: ' + itemID);
 
     this.$('.item1 .upstreamLabel').text(upstreamLabel);
     this.$('.item1 .diff-hash').text(upstreamVersion);
@@ -1103,21 +1115,6 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
     ignoreButton.click(function() {
       event.ignore();
     });
-
-
-    function waitForOrDisplayContent(selector, content) {
-      var busy = this.$(selector).prev();
-
-      if (content == null) {
-        this.$(selector).hide();
-        busy.show();
-      } else {
-        this.$(selector).text(content).show();
-        busy.hide();
-      }
-    }
-    waitForOrDisplayContent(".item1 pre", upstreamContent);
-    waitForOrDisplayContent(".item2 pre", downstreamContent);
 
     this.renderEntityScopedActions();
   },
@@ -1145,6 +1142,72 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
   }
 });
 
+Diffa.Views.DiffInspectorPopup = Backbone.View.extend({
+  initialize: function() {
+    var self = this;
+
+    $(document).bind('expand-event', function(e, model) {
+      // Attach the inspector view, and open a lightbox
+      var inspector = new Diffa.Views.DiffInspector({model: model});
+      $.colorbox({
+        inline: true,
+        href: $(inspector.el)
+      });
+    });
+
+      // Keep our element invisible
+    $(this.el).hide();
+  }
+});
+
+Diffa.Views.DiffInspector = Backbone.View.extend({
+  tagName: 'div',
+  className: 'diffa-diffinspector',
+
+  initialize: function() {
+    _.bindAll(this, "render");
+
+    $(this.el).html(JST['heatmap/contentinspector']({API_BASE: API_BASE}));
+    this.render();
+  },
+
+  render: function() {
+    var event = this.model;
+    var self = this;
+
+    var itemID = event.get('objId').id,
+        upstreamLabel = event.get('upstreamName') || "upstream",
+        upstreamVersion = event.get('upstreamVsn') || "no version",
+        downstreamLabel = event.get("downstreamName") || "downstream",
+        downstreamVersion = event.get('downstreamVsn') || "no version",
+        upstreamContent = event.get("upstreamContent"),
+        downstreamContent = event.get("downstreamContent");
+
+    this.$('.content-label').text('Content for item ID: ' + itemID);
+
+    this.$('.item1 .upstreamLabel').text(upstreamLabel);
+    this.$('.item1 .diff-hash').text(upstreamVersion);
+
+    this.$('.item2 .downstreamLabel').text(downstreamLabel);
+    this.$('.item2 .diff-hash').text(downstreamVersion);
+
+    function waitForOrDisplayContent(selector, content) {
+      var busy = this.$(selector).prev();
+
+      if (content == null) {
+        self.$(selector).hide();
+        busy.show();
+      } else {
+        self.$(selector).text(content).show();
+        busy.hide();
+      }
+    }
+    waitForOrDisplayContent(".item1 pre", upstreamContent);
+    waitForOrDisplayContent(".item2 pre", downstreamContent);
+  }
+});
+
+
 function nearestHour() {
   var hours = (new Date()).getHours() + 1;
   return Date.today().add({hours: hours});
@@ -1161,6 +1224,10 @@ $('.diffa-difflist').each(function() {
 $('.diffa-contentviewer').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
   new Diffa.Views.DiffDetail({el: $(this), model: domain.diffs});
+});
+$('.diffa-contentinspector').each(function() {
+  var domain = Diffa.DomainManager.get($(this).data('domain'));
+  new Diffa.Views.DiffInspectorPopup({el: $(this)});
 });
 
 $('.diffa-heatmap-page').each(function() {
