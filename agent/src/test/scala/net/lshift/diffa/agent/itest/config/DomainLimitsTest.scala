@@ -37,11 +37,17 @@ class DomainLimitsTest {
   }
 
   @Test
-  def shouldSetDomainHardLimit {
-    domainLimits.setDomainHardLimit(ChangeEventRate.key, 14)
+  def shouldSetDomainHardLimitThenDefaultLimit {
+    domainLimits.setDomainHardLimit(ChangeEventRate.key, 144)
+    domainLimits.setDomainDefaultLimit(ChangeEventRate.key, 144) // Set explicitly to guarantee the state of the agent up front
 
-    val limit = domainLimits.effectiveDomainLimit(ChangeEventRate.key)
-    assertEquals(14, limit)
+    val oldDomainLimit = domainLimits.effectiveDomainLimit(ChangeEventRate.key)
+    assertEquals(144, oldDomainLimit)
+
+    domainLimits.setDomainDefaultLimit(ChangeEventRate.key, 122)
+
+    val newLimit = domainLimits.effectiveDomainLimit(ChangeEventRate.key)
+    assertEquals(122, newLimit)
   }
 
 }
