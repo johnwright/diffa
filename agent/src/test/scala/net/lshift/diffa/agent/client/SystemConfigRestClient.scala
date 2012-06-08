@@ -74,6 +74,7 @@ class SystemConfigRestClient(rootUrl:String, params: RestClientParams = RestClie
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 204 | 304    => ()
+      case 404   => throw new NotFoundException(path.toString)
       case x:Int => handleHTTPError(x, path, status)
     }
   }
@@ -84,6 +85,7 @@ class SystemConfigRestClient(rootUrl:String, params: RestClientParams = RestClie
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 204 | 304    => ()
+      case 404   => throw new NotFoundException(path.toString)
       case x:Int => handleHTTPError(x, path, status)
     }
   }
