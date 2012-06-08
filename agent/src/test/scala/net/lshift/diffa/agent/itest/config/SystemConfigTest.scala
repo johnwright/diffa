@@ -59,15 +59,19 @@ class SystemConfigTest {
   }
 
   @Test
-  def shouldSetSystemLimits {
+  def shouldSetSystemHardLimitFollowedBySoftLimit {
     val domain = DomainDef(name = new UUID().toString)
     client.declareDomain(domain)
 
-    client.setDefaultSystemLimit(ChangeEventRate.key, 19)
+    client.setHardSystemLimit(ChangeEventRate.key, 19)
 
-    val limit = client.getEffectiveSystemLimit(ChangeEventRate.key)
+    val oldlimit = client.getEffectiveSystemLimit(ChangeEventRate.key)
+    assertEquals(19, oldlimit)
 
-    assertEquals(19, limit)
+    client.setDefaultSystemLimit(ChangeEventRate.key, 18)
+
+    val newlimit = client.getEffectiveSystemLimit(ChangeEventRate.key)
+    assertEquals(18, newlimit)
 
     client.removeDomain(domain.name)
   }
