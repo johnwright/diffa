@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.net.URI
 import net.lshift.diffa.kernel.util.MissingObjectException
-import net.lshift.diffa.schema.tables.ExternalHttpCredentials.{EXTERNAL_HTTP_CREDENTIALS => e}
+import net.lshift.diffa.schema.tables.ExternalHttpCredentials.EXTERNAL_HTTP_CREDENTIALS
 import net.lshift.diffa.schema.jooq.DatabaseFacade
 
 class JooqDomainCredentialsStore(val db: DatabaseFacade)
@@ -34,24 +34,24 @@ class JooqDomainCredentialsStore(val db: DatabaseFacade)
   def addExternalHttpCredentials(domain:String, creds:InboundExternalHttpCredentialsDef) = db.execute { t =>
     creds.validate()
 
-    t.insertInto(e).
-      set(e.DOMAIN, domain).
-      set(e.URL, creds.url).
-      set(e.CRED_TYPE, creds.`type`).
-      set(e.CRED_KEY, creds.key).
-      set(e.CRED_VALUE, creds.value).
+    t.insertInto(EXTERNAL_HTTP_CREDENTIALS).
+      set(EXTERNAL_HTTP_CREDENTIALS.DOMAIN, domain).
+      set(EXTERNAL_HTTP_CREDENTIALS.URL, creds.url).
+      set(EXTERNAL_HTTP_CREDENTIALS.CRED_TYPE, creds.`type`).
+      set(EXTERNAL_HTTP_CREDENTIALS.CRED_KEY, creds.key).
+      set(EXTERNAL_HTTP_CREDENTIALS.CRED_VALUE, creds.value).
     onDuplicateKeyUpdate().
-      set(e.CRED_TYPE, creds.`type`).
-      set(e.CRED_KEY, creds.key).
-      set(e.CRED_VALUE, creds.value).
+      set(EXTERNAL_HTTP_CREDENTIALS.CRED_TYPE, creds.`type`).
+      set(EXTERNAL_HTTP_CREDENTIALS.CRED_KEY, creds.key).
+      set(EXTERNAL_HTTP_CREDENTIALS.CRED_VALUE, creds.value).
     execute()
   }
 
   def deleteExternalHttpCredentials(domain:String, url:String) = db.execute { t =>
     val deleted =
       t.delete(EXTERNAL_HTTP_CREDENTIALS).
-        where(e.DOMAIN.equal(domain)).
-        and(e.URL.equal(url)).
+        where(EXTERNAL_HTTP_CREDENTIALS.DOMAIN.equal(domain)).
+        and(EXTERNAL_HTTP_CREDENTIALS.URL.equal(url)).
       execute()
 
     if (deleted == 0) {
@@ -60,11 +60,11 @@ class JooqDomainCredentialsStore(val db: DatabaseFacade)
   }
 
   def listCredentials(domain:String) : Seq[OutboundExternalHttpCredentialsDef] = db.execute { t =>
-    t.select().from(e).where(e.DOMAIN.equal(domain)).fetch().map { r =>
+    t.select().from(EXTERNAL_HTTP_CREDENTIALS).where(EXTERNAL_HTTP_CREDENTIALS.DOMAIN.equal(domain)).fetch().map { r =>
       OutboundExternalHttpCredentialsDef(
-        url = r.getValue(e.URL),
-        key = r.getValue(e.CRED_KEY),
-        `type` = r.getValue(e.CRED_TYPE)
+        url = r.getValue(EXTERNAL_HTTP_CREDENTIALS.URL),
+        key = r.getValue(EXTERNAL_HTTP_CREDENTIALS.CRED_KEY),
+        `type` = r.getValue(EXTERNAL_HTTP_CREDENTIALS.CRED_TYPE)
       )
     }
   }
@@ -75,16 +75,16 @@ class JooqDomainCredentialsStore(val db: DatabaseFacade)
 
     val baseUrl = searchURI.getScheme + "://" + searchURI.getAuthority + "%"
 
-    val results = t.selectFrom(e).
-      where(e.DOMAIN.equal(domain)).
-      and(e.URL.like(baseUrl)).
+    val results = t.selectFrom(EXTERNAL_HTTP_CREDENTIALS).
+      where(EXTERNAL_HTTP_CREDENTIALS.DOMAIN.equal(domain)).
+      and(EXTERNAL_HTTP_CREDENTIALS.URL.like(baseUrl)).
       fetch().map { r =>
         ExternalHttpCredentials(
-          domain = r.getValue(e.DOMAIN),
-          url = r.getValue(e.URL),
-          key = r.getValue(e.CRED_KEY),
-          value = r.getValue(e.CRED_VALUE),
-          credentialType = r.getValue(e.CRED_TYPE)
+          domain = r.getValue(EXTERNAL_HTTP_CREDENTIALS.DOMAIN),
+          url = r.getValue(EXTERNAL_HTTP_CREDENTIALS.URL),
+          key = r.getValue(EXTERNAL_HTTP_CREDENTIALS.CRED_KEY),
+          value = r.getValue(EXTERNAL_HTTP_CREDENTIALS.CRED_VALUE),
+          credentialType = r.getValue(EXTERNAL_HTTP_CREDENTIALS.CRED_TYPE)
         )
       }
 
