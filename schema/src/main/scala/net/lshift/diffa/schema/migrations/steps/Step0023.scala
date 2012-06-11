@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import java.sql.Types
+import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 
 /**
  * Add configuration tables for enforcing limits on the Diffa service.

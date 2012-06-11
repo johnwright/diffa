@@ -13,31 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import java.sql.Types
+import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
+import net.lshift.diffa.schema.migrations.{MigrationUtil, HibernateMigrationStep}
 
-object Step0026 extends HibernateMigrationStep {
+object Step0032 extends HibernateMigrationStep {
 
-  def versionId = 26
+  def versionId = 32
 
-  def name = "Break out external http credentials"
+  def name = "Add the scan Response Size limit"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.createTable("external_http_credentials").
-      column("domain", Types.VARCHAR, 50, false).
-      column("url", Types.VARCHAR, 255, false).
-      column("cred_key", Types.VARCHAR, 50, false).
-      column("cred_value", Types.VARCHAR, 255, false).
-      column("cred_type", Types.VARCHAR, 20, false).
-      pk("domain", "url")
-
-    migration.alterTable("external_http_credentials").
-      addForeignKey("fk_domain_http_creds", "domain", "domains", "name")
+    MigrationUtil.insertLimit(migration, ScanResponseSizeLimit)
 
     migration
   }

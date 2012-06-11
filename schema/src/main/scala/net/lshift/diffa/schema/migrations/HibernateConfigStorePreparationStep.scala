@@ -22,6 +22,7 @@ import org.hibernate.tool.hbm2ddl.DatabaseMetadata
 import org.hibernate.cfg.{Environment, Configuration}
 import java.sql.{Types, Connection}
 
+import net.lshift.diffa.schema.migrations.steps._
 import net.lshift.diffa.schema.hibernate.SessionHelper.sessionFactoryToSessionHelper
 import net.lshift.hibernate.migrations.MigrationBuilder
 

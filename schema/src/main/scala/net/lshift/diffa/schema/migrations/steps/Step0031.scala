@@ -13,23 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
-import scala.collection.JavaConversions._
+import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 
-object Step0032 extends HibernateMigrationStep {
+object Step0031 extends HibernateMigrationStep {
 
-  def versionId = 32
-
-  def name = "Add the scan Response Size limit"
+  def versionId = 31
+  def name = "Remove deprecated event buffer and explain file limit setttings from pair definitions"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    MigrationUtil.insertLimit(migration, ScanResponseSizeLimit)
+    migration.alterTable("pair").dropColumn("events_to_log")
+    migration.alterTable("pair").dropColumn("max_explain_files")
 
     migration
   }

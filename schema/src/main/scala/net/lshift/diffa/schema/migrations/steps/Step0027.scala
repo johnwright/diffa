@@ -13,20 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
-import net.lshift.diffa.schema.servicelimits.ChangeEventRate
 import net.lshift.hibernate.migrations.MigrationBuilder
+import net.lshift.diffa.schema.servicelimits.{DiagnosticEventBufferSize, ExplainFiles}
+import net.lshift.diffa.schema.migrations.{MigrationUtil, HibernateMigrationStep}
 
-object Step0030 extends HibernateMigrationStep {
-  def versionId = 30
-  def name = "Configure system-wide change event rate limit"
+object Step0027 extends HibernateMigrationStep {
+
+  def versionId = 27
+
+  def name = "Remove deprecated system config values"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    MigrationUtil.insertLimit(migration, ChangeEventRate)
+    migration.delete("system_config_options").where("opt_key").is(Step0022.eventExplanationLimitKey)
+    migration.delete("system_config_options").where("opt_key").is(Step0022.explainFilesLimitKey)
+
+    MigrationUtil.insertLimit(migration, DiagnosticEventBufferSize)
+
+    MigrationUtil.insertLimit(migration, ExplainFiles)
 
     migration
   }

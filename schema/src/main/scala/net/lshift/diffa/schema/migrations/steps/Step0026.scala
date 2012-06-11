@@ -13,21 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
+import java.sql.Types
+import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 
-object Step0031 extends HibernateMigrationStep {
+object Step0026 extends HibernateMigrationStep {
 
-  def versionId = 31
-  def name = "Remove deprecated event buffer and explain file limit setttings from pair definitions"
+  def versionId = 26
+
+  def name = "Break out external http credentials"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.alterTable("pair").dropColumn("events_to_log")
-    migration.alterTable("pair").dropColumn("max_explain_files")
+    migration.createTable("external_http_credentials").
+      column("domain", Types.VARCHAR, 50, false).
+      column("url", Types.VARCHAR, 255, false).
+      column("cred_key", Types.VARCHAR, 50, false).
+      column("cred_value", Types.VARCHAR, 255, false).
+      column("cred_type", Types.VARCHAR, 20, false).
+      pk("domain", "url")
+
+    migration.alterTable("external_http_credentials").
+      addForeignKey("fk_domain_http_creds", "domain", "domains", "name")
 
     migration
   }

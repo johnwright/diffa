@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import java.sql.Types
 import scala.collection.JavaConversions._
 import net.lshift.hibernate.migrations.MigrationBuilder
+import net.lshift.diffa.schema.migrations.{DefinePartitionInformationTable, CommonSteps, HibernateMigrationStep}
 
 /**
  * This Step 'migrates' a schema/database to version 22 -

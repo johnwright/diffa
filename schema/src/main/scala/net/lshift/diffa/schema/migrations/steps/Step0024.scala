@@ -13,27 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
+import java.sql.Types
+import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 
+object Step0024 extends HibernateMigrationStep {
 
-object Step0029 extends HibernateMigrationStep {
+  def versionId = 24
 
-  def versionId = 29
-
-  def name = "Add unique constraint for the combination entity id, pair and domain in difference tables"
+  def name = "Add configuration versioning"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.alterTable("diffs")
-             .addUniqueConstraint("uk_diffs", "entity_id", "domain", "pair")
-
-    migration.alterTable("pending_diffs")
-             .addUniqueConstraint("uk_pending_diffs", "entity_id", "domain", "pair")
+    migration.alterTable("domains").
+      addColumn("config_version", Types.INTEGER, 11, false, 0)
 
     migration
   }

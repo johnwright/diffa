@@ -1,8 +1,9 @@
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import net.lshift.diffa.schema.servicelimits.{ScanConnectTimeout, ScanReadTimeout}
+import net.lshift.diffa.schema.migrations.{MigrationUtil, HibernateMigrationStep}
 
 /**
  * This Step migrates a schema/database to version 25, adding default read and

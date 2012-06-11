@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.schema.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
+import net.lshift.diffa.schema.servicelimits.ChangeEventRate
 import net.lshift.hibernate.migrations.MigrationBuilder
-import java.sql.Types
+import net.lshift.diffa.schema.migrations.{MigrationUtil, HibernateMigrationStep}
 
-object Step0024 extends HibernateMigrationStep {
-
-  def versionId = 24
-
-  def name = "Add configuration versioning"
+object Step0030 extends HibernateMigrationStep {
+  def versionId = 30
+  def name = "Configure system-wide change event rate limit"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.alterTable("domains").
-      addColumn("config_version", Types.INTEGER, 11, false, 0)
+    MigrationUtil.insertLimit(migration, ChangeEventRate)
 
     migration
   }
