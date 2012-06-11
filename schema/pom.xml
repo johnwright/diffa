@@ -12,7 +12,7 @@
   <artifactId>diffa-schema</artifactId>
   <version>1.4.5-SNAPSHOT</version>
 
-  <name>Diffa Schema</name>
+  <name>LShift Diffa Schema</name>
   <description>Database schema and migrations</description>
 
   <packaging>jar</packaging>

@@ -12,7 +12,7 @@
   <artifactId>diffa-schema-bindings</artifactId>
   <version>1.4.5-SNAPSHOT</version>
 
-  <name>Diffa Schema Bindings</name>
+  <name>LShift Diffa Schema Bindings</name>
   <description>JOOQ model class generation</description>
 
   <packaging>jar</packaging>
