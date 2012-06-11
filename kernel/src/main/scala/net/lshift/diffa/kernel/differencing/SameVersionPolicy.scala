@@ -23,6 +23,7 @@ import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint, ScanResultEntry}
+import java.util.Comparator
 
 /**
  * Version policy where two events are considered the same only when the upstream and downstream provide the
@@ -40,8 +41,9 @@ class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:Differen
   protected class DownstreamSameScanStrategy extends ScanStrategy {
     val name = "DownstreamSame"
 
-    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) = {
-      val aggregator = new Aggregator(bucketing)
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint],  collation: Comparator[AnyRef]) = {
+
+      val aggregator = new Aggregator(bucketing, collation) // TODO!
       stores(pair).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }

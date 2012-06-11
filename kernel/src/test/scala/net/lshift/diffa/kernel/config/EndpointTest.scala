@@ -70,6 +70,16 @@ class EndpointTest {
     var ep = new Endpoint{categories = categoryMap}
     assertEquals(schematized, ep.schematize(untyped))
   }
+
+  @Test def testGetCollatorForUnicode() = {
+    val ep = new Endpoint(collation = "unicode")
+    assertEquals(UnicodeCollationOrdering, ep.getCollator)
+  }
+  @Test def testGetCollatorForAscii() = {
+    val ep = new Endpoint(collation = "ascii")
+    assertEquals(AsciiCollationOrdering, ep.getCollator)
+
+  }
 }
 
 object EndpointTest {

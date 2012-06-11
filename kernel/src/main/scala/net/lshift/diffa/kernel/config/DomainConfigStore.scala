@@ -18,13 +18,13 @@ package net.lshift.diffa.kernel.config
 
 import reflect.BeanProperty
 import scala.collection.JavaConversions._
-import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
-import net.lshift.diffa.kernel.participants._
 import scala.Option._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.util.{EndpointSide, UpstreamEndpoint, DownstreamEndpoint, CategoryUtil}
 import net.lshift.diffa.participant.scanning.{AggregationBuilder, ConstraintsBuilder, SetConstraint, ScanConstraint}
+import java.util.{Comparator, HashMap}
+import net.lshift.diffa.kernel.participants._
 
 /**
  * Provides general configuration options within the scope of a particular domain.
@@ -164,8 +164,13 @@ case class Endpoint(
   def buildAggregations(builder:AggregationBuilder) {
     CategoryUtil.buildAggregations(builder, categories.toMap)
   }
-}
 
+ def getCollator () = collation match {
+    case "unicode" => UnicodeCollationOrdering
+    case "ascii" => AsciiCollationOrdering
+  }
+
+}
 case class EndpointView(
   @BeanProperty var name:String = null,
   @BeanProperty var endpoint:Endpoint = null,

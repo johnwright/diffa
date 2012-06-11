@@ -31,6 +31,7 @@ import net.lshift.diffa.kernel.diag.{DiagnosticsManager, DiagnosticLevel}
 import net.lshift.diffa.participant.scanning._
 import collection.JavaConversions._
 import net.lshift.diffa.kernel.util.{CategoryUtil, DownstreamEndpoint, EndpointSide, UpstreamEndpoint}
+import java.util.Comparator
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -183,7 +184,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val remoteDigests = participant.scan(constraints, bucketing)
       val responseTimestamp = new DateTime
 
-      val localDigests = getAggregates(pair, bucketing, constraints)
+      val localDigests = getAggregates(pair, bucketing, constraints, endpoint.getCollator)
 
       // Generate a diagnostic object detailing the response provided by the participant
       diagnostics.writePairExplanationObject(pair, "Version Policy", name + "-Aggregates-" + fileNameFormatter.print(requestTimestamp)  + ".json", os => {
@@ -282,7 +283,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
         Seq()
       } else {
-        val localDigests = getAggregates(pair, aggregations, constraints)
+        val localDigests = getAggregates(pair, aggregations, constraints, endpoint.getCollator)
         val bucketing = CategoryUtil.categoryFunctionsFor(aggregations, endpointCategories)
 
         DigestDifferencingUtils.differenceAggregates(inventoryEntries, localDigests, bucketing, constraints).map(o => o match {
@@ -312,7 +313,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       }
     }
 
-    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint], collation: Comparator[AnyRef]) : Seq[ScanResultEntry]
     def getEntities(pair:DiffaPairRef, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
     def handleMismatch(pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
@@ -320,8 +321,8 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   protected class UpstreamScanStrategy extends ScanStrategy {
     val name = "Upstream"
 
-    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) = {
-      val aggregator = new Aggregator(bucketing)
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint], collation: Comparator[AnyRef]) = {
+      val aggregator = new Aggregator(bucketing, collation)
       stores(pair).queryUpstreams(constraints, aggregator.collectUpstream)
       aggregator.digests
     }
@@ -344,8 +345,8 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
     }
   }
 
-  protected class Aggregator(bucketing:Seq[ScanAggregation]) {
-    val builder = new DigestBuilder(bucketing)
+  protected class Aggregator(bucketing:Seq[ScanAggregation], collation: Comparator[AnyRef]) {
+    val builder = new DigestBuilder(bucketing, collation)
 
     def collectUpstream(id:VersionID, attributes:Map[String, String], lastUpdate:DateTime, vsn:String) =
       builder.add(id.id, attributes, vsn)
