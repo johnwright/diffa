@@ -51,7 +51,7 @@ public class DigestBuilder {
   private String previousId = null;
 
 
-  private static Comparator<Object> defaultComparison = new Comparator<Object>() {
+  protected static Comparator<Object> defaultComparison = new Comparator<Object>() {
       public int compare(Object a, Object b) {
           return ((String)a).compareTo((String)b);
       }
@@ -87,10 +87,8 @@ public class DigestBuilder {
   public void add(String id, Map<String, String> attributes, String vsn) {
     log.trace("Adding to bucket: " + id + ", " + attributes + ", " + vsn);
 
-    if (previousId != null) {
-      if (comparator.compare(id, previousId) < 1) {
-        throw new OutOfOrderException(previousId,id);
-      }
+    if (isOutOfOrder(id)) {
+     throw new OutOfOrderException(previousId,id);
     }
 
     previousId = id;
@@ -117,7 +115,15 @@ public class DigestBuilder {
     bucket.add(vsn);
   }
 
-  public List<ScanResultEntry> toDigests() {
+    private boolean isOutOfOrder(String id) {
+      if (previousId != null) {
+        return comparator.compare(id, previousId) <= 0;
+      } else {
+        return false;
+      }
+    }
+
+    public List<ScanResultEntry> toDigests() {
     List<ScanResultEntry> result = new ArrayList<ScanResultEntry>();
     for (Bucket bucket : digestBuckets.values()) {
       result.add(bucket.toDigest());

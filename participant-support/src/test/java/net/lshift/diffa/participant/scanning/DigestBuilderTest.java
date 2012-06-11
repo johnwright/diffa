@@ -21,6 +21,11 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import com.ibm.icu.text.Collator;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
+
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -29,6 +34,8 @@ import static org.junit.Assert.fail;
 /**
  * Test cases for the digest builder.
  */
+
+@RunWith(Theories.class)
 public class DigestBuilderTest {
   private static final ScanAggregation bizDateAggregation =
       new DateAggregation("bizDate", DateGranularityEnum.Daily);
@@ -130,19 +137,56 @@ public class DigestBuilderTest {
   }
 
 
-  @Test
-  public void shouldAcceptAlternateCollationOrdering() {
-    // Create a collator which supports the Unicode Collation Algorithm; see either
-    // http://unicode.org/reports/tr10/ if you want all of the detail, or
-    // http://wiki.apache.org/couchdb/View_collation for the practical ramifications of this.
+  static class Scenario {
+      final Comparator<Object> collation;
+      final List<String> okaySequence;
+      final List<String> failingSequence;
 
-    Collator collation = Collator.getInstance(java.util.Locale.ROOT);
+      Scenario(Comparator<Object> coll, List<String> okaySequence, List<String> failingSequence) {
+          this.collation = coll;
+          this.okaySequence = okaySequence;
+          this.failingSequence = failingSequence;
+      }
+  }
 
-    DigestBuilder builder = new DigestBuilder(aggregations, collation);
+  // Create a collator which supports the Unicode Collation Algorithm; see either
+  // http://unicode.org/reports/tr10/ if you want all of the detail, or
+  // http://wiki.apache.org/couchdb/View_collation for the practical ramifications of this.
 
-    builder.add(ScanResultEntry.forEntity("bar", "vsn2", null, createAttrMap(JUN_7_2009_1, "b")));
-    builder.add(ScanResultEntry.forEntity("Foo", "vsn1", null, createAttrMap(JUN_6_2009_1, "a")));
 
+  @DataPoint public static Scenario unicode = new Scenario(
+        Collator.getInstance(java.util.Locale.ROOT),
+        Arrays.asList("bar", "Foo"),
+        Arrays.asList("Far", "boo" ));
+
+  @DataPoint public static Scenario binary = new Scenario(
+          DigestBuilder.defaultComparison,
+          Arrays.asList("Bar", "Foo"),
+          Arrays.asList("far", "boo" ));
+
+
+  @Theory
+  public void shouldAcceptSpecifiedCollationOrdering(Scenario ex) {
+    DigestBuilder builder = new DigestBuilder(aggregations, ex.collation);
+
+    for (String id: ex.okaySequence) {
+      builder.add(ScanResultEntry.forEntity(id, "vsn" + id, null, createAttrMap(JUN_7_2009_1, "b")));
+    }
+  }
+
+  @Theory
+  public void shouldRejectInvalidOrderWithSpecifiedCollationOrdering(Scenario ex) {
+    DigestBuilder builder = new DigestBuilder(aggregations, ex.collation);
+
+    try {
+      for (String id: ex.failingSequence) {
+        builder.add(ScanResultEntry.forEntity(id, "vsn" + id, null, createAttrMap(JUN_7_2009_1, "b")));
+      }
+      fail(String.format("Dis-ordered insertion of %s with collation %s should throw Exception",
+              ex.failingSequence, ex.collation));
+    } catch (Throwable t) {
+      // Pass  \o/
+    }
   }
 
     private static Map<String, String> createAttrMap(DateTime bizDate, String ss) {
