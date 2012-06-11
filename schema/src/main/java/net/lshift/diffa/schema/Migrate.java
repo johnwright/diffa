@@ -5,15 +5,15 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
 /**
- * Temporary helper class for proof-of-concept JOOQ integration.
+ * Helper class used by JOOQ binding generation.
  *
- * Delete this class and move all schema-generation code out to a separate module.
+ * The main method will be Invoked from the schema-bindings module. JOOQ generates its bindings by introspection
+ * of a database schema, and this class is responsible for building that schema.
  */
 public class Migrate {
 
   public static void main(String[] args) {
     Configuration config = new Configuration()
-      // TODO add hbm.xml resources?
       .setProperty("hibernate.dialect", System.getProperty("diffa.hibernate.dialect"))
       .setProperty("hibernate.connection.url", System.getProperty("diffa.jdbc.url"))
       .setProperty("hibernate.connection.driver_class", System.getProperty("diffa.jdbc.driver"))
