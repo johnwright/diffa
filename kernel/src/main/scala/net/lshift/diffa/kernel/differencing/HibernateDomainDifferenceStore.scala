@@ -382,9 +382,12 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
 
     def initializer(row: Record, generateKeyName: String => String) = {
       val domain = row.getValue(DIFFS.DOMAIN)
+      val persistentValue  = row.getValueAsLong("max_seq_id")
 
-      if (domain != null) {
-        val persistentValue  = row.getValueAsLong("max_seq_id")
+      if (domain != null && persistentValue != null) {
+
+        log.warn("Initializing using sequence for domain %s using %s".format(domain, persistentValue))
+
         val key = generateKeyName(domain)
         val currentValue = sequenceProvider.currentSequenceValue(key)
         if (persistentValue > currentValue) {
