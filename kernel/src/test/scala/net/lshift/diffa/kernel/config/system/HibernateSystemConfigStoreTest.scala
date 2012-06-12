@@ -84,16 +84,6 @@ class HibernateSystemConfigStoreTest {
   }
 
   @Test
-  def shouldListUsersInBinaryCollation = {
-    val userNames = Seq("baz", "Bar", "Foo")
-    for {
-      name <- userNames
-    } systemConfigStore.createOrUpdateUser(TEST_USER.copy(name = name))
-
-    assertEquals(Seq("Bar", "Foo", "baz"), systemConfigStore.listUsers.map(_.getName))
-  }
-
-  @Test
   def shouldBeAbleToUpdateUser() {
     val updatedUser = User(name = TEST_USER.name, email = "somethingelse@bar.com",
       passwordEnc = TEST_SUPERUSER.passwordEnc, superuser = true)
