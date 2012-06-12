@@ -53,12 +53,27 @@ Diffa.Views.PairList = Backbone.View.extend({
     $(this.el).html(window.JST['status/pairlist']());
   },
 
-  addPair: function(pair) {
+  addPair: function(pair, unused, opts) {
     var view = new Diffa.Views.PairSelector({model: pair});
-    $(this.el).append(view.render().el);
+    var renderedEl = view.render().el;
+
+    if (opts.index == 0) {
+      // insert as first element
+      $(this.el).prepend(renderedEl);
+    } else {
+      // search for sibling element at the given index
+      var sibling = $(".pair", this.el).eq(opts.index);
+      if (sibling.length == 0) {
+        // no sibling found, index > length so insert as last element
+        $(this.el).append(renderedEl);
+      } else {
+        // insert before sibling
+        sibling.before(renderedEl);
+      }
+    }
   },
 
-  removePair: function(pair) {
+  removePair: function(pair, unused, opts) {
     pair.remove();
   }
 });
