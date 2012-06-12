@@ -325,6 +325,8 @@ Diffa.Collections.PairStates = Diffa.Collections.CollectionBase.extend({
     });
   },
 
+  comparator: function(state) { return state.id; },
+
   sync: function() {
     var self = this;
 
