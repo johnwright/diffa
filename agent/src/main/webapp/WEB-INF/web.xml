@@ -124,5 +124,10 @@
     <env-entry-value>org.hibernate.dialect.HSQLDialect</env-entry-value>
     <env-entry-type>java.lang.String</env-entry-type>
   </env-entry>
+  <env-entry>
+    <env-entry-name>diffaJooqDialect</env-entry-name>
+    <env-entry-value>HSQLDB</env-entry-value>
+    <env-entry-type>java.lang.String</env-entry-type>
+  </env-entry>
 </web-app>
 
