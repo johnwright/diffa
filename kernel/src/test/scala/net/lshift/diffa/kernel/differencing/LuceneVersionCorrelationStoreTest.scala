@@ -53,11 +53,13 @@ class LuceneVersionCorrelationStoreTest {
 
   val store = stores(pair)
   val otherStore = stores(otherPair)
+  val storeWithUnicodeOrder = stores(pairWithUnicodeOrder)
 
   @Before
   def cleanupStore {
     store.reset
     otherStore.reset
+    storeWithUnicodeOrder.reset
   }
 
   @Test
@@ -437,7 +439,23 @@ class LuceneVersionCorrelationStoreTest {
         CollectedDownstreamDetail(VersionID(pair, "id7"), AttributesUtil.toUntypedMap(bizDateTimeMap(DEC_2_2009)), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
       collector.downstreamObjs.toList)
   }
-  
+
+  @Test
+  def queryDownstreamRangeCanReturnResultsWithSpecifiedCollation = {
+    val writer = storeWithUnicodeOrder.openWriter()
+    writer.storeDownstreamVersion(VersionID(pairWithUnicodeOrder, "foo"), bizDateTimeMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
+    writer.storeDownstreamVersion(VersionID(pairWithUnicodeOrder, "FooBarWithSuffix"),bizDateTimeMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
+    writer.flush()
+
+    val collector = new Collector
+    val digests = storeWithUnicodeOrder.queryDownstreams(List(), collector.collectDownstream)
+    assertEquals(
+      List(
+        CollectedDownstreamDetail(VersionID(pairWithUnicodeOrder, "foo"), AttributesUtil.toUntypedMap(bizDateTimeMap(DEC_1_2009)), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6"),
+        CollectedDownstreamDetail(VersionID(pairWithUnicodeOrder, "FooBarWithSuffix"), AttributesUtil.toUntypedMap(bizDateTimeMap(DEC_2_2009)), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")),
+      collector.downstreamObjs.toList)
+  }
+
   @Test
   def storedUpstreamShouldBeRetrievable = {
     val timestamp = new DateTime()
@@ -702,19 +720,43 @@ class Collector {
 }
 
 object LuceneVersionCorrelationStoreTest {
-  val dummyConfigStore = EasyMock.createMock(classOf[SystemConfigStore])
-  EasyMock.expect(dummyConfigStore.
-      maybeSystemConfigOption(VersionCorrelationStore.schemaVersionKey)).
-      andStubReturn(Some(VersionCorrelationStore.currentSchemaVersion.toString))
-  EasyMock.replay(dummyConfigStore)
-
-  val dummyDiagnostics = EasyMock.createNiceMock(classOf[DiagnosticsManager])
-  EasyMock.replay(dummyDiagnostics)
 
   val domainName = "domain"
   val pair = DiffaPairRef(key="pair",domain=domainName)
   val otherPair = DiffaPairRef(key="other-pair",domain=domainName)
-  val stores = new LuceneVersionCorrelationStoreFactory("target", dummyConfigStore, dummyDiagnostics)
+  val pairWithUnicodeOrder = DiffaPairRef(key="pair-with-unicode-ordering",domain=domainName)
+
+  val dummyConfigStore = EasyMock.createMock(classOf[SystemConfigStore])
+
+  val dummyDomainConfigStore = EasyMock.createMock(classOf[DomainConfigStore])
+
+
+  EasyMock.expect(dummyConfigStore.
+    maybeSystemConfigOption(VersionCorrelationStore.schemaVersionKey)).
+    andStubReturn(Some(VersionCorrelationStore.currentSchemaVersion.toString))
+
+  Map(pair -> "ascii", pairWithUnicodeOrder -> "unicode").foreach { case (pair, collation) =>
+    EasyMock.expect(dummyConfigStore.getPair(pair)
+    ).andStubReturn(
+      DiffaPair(key=pair.key, domain=Domain(name=domainName),
+        upstream="%s-dummyUpstream".format(pair.key),
+        downstream="%s-dummyDownstream".format(pair.key))
+    )
+    Seq( "dummyUpstream", "dummyDownstream").foreach { sideName: String =>
+      EasyMock.expect(dummyDomainConfigStore.getEndpoint(domainName, "%s-%s".format(pair.key, sideName))
+      ).andStubReturn(Endpoint(collation=collation))
+    }
+  }
+
+  EasyMock.replay(dummyConfigStore)
+
+  EasyMock.replay(dummyDomainConfigStore)
+
+  val dummyDiagnostics = EasyMock.createNiceMock(classOf[DiagnosticsManager])
+  EasyMock.replay(dummyDiagnostics)
+
+  val stores = new LuceneVersionCorrelationStoreFactory("target", dummyConfigStore,
+    dummyDomainConfigStore, dummyDiagnostics)
 
   // Helper methods for various constraint/attribute scenarios
   def bizDateTimeSeq(d:DateTime) = Seq(d.toString())

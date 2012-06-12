@@ -36,14 +36,15 @@ import java.util.Comparator
 class SameVersionPolicy(stores:VersionCorrelationStoreFactory, listener:DifferencingListener, systemConfigStore:SystemConfigStore, diagnostics:DiagnosticsManager)
     extends BaseScanningVersionPolicy(stores, listener, systemConfigStore, diagnostics) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamSameScanStrategy
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, collation: Comparator[AnyRef]) =
+    new DownstreamSameScanStrategy(collation)
 
-  protected class DownstreamSameScanStrategy extends ScanStrategy {
+  protected class DownstreamSameScanStrategy(collation: Comparator[AnyRef]) extends ScanStrategy {
     val name = "DownstreamSame"
 
-    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint],  collation: Comparator[AnyRef]) = {
+    def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) = {
 
-      val aggregator = new Aggregator(bucketing, collation) // TODO!
+      val aggregator = new Aggregator(bucketing, collation)
       stores(pair).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
