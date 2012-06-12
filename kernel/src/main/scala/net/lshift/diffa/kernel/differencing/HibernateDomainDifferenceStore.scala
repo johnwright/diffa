@@ -410,8 +410,8 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
       foreach(row => initializer(row, pendingEventSequenceKey))
   }
 
-  private val eventSequenceKey = (domain: String) => "%s.events".format(domain)
-  private val pendingEventSequenceKey = (domain: String) => "%s.pending.events".format(domain)
+  private def eventSequenceKey(domain: String) = "%s.events".format(domain)
+  private def pendingEventSequenceKey(domain: String) = "%s.pending.events".format(domain)
 
   private def getPendingEvent(id: VersionID) = {
     val query = (f: Factory) =>
