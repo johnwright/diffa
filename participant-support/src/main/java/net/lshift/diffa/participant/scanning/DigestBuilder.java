@@ -87,10 +87,9 @@ public class DigestBuilder {
   public void add(String id, Map<String, String> attributes, String vsn) {
     log.trace("Adding to bucket: " + id + ", " + attributes + ", " + vsn);
 
-    if (isOutOfOrder(id)) {
+    if (!isCorrectlyOrdered(id)) {
      throw new OutOfOrderException(previousId,id);
     }
-
     previousId = id;
 
     Map<String, String> partitions = new HashMap<String, String>();
@@ -115,11 +114,12 @@ public class DigestBuilder {
     bucket.add(vsn);
   }
 
-    private boolean isOutOfOrder(String id) {
+    private boolean isCorrectlyOrdered(String id) {
       if (previousId != null) {
-        return comparator.compare(id, previousId) <= 0;
+        boolean ret = comparator.compare(id, previousId) > 0;
+        return ret;
       } else {
-        return false;
+        return true;
       }
     }
 
