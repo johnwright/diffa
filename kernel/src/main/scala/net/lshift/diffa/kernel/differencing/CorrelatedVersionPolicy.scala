@@ -22,8 +22,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint, ScanResultEntry}
-import java.util.Comparator
+import net.lshift.diffa.participant.scanning.{IdOrdering, ScanAggregation, ScanConstraint, ScanResultEntry}
 
 
 /**
@@ -38,11 +37,11 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               diagnostics:DiagnosticsManager)
     extends BaseScanningVersionPolicy(stores, listener, systemConfigStore, diagnostics) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, collation: Comparator[AnyRef]) =
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, collation: IdOrdering) =
     new DownstreamCorrelatingScanStrategy(us,ds, collation)
   
   protected class DownstreamCorrelatingScanStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant,
-                                                     collation: Comparator[AnyRef]                                                     )
+                                                     collation: IdOrdering                                                     )
       extends ScanStrategy {
     val name = "DownstreamCorrelating"
 

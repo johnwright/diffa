@@ -32,7 +32,6 @@ import org.apache.lucene.index.{IndexReader, Term}
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.util._
-import java.util.Comparator
 
 /**
  * Implementation of the VersionCorrelationStore that utilises Lucene to store (and index) the version information
@@ -116,7 +115,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory,
     withSearcher(writer, s => {
       val idOnlyCollector = new DocIdOnlyCollector
       s.search(preventEmptyQuery(query), idOnlyCollector)
-      idOnlyCollector.allSortedCorrelations(s, collationFor(UpstreamEndpoint)).filter(c => c.upstreamVsn != null)
+      idOnlyCollector.allSortedCorrelations(s, orderingFor(UpstreamEndpoint)).filter(c => c.upstreamVsn != null)
     })
 
   }
@@ -127,16 +126,16 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory,
     val idOnlyCollector = new DocIdOnlyCollector
     val searcher = new IndexSearcher(writer.getReader)
     searcher.search(preventEmptyQuery(query), idOnlyCollector)
-    idOnlyCollector.allSortedCorrelations(searcher, collationFor(DownstreamEndpoint)).filter(c => c.downstreamUVsn != null)
+    idOnlyCollector.allSortedCorrelations(searcher, orderingFor(DownstreamEndpoint)).filter(c => c.downstreamUVsn != null)
   }
 
-  def collationFor(side: EndpointSide): Comparator[AnyRef] = {
+  def orderingFor(side: EndpointSide): IdOrdering = {
     val p = configStore.getPair(pair)
     val endpointName = side match {
       case UpstreamEndpoint => p.upstream
       case DownstreamEndpoint => p.downstream
     }
-    domainConfigStore.getEndpoint(pair.domain, endpointName).getCollator
+    domainConfigStore.getEndpoint(pair.domain, endpointName).getIdOrdering
   }
 
   def ensureUpgradeable(side:EndpointSide, changes:Seq[CategoryChange]) {
@@ -248,9 +247,9 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory,
       })
     }
 
-    def allSortedCorrelations(searcher:IndexSearcher, collation: Comparator[Object]) = {
-      val ret = allCorrelations(searcher).sortWith((a, b) => collation.compare(a.id, b.id) < 0)
-      logger.info("%s#allSortedCorrelations/%s -> %s".format(this.getClass, collation, ret.map(_.id)))
+    def allSortedCorrelations(searcher:IndexSearcher, ordering: IdOrdering) = {
+      val ret = allCorrelations(searcher).sortWith((a, b) => ordering.sortsBefore(a.id, b.id))
+      logger.info("%s#allSortedCorrelations/%s -> %s".format(this.getClass, ordering, ret.map(_.id)))
       ret
     }
   }

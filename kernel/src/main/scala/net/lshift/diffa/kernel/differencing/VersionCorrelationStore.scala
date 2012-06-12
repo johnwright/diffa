@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory
 import net.lshift.diffa.participant.scanning.ScanConstraint
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.util.{CategoryChange, EndpointSide}
-import java.util.Comparator
 
 /**
  * Store used for caching version correlation information between a pair of participants.

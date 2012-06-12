@@ -6,21 +6,23 @@ import org.junit.experimental.theories.{DataPoint, Theories, Theory}
 import org.hamcrest.Matchers._
 import org.hamcrest.MatcherAssert.assertThat
 
-class UnicodeCollationOrderingTest {
-  @Test def testLt() = assert(UnicodeCollationOrdering.compare("a", "b") < 0)
-  @Test def testMixCaseLt() = assert(UnicodeCollationOrdering.compare("a", "B") < 0)
 
-  @Test def testGt() = assert(UnicodeCollationOrdering.compare("c", "b") > 0)
-  @Test def testMixCaseGt() = assert(UnicodeCollationOrdering.compare("C", "b") > 0)
+// TODO: Remove these; as the functionality is tested in the Java superclass.
+class UnicodeCollationOrderingTest {
+  @Test def testLt() = assert(UnicodeCollationOrdering.sortsBefore("a", "b"))
+  @Test def testMixCaseLt() = assert(UnicodeCollationOrdering.sortsBefore("a", "B"))
+
+  @Test def testGt() = assert(!UnicodeCollationOrdering.sortsBefore("c", "b"))
+  @Test def testMixCaseGt() = assert(!UnicodeCollationOrdering.sortsBefore("C", "b"))
 
 }
 
 
 class AsciiCollationOrderingTest {
-  @Test def testLt() = assert(AsciiCollationOrdering.compare("a", "b") < 0)
-  @Test def testMixCaseLt() = assert(AsciiCollationOrdering.compare("a", "B") > 0)
+  @Test def testLt() = assert(AsciiCollationOrdering.sortsBefore("a", "b"))
+  @Test def testMixCaseLt() = assert(!AsciiCollationOrdering.sortsBefore("a", "B"))
 
-  @Test def testGt() = assert(AsciiCollationOrdering.compare("c", "b") > 0)
-  @Test def testMixCaseGt() = assert(AsciiCollationOrdering.compare("C", "b") < 0)
+  @Test def testGt() = assert(!AsciiCollationOrdering.sortsBefore("c", "b"))
+  @Test def testMixCaseGt() = assert(AsciiCollationOrdering.sortsBefore("C", "b"))
 
 }

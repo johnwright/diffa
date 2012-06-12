@@ -23,7 +23,7 @@ import scala.Option._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.util.{EndpointSide, UpstreamEndpoint, DownstreamEndpoint, CategoryUtil}
 import net.lshift.diffa.participant.scanning.{AggregationBuilder, ConstraintsBuilder, SetConstraint, ScanConstraint}
-import java.util.{Comparator, HashMap}
+import java.util.HashMap
 import net.lshift.diffa.kernel.participants._
 
 /**
@@ -165,7 +165,7 @@ case class Endpoint(
     CategoryUtil.buildAggregations(builder, categories.toMap)
   }
 
- def getCollator () = collation match {
+ def getIdOrdering () = collation match {
     case "unicode" => UnicodeCollationOrdering
     case "ascii" => AsciiCollationOrdering
   }

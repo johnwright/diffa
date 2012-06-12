@@ -20,7 +20,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
-import com.ibm.icu.text.Collator;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
@@ -138,12 +137,12 @@ public class DigestBuilderTest {
 
 
   static class Scenario {
-      final Comparator<Object> collation;
+      final IdOrdering idOrdering;
       final List<String> okaySequence;
       final List<String> failingSequence;
 
-      Scenario(Comparator<Object> coll, List<String> okaySequence, List<String> failingSequence) {
-          this.collation = coll;
+      Scenario(IdOrdering coll, List<String> okaySequence, List<String> failingSequence) {
+          this.idOrdering = coll;
           this.okaySequence = okaySequence;
           this.failingSequence = failingSequence;
       }
@@ -155,19 +154,20 @@ public class DigestBuilderTest {
 
 
   @DataPoint public static Scenario unicode = new Scenario(
-        Collator.getInstance(java.util.Locale.ROOT),
+        new UnicodeCollationAwareIdOrdering(),
         Arrays.asList("bar", "Foo"),
-        Arrays.asList("Far", "boo" ));
+        Arrays.asList("Far", "boo" )
+  );
 
   @DataPoint public static Scenario binary = new Scenario(
-          DigestBuilder.defaultComparison,
+          new NaiveIdOrdering(),
           Arrays.asList("Bar", "Foo"),
           Arrays.asList("far", "boo" ));
 
 
   @Theory
   public void shouldAcceptSpecifiedCollationOrdering(Scenario ex) {
-    DigestBuilder builder = new DigestBuilder(aggregations, ex.collation);
+    DigestBuilder builder = new DigestBuilder(aggregations, ex.idOrdering);
 
     for (String id: ex.okaySequence) {
       builder.add(ScanResultEntry.forEntity(id, "vsn" + id, null, createAttrMap(JUN_7_2009_1, "b")));
@@ -176,14 +176,14 @@ public class DigestBuilderTest {
 
   @Theory
   public void shouldRejectInvalidOrderWithSpecifiedCollationOrdering(Scenario ex) {
-    DigestBuilder builder = new DigestBuilder(aggregations, ex.collation);
+    DigestBuilder builder = new DigestBuilder(aggregations, ex.idOrdering);
 
     try {
       for (String id: ex.failingSequence) {
         builder.add(ScanResultEntry.forEntity(id, "vsn" + id, null, createAttrMap(JUN_7_2009_1, "b")));
       }
-      fail(String.format("Dis-ordered insertion of %s with collation %s should throw Exception",
-              ex.failingSequence, ex.collation));
+      fail(String.format("Dis-ordered insertion of %s with idOrdering %s should throw Exception",
+              ex.failingSequence, ex.idOrdering));
     } catch (Throwable t) {
       // Pass  \o/
     }
