@@ -247,11 +247,8 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory,
       })
     }
 
-    def allSortedCorrelations(searcher:IndexSearcher, ordering: IdOrdering) = {
-      val ret = allCorrelations(searcher).sortWith((a, b) => ordering.sortsBefore(a.id, b.id))
-      logger.info("%s#allSortedCorrelations/%s -> %s".format(this.getClass, ordering, ret.map(_.id)))
-      ret
-    }
+    def allSortedCorrelations(searcher:IndexSearcher, ordering: IdOrdering) = 
+      allCorrelations(searcher).sortWith((a, b) => ordering.sortsBefore(a.id, b.id))
   }
 
   def close = {
