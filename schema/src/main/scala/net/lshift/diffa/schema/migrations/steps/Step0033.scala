@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.kernel.config.migrations
+package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.kernel.config.HibernateMigrationStep
 import java.sql.Types
+import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 
 
 object Step0033 extends HibernateMigrationStep {
-
   def versionId = 33
   def name = "Add the collation field to Endpoints"
 
