@@ -103,7 +103,7 @@ class HibernateSystemConfigStoreTest {
   }
 
   @Test
-  def shouldListDomainsInBinaryCollation = {
+  def shouldListDomainsWithAsciiCollationByDefault = {
     val domainNames = Seq("bar", "Baz", "Foo", "diffa", domainName)
     domainNames.foreach { name =>
       systemConfigStore.createOrUpdateDomain(Domain(name))
