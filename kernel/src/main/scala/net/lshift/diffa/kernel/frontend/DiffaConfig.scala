@@ -87,6 +87,7 @@ case class EndpointDef (
     ValidationUtil.ensureLengthLimit(endPointPath, "versionGenerationUrl", versionGenerationUrl, DEFAULT_URL_LENGTH_LIMIT)
     ValidationUtil.ensureLengthLimit(endPointPath, "inboundUrl", inboundUrl, DEFAULT_URL_LENGTH_LIMIT)
 
+    collation = ValidationUtil.maybeDefault(collation, "ascii")
     ValidationUtil.ensureMembership(endPointPath, "collation", collation,
       Set(DiffaConfig.ASCII_COLLATION, DiffaConfig.UNICODE_COLLATION))
 
