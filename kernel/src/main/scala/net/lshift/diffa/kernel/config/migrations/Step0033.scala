@@ -21,9 +21,9 @@ import net.lshift.diffa.kernel.config.HibernateMigrationStep
 import java.sql.Types
 
 
-object Step0032 extends HibernateMigrationStep {
+object Step0033 extends HibernateMigrationStep {
 
-  def versionId = 32
+  def versionId = 33
   def name = "Add the collation field to Endpoints"
 
   def createMigration(config: Configuration) = {
