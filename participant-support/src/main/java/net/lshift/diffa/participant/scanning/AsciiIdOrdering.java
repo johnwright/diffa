@@ -7,7 +7,7 @@ package net.lshift.diffa.participant.scanning;
  * Time: 19:09
  * To change this template use File | Settings | File Templates.
  */
-public class NaiveIdOrdering implements IdOrdering {
+public class AsciiIdOrdering implements IdOrdering {
   @Override
   public boolean sortsBefore(String left, String right) {
     return left.compareTo(right) < 0;

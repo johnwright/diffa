@@ -160,7 +160,7 @@ public class DigestBuilderTest {
   );
 
   @DataPoint public static Scenario binary = new Scenario(
-          new NaiveIdOrdering(),
+          new AsciiIdOrdering(),
           Arrays.asList("Bar", "Foo"),
           Arrays.asList("far", "boo" ));
 

@@ -53,7 +53,7 @@ public class DigestBuilder {
 
   public DigestBuilder(List<ScanAggregation> aggregations) {
 
-      this(aggregations, new NaiveIdOrdering());
+      this(aggregations, new AsciiIdOrdering());
   }
 
   public DigestBuilder(List<ScanAggregation> aggregations, IdOrdering idOrdering) {

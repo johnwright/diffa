@@ -5,7 +5,7 @@ import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
 import org.hamcrest.Matchers._
 import org.hamcrest.MatcherAssert.assertThat
-import net.lshift.diffa.participant.scanning.{NaiveIdOrdering, IdOrdering}
+import net.lshift.diffa.participant.scanning.{AsciiIdOrdering, IdOrdering}
 
 trait IdOrderingTestMixin {
   val ordering: IdOrdering

@@ -9,9 +9,9 @@ import org.junit.Test;
  * Time: 19:38
  * To change this template use File | Settings | File Templates.
  */
-public class NaiveIdOrderingTest {
+public class AsciiIdOrderingTest {
   
-  private IdOrdering idOrdering = new NaiveIdOrdering();
+  private IdOrdering idOrdering = new AsciiIdOrdering();
   @Test 
   public void testLt() {
     assert(idOrdering.sortsBefore("a", "b"));
