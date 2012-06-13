@@ -16,6 +16,35 @@
 
 package net.lshift.diffa.participant.scanning;
 
+
+/**
+ * This type represents the concept of an ordering of ids. This is so that
+ * we can parameterise the ordering-sensitive parts of our code (Eg: the
+ * DigestBuilder, output from the VersionCorrelationStore) in order to
+ * support systems who might use an ordering that differs from doing naive
+ * ASCII string comparisons. Eg: MySQL uses a swedish case insensitive
+ * collation by default, where the case is considered to be less important
+ * than the relative ordering of the character within the alphabet.
+ * So with a varchar primary key with a case insensitive collation, you might end up
+ * with the following ordering:
+ *
+ * [foo, FooBar, fooBar2]
+ *
+ * Wheras with a plain ASCII-ordered ordering, we would have:
+ *
+ * [FooBar, foo, fooBar2]
+ */
+
 public interface IdOrdering {
+  /**
+   * Describes a strict weak ordering over string values. It is semantically
+   * equivalent to (left < right), but taking into account other criteria
+   * required for an ordering appropriate to the participant's domain (eg:
+   * case sensitivity, numeric ordering, &c).
+   *
+   * @param left The left hand side of the comparison,.
+   * @param right The right hand side of the comparison.
+   * @return The result of said comparison.
+   */
   public boolean sortsBefore(String left, String right);
 }
