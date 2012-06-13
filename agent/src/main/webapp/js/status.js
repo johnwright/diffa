@@ -61,15 +61,8 @@ Diffa.Views.PairList = Backbone.View.extend({
       // insert as first element
       $(this.el).prepend(renderedEl);
     } else {
-      // search for sibling element at the given index
-      var sibling = $(".pair", this.el).eq(opts.index);
-      if (sibling.length == 0) {
-        // no sibling found, index > length so insert as last element
-        $(this.el).append(renderedEl);
-      } else {
-        // insert before sibling
-        sibling.before(renderedEl);
-      }
+      // append after sibling element located one to the left of the given index
+      $(".pair", this.el).eq(opts.index - 1).after(renderedEl);
     }
   },
 
