@@ -5,24 +5,40 @@ import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
 import org.hamcrest.Matchers._
 import org.hamcrest.MatcherAssert.assertThat
+import net.lshift.diffa.participant.scanning.{NaiveIdOrdering, IdOrdering}
 
+trait IdOrderingTestMixin {
+  val ordering: IdOrdering
+  @Theory def sortsBefore(ex: Tuple3[String, String, Boolean]) = ex match {
+    case (left, right, result) =>
+      assert(ordering.sortsBefore(left, right) == result,
+        ("%s should sort before %s => %s".format(left, right, result)))
+  }
+}
 
-// TODO: Remove these; as the functionality is tested in the Java superclass.
-class UnicodeCollationOrderingTest {
-  @Test def testLt() = assert(UnicodeCollationOrdering.sortsBefore("a", "b"))
-  @Test def testMixCaseLt() = assert(UnicodeCollationOrdering.sortsBefore("a", "B"))
+@RunWith(classOf[Theories])
+class UnicodeCollationOrderingTest extends IdOrderingTestMixin {
+  val ordering = UnicodeCollationOrdering
+}
+object UnicodeCollationOrderingTest {
+  @DataPoint def trivial = ("a", "b", true)
+  @DataPoint def caseIsSecondaryToOrdinal = ("a", "B", true)
 
-  @Test def testGt() = assert(!UnicodeCollationOrdering.sortsBefore("c", "b"))
-  @Test def testMixCaseGt() = assert(!UnicodeCollationOrdering.sortsBefore("C", "b"))
+  @DataPoint def cSortsAfterB = ("c", "b", false)
+  @DataPoint def upperCaseDoesNotSortBeforeLower() = ("C", "b", false)
 
 }
 
 
-class AsciiCollationOrderingTest {
-  @Test def testLt() = assert(AsciiCollationOrdering.sortsBefore("a", "b"))
-  @Test def testMixCaseLt() = assert(!AsciiCollationOrdering.sortsBefore("a", "B"))
+@RunWith(classOf[Theories])
+class AsciiCollationOrderingTest extends IdOrderingTestMixin {
+  val ordering = AsciiCollationOrdering
+}
+object AsciiCollationOrderingTest {
+  @DataPoint def trivial = ("a", "b", true)
+  @DataPoint def isCaseInsensitive = ("a", "B", false)
 
-  @Test def testGt() = assert(!AsciiCollationOrdering.sortsBefore("c", "b"))
-  @Test def testMixCaseGt() = assert(AsciiCollationOrdering.sortsBefore("C", "b"))
+  @DataPoint def cSortsAfterB = ("c", "b", false)
+  @DataPoint def upperCaseSortsBeforeLower = ("C", "b", true)
 
 }
