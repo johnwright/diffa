@@ -20,6 +20,7 @@ import org.apache.commons.codec.binary.Hex
 import collection.JavaConversions._
 import net.lshift.diffa.participant.scanning._
 import java.util.Comparator
+import net.lshift.diffa.kernel.config.AsciiCollationOrdering
 
 /**
  * Utilities for helping to make Diffa itself scannable.
@@ -47,9 +48,9 @@ object ScannableUtils {
     def compare(a:String, b:String): Int = a.compareTo(b)
   }
   def maybeAggregate(entries:Seq[ScanResultEntry], aggregations:Seq[ScanAggregation]) :java.util.List[ScanResultEntry] =
-    maybeAggregate(entries, aggregations, defaultComparison)
+    maybeAggregate(entries, aggregations, AsciiCollationOrdering)
 
-  def maybeAggregate(entries:Seq[ScanResultEntry], aggregations:Seq[ScanAggregation], collator: Comparator[Object]):java.util.List[ScanResultEntry] = {
+  def maybeAggregate(entries:Seq[ScanResultEntry], aggregations:Seq[ScanAggregation], collator: IdOrdering):java.util.List[ScanResultEntry] = {
     if (aggregations.length > 0) {
       val digester = new DigestBuilder(aggregations, collator)
       entries.foreach(digester.add(_))

@@ -31,8 +31,6 @@ import javax.servlet.http.HttpServletRequest
 import net.lshift.diffa.kernel.frontend.{SystemConfiguration, DomainDef}
 import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.config.{Domain, ConfigValidationException}
-import java.util.Locale
-import com.ibm.icu.text.Collator
 
 @Path("/root")
 @Component
@@ -126,7 +124,7 @@ class SystemConfigResource {
 
     val domains = ScannableUtils.filterByKey[Domain](systemConfig.listDomains, constraints, _.name)
     val scanResults = domains.map { d => new ScanResultEntry(d.name, generateVersion(d), null, Map("name" -> d.name)) }
-    val aggregated = ScannableUtils.maybeAggregate(scanResults, aggregations, Collator.getInstance(Locale.ROOT))
+    val aggregated = ScannableUtils.maybeAggregate(scanResults, aggregations)
 
     Response.ok(aggregated).build()
   }
