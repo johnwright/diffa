@@ -28,9 +28,7 @@ object Step0033 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-   // This maps to the property Enpoint#collation, but as collation is a 
-   // reserved word, choose an alternative name.
-    migration.alterTable("endpoint").addColumn("collationName", Types.VARCHAR, 16, false, "ascii")
+    migration.alterTable("endpoint").addColumn("idOrdering", Types.VARCHAR, 16, false, "ascii")
     migration
   }
 }

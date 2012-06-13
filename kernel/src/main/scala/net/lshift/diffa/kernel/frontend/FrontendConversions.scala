@@ -32,7 +32,7 @@ object FrontendConversions {
     inboundUrl = e.inboundUrl,
     categories = e.categories,
     views = new java.util.ArrayList[EndpointViewDef](e.views.map(v => toEndpointViewDef(v))),
-    collation = e.collationName)
+    idOrdering = e.idOrdering)
 
   def fromEndpointDef(domain:Domain, e:EndpointDef) = Endpoint(
     name = e.name,
@@ -42,7 +42,7 @@ object FrontendConversions {
     versionGenerationUrl = e.versionGenerationUrl,
     inboundUrl = e.inboundUrl,
     categories = e.categories,
-    collationName = e.collation)
+    idOrdering = e.idOrdering)
 
   def fromEndpointViewDef(endpoint:Endpoint, v:EndpointViewDef) =
     EndpointView(name = v.name, endpoint = endpoint, categories = v.categories)

@@ -77,8 +77,8 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
   def startInventory(pairRef:DiffaPairRef, endpoint:Endpoint, view:Option[String], writer: LimitedVersionCorrelationWriter, side:EndpointSide) = {
     val strategy = side match {
-      case UpstreamEndpoint   => new UpstreamScanStrategy(endpoint.getIdOrdering)
-      case DownstreamEndpoint => downstreamStrategy(null, null, endpoint.getIdOrdering)
+      case UpstreamEndpoint   => new UpstreamScanStrategy(endpoint.lookupOrdering)
+      case DownstreamEndpoint => downstreamStrategy(null, null, endpoint.lookupOrdering)
     }
 
     strategy.startInventory(pairRef, endpoint, view, writer)
@@ -90,8 +90,8 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
   def processInventory(pairRef:DiffaPairRef, endpoint:Endpoint, writer: LimitedVersionCorrelationWriter, side:EndpointSide,
                        constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry]) = {
     val strategy = side match {
-      case UpstreamEndpoint   => new UpstreamScanStrategy(endpoint.getIdOrdering)
-      case DownstreamEndpoint => downstreamStrategy(null, null, endpoint.getIdOrdering)
+      case UpstreamEndpoint   => new UpstreamScanStrategy(endpoint.lookupOrdering)
+      case DownstreamEndpoint => downstreamStrategy(null, null, endpoint.lookupOrdering)
     }
 
     strategy.processInventory(pairRef, endpoint, writer, constraints, aggregations, entries, listener)
@@ -118,7 +118,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
                    listener:DifferencingListener, handle:FeedbackHandle) = {
     benchmark(pairRef, "upstream scan", () => {
       val upstreamConstraints = upstream.groupedConstraints(view)
-      constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy(upstream.getIdOrdering)
+      constraintsOrEmpty(upstreamConstraints).foreach((new UpstreamScanStrategy(upstream.lookupOrdering)
         .scanParticipant(pairRef, writer, upstream, upstream.initialBucketing(view), _, participant, listener, handle)))
     })
   }
@@ -127,7 +127,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
                      ds:DownstreamParticipant, listener:DifferencingListener, handle:FeedbackHandle) = {
     benchmark(pairRef, "downstream scan", () => {
       val downstreamConstraints = downstream.groupedConstraints(view)
-      constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds, downstream.getIdOrdering)
+      constraintsOrEmpty(downstreamConstraints).foreach(downstreamStrategy(us,ds, downstream.lookupOrdering)
         .scanParticipant(pairRef, writer, downstream, downstream.initialBucketing(view), _, ds, listener, handle))
     })
   }

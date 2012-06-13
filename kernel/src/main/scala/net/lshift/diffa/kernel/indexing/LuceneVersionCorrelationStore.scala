@@ -135,7 +135,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory,
       case UpstreamEndpoint => p.upstream
       case DownstreamEndpoint => p.downstream
     }
-    domainConfigStore.getEndpoint(pair.domain, endpointName).getIdOrdering
+    domainConfigStore.getEndpoint(pair.domain, endpointName).lookupOrdering
   }
 
   def ensureUpgradeable(side:EndpointSide, changes:Seq[CategoryChange]) {

@@ -38,7 +38,7 @@ class DiffaConfigReaderWriterTest {
           inboundUrl = "http://inbound",
           scanUrl = "http://localhost:1234/scan",
           contentRetrievalUrl = "http://localhost:1234/content",
-          collation="unicode",
+          idOrdering="unicode",
           categories = Map(
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c")),
@@ -89,7 +89,7 @@ class DiffaConfigReaderWriterTest {
         <endpoint name="upstream1"
                   inbound-url="http://inbound"
                   scan-url="http://localhost:1234/scan" content-url="http://localhost:1234/content"
-                  collation="unicode">
+                  idOrdering="unicode">
           <range-category name="a" data-type="date" lower="2009" upper="2010"/>
           <set-category name="b">
             <value>a</value>
@@ -106,7 +106,7 @@ class DiffaConfigReaderWriterTest {
         </endpoint>
         <endpoint name="downstream1"
                   scan-url="http://localhost:5432/scan" version-url="http://localhost:5432/generate-version"
-                  collation="ascii">
+                  idOrdering="ascii">
           <prefix-category name="c" prefix-length="1" max-length="5" step="1"/>
           <prefix-category name="d" prefix-length="1" max-length="6" step="1"/>
           <view name="little-view">

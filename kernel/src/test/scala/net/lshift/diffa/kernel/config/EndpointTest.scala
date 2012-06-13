@@ -72,12 +72,12 @@ class EndpointTest {
   }
 
   @Test def testGetCollatorForUnicode() = {
-    val ep = new Endpoint(collationName = "unicode")
-    assertEquals(UnicodeCollationOrdering, ep.getIdOrdering)
+    val ep = new Endpoint(idOrdering = "unicode")
+    assertEquals(UnicodeCollationOrdering, ep.lookupOrdering)
   }
   @Test def testGetCollatorForAscii() = {
-    val ep = new Endpoint(collationName = "ascii")
-    assertEquals(AsciiCollationOrdering, ep.getIdOrdering)
+    val ep = new Endpoint(idOrdering = "ascii")
+    assertEquals(AsciiCollationOrdering, ep.lookupOrdering)
 
   }
 }
