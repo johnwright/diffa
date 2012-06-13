@@ -34,13 +34,13 @@
     </table>
     <a class="add-link" href="">Add New</a>
   </dd>
-  <dt>Id Ordering</dt>
-  <dd class="id_ordering">
-    <select name="id_ordering">
-      <option
-    <input data-key="versionGenerationUrl" type="text" size="60"></dd>
+  <dt>Id Ordering Case Sensitivity</dt>
+  <dd class="idOrdering">
+    <input type="radio" data-key="idOrdering" id="idOrderingAscii" name="idOrdering" value="ascii" /> 
+      <label for="idOrderingAscii">Off</label>
+    <input type="radio" data-key="idOrdering" id="idOrderingUnicode" name="idOrdering" value="unicode" />
+      <label for="idOrderingUnicode"><abbr title="Uses unicode collation algorithm">On</abbr></label>
   </dd>
-
 
   <dd class="controls"><button class="save">Save</button> <button class="delete">Delete</button></dd>
 </dl>
