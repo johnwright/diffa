@@ -429,7 +429,12 @@
     </constructor-arg>
   </bean>
 
-  <bean id="domainConfigStore" class="net.lshift.diffa.kernel.config.HibernateDomainConfigStore">
+  <bean id="domainConfigStore" class="net.lshift.diffa.kernel.config.CachedDomainConfigStore">
+    <constructor-arg ref="underlyingDomainConfigStore" />
+    <constructor-arg ref="hazelcastCacheProvider" />
+  </bean>
+
+  <bean id="underlyingDomainConfigStore" class="net.lshift.diffa.kernel.config.HibernateDomainConfigStore">
     <constructor-arg ref="diffaSessionFactory" />
     <constructor-arg ref="databaseFacade" />
     <constructor-arg ref="pairCache" />
