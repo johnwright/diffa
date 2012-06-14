@@ -47,7 +47,7 @@ class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
 
 
     def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) = {
-      val aggregator = new Aggregator(bucketing, collation) // TODO
+      val aggregator = new Aggregator(bucketing, collation)
       stores(pair).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }
