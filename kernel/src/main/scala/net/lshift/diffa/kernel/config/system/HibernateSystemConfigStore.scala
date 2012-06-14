@@ -25,9 +25,12 @@ import net.lshift.diffa.kernel.differencing.StoreCheckpoint
 import org.hibernate.{Query, Session, SessionFactory}
 import org.apache.commons.lang.RandomStringUtils
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
+import net.lshift.diffa.schema.tables.Pair.PAIR
 
 class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
                                  db:DatabaseFacade,
+                                 jooq:JooqDatabaseFacade,
                                  val pairCache:PairCache)
     extends SystemConfigStore with HibernateQueryUtils {
 
@@ -70,10 +73,13 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
   def listDomains = db.listQuery[Domain]("allDomains", Map())
 
-  def getPair(pair:DiffaPairRef) : DiffaPair = getPair(pair.domain, pair.key)
-  def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
+  //def getPair(pair:DiffaPairRef) : DiffaPair = getPair(pair.domain, pair.key)
+  //def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
 
-  def listPairs = db.listQuery[DiffaPair]("allPairs", Map())
+  def listPairs = jooq.execute { t =>
+    t.select().from(PAIR).fetch().map(ResultMappingUtil.recordToDomainPairDef)
+  }
+
   def listEndpoints = db.listQuery[Endpoint]("allEndpoints", Map())
 
 

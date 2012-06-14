@@ -22,28 +22,43 @@ import net.lshift.diffa.kernel.util.cache.CacheProvider
 class CachedDomainConfigStore(underlying:DomainConfigStore,
                               cacheProvider:CacheProvider) extends DomainConfigStore {
 
-  val pairsByEndpoint = cacheProvider.getCachedMap[String,Seq[DiffaPair]]("domain.pairs.by.endpoint")
+  val pairsByEndpoint = cacheProvider.getCachedMap[String,Seq[PairDef]]("domain.pairs.by.endpoint")
 
   def reset {
     pairsByEndpoint.evictAll()
   }
 
-  def listPairsForEndpoint(domain: String, endpoint: String): Seq[DiffaPair] = {
+  def listPairsForEndpoint(domain: String, endpoint: String): Seq[PairDef] = {
     pairsByEndpoint.readThrough(
       formatKey(domain, endpoint),
       () => underlying.listPairsForEndpoint(domain, endpoint)
     )
   }
 
+  def deleteEndpoint(domain: String, endpoint: String) = {
+    underlying.deleteEndpoint(domain, endpoint)
+    pairsByEndpoint.evict(formatKey(domain, endpoint))
+  }
 
+  def deletePair(domain: String, key: String) = {
+    underlying.deletePair(domain, key)
 
+    // TODO we should be more judicuous about this eviction, since it nukes the whole cache
+
+    pairsByEndpoint.evictAll()
+  }
+
+  def createOrUpdatePair(domain: String, pair: PairDef) = {
+    underlying.createOrUpdatePair(domain, pair)
+    //pairsByEndpoint.put(formatKey(domain, pair.upstreamName), )
+  }
 
   def listRepairActionsForPair(domain: String, key: String) = underlying.listRepairActionsForPair(domain, key)
+
   def createOrUpdateEndpoint(domain: String, endpoint: EndpointDef) = underlying.createOrUpdateEndpoint(domain, endpoint)
-  def deleteEndpoint(domain: String, name: String) = underlying.deleteEndpoint(domain, name)
   def listEndpoints(domain: String): Seq[EndpointDef] = underlying.listEndpoints(domain)
-  def createOrUpdatePair(domain: String, pairDef: PairDef) = underlying.createOrUpdatePair(domain, pairDef)
-  def deletePair(domain: String, key: String) = underlying.deletePair(domain, key)
+
+
   def listPairs(domain: String) = underlying.listPairs(domain)
   def createOrUpdateRepairAction(domain: String, action: RepairActionDef) = underlying.createOrUpdateRepairAction(domain, action)
   def deleteRepairAction(domain: String, name: String, pairKey: String) = underlying.deleteRepairAction(domain, name, pairKey)
@@ -58,7 +73,7 @@ class CachedDomainConfigStore(underlying:DomainConfigStore,
   def listReportsForPair(domain: String, key: String) = underlying.listReportsForPair(domain, key)
   def getEndpointDef(domain: String, name: String): EndpointDef = underlying.getEndpointDef(domain, name)
   def getEndpoint(domain: String, name: String): Endpoint = underlying.getEndpoint(domain, name)
-  def getPairDef(domain: String, key: String): PairDef = underlying.getPairDef(domain, key)
+  def getPairDef(domain: String, key: String) = underlying.getPairDef(domain, key)
   def getRepairActionDef(domain: String, name: String, pairKey: String) = underlying.getRepairActionDef(domain, name, pairKey)
   def getPairReportDef(domain: String, name: String, pairKey: String) = underlying.getPairReportDef(domain, name, pairKey)
   def getConfigVersion(domain: String) = underlying.getConfigVersion(domain)

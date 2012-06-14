@@ -57,8 +57,11 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   def clearSystemConfigOption(key: String) = underlying.clearSystemConfigOption(key)
   def maybeSystemConfigOption(key: String) = underlying.maybeSystemConfigOption(key)
   def systemConfigOptionOrDefault(key: String, defaultVal: String) = underlying.systemConfigOptionOrDefault(key, defaultVal)
-  def getPair(domain: String, pairKey: String) = underlying.getPair(domain, pairKey)
-  def getPair(pair: DiffaPairRef) = underlying.getPair(pair)
+  //def getPair(domain: String, pairKey: String) = underlying.getPair(domain, pairKey)
+
+
+  //def getPair(pair: DiffaPairRef) = underlying.getPair(pair)
+
   def listPairs = underlying.listPairs
   def listEndpoints = underlying.listEndpoints
 

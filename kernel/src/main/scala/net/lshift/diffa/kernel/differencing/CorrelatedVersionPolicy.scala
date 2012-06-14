@@ -33,9 +33,8 @@ import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint, S
  */
 class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               listener:DifferencingListener,
-                              systemConfigStore:SystemConfigStore,
                               diagnostics:DiagnosticsManager)
-    extends BaseScanningVersionPolicy(stores, listener, systemConfigStore, diagnostics) {
+    extends BaseScanningVersionPolicy(stores, listener, diagnostics) {
 
   def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingScanStrategy(us,ds)
   

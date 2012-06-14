@@ -51,13 +51,13 @@ class Changes(val domainConfig:DomainConfigStore,
     val typedAttributes = targetEndpoint.schematize(evtAttributes)
 
     domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
-      val pairEvt = if (pair.upstream == endpoint) {
-        UpstreamPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
+      val pairEvt = if (pair.upstreamName == endpoint) {
+        UpstreamPairChangeEvent(VersionID(pair.asRef(domain), evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
       } else {
         if (pair.versionPolicyName == "same" || evt.getParentVersion == null) {
-          DownstreamPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
+          DownstreamPairChangeEvent(VersionID(pair.asRef(domain), evt.getId), typedAttributes, evt.getLastUpdated, evt.getVersion)
         } else {
-          DownstreamCorrelatedPairChangeEvent(VersionID(pair.asRef, evt.getId), typedAttributes, evt.getLastUpdated, evt.getParentVersion, evt.getVersion)
+          DownstreamCorrelatedPairChangeEvent(VersionID(pair.asRef(domain), evt.getId), typedAttributes, evt.getLastUpdated, evt.getParentVersion, evt.getVersion)
         }
       }
 
@@ -68,7 +68,7 @@ class Changes(val domainConfig:DomainConfigStore,
 
       if (issues.size > 0) {
         log.warn("Dropping invalid pair event " + pairEvt + " due to issues " + issues)
-        diagnostics.logPairExplanation(pair.asRef, "Version Policy",
+        diagnostics.logPairExplanation(pair.asRef(domain), "Version Policy",
           "The result %s was dropped since it didn't meet the request constraints. Identified issues were (%s)".format(
             pairEvt, issues.map { case (k, v) => k + ": " + v }.mkString(", ")))
       } else {
@@ -76,7 +76,7 @@ class Changes(val domainConfig:DomainConfigStore,
         //    that the DifferencesManager doesn't emit spurious events.
 
         // If there is a matcher available, notify it first
-        mm.getMatcher(pair.asRef) match {
+        mm.getMatcher(pair.asRef(domain)) match {
           case None =>
           case Some(matcher) => matcher.onChange(pairEvt, () => {})
         }
@@ -102,7 +102,7 @@ class Changes(val domainConfig:DomainConfigStore,
       val side = pair.whichSide(targetEndpoint)
 
       // Propagate the change event to the corresponding policy
-      requests ++= changeEventClient.startInventory(pair.asRef, side, view)
+      requests ++= changeEventClient.startInventory(pair.asRef(domain), side, view)
     })
 
     requests.toSeq
@@ -128,10 +128,10 @@ class Changes(val domainConfig:DomainConfigStore,
 
     val nextRequests = scala.collection.mutable.Set[ScanRequest]()
     domainConfig.listPairsForEndpoint(domain, endpoint).foreach(pair => {
-      val side = if (pair.upstream == endpoint) UpstreamEndpoint else DownstreamEndpoint
+      val side = if (pair.upstreamName == endpoint) UpstreamEndpoint else DownstreamEndpoint
 
       // Propagate the change event to the corresponding policy
-      nextRequests ++= changeEventClient.submitInventory(pair.asRef, side, fullConstraints, aggregations, entries)
+      nextRequests ++= changeEventClient.submitInventory(pair.asRef(domain), side, fullConstraints, aggregations, entries)
     })
 
     nextRequests.toSeq

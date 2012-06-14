@@ -24,13 +24,18 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.CacheWrapper
 import org.hibernate.transform.ResultTransformer
 import java.util.List
 import java.sql.SQLIntegrityConstraintViolationException
+import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
+import net.lshift.diffa.schema.tables.Pair.PAIR
+import org.jooq.Record
+import net.lshift.diffa.kernel.util.{MissingObjectException, CacheWrapper}
+;
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  db:DatabaseFacade,
+                                 jooq:JooqDatabaseFacade,
                                  pairCache:PairCache,
                                  hookManager:HookManager,
                                  cacheManager:CacheManager,
@@ -127,8 +132,21 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   def listPairsFromPersistence(domain:String) = db.listQuery[DiffaPair]("pairsByDomain", Map("domain_name" -> domain)).map(toPairDef(_))
 
-  def listPairsForEndpoint(domain:String, endpoint:String) =
-    db.listQuery[DiffaPair]("pairsByEndpoint", Map("domain_name" -> domain, "endpoint_name" -> endpoint))
+  def listPairsForEndpoint(domain:String, endpoint:String) = jooq.execute { t =>
+    t.select().from(PAIR).where(
+        PAIR.DOMAIN.equal(domain)).
+        and(PAIR.UPSTREAM.equal(endpoint).or(PAIR.DOWNSTREAM.equal(endpoint))
+      ).
+      fetch().map{ p => PairDef(
+        key = p.getValue(PAIR.PAIR_KEY),
+        upstreamName = p.getValue(PAIR.UPSTREAM),
+        downstreamName = p.getValue(PAIR.DOWNSTREAM),
+        versionPolicyName = p.getValue(PAIR.VERSION_POLICY_NAME),
+        scanCronSpec = p.getValue(PAIR.SCAN_CRON_SPEC),
+        allowManualScans = p.getValue(PAIR.ALLOW_MANUAL_SCANS),
+        views = null // Probably not needed by things that use this query, famous last words.....
+    )}
+  }
 
   def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] =
     getRepairActionsInPair(domain, pairKey).map(toRepairActionDef(_))
@@ -188,7 +206,19 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   def getEndpointDef(domain:String, name: String) = sessionFactory.withSession(s => toEndpointDef(getEndpoint(s, domain, name)))
   def getEndpoint(domain:String, name: String) = sessionFactory.withSession(s => getEndpoint(s, domain, name))
-  def getPairDef(domain:String, key: String) = sessionFactory.withSession(s => toPairDef(getPair(s, domain, key)))
+
+
+  def getPairDef(domain:String, key: String) = jooq.execute { t =>
+    Option(
+      t.select().
+        from(PAIR).
+        where(PAIR.DOMAIN.equal(domain).and(PAIR.PAIR_KEY.equal(key))).
+        fetchOne()
+    ).map(ResultMappingUtil.recordToDomainPairDef).getOrElse {
+      throw new MissingObjectException(domain + "/" + key)
+    }
+  }
+
   def getRepairActionDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toRepairActionDef(getRepairAction(s, domain, name, pairKey)))
   def getPairReportDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toPairReportDef(getReport(s, domain, name, pairKey)))
 

@@ -20,6 +20,7 @@ import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.junit.{Test, Before}
 import org.junit.Assert._
+import net.lshift.diffa.kernel.frontend.PairDef
 
 class CachedDomainConfigStoreTest {
 
@@ -29,8 +30,8 @@ class CachedDomainConfigStoreTest {
 
   val cachedServiceLimitStore = new CachedDomainConfigStore(underlying, cacheProvider)
 
-  val pair1 = DiffaPair(key = "pair1")
-  val pair2 = DiffaPair(key = "pair2")
+  val pair1 = PairDef(key = "pair1")
+  val pair2 = PairDef(key = "pair2")
 
   @Before
   def resetCache {

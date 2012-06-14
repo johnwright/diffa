@@ -273,10 +273,6 @@
     select u from User u order by u.name asc
   </query>
 
-  <query name="allPairs">
-    select p from DiffaPair p
-  </query>
-
   <query name="allDomains">
     select d from Domain d order by d.name asc
   </query>
@@ -300,14 +296,6 @@
 
   <query name="rootUserCount" cacheable="true">
     select count(*) from User u where u.name in (:user_names) and u.superuser = true
-  </query>
-
-  <!-- Queries by endpoint -->
-  <query name="pairsByEndpoint" cacheable="true">
-    select p from DiffaPair p
-    where
-      p.domain.name = :domain_name and
-      (p.upstream = :endpoint_name or p.downstream = :endpoint_name)
   </query>
 
   <query name="endpointViewsByEndpoint" cacheable="true">

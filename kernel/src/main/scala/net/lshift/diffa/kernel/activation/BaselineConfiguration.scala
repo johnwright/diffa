@@ -22,6 +22,7 @@ import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.db.HibernateDatabaseFacade
 import net.lshift.diffa.kernel.config.{Member, DomainMembershipAware, PairCache, HibernateDomainConfigStore}
+import net.lshift.diffa.schema.jooq.DatabaseFacade
 
 /**
  * This creates a baseline data set in the DB once the Hibernate session factory
@@ -40,13 +41,16 @@ class BaselineConfiguration extends SessionFactoryObserver {
       def onMembershipCreated(member: Member) {}
       def onMembershipRemoved(member: Member) {}
     }
+
+
+    /*
     val config = new HibernateDomainConfigStore(factory,
                                                 new HibernateDatabaseFacade(factory, null),
                                                 new PairCache(cacheManager),
                                                 new HookManager,
                                                 cacheManager,
                                                 membershipListener)
-
+    */
     log.debug("Diffa baseline configuration created")
   }
 

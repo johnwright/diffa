@@ -21,6 +21,7 @@ import reflect.BeanProperty
 import org.quartz.CronExpression
 import java.util.HashMap
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.util.{DownstreamEndpoint, UpstreamEndpoint, EndpointSide}
 
 /**
  * Describes a complete Diffa configuration in the context of a domain - this means that all of the objects
@@ -153,6 +154,18 @@ case class PairDef(
 
   def this() = this(key = null)
 
+  def asRef(domain:String) = DiffaPairRef(key, domain)
+
+  def whichSide(endpoint:EndpointDef):EndpointSide = {
+    if (upstreamName == endpoint.name) {
+      UpstreamEndpoint
+    } else if (downstreamName == endpoint.name) {
+      DownstreamEndpoint
+    } else {
+      throw new IllegalArgumentException(endpoint.name + " is not a member of pair " + key)
+    }
+  }
+
   def validate(path:String = null, endpoints:Set[EndpointDef] = null) {
     val pairPath = ValidationUtil.buildPath(path, "pair", Map("key" -> key))
 
@@ -233,6 +246,22 @@ case class PairViewDef(
       }
     }
   }
+}
+
+case class DomainPairDef(
+  var domain: String = null,
+  var key: String = null,
+  var versionPolicyName: String = null,
+  var matchingTimeout: Int = 0,
+  var upstreamName: String = null,
+  var downstreamName: String = null,
+  var scanCronSpec: String = null,
+  var allowManualScans: java.lang.Boolean = null,
+  var views:java.util.Set[PairViewDef] = new java.util.HashSet[PairViewDef]) {
+
+  def asRef = DiffaPairRef(key, domain)
+
+  def identifier = asRef.identifier
 }
 
 /**
