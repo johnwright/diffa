@@ -16,11 +16,11 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.participant.scanning.{AsciiIdOrdering, UnicodeCollationAwareIdOrdering, IdOrdering}
+import net.lshift.diffa.participant.scanning.{AsciiCollation, UnicodeCollation, Collation}
 
-object UnicodeCollationOrdering extends UnicodeCollationAwareIdOrdering {
+object UnicodeCollationOrdering extends UnicodeCollation {
 }
 
 
-object AsciiCollationOrdering extends AsciiIdOrdering {
+object AsciiCollationOrdering extends AsciiCollation {
 }

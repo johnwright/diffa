@@ -142,7 +142,7 @@ class CastorSerializableEndpoint extends Categorized {
   @BeanProperty var versionGenerationUrl: String = null
   @BeanProperty var inboundUrl: String = null
   @BeanProperty var views: java.util.List[CastorSerializableEndpointView] = new java.util.ArrayList[CastorSerializableEndpointView]
-  @BeanProperty var idOrdering: String = null
+  @BeanProperty var collation: String = null
 
   def fromDiffaEndpoint(e:EndpointDef) = {
     this.name = e.name
@@ -152,7 +152,7 @@ class CastorSerializableEndpoint extends Categorized {
     this.inboundUrl = e.inboundUrl
     this.fromDiffaCategories(e.categories)
     this.views = e.views.map(v => new CastorSerializableEndpointView().fromDiffaEndpointView(v));
-    this.idOrdering = e.idOrdering
+    this.collation = e.collation
 
     this
   }
@@ -163,7 +163,7 @@ class CastorSerializableEndpoint extends Categorized {
       scanUrl = scanUrl, contentRetrievalUrl = contentRetrievalUrl, versionGenerationUrl = versionGenerationUrl,
       categories = toDiffaCategories,
       views = views.map(v => v.toDiffaEndpointView),
-      idOrdering = idOrdering
+      collation = collation
     )
 }
 

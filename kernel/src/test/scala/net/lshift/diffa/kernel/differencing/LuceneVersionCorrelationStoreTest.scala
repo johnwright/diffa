@@ -760,7 +760,7 @@ object LuceneVersionCorrelationStoreTest {
     )
     Seq( "dummyUpstream", "dummyDownstream").foreach { sideName: String =>
       EasyMock.expect(dummyDomainConfigStore.getEndpoint(domainName, "%s-%s".format(pair.key, sideName))
-      ).andStubReturn(Endpoint(idOrdering=collation))
+      ).andStubReturn(Endpoint(collation=collation))
     }
   }
 

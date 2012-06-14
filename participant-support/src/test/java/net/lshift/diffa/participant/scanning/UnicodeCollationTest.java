@@ -15,14 +15,23 @@
  */
 package net.lshift.diffa.participant.scanning;
 
-import com.ibm.icu.text.Collator;
-import java.util.Locale;
+import org.junit.Test;
 
-public class UnicodeCollationAwareIdOrdering implements IdOrdering {
-  private Collator coll = Collator.getInstance(Locale.ROOT);
-
-  @Override
-  public boolean sortsBefore(String left, String right) {
-    return coll.compare(left, right) < 0;
+public class UnicodeCollationTest {
+  private Collation collation = new UnicodeCollation();
+  @Test
+  public void trivial() {
+    assert(collation.sortsBefore("a", "b"));
   }
+  @Test public void caseIsSecondaryToOrdinal() {
+    assert(collation.sortsBefore("a", "B"));
+  }
+
+  @Test public void cSortsAfterB() {
+    assert(!collation.sortsBefore("c", "b"));
+  }
+  @Test public void upperCaseDoesNotSortBeforeLower() {
+    assert(!collation.sortsBefore("C", "b"));
+  }
+
 }

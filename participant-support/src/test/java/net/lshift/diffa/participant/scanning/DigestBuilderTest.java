@@ -137,12 +137,12 @@ public class DigestBuilderTest {
 
 
   static class Scenario {
-      final IdOrdering idOrdering;
+      final Collation collation;
       final List<String> okaySequence;
       final List<String> failingSequence;
 
-      Scenario(IdOrdering coll, List<String> okaySequence, List<String> failingSequence) {
-          this.idOrdering = coll;
+      Scenario(Collation coll, List<String> okaySequence, List<String> failingSequence) {
+          this.collation = coll;
           this.okaySequence = okaySequence;
           this.failingSequence = failingSequence;
       }
@@ -154,20 +154,20 @@ public class DigestBuilderTest {
 
 
   @DataPoint public static Scenario unicode = new Scenario(
-        new UnicodeCollationAwareIdOrdering(),
+        new UnicodeCollation(),
         Arrays.asList("bar", "Foo"),
         Arrays.asList("Far", "boo" )
   );
 
   @DataPoint public static Scenario binary = new Scenario(
-          new AsciiIdOrdering(),
+          new AsciiCollation(),
           Arrays.asList("Bar", "Foo"),
           Arrays.asList("far", "boo" ));
 
 
   @Theory
   public void shouldAcceptSpecifiedCollationOrdering(Scenario ex) {
-    DigestBuilder builder = new DigestBuilder(aggregations, ex.idOrdering);
+    DigestBuilder builder = new DigestBuilder(aggregations, ex.collation);
 
     for (String id: ex.okaySequence) {
       builder.add(ScanResultEntry.forEntity(id, "vsn" + id, null, createAttrMap(JUN_7_2009_1, "b")));
@@ -176,14 +176,14 @@ public class DigestBuilderTest {
 
   @Theory
   public void shouldRejectInvalidOrderWithSpecifiedCollationOrdering(Scenario ex) {
-    DigestBuilder builder = new DigestBuilder(aggregations, ex.idOrdering);
+    DigestBuilder builder = new DigestBuilder(aggregations, ex.collation);
 
     try {
       for (String id: ex.failingSequence) {
         builder.add(ScanResultEntry.forEntity(id, "vsn" + id, null, createAttrMap(JUN_7_2009_1, "b")));
       }
-      fail(String.format("Dis-ordered insertion of %s with idOrdering %s should throw Exception",
-              ex.failingSequence, ex.idOrdering));
+      fail(String.format("Dis-ordered insertion of %s with collation %s should throw Exception",
+              ex.failingSequence, ex.collation));
     } catch (Throwable t) {
       // Pass  \o/
     }

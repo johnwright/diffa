@@ -15,9 +15,14 @@
  */
 package net.lshift.diffa.participant.scanning;
 
-public class AsciiIdOrdering implements IdOrdering {
+import com.ibm.icu.text.Collator;
+import java.util.Locale;
+
+public class UnicodeCollation implements Collation {
+  private Collator coll = Collator.getInstance(Locale.ROOT);
+
   @Override
   public boolean sortsBefore(String left, String right) {
-    return left.compareTo(right) < 0;
+    return coll.compare(left, right) < 0;
   }
 }

@@ -129,13 +129,13 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory,
     idOnlyCollector.allSortedCorrelations(searcher, orderingFor(DownstreamEndpoint)).filter(c => c.downstreamUVsn != null)
   }
 
-  def orderingFor(side: EndpointSide): IdOrdering = {
+  def orderingFor(side: EndpointSide): Collation = {
     val p = configStore.getPair(pair)
     val endpointName = side match {
       case UpstreamEndpoint => p.upstream
       case DownstreamEndpoint => p.downstream
     }
-    domainConfigStore.getEndpoint(pair.domain, endpointName).lookupOrdering
+    domainConfigStore.getEndpoint(pair.domain, endpointName).lookupCollation
   }
 
   def ensureUpgradeable(side:EndpointSide, changes:Seq[CategoryChange]) {
@@ -247,7 +247,7 @@ class LuceneVersionCorrelationStore(val pair: DiffaPairRef, index:Directory,
       })
     }
 
-    def allSortedCorrelations(searcher:IndexSearcher, ordering: IdOrdering) = 
+    def allSortedCorrelations(searcher:IndexSearcher, ordering: Collation) =
       allCorrelations(searcher).sortWith((a, b) => ordering.sortsBefore(a.id, b.id))
   }
 

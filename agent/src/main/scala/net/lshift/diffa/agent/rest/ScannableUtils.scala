@@ -50,7 +50,7 @@ object ScannableUtils {
   def maybeAggregate(entries:Seq[ScanResultEntry], aggregations:Seq[ScanAggregation]) :java.util.List[ScanResultEntry] =
     maybeAggregate(entries, aggregations, AsciiCollationOrdering)
 
-  def maybeAggregate(entries:Seq[ScanResultEntry], aggregations:Seq[ScanAggregation], collator: IdOrdering):java.util.List[ScanResultEntry] = {
+  def maybeAggregate(entries:Seq[ScanResultEntry], aggregations:Seq[ScanAggregation], collator: Collation):java.util.List[ScanResultEntry] = {
     if (aggregations.length > 0) {
       val digester = new DigestBuilder(aggregations, collator)
       entries.foreach(digester.add(_))

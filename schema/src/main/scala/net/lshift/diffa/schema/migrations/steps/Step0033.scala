@@ -28,7 +28,8 @@ object Step0033 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.alterTable("endpoint").addColumn("idOrdering", Types.VARCHAR, 16, false, "ascii")
+    migration.alterTable("endpoint").addColumn("collation_type", Types.VARCHAR, 16, false, "ascii")
     migration
   }
 }
+                                       p

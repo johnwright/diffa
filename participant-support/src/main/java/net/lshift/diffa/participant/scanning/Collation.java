@@ -35,7 +35,7 @@ package net.lshift.diffa.participant.scanning;
  * [FooBar, foo, fooBar2]
  */
 
-public interface IdOrdering {
+public interface Collation {
   /**
    * Describes a strict weak ordering over string values. It is semantically
    * equivalent to (left < right), but taking into account other criteria

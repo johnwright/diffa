@@ -72,25 +72,25 @@ class EndpointDefValidationTest extends DefValidationTestBase {
   @Test
   def shouldDefaultToAsciiOrdering() = {
     val endpoint = EndpointDef(name="dummy")
-    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.idOrdering)
+    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.collation)
   }
 
   def shouldAcceptEndpointWithAsciiCollation {
-    val endpoint = EndpointDef(name="dummy", idOrdering="ascii")
+    val endpoint = EndpointDef(name="dummy", collation="ascii")
     assertIsValid(endpoint)
 
-    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.idOrdering)
+    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.collation)
   }
   @Test
   def shouldAcceptEndpointWithUnicodeCollation {
-    val endpoint = EndpointDef(name="dummy", idOrdering="unicode")
+    val endpoint = EndpointDef(name="dummy", collation="unicode")
     assertIsValid(endpoint)
-    assertEquals(DiffaConfig.UNICODE_COLLATION, endpoint.idOrdering)
+    assertEquals(DiffaConfig.UNICODE_COLLATION, endpoint.collation)
   }
 
   @Test
   def shouldRejectInvalidCollation {
-    val endpoint = EndpointDef(name="dummy", idOrdering="dummy")
+    val endpoint = EndpointDef(name="dummy", collation="dummy")
     validateError(endpoint, "config/endpoint[name=dummy]: collation is invalid. dummy is not a member of the set Set(ascii, unicode)")
   }
 

@@ -116,7 +116,7 @@ case class Endpoint(
   @BeanProperty var versionGenerationUrl: String = null,
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
-  @BeanProperty var idOrdering: String = "ascii") {
+  @BeanProperty var collation: String = "ascii") {
 
   // Don't include this in the header definition, since it is a lazy collection
   @BeanProperty var views: java.util.Set[EndpointView] = new java.util.HashSet[EndpointView]
@@ -165,7 +165,7 @@ case class Endpoint(
     CategoryUtil.buildAggregations(builder, categories.toMap)
   }
 
- def lookupOrdering () = idOrdering match {
+ def lookupCollation () = collation match {
     case "unicode" => UnicodeCollationOrdering
     case "ascii" => AsciiCollationOrdering
   }

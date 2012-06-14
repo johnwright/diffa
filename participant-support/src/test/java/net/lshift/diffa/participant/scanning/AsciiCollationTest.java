@@ -17,21 +17,22 @@ package net.lshift.diffa.participant.scanning;
 
 import org.junit.Test;
 
-public class UnicodeCollationAwareIdOrderingTest {
-  private IdOrdering idOrdering = new UnicodeCollationAwareIdOrdering();
-  @Test
-  public void testLt() {
-    assert(idOrdering.sortsBefore("a", "b"));
+public class AsciiCollationTest {
+  
+  private Collation collation = new AsciiCollation();
+  @Test 
+  public void trivial() {
+    assert(collation.sortsBefore("a", "b"));
   }
-  @Test public void testMixCaseLt() {
-    assert(idOrdering.sortsBefore("a", "B"));
+  @Test public void isCaseSensitive() {
+    assert(!collation.sortsBefore("a", "B"));
   }
 
-  @Test public void testGt() {
-    assert(!idOrdering.sortsBefore("c", "b"));
+  @Test public void cSortsAfterB() {
+    assert(!collation.sortsBefore("c", "b"));
   }
-  @Test public void testMixCaseGt() {
-    assert(!idOrdering.sortsBefore("C", "b"));
+  @Test public void upperCaseSortsBeforeLower() {
+    assert(collation.sortsBefore("C", "b"));
   }
 
 }

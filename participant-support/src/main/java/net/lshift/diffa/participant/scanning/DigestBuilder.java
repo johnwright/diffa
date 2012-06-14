@@ -47,23 +47,23 @@ public class DigestBuilder {
   // this should be a Comparator<String>, but both ICU and the JDK's Collators
   // implement Comparator<Object>. Even  though they both compare strings.
   // So much for Type safety.
-  private final IdOrdering idOrdering;
+  private final Collation collation;
   private String previousId = null;
 
 
   public DigestBuilder(List<ScanAggregation> aggregations) {
 
-      this(aggregations, new AsciiIdOrdering());
+      this(aggregations, new AsciiCollation());
   }
 
-  public DigestBuilder(List<ScanAggregation> aggregations, IdOrdering idOrdering) {
+  public DigestBuilder(List<ScanAggregation> aggregations, Collation collation) {
     this.aggregations = aggregations;
     this.digestBuckets = new HashMap<BucketKey, Bucket>();
 
-    if (idOrdering == null) {
+    if (collation == null) {
       throw new NullPointerException("Collator is null");
     }
-    this.idOrdering = idOrdering;
+    this.collation = collation;
   }
 
   /**
@@ -114,7 +114,7 @@ public class DigestBuilder {
 
     private boolean isCorrectlyOrdered(String id) {
       if (previousId != null) {
-        return !idOrdering.sortsBefore(id, previousId);
+        return !collation.sortsBefore(id, previousId);
       } else {
         return true;
       }
