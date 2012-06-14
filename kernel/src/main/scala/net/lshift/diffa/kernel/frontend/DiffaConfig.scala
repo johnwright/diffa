@@ -65,7 +65,7 @@ case class EndpointDef (
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
   @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef],
-  @BeanProperty var collation: String = "ascii") {
+  @BeanProperty var collation: String = AsciiCollationOrdering.name) {
 
   def this() = this(name = null)
 
@@ -87,9 +87,9 @@ case class EndpointDef (
     ValidationUtil.ensureLengthLimit(endPointPath, "versionGenerationUrl", versionGenerationUrl, DEFAULT_URL_LENGTH_LIMIT)
     ValidationUtil.ensureLengthLimit(endPointPath, "inboundUrl", inboundUrl, DEFAULT_URL_LENGTH_LIMIT)
 
-    collation = ValidationUtil.maybeDefault(collation, "ascii")
+    collation = ValidationUtil.maybeDefault(collation, AsciiCollationOrdering.name)
     ValidationUtil.ensureMembership(endPointPath, "collation", collation,
-      Set(DiffaConfig.ASCII_COLLATION, DiffaConfig.UNICODE_COLLATION))
+      Set(AsciiCollationOrdering.name, UnicodeCollationOrdering.name))
 
     Array(scanUrl,
           contentRetrievalUrl,
@@ -106,11 +106,6 @@ case class EndpointDef (
     ValidationUtil.ensureUniqueChildren(endPointPath, "views", "name", views.map(v => v.name))
     views.foreach(v => v.validate(this, endPointPath))
   }
-}
-
-object DiffaConfig {
-  val ASCII_COLLATION = "ascii"
-  val UNICODE_COLLATION = "unicode"
 }
 
 case class EndpointViewDef(

@@ -38,7 +38,7 @@ class DiffaConfigReaderWriterTest {
           inboundUrl = "http://inbound",
           scanUrl = "http://localhost:1234/scan",
           contentRetrievalUrl = "http://localhost:1234/content",
-          collation="unicode",
+          collation=UnicodeCollationOrdering.name,
           categories = Map(
             "a" -> new RangeCategoryDescriptor("date", "2009", "2010"),
             "b" -> new SetCategoryDescriptor(Set("a", "b", "c")),

@@ -25,6 +25,7 @@ import org.junit.experimental.theories.{DataPoint, Theories, Theory, DataPoints}
 import net.lshift.diffa.kernel.config.EndpointTest.ConstraintExpectation
 import net.lshift.diffa.participant.scanning.{IntegerRangeConstraint, TimeRangeConstraint, DateRangeConstraint, ScanConstraint}
 import org.joda.time.{DateTimeZone, LocalDate, DateTime}
+import net.lshift.diffa.kernel.frontend.DiffaConfig
 
 /**
  * Test cases for the Endpoint class.
@@ -72,11 +73,11 @@ class EndpointTest {
   }
 
   @Test def testGetCollatorForUnicode() = {
-    val ep = new Endpoint(collation = "unicode")
+    val ep = new Endpoint(collation = UnicodeCollationOrdering.name)
     assertEquals(UnicodeCollationOrdering, ep.lookupCollation)
   }
   @Test def testGetCollatorForAscii() = {
-    val ep = new Endpoint(collation = "ascii")
+    val ep = new Endpoint(collation = AsciiCollationOrdering.name)
     assertEquals(AsciiCollationOrdering, ep.lookupCollation)
 
   }

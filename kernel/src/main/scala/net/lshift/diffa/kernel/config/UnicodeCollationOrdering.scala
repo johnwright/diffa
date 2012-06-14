@@ -19,8 +19,10 @@ package net.lshift.diffa.kernel.config
 import net.lshift.diffa.participant.scanning.{AsciiCollation, UnicodeCollation, Collation}
 
 object UnicodeCollationOrdering extends UnicodeCollation {
+  val name = "unicode"
 }
 
 
 object AsciiCollationOrdering extends AsciiCollation {
+  val name = "ascii"
 }

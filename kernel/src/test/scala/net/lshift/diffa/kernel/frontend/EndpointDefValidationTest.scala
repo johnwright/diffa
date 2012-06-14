@@ -1,9 +1,9 @@
 package net.lshift.diffa.kernel.frontend
 
 import org.junit.Test
-import net.lshift.diffa.kernel.config.RangeCategoryDescriptor
 import scala.collection.JavaConversions._
 import org.junit.Assert.assertEquals
+import net.lshift.diffa.kernel.config.{UnicodeCollationOrdering, AsciiCollationOrdering, RangeCategoryDescriptor}
 
 /**
  * Verify that EndpointDef constraints are enforced.
@@ -72,20 +72,20 @@ class EndpointDefValidationTest extends DefValidationTestBase {
   @Test
   def shouldDefaultToAsciiOrdering() = {
     val endpoint = EndpointDef(name="dummy")
-    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.collation)
+    assertEquals(AsciiCollationOrdering.name, endpoint.collation)
   }
 
   def shouldAcceptEndpointWithAsciiCollation {
     val endpoint = EndpointDef(name="dummy", collation="ascii")
     assertIsValid(endpoint)
 
-    assertEquals(DiffaConfig.ASCII_COLLATION, endpoint.collation)
+    assertEquals(AsciiCollationOrdering.name, endpoint.collation)
   }
   @Test
   def shouldAcceptEndpointWithUnicodeCollation {
     val endpoint = EndpointDef(name="dummy", collation="unicode")
     assertIsValid(endpoint)
-    assertEquals(DiffaConfig.UNICODE_COLLATION, endpoint.collation)
+    assertEquals(UnicodeCollationOrdering.name, endpoint.collation)
   }
 
   @Test

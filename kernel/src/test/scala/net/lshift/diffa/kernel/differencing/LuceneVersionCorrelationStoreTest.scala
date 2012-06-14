@@ -751,7 +751,9 @@ object LuceneVersionCorrelationStoreTest {
     maybeSystemConfigOption(VersionCorrelationStore.schemaVersionKey)).
     andStubReturn(Some(VersionCorrelationStore.currentSchemaVersion.toString))
 
-  Map(pair -> "ascii", pairWithUnicodeOrder -> "unicode").foreach { case (pair, collation) =>
+  Map(pair -> AsciiCollationOrdering.name,
+    pairWithUnicodeOrder -> UnicodeCollationOrdering.name).foreach {
+    case (pair, collation) =>
     EasyMock.expect(dummyConfigStore.getPair(pair)
     ).andStubReturn(
       DiffaPair(key=pair.key, domain=Domain(name=domainName),
