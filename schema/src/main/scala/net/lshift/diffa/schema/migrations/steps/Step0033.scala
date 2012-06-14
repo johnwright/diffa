@@ -32,4 +32,3 @@ object Step0033 extends HibernateMigrationStep {
     migration
   }
 }
-                                       p
