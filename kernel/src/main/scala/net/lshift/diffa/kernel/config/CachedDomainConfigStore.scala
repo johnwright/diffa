@@ -21,19 +21,34 @@ import net.lshift.diffa.kernel.util.cache.CacheProvider
 
 class CachedDomainConfigStore(underlying:DomainConfigStore,
                               cacheProvider:CacheProvider) extends DomainConfigStore {
-  
+
+  val pairsByEndpoint = cacheProvider.getCachedMap[String,Seq[DiffaPair]]("domain.pairs.by.endpoint")
+
+  def reset {
+    pairsByEndpoint.evictAll()
+  }
+
+  def listPairsForEndpoint(domain: String, endpoint: String): Seq[DiffaPair] = {
+    pairsByEndpoint.readThrough(
+      formatKey(domain, endpoint),
+      () => underlying.listPairsForEndpoint(domain, endpoint)
+    )
+  }
+
+
+
+
   def listRepairActionsForPair(domain: String, key: String) = underlying.listRepairActionsForPair(domain, key)
   def createOrUpdateEndpoint(domain: String, endpoint: EndpointDef) = underlying.createOrUpdateEndpoint(domain, endpoint)
   def deleteEndpoint(domain: String, name: String) = underlying.deleteEndpoint(domain, name)
   def listEndpoints(domain: String): Seq[EndpointDef] = underlying.listEndpoints(domain)
   def createOrUpdatePair(domain: String, pairDef: PairDef) = underlying.createOrUpdatePair(domain, pairDef)
   def deletePair(domain: String, key: String) = underlying.deletePair(domain, key)
-  def listPairs(domain: String): Seq[PairDef] = underlying.listPairs(domain)
-  def listPairsForEndpoint(domain: String, endpoint: String): Seq[DiffaPair] = underlying.listPairsForEndpoint(domain, endpoint)
+  def listPairs(domain: String) = underlying.listPairs(domain)
   def createOrUpdateRepairAction(domain: String, action: RepairActionDef) = underlying.createOrUpdateRepairAction(domain, action)
   def deleteRepairAction(domain: String, name: String, pairKey: String) = underlying.deleteRepairAction(domain, name, pairKey)
   def listRepairActions(domain: String) = underlying.listRepairActions(domain)
-  def listEscalations(domain: String): Seq[EscalationDef] = underlying.listEscalations(domain)
+  def listEscalations(domain: String) = underlying.listEscalations(domain)
   def deleteEscalation(domain: String, s: String, s1: String) = underlying.deleteEscalation(domain, s, s1)
   def createOrUpdateEscalation(domain: String, escalation: EscalationDef) = underlying.createOrUpdateEscalation(domain, escalation)
   def listEscalationsForPair(domain: String, key: String) = underlying.listEscalationsForPair(domain, key)
@@ -55,4 +70,6 @@ class CachedDomainConfigStore(underlying:DomainConfigStore,
   def makeDomainMember(domain: String, userName: String): Member = underlying.makeDomainMember(domain, userName)
   def removeDomainMembership(domain: String, userName: String) = underlying.removeDomainMembership(domain, userName)
   def listDomainMembers(domain: String): Seq[Member] = underlying.listDomainMembers(domain)
+
+  private def formatKey(domain: String, objectName: String) = "%s/%s".format(domain, objectName)
 }
