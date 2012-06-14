@@ -162,8 +162,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     this.preBind();
 
     // Clear the contents of all bound fields, except for radio buttons
-    var ets = $('input[data-key]', this.el).not('input:radio').val(''); 
-    console.log("Cleared", ets);
+    $('input[data-key]', this.el).not('input:radio').val(''); 
     Backbone.ModelBinding.bind(this, {all: "data-key"});
 
     this.postBind();
