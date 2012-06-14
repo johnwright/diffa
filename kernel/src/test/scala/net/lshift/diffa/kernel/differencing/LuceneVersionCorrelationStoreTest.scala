@@ -409,7 +409,7 @@ class LuceneVersionCorrelationStoreTest {
   }
 
   @Test
-  def queryUpstreamRangeReturnsInIDOrder = {
+  def queryUpstreamRangeReturnsInIDOrderWithAsciiOrdering = {
     val writer = store.openWriter()
     writer.storeUpstreamVersion(VersionID(pair, "id7"), bizDateTimeMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")
     writer.storeUpstreamVersion(VersionID(pair, "id6"), bizDateTimeMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
@@ -425,7 +425,7 @@ class LuceneVersionCorrelationStoreTest {
   }
 
   @Test
-  def queryDownstreamRangeReturnsInIDOrder = {
+  def queryDownstreamRangeReturnsInIDOrderWithAsciiOrdering = {
     val writer = store.openWriter()
     writer.storeDownstreamVersion(VersionID(pair, "id7"), bizDateTimeMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
     writer.storeDownstreamVersion(VersionID(pair, "id6"), bizDateTimeMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
@@ -441,7 +441,23 @@ class LuceneVersionCorrelationStoreTest {
   }
 
   @Test
-  def queryDownstreamRangeCanReturnResultsWithSpecifiedCollation = {
+  def queryUpstreamRangeCanReturnResultsWithUnicodeCollation = {
+    val writer = storeWithUnicodeOrder.openWriter()
+    writer.storeUpstreamVersion(VersionID(pairWithUnicodeOrder, "FooBarWithSuffix"), bizDateTimeMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7")
+    writer.storeUpstreamVersion(VersionID(pairWithUnicodeOrder, "foo"), bizDateTimeMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6")
+    writer.flush()
+
+    val collector = new Collector
+    val digests = storeWithUnicodeOrder.queryUpstreams(List(), collector.collectUpstream)
+    assertEquals(
+      List(
+        CollectedUpstreamDetail(VersionID(pairWithUnicodeOrder, "foo"), AttributesUtil.toUntypedMap(bizDateTimeMap(DEC_1_2009)), DEC_1_2009, "upstreamVsn-id6"),
+        CollectedUpstreamDetail(VersionID(pairWithUnicodeOrder, "FooBarWithSuffix"), AttributesUtil.toUntypedMap(bizDateTimeMap(DEC_2_2009)), DEC_2_2009, "upstreamVsn-id7")),
+      collector.upstreamObjs.toList)
+  }
+
+  @Test
+  def queryDownstreamRangeCanReturnResultsWithUnicodeCollation = {
     val writer = storeWithUnicodeOrder.openWriter()
     writer.storeDownstreamVersion(VersionID(pairWithUnicodeOrder, "foo"), bizDateTimeMap(DEC_1_2009), DEC_1_2009, "upstreamVsn-id6", "downstreamVsn-id6")
     writer.storeDownstreamVersion(VersionID(pairWithUnicodeOrder, "FooBarWithSuffix"),bizDateTimeMap(DEC_2_2009), DEC_2_2009, "upstreamVsn-id7", "downstreamVsn-id7")
