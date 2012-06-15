@@ -29,12 +29,8 @@ import net.lshift.diffa.participant.scanning.{AggregationBuilder, ConstraintsBui
 /**
  * Provides general configuration options within the scope of a particular domain.
  */
-trait InternalDomainConfigStore {
-  def getPairDef(domain:String, key: String) : DomainPairDef
-  def getPairDef(ref:DiffaPairRef) : DomainPairDef = getPairDef(ref.domain, ref.key)
-}
 
-trait ExternalDomainConfigStore {
+trait DomainConfigStore {
 
   def createOrUpdateEndpoint(domain:String, endpoint: EndpointDef) : Endpoint
   def deleteEndpoint(domain:String, name: String) : Unit
@@ -44,6 +40,9 @@ trait ExternalDomainConfigStore {
   def deletePair(domain:String, key: String) : Unit
   def listPairs(domain:String) : Seq[PairDef]
   def listPairsForEndpoint(domain:String, endpoint:String) : Seq[PairDef]
+
+  def getPairDef(domain:String, key: String) : DomainPairDef
+  def getPairDef(ref:DiffaPairRef) : DomainPairDef = getPairDef(ref.domain, ref.key)
 
   def createOrUpdateRepairAction(domain:String, action: RepairActionDef) : Unit
   def deleteRepairAction(domain:String, name: String, pairKey: String) : Unit
@@ -111,8 +110,6 @@ trait ExternalDomainConfigStore {
    */
   def listDomainMembers(domain:String) : Seq[Member]
 }
-
-trait DomainConfigStore extends InternalDomainConfigStore with ExternalDomainConfigStore
 
 case class Endpoint(
   @BeanProperty var name: String = null,
