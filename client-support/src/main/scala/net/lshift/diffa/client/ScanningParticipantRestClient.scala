@@ -73,6 +73,10 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
     RequestBuildingHelper.constraintsToQueryArguments(params, constraints)
     RequestBuildingHelper.aggregationsToQueryArguments(params, aggregations)
 
+    // TODO We use the scanUrl as a basis for all of the error logging, although it doesn't contain
+    // any of the constraint or aggregation parameters
+    // But we eed to be careful to add these on, since they could potentially leak authentication data
+
     def prepareRequest(query:Option[QueryParameterCredentials]) = buildGetRequest(params, query)
     val (httpClient, httpGet) = maybeAuthenticate(prepareRequest)
 
@@ -83,8 +87,8 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
       statusCode match {
         case 200 => handleJsonResponse(response)
         case _   =>
-          log.error("{} External scan error, response code: {}",
-            Array(formatAlertCode(EXTERNAL_SCAN_ERROR), statusCode))
+          val template = "%s Received HTTP %s response code requesting %s"
+          log.error(template.format(formatAlertCode(EXTERNAL_SCAN_ERROR), statusCode, scanUrl))
           throw new ScanFailedException("Participant scan failed: %s\n%s".format(
             statusCode, EntityUtils.toString(response.getEntity)))
       }
@@ -94,7 +98,7 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
         // NOTICE: ScanFailedException is handled specially (see its class documentation).
         throw new ScanFailedException("Could not connect to " + scanUrl)
       case ex: SocketException =>
-        log.error("Socket closed to %s closed".format(SCAN_CONNECTION_CLOSED, scanUrl))
+        log.error("%s Socket closed to %s closed".format(SCAN_CONNECTION_CLOSED, scanUrl))
         // NOTICE: ScanFailedException is handled specially (see its class documentation).
         throw new ScanFailedException("Connection to %s closed unexpectedly, query %s".format(
           scanUrl, uri.getQuery))
