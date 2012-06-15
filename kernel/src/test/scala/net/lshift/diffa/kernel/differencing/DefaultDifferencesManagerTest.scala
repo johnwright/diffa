@@ -30,6 +30,7 @@ import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import org.joda.time.{DateTimeZone, DateTime, Duration, Interval}
+import net.lshift.diffa.kernel.frontend.DomainPairDef
 
 /**
  * Test cases for the participant protocol factory.
@@ -66,8 +67,8 @@ class DefaultDifferencesManagerTest {
   val u = Endpoint(name = "1", scanUrl = "http://foo.com/scan", inboundUrl = "changes")
   val d = Endpoint(name = "2", scanUrl = "http://bar.com/scan", inboundUrl = "changes", contentRetrievalUrl = "http://foo.com/content")
 
-  val pair1 = DiffaPair(key = "pair1", domain = domain1, versionPolicyName = "policy", upstream = u.name, downstream = d.name)
-  val pair2 = DiffaPair(key = "pair2", domain = domain1, versionPolicyName = "policy", upstream = u.name, downstream = d.name, matchingTimeout = 5)
+  val pair1 = DomainPairDef(key = "pair1", domain = domain1.name, versionPolicyName = "policy", upstreamName = u.name, downstreamName = d.name)
+  val pair2 = DomainPairDef(key = "pair2", domain = domain1.name, versionPolicyName = "policy", upstreamName = u.name, downstreamName = d.name, matchingTimeout = 5)
 
 
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
@@ -123,8 +124,8 @@ class DefaultDifferencesManagerTest {
     participantFactory.createUpstreamParticipant(u, pair1.asRef)
     participantFactory.createDownstreamParticipant(d, pair1.asRef)
 
-    expect(systemConfigStore.getPair(domainName, "pair1")).andStubReturn(pair1)
-    expect(systemConfigStore.getPair(domainName, "pair2")).andStubReturn(pair2)
+    expect(domainConfigStore.getPairDef(domainName, "pair1")).andStubReturn(pair1)
+    expect(domainConfigStore.getPairDef(domainName, "pair2")).andStubReturn(pair2)
     expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
     expect(matchingManager.getMatcher(pair1.asRef)).andStubReturn(Some(matcher))
     expect(matchingManager.getMatcher(pair2.asRef)).andStubReturn(Some(matcher))
@@ -137,7 +138,7 @@ class DefaultDifferencesManagerTest {
     replay(systemConfigStore, matchingManager, domainConfigStore)
   }
 
-  def expectDifferenceForPair(pairs:DiffaPair*)  = {
+  def expectDifferenceForPair(pairs:DomainPairDef*)  = {
     pairs.foreach(p => {
       expect(pairPolicyClient.difference(p.asRef)).atLeastOnce
     })

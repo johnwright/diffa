@@ -156,6 +156,17 @@ case class PairDef(
 
   def asRef(domain:String) = DiffaPairRef(key, domain)
 
+  def asDomainPairDef(domainName:String) = DomainPairDef(
+    domain = domainName,
+    key = this.key,
+    matchingTimeout = this.matchingTimeout,
+    upstreamName = this.upstreamName,
+    downstreamName = this.downstreamName,
+    scanCronSpec = this.scanCronSpec,
+    allowManualScans = this.allowManualScans,
+    views = this.views
+  )
+
   def whichSide(endpoint:EndpointDef):EndpointSide = {
     if (upstreamName == endpoint.name) {
       UpstreamEndpoint
@@ -257,7 +268,7 @@ case class DomainPairDef(
   var downstreamName: String = null,
   var scanCronSpec: String = null,
   var allowManualScans: java.lang.Boolean = null,
-  var views:java.util.Set[PairViewDef] = new java.util.HashSet[PairViewDef]) {
+  var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
 
   def asRef = DiffaPairRef(key, domain)
 

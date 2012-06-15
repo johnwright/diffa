@@ -18,6 +18,7 @@ package net.lshift.diffa.kernel.config
 
 import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.util.db.DatabaseFacade
+import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.sf.ehcache.CacheManager
 import org.easymock.EasyMock._
@@ -29,6 +30,7 @@ class DomainMembershipAwareTest {
 
   val sf = createStrictMock(classOf[SessionFactory])
   val db = createStrictMock(classOf[DatabaseFacade])
+  val jf = createStrictMock(classOf[JooqDatabaseFacade])
   val pc = E4.createStrictMock(classOf[PairCache])
   val hm = E4.createNiceMock(classOf[HookManager])
   val cm = E4.createNiceMock(classOf[CacheManager])
@@ -46,7 +48,7 @@ class DomainMembershipAwareTest {
 
   val membershipListener = createStrictMock(classOf[DomainMembershipAware])
 
-  val domainConfigStore = new HibernateDomainConfigStore(sf,db,pc,hm,cm, membershipListener)
+  val domainConfigStore = new HibernateDomainConfigStore(sf,db,jf,pc,hm,cm, membershipListener)
 
   val user = User(name = "u")
   val domain = Domain(name = "d")

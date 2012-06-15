@@ -101,6 +101,8 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     throw new IllegalStateException("Failed to initialize environment before using DataSource")
   }
 
+  private val jooqDatabaseFacade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
+
   private def makeStore[T](consFn: SessionFactory => T, className: String): T = _sessionFactory match {
     case Some(sf) =>
       consFn(sf)
@@ -112,10 +114,10 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     makeStore[ServiceLimitsStore](sf => new HibernateServiceLimitsStore(sf, new HibernateDatabaseFacade(sf,ds)), "ServiceLimitsStore")
 
   private lazy val _systemConfigStore =
-    makeStore(sf => new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), pairCache), "SystemConfigStore")
+    makeStore(sf => new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, pairCache), "SystemConfigStore")
 
   private lazy val _domainConfigStore =
-    makeStore(sf => new HibernateDomainConfigStore(sf, new HibernateDatabaseFacade(sf,ds), pairCache, hookManager, cacheManager, membershipListener), "domainConfigStore")
+    makeStore(sf => new HibernateDomainConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, pairCache, hookManager, cacheManager, membershipListener), "domainConfigStore")
 
   private lazy val _domainCredentialsStore =
     makeStore(sf => new JooqDomainCredentialsStore(facade), "domainCredentialsStore")
