@@ -40,7 +40,7 @@ import net.lshift.diffa.kernel.config.{InternalDomainConfigStore, DiffaPairRef, 
  * Quartz backed implementation of the ScanScheduler.
  */
 class QuartzScanScheduler(systemConfig:SystemConfigStore,
-                          domainConfig:InternalDomainConfigStore,
+                          domainConfig:DomainConfigStore,
                           pairPolicyClient:PairPolicyClient,
                           name:String)
     extends ScanScheduler
