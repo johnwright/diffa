@@ -32,12 +32,12 @@ import org.apache.http.message.BasicNameValuePair
 import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
 import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
-import java.net.{ConnectException, SocketException, URI}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
 import org.apache.http.HttpResponse
 import java.io.{IOException, InputStream}
 import net.lshift.diffa.kernel.differencing.{ScanLimitBreachedException, ScanFailedException}
+import java.net.{SocketTimeoutException, ConnectException, SocketException, URI}
 
 
 /**
@@ -98,9 +98,14 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
         // NOTICE: ScanFailedException is handled specially (see its class documentation).
         throw new ScanFailedException("Could not connect to " + scanUrl)
       case ex: SocketException =>
-        log.error("%s Socket closed to %s closed".format(SCAN_CONNECTION_CLOSED, scanUrl))
+        log.error("%s Socket closed to %s".format(SCAN_CONNECTION_CLOSED, scanUrl))
         // NOTICE: ScanFailedException is handled specially (see its class documentation).
         throw new ScanFailedException("Connection to %s closed unexpectedly, query %s".format(
+          scanUrl, uri.getQuery))
+      case ex: SocketTimeoutException =>
+        log.error("%s Socket time out for %s".format(SCAN_SOCKET_TIMEOUT, scanUrl))
+        // NOTICE: ScanFailedException is handled specially (see its class documentation).
+        throw new ScanFailedException("Socket to %s timed out unexpectedly, query %s".format(
           scanUrl, uri.getQuery))
     } finally {
       shutdownImmediate(httpClient)
