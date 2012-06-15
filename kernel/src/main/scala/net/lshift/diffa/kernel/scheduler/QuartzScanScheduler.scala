@@ -34,7 +34,7 @@ import net.lshift.diffa.kernel.actors.PairPolicyClient
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import scala.collection.JavaConversions._
 import reflect.BeanProperty
-import net.lshift.diffa.kernel.config.{InternalDomainConfigStore, DiffaPairRef, DomainConfigStore, DiffaPair}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore, DiffaPair}
 
 /**
  * Quartz backed implementation of the ScanScheduler.
