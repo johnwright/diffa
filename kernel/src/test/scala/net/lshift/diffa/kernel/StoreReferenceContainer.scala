@@ -101,7 +101,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     throw new IllegalStateException("Failed to initialize environment before using DataSource")
   }
 
-  private val jooqDatabaseFacade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
+  private lazy val jooqDatabaseFacade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
 
   private def makeStore[T](consFn: SessionFactory => T, className: String): T = _sessionFactory match {
     case Some(sf) =>
