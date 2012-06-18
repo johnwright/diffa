@@ -21,6 +21,7 @@ import net.lshift.diffa.kernel.frontend.{PairViewDef, DomainPairDef}
 import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 object ResultMappingUtil {
 
@@ -37,7 +38,11 @@ object ResultMappingUtil {
     )
   }
 
-  def recordToDomainPairDef(result:Result[Record]) : DomainPairDef = {
+  /**
+   * This fetches the associated PAIR_VIEWS child records from the PAIR parent,
+   * under the assumption that the result set only contains one parent record.
+   */
+  def singleParentRecordToDomainPairDef(result:Result[Record]) : DomainPairDef = {
 
     val record = result.get(0)
 

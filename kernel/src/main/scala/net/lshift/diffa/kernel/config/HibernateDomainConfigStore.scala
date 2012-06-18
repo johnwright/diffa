@@ -210,9 +210,10 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
 
   def getPairDef(domain:String, key: String) = jooq.execute { t =>
-    Option(
+
+    val result =
       t.select(PAIR.getFields).
-        select(PAIR_VIEWS.getFields).
+        select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC).
         from(PAIR).
           leftOuterJoin(PAIR_VIEWS).
             on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
@@ -226,16 +227,25 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
               t.selectOne().
                 from(PAIR_VIEWS).
                 where(
-                PAIR_VIEWS.DOMAIN.equal(domain).
+                  PAIR_VIEWS.DOMAIN.equal(domain).
                   and(PAIR_VIEWS.PAIR.equal(key))
               )
             )
           )
-        ).
-        fetch()
-    ).map(ResultMappingUtil.recordToDomainPairDef).getOrElse {
-      throw new MissingObjectException(domain + "/" + key)
+        ).fetch()
+
+    if (result.size() == 0) {
+      //throw new MissingObjectException(domain + "/" + key)
+
+      // TODO Ideally this code should throw something more descriptive like the above error
+      // but for now, I'd like to keep this patch small
+
+      throw new MissingObjectException("pair")
     }
+    else {
+      ResultMappingUtil.singleParentRecordToDomainPairDef(result)
+    }
+
   }
 
   def getRepairActionDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toRepairActionDef(getRepairAction(s, domain, name, pairKey)))
