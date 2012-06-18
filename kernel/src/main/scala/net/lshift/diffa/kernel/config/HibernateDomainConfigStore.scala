@@ -29,6 +29,7 @@ import java.util.List
 import java.sql.SQLIntegrityConstraintViolationException
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.schema.tables.Pair.PAIR
+import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import org.jooq.Record
 import net.lshift.diffa.kernel.util.{MissingObjectException, CacheWrapper}
 ;
@@ -210,10 +211,28 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   def getPairDef(domain:String, key: String) = jooq.execute { t =>
     Option(
-      t.select().
+      t.select(PAIR.getFields).
+        select(PAIR_VIEWS.getFields).
         from(PAIR).
-        where(PAIR.DOMAIN.equal(domain).and(PAIR.PAIR_KEY.equal(key))).
-        fetchOne()
+          leftOuterJoin(PAIR_VIEWS).
+            on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
+            and(PAIR_VIEWS.DOMAIN.equal(PAIR.DOMAIN)).
+        where(PAIR.DOMAIN.equal(domain).
+          and(PAIR.PAIR_KEY.equal(key)).
+          and(
+            PAIR_VIEWS.DOMAIN.equal(domain).
+            and(PAIR_VIEWS.PAIR.equal(key)).
+            orNotExists(
+              t.selectOne().
+                from(PAIR_VIEWS).
+                where(
+                PAIR_VIEWS.DOMAIN.equal(domain).
+                  and(PAIR_VIEWS.PAIR.equal(key))
+              )
+            )
+          )
+        ).
+        fetch()
     ).map(ResultMappingUtil.recordToDomainPairDef).getOrElse {
       throw new MissingObjectException(domain + "/" + key)
     }

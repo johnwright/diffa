@@ -16,9 +16,11 @@
 
 package net.lshift.diffa.kernel.config
 
-import org.jooq.Record
-import net.lshift.diffa.kernel.frontend.DomainPairDef
-import net.lshift.diffa.schema.tables.Pair._
+import org.jooq.{Result, Record}
+import net.lshift.diffa.kernel.frontend.{PairViewDef, DomainPairDef}
+import net.lshift.diffa.schema.tables.Pair.PAIR
+import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
+import scala.collection.JavaConversions._
 
 object ResultMappingUtil {
 
@@ -27,10 +29,34 @@ object ResultMappingUtil {
       key = r.getValue(PAIR.PAIR_KEY),
       upstreamName = r.getValue(PAIR.UPSTREAM),
       downstreamName = r.getValue(PAIR.DOWNSTREAM),
+      matchingTimeout = r.getValue(PAIR.MATCHING_TIMEOUT),
       versionPolicyName = r.getValue(PAIR.VERSION_POLICY_NAME),
       scanCronSpec = r.getValue(PAIR.SCAN_CRON_SPEC),
       allowManualScans = r.getValue(PAIR.ALLOW_MANUAL_SCANS),
       views = null // Probably not needed by things that use this query, famous last words.....
     )
+  }
+
+  def recordToDomainPairDef(result:Result[Record]) : DomainPairDef = {
+
+    val record = result.get(0)
+
+    val pair = DomainPairDef(
+      key = record.getValue(PAIR.PAIR_KEY),
+      upstreamName = record.getValue(PAIR.UPSTREAM),
+      downstreamName = record.getValue(PAIR.DOWNSTREAM),
+      matchingTimeout = record.getValue(PAIR.MATCHING_TIMEOUT),
+      versionPolicyName = record.getValue(PAIR.VERSION_POLICY_NAME),
+      scanCronSpec = record.getValue(PAIR.SCAN_CRON_SPEC),
+      allowManualScans = record.getValue(PAIR.ALLOW_MANUAL_SCANS),
+      views = null
+    )
+
+    pair.views = result.iterator().map(r => PairViewDef(
+      name = r.getValue(PAIR_VIEWS.NAME),
+      scanCronSpec = r.getValue(PAIR_VIEWS.SCAN_CRON_SPEC)
+    )).toList
+
+    pair
   }
 }
