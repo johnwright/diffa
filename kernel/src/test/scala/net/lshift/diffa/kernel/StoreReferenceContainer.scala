@@ -180,5 +180,4 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     _sessionFactory.get.withSession(s => s.createCriteria(classOf[User]).list.foreach(s.delete(_)))
   }
 
-  def sessionStatistics = _sessionFactory.get.getStatistics
 }
