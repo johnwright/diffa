@@ -428,8 +428,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def listPairViews(s:Session, domain:String, pairKey:String) =
     db.listQuery[PairView]("pairViewsByPair", Map("domain_name" -> domain, "pair_key" -> pairKey))
 
-
-  private def formatDomainScopedKey(domain: String, objectName: String) = "%s/%s".format(domain, objectName)
 }
 
 // These key classes need to be serializable .......

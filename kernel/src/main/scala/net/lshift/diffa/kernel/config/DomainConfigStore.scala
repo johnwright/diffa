@@ -44,8 +44,8 @@ trait DomainConfigStore {
   def getPairDef(domain:String, key: String) : DomainPairDef
   def getPairDef(ref:DiffaPairRef) : DomainPairDef = getPairDef(ref.domain, ref.key)
 
-  def createOrUpdateRepairAction(domain:String, action: RepairActionDef) : Unit
-  def deleteRepairAction(domain:String, name: String, pairKey: String) : Unit
+  def createOrUpdateRepairAction(domain:String, action: RepairActionDef)
+  def deleteRepairAction(domain:String, name: String, pairKey: String)
 
   def listRepairActions(domain:String) : Seq[RepairActionDef]
   def listRepairActionsForPair(domain:String, key: String) : Seq[RepairActionDef]
