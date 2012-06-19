@@ -45,7 +45,7 @@ class CachedDomainConfigStoreTest {
   }
 
   @Test
-  def shouldCacheIndividualPairDefs = {
+  def shouldCacheIndividualPairDefs {
 
     val pair = DomainPairDef(key = "pair", domain = "domain")
     expect(jooq.execute(anyObject[Function1[Factory,DomainPairDef]]())).andReturn(pair).once()
@@ -61,9 +61,45 @@ class CachedDomainConfigStoreTest {
     E4.verify(jooq)
   }
 
+  @Test
+  def shouldCacheListingPairDefs = {
+
+    val pair1 = DomainPairDef(key = "pair1", domain = "domain")
+    val pair2 = DomainPairDef(key = "pair2", domain = "domain")
+    expect(jooq.execute(anyObject[Function1[Factory,Seq[DomainPairDef]]]())).andReturn(Seq(pair1, pair2)).once()
+
+    E4.replay(jooq)
+
+    val firstCall = domainConfig.listPairs("domain")
+    assertEquals(Seq(pair1, pair2), firstCall)
+
+    val secondCall = domainConfig.listPairs("domain")
+    assertEquals(Seq(pair1, pair2), secondCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheListingPairDefsByEndpoint = {
+
+    val pair1 = DomainPairDef(key = "pair1", domain = "domain")
+    val pair2 = DomainPairDef(key = "pair2", domain = "domain")
+    expect(jooq.execute(anyObject[Function1[Factory,Seq[DomainPairDef]]]())).andReturn(Seq(pair1, pair2)).once()
+
+    E4.replay(jooq)
+
+    val firstCall = domainConfig.listPairsForEndpoint("domain", "endpoint")
+    assertEquals(Seq(pair1, pair2), firstCall)
+
+    val secondCall = domainConfig.listPairsForEndpoint("domain", "endpoint")
+    assertEquals(Seq(pair1, pair2), secondCall)
+
+    E4.verify(jooq)
+  }
+
   // TODO Comment this back in when caching for endpoints lands
   //@Test
-  def shouldCacheIndividualEndpoints = {
+  def shouldCacheIndividualEndpoints {
 
     val endpoint = EndpointDef(name = "endpoint")
     expect(jooq.execute(anyObject[Function1[Factory,EndpointDef]]())).andReturn(endpoint).once()
