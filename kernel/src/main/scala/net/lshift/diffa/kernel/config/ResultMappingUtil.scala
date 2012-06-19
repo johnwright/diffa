@@ -47,6 +47,7 @@ object ResultMappingUtil {
     val record = result.get(0)
 
     val pair = DomainPairDef(
+      domain = record.getValue(PAIR.DOMAIN),
       key = record.getValue(PAIR.PAIR_KEY),
       upstreamName = record.getValue(PAIR.UPSTREAM),
       downstreamName = record.getValue(PAIR.DOWNSTREAM),
