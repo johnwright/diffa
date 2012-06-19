@@ -16,15 +16,16 @@
 package net.lshift.diffa.kernel.config
 
 import org.junit.Test
-import org.easymock.EasyMock._
+import org.junit.Assert._
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.util.db.DatabaseFacade
 import org.easymock.EasyMock._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.kernel.util.db.DatabaseFacade
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.easymock.classextension.{EasyMock => E4}
+import org.jooq.impl.Factory
+import net.lshift.diffa.kernel.frontend.DomainPairDef
 
 class CachedDomainConfigStoreTest {
 
@@ -40,14 +41,18 @@ class CachedDomainConfigStoreTest {
 
   @Test
   def shouldCacheIndividualPairDefs = {
-    val pair = DiffaPairRef("domain", "pair")
-    expect(jooq.execute(anyObject())).asStub()
 
-    replay(jooq)
+    val pair = DomainPairDef(key = "pair", domain = "domain")
+    expect(jooq.execute(anyObject[Function1[Factory,DomainPairDef]]())).andReturn(pair).once()
 
-    domainConfig.getPairDef(pair)
+    E4.replay(jooq)
 
+    val firstCall = domainConfig.getPairDef(pair.asRef)
+    assertEquals(pair, firstCall)
 
-    verify(jooq)
+    val secondCall = domainConfig.getPairDef(pair.asRef)
+    assertEquals(pair, secondCall)
+
+    E4.verify(jooq)
   }
 }

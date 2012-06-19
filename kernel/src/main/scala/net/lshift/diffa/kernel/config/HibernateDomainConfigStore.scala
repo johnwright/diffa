@@ -51,13 +51,17 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   private val cachedConfigVersions = cacheProvider.getCachedMap[String,Int]("domain.config.versions")
   private val cachedPairs = cacheProvider.getCachedMap[String, List[DomainPairDef]]("domain.pairs")
+  private val cachedPairsByKey = cacheProvider.getCachedMap[DomainPairKey, DomainPairDef]("domain.pairs.by.key")
   private val cachedEndpoints = cacheProvider.getCachedMap[String, List[EndpointDef]]("domain.endpoints")
+  private val cachedEndpointsByKey = cacheProvider.getCachedMap[DomainEndpointKey, EndpointDef]("domain.endpoints.by.key")
   private val cachedPairsByEndpoint = cacheProvider.getCachedMap[DomainEndpointKey, List[DomainPairDef]]("domain.pairs.by.endpoint")
 
   def reset {
     cachedConfigVersions.evictAll()
     cachedPairs.evictAll()
+    cachedPairsByKey.evictAll()
     cachedEndpoints.evictAll()
+    cachedEndpointsByKey.evictAll()
     cachedPairsByEndpoint.evictAll()
   }
 
@@ -65,20 +69,24 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     cachedConfigVersions.evict(domain)
     cachedEndpoints.evict(domain)
     cachedPairs.evict(domain)
-    cachedPairsByEndpoint.keySubset(PairByDomainPredicate(domain)).evictAll()
+    cachedPairsByEndpoint.keySubset(EndpointByDomainPredicate(domain)).evictAll()
+    cachedPairsByKey.keySubset(PairByDomainPredicate(domain)).evictAll()
+    cachedEndpointsByKey.keySubset(EndpointByDomainPredicate(domain)).evictAll()
   }
 
   private def invalidateEndpointCachesOnly(domain:String, endpointName: String) = {
     cachedEndpoints.evict(domain)
     cachedPairsByEndpoint.keySubset(PairByDomainAndEndpointPredicate(domain, endpointName)).evictAll()
+    cachedEndpointsByKey.evict(DomainEndpointKey(domain,endpointName))
 
-    // TODO This is a very coarse grained invalidation of the pair cache - this could be made finer at some stage
+    // TODO This is a very coarse grained invalidation of the pair caches - this could be made finer at some stage
     cachedPairs.evict(domain)
+    cachedPairsByKey.keySubset(PairByDomainPredicate(domain)).evictAll()
   }
 
   private def invalidatePairCachesOnly(domain:String) = {
     cachedPairs.evict(domain)
-    cachedPairsByEndpoint.keySubset(PairByDomainPredicate(domain)).evictAll()
+    cachedPairsByEndpoint.keySubset(EndpointByDomainPredicate(domain)).evictAll()
   }
 
   def onDomainUpdated(domain: String) = invalidateAllCaches(domain)
@@ -285,7 +293,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def getEndpoint(domain:String, name: String) = sessionFactory.withSession(s => getEndpoint(s, domain, name))
 
 
-  def getPairDef(domain:String, key: String) = jooq.execute { t =>
+  def getPairDef(domain:String, key: String) = cachedPairsByKey.readThrough(DomainPairKey(domain,key), () => jooq.execute { t =>
 
     val result =
       t.select(PAIR.getFields).
@@ -322,7 +330,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       ResultMappingUtil.singleParentRecordToDomainPairDef(result)
     }
 
-  }
+  })
 
   def getRepairActionDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toRepairActionDef(getRepairAction(s, domain, name, pairKey)))
   def getPairReportDef(domain:String, name: String, pairKey: String) = sessionFactory.withSession(s => toPairReportDef(getReport(s, domain, name, pairKey)))
@@ -430,6 +438,15 @@ case class DomainEndpointKey(
   def this() = this(domain = null)
 
 }
+
+case class DomainPairKey(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var pair: String = null) {
+
+  def this() = this(domain = null)
+
+}
+
 case class PairByDomainAndEndpointPredicate(
   @BeanProperty domain:String = null,
   @BeanProperty endpoint:String = null) extends KeyPredicate[DomainEndpointKey] {
@@ -437,7 +454,13 @@ case class PairByDomainAndEndpointPredicate(
   def constrain(key: DomainEndpointKey) = key.domain == domain && key.endpoint == endpoint
 }
 
-case class PairByDomainPredicate(@BeanProperty domain:String = null) extends KeyPredicate[DomainEndpointKey] {
+case class EndpointByDomainPredicate(@BeanProperty domain:String = null) extends KeyPredicate[DomainEndpointKey] {
   def this() = this(domain = null)
   def constrain(key: DomainEndpointKey) = key.domain == domain
 }
+
+case class PairByDomainPredicate(@BeanProperty domain:String = null) extends KeyPredicate[DomainPairKey] {
+  def this() = this(domain = null)
+  def constrain(key: DomainPairKey) = key.domain == domain
+}
+
