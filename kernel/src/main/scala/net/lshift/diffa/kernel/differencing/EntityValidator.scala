@@ -11,17 +11,8 @@ import org.joda.time.DateTime
  * To change this template use File | Settings | File Templates.
  */
 
-case class EntityValidator(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String]) {
-  def validateCharactersIn(string: String) = {
-    // println("Validate chars: " + string)
-    if (!java.util.regex.Pattern.compile("^\\p{Graph}*$").matcher(string).matches())
-      throw new InvalidEntityException(string)
-  }
-  def validate = {
-    // println("Validating: %s".format(this))
-    if (id != null) validateCharactersIn(id)
-    attributes.foreach { case (_, value) => validateCharactersIn(value) }
-  }
+case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String]) {
+
 }
 
 object EntityValidator {
@@ -31,7 +22,21 @@ object EntityValidator {
     case x => Some(x)
   }
 
-  def of(e: ScanResultEntry) = new EntityValidator(e.getId, e.getVersion, e.getLastUpdated,
+  def validateCharactersIn(string: String) = {
+    // println("Validate chars: " + string)
+    if (!java.util.regex.Pattern.compile("^\\p{Graph}*$").matcher(string).matches())
+      throw new InvalidEntityException(string)
+  }
+  def validate(e: ValidatableEntity): Unit = {
+    // println("Validating: %s".format(this))
+    if (e.id != null) validateCharactersIn(e.id)
+    e.attributes.foreach { case (_, value) => validateCharactersIn(value) }
+  }
+
+  def validate(e: ScanResultEntry): Unit = validate(of(e))
+
+  private def of(e: ScanResultEntry) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
     maybe(e.getAttributes).map(_.toMap).getOrElse(Map()))
+
 
 }

@@ -33,23 +33,9 @@ object EntityValidatorTest {
 class EntityValidatorTest {
   import EntityValidatorTest._
 
-  @Test
-  def hasSameFieldsAsScanResultEntry {
-    lazy val entry = ScanResultEntry.forEntity("theId", "aVersion", DateTime.now(), Map[String, String]())
-    val validator = EntityValidator.of(entry)
-
-    assertThat(validator.id, equalTo(entry.getId))
-    assertThat(validator.version, equalTo(entry.getVersion))
-    assertThat(validator.lastUpdated, equalTo(entry.getLastUpdated))
-    assertThat(validator.attributes, equalTo(entry.getAttributes.toMap))
-
-  }
-
-
   @Test def shouldRaiseExceptionWithNonAsciiId {
     assertThatSome(exceptionForInvalidId, instanceOf(classOf[InvalidEntityException]))
   }
-
 
   def assertThatSome[T](exception: Option[T], matcher: Matcher[T]) =
     exception.map(assertThat(_, matcher)).getOrElse(fail("Recieved None when expecting Some(value)"))
@@ -61,41 +47,41 @@ class EntityValidatorTest {
 
   @Test def shouldBeValidWithAlphaNumericStringForId {
     val validId = "foo4_-,."
-    val validator = scanResultValidatorFor(id = validId)
-    assertEquals(None, exceptionOf(validator.validate))
+    val entity = scanResultFor(id = validId)
+    assertEquals(None, exceptionOf(validator.validate(entity)))
   }
 
   @Test def shouldBeValidWithNullId {
-    val validator = scanResultValidatorFor(id = null)
-    assertEquals(exceptionOf(validator.validate), None)
+    val entity = scanResultFor(id = null)
+    assertEquals(exceptionOf(validator.validate(entity)), None)
   }
 
-  lazy val validatorWithInvalidAttributes: EntityValidator = {
-    scanResultValidatorFor(attributes = Map("property" -> INVALID_ID))
+  lazy val validator = EntityValidator
+
+  lazy val entityWithInvalidAttributes = {
+    scanResultFor(attributes = Map("property" -> INVALID_ID))
   }
 
   @Test
   def shouldBeInvalidWithNonPrintablesInAttributeValues {
-    assertThatSome(exceptionOf(validatorWithInvalidAttributes.validate),
-      instanceOf(classOf[InvalidEntityException]))
+    assertThatSome(exceptionOf(validator.validate(entityWithInvalidAttributes)),
+      is(instanceOf(classOf[InvalidEntityException])))
   }
 
   @Test
   def shouldReportNonPrintablesInAttributeValuesInException {
-    assertThatSome(exceptionOf(validatorWithInvalidAttributes.validate).map(_.getMessage),
+    assertThatSome(exceptionOf(validator.validate(entityWithInvalidAttributes)).map(_.getMessage),
       containsString(INVALID_ID))
   }
-
-
 
   private def exceptionOf(thunk: => Unit): Option[Throwable] =
     try { thunk; None } catch { case e => Some(e) }
 
-  private def scanResultValidatorFor(id: String = "id", attributes: Map[String, String] = Map()) = {
-    EntityValidator(id, null, null, attributes)
+  private def scanResultFor(id: String = "id", attributes: Map[String, String] = Map()) = {
+   new ScanResultEntry(id, null, null, attributes)
   }
 
-  private def exceptionForInvalidId = exceptionOf(scanResultValidatorFor(id = INVALID_ID).validate)
+  val  exceptionForInvalidId = exceptionOf(validator.validate(scanResultFor(id = INVALID_ID)))
 
 }
 
