@@ -24,7 +24,6 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import org.hamcrest.Matcher
-import net.lshift.diffa.kernel.differencing.InvalidEntityException
 
 object EntityValidatorTest {
   final val INVALID_ID: String = "\u26093"
@@ -55,16 +54,20 @@ class EntityValidatorTest {
   def assertThatSome[T](exception: Option[T], matcher: Matcher[T]) =
     exception.map(assertThat(_, matcher)).getOrElse(fail("Recieved None when expecting Some(value)"))
 
-  @Test def exceptionMessageShouldContainInvalidString {
+  @Test def exceptionMessageShouldContainInvalidStringForId {
     val ex =
     assertThatSome(exceptionForInvalidId.map(_.getMessage), containsString(INVALID_ID))
   }
 
-  @Test def shouldBeValidWithAlphaNumericString {
+  @Test def shouldBeValidWithAlphaNumericStringForId {
     val validId = "foo4_-,."
     val validator = scanResultValidatorFor(id = validId)
-    assertEquals(exceptionOf(validator.validate), None)
+    assertEquals(None, exceptionOf(validator.validate))
+  }
 
+  @Test def shouldBeValidWithNullId {
+    val validator = scanResultValidatorFor(id = null)
+    assertEquals(exceptionOf(validator.validate), None)
   }
 
   lazy val validatorWithInvalidAttributes: EntityValidator = {

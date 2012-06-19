@@ -19,7 +19,7 @@ case class EntityValidator(id:String, version:String, lastUpdated:DateTime, attr
   }
   def validate = {
     // println("Validating: %s".format(this))
-    validateCharactersIn(id)
+    if (id != null) validateCharactersIn(id)
     attributes.foreach { case (_, value) => validateCharactersIn(value) }
   }
 }
