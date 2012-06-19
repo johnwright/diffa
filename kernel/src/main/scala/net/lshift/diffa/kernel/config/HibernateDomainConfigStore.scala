@@ -222,7 +222,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
       pair
 
-    }).toSeq
+    }).toList
   })
 
   def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] =
