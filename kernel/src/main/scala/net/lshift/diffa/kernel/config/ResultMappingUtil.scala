@@ -22,6 +22,7 @@ import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.MissingObjectException
+import java.util
 
 object ResultMappingUtil {
 
@@ -55,13 +56,15 @@ object ResultMappingUtil {
       versionPolicyName = record.getValue(PAIR.VERSION_POLICY_NAME),
       scanCronSpec = record.getValue(PAIR.SCAN_CRON_SPEC),
       allowManualScans = record.getValue(PAIR.ALLOW_MANUAL_SCANS),
-      views = null
+      views = new util.ArrayList[PairViewDef]()
     )
 
-    pair.views = result.iterator().map(r => PairViewDef(
-      name = r.getValue(PAIR_VIEWS.NAME),
-      scanCronSpec = r.getValue(PAIR_VIEWS.SCAN_CRON_SPEC)
-    )).toList
+    result.iterator().filterNot(_.getValue(PAIR_VIEWS.NAME) == null).foreach(r => {
+      pair.views.add(PairViewDef(
+        name = r.getValue(PAIR_VIEWS.NAME),
+        scanCronSpec = r.getValue(PAIR_VIEWS.SCAN_CRON_SPEC)
+      ))
+    })
 
     pair
   }

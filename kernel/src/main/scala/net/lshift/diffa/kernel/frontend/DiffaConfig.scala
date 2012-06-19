@@ -259,16 +259,21 @@ case class PairViewDef(
   }
 }
 
+/**
+ * This has been made java friendly to ensure it can be serialized correctly when inserted into caches
+ */
 case class DomainPairDef(
-  var domain: String = null,
-  var key: String = null,
-  var versionPolicyName: String = null,
-  var matchingTimeout: Int = 0,
-  var upstreamName: String = null,
-  var downstreamName: String = null,
-  var scanCronSpec: String = null,
-  var allowManualScans: java.lang.Boolean = null,
-  var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
+  @BeanProperty var domain: String = null,
+  @BeanProperty var key: String = null,
+  @BeanProperty var versionPolicyName: String = null,
+  @BeanProperty var matchingTimeout: Int = 0,
+  @BeanProperty var upstreamName: String = null,
+  @BeanProperty var downstreamName: String = null,
+  @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var allowManualScans: java.lang.Boolean = null,
+  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
+
+  def this() = this(domain = null)
 
   def asRef = DiffaPairRef(key, domain)
 

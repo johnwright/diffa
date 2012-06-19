@@ -38,8 +38,8 @@ trait DomainConfigStore {
 
   def createOrUpdatePair(domain:String, pairDef: PairDef) : Unit
   def deletePair(domain:String, key: String) : Unit
-  def listPairs(domain:String) : Seq[PairDef]
-  def listPairsForEndpoint(domain:String, endpoint:String) : Seq[PairDef]
+  def listPairs(domain:String) : Seq[DomainPairDef]
+  def listPairsForEndpoint(domain:String, endpoint:String) : Seq[DomainPairDef]
 
   def getPairDef(domain:String, key: String) : DomainPairDef
   def getPairDef(ref:DiffaPairRef) : DomainPairDef = getPairDef(ref.domain, ref.key)

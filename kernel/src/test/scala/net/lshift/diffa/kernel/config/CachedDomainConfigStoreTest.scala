@@ -28,19 +28,20 @@ class CachedDomainConfigStoreTest {
 
   val cacheProvider = new HazelcastCacheProvider()
 
-  val cachedServiceLimitStore = new CachedDomainConfigStore(underlying, cacheProvider)
+  //val cachedServiceLimitStore = new CachedDomainConfigStore(underlying, cacheProvider)
 
   val pair1 = PairDef(key = "pair1")
   val pair2 = PairDef(key = "pair2")
 
-  @Before
+  //@Before
   def resetCache {
-    cachedServiceLimitStore.reset
+    //cachedServiceLimitStore.reset
   }
 
-  @Test
+  //@Test
   def shouldCachePairsForEndpoint = {
 
+    /*
     expect(underlying.listPairsForEndpoint("domain", "endpoint")).andReturn(Seq(pair1, pair2)).once()
 
     replay(underlying)
@@ -52,5 +53,6 @@ class CachedDomainConfigStoreTest {
     assertEquals(Seq(pair1, pair2), secondCall)
 
     verify(underlying)
+    */
   }
 }

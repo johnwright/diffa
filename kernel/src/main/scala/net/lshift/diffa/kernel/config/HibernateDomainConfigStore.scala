@@ -31,7 +31,10 @@ import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import org.jooq.Record
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
-import net.lshift.diffa.kernel.util.cache.CacheProvider
+import net.lshift.diffa.kernel.util.cache.{KeyPredicate, CacheProvider}
+import reflect.BeanProperty
+import collection.mutable
+import java.util
 ;
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
@@ -47,17 +50,43 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
 
   private val cachedConfigVersions = cacheProvider.getCachedMap[String,Int]("domain.config.versions")
+  private val cachedPairs = cacheProvider.getCachedMap[String, List[DomainPairDef]]("domain.pairs")
+  private val cachedEndpoints = cacheProvider.getCachedMap[String, List[EndpointDef]]("domain.endpoints")
+  private val cachedPairsByEndpoint = cacheProvider.getCachedMap[DomainEndpointKey, List[DomainPairDef]]("domain.pairs.by.endpoint")
 
-  def onDomainUpdated(domain: String) {
-    cachedConfigVersions.evict(domain)
+  def reset {
+    cachedConfigVersions.evictAll()
+    cachedPairs.evictAll()
+    cachedEndpoints.evictAll()
+    cachedPairsByEndpoint.evictAll()
   }
-  def onDomainRemoved(domain: String) {
+
+  private def invalidateAllCaches(domain:String) = {
     cachedConfigVersions.evict(domain)
+    cachedEndpoints.evict(domain)
+    cachedPairs.evict(domain)
+    cachedPairsByEndpoint.keySubset(PairByDomainPredicate(domain)).evictAll()
   }
+
+  private def invalidateEndpointCachesOnly(domain:String, endpointName: String) = {
+    cachedEndpoints.evict(domain)
+    cachedPairsByEndpoint.keySubset(PairByDomainAndEndpointPredicate(domain, endpointName)).evictAll()
+
+    // TODO This is a very coarse grained invalidation of the pair cache - this could be made finer at some stage
+    cachedPairs.evict(domain)
+  }
+
+  private def invalidatePairCachesOnly(domain:String) = {
+    cachedPairs.evict(domain)
+    cachedPairsByEndpoint.keySubset(PairByDomainPredicate(domain)).evictAll()
+  }
+
+  def onDomainUpdated(domain: String) = invalidateAllCaches(domain)
+  def onDomainRemoved(domain: String) = invalidateAllCaches(domain)
 
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = withVersionUpgrade(domainName, s => {
 
-    // TODO pairCache.invalidate(domainName)
+    invalidateEndpointCachesOnly(domainName, e.name)
 
     val domain = getDomain(domainName)
     val endpoint = fromEndpointDef(domain, e)
@@ -74,7 +103,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   def deleteEndpoint(domain:String, name: String): Unit = withVersionUpgrade(domain, s => {
 
-    // TODO pairCache.invalidate(domain)
+    invalidateEndpointCachesOnly(domain, name)
 
     val endpoint = getEndpoint(s, domain, name)
 
@@ -87,8 +116,10 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     s.delete(endpoint)
   })
 
-  def listEndpoints(domain:String): Seq[EndpointDef] =
+  def listEndpoints(domain:String): Seq[EndpointDef] = cachedEndpoints.readThrough(domain, () => {
     db.listQuery[Endpoint]("endpointsByDomain", Map("domain_name" -> domain)).map(toEndpointDef(_))
+  })
+
 
   def createOrUpdateRepairAction(domain:String, a: RepairActionDef) = sessionFactory.withSession(s => {
     val pair = getPair(s, domain, a.pair)
@@ -106,7 +137,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     withVersionUpgrade(domain, s => {
       p.validate()
 
-      // TODO pairCache.invalidate(domain)
+      invalidatePairCachesOnly(domain)
 
       val dom = getDomain(domain)
       val toUpdate = DiffaPair(p.key, dom, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
@@ -126,7 +157,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def deletePair(domain:String, key: String) {
     withVersionUpgrade(domain, s => {
 
-      // TODO pairCache.invalidate(domain)
+      invalidatePairCachesOnly(domain)
 
       val pair = getPair(s, domain, key)
       deletePairInSession(s, domain, pair)
@@ -135,30 +166,64 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     hook.pairRemoved(domain, key)
   }
 
-  // TODO This read through cache should not be necessary when the 2L cache miss issue is resolved
-  def listPairs(domain:String) = {
-    // TODO
-    //pairCache.readThrough(domain, () => listPairsFromPersistence(domain))
-    listPairsFromPersistence(domain)
-  }
+  def listPairs(domain:String) = cachedPairs.readThrough(domain, () => listPairsInternal(domain))
 
-  def listPairsFromPersistence(domain:String) = db.listQuery[DiffaPair]("pairsByDomain", Map("domain_name" -> domain)).map(toPairDef(_))
+  def listPairsForEndpoint(domain:String, endpoint:String) =
+    cachedPairsByEndpoint.readThrough(DomainEndpointKey(domain, endpoint), () => listPairsInternal(domain, Some(endpoint)))
 
-  def listPairsForEndpoint(domain:String, endpoint:String) = jooq.execute { t =>
-    t.select().from(PAIR).where(
-        PAIR.DOMAIN.equal(domain)).
-        and(PAIR.UPSTREAM.equal(endpoint).or(PAIR.DOWNSTREAM.equal(endpoint))
-      ).
-      fetch().map{ p => PairDef(
-        key = p.getValue(PAIR.PAIR_KEY),
-        upstreamName = p.getValue(PAIR.UPSTREAM),
-        downstreamName = p.getValue(PAIR.DOWNSTREAM),
-        versionPolicyName = p.getValue(PAIR.VERSION_POLICY_NAME),
-        scanCronSpec = p.getValue(PAIR.SCAN_CRON_SPEC),
-        allowManualScans = p.getValue(PAIR.ALLOW_MANUAL_SCANS),
-        views = null // Probably not needed by things that use this query, famous last words.....
-    )}
-  }
+  private def listPairsInternal(domain:String, endpoint:Option[String] = None) : Seq[DomainPairDef] = jooq.execute(t => {
+
+
+    val baseQuery = t.select(PAIR.getFields).
+                      select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC).
+                      from(PAIR).
+                        leftOuterJoin(PAIR_VIEWS).
+                          on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
+                          and(PAIR_VIEWS.DOMAIN.equal(PAIR.DOMAIN)).
+                      where(PAIR.DOMAIN.equal(domain))
+
+    val query = endpoint match {
+      case None       => baseQuery
+      case Some(name) => baseQuery.and(PAIR.UPSTREAM.equal(name).or(PAIR.DOWNSTREAM.equal(name)))
+    }
+
+    val results = query.fetch()
+
+    val compressed = new mutable.HashMap[String, DomainPairDef]()
+
+    def compressionKey(pairKey:String) = domain + "/" + pairKey
+
+    results.iterator().map(record => {
+      val pairKey = record.getValue(PAIR.PAIR_KEY)
+      val compressedKey = compressionKey(pairKey)
+      val pair = compressed.getOrElseUpdate(compressedKey,
+        DomainPairDef(
+          domain = record.getValue(PAIR.DOMAIN),
+          key = record.getValue(PAIR.PAIR_KEY),
+          upstreamName = record.getValue(PAIR.UPSTREAM),
+          downstreamName = record.getValue(PAIR.DOWNSTREAM),
+          versionPolicyName = record.getValue(PAIR.VERSION_POLICY_NAME),
+          scanCronSpec = record.getValue(PAIR.SCAN_CRON_SPEC),
+          matchingTimeout = record.getValue(PAIR.MATCHING_TIMEOUT),
+          allowManualScans = record.getValue(PAIR.ALLOW_MANUAL_SCANS),
+          views = new util.ArrayList[PairViewDef]()
+        )
+      )
+
+      val viewScanCronSpec = record.getValue(PAIR_VIEWS.SCAN_CRON_SPEC)
+      val viewName = record.getValue(PAIR_VIEWS.NAME)
+
+      if (viewName != null) {
+        pair.views.add(PairViewDef(
+          name = viewName,
+          scanCronSpec = viewScanCronSpec
+        ))
+      }
+
+      pair
+
+    }).toSeq
+  })
 
   def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] =
     getRepairActionsInPair(domain, pairKey).map(toRepairActionDef(_))
@@ -352,4 +417,27 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def listPairViews(s:Session, domain:String, pairKey:String) =
     db.listQuery[PairView]("pairViewsByPair", Map("domain_name" -> domain, "pair_key" -> pairKey))
 
+
+  private def formatDomainScopedKey(domain: String, objectName: String) = "%s/%s".format(domain, objectName)
+}
+
+// These key classes need to be serializable .......
+
+case class DomainEndpointKey(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var endpoint: String = null) {
+
+  def this() = this(domain = null)
+
+}
+case class PairByDomainAndEndpointPredicate(
+  @BeanProperty domain:String = null,
+  @BeanProperty endpoint:String = null) extends KeyPredicate[DomainEndpointKey] {
+  def this() = this(domain = null)
+  def constrain(key: DomainEndpointKey) = key.domain == domain && key.endpoint == endpoint
+}
+
+case class PairByDomainPredicate(@BeanProperty domain:String = null) extends KeyPredicate[DomainEndpointKey] {
+  def this() = this(domain = null)
+  def constrain(key: DomainEndpointKey) = key.domain == domain
 }

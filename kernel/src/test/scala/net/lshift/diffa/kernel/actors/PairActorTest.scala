@@ -91,7 +91,7 @@ class PairActorTest {
   expect(systemConfigStore.listPairs).andReturn(Seq())      // Don't return our pair in the list, since we don't want it started immediately
 
 
-  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(FrontendConversions.toPairDef(pair)))
+  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(pair))
   expect(domainConfigStore.getEndpoint(domainName, upstream.name)).andStubReturn(upstream)
   expect(domainConfigStore.getEndpoint(domainName, downstream.name)).andStubReturn(downstream)
 

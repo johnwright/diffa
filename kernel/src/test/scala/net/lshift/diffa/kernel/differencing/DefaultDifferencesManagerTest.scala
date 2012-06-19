@@ -76,7 +76,7 @@ class DefaultDifferencesManagerTest {
   replay(systemConfigStore)
 
   val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
-  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(toPairDef(pair1), toPairDef(pair2)))
+  expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(pair1, pair2))
   replay(domainConfigStore)
 
   val matchingManager = createStrictMock("matchingManager", classOf[MatchingManager])
@@ -133,7 +133,7 @@ class DefaultDifferencesManagerTest {
     expect(matcher.isVersionIDActive(VersionID(pair2.asRef, "id"))).andStubReturn(true)
     expect(matcher.isVersionIDActive(VersionID(pair1.asRef, "id2"))).andStubReturn(false)
 
-    expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(toPairDef(pair1), toPairDef(pair2)))
+    expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(pair1, pair2))
 
     replay(systemConfigStore, matchingManager, domainConfigStore)
   }

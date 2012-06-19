@@ -108,7 +108,7 @@ class LocalDiagnosticsManagerTest {
     // Remove the pair, and report it
     reset(domainConfigStore)
     expect(domainConfigStore.listPairs(domainName)).
-        andStubReturn(Seq(FrontendConversions.toPairDef(pair2)))
+        andStubReturn(Seq(pair2))
     replayDomainConfig
     diagnostics.onDeletePair(pair1.asRef)
     assertEquals(Map("pair2" -> PairScanState.UNKNOWN), diagnostics.retrievePairScanStatesForDomain(domainName))
@@ -277,13 +277,13 @@ class LocalDiagnosticsManagerTest {
   }
 
   private def expectPairListFromConfigStore(pairs: Seq[DomainPairDef]) {
-    val pairDefs = pairs map FrontendConversions.toPairDef
+    //val pairDefs = pairs map FrontendConversions.toPairDef
     expect(domainConfigStore.listPairs(domainName)).
-      andStubReturn(pairDefs)
+      andStubReturn(pairs)
 
-    pairDefs foreach { pairDef =>
+    pairs foreach { pairDef =>
       expect(domainConfigStore.getPairDef(domainName, pairDef.key)).
-        andStubReturn(pairDef.asDomainPairDef(domainName))
+        andStubReturn(pairDef)
     }
     replayDomainConfig
   }
