@@ -27,14 +27,18 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
+import collection.mutable.ListBuffer
 
 class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
                                  db:DatabaseFacade,
-                                 jooq:JooqDatabaseFacade,
-                                 domainEventSubscribers:java.util.List[DomainLifecycleAware])
+                                 jooq:JooqDatabaseFacade)
     extends SystemConfigStore with HibernateQueryUtils {
 
   val logger = LoggerFactory.getLogger(getClass)
+
+  private val domainEventSubscribers = new ListBuffer[DomainLifecycleAware]
+
+  def registerDomainEventListener(d:DomainLifecycleAware) = domainEventSubscribers += d
 
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => {
     domainEventSubscribers.foreach(_.onDomainUpdated(d.name))
