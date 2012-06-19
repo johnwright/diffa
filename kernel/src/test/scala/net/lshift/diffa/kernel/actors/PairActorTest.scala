@@ -83,14 +83,14 @@ class PairActorTest {
   org.easymock.classextension.EasyMock.replay(versionPolicyManager)
 
   val systemConfigStore = createStrictMock("systemConfigStore", classOf[SystemConfigStore])
+  val domainConfigStore = createStrictMock("domainConfigStore", classOf[DomainConfigStore])
 
   expect(domainConfigStore.getPairDef(domainName, pairKey)).andStubReturn(pair)
   expect(domainConfigStore.getPairDef(DiffaPairRef(pairKey, domainName))).andStubReturn(pair)
   expect(systemConfigStore.listDomains).andStubReturn(Seq(Domain(name = domainName)))
   expect(systemConfigStore.listPairs).andReturn(Seq())      // Don't return our pair in the list, since we don't want it started immediately
-  replay(systemConfigStore)
 
-  val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
+
   expect(domainConfigStore.listPairs(domainName)).andStubReturn(Seq(FrontendConversions.toPairDef(pair)))
   expect(domainConfigStore.getEndpoint(domainName, upstream.name)).andStubReturn(upstream)
   expect(domainConfigStore.getEndpoint(domainName, downstream.name)).andStubReturn(downstream)
@@ -100,6 +100,7 @@ class PairActorTest {
                                                  CorrelationWriterProxy.TIMEOUT_DEFAULT_VALUE)).
     andStubReturn(CorrelationWriterProxy.TIMEOUT_DEFAULT_VALUE)
 
+  replay(systemConfigStore)
   replay(domainConfigStore)
 
   val writer = createMock("writer", classOf[ExtendedVersionCorrelationWriter])
