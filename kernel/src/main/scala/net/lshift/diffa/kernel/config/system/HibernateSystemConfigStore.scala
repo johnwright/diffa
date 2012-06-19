@@ -49,8 +49,6 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
     domainEventSubscribers.foreach(_.onDomainRemoved(domain))
 
-    // TODO Why is do we not just do a DELETE CASCADE?
-
     db.execute("deleteExternalHttpCredentialsByDomain", Map("domain" -> domain))
 
     deleteByDomain[EndpointView](s, domain, "endpointViewsByDomain")
@@ -76,9 +74,6 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
   def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))
 
   def listDomains = db.listQuery[Domain]("allDomains", Map()).sortBy(_.getName)
-
-  //def getPair(pair:DiffaPairRef) : DiffaPair = getPair(pair.domain, pair.key)
-  //def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
 
   def listPairs = jooq.execute { t =>
     t.select().from(PAIR).fetch().map(ResultMappingUtil.recordToDomainPairDef)
@@ -134,7 +129,6 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
   def getUser(name: String) : User = sessionFactory.withSession(getUser(_,name))
 
-  // TODO This needs to be cached
   def getUserByToken(token: String) : User
     = db.singleQuery[User]("userByToken", Map("token" -> token), "user token %s".format(token))
 

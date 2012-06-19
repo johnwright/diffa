@@ -128,41 +128,6 @@ class HibernateDomainConfigStoreTest {
   def exists (e:EndpointDef, count:Int) : Unit = exists(e, count, count - 1)
 
   @Test
-  def pairsShouldCache {
-    // TODO Put this back in
-
-    // Do some cache testing
-
-    /*
-    declareAll()
-
-    val initialCount = storeReferences.sessionStatistics.getQueryExecutionCount
-
-    // This call should be read through from the DB
-    domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache miss", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-
-    // This call should be cached
-    domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache hit", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-
-    provokeCacheInvalidation(() => domainConfigStore.createOrUpdateEndpoint(domainName, upstream1))
-    provokeCacheInvalidation(() => domainConfigStore.createOrUpdatePair(domainName, pairDef))
-    provokeCacheInvalidation(() => domainConfigStore.deletePair(domainName, pairKey))
-    provokeCacheInvalidation(() => domainConfigStore.deleteEndpoint(domainName, upstream1.name))
-
-    // This should invalidate the pair cache
-    def provokeCacheInvalidation[T](f:() => T) = {
-      f()
-      val countAfterOperation = storeReferences.sessionStatistics.getQueryExecutionCount
-      domainConfigStore.listPairs(domainName)
-      assertEquals("Should have generated cache hit", countAfterOperation + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-    }
-
-    */
-  }
-
-  @Test
   def domainShouldBeDeletable = {
     declareAll()
 
@@ -188,7 +153,7 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeclare: Unit = {
+  def testDeclare {
     // declare the domain
     systemConfigStore.createOrUpdateDomain(domain)
 

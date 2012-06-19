@@ -11,11 +11,10 @@ import org.junit.{Before, Test}
 import java.io.{FileInputStream, File}
 import org.apache.commons.io.{IOUtils, FileDeleteStrategy}
 import java.util.zip.ZipInputStream
-import org.junit.experimental.theories.{DataPoints, DataPoint, Theory}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.servicelimits._
 import system.SystemConfigStore
-import net.lshift.diffa.kernel.frontend.{DomainPairDef, PairDef, FrontendConversions}
+import net.lshift.diffa.kernel.frontend.DomainPairDef
 
 class LocalDiagnosticsManagerTest {
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
@@ -277,7 +276,6 @@ class LocalDiagnosticsManagerTest {
   }
 
   private def expectPairListFromConfigStore(pairs: Seq[DomainPairDef]) {
-    //val pairDefs = pairs map FrontendConversions.toPairDef
     expect(domainConfigStore.listPairs(domainName)).
       andStubReturn(pairs)
 
