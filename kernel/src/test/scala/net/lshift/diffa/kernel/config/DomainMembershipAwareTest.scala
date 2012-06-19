@@ -30,7 +30,7 @@ class DomainMembershipAwareTest {
 
   val sf = createStrictMock(classOf[SessionFactory])
   val db = createStrictMock(classOf[DatabaseFacade])
-  val jf = createStrictMock(classOf[JooqDatabaseFacade])
+  val jf = E4.createStrictMock(classOf[JooqDatabaseFacade])
   val pc = E4.createStrictMock(classOf[PairCache])
   val hm = E4.createNiceMock(classOf[HookManager])
   val cm = E4.createNiceMock(classOf[CacheManager])
