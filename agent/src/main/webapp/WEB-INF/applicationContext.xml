@@ -352,9 +352,6 @@
   </bean>
 
   <bean id="diffaSessionFactory" class="net.lshift.diffa.agent.util.ListeningLocalSessionFactoryBean">
-    <constructor-arg>
-      <bean class="net.lshift.diffa.kernel.activation.BaselineConfiguration"/>
-    </constructor-arg>
     <property name="dataSource">
       <bean class="org.springframework.jndi.JndiObjectFactoryBean">
             <property name="jndiName" value="java:comp/env/jdbc/diffaDS"/>
