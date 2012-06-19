@@ -124,8 +124,8 @@ class DefaultDifferencesManagerTest {
     participantFactory.createUpstreamParticipant(u, pair1.asRef)
     participantFactory.createDownstreamParticipant(d, pair1.asRef)
 
-    expect(domainConfigStore.getPairDef(domainName, "pair1")).andStubReturn(pair1)
-    expect(domainConfigStore.getPairDef(domainName, "pair2")).andStubReturn(pair2)
+    expect(domainConfigStore.getPairDef(pair1.asRef)).andStubReturn(pair1)
+    expect(domainConfigStore.getPairDef(pair2.asRef)).andStubReturn(pair2)
     expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
     expect(matchingManager.getMatcher(pair1.asRef)).andStubReturn(Some(matcher))
     expect(matchingManager.getMatcher(pair2.asRef)).andStubReturn(Some(matcher))
@@ -226,6 +226,7 @@ class DefaultDifferencesManagerTest {
     replay(domainDifferenceStore)
     reset(domainConfigStore)
     expect(domainConfigStore.getEndpoint(domainName, d.name)).andReturn(d)
+    expect(domainConfigStore.getPairDef(pair1.asRef)).andStubReturn(pair1)
     replay(domainConfigStore)
 
     val content = manager.retrieveEventDetail(domainName, "123", ParticipantType.DOWNSTREAM)
@@ -239,6 +240,7 @@ class DefaultDifferencesManagerTest {
     replay(domainDifferenceStore)
     reset(domainConfigStore)
     expect(domainConfigStore.getEndpoint(domainName, u.name)).andStubReturn(u)
+    expect(domainConfigStore.getPairDef(pair1.asRef)).andStubReturn(pair1)
     replay(domainConfigStore)
 
     val content = manager.retrieveEventDetail(domainName, "123", ParticipantType.UPSTREAM)
