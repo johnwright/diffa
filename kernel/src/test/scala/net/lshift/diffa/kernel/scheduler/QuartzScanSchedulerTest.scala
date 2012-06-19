@@ -49,6 +49,7 @@ class QuartzScanSchedulerTest {
     val pair = DomainPairDef(key = "PairA", domain="domain", scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq())
+    expect(domainConfig.getPairDef(pair.asRef)).andStubReturn(pair)
 
     replayAll()
 
@@ -72,6 +73,7 @@ class QuartzScanSchedulerTest {
       views = List(buildView(pairKey = "PairA", name = "someview", scanCronSpec = generateNowishCronSpec)))
 
     expect(systemConfig.listPairs).andReturn(Seq())
+    expect(domainConfig.getPairDef(pair.asRef)).andStubReturn(pair)
 
     replayAll()
 
@@ -94,7 +96,7 @@ class QuartzScanSchedulerTest {
     val pair = DomainPairDef(key = "PairB", domain="domain", scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq(pair))
-    expect(domainConfig.getPairDef("domain", "PairB")).andReturn(pair)
+    expect(domainConfig.getPairDef(pair.asRef)).andReturn(pair)
 
     replayAll()
 
@@ -115,6 +117,7 @@ class QuartzScanSchedulerTest {
     val pair = DomainPairDef(key = "PairC", domain="domain", scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq(pair))
+    expect(domainConfig.getPairDef(pair.asRef)).andStubReturn(pair)
 
     replayAll()
 
@@ -136,6 +139,8 @@ class QuartzScanSchedulerTest {
     val p2 = DomainPairDef(key = "PairD", domain="domain", scanCronSpec = generateNowishCronSpec)
 
     expect(systemConfig.listPairs).andReturn(Seq())
+    expect(domainConfig.getPairDef(p1.asRef)).andReturn(p1).once()
+    expect(domainConfig.getPairDef(p2.asRef)).andReturn(p2).once()
 
     replayAll()
 
@@ -149,7 +154,7 @@ class QuartzScanSchedulerTest {
         case ScanInvocation(p, v) => assertEquals("PairD", p.key)
       }
 
-      verify(systemConfig, pairPolicyClient)
+      verify(systemConfig, domainConfig, pairPolicyClient)
     }
   }
 
@@ -157,12 +162,17 @@ class QuartzScanSchedulerTest {
   def shouldAddNewViewSchedules() {
     val mb = createExecuteListenerQueue
 
+    val oldView = buildView("PairF", "someview", generateOldCronSpec)
+    val newView = buildView("PairF", "someview2", generateNowishCronSpec)
+
     val p1 = DomainPairDef(key = "PairF", domain="domain", scanCronSpec = generateOldCronSpec,
-      views = List(buildView("PairF", "someview", generateOldCronSpec)))
+      views = List(oldView))
     val p2 = DomainPairDef(key = "PairF", domain="domain", scanCronSpec = null,
-      views = p1.views ++ Set(buildView("PairF", "someview2", generateNowishCronSpec)))
+      views = List(oldView, newView))
 
     expect(systemConfig.listPairs).andReturn(Seq())
+    expect(domainConfig.getPairDef(p1.asRef)).andReturn(p1).once()
+    expect(domainConfig.getPairDef(p2.asRef)).andReturn(p2).once()
 
     replayAll()
 
@@ -194,6 +204,8 @@ class QuartzScanSchedulerTest {
       views = List(buildView("PairE", "someview2", generateOldCronSpec)))
 
     expect(systemConfig.listPairs).andReturn(Seq())
+    expect(domainConfig.getPairDef(p2.asRef)).andStubReturn(p2)
+    expect(domainConfig.getPairDef(p2.asRef)).andStubReturn(p2)
 
     replayAll()
 
@@ -210,7 +222,7 @@ class QuartzScanSchedulerTest {
     }
   }
 
-  private def replayAll() { replay(systemConfig, pairPolicyClient) }
+  private def replayAll() { replay(systemConfig, domainConfig, pairPolicyClient) }
 
   private def withScheduler[T](s:QuartzScanScheduler)(f:(QuartzScanScheduler) => T) {
     try {
