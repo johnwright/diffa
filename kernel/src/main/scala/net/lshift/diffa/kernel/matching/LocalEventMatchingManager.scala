@@ -31,7 +31,7 @@ class LocalEventMatchingManager(systemConfigStore: SystemConfigStore,
   private val listeners = new ListBuffer[MatchingStatusListener]
 
   // Create a matcher for each pre-existing pair
-  systemConfigStore.listPairs.foreach(p => updateMatcher(_))
+  systemConfigStore.listPairs.foreach(updateMatcher(_))
 
   def getMatcher(pair:DiffaPairRef) = matchers.get(pair)
 

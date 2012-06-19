@@ -44,7 +44,7 @@ class LocalEventMatchingManagerTest {
   expect(domainConfigStore.getPairDef(domainName, "pair1")).andStubReturn(pair1)
   expect(domainConfigStore.getPairDef(domainName, "pair2")).andStubReturn(pair2)
   expect(systemConfigStore.listPairs).andStubReturn(Seq(pair1,pair2))
-  replay(systemConfigStore)
+  replay(systemConfigStore, domainConfigStore)
 
   val matchingManager = new LocalEventMatchingManager(systemConfigStore, domainConfigStore)
 
@@ -60,9 +60,9 @@ class LocalEventMatchingManagerTest {
 
   @Test
   def shouldReturnAMatcherForAPairKeyLaterIntroduced {
-    reset(systemConfigStore)
-    expect(domainConfigStore.getPairDef(domainName, "pair3")).andStubReturn(pair3)
-    replay(systemConfigStore)
+    reset(systemConfigStore, domainConfigStore)
+    expect(domainConfigStore.getPairDef(pair3.asRef)).andStubReturn(pair3)
+    replay(systemConfigStore, domainConfigStore)
 
     matchingManager.onUpdatePair(pair3.asRef)
     assertFalse(None.equals(matchingManager.getMatcher(pair3.asRef)))
@@ -70,9 +70,9 @@ class LocalEventMatchingManagerTest {
 
   @Test
   def shouldNotReturnAMatcherForARemovedPair {
-    reset(systemConfigStore)
-    expect(domainConfigStore.getPairDef(domainName, "pair3")).andStubReturn(pair3)
-    replay(systemConfigStore)
+    reset(systemConfigStore, domainConfigStore)
+    expect(domainConfigStore.getPairDef(pair3.asRef)).andStubReturn(pair3)
+    replay(systemConfigStore, domainConfigStore)
 
     matchingManager.onUpdatePair(pair3.asRef)
     matchingManager.onDeletePair(pair3.asRef)
@@ -91,9 +91,9 @@ class LocalEventMatchingManagerTest {
 
   @Test
   def shouldApplyListenersToNewMatchers {
-    reset(systemConfigStore)
-    expect(domainConfigStore.getPairDef(domainName, "pair3")).andStubReturn(pair3)
-    replay(systemConfigStore)
+    reset(systemConfigStore, domainConfigStore)
+    expect(domainConfigStore.getPairDef(pair3.asRef)).andStubReturn(pair3)
+    replay(systemConfigStore, domainConfigStore)
 
     val l1 = createStrictMock(classOf[MatchingStatusListener])
     matchingManager.addListener(l1)
