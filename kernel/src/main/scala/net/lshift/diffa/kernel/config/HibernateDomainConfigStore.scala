@@ -86,6 +86,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   private def invalidatePairCachesOnly(domain:String) = {
     cachedPairs.evict(domain)
+    cachedPairsByKey.keySubset(PairByDomainPredicate(domain)).evictAll()
     cachedPairsByEndpoint.keySubset(EndpointByDomainPredicate(domain)).evictAll()
   }
 

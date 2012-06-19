@@ -110,7 +110,10 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Before
-  def setUp = storeReferences.clearConfiguration(domainName)
+  def setUp {
+    storeReferences.clearConfiguration(domainName)
+    domainConfigStore.reset
+  }
 
   def exists (e:EndpointDef, count:Int, offset:Int) : Unit = {
     val endpoints = domainConfigStore.listEndpoints(domainName).sortWith((a, b) => a.name < b.name)
@@ -336,7 +339,7 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeletePair: Unit = {
+  def testDeletePair {
     declareAll
 
     assertEquals(pairKey, domainConfigStore.getPairDef(domainName, pairKey).key)
