@@ -31,7 +31,6 @@ class DomainMembershipAwareTest {
   val sf = createStrictMock(classOf[SessionFactory])
   val db = createStrictMock(classOf[DatabaseFacade])
   val jf = E4.createStrictMock(classOf[JooqDatabaseFacade])
-  val pc = E4.createStrictMock(classOf[PairCache])
   val hm = E4.createNiceMock(classOf[HookManager])
   val cm = E4.createNiceMock(classOf[CacheManager])
 
@@ -48,7 +47,7 @@ class DomainMembershipAwareTest {
 
   val membershipListener = createStrictMock(classOf[DomainMembershipAware])
 
-  val domainConfigStore = new HibernateDomainConfigStore(sf,db,jf,pc,hm,cm, membershipListener)
+  val domainConfigStore = new HibernateDomainConfigStore(sf,db,jf, hm,cm, membershipListener)
 
   val user = User(name = "u")
   val domain = Domain(name = "d")

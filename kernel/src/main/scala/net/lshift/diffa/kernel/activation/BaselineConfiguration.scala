@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory
 import net.sf.ehcache.CacheManager
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.db.HibernateDatabaseFacade
-import net.lshift.diffa.kernel.config.{Member, DomainMembershipAware, PairCache, HibernateDomainConfigStore}
+import net.lshift.diffa.kernel.config.{Member, DomainMembershipAware, HibernateDomainConfigStore}
 import net.lshift.diffa.schema.jooq.DatabaseFacade
 
 /**

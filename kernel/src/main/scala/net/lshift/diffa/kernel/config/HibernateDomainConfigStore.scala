@@ -32,25 +32,29 @@ import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import org.jooq.Record
 import net.lshift.diffa.kernel.util.{MissingObjectException, CacheWrapper}
+import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
 ;
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  db:DatabaseFacade,
                                  jooq:JooqDatabaseFacade,
-                                 pairCache:PairCache,
                                  hookManager:HookManager,
                                  cacheManager:CacheManager,
                                  membershipListener:DomainMembershipAware)
     extends DomainConfigStore
+    with DomainLifecycleAware
     with HibernateQueryUtils {
 
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
 
   private val cachedConfigVersions = new CacheWrapper[String,Int]("configVersions", cacheManager)
 
+  def onDomainUpdated(domain: String) {}
+  def onDomainRemoved(domain: String) {}
+
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = withVersionUpgrade(domainName, s => {
 
-    pairCache.invalidate(domainName)
+    // TODO pairCache.invalidate(domainName)
 
     val domain = getDomain(domainName)
     val endpoint = fromEndpointDef(domain, e)
@@ -67,7 +71,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   def deleteEndpoint(domain:String, name: String): Unit = withVersionUpgrade(domain, s => {
 
-    pairCache.invalidate(domain)
+    // TODO pairCache.invalidate(domain)
 
     val endpoint = getEndpoint(s, domain, name)
 
@@ -99,7 +103,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     withVersionUpgrade(domain, s => {
       p.validate()
 
-      pairCache.invalidate(domain)
+      // TODO pairCache.invalidate(domain)
 
       val dom = getDomain(domain)
       val toUpdate = DiffaPair(p.key, dom, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
@@ -119,7 +123,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def deletePair(domain:String, key: String) {
     withVersionUpgrade(domain, s => {
 
-      pairCache.invalidate(domain)
+      // TODO pairCache.invalidate(domain)
 
       val pair = getPair(s, domain, key)
       deletePairInSession(s, domain, pair)
@@ -129,7 +133,11 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   }
 
   // TODO This read through cache should not be necessary when the 2L cache miss issue is resolved
-  def listPairs(domain:String) = pairCache.readThrough(domain, () => listPairsFromPersistence(domain))
+  def listPairs(domain:String) = {
+    // TODO
+    //pairCache.readThrough(domain, () => listPairsFromPersistence(domain))
+    listPairsFromPersistence(domain)
+  }
 
   def listPairsFromPersistence(domain:String) = db.listQuery[DiffaPair]("pairsByDomain", Map("domain_name" -> domain)).map(toPairDef(_))
 

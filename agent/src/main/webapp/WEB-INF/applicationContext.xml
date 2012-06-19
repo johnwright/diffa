@@ -420,20 +420,11 @@
       Configuration
     ===========
   -->
-  <!-- TODO Once #366 lands, this cache should be unnecessary -->
-  <bean id="pairCache" class="net.lshift.diffa.kernel.config.PairCache">
-    <constructor-arg>
-      <bean class="net.sf.ehcache.CacheManager">
-        <constructor-arg type="java.net.URL" value="classpath:ehcache-pairs.xml"/>
-      </bean>
-    </constructor-arg>
-  </bean>
 
   <bean id="domainConfigStore" class="net.lshift.diffa.kernel.config.HibernateDomainConfigStore">
     <constructor-arg ref="diffaSessionFactory" />
     <constructor-arg ref="databaseFacade" />
     <constructor-arg ref="jooqDatabaseFacade" />
-    <constructor-arg ref="pairCache" />
     <constructor-arg ref="hookManager" />
     <constructor-arg>
       <bean class="net.sf.ehcache.CacheManager">
@@ -447,7 +438,11 @@
     <constructor-arg ref="diffaSessionFactory" />
     <constructor-arg ref="databaseFacade" />
     <constructor-arg ref="jooqDatabaseFacade" />
-    <constructor-arg ref="pairCache" />
+    <constructor-arg >
+      <list>
+        <ref bean="domainConfigStore"/>
+      </list>
+    </constructor-arg>
   </bean>
 
   <bean id="systemConfigStore" class="net.lshift.diffa.kernel.config.system.CachedSystemConfigStore">

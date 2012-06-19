@@ -84,7 +84,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   def facade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
 
   private val cacheManager = new CacheManager
-  private val pairCache = new PairCache(cacheManager)
+
   private val hookManager = new HookManager(applicationConfig)
   private val membershipListener = new DomainMembershipAware {
     def onMembershipCreated(member: Member) {}
@@ -113,11 +113,11 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   private lazy val _serviceLimitsStore =
     makeStore[ServiceLimitsStore](sf => new HibernateServiceLimitsStore(sf, new HibernateDatabaseFacade(sf,ds)), "ServiceLimitsStore")
 
-  private lazy val _systemConfigStore =
-    makeStore(sf => new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, pairCache), "SystemConfigStore")
-
   private lazy val _domainConfigStore =
-    makeStore(sf => new HibernateDomainConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, pairCache, hookManager, cacheManager, membershipListener), "domainConfigStore")
+    makeStore(sf => new HibernateDomainConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, hookManager, cacheManager, membershipListener), "domainConfigStore")
+
+  private lazy val _systemConfigStore =
+    makeStore(sf => new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, Seq(_domainConfigStore)), "SystemConfigStore")
 
   private lazy val _domainCredentialsStore =
     makeStore(sf => new JooqDomainCredentialsStore(facade), "domainCredentialsStore")

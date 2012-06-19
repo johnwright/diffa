@@ -21,29 +21,29 @@ import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
-import net.lshift.diffa.kernel.differencing.StoreCheckpoint
 import org.hibernate.{Query, Session, SessionFactory}
 import org.apache.commons.lang.RandomStringUtils
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.schema.tables.Pair.PAIR
+import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
 
 class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
                                  db:DatabaseFacade,
                                  jooq:JooqDatabaseFacade,
-                                 val pairCache:PairCache)
+                                 domainEventSubscribers:java.util.List[DomainLifecycleAware])
     extends SystemConfigStore with HibernateQueryUtils {
 
   val logger = LoggerFactory.getLogger(getClass)
 
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => {
-    pairCache.invalidate(d.name)
+    domainEventSubscribers.foreach(_.onDomainUpdated(d.name))
     s.saveOrUpdate(d)
   })
 
   def deleteDomain(domain:String) = sessionFactory.withSession( s => {
 
-    pairCache.invalidate(domain)
+    domainEventSubscribers.foreach(_.onDomainRemoved(domain))
 
     // TODO Why is do we not just do a DELETE CASCADE?
 

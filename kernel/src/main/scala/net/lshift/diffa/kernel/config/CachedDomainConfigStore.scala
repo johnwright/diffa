@@ -19,6 +19,7 @@ import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.util.cache.CacheProvider
 
 
+@Deprecated
 class CachedDomainConfigStore(underlying:DomainConfigStore,
                               cacheProvider:CacheProvider) extends DomainConfigStore {
 
