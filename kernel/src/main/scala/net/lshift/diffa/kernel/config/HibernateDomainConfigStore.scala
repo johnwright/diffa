@@ -23,23 +23,22 @@ import org.hibernate.{Session, SessionFactory}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.hooks.HookManager
-import net.sf.ehcache.CacheManager
-import org.hibernate.transform.ResultTransformer
 import java.util.List
 import java.sql.SQLIntegrityConstraintViolationException
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import org.jooq.Record
-import net.lshift.diffa.kernel.util.{MissingObjectException, CacheWrapper}
+import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
+import net.lshift.diffa.kernel.util.cache.CacheProvider
 ;
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  db:DatabaseFacade,
                                  jooq:JooqDatabaseFacade,
                                  hookManager:HookManager,
-                                 cacheManager:CacheManager,
+                                 cacheProvider:CacheProvider,
                                  membershipListener:DomainMembershipAware)
     extends DomainConfigStore
     with DomainLifecycleAware
@@ -47,10 +46,14 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
 
-  private val cachedConfigVersions = new CacheWrapper[String,Int]("configVersions", cacheManager)
+  private val cachedConfigVersions = cacheProvider.getCachedMap[String,Int]("domain.config.versions")
 
-  def onDomainUpdated(domain: String) {}
-  def onDomainRemoved(domain: String) {}
+  def onDomainUpdated(domain: String) {
+    cachedConfigVersions.evict(domain)
+  }
+  def onDomainRemoved(domain: String) {
+    cachedConfigVersions.evict(domain)
+  }
 
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = withVersionUpgrade(domainName, s => {
 
@@ -277,7 +280,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
     def beforeCommit(session:Session) = upgradeConfigVersion(domain)(session)
     def commandsToExecute(session:Session) = dbCommands(session)
-    def afterCommit() = cachedConfigVersions.remove(domain)
+    def afterCommit() = cachedConfigVersions.evict(domain)
 
     sessionFactory.withSession(
       beforeCommit _,

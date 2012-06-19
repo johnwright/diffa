@@ -426,11 +426,7 @@
     <constructor-arg ref="databaseFacade" />
     <constructor-arg ref="jooqDatabaseFacade" />
     <constructor-arg ref="hookManager" />
-    <constructor-arg>
-      <bean class="net.sf.ehcache.CacheManager">
-        <constructor-arg type="java.net.URL" value="classpath:ehcache-config-versions.xml"/>
-      </bean>
-    </constructor-arg>
+    <constructor-arg ref="hazelcastCacheProvider" />
     <constructor-arg ref="systemConfigStore" />
   </bean>
 

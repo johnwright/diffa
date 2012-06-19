@@ -25,6 +25,7 @@ import org.easymock.EasyMock._
 import org.easymock.classextension.{EasyMock => E4}
 import org.junit.Test
 import org.easymock.EasyMock
+import net.lshift.diffa.kernel.util.cache.CacheProvider
 
 class DomainMembershipAwareTest {
 
@@ -32,13 +33,7 @@ class DomainMembershipAwareTest {
   val db = createStrictMock(classOf[DatabaseFacade])
   val jf = E4.createStrictMock(classOf[JooqDatabaseFacade])
   val hm = E4.createNiceMock(classOf[HookManager])
-  val cm = E4.createNiceMock(classOf[CacheManager])
-
-  // TODO We shouldn't really need to get this far into the HibernateDomainConfigStore, ideally
-  expect(cm.cacheExists(EasyMock.isA(classOf[String]))).andStubReturn(false)
-  expect(cm.addCache(EasyMock.isA(classOf[String]))).anyTimes()
-
-  E4.replay(cm)
+  val cp = createNiceMock(classOf[CacheProvider])
 
   // TODO Nor should we get this far into the DatabaseFacade, ideally
   expect(db.execute(EasyMock.isA(classOf[String]), EasyMock.isA(classOf[Map[String,Any]]))).andStubReturn(1)
@@ -47,7 +42,7 @@ class DomainMembershipAwareTest {
 
   val membershipListener = createStrictMock(classOf[DomainMembershipAware])
 
-  val domainConfigStore = new HibernateDomainConfigStore(sf,db,jf, hm,cm, membershipListener)
+  val domainConfigStore = new HibernateDomainConfigStore(sf,db,jf, hm, cp, membershipListener)
 
   val user = User(name = "u")
   val domain = Domain(name = "d")
