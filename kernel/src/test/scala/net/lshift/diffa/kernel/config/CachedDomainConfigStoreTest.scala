@@ -15,7 +15,7 @@
  */
 package net.lshift.diffa.kernel.config
 
-import org.junit.Test
+import org.junit.{Before, Test}
 import org.junit.Assert._
 import org.hibernate.SessionFactory
 import org.easymock.EasyMock._
@@ -25,7 +25,7 @@ import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.easymock.classextension.{EasyMock => E4}
 import org.jooq.impl.Factory
-import net.lshift.diffa.kernel.frontend.DomainPairDef
+import net.lshift.diffa.kernel.frontend.{EndpointDef, DomainPairDef}
 
 class CachedDomainConfigStoreTest {
 
@@ -38,6 +38,11 @@ class CachedDomainConfigStoreTest {
   val cp = new HazelcastCacheProvider
 
   val domainConfig = new HibernateDomainConfigStore(sf, db, jooq, hm, cp, ml)
+
+  @Before
+  def resetCaches {
+    domainConfig.reset
+  }
 
   @Test
   def shouldCacheIndividualPairDefs = {
@@ -52,6 +57,24 @@ class CachedDomainConfigStoreTest {
 
     val secondCall = domainConfig.getPairDef(pair.asRef)
     assertEquals(pair, secondCall)
+
+    E4.verify(jooq)
+  }
+
+  // TODO Comment this back in when caching for endpoints lands
+  //@Test
+  def shouldCacheIndividualEndpoints = {
+
+    val endpoint = EndpointDef(name = "endpoint")
+    expect(jooq.execute(anyObject[Function1[Factory,EndpointDef]]())).andReturn(endpoint).once()
+
+    E4.replay(jooq)
+
+    val firstCall = domainConfig.getEndpointDef("domain", "endpoint")
+    assertEquals(endpoint, firstCall)
+
+    val secondCall = domainConfig.getEndpointDef("domain", "endpoint")
+    assertEquals(endpoint, secondCall)
 
     E4.verify(jooq)
   }

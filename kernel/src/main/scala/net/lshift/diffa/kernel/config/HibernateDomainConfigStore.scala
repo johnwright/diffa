@@ -28,6 +28,8 @@ import java.sql.SQLIntegrityConstraintViolationException
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
+import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
+import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
 import org.jooq.Record
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
