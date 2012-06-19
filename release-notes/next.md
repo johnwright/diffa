@@ -55,6 +55,7 @@
 
 * Upgraded to Lucene 3.6.0
 * Upgraded to Akka 2.0.1
+* Upgraded to Hazelcast 2.1.2
 
 ## Upgrading
 
