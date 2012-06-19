@@ -25,7 +25,7 @@ import org.easymock.EasyMock._
 import org.easymock.classextension.{EasyMock => E4}
 import org.junit.Test
 import org.easymock.EasyMock
-import net.lshift.diffa.kernel.util.cache.CacheProvider
+import net.lshift.diffa.kernel.util.cache.{HazelcastCacheProvider, CacheProvider}
 
 class DomainMembershipAwareTest {
 
@@ -33,7 +33,8 @@ class DomainMembershipAwareTest {
   val db = createStrictMock(classOf[DatabaseFacade])
   val jf = E4.createStrictMock(classOf[JooqDatabaseFacade])
   val hm = E4.createNiceMock(classOf[HookManager])
-  val cp = createNiceMock(classOf[CacheProvider])
+
+  val cp = new HazelcastCacheProvider
 
   // TODO Nor should we get this far into the DatabaseFacade, ideally
   expect(db.execute(EasyMock.isA(classOf[String]), EasyMock.isA(classOf[Map[String,Any]]))).andStubReturn(1)
