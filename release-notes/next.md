@@ -49,6 +49,7 @@
 * [182] - Allow limiting the maximum physical response size that we accept from a participant
 * [187] - Ensure alphabetical ordering of elements in the UI
 * [???] - Introduce basic caching of the domain config store
+* [189] - Allow a user to specify if an endpoint sorts keys by their ASCII-equivalent values, or via the Unicode Collation Algorithm
 
 ## Library Upgrades
 
