@@ -265,7 +265,10 @@ case class PairViewDef(
 }
 
 /**
- * This has been made java friendly to ensure it can be serialized correctly when inserted into caches
+ * This is the next generation version of the DiffaPair, but with serialization and friendly fields.
+ * This has been made java friendly to ensure it can be serialized correctly when inserted into caches.
+ * When Hibernate has been removed completely, the DiffaPair object can be deleted all together and
+ * get replaced with this more useful definition.
  */
 case class DomainPairDef(
   @BeanProperty var domain: String = null,
