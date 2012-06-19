@@ -178,7 +178,7 @@ class Configuration(val configStore: DomainConfigStore,
   // This might have to get refactored in light of the fact that we are now pretty much
   // just using REST to configure the agent
   def getEndpointDef(domain:String, x:String) = configStore.getEndpointDef(domain, x)
-  def getPairDef(domain:String, x:String) = configStore.getPairDef(domain, x)
+  def getPairDef(domain:String, x:String) : PairDef = configStore.getPairDef(domain, x).withoutDomain
   def getUser(x:String) = systemConfigStore.getUser(x)
 
   def createOrUpdateUser(domain:String, u: User): Unit = {

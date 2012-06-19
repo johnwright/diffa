@@ -272,6 +272,17 @@ case class DomainPairDef(
 
   def asRef = DiffaPairRef(key, domain)
 
+  def withoutDomain = PairDef(
+    key = key,
+    versionPolicyName = versionPolicyName,
+    matchingTimeout = matchingTimeout,
+    upstreamName = upstreamName,
+    downstreamName = downstreamName,
+    scanCronSpec = scanCronSpec,
+    allowManualScans = allowManualScans,
+    views = views
+  )
+
   def identifier = asRef.identifier
 }
 
