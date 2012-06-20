@@ -184,7 +184,4 @@ public class JSONHelper {
     }
   }
 
-  private static class NullScanResultEntryProcessor implements ScanResultEntryProcessor {
-      public void process(ScanResultEntry e) {}
-  }
 }
