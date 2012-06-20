@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.participant.common;
+package net.lshift.diffa.participant.scanning;
 
-import net.lshift.diffa.participant.scanning.ScanResultEntry;
+import net.lshift.diffa.participant.common.ScanResultEntryValidator;
 
-class NullScanResultEntryProcessor implements ScanResultEntryProcessor {
+public
+class NullScanResultEntryValidator implements ScanResultEntryValidator {
     public void process(ScanResultEntry e) {}
 }

@@ -17,6 +17,7 @@ package net.lshift.diffa.participant.common;
 
 import net.lshift.diffa.participant.changes.ChangeEvent;
 import net.lshift.diffa.participant.correlation.ProcessingResponse;
+import net.lshift.diffa.participant.scanning.NullScanResultEntryValidator;
 import net.lshift.diffa.participant.scanning.ScanResultEntry;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
@@ -73,10 +74,10 @@ public class JSONHelper {
 
   public static ScanResultEntry[] readQueryResult(InputStream stream)
           throws IOException {
-    return readQueryResult(stream, new NullScanResultEntryProcessor());
+    return readQueryResult(stream, new NullScanResultEntryValidator());
   }
 
-    public static ScanResultEntry[] readQueryResult(InputStream stream, ScanResultEntryProcessor proc)
+    public static ScanResultEntry[] readQueryResult(InputStream stream, ScanResultEntryValidator proc)
       throws IOException {
     try {
       List<ScanResultEntry> scanResultEntries = new ArrayList<ScanResultEntry>();

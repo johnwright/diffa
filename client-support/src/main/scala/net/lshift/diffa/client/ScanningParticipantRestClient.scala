@@ -38,6 +38,7 @@ import org.apache.http.HttpResponse
 import java.io.{IOException, InputStream}
 import net.lshift.diffa.kernel.differencing.{ScanLimitBreachedException, ScanFailedException}
 import java.net.{SocketTimeoutException, ConnectException, SocketException, URI}
+import net.lshift.diffa.kernel.differencing.EntityValidator
 
 
 /**
