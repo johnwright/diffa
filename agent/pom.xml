@@ -344,7 +344,6 @@
           <!--<forkMode>never</forkMode>-->
           <excludes>
             <exclude>**/*$*/**</exclude>
-            <exclude>**/itest/**</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -359,7 +358,7 @@
                 <exclude>none</exclude>
               </excludes>
               <includes>
-                <include>**/itest/**/*Test.class</include>
+                <include>**/itest/**/UserPreferencesTest.class</include>
               </includes>
               <systemPropertyVariables>
                 <diffa.maildir>${basedir}/target/messages</diffa.maildir>
