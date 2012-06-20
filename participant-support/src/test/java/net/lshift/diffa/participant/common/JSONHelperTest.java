@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.easymock.EasyMock.*;
 
 /**
  * Tests for the JSON serialisation support.
@@ -222,7 +223,32 @@ public class JSONHelperTest {
     // Then
     assertEquals("Should log exactly one event", 1, logAppender.getEventCount());
   }
-  
+
+
+  @Test
+  public void shouldPassScannedEntityToProcessor() throws Exception {
+    //Given
+    ScanResultEntryProcessor proc = createMock(ScanResultEntryProcessor.class);
+    Map<String, String> attributes= new HashMap<String, String>();
+    attributes.put("a1", "v1");
+
+    ScanResultEntry expected = ScanResultEntry.forEntity("id1", "v1",
+            new DateTime(2011, 06, 05, 15, 03, 0, DateTimeZone.UTC), attributes);
+
+    proc.processResult(expected); replay(proc);
+    String scanResult = "[" +
+            makeJsonEntityString("id1", ",\"attributes\":{\"a1\":\"v1\"}", "v1", "2011-06-05T15:03:00.000Z") + "]";
+    InputStream in = new ByteArrayInputStream(scanResult.getBytes());
+
+    // When
+    JSONHelper.readQueryResult(in, proc);
+
+
+    // Then
+    verify(proc);
+  }
+
+
   @Test
   public void shouldLogScanResultEntryCountForAggregateQuery() throws Exception {
     // Given

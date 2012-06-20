@@ -72,6 +72,11 @@ public class JSONHelper {
   }
 
   public static ScanResultEntry[] readQueryResult(InputStream stream)
+          throws IOException {
+    return readQueryResult(stream, new NullScanResultEntryProcessor());
+  }
+
+    public static ScanResultEntry[] readQueryResult(InputStream stream, ScanResultEntryProcessor proc)
       throws IOException {
     try {
       List<ScanResultEntry> scanResultEntries = new ArrayList<ScanResultEntry>();
@@ -81,7 +86,10 @@ public class JSONHelper {
       }
 
       while (parser.nextToken() != JsonToken.END_ARRAY) {
-        scanResultEntries.add(mapper.readValue(parser, ScanResultEntry.class));
+          ScanResultEntry entry = mapper.readValue(parser, ScanResultEntry.class);
+          proc.processResult(entry);
+          scanResultEntries.add(entry);
+
       }
       log.info("ScanResultEntry readQueryResult [count = " + scanResultEntries.size() + "]");
       return scanResultEntries.toArray(new ScanResultEntry[scanResultEntries.size()]);
@@ -174,5 +182,9 @@ public class JSONHelper {
     } catch (Exception ex) {
       throw new IOException("Failed to deserialize event from JSON", ex);
     }
+  }
+
+  private static class NullScanResultEntryProcessor implements ScanResultEntryProcessor {
+      public void processResult(ScanResultEntry e) {}
   }
 }

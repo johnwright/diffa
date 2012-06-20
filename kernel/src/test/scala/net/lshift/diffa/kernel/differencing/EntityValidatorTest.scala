@@ -8,10 +8,6 @@ package net.lshift.diffa.kernel.differencing
  * To change this template use File | Settings | File Templates.
  */
 
-class EntityValidationTest {
-
-}
-
 import org.junit.Test
 import org.junit.experimental.theories.Theories
 import org.junit.runner.RunWith
