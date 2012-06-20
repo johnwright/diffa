@@ -28,6 +28,7 @@ object ResultMappingUtil {
 
   def recordToDomainPairDef(r:Record) : DomainPairDef = {
     DomainPairDef(
+      domain = r.getValue(PAIR.DOMAIN),
       key = r.getValue(PAIR.PAIR_KEY),
       upstreamName = r.getValue(PAIR.UPSTREAM),
       downstreamName = r.getValue(PAIR.DOWNSTREAM),
