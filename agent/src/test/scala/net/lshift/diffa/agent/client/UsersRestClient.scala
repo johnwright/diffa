@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010 - 2012 LShift Ltd.
+ * Copyright (C) 2010-2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ class UsersRestClient(rootUrl:String, username:String)
   extends ExternalRestClient(rootUrl, "/users/" + username) {
 
   def getFilteredItems(domain:String, itemType:FilteredItemType) = {
-    val path = resource.path(resourcePath + "/" + itemType.toString)
-    val media = path.accept(MediaType.TEXT_PLAIN)
+    val path = resource.path("/" + domain + "/filter/"  + itemType.toString)
+    val media = path.accept(MediaType.APPLICATION_JSON)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
-      case 200   => response.getEntity(classOf[String]).toInt
+      case 200   => response.getEntity(classOf[java.util.List[String]])
       case 404   => throw new NotFoundException(path.toString)
       case x:Int => handleHTTPError(x, path, status)
     }

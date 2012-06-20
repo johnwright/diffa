@@ -18,17 +18,45 @@ package net.lshift.diffa.agent.rest
 import javax.ws.rs.{PathParam, Produces, GET, Path}
 import org.springframework.stereotype.Component
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.beans.factory.annotation.Autowired
+import net.lshift.diffa.kernel.config.system.CachedSystemConfigStore
+import com.sun.jersey.api.NotFoundException
+import net.lshift.diffa.kernel.preferences.{UserPreferencesStore, FilteredItemType}
+import scala.collection.JavaConversions._
 
-@Path("/users/{user}")
+@Path("/users/{user}/{domain}")
 @Component
-@PreAuthorize("hasPermission(#user, 'user-preferences')")
+@PreAuthorize("hasPermission(#user, 'user-preferences') and hasPermission(#domain, 'domain-user')")
 class UsersResource {
 
+  @Autowired var systemConfigStore:CachedSystemConfigStore = null
+  @Autowired var userPreferences:UserPreferencesStore = null
+
   @GET
-  @Path("/filter/{name}")
+  @Path("/filter/{itemType}")
   @Produces(Array("application/json"))
-  def getFilters(@PathParam("name") name:String) = {
-    Array("foo", "bar")
+  def getFilters(@PathParam("user") user:String,
+                 @PathParam("domain") domain:String,
+                 @PathParam("itemType") itemType:String) = {
+    checkDomain(domain)
+    val filterType = getFilterType(itemType)
+    userPreferences.listFilteredItems(domain, user, filterType).toArray
   }
+
+  private def getFilterType(unparsed:String) = {
+    try {
+      FilteredItemType.valueOf(unparsed)
+    }
+    catch {
+      case x:IllegalArgumentException =>
+        throw new InvalidEnumException("FilteredItemType", unparsed)
+    }
+  }
+
+  private def checkDomain[T](domain: String) =
+    if (!systemConfigStore.doesDomainExist(domain)) {
+      throw new NotFoundException("Invalid domain: " + domain)
+    }
+
 
 }

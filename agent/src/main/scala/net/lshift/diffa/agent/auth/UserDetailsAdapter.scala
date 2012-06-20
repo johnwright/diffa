@@ -60,6 +60,11 @@ class UserDetailsAdapter(val systemConfigStore:SystemConfigStore)
         val domain = targetDomainObject.asInstanceOf[String]
         isRoot(auth) || hasDomainRole(auth, domain, "user")
 
+        // Tests to see whether the requesting user is the owner of the requested object
+      case "user-preferences" =>
+        val user = targetDomainObject.asInstanceOf[String]
+        auth.getName == user
+
         // Unknown permission request type
       case _ =>
         false
