@@ -17,6 +17,9 @@ package net.lshift.diffa.kernel.preferences
 
 import net.lshift.diffa.kernel.config.DiffaPairRef
 
+/**
+ * Provides a mechanism for users to persist their display preferences.
+ */
 trait UserPreferencesStore {
 
   /**
