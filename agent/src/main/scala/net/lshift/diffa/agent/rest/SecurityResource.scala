@@ -37,7 +37,7 @@ import scala.collection.JavaConversions._
 @Path("/security")
 @Component
 @PreAuthorize("hasRole('root')")
-class UsersResource {
+class SecurityResource {
 
   @Autowired var systemConfig:SystemConfiguration = null
   @Context var uriInfo:UriInfo = null
