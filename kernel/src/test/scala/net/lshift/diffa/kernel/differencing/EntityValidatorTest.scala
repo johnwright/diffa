@@ -44,12 +44,12 @@ class EntityValidatorTest {
   @Test def shouldBeValidWithAlphaNumericStringForId {
     val validId = "foo4_-,."
     val entity = scanResultFor(id = validId)
-    assertEquals(None, exceptionOf(validator.validate(entity)))
+    assertEquals(None, exceptionOf(validator.process(entity)))
   }
 
   @Test def shouldBeValidWithNullId {
     val entity = scanResultFor(id = null)
-    assertEquals(exceptionOf(validator.validate(entity)), None)
+    assertEquals(exceptionOf(validator.process(entity)), None)
   }
 
   lazy val validator = EntityValidator
@@ -60,13 +60,13 @@ class EntityValidatorTest {
 
   @Test
   def shouldBeInvalidWithNonPrintablesInAttributeValues {
-    assertThatSome(exceptionOf(validator.validate(entityWithInvalidAttributes)),
+    assertThatSome(exceptionOf(validator.process(entityWithInvalidAttributes)),
       is(instanceOf(classOf[InvalidEntityException])))
   }
 
   @Test
   def shouldReportNonPrintablesInAttributeValuesInException {
-    assertThatSome(exceptionOf(validator.validate(entityWithInvalidAttributes)).map(_.getMessage),
+    assertThatSome(exceptionOf(validator.process(entityWithInvalidAttributes)).map(_.getMessage),
       containsString(INVALID_ID))
   }
 
@@ -77,7 +77,7 @@ class EntityValidatorTest {
    new ScanResultEntry(id, null, null, attributes)
   }
 
-  val  exceptionForInvalidId = exceptionOf(validator.validate(scanResultFor(id = INVALID_ID)))
+  val  exceptionForInvalidId = exceptionOf(validator.process(scanResultFor(id = INVALID_ID)))
 
 }
 

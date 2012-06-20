@@ -2,6 +2,7 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.participant.scanning.ScanResultEntry
 import org.joda.time.DateTime
+import net.lshift.diffa.participant.common.ScanResultEntryProcessor
 
 /**
  * Created with IntelliJ IDEA.
@@ -15,7 +16,7 @@ case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, at
 
 }
 
-object EntityValidator {
+object EntityValidator extends ScanResultEntryProcessor {
   import scala.collection.JavaConversions._
   def maybe[T](x: T) = x match {
     case null => None
@@ -33,7 +34,7 @@ object EntityValidator {
     e.attributes.foreach { case (_, value) => validateCharactersIn(value) }
   }
 
-  def validate(e: ScanResultEntry): Unit = validate(of(e))
+  def process(e: ScanResultEntry): Unit = validate(of(e))
 
   private def of(e: ScanResultEntry) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
     maybe(e.getAttributes).map(_.toMap).getOrElse(Map()))
