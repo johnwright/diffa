@@ -87,7 +87,7 @@ public class JSONHelper {
 
       while (parser.nextToken() != JsonToken.END_ARRAY) {
           ScanResultEntry entry = mapper.readValue(parser, ScanResultEntry.class);
-          proc.processResult(entry);
+          proc.process(entry);
           scanResultEntries.add(entry);
 
       }
@@ -185,6 +185,6 @@ public class JSONHelper {
   }
 
   private static class NullScanResultEntryProcessor implements ScanResultEntryProcessor {
-      public void processResult(ScanResultEntry e) {}
+      public void process(ScanResultEntry e) {}
   }
 }

@@ -10,5 +10,5 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry;
  * To change this template use File | Settings | File Templates.
  */
 public interface ScanResultEntryProcessor {
-    void processResult(ScanResultEntry entry);
+    void process(ScanResultEntry entry);
 }
