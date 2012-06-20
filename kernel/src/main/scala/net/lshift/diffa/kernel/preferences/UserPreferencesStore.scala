@@ -15,7 +15,11 @@
  */
 package net.lshift.diffa.kernel.preferences
 
+import net.lshift.diffa.kernel.config.DiffaPairRef
+
 trait UserPreferencesStore {
+
+  def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType)
 
   /**
    * Returns a list of all of the items that the user has elected to filter out.

@@ -82,7 +82,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
   def listEndpoints = db.listQuery[Endpoint]("allEndpoints", Map())
 
 
-  @Deprecated
+  // TODO implement create or update using JOOQ
   def createOrUpdateUser(user: User) = {
     if (updateUser(user) == 0) {
       createUser(user)

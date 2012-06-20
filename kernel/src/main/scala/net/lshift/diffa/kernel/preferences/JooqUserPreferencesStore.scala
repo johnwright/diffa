@@ -15,9 +15,30 @@
  */
 package net.lshift.diffa.kernel.preferences
 
-class JooqUserPreferencesStore extends UserPreferencesStore {
+import scala.collection.JavaConversions._
+import net.lshift.diffa.schema.jooq.DatabaseFacade
+import net.lshift.diffa.kernel.config.DiffaPairRef
+import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
 
-  def listFilteredItems(domain: String, username: String, itemType: FilteredItemType) = {
-    List("p1, p2")
-  }
+class JooqUserPreferencesStore(db:DatabaseFacade) extends UserPreferencesStore {
+
+  def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
+    t.insertInto(USER_ITEM_VISIBILITY).
+      set(USER_ITEM_VISIBILITY.DOMAIN, pair.domain).
+      set(USER_ITEM_VISIBILITY.PAIR, pair.key).
+      set(USER_ITEM_VISIBILITY.USERNAME, username).
+      set(USER_ITEM_VISIBILITY.ITEM_TYPE, itemType.toString).
+    execute()
+  })
+
+  def listFilteredItems(domain: String, username: String, itemType: FilteredItemType) = db.execute(t => {
+    val result =
+      t.select().from(USER_ITEM_VISIBILITY).
+        where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).
+          and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
+          and(USER_ITEM_VISIBILITY.ITEM_TYPE.equal(itemType.toString)).
+        fetch()
+
+    result.iterator().map(record => record.getValue(USER_ITEM_VISIBILITY.PAIR)).toSeq
+  })
 }
