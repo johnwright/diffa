@@ -19,10 +19,30 @@ import net.lshift.diffa.kernel.config.DiffaPairRef
 
 trait UserPreferencesStore {
 
+  /**
+   * Creates a new item that the user has chosen to filter out.
+   */
   def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType)
+
+  /**
+   * Deletes item that the user has chosen to filter out.
+   */
+  def removeFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType)
+
+  /**
+   * Deletes all items that the given user has configured for the current domain.
+   */
+  def removeAllFilteredItemsForDomain(domain:String, username: String)
+
+  /**
+   * Deletes all items that the given user has configured for themselves.
+   */
+  def removeAllFilteredItemsForUser(username: String)
 
   /**
    * Returns a list of all of the items that the user has elected to filter out.
    */
   def listFilteredItems(domain:String, username:String, itemType:FilteredItemType) : Seq[String]
+
+
 }

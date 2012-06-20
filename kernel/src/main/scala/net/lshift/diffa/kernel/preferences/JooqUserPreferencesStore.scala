@@ -31,6 +31,28 @@ class JooqUserPreferencesStore(db:DatabaseFacade) extends UserPreferencesStore {
     execute()
   })
 
+  def removeFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
+    t.delete(USER_ITEM_VISIBILITY).
+      where(USER_ITEM_VISIBILITY.DOMAIN.equal(pair.domain)).
+        and(USER_ITEM_VISIBILITY.PAIR.equal(pair.key)).
+        and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
+        and(USER_ITEM_VISIBILITY.ITEM_TYPE.equal(itemType.toString)).
+      execute()
+  })
+
+  def removeAllFilteredItemsForDomain(domain:String, username: String) = db.execute(t => {
+    t.delete(USER_ITEM_VISIBILITY).
+      where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).
+        and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
+      execute()
+  })
+
+  def removeAllFilteredItemsForUser(username: String) = db.execute(t => {
+    t.delete(USER_ITEM_VISIBILITY).
+      where(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
+      execute()
+  })
+
   def listFilteredItems(domain: String, username: String, itemType: FilteredItemType) = db.execute(t => {
     val result =
       t.select().from(USER_ITEM_VISIBILITY).
