@@ -20,12 +20,16 @@ import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, DiffaPair}
 import net.lshift.diffa.kernel.frontend.{DomainPairDef, PairDef}
+import org.slf4j.LoggerFactory
 
 /**
  * Keeps track of and updates Local event matchers for pair entries from DomainConfigStore.
  */
 class LocalEventMatchingManager(systemConfigStore: SystemConfigStore,
                                 domainConfigStore: DomainConfigStore) extends MatchingManager {
+
+  val log = LoggerFactory.getLogger(getClass)
+
   private val reaper = new LocalEventMatcherReaper
   private val matchers = new HashMap[DiffaPairRef, LocalEventMatcher]
   private val listeners = new ListBuffer[MatchingStatusListener]
@@ -62,6 +66,10 @@ class LocalEventMatchingManager(systemConfigStore: SystemConfigStore,
   }
 
   private def updateMatcher(pair:DomainPairDef):Unit = {
+
+    // TODO demote this statement
+    log.info("Updating matcher for " + pair)
+
     val newMatcher = new LocalEventMatcher(pair, reaper)
 
     matchers.remove(pair.asRef) match {
