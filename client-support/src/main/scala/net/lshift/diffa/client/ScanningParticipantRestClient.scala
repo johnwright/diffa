@@ -135,7 +135,9 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
     }
 
     try {
-      JSONHelper.readQueryResult(countedInputStream)
+      // TODO: Check with Ben if there's value in creating itests for this or
+      // refactoring this class to accept an HTTP Fetcher interface.
+      JSONHelper.readQueryResult(countedInputStream, EntityValidator)
     } catch { case e:IOException =>
       e.getCause match {
         case scanError : ScanLimitBreachedException => throw scanError
