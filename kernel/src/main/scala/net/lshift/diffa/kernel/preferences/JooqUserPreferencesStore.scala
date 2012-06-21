@@ -20,14 +20,15 @@ import net.lshift.diffa.schema.jooq.DatabaseFacade
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
 import net.lshift.diffa.kernel.lifecycle.{DomainLifecycleAware, PairLifecycleAware}
-import net.lshift.diffa.kernel.util.cache.CacheProvider
+import net.lshift.diffa.kernel.util.cache.{KeyPredicate, CacheProvider}
+import reflect.BeanProperty
 
-class JooqUserPreferencesStore(db:DatabaseFacade)
+class JooqUserPreferencesStore(db:DatabaseFacade, cacheProvider:CacheProvider)
   extends UserPreferencesStore
   with PairLifecycleAware
   with DomainLifecycleAware {
 
-  //val pendingEvents = cacheProvider.getCachedMap[]("pending.difference.events")
+  val cachedFilteredItems = cacheProvider.getCachedMap[DomainUserTypeKey, java.util.List[String]]("user.preferences.filtered.items")
 
   def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
     t.insertInto(USER_ITEM_VISIBILITY).
@@ -38,40 +39,79 @@ class JooqUserPreferencesStore(db:DatabaseFacade)
     execute()
   })
 
-  def removeFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
-    t.delete(USER_ITEM_VISIBILITY).
-      where(USER_ITEM_VISIBILITY.DOMAIN.equal(pair.domain)).
+  def removeFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = {
+    cachedFilteredItems.evict(DomainUserTypeKey(pair.domain, username, itemType.toString))
+    db.execute(t => {
+      t.delete(USER_ITEM_VISIBILITY).
+        where(USER_ITEM_VISIBILITY.DOMAIN.equal(pair.domain)).
         and(USER_ITEM_VISIBILITY.PAIR.equal(pair.key)).
         and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
         and(USER_ITEM_VISIBILITY.ITEM_TYPE.equal(itemType.toString)).
-      execute()
-  })
+        execute()
+    })
+  }
 
-  def removeAllFilteredItemsForDomain(domain:String, username: String) = db.execute(t => {
-    t.delete(USER_ITEM_VISIBILITY).
-      where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).
-        and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
-      execute()
-  })
-
-  def removeAllFilteredItemsForUser(username: String) = db.execute(t => {
-    t.delete(USER_ITEM_VISIBILITY).
-      where(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
-      execute()
-  })
-
-  def listFilteredItems(domain: String, username: String, itemType: FilteredItemType) = db.execute(t => {
-    val result =
-      t.select().from(USER_ITEM_VISIBILITY).
+  def removeAllFilteredItemsForDomain(domain:String, username: String) = {
+    cachedFilteredItems.keySubset(FilterByDomainAndUserPredicate(domain, username)).evictAll()
+    db.execute(t => {
+      t.delete(USER_ITEM_VISIBILITY).
         where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).
-          and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
-          and(USER_ITEM_VISIBILITY.ITEM_TYPE.equal(itemType.toString)).
-        fetch()
+        and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
+        execute()
+    })
+  }
 
-    result.iterator().map(record => record.getValue(USER_ITEM_VISIBILITY.PAIR)).toSeq
-  })
+  def removeAllFilteredItemsForUser(username: String) = {
+    cachedFilteredItems.keySubset(FilterByUserPredicate(username)).evictAll()
+    db.execute(t => {
+      t.delete(USER_ITEM_VISIBILITY).
+        where(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
+        execute()
+    })
+  }
+
+  def listFilteredItems(domain: String, username: String, itemType: FilteredItemType) = {
+    cachedFilteredItems.readThrough(DomainUserTypeKey(domain,username,itemType.toString), () => {
+      db.execute(t => {
+        val result =
+          t.select().from(USER_ITEM_VISIBILITY).
+            where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).
+            and(USER_ITEM_VISIBILITY.USERNAME.equal(username)).
+            and(USER_ITEM_VISIBILITY.ITEM_TYPE.equal(itemType.toString)).
+          fetch()
+
+        val items = new java.util.ArrayList[String]()
+
+        for (record <- result.iterator()) {
+          items.add(record.getValue(USER_ITEM_VISIBILITY.PAIR))
+        }
+
+        items
+      })
+    })
+  }
 
   def onPairDeleted(pair: DiffaPairRef) {}
   def onDomainUpdated(domain: String) {}
   def onDomainRemoved(domain: String) {}
+}
+
+case class DomainUserTypeKey(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var username: String = null,
+  @BeanProperty var itemType: String = null) {
+
+  def this() = this(domain = null)
+
+}
+
+case class FilterByUserPredicate(@BeanProperty user:String = null) extends KeyPredicate[DomainUserTypeKey] {
+  def this() = this(user = null)
+  def constrain(key: DomainUserTypeKey) = key.username == user
+}
+
+case class FilterByDomainAndUserPredicate(@BeanProperty domain:String = null,
+                                          @BeanProperty user:String = null) extends KeyPredicate[DomainUserTypeKey] {
+  def this() = this(domain = null)
+  def constrain(key: DomainUserTypeKey) = key.domain == domain && key.username == user
 }

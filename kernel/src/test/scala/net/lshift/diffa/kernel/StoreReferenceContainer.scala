@@ -128,7 +128,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     makeStore(sf => new JooqDomainCredentialsStore(facade), "domainCredentialsStore")
 
   private lazy val _userPreferencesStore =
-    makeStore(sf => new JooqUserPreferencesStore(facade), "userPreferencesStore")
+    makeStore(sf => new JooqUserPreferencesStore(facade, cacheProvider), "userPreferencesStore")
 
   private lazy val _domainDifferenceStore =
     makeStore(sf => new HibernateDomainDifferenceStore(sf, facade, cacheProvider, sequenceProvider, hookManager), "DomainDifferenceStore")
