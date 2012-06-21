@@ -19,9 +19,22 @@ import net.lshift.diffa.client.{NotFoundException, ExternalRestClient}
 import net.lshift.diffa.kernel.preferences.FilteredItemType
 import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 class UsersRestClient(rootUrl:String, username:String)
   extends ExternalRestClient(rootUrl, "/users/" + username) {
+
+  def createFilter(pair:DiffaPairRef, itemType:FilteredItemType) = {
+    val path = resource.path("/" + pair.domain + "/" + pair.key + "/filter/"  + itemType.toString)
+    val media = path.accept(MediaType.TEXT_PLAIN)
+    val response = media.put(classOf[ClientResponse])
+    val status = response.getClientResponseStatus
+    status.getStatusCode match {
+      case 204   => ()
+      case 404   => throw new NotFoundException(path.toString)
+      case x:Int => handleHTTPError(x, path, status)
+    }
+  }
 
   def getFilteredItems(domain:String, itemType:FilteredItemType) = {
     val path = resource.path("/" + domain + "/filter/"  + itemType.toString)

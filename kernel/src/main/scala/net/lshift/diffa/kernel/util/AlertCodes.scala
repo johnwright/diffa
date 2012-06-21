@@ -60,6 +60,10 @@ object AlertCodes {
 
   // 4xx Errors that occur that as result of an invalid inbound request from a client
 
+  // 25
+  // 42x DB errors
+  val DB_ERROR = 420
+  val INTEGRITY_CONSTRAINT_VIOLATED = 421
 
   // 5xx Errors
   

@@ -17,18 +17,47 @@ package net.lshift.diffa.agent.itest.preferences
 
 import net.lshift.diffa.kernel.preferences.FilteredItemType
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.agent.client.UsersRestClient
-import org.junit.Test
+import net.lshift.diffa.agent.client.{SystemConfigRestClient, ConfigurationRestClient, UsersRestClient}
+import org.junit.{Before, Test}
 import org.junit.Assert._
+import net.lshift.diffa.kernel.frontend.{DomainDef, DomainPairDef, EndpointDef}
+import com.eaio.uuid.UUID
 
 class UserPreferencesTest {
 
-  val client = new UsersRestClient(agentURL, agentUsername)
+  val domain = new UUID().toString
+
+  val preferencesClient = new UsersRestClient(agentURL, agentUsername)
+  val systemConfigClient = new SystemConfigRestClient(agentURL)
+  val configClient = new ConfigurationRestClient(agentURL, domain)
+
+  val upstream = EndpointDef(name = new UUID().toString)
+  val downstream = EndpointDef(name = new UUID().toString)
+  val pair = DomainPairDef(key = new UUID().toString,
+                           domain = domain,
+                           upstreamName = upstream.name,
+                           downstreamName = downstream.name)
+
+  @Before
+  def createTestData {
+    systemConfigClient.declareDomain(DomainDef(name = domain))
+
+    configClient.declareEndpoint(upstream)
+    configClient.declareEndpoint(downstream)
+    configClient.declarePair(pair.withoutDomain)
+
+
+  }
 
   @Test
   def shouldSetFilters {
-    val filtered = client.getFilteredItems(defaultDomain, FilteredItemType.SWIM_LANE)
+
+    preferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
+
+    val filtered = preferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
 
     assertNotNull(filtered)
+    assertEquals(1, filtered.size())
+    assertEquals(pair.key, filtered.get(0))
   }
 }

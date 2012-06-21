@@ -15,7 +15,7 @@
  */
 package net.lshift.diffa.agent.rest
 
-import javax.ws.rs.{PathParam, Produces, GET, Path}
+import javax.ws.rs._
 import org.springframework.stereotype.Component
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,6 +23,8 @@ import net.lshift.diffa.kernel.config.system.CachedSystemConfigStore
 import com.sun.jersey.api.NotFoundException
 import net.lshift.diffa.kernel.preferences.{UserPreferencesStore, FilteredItemType}
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.DiffaPairRef
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 @Path("/users/{user}/{domain}")
 @Component
@@ -41,6 +43,17 @@ class UsersResource {
     checkDomain(domain)
     val filterType = getFilterType(itemType)
     userPreferences.listFilteredItems(domain, user, filterType).toArray
+  }
+
+  @PUT
+  @Path("/{pair}/filter/{itemType}")
+  def createFilter(@PathParam("user") user:String,
+                   @PathParam("domain") domain:String,
+                   @PathParam("pair") pair:String,
+                   @PathParam("itemType") itemType:String) {
+    checkDomain(domain)
+    val filterType = getFilterType(itemType)
+    userPreferences.createFilteredItem(DiffaPairRef(pair,domain), user, filterType)
   }
 
   private def getFilterType(unparsed:String) = {
