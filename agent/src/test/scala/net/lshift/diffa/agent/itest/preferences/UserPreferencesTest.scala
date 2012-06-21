@@ -22,7 +22,7 @@ import org.junit.{Before, Test}
 import org.junit.Assert._
 import net.lshift.diffa.kernel.frontend.{UserDef, DomainDef, DomainPairDef, EndpointDef}
 import com.eaio.uuid.UUID
-import net.lshift.diffa.client.AccessDeniedException
+import net.lshift.diffa.client.{RestClientParams, AccessDeniedException}
 
 class UserPreferencesTest {
 
@@ -51,7 +51,7 @@ class UserPreferencesTest {
   }
 
   @Test
-  def shouldSetAndDeleteFilters {
+  def rootUserShouldBeAbleToSetAndDeleteAnyFilters {
 
     rootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
 
@@ -64,13 +64,58 @@ class UserPreferencesTest {
     assertEquals(Seq(), shouldBeEmpty)
   }
 
-  @Test(expected = classOf[AccessDeniedException])
-  def shouldNotBeAbleToModifySettingsForADifferentUser {
+  @Test
+  def nonRootUserShouldBeAbleToModifyOwnDomainSettingsWhenMemberOfADomain {
 
-    val nonRootUser = UserDef(name = new UUID().toString, superuser = false, external = true)
+    val nonRootUser = UserDef(name = new UUID().toString,superuser = false, external = true)
     securityClient.declareUser(nonRootUser)
+    configClient.makeDomainMember(nonRootUser.name)
 
-    val nonRootUserPreferencesClient = new UsersRestClient(agentURL, nonRootUser.name)
+    val token = securityClient.getUserToken(nonRootUser.name)
+    val invokingCreds = RestClientParams(token = Some(token))
+
+    // This attempts to access a particular user's settings when authenticated as that particular user
+
+    val nonRootUserPreferencesClient = new UsersRestClient(agentURL, nonRootUser.name, invokingCreds)
     nonRootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
   }
+
+  @Test(expected = classOf[AccessDeniedException])
+  def nonRootUserShouldNotBeAbleToModifyOwnDomainSettingsWhenNotMemberOfADomain {
+
+    val nonRootUser = UserDef(name = new UUID().toString,superuser = false, external = true)
+    securityClient.declareUser(nonRootUser)
+
+    val token = securityClient.getUserToken(nonRootUser.name)
+    val invokingCreds = RestClientParams(token = Some(token))
+
+    // This attempts to access a particular user's settings when authenticated as that particular user
+    // but they are not a member of the target domain
+
+    val nonRootUserPreferencesClient = new UsersRestClient(agentURL, nonRootUser.name, invokingCreds)
+    nonRootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
+  }
+
+
+  @Test(expected = classOf[AccessDeniedException])
+  def nonRootUserShouldNotBeAbleToModifyOtherUsersDomainSettingsWhenMemberOfSameDomain {
+
+    val nonRootUser = UserDef(name = new UUID().toString, superuser = false, external = true)
+    val otherNonRootUser = UserDef(name = new UUID().toString, superuser = false, external = true)
+
+    securityClient.declareUser(nonRootUser)
+    securityClient.declareUser(otherNonRootUser)
+    configClient.makeDomainMember(nonRootUser.name)
+    configClient.makeDomainMember(otherNonRootUser.name)
+
+    val token = securityClient.getUserToken(nonRootUser.name)
+    val invokingCreds = RestClientParams(token = Some(token))
+
+    // This attempts to access a particular user's settings when authenticated as another user
+    // who is a member of the same domain
+
+    val nonRootUserPreferencesClient = new UsersRestClient(agentURL, otherNonRootUser.name, invokingCreds)
+    nonRootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
+  }
+
 }

@@ -15,15 +15,15 @@
  */
 package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.client.{AccessDeniedException, NotFoundException, ExternalRestClient}
+import net.lshift.diffa.client.{RestClientParams, AccessDeniedException, NotFoundException, ExternalRestClient}
 import net.lshift.diffa.kernel.preferences.FilteredItemType
 import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import scala.collection.JavaConversions._
 
-class UsersRestClient(rootUrl:String, username:String)
-  extends ExternalRestClient(rootUrl, "/users/" + username) {
+class UsersRestClient(rootUrl:String, username:String, params: RestClientParams = RestClientParams.default)
+  extends ExternalRestClient(rootUrl, "/users/" + username, params) {
 
   def removeFilter(pair:DiffaPairRef, itemType:FilteredItemType)
     = delete("/" + pair.domain + "/" + pair.key + "/filter/"  + itemType.toString)
