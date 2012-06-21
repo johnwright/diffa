@@ -30,6 +30,10 @@ class JooqUserPreferencesStore(db:DatabaseFacade, cacheProvider:CacheProvider)
 
   val cachedFilteredItems = cacheProvider.getCachedMap[DomainUserTypeKey, java.util.List[String]]("user.preferences.filtered.items")
 
+  def reset {
+    cachedFilteredItems.evictAll()
+  }
+
   def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
     t.insertInto(USER_ITEM_VISIBILITY).
       set(USER_ITEM_VISIBILITY.DOMAIN, pair.domain).

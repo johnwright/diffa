@@ -39,6 +39,8 @@ class JooqUserPreferencesStoreTest {
   @Before
   def createTestData {
 
+    preferencesStore.reset
+
     systemConfigStore.createOrUpdateDomain(Domain(name = "domain"))
     systemConfigStore.createOrUpdateDomain(Domain(name = "domain"))
     systemConfigStore.createOrUpdateUser(User(name = "user", email = "", passwordEnc = ""))
