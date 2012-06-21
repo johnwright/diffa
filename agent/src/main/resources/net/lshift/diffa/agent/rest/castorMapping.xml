@@ -120,6 +120,9 @@
     <field name="scanCronSpec" type="string">
       <bind-xml name="scan-schedule" node="attribute" />
     </field>
+    <field name="scanCronEnabled" type="boolean">
+      <bind-xml name="scan-schedule-enabled" node="attribute" />
+    </field>
     <field name="allowManualScans" type="boolean">
       <bind-xml name="allow-manual-scans" node="attribute" />
     </field>
@@ -132,7 +135,7 @@
     <field name="reports" type="net.lshift.diffa.kernel.frontend.PairReportDef" collection="arraylist">
       <bind-xml name="report" />
     </field>
-    <field name="views" type="net.lshift.diffa.kernel.frontend.PairViewDef" collection="arraylist">
+    <field name="views" type="net.lshift.diffa.agent.rest.CastorSerializablePairView" collection="arraylist">
       <bind-xml name="view" />
     </field>
   </class>
@@ -195,12 +198,15 @@
     </field>
   </class>
 
-  <class name="net.lshift.diffa.kernel.frontend.PairViewDef">
+  <class name="net.lshift.diffa.agent.rest.CastorSerializablePairView">
     <field name="name" type="string">
       <bind-xml name="name" node="attribute" />
     </field>
     <field name="scanCronSpec" type="string">
       <bind-xml name="scan-schedule" node="attribute" />
+    </field>
+    <field name="scanCronEnabled" type="boolean">
+      <bind-xml name="scan-schedule-enabled" node="attribute" />
     </field>
   </class>
 

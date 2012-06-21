@@ -189,6 +189,7 @@ case class DiffaPair(
   @BeanProperty var versionPolicyName: String = null,
   @BeanProperty var matchingTimeout: Int = DiffaPair.NO_MATCHING,
   @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var scanCronEnabled: Boolean = true,
   @BeanProperty var allowManualScans: java.lang.Boolean = null,
   @BeanProperty var views:java.util.Set[PairView] = new java.util.HashSet[PairView]) {
 
@@ -219,7 +220,8 @@ case class DiffaPair(
 
 case class PairView(
   @BeanProperty var name:String = null,
-  @BeanProperty var scanCronSpec:String = null
+  @BeanProperty var scanCronSpec:String = null,
+  @BeanProperty var scanCronEnabled:Boolean = true
 ) {
   // Not wanted in equals, hashCode or toString
   @BeanProperty var pair:DiffaPair = null
