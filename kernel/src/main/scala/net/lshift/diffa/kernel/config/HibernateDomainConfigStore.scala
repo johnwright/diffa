@@ -187,8 +187,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     forceHibernateCacheEviction()
   }
 
-
-
   def listPairs(domain:String) = cachedPairs.readThrough(domain, () => listPairsInternal(domain))
 
   def listPairsForEndpoint(domain:String, endpoint:String) =
@@ -365,6 +363,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
    * Force the DB to uprev the config version column for this particular domain
    */
   private def upgradeConfigVersion(t:Factory, domain:String) {
+
+    cachedConfigVersions.evict(domain)
+
     t.update(DOMAINS).
       set(DOMAINS.CONFIG_VERSION, DOMAINS.CONFIG_VERSION.add(1)).
       where(DOMAINS.NAME.equal(domain)).
@@ -424,10 +425,14 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   }
 
   private def deletePairWithoutDependencies(t:Factory, pair:DiffaPairRef) = {
-    t.delete(PAIR).
+    val deleted = t.delete(PAIR).
       where(PAIR.DOMAIN.equal(pair.domain)).
       and(PAIR.PAIR_KEY.equal(pair.key)).
       execute()
+
+    if (deleted == 0) {
+      throw new MissingObjectException(pair.identifier)
+    }
   }
 
   private def deleteUserItemsByPair(t:Factory, pair:DiffaPairRef) = {

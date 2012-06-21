@@ -197,6 +197,18 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
+  def removingDomainShouldRemoveAnyUserSettingsRelatedToThatDomain {
+    declareAll()
+
+    systemConfigStore.createOrUpdateUser(user)
+    domainConfigStore.makeDomainMember(domainName, user.name)
+    userPreferencesStore.createFilteredItem(pairRef, user.name, FilteredItemType.SWIM_LANE)
+
+    systemConfigStore.deleteDomain(domainName)
+
+  }
+
+  @Test
   def shouldAllowMaxGranularityOverride = {
     // declare the domain
     systemConfigStore.createOrUpdateDomain(domain)
@@ -351,12 +363,12 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeleteMissing: Unit = {
+  def testDeleteMissing {
     expectMissingObject("endpoint") {
       domainConfigStore.deleteEndpoint(domainName, "MISSING_ENDPOINT")
     }
 
-    expectMissingObject("pair") {
+    expectMissingObject("domain/MISSING_PAIR") {
       domainConfigStore.deletePair(domainName, "MISSING_PAIR")
     }
   }

@@ -108,7 +108,7 @@ trait HibernateQueryUtils {
     singleQuery[Domain](s, "domainByName", Map("domain_name" -> name), "domain %s".format(name))
   })
 
-  def removeDomainDifferences(domain: String) = sessionFactory.withSession(s => {
+  @Deprecated def removeDomainDifferences(domain: String) = sessionFactory.withSession(s => {
     // TODO Maybe this should be integrated with HibernateSystemConfigStore:deleteDomain/1
     executeUpdate(s, "removeDomainCheckpoints", Map("domain_name" -> domain))
     executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
