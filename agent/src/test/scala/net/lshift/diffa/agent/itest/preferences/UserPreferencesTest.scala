@@ -46,15 +46,19 @@ class UserPreferencesTest {
     configClient.declareEndpoint(downstream)
     configClient.declarePair(pair.withoutDomain)
 
-
   }
 
   @Test
-  def shouldSetFilters {
+  def shouldSetAndDeleteFilters {
 
     preferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
 
     val filtered = preferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
     assertEquals(Seq(pair.key), filtered)
+
+    preferencesClient.removeFilter(pair.asRef, FilteredItemType.SWIM_LANE)
+
+    val shouldBeEmpty = preferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
+    assertEquals(Seq(), shouldBeEmpty)
   }
 }

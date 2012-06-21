@@ -56,6 +56,17 @@ class UsersResource {
     userPreferences.createFilteredItem(DiffaPairRef(pair,domain), user, filterType)
   }
 
+  @DELETE
+  @Path("/{pair}/filter/{itemType}")
+  def removeFilter(@PathParam("user") user:String,
+                   @PathParam("domain") domain:String,
+                   @PathParam("pair") pair:String,
+                   @PathParam("itemType") itemType:String) {
+    checkDomain(domain)
+    val filterType = getFilterType(itemType)
+    userPreferences.removeFilteredItem(DiffaPairRef(pair,domain), user, filterType)
+  }
+
   private def getFilterType(unparsed:String) = {
     try {
       FilteredItemType.valueOf(unparsed)

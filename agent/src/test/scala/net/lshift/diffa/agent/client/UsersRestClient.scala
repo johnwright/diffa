@@ -25,6 +25,9 @@ import scala.collection.JavaConversions._
 class UsersRestClient(rootUrl:String, username:String)
   extends ExternalRestClient(rootUrl, "/users/" + username) {
 
+  def removeFilter(pair:DiffaPairRef, itemType:FilteredItemType)
+    = delete("/" + pair.domain + "/" + pair.key + "/filter/"  + itemType.toString)
+
   def createFilter(pair:DiffaPairRef, itemType:FilteredItemType) = {
     val path = resource.path("/" + pair.domain + "/" + pair.key + "/filter/"  + itemType.toString)
     val media = path.accept(MediaType.TEXT_PLAIN)
