@@ -32,13 +32,13 @@ object Step0034 extends HibernateMigrationStep {
     migration.createTable("user_item_visibility").
       column("domain", Types.VARCHAR, 50, false).
       column("pair", Types.VARCHAR, 50, false).
-      column("username", Types.VARCHAR, 50, false). // TODO is username spellt user_name?
+      column("username", Types.VARCHAR, 50, false). // TODO is username spelt user_name?
       column("item_type", Types.VARCHAR, 20, false).
       pk("domain", "pair", "username", "item_type")
 
     migration.alterTable("user_item_visibility").
       addForeignKey("fk_uiv_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key")).
-      addForeignKey("fk_uiv_user", "username", "users", "name").
+      addForeignKey("fk_uiv_user", "username", "users", "name"). // TODO Is this constraint needed?
       addForeignKey("fk_uiv_mmbs", Array("domain", "username"), "members", Array("domain_name", "user_name"))
 
     migration

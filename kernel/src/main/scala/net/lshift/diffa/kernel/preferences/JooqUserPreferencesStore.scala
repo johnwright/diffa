@@ -19,8 +19,12 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.schema.jooq.DatabaseFacade
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
+import net.lshift.diffa.kernel.lifecycle.{DomainLifecycleAware, PairLifecycleAware}
 
-class JooqUserPreferencesStore(db:DatabaseFacade) extends UserPreferencesStore {
+class JooqUserPreferencesStore(db:DatabaseFacade)
+  extends UserPreferencesStore
+  with PairLifecycleAware
+  with DomainLifecycleAware {
 
   def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
     t.insertInto(USER_ITEM_VISIBILITY).
@@ -63,4 +67,8 @@ class JooqUserPreferencesStore(db:DatabaseFacade) extends UserPreferencesStore {
 
     result.iterator().map(record => record.getValue(USER_ITEM_VISIBILITY.PAIR)).toSeq
   })
+
+  def onPairDeleted(pair: DiffaPairRef) {}
+  def onDomainUpdated(domain: String) {}
+  def onDomainRemoved(domain: String) {}
 }
