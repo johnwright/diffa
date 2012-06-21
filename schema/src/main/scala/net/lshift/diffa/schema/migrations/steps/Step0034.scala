@@ -38,7 +38,8 @@ object Step0034 extends HibernateMigrationStep {
 
     migration.alterTable("user_item_visibility").
       addForeignKey("fk_uiv_pair", Array("domain", "pair"), "pair", Array("domain", "pair_key")).
-      addForeignKey("fk_uiv_user", "username", "users", "name")
+      addForeignKey("fk_uiv_user", "username", "users", "name").
+      addForeignKey("fk_uiv_mmbs", Array("domain", "username"), "members", Array("domain_name", "user_name"))
 
     migration
   }

@@ -43,6 +43,8 @@ class JooqUserPreferencesStoreTest {
     systemConfigStore.createOrUpdateDomain(Domain(name = "domain"))
     systemConfigStore.createOrUpdateUser(User(name = "user", email = "", passwordEnc = ""))
 
+    domainConfigStore.makeDomainMember("domain", "user")
+
     domainConfigStore.createOrUpdateEndpoint("domain", upstream)
     domainConfigStore.createOrUpdateEndpoint("domain", downstream)
     domainConfigStore.createOrUpdatePair("domain", pair1.withoutDomain)
