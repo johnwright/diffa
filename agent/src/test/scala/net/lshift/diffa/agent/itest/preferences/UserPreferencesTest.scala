@@ -17,19 +17,21 @@ package net.lshift.diffa.agent.itest.preferences
 
 import net.lshift.diffa.kernel.preferences.FilteredItemType
 import net.lshift.diffa.agent.itest.support.TestConstants._
-import net.lshift.diffa.agent.client.{SystemConfigRestClient, ConfigurationRestClient, UsersRestClient}
+import net.lshift.diffa.agent.client.{SecurityRestClient, SystemConfigRestClient, ConfigurationRestClient, UsersRestClient}
 import org.junit.{Before, Test}
 import org.junit.Assert._
-import net.lshift.diffa.kernel.frontend.{DomainDef, DomainPairDef, EndpointDef}
+import net.lshift.diffa.kernel.frontend.{UserDef, DomainDef, DomainPairDef, EndpointDef}
 import com.eaio.uuid.UUID
+import net.lshift.diffa.client.AccessDeniedException
 
 class UserPreferencesTest {
 
   val domain = new UUID().toString
 
-  val preferencesClient = new UsersRestClient(agentURL, agentUsername)
+  val rootUserPreferencesClient = new UsersRestClient(agentURL, agentUsername)
   val systemConfigClient = new SystemConfigRestClient(agentURL)
   val configClient = new ConfigurationRestClient(agentURL, domain)
+  val securityClient = new SecurityRestClient(agentURL)
 
   val upstream = EndpointDef(name = new UUID().toString)
   val downstream = EndpointDef(name = new UUID().toString)
@@ -51,14 +53,24 @@ class UserPreferencesTest {
   @Test
   def shouldSetAndDeleteFilters {
 
-    preferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
+    rootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
 
-    val filtered = preferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
+    val filtered = rootUserPreferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
     assertEquals(Seq(pair.key), filtered)
 
-    preferencesClient.removeFilter(pair.asRef, FilteredItemType.SWIM_LANE)
+    rootUserPreferencesClient.removeFilter(pair.asRef, FilteredItemType.SWIM_LANE)
 
-    val shouldBeEmpty = preferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
+    val shouldBeEmpty = rootUserPreferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
     assertEquals(Seq(), shouldBeEmpty)
+  }
+
+  @Test(expected = classOf[AccessDeniedException])
+  def shouldNotBeAbleToModifySettingsForADifferentUser {
+
+    val nonRootUser = UserDef(name = new UUID().toString, superuser = false, external = true)
+    securityClient.declareUser(nonRootUser)
+
+    val nonRootUserPreferencesClient = new UsersRestClient(agentURL, nonRootUser.name)
+    nonRootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
   }
 }

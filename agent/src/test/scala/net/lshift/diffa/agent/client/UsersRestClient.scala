@@ -15,7 +15,7 @@
  */
 package net.lshift.diffa.agent.client
 
-import net.lshift.diffa.client.{NotFoundException, ExternalRestClient}
+import net.lshift.diffa.client.{AccessDeniedException, NotFoundException, ExternalRestClient}
 import net.lshift.diffa.kernel.preferences.FilteredItemType
 import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
@@ -35,6 +35,7 @@ class UsersRestClient(rootUrl:String, username:String)
     val status = response.getClientResponseStatus
     status.getStatusCode match {
       case 204   => ()
+      case 403   => throw new AccessDeniedException(path.toString)
       case 404   => throw new NotFoundException(path.toString)
       case x:Int => handleHTTPError(x, path, status)
     }
