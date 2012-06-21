@@ -20,6 +20,7 @@ import net.lshift.diffa.kernel.preferences.FilteredItemType
 import javax.ws.rs.core.MediaType
 import com.sun.jersey.api.client.ClientResponse
 import net.lshift.diffa.kernel.config.DiffaPairRef
+import scala.collection.JavaConversions._
 
 class UsersRestClient(rootUrl:String, username:String)
   extends ExternalRestClient(rootUrl, "/users/" + username) {
@@ -36,13 +37,13 @@ class UsersRestClient(rootUrl:String, username:String)
     }
   }
 
-  def getFilteredItems(domain:String, itemType:FilteredItemType) = {
+  def getFilteredItems(domain:String, itemType:FilteredItemType) : Seq[String] = {
     val path = resource.path("/" + domain + "/filter/"  + itemType.toString)
     val media = path.accept(MediaType.APPLICATION_JSON)
     val response = media.get(classOf[ClientResponse])
     val status = response.getClientResponseStatus
     status.getStatusCode match {
-      case 200   => response.getEntity(classOf[java.util.List[String]])
+      case 200   => response.getEntity(classOf[java.util.List[String]]).toList
       case 404   => throw new NotFoundException(path.toString)
       case x:Int => handleHTTPError(x, path, status)
     }

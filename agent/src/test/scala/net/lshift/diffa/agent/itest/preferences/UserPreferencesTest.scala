@@ -55,9 +55,6 @@ class UserPreferencesTest {
     preferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
 
     val filtered = preferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
-
-    assertNotNull(filtered)
-    assertEquals(1, filtered.size())
-    assertEquals(pair.key, filtered.get(0))
+    assertEquals(Seq(pair.key), filtered)
   }
 }
