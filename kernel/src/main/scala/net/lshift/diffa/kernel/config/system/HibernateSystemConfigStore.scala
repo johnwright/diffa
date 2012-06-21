@@ -82,6 +82,8 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     })
 
     domainEventSubscribers.foreach(_.onDomainRemoved(domain))
+
+    forceHibernateCacheEviction()
   }
 
   def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))

@@ -477,19 +477,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       execute()
   }
 
-  @Deprecated private def forceHibernateCacheEviction() = {
-    try {
-      val cache = sessionFactory.getCache
-      cache.evictEntityRegions()
-      cache.evictCollectionRegions()
-      cache.evictDefaultQueryRegion()
-    }
-    catch {
-      case x:Exception =>
-        log.error("Could not manually evict the Hibernate cache", x)
-    }
-  }
-
   def makeDomainMember(domain:String, userName:String) = {
     try {
       db.execute("createDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))

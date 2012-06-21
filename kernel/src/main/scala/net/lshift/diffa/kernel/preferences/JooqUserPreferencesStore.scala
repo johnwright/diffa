@@ -20,11 +20,14 @@ import net.lshift.diffa.schema.jooq.DatabaseFacade
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
 import net.lshift.diffa.kernel.lifecycle.{DomainLifecycleAware, PairLifecycleAware}
+import net.lshift.diffa.kernel.util.cache.CacheProvider
 
 class JooqUserPreferencesStore(db:DatabaseFacade)
   extends UserPreferencesStore
   with PairLifecycleAware
   with DomainLifecycleAware {
+
+  //val pendingEvents = cacheProvider.getCachedMap[]("pending.difference.events")
 
   def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
     t.insertInto(USER_ITEM_VISIBILITY).

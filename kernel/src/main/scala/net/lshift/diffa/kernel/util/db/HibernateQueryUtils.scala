@@ -115,6 +115,19 @@ trait HibernateQueryUtils {
     executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
   })
 
+  @Deprecated def forceHibernateCacheEviction() = {
+    try {
+      val cache = sessionFactory.getCache
+      cache.evictEntityRegions()
+      cache.evictCollectionRegions()
+      cache.evictDefaultQueryRegion()
+    }
+    catch {
+      case x:Exception =>
+        log.error("Could not manually evict the Hibernate cache", x)
+    }
+  }
+
   /**
    * This is un-protected call to set a configuration option.
    * It is up to the calling context to establish this is authorized.
