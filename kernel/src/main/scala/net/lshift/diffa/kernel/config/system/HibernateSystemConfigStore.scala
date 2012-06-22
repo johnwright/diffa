@@ -78,7 +78,13 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
       t.delete(STORE_CHECKPOINTS).where(STORE_CHECKPOINTS.DOMAIN.equal(domain)).execute()
       t.delete(PENDING_DIFFS).where(PENDING_DIFFS.DOMAIN.equal(domain)).execute()
       t.delete(DIFFS).where(DIFFS.DOMAIN.equal(domain)).execute()
-      t.delete(DOMAINS).where(DOMAINS.NAME.equal(domain)).execute()
+
+      val deleted = t.delete(DOMAINS).where(DOMAINS.NAME.equal(domain)).execute()
+
+      if (deleted == 0) {
+        logger.error("%s: Attempt to delete non-existent domain: %s".format(AlertCodes.INVALID_DOMAIN, domain))
+        throw new MissingObjectException(domain)
+      }
     })
 
     domainEventSubscribers.foreach(_.onDomainRemoved(domain))
