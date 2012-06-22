@@ -66,14 +66,14 @@ class JooqUserPreferencesStoreTest {
   @Test
   def shouldReturnFilteredItems {
     val filteredItems = preferencesStore.listFilteredItems("domain", "user", FilteredItemType.SWIM_LANE)
-    assertEquals(Seq(pair1.key, pair2.key, pair3.key), filteredItems)
+    assertEquals(Set(pair1.key, pair2.key, pair3.key), filteredItems)
   }
 
   @Test
   def shouldBeAbleToRemoveSingleFilteredItem {
     preferencesStore.removeFilteredItem(pair3.asRef, "user", FilteredItemType.SWIM_LANE)
     val filteredItems = preferencesStore.listFilteredItems("domain", "user", FilteredItemType.SWIM_LANE)
-    assertEquals(Seq(pair1.key, pair2.key), filteredItems)
+    assertEquals(Set(pair1.key, pair2.key), filteredItems)
   }
 
   @Test

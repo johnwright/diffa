@@ -18,13 +18,13 @@ package net.lshift.diffa.kernel.preferences
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 
 import net.lshift.diffa.schema.jooq.DatabaseFacade
-import org.junit.Test
+import org.junit.{Before, Test}
 import org.junit.Assert._
 import org.easymock.EasyMock._
 import org.easymock.classextension.{EasyMock => E4}
-import net.lshift.diffa.kernel.config.DiffaPairRef
 import org.jooq.impl.Factory
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 class CachedUserPreferencesStoreTest {
 
@@ -32,13 +32,18 @@ class CachedUserPreferencesStoreTest {
   val jooq = E4.createStrictMock(classOf[DatabaseFacade])
   val preferencesStore = new JooqUserPreferencesStore(jooq, cacheProvider)
 
-  @Test
-  def shouldCacheUserVisibilityItems {
+  @Before
+  def clearCache = {
+    preferencesStore.reset
+  }
 
-    val pairs = new java.util.ArrayList[String]()
+  @Test
+  def shouldReadThroughUserVisibilityItems {
+
+    val pairs = new java.util.HashSet[String]()
     pairs.add("pair")
 
-    expect(jooq.execute(anyObject[Function1[Factory, java.util.List[String]]]())).andReturn(pairs).once()
+    expect(jooq.execute(anyObject[Function1[Factory, java.util.Set[String]]]())).andReturn(pairs).once()
 
     E4.replay(jooq)
 
@@ -47,6 +52,37 @@ class CachedUserPreferencesStoreTest {
 
     val secondCall = preferencesStore.listFilteredItems("domain", "user", FilteredItemType.SWIM_LANE)
     assertEquals(pairs.toList, secondCall.toList)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldInvalidateUserVisibilityItemsOnUpdate {
+
+    val firstPairSet = new java.util.HashSet[String]()
+    firstPairSet.add("p1")
+
+    val secondPairSet = new java.util.HashSet[String]()
+    secondPairSet.add("p1")
+    secondPairSet.add("p2")
+
+    // First read -> returns Set(p1)
+    expect(jooq.execute(anyObject[Function1[Factory, java.util.Set[String]]]())).andReturn(firstPairSet).once()
+    // Update the set with p2
+    expect(jooq.execute(anyObject[Function1[Factory, Unit]]())).andReturn(()).once()
+    // First read -> returns Set(p1,p2)
+    expect(jooq.execute(anyObject[Function1[Factory, java.util.Set[String]]]())).andReturn(secondPairSet).once()
+
+
+    E4.replay(jooq)
+
+    val firstCall = preferencesStore.listFilteredItems("domain", "user", FilteredItemType.SWIM_LANE)
+    assertEquals(firstPairSet.toList, firstCall.toList)
+
+    preferencesStore.createFilteredItem(DiffaPairRef("p2","domain"), "user", FilteredItemType.SWIM_LANE)
+
+    val secondCall = preferencesStore.listFilteredItems("domain", "user", FilteredItemType.SWIM_LANE)
+    assertEquals(secondPairSet.toList, secondCall.toList)
 
     E4.verify(jooq)
   }

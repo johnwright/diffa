@@ -28,20 +28,29 @@ class JooqUserPreferencesStore(db:DatabaseFacade, cacheProvider:CacheProvider)
   with PairLifecycleAware
   with DomainLifecycleAware {
 
-  val cachedFilteredItems = cacheProvider.getCachedMap[DomainUserTypeKey, java.util.List[String]]("user.preferences.filtered.items")
+  val cachedFilteredItems = cacheProvider.getCachedMap[DomainUserTypeKey, java.util.Set[String]]("user7.preferences.filtered.items")
 
   def reset {
     cachedFilteredItems.evictAll()
   }
 
-  def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = db.execute(t => {
-    t.insertInto(USER_ITEM_VISIBILITY).
-      set(USER_ITEM_VISIBILITY.DOMAIN, pair.domain).
-      set(USER_ITEM_VISIBILITY.PAIR, pair.key).
-      set(USER_ITEM_VISIBILITY.USERNAME, username).
-      set(USER_ITEM_VISIBILITY.ITEM_TYPE, itemType.toString).
-    execute()
-  })
+  def createFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = {
+    db.execute(t => {
+      t.insertInto(USER_ITEM_VISIBILITY).
+        set(USER_ITEM_VISIBILITY.DOMAIN, pair.domain).
+        set(USER_ITEM_VISIBILITY.PAIR, pair.key).
+        set(USER_ITEM_VISIBILITY.USERNAME, username).
+        set(USER_ITEM_VISIBILITY.ITEM_TYPE, itemType.toString).
+        execute()
+    })
+
+    // Theoretically we could update the cache right now,
+    // but we'd need to lock the the update, so let's just invalidate it for now and
+    // let the reader pull the data through
+
+    val key = DomainUserTypeKey(pair.domain, username, itemType.toString)
+    cachedFilteredItems.evict(key)
+  }
 
   def removeFilteredItem(pair:DiffaPairRef, username: String, itemType: FilteredItemType) = {
     cachedFilteredItems.evict(DomainUserTypeKey(pair.domain, username, itemType.toString))
@@ -74,7 +83,7 @@ class JooqUserPreferencesStore(db:DatabaseFacade, cacheProvider:CacheProvider)
     })
   }
 
-  def listFilteredItems(domain: String, username: String, itemType: FilteredItemType) = {
+  def listFilteredItems(domain: String, username: String, itemType: FilteredItemType) : Set[String] = {
     cachedFilteredItems.readThrough(DomainUserTypeKey(domain,username,itemType.toString), () => {
       db.execute(t => {
         val result =
@@ -84,7 +93,7 @@ class JooqUserPreferencesStore(db:DatabaseFacade, cacheProvider:CacheProvider)
             and(USER_ITEM_VISIBILITY.ITEM_TYPE.equal(itemType.toString)).
           fetch()
 
-        val items = new java.util.ArrayList[String]()
+        val items = new java.util.HashSet[String]()
 
         for (record <- result.iterator()) {
           items.add(record.getValue(USER_ITEM_VISIBILITY.PAIR))
@@ -93,11 +102,18 @@ class JooqUserPreferencesStore(db:DatabaseFacade, cacheProvider:CacheProvider)
         items
       })
     })
-  }
+  }.toSet
 
-  def onPairDeleted(pair: DiffaPairRef) {}
-  def onDomainUpdated(domain: String) {}
-  def onDomainRemoved(domain: String) {}
+  def onPairDeleted(pair: DiffaPairRef) {
+    // This is probably too coarse grained, i.e. it invalidates everything
+    invalidCacheForDomain(pair.domain)
+  }
+  def onDomainUpdated(domain: String) = invalidCacheForDomain(domain)
+  def onDomainRemoved(domain: String) = invalidCacheForDomain(domain)
+
+  private def invalidCacheForDomain(domain:String) = {
+    cachedFilteredItems.keySubset(FilterByUserPredicate(domain)).evictAll()
+  }
 }
 
 case class DomainUserTypeKey(
@@ -112,6 +128,11 @@ case class DomainUserTypeKey(
 case class FilterByUserPredicate(@BeanProperty user:String = null) extends KeyPredicate[DomainUserTypeKey] {
   def this() = this(user = null)
   def constrain(key: DomainUserTypeKey) = key.username == user
+}
+
+case class FilterByDomainPredicate(@BeanProperty domain:String = null) extends KeyPredicate[DomainUserTypeKey] {
+  def this() = this(domain = null)
+  def constrain(key: DomainUserTypeKey) = key.domain == domain
 }
 
 case class FilterByDomainAndUserPredicate(@BeanProperty domain:String = null,

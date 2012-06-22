@@ -45,7 +45,7 @@ trait UserPreferencesStore {
   /**
    * Returns a list of all of the items that the user has elected to filter out.
    */
-  def listFilteredItems(domain:String, username:String, itemType:FilteredItemType) : Seq[String]
+  def listFilteredItems(domain:String, username:String, itemType:FilteredItemType) : Set[String]
 
 
 }
