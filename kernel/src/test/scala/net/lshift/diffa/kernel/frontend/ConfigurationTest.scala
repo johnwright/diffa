@@ -159,7 +159,7 @@ class ConfigurationTest {
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?",
           allowManualScans = true, views = List(PairViewDef("v1"))),
-        PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?")),
+        PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?", scanCronEnabled = false)),
       repairActions = Set(RepairActionDef("Resend Sauce", "resend", "pair", "ab")),
       reports = Set(PairReportDef("Bulk Send Differences", "ab", "differences", "http://location:5432/diffhandler")),
       escalations = Set(
@@ -172,7 +172,7 @@ class ConfigurationTest {
                        versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = ep1.name, downstream = ep2.name)
 
     val ac = DiffaPair(key = "ac", domain = Domain(name="domain"), matchingTimeout = 5,
-                       versionPolicyName = "same", scanCronSpec = "0 * * * * ?", upstream = ep1.name, downstream = ep2.name)
+                       versionPolicyName = "same", scanCronSpec = "0 * * * * ?", scanCronEnabled = false, upstream = ep1.name, downstream = ep2.name)
 
 
     expect(endpointListener.onEndpointAvailable(fromEndpointDef(domain, ep1))).once

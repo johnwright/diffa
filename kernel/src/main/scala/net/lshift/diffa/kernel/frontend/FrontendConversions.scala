@@ -54,12 +54,13 @@ object FrontendConversions {
     upstreamName = p.upstream,
     downstreamName = p.downstream,
     scanCronSpec = p.scanCronSpec,
+    scanCronEnabled = p.scanCronEnabled,
     allowManualScans = p.allowManualScans,
     views = p.views.map(v => toPairViewDef(v)).toList)
 
   def toPairViewDef(v:PairView) = PairViewDef(name = v.name, scanCronSpec = v.scanCronSpec)
   def fromPairViewDef(p:DiffaPair, v:PairViewDef) = {
-    val result = PairView(name = v.name, scanCronSpec = v.scanCronSpec)
+    val result = PairView(name = v.name, scanCronSpec = v.scanCronSpec, scanCronEnabled = v.scanCronEnabled)
     result.pair = p
     result
   }
