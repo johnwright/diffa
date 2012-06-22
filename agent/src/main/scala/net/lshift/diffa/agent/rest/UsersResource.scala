@@ -16,6 +16,7 @@
 package net.lshift.diffa.agent.rest
 
 import javax.ws.rs._
+import core.{Request, Context, EntityTag}
 import org.springframework.stereotype.Component
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,10 +40,24 @@ class UsersResource {
   @Produces(Array("application/json"))
   def getFilters(@PathParam("user") user:String,
                  @PathParam("domain") domain:String,
-                 @PathParam("itemType") itemType:String) = {
+                 @PathParam("itemType") itemType:String,
+                 @Context request: Request) = {
     checkDomain(domain)
     val filterType = getFilterType(itemType)
-    userPreferences.listFilteredItems(domain, user, filterType).toArray
+    val filters = userPreferences.listFilteredItems(domain, user, filterType).toArray
+
+    // This etag check doesn't prevent the call going through to the backend,
+    // but that is not such a big deal since the result will be cached in any case.
+    // Computing the etag and sending back a 304 can potentially cut down on network traffic
+
+    val filtersVsn = new EntityTag(filters.hashCode().toString)
+
+    request.evaluatePreconditions(filtersVsn) match {
+      case null => // We'll continue with the request
+      case r => throw new WebApplicationException(r.build)
+    }
+
+    filters
   }
 
   @PUT

@@ -51,20 +51,6 @@ class UserPreferencesTest {
   }
 
   @Test
-  def rootUserShouldBeAbleToSetAndDeleteAnyFilters {
-
-    rootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
-
-    val filtered = rootUserPreferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
-    assertEquals(Seq(pair.key), filtered)
-
-    rootUserPreferencesClient.removeFilter(pair.asRef, FilteredItemType.SWIM_LANE)
-
-    val shouldBeEmpty = rootUserPreferencesClient.getFilteredItems(domain, FilteredItemType.SWIM_LANE)
-    assertEquals(Seq(), shouldBeEmpty)
-  }
-
-  @Test
   def nonRootUserShouldBeAbleToModifyOwnDomainSettingsWhenMemberOfADomain {
 
     val nonRootUser = UserDef(name = new UUID().toString,superuser = false, external = true)
