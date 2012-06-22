@@ -208,6 +208,98 @@ class QuartzScanSchedulerTest {
     }
   }
 
+  @Test
+  def shouldAllowPairScanSchedulesToBeDisabled {
+    val mb = createExecuteListenerQueue
+
+    val p1 = DiffaPair(key="PairG", domain=domain, scanCronSpec=generateNowishCronSpec)
+    val p2 = p1.copy(scanCronEnabled = false)
+
+    expect(systemConfig.listPairs).andReturn(Seq())
+
+    replayAll()
+
+    withScheduler(new QuartzScanScheduler(systemConfig, pairPolicyClient, "shouldAllowPairScanSchedulesToBeDisabled")) { scheduler =>
+      scheduler.onUpdatePair(p1)
+      scheduler.onUpdatePair(p2)
+
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null =>
+        case ScanInvocation(p, v) => fail("Scheduler should not have started scan for pair " + p)
+      }
+    }
+  }
+
+  @Test
+  def shouldAllowPairScanSchedulesToBeReEnabled {
+    val mb = createExecuteListenerQueue
+
+    val p1 = DiffaPair(key="PairH", domain=domain, scanCronSpec=generateNowishCronSpec, scanCronEnabled=false)
+    val p2 = p1.copy(scanCronEnabled = true)
+
+    expect(systemConfig.listPairs).andReturn(Seq())
+
+    replayAll()
+
+    withScheduler(new QuartzScanScheduler(systemConfig, pairPolicyClient, "shouldAllowPairScanSchedulesToBeReEnabled")) { scheduler =>
+      scheduler.onUpdatePair(p1)
+      scheduler.onUpdatePair(p2)
+
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null => fail("Scan was not triggered")
+        case ScanInvocation(p, v) =>
+          assertEquals("PairH", p.key)
+          assertEquals(None, v)
+      }
+    }
+  }
+
+  @Test
+  def shouldAllowViewScanSchedulesToBeDisabled {
+    val mb = createExecuteListenerQueue
+
+    val p1 = DiffaPair(key="PairI", domain=domain, views=Set(buildView("PairI", "someview", generateNowishCronSpec)))
+    val p2 = p1.copy(views=Set(buildView("PairI", "someview", generateNowishCronSpec, scanCronEnabled=false)))
+
+    expect(systemConfig.listPairs).andReturn(Seq())
+
+    replayAll()
+
+    withScheduler(new QuartzScanScheduler(systemConfig, pairPolicyClient, "shouldAllowViewScanSchedulesToBeDisabled")) { scheduler =>
+      scheduler.onUpdatePair(p1)
+      scheduler.onUpdatePair(p2)
+
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null =>
+        case ScanInvocation(p, v) => fail("Scheduler should not have started scan for pair " + p)
+      }
+    }
+  }
+
+  @Test
+  def shouldAllowViewScanSchedulesToBeReEnabled {
+    val mb = createExecuteListenerQueue
+
+    val p1 = DiffaPair(key="PairJ", domain=domain, views=Set(buildView("PairJ", "someview", generateNowishCronSpec, false)))
+    val p2 = p1.copy(views=Set(buildView("PairJ", "someview", generateNowishCronSpec, true)))
+
+    expect(systemConfig.listPairs).andReturn(Seq())
+
+    replayAll()
+
+    withScheduler(new QuartzScanScheduler(systemConfig, pairPolicyClient, "shouldAllowViewScanSchedulesToBeReEnabled")) { scheduler =>
+      scheduler.onUpdatePair(p1)
+      scheduler.onUpdatePair(p2)
+
+      mb.poll(3, TimeUnit.SECONDS) match {
+        case null => fail("Scan was not triggered")
+        case ScanInvocation(p, v) =>
+          assertEquals("PairJ", p.key)
+          assertEquals(Some("someview"), v)
+      }
+    }
+  }
+
   private def replayAll() { replay(systemConfig, pairPolicyClient) }
 
   private def withScheduler[T](s:QuartzScanScheduler)(f:(QuartzScanScheduler) => T) {
@@ -241,8 +333,8 @@ class QuartzScanSchedulerTest {
     q
   }
 
-  private def buildView(pairKey:String, name:String, scanCronSpec:String) = {
-    val view = PairView(name, scanCronSpec)
+  private def buildView(pairKey:String, name:String, scanCronSpec:String, scanCronEnabled:Boolean = true) = {
+    val view = PairView(name, scanCronSpec, scanCronEnabled)
     view.pair = DiffaPair(key = pairKey, domain = domain)
     view
   }
