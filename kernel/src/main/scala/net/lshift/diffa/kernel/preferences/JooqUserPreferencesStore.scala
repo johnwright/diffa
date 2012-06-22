@@ -28,7 +28,7 @@ class JooqUserPreferencesStore(db:DatabaseFacade, cacheProvider:CacheProvider)
   with PairLifecycleAware
   with DomainLifecycleAware {
 
-  val cachedFilteredItems = cacheProvider.getCachedMap[DomainUserTypeKey, java.util.Set[String]]("user7.preferences.filtered.items")
+  val cachedFilteredItems = cacheProvider.getCachedMap[DomainUserTypeKey, java.util.Set[String]]("user.preferences.filtered.items")
 
   def reset {
     cachedFilteredItems.evictAll()
