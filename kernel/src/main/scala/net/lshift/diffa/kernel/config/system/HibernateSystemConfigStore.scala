@@ -192,7 +192,6 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
         set(SYSTEM_CONFIG_OPTIONS.OPT_KEY, key).
         set(SYSTEM_CONFIG_OPTIONS.OPT_VAL, value).
       onDuplicateKeyUpdate().
-        set(SYSTEM_CONFIG_OPTIONS.OPT_KEY, key).
         set(SYSTEM_CONFIG_OPTIONS.OPT_VAL, value).
       execute()
   })

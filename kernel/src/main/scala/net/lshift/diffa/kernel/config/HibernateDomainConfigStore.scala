@@ -27,6 +27,7 @@ import java.util.List
 import java.sql.SQLIntegrityConstraintViolationException
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.schema.tables.Domains.DOMAINS
+import net.lshift.diffa.schema.tables.Members.MEMBERS
 import net.lshift.diffa.schema.tables.ConfigOptions.CONFIG_OPTIONS
 import net.lshift.diffa.schema.tables.RepairActions.REPAIR_ACTIONS
 import net.lshift.diffa.schema.tables.Escalations.ESCALATIONS
@@ -458,7 +459,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
         set(CONFIG_OPTIONS.OPT_KEY, key).
         set(CONFIG_OPTIONS.OPT_VAL, value).
       onDuplicateKeyUpdate().
-        set(CONFIG_OPTIONS.OPT_KEY, key).
         set(CONFIG_OPTIONS.OPT_VAL, value).
       execute()
     })
@@ -550,6 +550,17 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       and(STORE_CHECKPOINTS.PAIR.equal(pair.key)).
       execute()
   }
+   /*
+  def makeDomainMember(domain:String, userName:String) = {
+    jooq.execute(t => {
+      t.insertInto(MEMBERS).
+        set(MEMBERS.DOMAIN_NAME, domain).
+        set(MEMBERS.USER_NAME, domain).
+        onDuplicateKeyIgnore()
+
+    })
+  }
+  */
 
   def makeDomainMember(domain:String, userName:String) = {
     try {
@@ -567,6 +578,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     membershipListener.onMembershipCreated(member)
     member
   }
+
 
   def removeDomainMembership(domain:String, userName:String) = {
     val member = Member(User(name = userName), Domain(name = domain))
