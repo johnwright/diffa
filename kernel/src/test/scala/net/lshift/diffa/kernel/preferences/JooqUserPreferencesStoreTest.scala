@@ -77,14 +77,14 @@ class JooqUserPreferencesStoreTest {
   }
 
   @Test
-  def shouldBeAbleToItemsInDomainForUser {
+  def shouldBeAbleToRemoveItemsInDomainForUser {
     preferencesStore.removeAllFilteredItemsForDomain("domain", "user")
     val filteredItems = preferencesStore.listFilteredItems("domain", "user", FilteredItemType.SWIM_LANE)
     assertTrue(filteredItems.isEmpty)
   }
 
   @Test
-  def shouldBeAbleToItemsForUser {
+  def shouldBeAbleToRemoveItemsForUser {
     preferencesStore.removeAllFilteredItemsForUser("user")
     val filteredItems = preferencesStore.listFilteredItems("domain", "user", FilteredItemType.SWIM_LANE)
     assertTrue(filteredItems.isEmpty)
