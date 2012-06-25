@@ -97,7 +97,7 @@ public class JSONHelper {
     } catch (IOException ex) {
       throw ex;
     } catch (Exception ex) {
-      throw new IOException("Failed to deserialize result from JSON", ex);
+      throw new IOException("Failed to deserialize result from JSON: %s".format(ex.getMessage()), ex);
     }
   }
 

@@ -26,15 +26,16 @@ case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, at
 object EntityValidator extends ScanEntityValidator {
   import scala.collection.JavaConversions._
 
-  def validateCharactersIn(s: String) = {
+  def validateCharactersInField(location: String, s: String) = {
     // println("Validate chars: " + string)
     if (!java.util.regex.Pattern.compile("^\\p{Graph}*$").matcher(s).matches())
-      throw new InvalidEntityException(s)
+      throw new InvalidEntityException(
+        "entity field: %s contained invalid data: %s; please see documentation for details".format(location, s))
   }
   def validate(e: ValidatableEntity): Unit = {
     // println("Validating: %s".format(this))
-    if (e.id != null) validateCharactersIn(e.id)
-    e.attributes.foreach { case (_, value) => validateCharactersIn(value) }
+    if (e.id != null) validateCharactersInField("id", e.id)
+    e.attributes.foreach { case (name, value) => validateCharactersInField("attributes[%s]".format(name), value) }
   }
 
   def process(e: ScanResultEntry): Unit = validate(of(e))

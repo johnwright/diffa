@@ -24,7 +24,7 @@ import org.apache.http.client.HttpClient
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConversions._
-import net.lshift.diffa.participant.common.JSONHelper
+import net.lshift.diffa.participant.common.{InvalidEntityException, JSONHelper}
 import org.apache.http.util.EntityUtils
 import com.sun.jersey.core.util.MultivaluedMapImpl
 import net.lshift.diffa.kernel.participants.{ScanningParticipantRef, CategoryFunction}
@@ -136,12 +136,11 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
     }
 
     try {
-      // TODO: Check with Ben if there's value in creating itests for this or
-      // refactoring this class to accept an HTTP Fetcher interface.
       JSONHelper.readQueryResult(countedInputStream, EntityValidator)
     } catch { case e:IOException =>
       e.getCause match {
         case scanError : ScanLimitBreachedException => throw scanError
+        case invalidity : InvalidEntityException => throw invalidity
         case _ => throw e
       }
     }
