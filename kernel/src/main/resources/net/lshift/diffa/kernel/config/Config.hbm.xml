@@ -255,11 +255,6 @@
     select e from Escalation e
   </query>
 
-  <!-- Queries by user -->
-  <query name="membersByUser" cacheable="true">
-    select m from Member m where m.user.name = :user_name
-  </query>
-
   <query name="rootUserCount" cacheable="true">
     select count(*) from User u where u.name in (:user_names) and u.superuser = true
   </query>
@@ -272,10 +267,6 @@
   </query>
 
   <!-- Queries by domain only -->
-
-  <query name="membersByDomain" cacheable="true">
-    select m from Member m where m.domain.name = :domain_name
-  </query>
 
   <query name="domainByName" cacheable="true">
     select d from Domain d where d.name = :domain_name
