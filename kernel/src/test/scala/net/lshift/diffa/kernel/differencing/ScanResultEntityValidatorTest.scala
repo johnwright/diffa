@@ -29,63 +29,75 @@ import scala.collection.JavaConversions._
 import org.hamcrest.Matcher
 import net.lshift.diffa.participant.common.InvalidEntityException
 
-object EntityValidatorTest {
-  final val INVALID_ID: String = "\u26093"
+// @RunWith(classOf[Theories])
+class ScanResultEntityValidatorTest extends EntityValidatorTestChecks[ScanResultEntry] {
+  val validator = EntityValidator
+  val entityWithInvalidId = scanResultFor(id = INVALID_ID)
+  val entityWithInvalidAttributes = scanResultFor(attributes = Map("property" -> INVALID_ID))
+  val entityWithValidId = scanResultFor(id = VALID_ID)
+
+  def process(e: ScanResultEntry) = {
+    validator.process(e)
+  }
+  def scanResultFor(id: String = "id", attributes: Map[String, String] = Map()) = {
+    new ScanResultEntry(id, null, null, attributes)
+  }
+
+  @Test def shouldBeValidWithNullId {
+    val entity = scanResultFor(id = null)
+    assertEquals("Handling entity %s".format(entity),
+      None, exceptionOf(process(entity)))
+  }
+
 }
 
-// @RunWith(classOf[Theories])
-class EntityValidatorTest {
-  import EntityValidatorTest._
+trait EntityValidatorTestChecks[T] {
+  final val INVALID_ID: String = "\u26093"
+  final val VALID_ID = "foo4_-,."
+
+  val entityWithInvalidId: T
+  val entityWithValidId: T
+  val entityWithInvalidAttributes: T
+
+
+
+  def exceptionForInvalidId = exceptionOf(process(entityWithInvalidId))
+
+  def process(e: T): Unit
 
   @Test def shouldRaiseExceptionWithNonAsciiId {
-    assertThatSome(exceptionForInvalidId, instanceOf(classOf[InvalidEntityException]))
+      assertThatSome(exceptionForInvalidId, instanceOf(classOf[InvalidEntityException]))
   }
 
   def assertThatSome[T](exception: Option[T], matcher: Matcher[T]) =
     exception.map(assertThat(_, matcher)).getOrElse(fail("Recieved None when expecting Some(value)"))
 
   @Test def exceptionMessageShouldContainInvalidStringForId {
-    val ex =
+
     assertThatSome(exceptionForInvalidId.map(_.getMessage), containsString(INVALID_ID))
   }
 
   @Test def shouldBeValidWithAlphaNumericStringForId {
-    val validId = "foo4_-,."
-    val entity = scanResultFor(id = validId)
-    assertEquals(None, exceptionOf(validator.process(entity)))
+    assertEquals("Handling entity %s".format(entityWithValidId),
+      None, exceptionOf(process(entityWithValidId)))
   }
 
-  @Test def shouldBeValidWithNullId {
-    val entity = scanResultFor(id = null)
-    assertEquals(exceptionOf(validator.process(entity)), None)
-  }
 
-  lazy val validator = EntityValidator
 
-  lazy val entityWithInvalidAttributes = {
-    scanResultFor(attributes = Map("property" -> INVALID_ID))
-  }
+
 
   @Test
   def shouldBeInvalidWithNonPrintablesInAttributeValues {
-    assertThatSome(exceptionOf(validator.process(entityWithInvalidAttributes)),
+    assertThatSome(exceptionOf(process(entityWithInvalidAttributes)),
       is(instanceOf(classOf[InvalidEntityException])))
   }
 
   @Test
   def shouldReportNonPrintablesInAttributeValuesInException {
-    assertThatSome(exceptionOf(validator.process(entityWithInvalidAttributes)).map(_.getMessage),
+    assertThatSome(exceptionOf(process(entityWithInvalidAttributes)).map(_.getMessage),
       containsString(INVALID_ID))
   }
 
-  private def exceptionOf(thunk: => Unit): Option[Throwable] =
+  protected def exceptionOf(thunk: => Unit): Option[Throwable] =
     try { thunk; None } catch { case e => Some(e) }
-
-  private def scanResultFor(id: String = "id", attributes: Map[String, String] = Map()) = {
-   new ScanResultEntry(id, null, null, attributes)
-  }
-
-  val  exceptionForInvalidId = exceptionOf(validator.process(scanResultFor(id = INVALID_ID)))
-
 }
-
