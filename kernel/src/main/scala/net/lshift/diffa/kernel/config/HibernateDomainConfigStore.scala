@@ -76,7 +76,17 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   private val cachedDomainConfigOptionsMap = cacheProvider.getCachedMap[String, java.util.Map[String,String]](DOMAIN_CONFIG_OPTIONS_MAP)
   private val cachedDomainConfigOptions = cacheProvider.getCachedMap[DomainConfigKey, String](DOMAIN_CONFIG_OPTIONS)
 
+  // Members
   private val cachedMembers = cacheProvider.getCachedMap[String, java.util.List[Member]](USER_DOMAIN_MEMBERS)
+
+  // Escalations
+  private val cachedEscalations = cacheProvider.getCachedMap[DomainPairKey, java.util.List[Escalation]](DOMAIN_ESCALATIONS)
+
+  // Repair Actions
+  private val cachedRepairActions = cacheProvider.getCachedMap[DomainPairKey, java.util.List[RepairAction]](DOMAIN_REPAIR_ACTIONS)
+
+  // Pair Reports
+  private val cachedPairReports = cacheProvider.getCachedMap[DomainPairKey, java.util.List[PairReport]](DOMAIN_PAIR_REPORTS)
 
   def reset {
     cachedConfigVersions.evictAll()
@@ -90,6 +100,24 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     cachedDomainConfigOptions.evictAll()
 
     cachedMembers.evictAll()
+
+    cachedEscalations.evictAll()
+
+    cachedRepairActions.evictAll()
+
+    cachedPairReports.evictAll()
+  }
+
+  private def invalidatePairReportsCache(domain:String) = {
+    cachedPairReports.evict(domain)
+  }
+
+  private def invalidateEscalationCache(domain:String) = {
+    cachedEscalations.evict(domain)
+  }
+
+  private def invalidateRepairActionCache(domain:String) = {
+    cachedRepairActions.evict(domain)
   }
 
   private def invalidateMembershipCache(domain:String) = {
@@ -108,7 +136,13 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     cachedPairsByEndpoint.keySubset(EndpointByDomainPredicate(domain)).evictAll()
     cachedPairsByKey.keySubset(PairByDomainPredicate(domain)).evictAll()
     cachedEndpointsByKey.keySubset(EndpointByDomainPredicate(domain)).evictAll()
+
     invalidateConfigCaches(domain)
+
+    invalidateMembershipCache(domain)
+    invalidateEscalationCache(domain)
+    invalidateRepairActionCache(domain)
+    invalidatePairReportsCache(domain)
   }
 
   private def invalidateEndpointCachesOnly(domain:String, endpointName: String) = {
@@ -270,8 +304,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     }).toList
   })
 
-  def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] =
-    getRepairActionsInPair(domain, pairKey).map(toRepairActionDef(_))
 
   def listEscalations(domain:String) =
     db.listQuery[Escalation]("escalationsByDomain", Map("domain_name" -> domain)).map(toEscalationDef(_))
@@ -310,6 +342,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   def listReportsForPair(domain:String, pairKey: String) : Seq[PairReportDef]
     = getReportsForPair(domain, pairKey).map(toPairReportDef(_))
+
+  def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] =
+    getRepairActionsInPair(domain, pairKey).map(toRepairActionDef(_))
 
   private def getRepairActionsInPair(domain:String, pairKey: String): Seq[RepairAction] =
     db.listQuery[RepairAction]("repairActionsByPair", Map("pair_key" -> pairKey,
