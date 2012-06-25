@@ -16,9 +16,11 @@
 
 package net.lshift.diffa.participant.scanning;
 
-import net.lshift.diffa.participant.common.ScanResultEntryValidator;
+import net.lshift.diffa.participant.changes.ChangeEvent;
+import net.lshift.diffa.participant.common.ScanEntityValidator;
 
 public
 class NullScanResultEntryValidator implements ScanResultEntryValidator {
-    public void process(ScanResultEntry e) {}
+  public void process(ScanResultEntry e) {}
+  public void process(ChangeEvent e)  {}
 }
