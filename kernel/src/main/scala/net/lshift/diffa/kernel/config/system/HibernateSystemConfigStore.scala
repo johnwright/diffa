@@ -21,63 +21,89 @@ import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
-import net.lshift.diffa.kernel.differencing.StoreCheckpoint
 import org.hibernate.{Query, Session, SessionFactory}
 import org.apache.commons.lang.RandomStringUtils
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
+import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
+import net.lshift.diffa.schema.tables.PairReports.PAIR_REPORTS
+import net.lshift.diffa.schema.tables.Escalations.ESCALATIONS
+import net.lshift.diffa.schema.tables.RepairActions.REPAIR_ACTIONS
+import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
+import net.lshift.diffa.schema.tables.Pair.PAIR
+import net.lshift.diffa.schema.tables.EndpointViewsCategories.ENDPOINT_VIEWS_CATEGORIES
+import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
+import net.lshift.diffa.schema.tables.EndpointCategories.ENDPOINT_CATEGORIES
+import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
+import net.lshift.diffa.schema.tables.ConfigOptions.CONFIG_OPTIONS
+import net.lshift.diffa.schema.tables.Members.MEMBERS
+import net.lshift.diffa.schema.tables.StoreCheckpoints.STORE_CHECKPOINTS
+import net.lshift.diffa.schema.tables.PendingDiffs.PENDING_DIFFS
+import net.lshift.diffa.schema.tables.Diffs.DIFFS
+import net.lshift.diffa.schema.tables.Domains.DOMAINS
+import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
+import collection.mutable.ListBuffer
 
 class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
                                  db:DatabaseFacade,
-                                 val pairCache:PairCache)
+                                 jooq:JooqDatabaseFacade)
     extends SystemConfigStore with HibernateQueryUtils {
 
   val logger = LoggerFactory.getLogger(getClass)
 
+  private val domainEventSubscribers = new ListBuffer[DomainLifecycleAware]
+
+  def registerDomainEventListener(d:DomainLifecycleAware) = domainEventSubscribers += d
+
   def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => {
-    pairCache.invalidate(d.name)
+    domainEventSubscribers.foreach(_.onDomainUpdated(d.name))
     s.saveOrUpdate(d)
   })
 
-  def deleteDomain(domain:String) = sessionFactory.withSession( s => {
+  def deleteDomain(domain:String) = {
 
-    pairCache.invalidate(domain)
+    jooq.execute(t => {
+      t.delete(USER_ITEM_VISIBILITY).where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT_VIEWS_CATEGORIES).where(ENDPOINT_VIEWS_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT_VIEWS).where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).execute()
+      t.delete(PAIR_REPORTS).where(PAIR_REPORTS.DOMAIN.equal(domain)).execute()
+      t.delete(ESCALATIONS).where(ESCALATIONS.DOMAIN.equal(domain)).execute()
+      t.delete(REPAIR_ACTIONS).where(REPAIR_ACTIONS.DOMAIN.equal(domain)).execute()
+      t.delete(PAIR_VIEWS).where(PAIR_VIEWS.DOMAIN.equal(domain)).execute()
+      t.delete(PAIR).where(PAIR.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT_CATEGORIES).where(ENDPOINT_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT).where(ENDPOINT.DOMAIN.equal(domain)).execute()
+      t.delete(CONFIG_OPTIONS).where(CONFIG_OPTIONS.DOMAIN.equal(domain)).execute()
+      t.delete(MEMBERS).where(MEMBERS.DOMAIN_NAME.equal(domain)).execute()
+      t.delete(STORE_CHECKPOINTS).where(STORE_CHECKPOINTS.DOMAIN.equal(domain)).execute()
+      t.delete(PENDING_DIFFS).where(PENDING_DIFFS.DOMAIN.equal(domain)).execute()
+      t.delete(DIFFS).where(DIFFS.DOMAIN.equal(domain)).execute()
 
-    // TODO Why is do we not just do a DELETE CASCADE?
+      val deleted = t.delete(DOMAINS).where(DOMAINS.NAME.equal(domain)).execute()
 
-    db.execute("deleteExternalHttpCredentialsByDomain", Map("domain" -> domain))
+      if (deleted == 0) {
+        logger.error("%s: Attempt to delete non-existent domain: %s".format(AlertCodes.INVALID_DOMAIN, domain))
+        throw new MissingObjectException(domain)
+      }
+    })
 
-    deleteByDomain[EndpointView](s, domain, "endpointViewsByDomain")
-    deleteByDomain[Escalation](s, domain, "escalationsByDomain")
-    deleteByDomain[PairReport](s, domain, "reportsByDomain")
-    deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
-    deleteByDomain[PairView](s, domain, "pairViewsByDomain")
-    deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
-    deleteByDomain[Endpoint](s, domain, "endpointsByDomain")
-    deleteByDomain[ConfigOption](s, domain, "configOptionsByDomain")
-    deleteByDomain[Member](s, domain, "membersByDomain")
-    removeDomainDifferences(domain)
+    domainEventSubscribers.foreach(_.onDomainRemoved(domain))
 
-    s.flush()
-
-    val deleted = s.createSQLQuery("delete from domains where name = '%s'".format(domain)).executeUpdate()
-    if (deleted == 0) {
-      logger.error("%s: Attempt to delete non-existent domain: %s".format(AlertCodes.INVALID_DOMAIN, domain))
-      throw new MissingObjectException(domain)
-    }
-  })
+    forceHibernateCacheEviction()
+  }
 
   def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))
 
   def listDomains = db.listQuery[Domain]("allDomains", Map()).sortBy(_.getName)
 
-  def getPair(pair:DiffaPairRef) : DiffaPair = getPair(pair.domain, pair.key)
-  def getPair(domain:String, key: String) = sessionFactory.withSession(s => getPair(s, domain, key))
+  def listPairs = jooq.execute { t =>
+    t.select().from(PAIR).fetch().map(ResultMappingUtil.recordToDomainPairDef)
+  }
 
-  def listPairs = db.listQuery[DiffaPair]("allPairs", Map())
   def listEndpoints = db.listQuery[Endpoint]("allEndpoints", Map())
 
 
-  @Deprecated
+  // TODO implement create or update using JOOQ
   def createOrUpdateUser(user: User) = {
     if (updateUser(user) == 0) {
       createUser(user)
@@ -124,7 +150,6 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
   def getUser(name: String) : User = sessionFactory.withSession(getUser(_,name))
 
-  // TODO This needs to be cached
   def getUserByToken(token: String) : User
     = db.singleQuery[User]("userByToken", Map("token" -> token), "user token %s".format(token))
 

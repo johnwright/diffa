@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.StoreReferenceContainer
 import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import org.slf4j.LoggerFactory
 import org.junit.{Test, AfterClass, Before}
+import net.lshift.diffa.kernel.preferences.FilteredItemType
 
 class HibernateDomainConfigStoreTest {
   private val log = LoggerFactory.getLogger(getClass)
@@ -33,6 +34,7 @@ class HibernateDomainConfigStoreTest {
   private val storeReferences = HibernateDomainConfigStoreTest.storeReferences
   private val systemConfigStore = storeReferences.systemConfigStore
   private val domainConfigStore = storeReferences.domainConfigStore
+  private val userPreferencesStore = storeReferences.userPreferencesStore
 
   val dateCategoryName = "bizDate"
   val dateCategoryLower = new DateTime(1982,4,5,12,13,9,0).toString()
@@ -77,6 +79,7 @@ class HibernateDomainConfigStoreTest {
     downstream1.name, views = Seq(PairViewDef(name = "a-only")))
 
   val pair = DiffaPair(key = pairKey, domain = domain)
+  val pairRef = DiffaPairRef(key = pairKey, domain = domainName)
 
   val repairAction = RepairActionDef(name="REPAIR_ACTION_NAME",
                                      scope=RepairAction.ENTITY_SCOPE,
@@ -110,7 +113,10 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Before
-  def setUp = storeReferences.clearConfiguration(domainName)
+  def setUp {
+    storeReferences.clearConfiguration(domainName)
+    domainConfigStore.reset
+  }
 
   def exists (e:EndpointDef, count:Int, offset:Int) : Unit = {
     val endpoints = domainConfigStore.listEndpoints(domainName).sortWith((a, b) => a.name < b.name)
@@ -123,35 +129,6 @@ class HibernateDomainConfigStoreTest {
   }
 
   def exists (e:EndpointDef, count:Int) : Unit = exists(e, count, count - 1)
-
-  @Test
-  def pairsShouldCache = {
-
-    declareAll()
-
-    val initialCount = storeReferences.sessionStatistics.getQueryExecutionCount
-
-    // This call should be read through from the DB
-    domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache miss", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-
-    // This call should be cached
-    domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache hit", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-
-    provokeCacheInvalidation(() => domainConfigStore.createOrUpdateEndpoint(domainName, upstream1))
-    provokeCacheInvalidation(() => domainConfigStore.createOrUpdatePair(domainName, pairDef))
-    provokeCacheInvalidation(() => domainConfigStore.deletePair(domainName, pairKey))
-    provokeCacheInvalidation(() => domainConfigStore.deleteEndpoint(domainName, upstream1.name))
-
-    // This should invalidate the pair cache
-    def provokeCacheInvalidation[T](f:() => T) = {
-      f()
-      val countAfterOperation = storeReferences.sessionStatistics.getQueryExecutionCount
-      domainConfigStore.listPairs(domainName)
-      assertEquals("Should have generated cache hit", countAfterOperation + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-    }
-  }
 
   @Test
   def domainShouldBeDeletable = {
@@ -179,7 +156,7 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeclare: Unit = {
+  def testDeclare {
     // declare the domain
     systemConfigStore.createOrUpdateDomain(domain)
 
@@ -205,6 +182,30 @@ class HibernateDomainConfigStoreTest {
     val retrActions = domainConfigStore.listRepairActionsForPair(domainName, retrPair.key)
     assertEquals(1, retrActions.length)
     assertEquals(Some(pairKey), retrActions.headOption.map(_.pair))
+  }
+
+  @Test
+  def removingPairShouldRemoveAnyUserSettingsRelatedToThatPair {
+    declareAll()
+
+    systemConfigStore.createUser(user)
+    domainConfigStore.makeDomainMember(domainName, user.name)
+    userPreferencesStore.createFilteredItem(pairRef, user.name, FilteredItemType.SWIM_LANE)
+
+    domainConfigStore.deletePair(pairRef)
+
+  }
+
+  @Test
+  def removingDomainShouldRemoveAnyUserSettingsRelatedToThatDomain {
+    declareAll()
+
+    systemConfigStore.createOrUpdateUser(user)
+    domainConfigStore.makeDomainMember(domainName, user.name)
+    userPreferencesStore.createFilteredItem(pairRef, user.name, FilteredItemType.SWIM_LANE)
+
+    systemConfigStore.deleteDomain(domainName)
+
   }
 
   @Test
@@ -330,7 +331,7 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeletePair: Unit = {
+  def testDeletePair {
     declareAll
 
     assertEquals(pairKey, domainConfigStore.getPairDef(domainName, pairKey).key)
@@ -362,12 +363,12 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeleteMissing: Unit = {
+  def testDeleteMissing {
     expectMissingObject("endpoint") {
       domainConfigStore.deleteEndpoint(domainName, "MISSING_ENDPOINT")
     }
 
-    expectMissingObject("pair") {
+    expectMissingObject("domain/MISSING_PAIR") {
       domainConfigStore.deletePair(domainName, "MISSING_PAIR")
     }
   }

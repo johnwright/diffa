@@ -22,7 +22,8 @@
 * [168] - Rate limit the submission of Real Time Events (Change Events).
 * [180] - Replace the codeboxes from the content viewer with a lightbox that shows when a diff row item is double-clicked.
 * [186] - Expose the system and domain limit APIs via the REST API
-* [196] - Collapsible heatmap swim lanes.
+* [195] - Provide a mechanism for users to persist their visibility preferences
+* [196] - Support collapsing of heatmap swim lanes via UI controls
 
 ## General Maintenance
 
@@ -49,12 +50,14 @@
 * [178] - Fixed a bug in the rate limiter which unfairly rejected some actions which should have been accepted.
 * [182] - Allow limiting the maximum physical response size that we accept from a participant
 * [187] - Ensure alphabetical ordering of elements in the UI
+* [194] - Introduce caching of some calls in the domain config store
 * [189] - Allow a user to specify if an endpoint sorts keys by their ASCII-equivalent values, or via the Unicode Collation Algorithm
 
 ## Library Upgrades
 
 * Upgraded to Lucene 3.6.0
 * Upgraded to Akka 2.0.1
+* Upgraded to Hazelcast 2.1.2
 
 ## Upgrading
 

@@ -7,6 +7,7 @@ import hooks.HookManager
 import org.hibernate.dialect.Dialect
 import net.sf.ehcache.CacheManager
 import org.slf4j.LoggerFactory
+import preferences.JooqUserPreferencesStore
 import util.cache.HazelcastCacheProvider
 import util.db.HibernateDatabaseFacade
 import util.sequence.HazelcastSequenceProvider
@@ -84,7 +85,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   def facade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
 
   private val cacheManager = new CacheManager
-  private val pairCache = new PairCache(cacheManager)
+
   private val hookManager = new HookManager(applicationConfig)
   private val membershipListener = new DomainMembershipAware {
     def onMembershipCreated(member: Member) {}
@@ -101,6 +102,8 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     throw new IllegalStateException("Failed to initialize environment before using DataSource")
   }
 
+  private lazy val jooqDatabaseFacade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
+
   private def makeStore[T](consFn: SessionFactory => T, className: String): T = _sessionFactory match {
     case Some(sf) =>
       consFn(sf)
@@ -111,23 +114,31 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   private lazy val _serviceLimitsStore =
     makeStore[ServiceLimitsStore](sf => new HibernateServiceLimitsStore(sf, new HibernateDatabaseFacade(sf,ds)), "ServiceLimitsStore")
 
-  private lazy val _systemConfigStore =
-    makeStore(sf => new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), pairCache), "SystemConfigStore")
-
   private lazy val _domainConfigStore =
-    makeStore(sf => new HibernateDomainConfigStore(sf, new HibernateDatabaseFacade(sf,ds), pairCache, hookManager, cacheManager, membershipListener), "domainConfigStore")
+    makeStore(sf => new HibernateDomainConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, hookManager, cacheProvider, membershipListener), "domainConfigStore")
+
+  private lazy val _systemConfigStore =
+    makeStore(sf => {
+      val store = new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade)
+      store.registerDomainEventListener(_domainConfigStore)
+      store
+    }, "SystemConfigStore")
 
   private lazy val _domainCredentialsStore =
     makeStore(sf => new JooqDomainCredentialsStore(facade), "domainCredentialsStore")
 
+  private lazy val _userPreferencesStore =
+    makeStore(sf => new JooqUserPreferencesStore(facade, cacheProvider), "userPreferencesStore")
+
   private lazy val _domainDifferenceStore =
-    makeStore(sf => new HibernateDomainDifferenceStore(sf, facade, cacheProvider, sequenceProvider, cacheManager, hookManager), "DomainDifferenceStore")
+    makeStore(sf => new HibernateDomainDifferenceStore(sf, facade, cacheProvider, sequenceProvider, hookManager), "DomainDifferenceStore")
 
   def serviceLimitsStore: ServiceLimitsStore = _serviceLimitsStore
   def systemConfigStore: HibernateSystemConfigStore = _systemConfigStore
   def domainConfigStore: HibernateDomainConfigStore = _domainConfigStore
   def domainCredentialsStore: JooqDomainCredentialsStore = _domainCredentialsStore
   def domainDifferenceStore: HibernateDomainDifferenceStore = _domainDifferenceStore
+  def userPreferencesStore: JooqUserPreferencesStore = _userPreferencesStore
 
   def prepareEnvironmentForStores {
     performCleanerAction(cleaner => cleaner.clean)
@@ -178,5 +189,4 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     _sessionFactory.get.withSession(s => s.createCriteria(classOf[User]).list.foreach(s.delete(_)))
   }
 
-  def sessionStatistics = _sessionFactory.get.getStatistics
 }
