@@ -20,7 +20,7 @@ import net.lshift.diffa.participant.changes.ChangeEvent;
 import net.lshift.diffa.participant.common.ScanEntityValidator;
 
 public
-class NullScanResultEntryValidator implements ScanResultEntryValidator {
+class NullScanResultEntryValidator implements ScanEntityValidator {
   public void process(ScanResultEntry e) {}
   public void process(ChangeEvent e)  {}
 }

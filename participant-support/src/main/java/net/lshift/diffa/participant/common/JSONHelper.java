@@ -77,7 +77,7 @@ public class JSONHelper {
     return readQueryResult(stream, new NullScanResultEntryValidator());
   }
 
-    public static ScanResultEntry[] readQueryResult(InputStream stream, ScanResultEntryValidator proc)
+    public static ScanResultEntry[] readQueryResult(InputStream stream, ScanEntityValidator proc)
       throws IOException {
     try {
       List<ScanResultEntry> scanResultEntries = new ArrayList<ScanResultEntry>();

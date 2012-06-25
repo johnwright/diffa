@@ -24,14 +24,14 @@ import javax.ws.rs._
 import net.lshift.diffa.participant.changes.ChangeEvent
 import net.lshift.diffa.schema.servicelimits.ChangeEventRate
 import net.lshift.diffa.kernel.limiting.{DomainRateLimiterFactory, ServiceLimiterKey, ServiceLimiterRegistry}
-import net.lshift.diffa.participant.common.{InvalidEntityException, ScanResultEntryValidator}
+import net.lshift.diffa.participant.common.{InvalidEntityException, ScanEntityValidator}
 import net.lshift.diffa.kernel.differencing.EntityValidator
 
 /**
  * Resource allowing participants to provide details of changes that have occurred.
  */
 class ChangesResource(changes:Changes, domain:String, rateLimiterFactory: DomainRateLimiterFactory,
-                      validator: ScanResultEntryValidator) {
+                      validator: ScanEntityValidator) {
 
   def this(changes:Changes, domain:String, rateLimiterFactory: DomainRateLimiterFactory) =
     this(changes, domain, rateLimiterFactory, EntityValidator)

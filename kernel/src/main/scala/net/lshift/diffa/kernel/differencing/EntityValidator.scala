@@ -18,12 +18,12 @@ package net.lshift.diffa.kernel.differencing
 
 import net.lshift.diffa.participant.scanning.ScanResultEntry
 import org.joda.time.DateTime
-import net.lshift.diffa.participant.common.{InvalidEntityException, ScanResultEntryValidator}
+import net.lshift.diffa.participant.common.{InvalidEntityException, ScanEntityValidator}
 import net.lshift.diffa.participant.changes.ChangeEvent
 
 case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String])
 
-object EntityValidator extends ScanResultEntryValidator {
+object EntityValidator extends ScanEntityValidator {
   import scala.collection.JavaConversions._
 
   def validateCharactersIn(s: String) = {

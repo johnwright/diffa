@@ -10,7 +10,7 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry;
  * Time: 20:51
  * To change this template use File | Settings | File Templates.
  */
-public interface ScanResultEntryValidator {
+public interface ScanEntityValidator {
     void process(ScanResultEntry entry) throws InvalidEntityException ;
     void process(ChangeEvent entry) throws InvalidEntityException ;
 }

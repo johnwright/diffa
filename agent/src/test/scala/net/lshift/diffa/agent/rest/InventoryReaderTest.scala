@@ -23,7 +23,7 @@ import org.joda.time.{DateTimeZone, DateTime}
 import java.util.HashMap
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend.InvalidInventoryException
-import net.lshift.diffa.participant.common.ScanResultEntryValidator
+import net.lshift.diffa.participant.common.ScanEntityValidator
 import org.easymock.EasyMock._
 import org.hamcrest.Matchers._
 
@@ -159,7 +159,7 @@ class InventoryReaderTest {
       result.results)
   }
 
-  lazy val mockValidator = createMock(classOf[ScanResultEntryValidator])
+  lazy val mockValidator = createMock(classOf[ScanEntityValidator])
 
   private def parseCSVWith(reader: InventoryReader, s: Seq[String]) =
     reader.readFrom(null, null, null, null, null, new ByteArrayInputStream(s.mkString("\n").getBytes("UTF-8")))

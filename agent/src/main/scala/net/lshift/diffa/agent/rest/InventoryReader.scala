@@ -30,14 +30,14 @@ import org.joda.time.format.ISODateTimeFormat
 import java.util.HashMap
 import net.lshift.diffa.kernel.frontend.InvalidInventoryException
 import net.lshift.diffa.kernel.differencing.EntityValidator
-import net.lshift.diffa.participant.common.{InvalidEntityException, ScanResultEntryValidator}
+import net.lshift.diffa.participant.common.{InvalidEntityException, ScanEntityValidator}
 
 /**
  * Provider for encoding and decoding Diffa inventory submissions blocks.
  */
 @Provider
 @Consumes(Array("text/csv", "text/comma-separated-values"))
-class InventoryReader(resultValidator:ScanResultEntryValidator)
+class InventoryReader(resultValidator:ScanEntityValidator)
   extends MessageBodyReader[ScanResultList] {
   val updatedParser = ISODateTimeFormat.dateTimeNoMillis().withZoneUTC()
 

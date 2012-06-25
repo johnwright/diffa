@@ -228,7 +228,7 @@ public class JSONHelperTest {
   @Test
   public void shouldPassScannedEntityToProcessor() throws Exception {
     //Given
-    ScanResultEntryValidator proc = createMock(ScanResultEntryValidator.class);
+    ScanEntityValidator proc = createMock(ScanEntityValidator.class);
     Map<String, String> attributes= new HashMap<String, String>();
     attributes.put("a1", "v1");
 
