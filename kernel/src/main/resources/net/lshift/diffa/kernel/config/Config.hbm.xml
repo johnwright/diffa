@@ -154,14 +154,6 @@
     <property name="token" type="string" unique="true" />
   </class>
 
-  <class name="Member" table="members" abstract="false">
-    <cache usage="read-write"/>
-    <composite-id mapped="true">
-      <key-many-to-one name="domain" class="Domain" column="domain_name" lazy="false"/>
-      <key-many-to-one name="user" class="User" column="user_name" lazy="false"/>
-    </composite-id>
-  </class>
-
   <class name="ServiceLimitDefinitions" table="limit_definitions" abstract="false">
     <id name="limitName" type="string" column="name"/>
     <property name="limitDescription" type="string" column="description"/>
@@ -233,10 +225,6 @@
     <property name="reportType" type="string" column="report_type" not-null="true" />
     <property name="target" type="string" column="target" not-null="true" length="1024" />
   </class>
-
-  <sql-query name="deleteExternalHttpCredentialsByDomain">
-    delete from external_http_credentials where domain = :domain
-  </sql-query>
 
   <query name="userByName" cacheable="true">
     select u from User u where u.name = :name

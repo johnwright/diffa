@@ -550,41 +550,32 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       and(STORE_CHECKPOINTS.PAIR.equal(pair.key)).
       execute()
   }
-   /*
+
   def makeDomainMember(domain:String, userName:String) = {
+
     jooq.execute(t => {
       t.insertInto(MEMBERS).
         set(MEMBERS.DOMAIN_NAME, domain).
         set(MEMBERS.USER_NAME, domain).
-        onDuplicateKeyIgnore()
-
+        onDuplicateKeyIgnore().
+        execute()
     })
-  }
-  */
-
-  def makeDomainMember(domain:String, userName:String) = {
-    try {
-      db.execute("createDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
-    }
-    catch {
-      case x:SQLIntegrityConstraintViolationException =>
-        handleMemberConstraintViolation(domain, userName)
-      case e:Exception if e.getCause.isInstanceOf[SQLIntegrityConstraintViolationException] =>
-        handleMemberConstraintViolation(domain, userName)
-      // Otherwise just let the exception get thrown further
-    }
 
     val member = Member(User(name = userName), Domain(name = domain))
     membershipListener.onMembershipCreated(member)
     member
   }
 
-
   def removeDomainMembership(domain:String, userName:String) = {
+
+    jooq.execute(t => {
+      t.delete(MEMBERS).
+        where(MEMBERS.DOMAIN_NAME.equal(domain)).
+        and(MEMBERS.USER_NAME.equal(domain)).
+        execute()
+    })
+
     val member = Member(User(name = userName), Domain(name = domain))
-
-    db.execute("deleteDomainMembership", Map("domain_name" -> domain, "user_name" -> userName))
-
     membershipListener.onMembershipRemoved(member)
   }
 
