@@ -23,8 +23,10 @@
        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 
   <http use-expressions="true" >
+    <custom-filter ref="tokenFilter" before="FORM_LOGIN_FILTER" />
+    <form-login login-page="/login.html" default-target-url="/index.html"
+                authentication-failure-url="/login.html" />
     <http-basic />
-    <custom-filter ref="tokenFilter" before="BASIC_AUTH_FILTER" />
 
     <!-- Allow the status page and UI resources to be seen by anyone -->
     <intercept-url pattern="/status" access="permitAll" />

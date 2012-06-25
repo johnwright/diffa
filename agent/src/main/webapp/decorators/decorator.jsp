@@ -58,6 +58,7 @@
 
     <script type="text/javascript" src="js/thirdparty/jquery-1.7.1.min.js" charset="utf-8"></script>
     <script type="text/javascript" src="js/thirdparty/jquery.colorbox-1.3.19-min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery.cookie.js" charset="utf-8"></script>
     <script type="text/javascript" src="assets/diffa-core.js" charset="utf-8"></script>
 
     <script src="js/current-domain.js"></script>

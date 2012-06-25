@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Login to Diffa</title>
+</head>
+<body>
+<h1>Diffa</h1>
+<form action="j_spring_security_check" method="POST" onsubmit="trackUser(this)">
+  <p>
+    <label for="username">Username:</label>
+    <input id="username" name="j_username" type="text"/>
+    <br/>
+    <label for="password">Password:</label>
+    <input id="password" name="j_password" type="password"/>
+  </p>
+  <p>
+    <input type="submit" value="Log In"/>
+  </p>
+  <p>
+    Please contact your system administrator if you have forgotten your password.
+  </p>
+</form>
+<script type="text/javascript">
+function trackUser(loginForm) {
+  $.cookie("loggedInUser", loginForm.j_username.value);
+}
+</script>
+</body>
+</html>
