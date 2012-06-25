@@ -169,14 +169,21 @@ public class JSONHelper {
     }
   }
 
-  public static ChangeEvent[] readChangeEvents(InputStream stream)
+  public static ChangeEvent[] readChangeEvents(InputStream stream) throws IOException {
+    return readChangeEvents(stream, new NullScanResultEntryValidator());
+  }
+  public static ChangeEvent[] readChangeEvents(InputStream stream, ScanEntityValidator validator)
       throws IOException {
     try {
       JsonNode nextNode = mapper.readTree(stream);
       if (nextNode instanceof ArrayNode) {
-        return mapper.convertValue(nextNode, ChangeEvent[].class);
+        ChangeEvent[] events = mapper.convertValue(nextNode, ChangeEvent[].class);
+        for(ChangeEvent event: events) validator.process(event);
+        return events;
       } else {
-        return new ChangeEvent[] { mapper.convertValue(nextNode, ChangeEvent.class) };
+        ChangeEvent event = mapper.convertValue(nextNode, ChangeEvent.class);
+        validator.process(event);
+        return new ChangeEvent[] { event };
       }
     } catch (IOException ex) {
       throw ex;

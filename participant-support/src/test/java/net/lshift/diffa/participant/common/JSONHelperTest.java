@@ -181,6 +181,44 @@ public class JSONHelperTest {
     assertEquals(event, deserialised[0]);
   }
 
+
+  @Test
+  public void shouldPassChangeEventsToProcessorWhenSerializedAsArray() throws Exception {
+    //Given
+    ScanEntityValidator proc = createMock(ScanEntityValidator.class);
+    Map<String, String> attributes= new HashMap<String, String>();
+    attributes.put("a1", "v1");
+
+    ChangeEvent expected = ChangeEvent.forChange("id1", "v1",
+            new DateTime(2011, 06, 05, 15, 03, 0, DateTimeZone.UTC), attributes);
+
+    proc.process(expected); replay(proc);
+    String changeEvents = serialiseEvents(Arrays.asList(expected));
+    InputStream in = new ByteArrayInputStream(changeEvents.getBytes());
+
+    JSONHelper.readChangeEvents(in, proc);
+    verify(proc);
+  }
+
+  @Test
+  public void shouldPassChangeEventsToProcessorWhenSerializedAsObject() throws Exception {
+    //Given
+    ScanEntityValidator proc = createMock(ScanEntityValidator.class);
+    Map<String, String> attributes= new HashMap<String, String>();
+    attributes.put("dummy", "b52");
+
+    ChangeEvent expected = ChangeEvent.forChange("id42", "v2",
+            new DateTime(2012, 06, 07, 15, 03, 0, DateTimeZone.UTC), attributes);
+
+    proc.process(expected); replay(proc);
+    String changeEvents = serialiseEvent(expected);
+    InputStream in = new ByteArrayInputStream(changeEvents.getBytes());
+
+    JSONHelper.readChangeEvents(in, proc);
+    verify(proc);
+  }
+
+
   @Test
   public void shouldSerialiseEventListWithAttributes() throws Exception {
     String list = serialiseEvents(Arrays.asList(
