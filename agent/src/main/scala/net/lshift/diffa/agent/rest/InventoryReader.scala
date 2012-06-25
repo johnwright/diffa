@@ -37,9 +37,11 @@ import net.lshift.diffa.participant.common.{InvalidEntityException, ScanResultEn
  */
 @Provider
 @Consumes(Array("text/csv", "text/comma-separated-values"))
-class InventoryReader(resultValidator:ScanResultEntryValidator = EntityValidator)
+class InventoryReader(resultValidator:ScanResultEntryValidator)
   extends MessageBodyReader[ScanResultList] {
   val updatedParser = ISODateTimeFormat.dateTimeNoMillis().withZoneUTC()
+
+  def this() { this(EntityValidator) }
 
   def isReadable(propType : Class[_], genericType: Type, annotations: Array[Annotation], mediaType: MediaType) =
     classOf[ScanResultList].isAssignableFrom(propType)
