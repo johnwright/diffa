@@ -92,7 +92,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     cachedMembers.evictAll()
   }
 
-  private def invalidateMembeshipCache(domain:String) = {
+  private def invalidateMembershipCache(domain:String) = {
     cachedMembers.evict(domain)
   }
 
@@ -564,10 +564,12 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     jooq.execute(t => {
       t.insertInto(MEMBERS).
         set(MEMBERS.DOMAIN_NAME, domain).
-        set(MEMBERS.USER_NAME, domain).
+        set(MEMBERS.USER_NAME, userName).
         onDuplicateKeyIgnore().
         execute()
     })
+
+    invalidateMembershipCache(domain)
 
     val member = Member(userName,domain)
     membershipListener.onMembershipCreated(member)
@@ -579,9 +581,11 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     jooq.execute(t => {
       t.delete(MEMBERS).
         where(MEMBERS.DOMAIN_NAME.equal(domain)).
-        and(MEMBERS.USER_NAME.equal(domain)).
+        and(MEMBERS.USER_NAME.equal(userName)).
         execute()
     })
+
+    invalidateMembershipCache(domain)
 
     val member = Member(userName,domain)
     membershipListener.onMembershipRemoved(member)
