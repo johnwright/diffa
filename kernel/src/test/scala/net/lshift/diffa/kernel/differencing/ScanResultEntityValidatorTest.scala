@@ -28,6 +28,7 @@ import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import org.hamcrest.Matcher
 import net.lshift.diffa.participant.common.InvalidEntityException
+import net.lshift.diffa.participant.changes.ChangeEvent
 
 // @RunWith(classOf[Theories])
 class ScanResultEntityValidatorTest extends EntityValidatorTestChecks[ScanResultEntry] {
@@ -50,6 +51,26 @@ class ScanResultEntityValidatorTest extends EntityValidatorTestChecks[ScanResult
   }
 
 }
+
+
+class ChangeEventValidatorTest extends EntityValidatorTestChecks[ChangeEvent] {
+  val validator = EntityValidator
+  val entityWithInvalidId = changeEventFor(id = INVALID_ID)
+  val entityWithInvalidAttributes = changeEventFor(attributes = Map("property" -> INVALID_ID))
+  val entityWithValidId = changeEventFor(id = VALID_ID)
+
+  def process(e: ChangeEvent) = {
+    validator.process(e)
+  }
+  def changeEventFor(id: String = "id", attributes: Map[String, String] = Map()) = {
+    ChangeEvent.forChange(id, null, null, attributes)
+
+  }
+
+
+}
+
+
 
 trait EntityValidatorTestChecks[T] {
   final val INVALID_ID: String = "\u26093"

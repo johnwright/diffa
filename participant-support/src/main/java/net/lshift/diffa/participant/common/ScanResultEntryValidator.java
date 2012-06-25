@@ -1,5 +1,6 @@
 package net.lshift.diffa.participant.common;
 
+import net.lshift.diffa.participant.changes.ChangeEvent;
 import net.lshift.diffa.participant.scanning.ScanResultEntry;
 
 /**
@@ -11,4 +12,5 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry;
  */
 public interface ScanResultEntryValidator {
     void process(ScanResultEntry entry) throws InvalidEntityException ;
+    void process(ChangeEvent entry) throws InvalidEntityException ;
 }

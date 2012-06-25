@@ -19,18 +19,12 @@ package net.lshift.diffa.kernel.differencing
 import net.lshift.diffa.participant.scanning.ScanResultEntry
 import org.joda.time.DateTime
 import net.lshift.diffa.participant.common.{InvalidEntityException, ScanResultEntryValidator}
+import net.lshift.diffa.participant.changes.ChangeEvent
 
-
-case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String]) {
-
-}
+case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String])
 
 object EntityValidator extends ScanResultEntryValidator {
   import scala.collection.JavaConversions._
-  def maybe[T](x: T) = x match {
-    case null => None
-    case x => Some(x)
-  }
 
   def validateCharactersIn(s: String) = {
     // println("Validate chars: " + string)
@@ -44,9 +38,23 @@ object EntityValidator extends ScanResultEntryValidator {
   }
 
   def process(e: ScanResultEntry): Unit = validate(of(e))
+  def process(e: ChangeEvent) = validate(of(e))
+
 
   private def of(e: ScanResultEntry) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
-    maybe(e.getAttributes).map(_.toMap).getOrElse(Map()))
+    maybeMap(e.getAttributes))
 
+
+  private def of(e: ChangeEvent) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
+    maybeMap(e.getAttributes))
+
+  def maybe[T](x: T) = x match {
+    case null => None
+    case x => Some(x)
+  }
+
+  protected def maybeMap(attributes: java.util.Map[String, String]): Map[String, String] = {
+    maybe(attributes).map(_.toMap).getOrElse(Map())
+  }
 
 }
