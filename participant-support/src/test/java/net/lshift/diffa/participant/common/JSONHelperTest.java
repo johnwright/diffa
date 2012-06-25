@@ -70,6 +70,11 @@ public class JSONHelperTest {
     jsonHelperLogger.addAppender(logAppender);
   }
 
+  private final static ScanEntityValidator nullValidator = new ScanEntityValidator () {
+    public void process(ScanResultEntry e) {}
+    public void process(ChangeEvent e)  {}
+  };
+
   @Before
   public void setup() {
     logAppender.resetCount();
@@ -93,7 +98,7 @@ public class JSONHelperTest {
     ChangeEvent event = ChangeEvent.forChange("foo", "bar", new DateTime(1977,5,6,4,5,8,0, DateTimeZone.UTC));
     byte[] buffer = JSONHelper.writeChangeEvent(event);
     ByteArrayInputStream is = new ByteArrayInputStream(buffer);
-    ChangeEvent[] events = JSONHelper.readChangeEvents(is);
+    ChangeEvent[] events = JSONHelper.readChangeEvents(is, nullValidator);
     assertEquals(event, events[0]);
   }
   
@@ -256,7 +261,7 @@ public class JSONHelperTest {
     InputStream in = new ByteArrayInputStream(scanResult.getBytes());
 
     // When
-    JSONHelper.readQueryResult(in);
+    JSONHelper.readQueryResult(in, nullValidator);
 
     // Then
     assertEquals("Should log exactly one event", 1, logAppender.getEventCount());
@@ -294,7 +299,7 @@ public class JSONHelperTest {
     InputStream in = new ByteArrayInputStream(scanResult.getBytes());
 
     // When
-    JSONHelper.readQueryResult(in);
+    JSONHelper.readQueryResult(in, nullValidator);
 
     // Then
     assertEquals("Should log exactly one event", 1, logAppender.getEventCount());
@@ -346,7 +351,8 @@ public class JSONHelperTest {
 
   private static ScanResultEntry[] deserialiseResult(String s) throws Exception {
     ByteArrayInputStream bais = new ByteArrayInputStream(s.getBytes("UTF-8"));
-    return JSONHelper.readQueryResult(new ByteArrayInputStream(s.getBytes("UTF-8")));
+    return JSONHelper.readQueryResult(new ByteArrayInputStream(s.getBytes("UTF-8")),
+            nullValidator);
   }
 
   private static ProcessingResponse deserialiseResponse(String s) throws Exception {
@@ -356,7 +362,7 @@ public class JSONHelperTest {
 
   private static ChangeEvent[] deserialiseEvents(String s) throws Exception {
     ByteArrayInputStream bais = new ByteArrayInputStream(s.getBytes("UTF-8"));
-    return JSONHelper.readChangeEvents(new ByteArrayInputStream(s.getBytes("UTF-8")));
+    return JSONHelper.readChangeEvents(new ByteArrayInputStream(s.getBytes("UTF-8")), nullValidator);
   }
 
 
