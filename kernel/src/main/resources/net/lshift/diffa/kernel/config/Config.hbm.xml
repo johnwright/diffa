@@ -346,10 +346,6 @@
     join p.domain as d with d.name = :domain_name
   </query>
 
-  <query name="configOptionsByDomain" cacheable="true">
-    select o from ConfigOption o where o.domain.name = :domain_name
-  </query>
-
   <query name="configVersionByDomain" cacheable="false">
     select d.configVersion from Domain d where d.name = :domain
   </query>
@@ -399,12 +395,6 @@
     join r.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
     where r.name = :name
-  </query>
-
-  <query name="configOptionByNameAndKey" cacheable="true">
-    select o.value from ConfigOption o
-    where o.key = :key
-    and o.domain.name = :domain_name
   </query>
 
   <!-- Limits -->
