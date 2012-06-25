@@ -20,7 +20,9 @@ package net.lshift.diffa.kernel.naming;
  */
 public enum CacheName {
 
-  DOMAIN_CONFIG_OPTIONS,
-  USER_DOMAIN_MEMBERS
+  USER_DOMAIN_MEMBERS,
+
+  DOMAIN_CONFIG_OPTIONS_MAP,
+  DOMAIN_CONFIG_OPTIONS
 
 }
