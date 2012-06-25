@@ -67,7 +67,7 @@ class UserPreferencesTest {
   }
 
   @Test(expected = classOf[AccessDeniedException])
-  def nonRootUserShouldNotBeAbleToModifyOwnDomainSettingsWhenNotMemberOfADomain {
+  def nonRootUserShouldNotBeAbleToModifyOwnUserSettingsWhenNotMemberOfADomain {
 
     val nonRootUser = UserDef(name = new UUID().toString,superuser = false, external = true)
     securityClient.declareUser(nonRootUser)
