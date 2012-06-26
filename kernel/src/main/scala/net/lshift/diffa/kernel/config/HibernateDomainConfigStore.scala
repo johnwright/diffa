@@ -443,7 +443,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
         execute()
     })
 
-    invalidatePairReportsCache(domain)
+    invalidateRepairActionCache(domain)
   }
 
 
@@ -456,7 +456,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
         execute()
     })
 
-    invalidatePairReportsCache(domain)
+    invalidateRepairActionCache(domain)
   }
 
   def listRepairActionsForPair(domain:String, pairKey: String) : Seq[RepairActionDef] = {
