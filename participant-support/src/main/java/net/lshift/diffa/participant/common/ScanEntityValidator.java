@@ -19,6 +19,14 @@ package net.lshift.diffa.participant.common;
 import net.lshift.diffa.participant.changes.ChangeEvent;
 import net.lshift.diffa.participant.scanning.ScanResultEntry;
 
+/**
+ * The function of this interface is to assert that a scan entity (as either
+ * a ScanResultEntry or ChangeEvent) is valid to some standard, or throw an
+ * exception if not. For example, EntityValidator ensures that scanned
+ * entities are *syntactically* valid, before allowing them into the kernel
+ * of the system.
+ */
+
 public interface ScanEntityValidator {
     void process(ScanResultEntry entry) throws InvalidEntityException ;
     void process(ChangeEvent entry) throws InvalidEntityException ;
