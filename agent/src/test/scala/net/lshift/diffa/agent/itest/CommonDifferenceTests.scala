@@ -91,8 +91,10 @@ trait CommonDifferenceTests {
 
     assertEquals("abcdef", detail)
 
-    val fileList = messageDir.listFiles
-    assertNotNull("File list was null for dir: " + messageDir, fileList)
+    // TODO Remove mail notifications all together
+    //val fileList = messageDir.listFiles
+    //assertNotNull("File list was null for dir: " + messageDir, fileList)
+
     // #338 This notification test is broken since the default quiet time was set to a non-zero value,
     // but unfortuneately, this requires the config to be dynamically updateable.
     //assertEquals(1, fileList.size)
