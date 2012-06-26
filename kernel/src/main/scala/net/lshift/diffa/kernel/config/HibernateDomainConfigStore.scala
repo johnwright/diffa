@@ -181,37 +181,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     endpoint
   })
 
-  def deleteEndpoint(domain:String, endpoint: String) = {
-    jooq.execute(t => {
-
-      t.select(PAIR.DOMAIN, PAIR.PAIR_KEY).
-        from(PAIR).
-        where(PAIR.UPSTREAM.equal(endpoint).
-          or(PAIR.DOWNSTREAM.equal(endpoint))).
-        fetch().
-        iterator().foreach(r => {
-          deletePairWithDependencies(t, DiffaPairRef(
-            r.getValue(PAIR.PAIR_KEY),
-            r.getValue(PAIR.DOMAIN)
-          ))
-        })
-
-      t.delete(ENDPOINT_VIEWS).
-        where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).
-        and(ENDPOINT_VIEWS.NAME.equal(endpoint)).
-        execute()
-
-      t.delete(ENDPOINT).
-        where(ENDPOINT.DOMAIN.equal(domain)).
-        and(ENDPOINT.NAME.equal(endpoint)).
-        execute()
-
-      upgradeConfigVersion(t, domain)
-    })
-
-    invalidateEndpointCachesOnly(domain, endpoint)
-  }
-
   def deleteEndpoint(domain:String, name: String): Unit = withVersionUpgrade(domain, s => {
 
     invalidateEndpointCachesOnly(domain, name)
