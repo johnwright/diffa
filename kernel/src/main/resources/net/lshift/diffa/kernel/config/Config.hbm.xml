@@ -154,29 +154,6 @@
     <property name="token" type="string" unique="true" />
   </class>
 
-  <class name="Member" table="members" abstract="false">
-    <cache usage="read-write"/>
-    <composite-id mapped="true">
-      <key-many-to-one name="domain" class="Domain" column="domain_name" lazy="false"/>
-      <key-many-to-one name="user" class="User" column="user_name" lazy="false"/>
-    </composite-id>
-  </class>
-
-  <class name="ConfigOption" table="config_options" abstract="false">
-    <cache usage="read-write"/>
-    <composite-id mapped="true" class="net.lshift.diffa.kernel.config.DomainScopedKey">
-      <key-property name="key" type="string" column="opt_key" />
-      <key-many-to-one name="domain" class="Domain" column="domain" lazy="false" />
-    </composite-id>
-    <property name="value" type="string" column="opt_val" />
-  </class>
-
-  <class name="SystemConfigOption" table="system_config_options" abstract="false">
-    <cache usage="read-write"/>
-    <id name="key" type="string" column="opt_key" />
-    <property name="value" type="string" column="opt_val" />
-  </class>
-
   <class name="ServiceLimitDefinitions" table="limit_definitions" abstract="false">
     <id name="limitName" type="string" column="name"/>
     <property name="limitDescription" type="string" column="description"/>
@@ -249,10 +226,6 @@
     <property name="target" type="string" column="target" not-null="true" length="1024" />
   </class>
 
-  <sql-query name="deleteExternalHttpCredentialsByDomain">
-    delete from external_http_credentials where domain = :domain
-  </sql-query>
-
   <query name="userByName" cacheable="true">
     select u from User u where u.name = :name
   </query>
@@ -282,15 +255,6 @@
     select e from Escalation e
   </query>
 
-  <query name="allConfigs">
-    select o from ConfigOption o
-  </query>
-
-  <!-- Queries by user -->
-  <query name="membersByUser" cacheable="true">
-    select m from Member m where m.user.name = :user_name
-  </query>
-
   <query name="rootUserCount" cacheable="true">
     select count(*) from User u where u.name in (:user_names) and u.superuser = true
   </query>
@@ -303,10 +267,6 @@
   </query>
 
   <!-- Queries by domain only -->
-
-  <query name="membersByDomain" cacheable="true">
-    select m from Member m where m.domain.name = :domain_name
-  </query>
 
   <query name="domainByName" cacheable="true">
     select d from Domain d where d.name = :domain_name
@@ -344,10 +304,6 @@
     select a from RepairAction a
     join a.pair as p
     join p.domain as d with d.name = :domain_name
-  </query>
-
-  <query name="configOptionsByDomain" cacheable="true">
-    select o from ConfigOption o where o.domain.name = :domain_name
   </query>
 
   <query name="configVersionByDomain" cacheable="false">
@@ -399,12 +355,6 @@
     join r.pair as p with p.key = :pair_key
     join p.domain as d with d.name = :domain_name
     where r.name = :name
-  </query>
-
-  <query name="configOptionByNameAndKey" cacheable="true">
-    select o.value from ConfigOption o
-    where o.key = :key
-    and o.domain.name = :domain_name
   </query>
 
   <!-- Limits -->

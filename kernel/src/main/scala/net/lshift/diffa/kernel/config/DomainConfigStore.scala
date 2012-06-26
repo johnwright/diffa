@@ -37,7 +37,8 @@ trait DomainConfigStore {
   def listEndpoints(domain:String) : Seq[EndpointDef]
 
   def createOrUpdatePair(domain:String, pairDef: PairDef) : Unit
-  def deletePair(domain:String, key: String) : Unit
+  def deletePair(domain:String, key: String)
+  def deletePair(ref:DiffaPairRef) : Unit = deletePair(ref.domain, ref.key)
   def listPairs(domain:String) : Seq[DomainPairDef]
   def listPairsForEndpoint(domain:String, endpoint:String) : Seq[DomainPairDef]
 
@@ -416,8 +417,8 @@ object ExternalHttpCredentials {
 /**
  * Defines a user's membership to a domain
  */
-case class Member(@BeanProperty var user: User = null,
-                  @BeanProperty var domain: Domain = null) {
+case class Member(@BeanProperty var user:String = null,
+                  @BeanProperty var domain:String = null) {
 
   def this() = this(user = null)
 

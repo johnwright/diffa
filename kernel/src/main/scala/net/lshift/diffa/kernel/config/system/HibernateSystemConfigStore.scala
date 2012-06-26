@@ -25,7 +25,23 @@ import org.hibernate.{Query, Session, SessionFactory}
 import org.apache.commons.lang.RandomStringUtils
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
+import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
+import net.lshift.diffa.schema.tables.PairReports.PAIR_REPORTS
+import net.lshift.diffa.schema.tables.Escalations.ESCALATIONS
+import net.lshift.diffa.schema.tables.RepairActions.REPAIR_ACTIONS
+import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import net.lshift.diffa.schema.tables.Pair.PAIR
+import net.lshift.diffa.schema.tables.EndpointViewsCategories.ENDPOINT_VIEWS_CATEGORIES
+import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
+import net.lshift.diffa.schema.tables.EndpointCategories.ENDPOINT_CATEGORIES
+import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
+import net.lshift.diffa.schema.tables.ConfigOptions.CONFIG_OPTIONS
+import net.lshift.diffa.schema.tables.Members.MEMBERS
+import net.lshift.diffa.schema.tables.StoreCheckpoints.STORE_CHECKPOINTS
+import net.lshift.diffa.schema.tables.PendingDiffs.PENDING_DIFFS
+import net.lshift.diffa.schema.tables.Diffs.DIFFS
+import net.lshift.diffa.schema.tables.Domains.DOMAINS
+import net.lshift.diffa.schema.tables.SystemConfigOptions.SYSTEM_CONFIG_OPTIONS
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
 import collection.mutable.ListBuffer
 
@@ -45,31 +61,37 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     s.saveOrUpdate(d)
   })
 
-  def deleteDomain(domain:String) = sessionFactory.withSession( s => {
+  def deleteDomain(domain:String) = {
+
+    jooq.execute(t => {
+      t.delete(USER_ITEM_VISIBILITY).where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT_VIEWS_CATEGORIES).where(ENDPOINT_VIEWS_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT_VIEWS).where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).execute()
+      t.delete(PAIR_REPORTS).where(PAIR_REPORTS.DOMAIN.equal(domain)).execute()
+      t.delete(ESCALATIONS).where(ESCALATIONS.DOMAIN.equal(domain)).execute()
+      t.delete(REPAIR_ACTIONS).where(REPAIR_ACTIONS.DOMAIN.equal(domain)).execute()
+      t.delete(PAIR_VIEWS).where(PAIR_VIEWS.DOMAIN.equal(domain)).execute()
+      t.delete(PAIR).where(PAIR.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT_CATEGORIES).where(ENDPOINT_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(ENDPOINT).where(ENDPOINT.DOMAIN.equal(domain)).execute()
+      t.delete(CONFIG_OPTIONS).where(CONFIG_OPTIONS.DOMAIN.equal(domain)).execute()
+      t.delete(MEMBERS).where(MEMBERS.DOMAIN_NAME.equal(domain)).execute()
+      t.delete(STORE_CHECKPOINTS).where(STORE_CHECKPOINTS.DOMAIN.equal(domain)).execute()
+      t.delete(PENDING_DIFFS).where(PENDING_DIFFS.DOMAIN.equal(domain)).execute()
+      t.delete(DIFFS).where(DIFFS.DOMAIN.equal(domain)).execute()
+
+      val deleted = t.delete(DOMAINS).where(DOMAINS.NAME.equal(domain)).execute()
+
+      if (deleted == 0) {
+        logger.error("%s: Attempt to delete non-existent domain: %s".format(AlertCodes.INVALID_DOMAIN, domain))
+        throw new MissingObjectException(domain)
+      }
+    })
 
     domainEventSubscribers.foreach(_.onDomainRemoved(domain))
 
-    db.execute("deleteExternalHttpCredentialsByDomain", Map("domain" -> domain))
-
-    deleteByDomain[EndpointView](s, domain, "endpointViewsByDomain")
-    deleteByDomain[Escalation](s, domain, "escalationsByDomain")
-    deleteByDomain[PairReport](s, domain, "reportsByDomain")
-    deleteByDomain[RepairAction](s, domain, "repairActionsByDomain")
-    deleteByDomain[PairView](s, domain, "pairViewsByDomain")
-    deleteByDomain[DiffaPair](s, domain, "pairsByDomain")
-    deleteByDomain[Endpoint](s, domain, "endpointsByDomain")
-    deleteByDomain[ConfigOption](s, domain, "configOptionsByDomain")
-    deleteByDomain[Member](s, domain, "membersByDomain")
-    removeDomainDifferences(domain)
-
-    s.flush()
-
-    val deleted = s.createSQLQuery("delete from domains where name = '%s'".format(domain)).executeUpdate()
-    if (deleted == 0) {
-      logger.error("%s: Attempt to delete non-existent domain: %s".format(AlertCodes.INVALID_DOMAIN, domain))
-      throw new MissingObjectException(domain)
-    }
-  })
+    forceHibernateCacheEviction()
+  }
 
   def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))
 
@@ -82,7 +104,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
   def listEndpoints = db.listQuery[Endpoint]("allEndpoints", Map())
 
 
-  @Deprecated
+  // TODO implement create or update using JOOQ
   def createOrUpdateUser(user: User) = {
     if (updateUser(user) == 0) {
       createUser(user)
@@ -133,8 +155,16 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     = db.singleQuery[User]("userByToken", Map("token" -> token), "user token %s".format(token))
 
   def listUsers : Seq[User] = db.listQuery[User]("allUsers", Map())
-  def listDomainMemberships(username: String) : Seq[Member] =
-    db.listQuery[Member]("membersByUser", Map("user_name" -> username))
+
+  def listDomainMemberships(username: String) : Seq[Member] = {
+    jooq.execute(t => {
+      val results = t.select(MEMBERS.DOMAIN_NAME).
+                      from(MEMBERS).
+                      where(MEMBERS.USER_NAME.equal(username)).
+                      fetch()
+      results.iterator().map(r => Member(username, r.getValue(MEMBERS.DOMAIN_NAME)))
+    }).toSeq
+  }
 
   def containsRootUser(usernames: Seq[String]) : Boolean =
     sessionFactory.withSession(s => {
@@ -144,44 +174,41 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
       query.uniqueResult().asInstanceOf[java.lang.Long] > 0
     })
 
-  // TODO Add a unit test for this
-  def maybeSystemConfigOption(key: String) = {
-    sessionFactory.withSession(s => {
-      s.get(classOf[SystemConfigOption], key) match {
-        case null                       => None
-        case current:SystemConfigOption => Some(current.value)
-      }
-    })
-  }
-  def setSystemConfigOption(key:String, value:String) {
-    sessionFactory.withSession(s => {
-      val co = s.get(classOf[SystemConfigOption], key) match {
-        case null =>
-          new SystemConfigOption(key = key, value = value)
-        case current:SystemConfigOption =>  {
-          current.value = value
-          current
-        }
-      }
-      s.saveOrUpdate(co)
-    })
-  }
-  def clearSystemConfigOption(key:String) = sessionFactory.withSession(s => {
-    s.get(classOf[SystemConfigOption], key) match {
-      case null =>
-      case current:SystemConfigOption =>  s.delete(current)
+  def maybeSystemConfigOption(key: String) = jooq.execute( t => {
+    val record = t.select(SYSTEM_CONFIG_OPTIONS.OPT_VAL).
+      from(SYSTEM_CONFIG_OPTIONS).
+      where(SYSTEM_CONFIG_OPTIONS.OPT_KEY.equal(key)).
+      fetchOne()
+
+    if (record != null) {
+      Some(record.getValue(SYSTEM_CONFIG_OPTIONS.OPT_VAL))
+    }
+    else {
+      None
     }
   })
 
   def systemConfigOptionOrDefault(key:String, defaultVal:String) = {
     maybeSystemConfigOption(key) match {
-      case Some(s)   => s
+      case Some(str) => str
       case None      => defaultVal
     }
   }
 
-  private def deleteByDomain[T](s:Session, domain:String, queryName:String) =
-    db.listQuery[T](queryName, Map("domain_name" -> domain)).foreach(s.delete(_))
+  def setSystemConfigOption(key:String, value:String) = jooq.execute(t => {
+    t.insertInto(SYSTEM_CONFIG_OPTIONS).
+        set(SYSTEM_CONFIG_OPTIONS.OPT_KEY, key).
+        set(SYSTEM_CONFIG_OPTIONS.OPT_VAL, value).
+      onDuplicateKeyUpdate().
+        set(SYSTEM_CONFIG_OPTIONS.OPT_VAL, value).
+      execute()
+  })
+
+  def clearSystemConfigOption(key:String) = jooq.execute(t => {
+    t.delete(SYSTEM_CONFIG_OPTIONS).
+      where(SYSTEM_CONFIG_OPTIONS.OPT_KEY.equal(key)).
+      execute()
+  })
 }
 
 /**
