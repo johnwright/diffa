@@ -71,7 +71,7 @@ public class JSONHelper {
     }
   }
 
-  public static ScanResultEntry[] readQueryResult(InputStream stream, ScanEntityValidator proc)
+  public static ScanResultEntry[] readQueryResult(InputStream stream, ScanEntityValidator validator)
       throws IOException {
     try {
       List<ScanResultEntry> scanResultEntries = new ArrayList<ScanResultEntry>();
@@ -82,7 +82,7 @@ public class JSONHelper {
 
       while (parser.nextToken() != JsonToken.END_ARRAY) {
           ScanResultEntry entry = mapper.readValue(parser, ScanResultEntry.class);
-          proc.process(entry);
+          validator.process(entry);
           scanResultEntries.add(entry);
 
       }
