@@ -108,42 +108,25 @@ trait HibernateQueryUtils {
     singleQuery[Domain](s, "domainByName", Map("domain_name" -> name), "domain %s".format(name))
   })
 
-  def removeDomainDifferences(domain: String) = sessionFactory.withSession(s => {
+  @Deprecated def removeDomainDifferences(domain: String) = sessionFactory.withSession(s => {
     // TODO Maybe this should be integrated with HibernateSystemConfigStore:deleteDomain/1
     executeUpdate(s, "removeDomainCheckpoints", Map("domain_name" -> domain))
     executeUpdate(s, "removeDomainDiffs", Map("domain" -> domain))
     executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
   })
 
-  /**
-   * This is un-protected call to set a configuration option.
-   * It is up to the calling context to establish this is authorized.
-   */
-  def writeConfigOption(domainName: String, key: String, value: String) = sessionFactory.withSession(s => {
-    val domain = getDomain(domainName)
-    val scopedKey = DomainScopedKey(key, domain)
-    val co = s.get(classOf[ConfigOption], scopedKey) match {
-      case null =>
-        new ConfigOption(domain = domain, key = key, value = value)
-      case current: ConfigOption => {
-        current.value = value
-        current
-      }
+  @Deprecated def forceHibernateCacheEviction() = {
+    try {
+      val cache = sessionFactory.getCache
+      cache.evictEntityRegions()
+      cache.evictCollectionRegions()
+      cache.evictDefaultQueryRegion()
     }
-    s.saveOrUpdate(co)
-  })
-
-  /**
-   * This is un-protected call to clear a configuration option.
-   * It is up to the calling context to establish this is authorized.
-   */
-  def deleteConfigOption(domain: String, key: String) = sessionFactory.withSession(s => {
-    val scopedKey = DomainScopedKey(key, getDomain(domain))
-    s.get(classOf[ConfigOption], scopedKey) match {
-      case null =>
-      case current: ConfigOption => s.delete(current)
+    catch {
+      case x:Exception =>
+        log.error("Could not manually evict the Hibernate cache", x)
     }
-  })
+  }
 
   def getStoreCheckpoint(pair: DiffaPairRef) = sessionFactory.withSession(s => {
     singleQueryOpt[StoreCheckpoint](s, "storeCheckpointByPairAndDomain",
