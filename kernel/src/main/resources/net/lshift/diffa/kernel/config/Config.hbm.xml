@@ -288,6 +288,7 @@
     select v from EndpointView v where v.endpoint.domain.name = :domain_name
   </query>
 
+  <!--
   <query name="escalationsByDomain" cacheable="true">
     select e from Escalation e
     join e.pair as p
@@ -305,6 +306,7 @@
     join a.pair as p
     join p.domain as d with d.name = :domain_name
   </query>
+  -->
 
   <query name="configVersionByDomain" cacheable="false">
     select d.configVersion from Domain d where d.name = :domain
