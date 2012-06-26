@@ -366,7 +366,7 @@
                 <exclude>none</exclude>
               </excludes>
               <includes>
-                <include>**/itest/**/ChangeEventEntityValidationTest.class</include>
+                <include>**/itest/**/*Test.class</include>
               </includes>
               <systemPropertyVariables>
                 <diffa.maildir>${basedir}/target/messages</diffa.maildir>
