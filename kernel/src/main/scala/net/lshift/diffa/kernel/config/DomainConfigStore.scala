@@ -18,17 +18,18 @@ package net.lshift.diffa.kernel.config
 
 import reflect.BeanProperty
 import scala.collection.JavaConversions._
-import java.util.HashMap
 import net.lshift.diffa.kernel.differencing.AttributesUtil
-import net.lshift.diffa.kernel.participants._
 import scala.Option._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.util.{EndpointSide, UpstreamEndpoint, DownstreamEndpoint, CategoryUtil}
 import net.lshift.diffa.participant.scanning.{AggregationBuilder, ConstraintsBuilder, SetConstraint, ScanConstraint}
+import java.util.HashMap
+import net.lshift.diffa.kernel.participants._
 
 /**
  * Provides general configuration options within the scope of a particular domain.
  */
+
 trait DomainConfigStore {
 
   def createOrUpdateEndpoint(domain:String, endpoint: EndpointDef) : Endpoint
@@ -37,11 +38,14 @@ trait DomainConfigStore {
 
   def createOrUpdatePair(domain:String, pairDef: PairDef) : Unit
   def deletePair(domain:String, key: String) : Unit
-  def listPairs(domain:String) : Seq[PairDef]
-  def listPairsForEndpoint(domain:String, endpoint:String) : Seq[DiffaPair]
+  def listPairs(domain:String) : Seq[DomainPairDef]
+  def listPairsForEndpoint(domain:String, endpoint:String) : Seq[DomainPairDef]
 
-  def createOrUpdateRepairAction(domain:String, action: RepairActionDef) : Unit
-  def deleteRepairAction(domain:String, name: String, pairKey: String) : Unit
+  def getPairDef(domain:String, key: String) : DomainPairDef
+  def getPairDef(ref:DiffaPairRef) : DomainPairDef = getPairDef(ref.domain, ref.key)
+
+  def createOrUpdateRepairAction(domain:String, action: RepairActionDef)
+  def deleteRepairAction(domain:String, name: String, pairKey: String)
 
   def listRepairActions(domain:String) : Seq[RepairActionDef]
   def listRepairActionsForPair(domain:String, key: String) : Seq[RepairActionDef]
@@ -58,7 +62,6 @@ trait DomainConfigStore {
 
   def getEndpointDef(domain:String, name: String) : EndpointDef
   def getEndpoint(domain:String, name: String) : Endpoint
-  def getPairDef(domain:String, key: String) : PairDef
 
   def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
   def getPairReportDef(domain:String, name:String, pairKey:String):PairReportDef
@@ -115,7 +118,8 @@ case class Endpoint(
   @BeanProperty var contentRetrievalUrl: String = null,
   @BeanProperty var versionGenerationUrl: String = null,
   @BeanProperty var inboundUrl: String = null,
-  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]) {
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
+  @BeanProperty var collation: String = AsciiCollationOrdering.name) {
 
   // Don't include this in the header definition, since it is a lazy collection
   @BeanProperty var views: java.util.Set[EndpointView] = new java.util.HashSet[EndpointView]
@@ -163,8 +167,13 @@ case class Endpoint(
   def buildAggregations(builder:AggregationBuilder) {
     CategoryUtil.buildAggregations(builder, categories.toMap)
   }
-}
 
+ def lookupCollation () = collation match {
+    case UnicodeCollationOrdering.name => UnicodeCollationOrdering
+    case AsciiCollationOrdering.name => AsciiCollationOrdering
+  }
+
+}
 case class EndpointView(
   @BeanProperty var name:String = null,
   @BeanProperty var endpoint:Endpoint = null,

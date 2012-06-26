@@ -13,23 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.diffa.participant.scanning;
 
-package net.lshift.diffa.kernel.scheduler
+import com.ibm.icu.text.Collator;
+import java.util.Locale;
 
-import net.lshift.diffa.kernel.config.{DiffaPairRef, DiffaPair}
+public class UnicodeCollation implements Collation {
+  private Collator coll = Collator.getInstance(Locale.ROOT);
 
-/**
- * Trait to be implemented by Scan Scheduler implementations.
- */
-trait ScanScheduler {
-  /**
-   * Handler for new pair creation or update of an existing one. This method will ensure that the scheduler
-   * takes account of the given pair's configuration.
-   */
-  def onUpdatePair(pair:DiffaPairRef)
-
-  /**
-   * Handler for pair deletion.
-   */
-  def onDeletePair(pair:DiffaPairRef)
+  @Override
+  public boolean sortsBefore(String left, String right) {
+    return coll.compare(left, right) < 0;
+  }
 }

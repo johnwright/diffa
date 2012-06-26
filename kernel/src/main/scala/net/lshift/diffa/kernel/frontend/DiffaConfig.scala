@@ -21,6 +21,7 @@ import reflect.BeanProperty
 import org.quartz.CronExpression
 import java.util.HashMap
 import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.util.{DownstreamEndpoint, UpstreamEndpoint, EndpointSide}
 
 /**
  * Describes a complete Diffa configuration in the context of a domain - this means that all of the objects
@@ -64,7 +65,8 @@ case class EndpointDef (
   @BeanProperty var versionGenerationUrl: String = null,
   @BeanProperty var inboundUrl: String = null,
   @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
-  @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef]) {
+  @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef],
+  @BeanProperty var collation: String = AsciiCollationOrdering.name) {
 
   def this() = this(name = null)
 
@@ -85,7 +87,11 @@ case class EndpointDef (
     ValidationUtil.ensureLengthLimit(endPointPath, "contentRetrievalUrl", contentRetrievalUrl, DEFAULT_URL_LENGTH_LIMIT)
     ValidationUtil.ensureLengthLimit(endPointPath, "versionGenerationUrl", versionGenerationUrl, DEFAULT_URL_LENGTH_LIMIT)
     ValidationUtil.ensureLengthLimit(endPointPath, "inboundUrl", inboundUrl, DEFAULT_URL_LENGTH_LIMIT)
-    
+
+    collation = ValidationUtil.maybeDefault(collation, AsciiCollationOrdering.name)
+    ValidationUtil.ensureMembership(endPointPath, "collation", collation,
+      Set(AsciiCollationOrdering.name, UnicodeCollationOrdering.name))
+
     Array(scanUrl,
           contentRetrievalUrl,
           versionGenerationUrl,
@@ -153,6 +159,29 @@ case class PairDef(
   @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
 
   def this() = this(key = null)
+
+  def asRef(domain:String) = DiffaPairRef(key, domain)
+
+  def asDomainPairDef(domainName:String) = DomainPairDef(
+    domain = domainName,
+    key = this.key,
+    matchingTimeout = this.matchingTimeout,
+    upstreamName = this.upstreamName,
+    downstreamName = this.downstreamName,
+    scanCronSpec = this.scanCronSpec,
+    allowManualScans = this.allowManualScans,
+    views = this.views
+  )
+
+  def whichSide(endpoint:EndpointDef):EndpointSide = {
+    if (upstreamName == endpoint.name) {
+      UpstreamEndpoint
+    } else if (downstreamName == endpoint.name) {
+      DownstreamEndpoint
+    } else {
+      throw new IllegalArgumentException(endpoint.name + " is not a member of pair " + key)
+    }
+  }
 
   def validate(path:String = null, endpoints:Set[EndpointDef] = null) {
     val pairPath = ValidationUtil.buildPath(path, "pair", Map("key" -> key))
@@ -235,6 +264,43 @@ case class PairViewDef(
       }
     }
   }
+}
+
+/**
+ * This is the next generation version of the DiffaPair, but with serialization and friendly fields.
+ * This has been made java friendly to ensure it can be serialized correctly when inserted into caches.
+ * When Hibernate has been removed completely, the DiffaPair object can be deleted all together and
+ * get replaced with this more useful definition.
+ */
+case class DomainPairDef(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var key: String = null,
+  @BeanProperty var versionPolicyName: String = null,
+  @BeanProperty var matchingTimeout: Int = 0,
+  @BeanProperty var upstreamName: String = null,
+  @BeanProperty var downstreamName: String = null,
+  @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var scanCronEnabled: Boolean = true,
+  @BeanProperty var allowManualScans: java.lang.Boolean = null,
+  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
+
+  def this() = this(domain = null)
+
+  def asRef = DiffaPairRef(key, domain)
+
+  def withoutDomain = PairDef(
+    key = key,
+    versionPolicyName = versionPolicyName,
+    matchingTimeout = matchingTimeout,
+    upstreamName = upstreamName,
+    downstreamName = downstreamName,
+    scanCronSpec = scanCronSpec,
+    scanCronEnabled = scanCronEnabled,
+    allowManualScans = allowManualScans,
+    views = views
+  )
+
+  def identifier = asRef.identifier
 }
 
 /**

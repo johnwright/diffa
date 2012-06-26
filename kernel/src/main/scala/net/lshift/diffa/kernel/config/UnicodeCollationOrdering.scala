@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package net.lshift.diffa.kernel.scheduler
+package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.config.{DiffaPairRef, DiffaPair}
+import net.lshift.diffa.participant.scanning.{AsciiCollation, UnicodeCollation, Collation}
 
-/**
- * Trait to be implemented by Scan Scheduler implementations.
- */
-trait ScanScheduler {
-  /**
-   * Handler for new pair creation or update of an existing one. This method will ensure that the scheduler
-   * takes account of the given pair's configuration.
-   */
-  def onUpdatePair(pair:DiffaPairRef)
+object UnicodeCollationOrdering extends UnicodeCollation {
+  val name = "unicode"
+}
 
-  /**
-   * Handler for pair deletion.
-   */
-  def onDeletePair(pair:DiffaPairRef)
+
+object AsciiCollationOrdering extends AsciiCollation {
+  val name = "ascii"
 }

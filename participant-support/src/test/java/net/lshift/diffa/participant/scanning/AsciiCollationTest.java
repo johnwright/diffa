@@ -13,17 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.agent.rest
+package net.lshift.diffa.participant.scanning;
 
-import net.sf.ehcache.CacheManager
-import net.lshift.diffa.kernel.util.CacheWrapper
+import org.junit.Test;
 
-/**
- * Very simple generic read through cache
- */
-class ReadThroughCache[K,V](cacheManager:CacheManager, name:String) {
+public class AsciiCollationTest {
+  
+  private Collation collation = new AsciiCollation();
+  @Test 
+  public void trivial() {
+    assert(collation.sortsBefore("a", "b"));
+  }
+  @Test public void isCaseSensitive() {
+    assert(!collation.sortsBefore("a", "B"));
+  }
 
-  private val cachedPairs = new CacheWrapper[K,V](name, cacheManager)
+  @Test public void cSortsAfterB() {
+    assert(!collation.sortsBefore("c", "b"));
+  }
+  @Test public void upperCaseSortsBeforeLower() {
+    assert(collation.sortsBefore("C", "b"));
+  }
 
-  def readThrough(key:K, f:() => V) = cachedPairs.readThrough(key,f)
 }

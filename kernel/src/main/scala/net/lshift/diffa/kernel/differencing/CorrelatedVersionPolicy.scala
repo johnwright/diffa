@@ -22,7 +22,7 @@ import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint, ScanResultEntry}
+import net.lshift.diffa.participant.scanning.{Collation, ScanAggregation, ScanConstraint, ScanResultEntry}
 
 
 /**
@@ -33,19 +33,20 @@ import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint, S
  */
 class CorrelatedVersionPolicy(stores:VersionCorrelationStoreFactory,
                               listener:DifferencingListener,
-                              systemConfigStore:SystemConfigStore,
                               diagnostics:DiagnosticsManager)
-    extends BaseScanningVersionPolicy(stores, listener, systemConfigStore, diagnostics) {
+    extends BaseScanningVersionPolicy(stores, listener, diagnostics) {
 
-  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant) = new DownstreamCorrelatingScanStrategy(us,ds)
+  def downstreamStrategy(us:UpstreamParticipant, ds:DownstreamParticipant, collation: Collation) =
+    new DownstreamCorrelatingScanStrategy(us,ds, collation)
   
-  protected class DownstreamCorrelatingScanStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant)
+  protected class DownstreamCorrelatingScanStrategy(val us:UpstreamParticipant, val ds:DownstreamParticipant,
+                                                     collation: Collation                                                     )
       extends ScanStrategy {
     val name = "DownstreamCorrelating"
 
 
     def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) = {
-      val aggregator = new Aggregator(bucketing)
+      val aggregator = new Aggregator(bucketing, collation)
       stores(pair).queryDownstreams(constraints, aggregator.collectDownstream)
       aggregator.digests
     }

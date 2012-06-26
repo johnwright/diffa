@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.lshift.diffa.agent.rest
+package net.lshift.diffa.participant.scanning;
 
-import net.sf.ehcache.CacheManager
-
-/**
- * Typed implementation of a generic cache to solve autowire by type resolution.
- */
-class DomainSequenceCache(manager:CacheManager, name:String) extends ReadThroughCache[String, String](manager, name)
+public class AsciiCollation implements Collation {
+  @Override
+  public boolean sortsBefore(String left, String right) {
+    return left.compareTo(right) < 0;
+  }
+}

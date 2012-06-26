@@ -15,20 +15,28 @@
  */
 package net.lshift.diffa.schema.migrations.steps
 
+import java.sql.Types
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import java.sql.Types
 import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 
+object Step0034 extends HibernateMigrationStep {
 
-object Step0033 extends HibernateMigrationStep {
-  def versionId = 33
-  def name = "Add the collation field to Endpoints"
+  def versionId = 34
+
+  def name = "Add columns to support enabling/disabling of scan cron specs"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.alterTable("endpoint").addColumn("collation_type", Types.VARCHAR, 16, false, "ascii")
+    migration
+      .alterTable("pair")
+      .addColumn("scan_cron_enabled", Types.BIT, 1, false, 1)
+
+    migration
+      .alterTable("pair_views")
+      .addColumn("scan_cron_enabled", Types.BIT, 1, false, 1)
+
     migration
   }
 }

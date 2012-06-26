@@ -110,7 +110,10 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Before
-  def setUp = storeReferences.clearConfiguration(domainName)
+  def setUp {
+    storeReferences.clearConfiguration(domainName)
+    domainConfigStore.reset
+  }
 
   def exists (e:EndpointDef, count:Int, offset:Int) : Unit = {
     val endpoints = domainConfigStore.listEndpoints(domainName).sortWith((a, b) => a.name < b.name)
@@ -123,35 +126,6 @@ class HibernateDomainConfigStoreTest {
   }
 
   def exists (e:EndpointDef, count:Int) : Unit = exists(e, count, count - 1)
-
-  @Test
-  def pairsShouldCache = {
-
-    declareAll()
-
-    val initialCount = storeReferences.sessionStatistics.getQueryExecutionCount
-
-    // This call should be read through from the DB
-    domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache miss", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-
-    // This call should be cached
-    domainConfigStore.listPairs(domainName)
-    assertEquals("Should have generated cache hit", initialCount + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-
-    provokeCacheInvalidation(() => domainConfigStore.createOrUpdateEndpoint(domainName, upstream1))
-    provokeCacheInvalidation(() => domainConfigStore.createOrUpdatePair(domainName, pairDef))
-    provokeCacheInvalidation(() => domainConfigStore.deletePair(domainName, pairKey))
-    provokeCacheInvalidation(() => domainConfigStore.deleteEndpoint(domainName, upstream1.name))
-
-    // This should invalidate the pair cache
-    def provokeCacheInvalidation[T](f:() => T) = {
-      f()
-      val countAfterOperation = storeReferences.sessionStatistics.getQueryExecutionCount
-      domainConfigStore.listPairs(domainName)
-      assertEquals("Should have generated cache hit", countAfterOperation + 1, storeReferences.sessionStatistics.getQueryExecutionCount)
-    }
-  }
 
   @Test
   def domainShouldBeDeletable = {
@@ -179,7 +153,7 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeclare: Unit = {
+  def testDeclare {
     // declare the domain
     systemConfigStore.createOrUpdateDomain(domain)
 
@@ -285,6 +259,14 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
+  def testEndpointCollationIsPersisted = {
+    systemConfigStore.createOrUpdateDomain(domain)
+    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1.copy(collation = UnicodeCollationOrdering.name))
+    val retrieved = domainConfigStore.getEndpointDef(domainName, upstream1.name)
+    assertEquals(UnicodeCollationOrdering.name, retrieved.collation)
+  }
+
+  @Test
   def testUpdatePair: Unit = {
     declareAll
 
@@ -323,7 +305,7 @@ class HibernateDomainConfigStoreTest {
   }
 
   @Test
-  def testDeletePair: Unit = {
+  def testDeletePair {
     declareAll
 
     assertEquals(pairKey, domainConfigStore.getPairDef(domainName, pairKey).key)

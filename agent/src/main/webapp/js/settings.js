@@ -100,7 +100,12 @@ Diffa.Views.ElementList = Backbone.View.extend({
     var self = this;
     var newView = new Diffa.Views.ElementListItem({model: m, elementType: self.options.elementType});
 
-    this.$('.element-list').append(newView.render());
+    var index = this.collection.indexOf(m);
+    if (index == 0)
+      this.$('.element-list').prepend(newView.render());
+    else
+      this.$('.element-list').children().eq(index - 1).after(newView.render());
+
     this.updateNoneMessage();
 
     if (!initialRender) newView.flash();
@@ -161,7 +166,8 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     this.hideErrors();
     this.preBind();
 
-    $('input[data-key]', this.el).val('');    // Clear the contents of all bound fields
+    // Clear the contents of all bound fields, except for radio buttons
+    $('input[data-key]', this.el).not('input:radio').val(''); 
     Backbone.ModelBinding.bind(this, {all: "data-key"});
 
     this.postBind();

@@ -13,23 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.diffa.participant.scanning;
 
-package net.lshift.diffa.kernel.scheduler
+import org.junit.Test;
 
-import net.lshift.diffa.kernel.config.{DiffaPairRef, DiffaPair}
+public class UnicodeCollationTest {
+  private Collation collation = new UnicodeCollation();
+  @Test
+  public void trivial() {
+    assert(collation.sortsBefore("a", "b"));
+  }
+  @Test public void caseIsSecondaryToOrdinal() {
+    assert(collation.sortsBefore("a", "B"));
+  }
 
-/**
- * Trait to be implemented by Scan Scheduler implementations.
- */
-trait ScanScheduler {
-  /**
-   * Handler for new pair creation or update of an existing one. This method will ensure that the scheduler
-   * takes account of the given pair's configuration.
-   */
-  def onUpdatePair(pair:DiffaPairRef)
+  @Test public void cSortsAfterB() {
+    assert(!collation.sortsBefore("c", "b"));
+  }
+  @Test public void upperCaseDoesNotSortBeforeLower() {
+    assert(!collation.sortsBefore("C", "b"));
+  }
 
-  /**
-   * Handler for pair deletion.
-   */
-  def onDeletePair(pair:DiffaPairRef)
 }
