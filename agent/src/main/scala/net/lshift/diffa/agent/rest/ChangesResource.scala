@@ -51,7 +51,7 @@ class ChangesResource(changes:Changes, domain:String, rateLimiterFactory: Domain
         changes.onChange(domain, endpoint, e)
         Response.status(Response.Status.ACCEPTED)
       } catch {
-        case e: InvalidEntityException => Response.status(400) // with ... what kind of helpful information?
+        case e: InvalidEntityException => Response.status(400).entity(e.getMessage + "\n")
       }
     } else {
       Response.status(420)
