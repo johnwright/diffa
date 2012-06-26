@@ -155,7 +155,52 @@ class HibernateDomainConfigStoreTest {
     assertTrue(systemConfigStore.listDomains.filter(_.name == domainName).isEmpty)
   }
 
+
   @Test
+  def endpointsWithSameEndpointCategoriesInSeperateDomainsMustHaveSeperateIdentities {
+    println("Starting escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities")
+    val domain2 = domain.copy(name = domain.name + "2")
+    Seq(domain, domain2).foreach { dom =>
+      systemConfigStore.createOrUpdateDomain(dom)
+      // If this test was to fail, then it would fail on creating the second escalation at this point.
+
+      domainConfigStore.createOrUpdateEndpoint(dom.name, upstream1)
+    }
+  }
+  @Test
+  def escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities {
+    println("Starting escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities")
+    val domain2 = domain.copy(name = domain.name + "2")
+
+    Seq(domain, domain2).foreach { dom =>
+      systemConfigStore.createOrUpdateDomain(dom)
+      domainConfigStore.createOrUpdateEndpoint(dom.name, upstream1.copy(name = dom.name + "-up"))
+      domainConfigStore.createOrUpdateEndpoint(dom.name, downstream1.copy(name = dom.name + "-down"))
+      domainConfigStore.createOrUpdatePair(dom.name,
+        pairDef.copy(upstreamName = dom.name + "-up", downstreamName = dom.name + "-down"))
+      val anEscalation = escalation.copy(name = "identicalName", pair = pairDef.key)
+      // If this test was to fail, then it would fail on creating the second escalation at this point.
+      domainConfigStore.createOrUpdateEscalation(dom.name, anEscalation)
+    }
+  }
+
+  @Test
+  def repairActionsWithSameNameInSeperateDomainsMustHaveSeperateIdentities = {
+    val domain2 = domain.copy(name = domain.name + "2")
+
+    Seq(domain, domain2).foreach { dom =>
+      systemConfigStore.createOrUpdateDomain(dom)
+      domainConfigStore.createOrUpdateEndpoint(dom.name, upstream1.copy(name = dom.name + "-up"))
+      domainConfigStore.createOrUpdateEndpoint(dom.name, downstream1.copy(name = dom.name + "-down"))
+      domainConfigStore.createOrUpdatePair(dom.name,
+        pairDef.copy(upstreamName = dom.name + "-up", downstreamName = dom.name + "-down"))
+      val aRepairAction = repairAction.copy(name = "identicalName", pair = pairDef.key)
+      domainConfigStore.createOrUpdateRepairAction(dom.name, aRepairAction)
+    }
+  }
+
+
+@Test
   def testDeclare {
     // declare the domain
     systemConfigStore.createOrUpdateDomain(domain)
