@@ -343,13 +343,6 @@
     where a.name = :name
   </query>
 
-  <query name="escalationsByNameAndPair" cacheable="true">
-    select e from Escalation e
-    join e.pair as p with p.key = :pair_key
-    join p.domain as d with d.name = :domain_name
-    where e.name = :name
-  </query>
-
   <query name="reportsByNameAndPair" cacheable="true">
     select r from PairReport r
     join r.pair as p with p.key = :pair_key
