@@ -20,12 +20,30 @@ import net.lshift.diffa.participant.scanning.ScanResultEntry
 import org.joda.time.DateTime
 import net.lshift.diffa.participant.common.{InvalidEntityException, ScanEntityValidator}
 import net.lshift.diffa.participant.changes.ChangeEvent
+import scala.collection.JavaConversions._
 
 case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String])
 
+object ValidatableEntity {
+  def of(e: ScanResultEntry) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
+    maybeMap(e.getAttributes))
+
+  def of(e: ChangeEvent) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
+    maybeMap(e.getAttributes))
+
+  private def maybe[T](x: T) = x match {
+    case null => None
+    case x => Some(x)
+  }
+
+  private def maybeMap(attributes: java.util.Map[String, String]): Map[String, String] = {
+    maybe(attributes).map(_.toMap).getOrElse(Map())
+  }
+
+}
 
 /**
- * The function of this class is to accept something repesenting an entity of
+ * The function of this class is to accept something representing an entity of
  * some description (be it a ScanResultEntry or a ChangeEvent), and ensure
  * that it is at least *syntactically* valid, before allowing it into the
  * kernel of the system. Currently, we check for:
@@ -49,24 +67,10 @@ object EntityValidator extends ScanEntityValidator {
     e.attributes.foreach { case (name, value) => validateCharactersInField("attributes[%s]".format(name), value) }
   }
 
-  def process(e: ScanResultEntry): Unit = validate(of(e))
-  def process(e: ChangeEvent) = validate(of(e))
+  def process(e: ScanResultEntry): Unit = validate(ValidatableEntity.of(e))
+  def process(e: ChangeEvent) = validate(ValidatableEntity.of(e))
 
 
-  private def of(e: ScanResultEntry) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
-    maybeMap(e.getAttributes))
 
-
-  private def of(e: ChangeEvent) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
-    maybeMap(e.getAttributes))
-
-  def maybe[T](x: T) = x match {
-    case null => None
-    case x => Some(x)
-  }
-
-  protected def maybeMap(attributes: java.util.Map[String, String]): Map[String, String] = {
-    maybe(attributes).map(_.toMap).getOrElse(Map())
-  }
 
 }
