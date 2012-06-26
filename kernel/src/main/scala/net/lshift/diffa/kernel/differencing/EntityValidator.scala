@@ -23,6 +23,17 @@ import net.lshift.diffa.participant.changes.ChangeEvent
 
 case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String])
 
+
+/**
+ * The function of this class is to accept something repesenting an entity of
+ * some description (be it a ScanResultEntry or a ChangeEvent), and ensure
+ * that it is at least *syntactically* valid, before allowing it into the
+ * kernel of the system. Currently, we check for:
+ *
+ * - That the id of the entity contains only characters from the printable
+ * subset of ASCII characters, in order to avoid issues with collation orders
+ * and/or normalisation forms that may confuse the Merkle tree machinery.
+ */
 object EntityValidator extends ScanEntityValidator {
   import scala.collection.JavaConversions._
 
