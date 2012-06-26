@@ -25,10 +25,12 @@ import scala.collection.JavaConversions._
 case class ValidatableEntity(id:String, version:String, lastUpdated:DateTime, attributes: Map[String, String])
 
 object ValidatableEntity {
-  def of(e: ScanResultEntry) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
+
+  import ValidatableEntity._
+  def apply(e: ScanResultEntry) : ValidatableEntity = this(e.getId, e.getVersion, e.getLastUpdated,
     maybeMap(e.getAttributes))
 
-  def of(e: ChangeEvent) = ValidatableEntity(e.getId, e.getVersion, e.getLastUpdated,
+  def apply(e: ChangeEvent) : ValidatableEntity = this(e.getId, e.getVersion, e.getLastUpdated,
     maybeMap(e.getAttributes))
 
   private def maybe[T](x: T) = x match {
@@ -67,8 +69,8 @@ object EntityValidator extends ScanEntityValidator {
     e.attributes.foreach { case (name, value) => validateCharactersInField("attributes[%s]".format(name), value) }
   }
 
-  def process(e: ScanResultEntry): Unit = validate(ValidatableEntity.of(e))
-  def process(e: ChangeEvent) = validate(ValidatableEntity.of(e))
+  def process(e: ScanResultEntry): Unit = validate(ValidatableEntity(e))
+  def process(e: ChangeEvent) = validate(ValidatableEntity(e))
 
 
 
