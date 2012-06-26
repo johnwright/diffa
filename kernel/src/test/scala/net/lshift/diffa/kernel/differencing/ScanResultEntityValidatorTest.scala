@@ -16,21 +16,16 @@
 package net.lshift.diffa.kernel.differencing
 
 import org.junit.Test
-import org.junit.experimental.theories.Theories
-import org.junit.runner.RunWith
-import java.io.IOException
 import org.hamcrest.CoreMatchers.instanceOf
 import org.junit.Assert._
 import org.hamcrest.Matchers._
 import org.junit.matchers.JUnitMatchers.containsString
 import net.lshift.diffa.participant.scanning.ScanResultEntry
-import org.joda.time.DateTime
 import scala.collection.JavaConversions._
 import org.hamcrest.Matcher
 import net.lshift.diffa.participant.common.InvalidEntityException
 import net.lshift.diffa.participant.changes.ChangeEvent
 
-// @RunWith(classOf[Theories])
 class ScanResultEntityValidatorTest extends EntityValidatorTestChecks[ScanResultEntry] {
   val validator = EntityValidator
   val entityWithInvalidId = scanResultFor(id = INVALID_ID)
