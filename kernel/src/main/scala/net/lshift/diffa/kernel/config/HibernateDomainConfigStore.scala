@@ -451,8 +451,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     jooq.execute(t => {
       t.delete(REPAIR_ACTIONS).
         where(REPAIR_ACTIONS.DOMAIN.equal(domain)).
-        and(REPAIR_ACTIONS.PAIR_KEY.equal(pairKey)).
-        and(REPAIR_ACTIONS.NAME.equal(name)).
+          and(REPAIR_ACTIONS.PAIR_KEY.equal(pairKey)).
+          and(REPAIR_ACTIONS.NAME.equal(name)).
         execute()
     })
 
@@ -464,7 +464,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       val results = t.select().
                       from(REPAIR_ACTIONS).
                       where(REPAIR_ACTIONS.DOMAIN.equal(domain)).
-                      and(REPAIR_ACTIONS.PAIR_KEY.equal(pairKey)).
+                        and(REPAIR_ACTIONS.PAIR_KEY.equal(pairKey)).
                       fetch()
 
       mapResultsToList(results, recordToRepairAction)
