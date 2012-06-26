@@ -21,10 +21,9 @@ import java.lang.reflect.Type
 import java.lang.annotation.Annotation
 import javax.ws.rs.core.{MultivaluedMap, MediaType}
 import java.lang.{String, Class}
-import net.lshift.diffa.participant.scanning.{NullScanResultEntryValidator, ScanResultEntry}
+import net.lshift.diffa.participant.scanning.ScanResultEntry
 import au.com.bytecode.opencsv.CSVReader
 import java.io.{InputStreamReader, InputStream}
-import scala.collection.JavaConversions._
 import collection.mutable.ListBuffer
 import org.joda.time.format.ISODateTimeFormat
 import java.util.HashMap
