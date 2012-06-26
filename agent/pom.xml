@@ -363,7 +363,7 @@
             </goals>
             <configuration>
               <excludes>
-                <exclude>none</exclude>
+                <exclude>**/itest/**/*AmqpTest.class</exclude>
               </excludes>
               <includes>
                 <include>**/itest/**/*Test.class</include>
