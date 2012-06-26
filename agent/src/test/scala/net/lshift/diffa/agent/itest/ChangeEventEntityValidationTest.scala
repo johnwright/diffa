@@ -31,16 +31,9 @@ class ChangeEventEntityValidationTest {
   lazy val changeClient = new ChangesRestClient(agentURL, defaultDomain, endpoint)
   lazy val event = ChangeEvent.forChange("\u2603", "aVersion", yesterday)
 
-  @Test
+  @Test(expected=classOf[InvalidChangeEventException])
   def rejectsChangesForInvalidEntities = {
-    try {
       changeClient.onChangeEvent(event)
-      fail("Excepted change event submission to fail")
-    } catch {
-      case e:InvalidChangeEventException => () // Everything was okay
-      case e => fail("expected InvalidChangeEventException; recieved %s".format(e))
-    }
-
   }
 }
 
