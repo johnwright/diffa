@@ -166,29 +166,51 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
 
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : DomainEndpointDef = {
-    null
-  }
-
-  /*
-
-  def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = withVersionUpgrade(domainName, s => {
 
     invalidateEndpointCachesOnly(domainName, e.name)
 
-    val domain = getDomain(domainName)
-    val endpoint = fromEndpointDef(domain, e)
-    s.saveOrUpdate(endpoint)
+    jooq.execute(t => {
+      t.insertInto(ENDPOINT).
+          set(ENDPOINT.DOMAIN, domainName).
+          set(ENDPOINT.NAME, e.name).
+          set(ENDPOINT.COLLATION_TYPE, e.collation).
+          set(ENDPOINT.CONTENT_RETRIEVAL_URL, e.contentRetrievalUrl).
+          set(ENDPOINT.SCAN_URL, e.scanUrl).
+          set(ENDPOINT.VERSION_GENERATION_URL, e.versionGenerationUrl).
+          set(ENDPOINT.INBOUND_URL, e.inboundUrl).
+        onDuplicateKeyUpdate().
+          set(ENDPOINT.COLLATION_TYPE, e.collation).
+          set(ENDPOINT.CONTENT_RETRIEVAL_URL, e.contentRetrievalUrl).
+          set(ENDPOINT.SCAN_URL, e.scanUrl).
+          set(ENDPOINT.VERSION_GENERATION_URL, e.versionGenerationUrl).
+          set(ENDPOINT.INBOUND_URL, e.inboundUrl).
+        execute()
 
-    // Update the view definitions
-    val existingViews = listEndpointViews(s, domainName, e.name)
-    val viewsToRemove = existingViews.filter(existing => e.views.find(v => v.name == existing.name).isEmpty)
-    viewsToRemove.foreach(r => s.delete(r))
-    e.views.foreach(v => s.saveOrUpdate(fromEndpointViewDef(endpoint, v)))
+      // Update the view definitions
 
-    endpoint
-  })
+      t.delete(ENDPOINT_VIEWS).
+        where(ENDPOINT_VIEWS.NAME.notIn(e.views.map(v => v.name))).
+        execute()
 
-  */
+      e.views.foreach(v => {
+        t.insertInto(ENDPOINT_VIEWS).
+            set(ENDPOINT_VIEWS.DOMAIN, domainName).
+            set(ENDPOINT_VIEWS.ENDPOINT, e.name).
+            set(ENDPOINT_VIEWS.NAME, v.name).
+          onDuplicateKeyIgnore()
+      })
+    })
+
+    DomainEndpointDef(
+      domain = domainName,
+      name = e.name,
+      collation = e.collation,
+      contentRetrievalUrl = e.contentRetrievalUrl,
+      scanUrl = e.scanUrl,
+      versionGenerationUrl = e.versionGenerationUrl,
+      inboundUrl = e.inboundUrl
+    )
+  }
 
   def deleteEndpoint(domain:String, name: String): Unit = withVersionUpgrade(domain, s => {
 
