@@ -161,7 +161,9 @@ class HibernateDomainConfigStoreTest {
     val domain2 = domain.copy(name = domain.name + "2")
     Seq(domain, domain2).foreach { dom =>
       systemConfigStore.createOrUpdateDomain(dom)
-      // If this test was to fail, then it would fail on creating the second escalation at this point.
+      // When the primary key on endpoint_categories is over (endpointName,
+      // propertyName) then this test will fail with a constraint violation,
+      // even though the second endpoint is in a different domain.
 
       domainConfigStore.createOrUpdateEndpoint(dom.name, upstream1)
     }
@@ -177,7 +179,10 @@ class HibernateDomainConfigStoreTest {
       domainConfigStore.createOrUpdatePair(dom.name,
         pairDef.copy(upstreamName = dom.name + "-up", downstreamName = dom.name + "-down"))
       val anEscalation = escalation.copy(name = "identicalName", pair = pairDef.key)
-      // If this test was to fail, then it would fail on creating the second escalation at this point.
+      // When the primary key on escalations is over (pair_key, name) then
+      // this test will fail with a constraint violation, even though the
+      // second escalation is in a different domain.
+
       domainConfigStore.createOrUpdateEscalation(dom.name, anEscalation)
     }
   }
@@ -193,6 +198,10 @@ class HibernateDomainConfigStoreTest {
       domainConfigStore.createOrUpdatePair(dom.name,
         pairDef.copy(upstreamName = dom.name + "-up", downstreamName = dom.name + "-down"))
       val aRepairAction = repairAction.copy(name = "identicalName", pair = pairDef.key)
+      // When the primary key on repair_actions is over (pair_key, name) then
+      // this test will fail with a constraint violation, even though the
+      // second repair action is in a different domain.
+
       domainConfigStore.createOrUpdateRepairAction(dom.name, aRepairAction)
     }
   }
