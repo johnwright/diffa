@@ -199,6 +199,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
             set(ENDPOINT_VIEWS.NAME, v.name).
           onDuplicateKeyIgnore()
       })
+
+      upgradeConfigVersion(t, domainName)
+
     })
 
     DomainEndpointDef(
