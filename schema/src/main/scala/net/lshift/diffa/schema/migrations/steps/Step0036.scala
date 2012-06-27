@@ -31,6 +31,8 @@ object Step0036 extends MigrationStep {
   def createMigration(config: Configuration): MigrationBuilder = {
     val migration = new MigrationBuilder(config)
 
+    // Create the parent table that needs to get inserted into to make sure that each child category has a unique name
+
     migration.createTable("unique_category_names").
       column("domain", Types.VARCHAR, 50, false).
       column("endpoint", Types.VARCHAR, 50, false).
@@ -39,6 +41,8 @@ object Step0036 extends MigrationStep {
 
     migration.alterTable("unique_category_names").
       addForeignKey("fk_ucns_edpt", Array("domain", "endpoint"), "endpoint", Array("domain", "name"))
+
+    // Create the new table for prefix categories
 
     migration.createTable("prefix_categories").
               column("domain", Types.VARCHAR, 50, false).
@@ -53,13 +57,19 @@ object Step0036 extends MigrationStep {
     migration.alterTable("prefix_categories").
       addForeignKey("fk_pfcg_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
+    // Make sure names across all category tables are unique
+
     migration.alterTable("prefix_categories").
       addForeignKey("fk_pfcg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    // Create a parent record for all to-be-migrated prefix categories on endpoints proper
 
     migration.copyTableContents("category_descriptor", "unique_category_names",
       Seq("domain", "name", "endpoint")).
       join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
       whereSource(Map("constraint_type" -> "prefix"))
+
+    // Migrate all prefix categories on endpoints proper
 
     migration.copyTableContents("category_descriptor", "prefix_categories",
                                 Seq("prefix_length", "max_length", "step"),
@@ -67,10 +77,14 @@ object Step0036 extends MigrationStep {
               join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
               whereSource(Map("constraint_type" -> "prefix"))
 
+    // Create a parent record for all to-be-migrated prefix categories on endpoint views
+
     migration.copyTableContents("category_descriptor", "unique_category_names",
       Seq("domain", "name", "endpoint")).
       join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint")).
       whereSource(Map("constraint_type" -> "prefix"))
+
+    // Migrate all prefix categories on endpoint views
 
     migration.copyTableContents("category_descriptor", "prefix_categories",
       Seq("prefix_length", "max_length", "step"),
@@ -78,7 +92,11 @@ object Step0036 extends MigrationStep {
       join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint", "name")).
       whereSource(Map("constraint_type" -> "prefix"))
 
+    // Nuke old prefix descriptors
+
     migration.dropTable("prefix_category_descriptor")
+
+    // Create the new table for set categories
 
     migration.createTable("set_categories").
       column("domain", Types.VARCHAR, 50, false).
@@ -91,13 +109,19 @@ object Step0036 extends MigrationStep {
     migration.alterTable("set_categories").
       addForeignKey("fk_stcg_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
+    // Make sure names across all category tables are unique
+
     migration.alterTable("set_categories").
       addForeignKey("fk_stcg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    // Create a parent record for all to-be-migrated set categories on endpoints proper
 
     migration.copyTableContents("category_descriptor", "unique_category_names",
       Seq("domain", "name", "endpoint")).
       join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
       whereSource(Map("constraint_type" -> "set"))
+
+    // Migrate all set categories on endpoints proper
 
     migration.copyTableContents("category_descriptor", "set_categories",
       Seq("domain", "name", "endpoint", "value")).
@@ -105,16 +129,22 @@ object Step0036 extends MigrationStep {
       join("set_constraint_values", "value_id", "category_id", Seq("value_name")).
       whereSource(Map("constraint_type" -> "set"))
 
+    // Create a parent record for all to-be-migrated set categories on endpoint views
+
     migration.copyTableContents("category_descriptor", "unique_category_names",
       Seq("domain", "name", "endpoint")).
       join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint")).
       whereSource(Map("constraint_type" -> "set"))
+
+    // Migrate all set categories on endpoint views
 
     migration.copyTableContents("category_descriptor", "set_categories",
       Seq("domain", "name", "endpoint", "view_name", "value")).
       join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint", "name")).
       join("set_constraint_values", "value_id", "category_id", Seq("value_name")).
       whereSource(Map("constraint_type" -> "set"))
+
+    // Nuke old set descriptors and their associated values
 
     migration.dropTable("set_category_descriptor")
     migration.dropTable("set_constraint_values")
@@ -133,13 +163,19 @@ object Step0036 extends MigrationStep {
     migration.alterTable("range_categories").
       addForeignKey("fk_racg_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
+    // Make sure names across all category tables are unique
+
     migration.alterTable("range_categories").
       addForeignKey("fk_racg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    // Create a parent record for all to-be-migrated range categories on endpoints proper
 
     migration.copyTableContents("category_descriptor", "unique_category_names",
       Seq("domain", "name", "endpoint")).
       join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
       whereSource(Map("constraint_type" -> "range"))
+
+    // Migrate all range categories on endpoints proper
 
     migration.copyTableContents("category_descriptor", "range_categories",
       Seq("domain", "name", "endpoint", "data_type","lower_bound", "upper_bound", "max_granularity")).
@@ -147,10 +183,14 @@ object Step0036 extends MigrationStep {
       join("range_category_descriptor", "id", "category_id", Seq("data_type","lower_bound", "upper_bound", "max_granularity")).
       whereSource(Map("constraint_type" -> "range"))
 
+    // Create a parent record for all to-be-migrated range categories on endpoint views
+
     migration.copyTableContents("category_descriptor", "unique_category_names",
       Seq("domain", "name", "endpoint")).
       join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint")).
       whereSource(Map("constraint_type" -> "range"))
+
+    // Migrate all range categories on endpoint views
 
     migration.copyTableContents("category_descriptor", "range_categories",
       Seq("domain", "name", "endpoint", "view_name", "data_type","lower_bound", "upper_bound", "max_granularity")).
@@ -158,7 +198,11 @@ object Step0036 extends MigrationStep {
       join("range_category_descriptor", "id", "category_id", Seq("data_type","lower_bound", "upper_bound", "max_granularity")).
       whereSource(Map("constraint_type" -> "range"))
 
+    // Nuke old range descriptors
+
     migration.dropTable("range_category_descriptor")
+
+    // Blast away the n:m tables that linked the various category tables with the respective endpoint and endpoint views tables
 
     migration.dropTable("endpoint_categories")
     migration.dropTable("endpoint_views_categories")
