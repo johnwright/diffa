@@ -48,7 +48,7 @@ class HibernateConfigStorePreparationStep
    * til the latest, whereas for a schema at version k &lt; L, where L is the latest
    * version, the schema will be updated to k+1, k+2, ..., L.
    */
-  def prepare(sf: SessionFactory, config: Configuration) {
+  def prepare(sf: SessionFactory, config: Configuration, applyVerification:Boolean) {
     config.getProperties filterKeys(p => p.startsWith("hibernate")) foreach {
       prop => log.debug("Preparing database [%s: %s]".format(prop._1, prop._2))
     }
@@ -90,6 +90,18 @@ class HibernateConfigStorePreparationStep
                 }
               }
               log.info("Upgraded database to version %s (%s)".format(step.versionId, step.name))
+
+              if (applyVerification && step.isInstanceOf[VerifiedMigrationStep]) {
+
+                val verifiedStep = step.asInstanceOf[VerifiedMigrationStep]
+                val verification = verifiedStep.applyVerification(config)
+
+                verification.apply(connection)
+
+
+                log.info("Applied verification to version %s (%s)".format(step.versionId, step.name))
+              }
+
             } catch {
               case ex =>
                 println("Failed to prepare the database - attempted to execute the following statements for step " + step.versionId + ":")
@@ -159,25 +171,6 @@ object HibernatePreparationUtils {
   def schemaVersionUpdateStatement(version:Int) =  "update schema_version set version = %s".format(version)
 }
 
-abstract class HibernateMigrationStep {
-
-  /**
-   * The version that this step gets the database to.
-   */
-  def versionId:Int
-
-  /**
-   * The name of this migration step
-   */
-  def name:String
-
-  /**
-   * Requests that the step create migration builder for doing it's migration.
-   */
-  def createMigration(config:Configuration):MigrationBuilder
-}
-
-
 /**
  * One-off definition of the partition information table.
  */
@@ -220,6 +213,7 @@ object HibernateConfigStorePreparationStep {
     Step0031,
     Step0032,
     Step0033,
-    Step0034
+    Step0034,
+    Step0036
   )
 }

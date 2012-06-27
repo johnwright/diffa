@@ -19,13 +19,14 @@ import org.hibernate.cfg.Configuration
 import java.sql.Types
 import scala.collection.JavaConversions._
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.schema.migrations.{DefinePartitionInformationTable, CommonSteps, HibernateMigrationStep}
+import net.lshift.diffa.schema.migrations.{VerifiedMigrationStep, DefinePartitionInformationTable, CommonSteps}
+import org.apache.commons.lang.RandomStringUtils
 
 /**
  * This Step 'migrates' a schema/database to version 22 -
  * that is, it creates the base schema from scratch.
  */
-object Step0022 extends HibernateMigrationStep {
+object Step0022 extends VerifiedMigrationStep {
   def versionId = 22
 
   def name = "Create schema"
@@ -293,4 +294,66 @@ object Step0022 extends HibernateMigrationStep {
 
     migration
   }
+
+  def applyVerification(config:Configuration) = {
+    val migration = new MigrationBuilder(config)
+
+    val domain = randomString()
+    val endpoint = randomString()
+    val prefixId = randomInt()
+    val setId = randomInt()
+    val rangeId = randomInt()
+
+    migration.insert("domains").values(Map(
+      "name"  -> domain
+    ))
+
+    migration.insert("endpoint").values(Map(
+      "domain"  -> domain,
+      "name"    -> endpoint
+    ))
+
+    migration.insert("category_descriptor").values(Map(
+      "category_id"     -> prefixId,
+      "constraint_type" -> "prefix",
+      "prefix_length" -> "1",
+      "max_length" -> "2",
+      "step" -> "1"
+    ))
+
+    migration.insert("category_descriptor").values(Map(
+      "category_id"     -> setId,
+      "constraint_type" -> "set"
+    ))
+
+    migration.insert("category_descriptor").values(Map(
+      "category_id"     -> rangeId,
+      "constraint_type" -> "range"
+    ))
+
+    migration.insert("prefix_category_descriptor").values(Map(
+      "id"  -> prefixId
+    ))
+
+    migration.insert("set_category_descriptor").values(Map(
+      "id"  -> setId
+    ))
+
+    migration.insert("set_constraint_values").values(Map(
+      "value_id"    -> setId,
+      "value_name"  -> randomString()
+    ))
+
+    migration.insert("range_category_descriptor").values(Map(
+      "id"           -> rangeId,
+      "data_type"    -> "date",
+      "lower_bound"  -> "1999-10-10",
+      "upper_bound"  -> "1999-10-11"
+    ))
+
+    migration
+  }
+
+  private def randomString() = RandomStringUtils.randomAlphanumeric(10)
+  private def randomInt() = RandomStringUtils.randomNumeric(7)
 }
