@@ -17,6 +17,7 @@
 package net.lshift.diffa.kernel.config
 
 import org.junit.Assert._
+import org.hamcrest.Matchers._
 import scala.collection.Map
 import org.joda.time.DateTime
 import scala.collection.JavaConversions._
@@ -160,7 +161,7 @@ class HibernateDomainConfigStoreTest {
   def escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities {
     val domain2 = domain.copy(name = domain.name + "2")
 
-    Seq(domain, domain2).foreach { dom =>
+    val escalations = Seq(domain, domain2).map { dom =>
       systemConfigStore.createOrUpdateDomain(dom)
       domainConfigStore.createOrUpdateEndpoint(dom.name, upstream1.copy(name = dom.name + "-up"))
       domainConfigStore.createOrUpdateEndpoint(dom.name, downstream1.copy(name = dom.name + "-down"))
@@ -172,14 +173,18 @@ class HibernateDomainConfigStoreTest {
       // second escalation is in a different domain.
 
       domainConfigStore.createOrUpdateEscalation(dom.name, anEscalation)
+      anEscalation
     }
+    // And at this point, we need to ensure that we have successfully inserted two escalations total.
+    assertThat(systemConfigStore.listDomains.flatMap { d => domainConfigStore.listEscalations(d.name) },
+      is(equalTo(escalations)))
   }
 
   @Test
   def repairActionsWithSameNameInSeperateDomainsMustHaveSeperateIdentities = {
     val domain2 = domain.copy(name = domain.name + "2")
 
-    Seq(domain, domain2).foreach { dom =>
+    val repairActions = Seq(domain, domain2).map { dom =>
       systemConfigStore.createOrUpdateDomain(dom)
       domainConfigStore.createOrUpdateEndpoint(dom.name, upstream1.copy(name = dom.name + "-up"))
       domainConfigStore.createOrUpdateEndpoint(dom.name, downstream1.copy(name = dom.name + "-down"))
@@ -191,7 +196,13 @@ class HibernateDomainConfigStoreTest {
       // second repair action is in a different domain.
 
       domainConfigStore.createOrUpdateRepairAction(dom.name, aRepairAction)
+      aRepairAction
     }
+
+    // And at this point, we need to ensure that we have successfully inserted two repair actions total.
+    assertThat(systemConfigStore.listDomains.flatMap { d => domainConfigStore.listRepairActions(d.name) },
+      is(equalTo(repairActions)))
+
   }
 
 
