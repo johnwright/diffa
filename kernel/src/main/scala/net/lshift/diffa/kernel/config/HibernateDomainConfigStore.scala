@@ -254,8 +254,25 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   }
 
   def listEndpoints(domain:String): Seq[EndpointDef] = cachedEndpoints.readThrough(domain, () => {
-    db.listQuery[Endpoint]("endpointsByDomain", Map("domain_name" -> domain)).map(toEndpointDef(_))
-  })
+    jooq.execute(t => {
+      val results = t.select().
+                     from(ENDPOINT).
+                     where(ENDPOINT.DOMAIN.equal(domain)).fetch()
+
+      val endpoints = new java.util.ArrayList[EndpointDef]()
+
+      results.iterator().foreach(r => {
+        endpoints.add(EndpointDef(
+          name = r.getValue(ENDPOINT.NAME)
+
+          // More to map here .........
+        ))
+      })
+
+      endpoints
+
+    })
+  }).toSeq
 
   def createOrUpdatePair(domain:String, p: PairDef): Unit = {
     withVersionUpgrade(domain, s => {
