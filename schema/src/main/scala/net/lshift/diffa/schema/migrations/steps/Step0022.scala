@@ -300,6 +300,7 @@ object Step0022 extends VerifiedMigrationStep {
 
     val domain = randomString()
     val endpoint = randomString()
+    val endpointView = randomString()
     val prefixId = randomInt()
     val setId = randomInt()
     val rangeId = randomInt()
@@ -311,6 +312,13 @@ object Step0022 extends VerifiedMigrationStep {
     migration.insert("endpoint").values(Map(
       "domain"  -> domain,
       "name"    -> endpoint
+    ))
+
+
+    migration.insert("endpoint_views").values(Map(
+      "domain"  -> domain,
+      "endpoint"    -> endpoint,
+      "name"    -> endpointView
     ))
 
     migration.insert("category_descriptor").values(Map(
@@ -358,6 +366,14 @@ object Step0022 extends VerifiedMigrationStep {
       "name"                    -> "some-prefix-category"
     ))
 
+    migration.insert("endpoint_views_categories").values(Map(
+      "domain"                  -> domain,
+      "endpoint"                -> endpoint,
+      "name"                    -> endpointView,
+      "category_descriptor_id"  -> prefixId,
+      "category_name"           -> "some-prefix-category-view"
+    ))
+
     migration.insert("endpoint_categories").values(Map(
       "domain"                  -> domain,
       "id"                      -> endpoint,
@@ -365,11 +381,27 @@ object Step0022 extends VerifiedMigrationStep {
       "name"                    -> "some-set-category"
     ))
 
+    migration.insert("endpoint_views_categories").values(Map(
+      "domain"                  -> domain,
+      "endpoint"                -> endpoint,
+      "name"                    -> endpointView,
+      "category_descriptor_id"  -> setId,
+      "category_name"           -> "some-set-category-view"
+    ))
+
     migration.insert("endpoint_categories").values(Map(
       "domain"                  -> domain,
       "id"                      -> endpoint,
       "category_descriptor_id"  -> rangeId,
       "name"                    -> "some-range-category"
+    ))
+
+    migration.insert("endpoint_views_categories").values(Map(
+      "domain"                  -> domain,
+      "endpoint"                -> endpoint,
+      "name"                    -> endpointView,
+      "category_descriptor_id"  -> rangeId,
+      "category_name"           -> "some-range-category-view"
     ))
 
     migration

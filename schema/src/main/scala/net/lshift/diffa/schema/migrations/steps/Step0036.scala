@@ -67,6 +67,17 @@ object Step0036 extends MigrationStep {
               join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
               whereSource(Map("constraint_type" -> "prefix"))
 
+    migration.copyTableContents("category_descriptor", "unique_category_names",
+      Seq("domain", "name", "endpoint")).
+      join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint")).
+      whereSource(Map("constraint_type" -> "prefix"))
+
+    migration.copyTableContents("category_descriptor", "prefix_categories",
+      Seq("prefix_length", "max_length", "step"),
+      Seq("prefix_length", "max_length", "step", "domain", "name", "endpoint", "view_name")).
+      join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint", "name")).
+      whereSource(Map("constraint_type" -> "prefix"))
+
     migration.dropTable("prefix_category_descriptor")
 
     migration.createTable("set_categories").
@@ -91,6 +102,17 @@ object Step0036 extends MigrationStep {
     migration.copyTableContents("category_descriptor", "set_categories",
       Seq("domain", "name", "endpoint", "value")).
       join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
+      join("set_constraint_values", "value_id", "category_id", Seq("value_name")).
+      whereSource(Map("constraint_type" -> "set"))
+
+    migration.copyTableContents("category_descriptor", "unique_category_names",
+      Seq("domain", "name", "endpoint")).
+      join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint")).
+      whereSource(Map("constraint_type" -> "set"))
+
+    migration.copyTableContents("category_descriptor", "set_categories",
+      Seq("domain", "name", "endpoint", "view_name", "value")).
+      join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint", "name")).
       join("set_constraint_values", "value_id", "category_id", Seq("value_name")).
       whereSource(Map("constraint_type" -> "set"))
 
@@ -125,9 +147,21 @@ object Step0036 extends MigrationStep {
       join("range_category_descriptor", "id", "category_id", Seq("data_type","lower_bound", "upper_bound", "max_granularity")).
       whereSource(Map("constraint_type" -> "range"))
 
+    migration.copyTableContents("category_descriptor", "unique_category_names",
+      Seq("domain", "name", "endpoint")).
+      join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint")).
+      whereSource(Map("constraint_type" -> "range"))
+
+    migration.copyTableContents("category_descriptor", "range_categories",
+      Seq("domain", "name", "endpoint", "view_name", "data_type","lower_bound", "upper_bound", "max_granularity")).
+      join("endpoint_views_categories", "category_descriptor_id", "category_id", Seq("domain", "category_name", "endpoint", "name")).
+      join("range_category_descriptor", "id", "category_id", Seq("data_type","lower_bound", "upper_bound", "max_granularity")).
+      whereSource(Map("constraint_type" -> "range"))
+
     migration.dropTable("range_category_descriptor")
 
     migration.dropTable("endpoint_categories")
+    migration.dropTable("endpoint_views_categories")
 
     migration
   }
