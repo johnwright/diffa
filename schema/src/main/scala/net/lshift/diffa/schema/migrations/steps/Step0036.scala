@@ -37,6 +37,9 @@ object Step0036 extends MigrationStep {
       column("name", Types.VARCHAR, 50, false).
       pk("domain","endpoint","name")
 
+    migration.alterTable("unique_category_names").
+      addForeignKey("fk_ucns_edpt", Array("domain", "endpoint"), "endpoint", Array("domain", "name"))
+
     migration.createTable("prefix_categories").
               column("domain", Types.VARCHAR, 50, false).
               column("endpoint", Types.VARCHAR, 50, false).
@@ -48,33 +51,15 @@ object Step0036 extends MigrationStep {
               pk("domain","endpoint","name")
 
     migration.alterTable("prefix_categories").
-      addForeignKey("fk_pfcg_edpt", Array("domain", "endpoint"), "endpoint", Array("domain", "name"))
-
-    migration.alterTable("prefix_categories").
       addForeignKey("fk_pfcg_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
     migration.alterTable("prefix_categories").
       addForeignKey("fk_pfcg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
 
-    migration.insert("domains").values(Map(
-      "name"  -> "d"
-    ))
-
-    migration.insert("endpoint").values(Map(
-      "domain"  -> "d",
-      "name"    -> "d"
-    ))
-
-    /*
-    migration.insert("prefix_categories").values(Map(
-      "domain" -> "d",
-      "endpoint" -> "d",
-      "name" -> "d",
-      "prefix_length" -> "1",
-      "max_length" -> "1",
-      "step" -> "1"
-    ))
-    */
+    migration.copyTableContents("category_descriptor", "unique_category_names",
+      Seq("domain", "name", "endpoint")).
+      join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
+      whereSource(Map("constraint_type" -> "prefix"))
 
     migration.copyTableContents("category_descriptor", "prefix_categories",
                                 Seq("prefix_length", "max_length", "step"),
@@ -82,7 +67,7 @@ object Step0036 extends MigrationStep {
               join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
               whereSource(Map("constraint_type" -> "prefix"))
 
-    migration.dropTable("prefix_category_descriptorp")
+    migration.dropTable("prefix_category_descriptor")
 
     migration.createTable("set_categories").
       column("domain", Types.VARCHAR, 50, false).
@@ -93,13 +78,18 @@ object Step0036 extends MigrationStep {
       pk("domain","endpoint","name", "value")
 
     migration.alterTable("set_categories").
-      addForeignKey("fk_stcg_edpt", Array("domain", "endpoint"), "endpoint", Array("domain", "name"))
-
-    migration.alterTable("set_categories").
       addForeignKey("fk_stcg_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
+    migration.alterTable("set_categories").
+      addForeignKey("fk_stcg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    migration.copyTableContents("category_descriptor", "unique_category_names",
+      Seq("domain", "name", "endpoint")).
+      join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
+      whereSource(Map("constraint_type" -> "set"))
+
     migration.copyTableContents("category_descriptor", "set_categories",
-      Seq("domain", "endpoint", "name", "value")).
+      Seq("domain", "name", "endpoint", "value")).
       join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
       join("set_constraint_values", "value_id", "category_id", Seq("value_name")).
       whereSource(Map("constraint_type" -> "set"))
@@ -119,13 +109,18 @@ object Step0036 extends MigrationStep {
       pk("domain", "endpoint", "name")
 
     migration.alterTable("range_categories").
-      addForeignKey("fk_racg_edpt", Array("domain", "endpoint"), "endpoint", Array("domain", "name"))
-
-    migration.alterTable("range_categories").
       addForeignKey("fk_racg_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
+    migration.alterTable("range_categories").
+      addForeignKey("fk_racg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    migration.copyTableContents("category_descriptor", "unique_category_names",
+      Seq("domain", "name", "endpoint")).
+      join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
+      whereSource(Map("constraint_type" -> "range"))
+
     migration.copyTableContents("category_descriptor", "range_categories",
-      Seq("domain", "endpoint", "name", "data_type","lower_bound", "upper_bound", "max_granularity")).
+      Seq("domain", "name", "endpoint", "data_type","lower_bound", "upper_bound", "max_granularity")).
       join("endpoint_categories", "category_descriptor_id", "category_id", Seq("domain", "name", "id")).
       join("range_category_descriptor", "id", "category_id", Seq("data_type","lower_bound", "upper_bound", "max_granularity")).
       whereSource(Map("constraint_type" -> "range"))

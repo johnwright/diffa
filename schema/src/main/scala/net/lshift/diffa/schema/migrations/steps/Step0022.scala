@@ -351,6 +351,27 @@ object Step0022 extends VerifiedMigrationStep {
       "upper_bound"  -> "1999-10-11"
     ))
 
+    migration.insert("endpoint_categories").values(Map(
+      "domain"                  -> domain,
+      "id"                      -> endpoint,
+      "category_descriptor_id"  -> prefixId,
+      "name"                    -> "some-prefix-category"
+    ))
+
+    migration.insert("endpoint_categories").values(Map(
+      "domain"                  -> domain,
+      "id"                      -> endpoint,
+      "category_descriptor_id"  -> setId,
+      "name"                    -> "some-set-category"
+    ))
+
+    migration.insert("endpoint_categories").values(Map(
+      "domain"                  -> domain,
+      "id"                      -> endpoint,
+      "category_descriptor_id"  -> rangeId,
+      "name"                    -> "some-range-category"
+    ))
+
     migration
   }
 

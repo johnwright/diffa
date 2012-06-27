@@ -42,6 +42,8 @@ class HibernateConfigStorePreparationStep
 
   val migrationSteps = HibernateConfigStorePreparationStep.migrationSteps
 
+  def prepare(sf: SessionFactory, config: Configuration) : Unit = prepare(sf, config, false)
+
   /**
    * Install/upgrade the schema to the latest version.  In an empty schema, this will
    * install version 0, then upgrade sequentially through each intermediate version
