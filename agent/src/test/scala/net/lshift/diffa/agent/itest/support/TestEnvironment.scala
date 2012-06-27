@@ -104,16 +104,16 @@ class TestEnvironment(val pairKey: String,
   val downstream = new DownstreamMemoryParticipant(versionScheme.upstreamVersionGen, versionScheme.downstreamVersionGen)
 
   // Clients
-  val configurationClient:ConfigurationRestClient = new ConfigurationRestClient(serverRoot, domain.name)
-  val diffClient:DifferencesRestClient = new DifferencesRestClient(serverRoot, domain.name)
-  val actionsClient:ActionsClient = new ActionsRestClient(serverRoot, domain.name)
-  val escalationsClient:EscalationsRestClient = new EscalationsRestClient(serverRoot, domain.name)
-  val upstreamChangesClient:ChangesClient = changesClientBuilder(this, upstreamEpName)
-  val downstreamChangesClient:ChangesClient = changesClientBuilder(this, downstreamEpName)
-  val usersClient:SecurityRestClient = new SecurityRestClient(serverRoot)
-  val scanningClient:ScanningRestClient = new ScanningRestClient(serverRoot, domain.name)
-  val systemConfig = new SystemConfigRestClient(serverRoot)
-  val inventoryClient = new InventoryRestClient(serverRoot, domain.name)
+  lazy val configurationClient:ConfigurationRestClient = new ConfigurationRestClient(serverRoot, domain.name)
+  lazy val diffClient:DifferencesRestClient = new DifferencesRestClient(serverRoot, domain.name)
+  lazy val actionsClient:ActionsClient = new ActionsRestClient(serverRoot, domain.name)
+  lazy val escalationsClient:EscalationsRestClient = new EscalationsRestClient(serverRoot, domain.name)
+  lazy val upstreamChangesClient:ChangesClient = changesClientBuilder(this, upstreamEpName)
+  lazy val downstreamChangesClient:ChangesClient = changesClientBuilder(this, downstreamEpName)
+  lazy val usersClient:SecurityRestClient = new SecurityRestClient(serverRoot)
+  lazy val scanningClient:ScanningRestClient = new ScanningRestClient(serverRoot, domain.name)
+  lazy val systemConfig = new SystemConfigRestClient(serverRoot)
+  lazy val inventoryClient = new InventoryRestClient(serverRoot, domain.name)
 
   // Helpers
   val differencesHelper = new DifferencesHelper(pairKey, diffClient)
