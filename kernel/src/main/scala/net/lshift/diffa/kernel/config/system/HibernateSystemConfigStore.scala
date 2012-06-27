@@ -31,9 +31,11 @@ import net.lshift.diffa.schema.tables.Escalations.ESCALATIONS
 import net.lshift.diffa.schema.tables.RepairActions.REPAIR_ACTIONS
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import net.lshift.diffa.schema.tables.Pair.PAIR
-import net.lshift.diffa.schema.tables.EndpointViewsCategories.ENDPOINT_VIEWS_CATEGORIES
+import net.lshift.diffa.schema.tables.PrefixCategories.PREFIX_CATEGORIES
+import net.lshift.diffa.schema.tables.SetCategories.SET_CATEGORIES
+import net.lshift.diffa.schema.tables.RangeCategories.RANGE_CATEGORIES
+import net.lshift.diffa.schema.tables.UniqueCategoryNames.UNIQUE_CATEGORY_NAMES
 import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
-import net.lshift.diffa.schema.tables.EndpointCategories.ENDPOINT_CATEGORIES
 import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
 import net.lshift.diffa.schema.tables.ConfigOptions.CONFIG_OPTIONS
 import net.lshift.diffa.schema.tables.Members.MEMBERS
@@ -65,14 +67,16 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
     jooq.execute(t => {
       t.delete(USER_ITEM_VISIBILITY).where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).execute()
-      t.delete(ENDPOINT_VIEWS_CATEGORIES).where(ENDPOINT_VIEWS_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(PREFIX_CATEGORIES).where(PREFIX_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(SET_CATEGORIES).where(SET_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(RANGE_CATEGORIES).where(RANGE_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(UNIQUE_CATEGORY_NAMES).where(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(domain)).execute()
       t.delete(ENDPOINT_VIEWS).where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).execute()
       t.delete(PAIR_REPORTS).where(PAIR_REPORTS.DOMAIN.equal(domain)).execute()
       t.delete(ESCALATIONS).where(ESCALATIONS.DOMAIN.equal(domain)).execute()
       t.delete(REPAIR_ACTIONS).where(REPAIR_ACTIONS.DOMAIN.equal(domain)).execute()
       t.delete(PAIR_VIEWS).where(PAIR_VIEWS.DOMAIN.equal(domain)).execute()
       t.delete(PAIR).where(PAIR.DOMAIN.equal(domain)).execute()
-      t.delete(ENDPOINT_CATEGORIES).where(ENDPOINT_CATEGORIES.DOMAIN.equal(domain)).execute()
       t.delete(ENDPOINT).where(ENDPOINT.DOMAIN.equal(domain)).execute()
       t.delete(CONFIG_OPTIONS).where(CONFIG_OPTIONS.DOMAIN.equal(domain)).execute()
       t.delete(MEMBERS).where(MEMBERS.DOMAIN_NAME.equal(domain)).execute()
