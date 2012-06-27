@@ -47,7 +47,13 @@ class HibernatePreparationTest {
   // adversely affect it's operation. Since we do care that we delete some objects, we'll have a specific ban-list of
   // objects that we don't want to be present.
   val invalidTables = Seq(
-    "pair_group"      // Removed as of the v1 migration
+    "pair_group",                      // Removed as of the v1 migration
+    "prefix_category_descriptor",      // Removed as of the v36 migration
+    "set_category_descriptor",         // Removed as of the v36 migration
+    "set_constraint_values",           // Removed as of the v36 migration
+    "range_category_descriptor",       // Removed as of the v36 migration
+    "endpoint_categories",             // Removed as of the v36 migration
+    "endpoint_views_categories"        // Removed as of the v36 migration
   )
   val invalidColumns = Map(
     "pair" -> Seq(
