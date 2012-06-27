@@ -168,6 +168,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : DomainEndpointDef = {
 
     jooq.execute(t => {
+
+      // TODO create categories
+
       t.insertInto(ENDPOINT).
           set(ENDPOINT.DOMAIN, domainName).
           set(ENDPOINT.NAME, e.name).
