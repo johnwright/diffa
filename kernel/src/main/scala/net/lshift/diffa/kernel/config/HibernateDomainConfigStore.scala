@@ -167,8 +167,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : DomainEndpointDef = {
 
-    invalidateEndpointCachesOnly(domainName, e.name)
-
     jooq.execute(t => {
       t.insertInto(ENDPOINT).
           set(ENDPOINT.DOMAIN, domainName).
@@ -190,6 +188,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
       t.delete(ENDPOINT_VIEWS).
         where(ENDPOINT_VIEWS.NAME.notIn(e.views.map(v => v.name))).
+          and(ENDPOINT_VIEWS.DOMAIN.equal(domainName)).
+          and(ENDPOINT_VIEWS.ENDPOINT.equal(e.name)).
         execute()
 
       e.views.foreach(v => {
@@ -204,6 +204,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
     })
 
+    invalidateEndpointCachesOnly(domainName, e.name)
+
     DomainEndpointDef(
       domain = domainName,
       name = e.name,
@@ -215,20 +217,41 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     )
   }
 
-  def deleteEndpoint(domain:String, name: String): Unit = withVersionUpgrade(domain, s => {
+  def deleteEndpoint(domain:String, name: String) = {
 
+    jooq.execute(t => {
+
+      // Remove all pairs that reference the endpoint
+
+      val results = t.select(PAIR.DOMAIN, PAIR.PAIR_KEY).
+                      from(PAIR).
+                      where(PAIR.DOMAIN.equal(domain)).
+                        and(PAIR.UPSTREAM.equal(name).
+                            or(PAIR.DOWNSTREAM.equal(name))).fetch()
+
+      results.iterator().foreach(r => {
+        val ref = DiffaPairRef(r.getValue(PAIR.PAIR_KEY), r.getValue(PAIR.DOMAIN))
+        deletePairWithDependencies(t, ref)
+      })
+
+      t.delete(ENDPOINT_VIEWS).
+        where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).
+          and(ENDPOINT_VIEWS.ENDPOINT.equal(name)).
+        execute()
+
+      t.delete(ENDPOINT).
+        where(ENDPOINT.DOMAIN.equal(domain)).
+          and(ENDPOINT.NAME.equal(name)).
+        execute()
+
+      upgradeConfigVersion(t, domain)
+
+    })
+
+    invalidatePairCachesOnly(domain)
     invalidateEndpointCachesOnly(domain, name)
 
-    val endpoint = getEndpoint(s, domain, name)
-
-    // Remove all pairs that reference the endpoint
-    s.createQuery("FROM DiffaPair WHERE upstream = :endpoint OR downstream = :endpoint").
-            setString("endpoint", name).list.foreach(p => deletePairInSession(s, domain, p.asInstanceOf[DiffaPair]))
-
-    endpoint.views.foreach(s.delete(_))
-
-    s.delete(endpoint)
-  })
+  }
 
   def listEndpoints(domain:String): Seq[EndpointDef] = cachedEndpoints.readThrough(domain, () => {
     db.listQuery[Endpoint]("endpointsByDomain", Map("domain_name" -> domain)).map(toEndpointDef(_))
@@ -726,15 +749,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
     // TODO This is a very coarse grained invalidation
     invalidateConfigCaches(domain)
-  }
-
-  @Deprecated private def deletePairInSession(s:Session, domain:String, pair:DiffaPair) = {
-    getRepairActionsInPair(domain, pair.key).foreach(s.delete)
-    getEscalationsForPair(domain, pair.key).foreach(s.delete)
-    getReportsForPair(domain, pair.key).foreach(s.delete)
-    pair.views.foreach(s.delete(_))
-    deleteStoreCheckpoint(pair.asRef)
-    s.delete(pair)
   }
 
   private def deletePairWithDependencies(t:Factory, pair:DiffaPairRef) = {
