@@ -163,6 +163,14 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def onDomainUpdated(domain: String) = invalidateAllCaches(domain)
   def onDomainRemoved(domain: String) = invalidateAllCaches(domain)
 
+
+
+  def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : DomainEndpointDef = {
+    null
+  }
+
+  /*
+
   def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : Endpoint = withVersionUpgrade(domainName, s => {
 
     invalidateEndpointCachesOnly(domainName, e.name)
@@ -179,6 +187,8 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
     endpoint
   })
+
+  */
 
   def deleteEndpoint(domain:String, name: String): Unit = withVersionUpgrade(domain, s => {
 

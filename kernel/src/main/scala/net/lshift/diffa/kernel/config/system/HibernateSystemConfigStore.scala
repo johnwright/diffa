@@ -46,6 +46,7 @@ import net.lshift.diffa.schema.tables.Domains.DOMAINS
 import net.lshift.diffa.schema.tables.SystemConfigOptions.SYSTEM_CONFIG_OPTIONS
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
 import collection.mutable.ListBuffer
+import net.lshift.diffa.kernel.frontend.DomainEndpointDef
 
 class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
                                  db:DatabaseFacade,
@@ -105,7 +106,9 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     t.select().from(PAIR).fetch().map(ResultMappingUtil.recordToDomainPairDef)
   }
 
-  def listEndpoints = db.listQuery[Endpoint]("allEndpoints", Map())
+  def listEndpoints : Seq[DomainEndpointDef] = {
+    null //db.listQuery[Endpoint]("allEndpoints", Map())
+  }
 
 
   // TODO implement create or update using JOOQ

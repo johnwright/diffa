@@ -32,7 +32,7 @@ import net.lshift.diffa.kernel.participants._
 
 trait DomainConfigStore {
 
-  def createOrUpdateEndpoint(domain:String, endpoint: EndpointDef) : Endpoint
+  def createOrUpdateEndpoint(domain:String, endpoint: EndpointDef) : DomainEndpointDef
   def deleteEndpoint(domain:String, name: String) : Unit
   def listEndpoints(domain:String) : Seq[EndpointDef]
 
