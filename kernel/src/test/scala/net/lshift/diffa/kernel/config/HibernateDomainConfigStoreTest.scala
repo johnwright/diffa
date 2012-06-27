@@ -157,18 +157,6 @@ class HibernateDomainConfigStoreTest {
 
 
   @Test
-  def endpointsWithSameEndpointCategoriesInSeperateDomainsMustHaveSeperateIdentities {
-    val domain2 = domain.copy(name = domain.name + "2")
-    Seq(domain, domain2).foreach { dom =>
-      systemConfigStore.createOrUpdateDomain(dom)
-      // When the primary key on endpoint_categories is over (endpointName,
-      // propertyName) then this test will fail with a constraint violation,
-      // even though the second endpoint is in a different domain.
-
-      domainConfigStore.createOrUpdateEndpoint(dom.name, upstream1)
-    }
-  }
-  @Test
   def escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities {
     val domain2 = domain.copy(name = domain.name + "2")
 

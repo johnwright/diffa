@@ -33,9 +33,6 @@ object Step0035 extends HibernateMigrationStep {
       replacePrimaryKey("domain", "pair_key", "name")
     migration.alterTable("escalations").
       replacePrimaryKey("domain", "pair_key", "name")
-    migration.alterTable("endpoint_categories").
-      replacePrimaryKey("domain", "id", "name")
-
 
     migration
   }
