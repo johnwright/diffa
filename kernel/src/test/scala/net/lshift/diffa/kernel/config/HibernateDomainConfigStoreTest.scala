@@ -158,7 +158,6 @@ class HibernateDomainConfigStoreTest {
 
   @Test
   def endpointsWithSameEndpointCategoriesInSeperateDomainsMustHaveSeperateIdentities {
-    println("Starting escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities")
     val domain2 = domain.copy(name = domain.name + "2")
     Seq(domain, domain2).foreach { dom =>
       systemConfigStore.createOrUpdateDomain(dom)
@@ -169,7 +168,6 @@ class HibernateDomainConfigStoreTest {
   }
   @Test
   def escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities {
-    println("Starting escalationsWithSameNameInSeperateDomainsMustHaveSeperateIdentities")
     val domain2 = domain.copy(name = domain.name + "2")
 
     Seq(domain, domain2).foreach { dom =>
