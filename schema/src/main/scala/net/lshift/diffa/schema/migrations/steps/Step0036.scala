@@ -24,8 +24,8 @@ import scala.collection.JavaConversions._
 
 object Step0036 extends MigrationStep {
 
-  // TODO Uprev this to 36 when #200 lands
-  def versionId: Int = 35
+  def versionId: Int = 36
+
   def name: String = "De-hibernatize category storage"
 
   def createMigration(config: Configuration): MigrationBuilder = {
