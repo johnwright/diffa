@@ -51,7 +51,7 @@ class HibernateDomainDifferenceStore(val sessionFactory:SessionFactory,
   intializeExistingSequences()
 
   val aggregationCache = new DifferenceAggregationCache(this, cacheProvider)
-  val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
+  val hook = hookManager.createDifferencePartitioningHook(db)
 
   val pendingEvents = cacheProvider.getCachedMap[VersionID, PendingDifferenceEvent]("pending.difference.events")
   val reportedEvents = cacheProvider.getCachedMap[VersionID, ReportedDifferenceEvent]("reported.difference.events")

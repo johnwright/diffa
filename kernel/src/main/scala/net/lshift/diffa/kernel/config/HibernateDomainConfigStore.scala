@@ -57,7 +57,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     extends DomainConfigStore
     with DomainLifecycleAware {
 
-  val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
+  val hook = hookManager.createDifferencePartitioningHook(jooq)
 
   private val pairEventSubscribers = new ListBuffer[PairLifecycleAware]
   def registerPairEventListener(p:PairLifecycleAware) = pairEventSubscribers += p

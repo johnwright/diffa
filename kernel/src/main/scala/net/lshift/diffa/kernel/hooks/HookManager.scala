@@ -15,10 +15,11 @@
  */
 package net.lshift.diffa.kernel.hooks
 
-import org.hibernate.SessionFactory
+
 import org.hibernate.cfg.Configuration
-import org.hibernate.dialect.{Oracle10gDialect, Oracle8iDialect, Dialect}
+import org.hibernate.dialect.Dialect
 import net.lshift.hibernate.migrations.dialects.{OracleDialectExtension, DialectExtensionSelector, DialectExtension}
+import net.lshift.diffa.schema.jooq.DatabaseFacade
 
 /**
  * Factory for constructing hooks based upon session configuration.
@@ -38,11 +39,11 @@ class HookManager {
     dialectExtension = DialectExtensionSelector.select(dialect)
   }
 
-  def createDifferencePartitioningHook(sessionFactory:SessionFactory) = {
+  def createDifferencePartitioningHook(jooq:DatabaseFacade) = {
     // Ideally, this would go in something like the DialectExtension;
     // however, that would create a circular dependency between the two modules.
     if (dialectExtension.isInstanceOf[OracleDialectExtension]) {
-      new OracleDifferencePartitioningHook(sessionFactory)
+      new OracleDifferencePartitioningHook(jooq)
     } else {
       new EmptyDifferencePartitioningHook
     }
