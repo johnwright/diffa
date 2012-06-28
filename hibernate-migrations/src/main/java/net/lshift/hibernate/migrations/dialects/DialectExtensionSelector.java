@@ -39,4 +39,17 @@ public class DialectExtensionSelector {
 
     return new DefaultDialectExtension();
   }
+
+  public static DialectExtension select(String dialect) {
+
+    if (dialect.equals("Oracle"))  {
+      return new OracleDialectExtension();
+    }
+
+    if (dialect.equals("MySQL"))  {
+      return new MySQL5DialectExtension();
+    }
+
+    return new DefaultDialectExtension();
+  }
 }

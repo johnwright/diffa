@@ -29,8 +29,8 @@ import net.lshift.diffa.kernel.hooks.HookManager
  * the Hibernate Configuration object in a suitable way. 
  */
 class ListeningLocalSessionFactoryBean extends LocalSessionFactoryBean {
+
   @BeanProperty var preparationSteps:Array[HibernatePreparationStep] = Array[HibernatePreparationStep]()
-  @BeanProperty var hookManager:HookManager = null
 
   /**
    * Override the final step in the session factory creation to let us prepare the database.
@@ -38,7 +38,6 @@ class ListeningLocalSessionFactoryBean extends LocalSessionFactoryBean {
   override def newSessionFactory(config:Configuration) = {
     val sf = super.newSessionFactory(config)
 
-    hookManager.applyConfiguration(config)
     preparationSteps.foreach(step => step.prepare(sf, config))
 
     sf
