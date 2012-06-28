@@ -62,7 +62,7 @@ trait DomainConfigStore {
   def listReportsForPair(domain:String, key: String) : Seq[PairReportDef]
 
   def getEndpointDef(domain:String, name: String) : EndpointDef
-  def getEndpoint(domain:String, name: String) : Endpoint
+  @Deprecated def getEndpoint(domain:String, name: String) : Endpoint
 
   def getRepairActionDef(domain:String, name: String, pairKey: String): RepairActionDef
   def getPairReportDef(domain:String, name:String, pairKey:String):PairReportDef

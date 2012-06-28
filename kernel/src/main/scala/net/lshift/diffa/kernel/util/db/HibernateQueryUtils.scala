@@ -115,19 +115,6 @@ trait HibernateQueryUtils {
     executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
   })
 
-  @Deprecated def forceHibernateCacheEviction() = {
-    try {
-      val cache = sessionFactory.getCache
-      cache.evictEntityRegions()
-      cache.evictCollectionRegions()
-      cache.evictDefaultQueryRegion()
-    }
-    catch {
-      case x:Exception =>
-        log.error("Could not manually evict the Hibernate cache", x)
-    }
-  }
-
   def getStoreCheckpoint(pair: DiffaPairRef) = sessionFactory.withSession(s => {
     singleQueryOpt[StoreCheckpoint](s, "storeCheckpointByPairAndDomain",
       Map("pair_key" -> pair.key, "domain_name" -> pair.domain))
@@ -172,6 +159,19 @@ trait Cursor[T] extends Closeable {
 object HibernateQueryUtils {
 
   val log = LoggerFactory.getLogger(getClass)
+
+  @Deprecated def forceHibernateCacheEviction(sessionFactory:SessionFactory) = {
+    try {
+      val cache = sessionFactory.getCache
+      cache.evictEntityRegions()
+      cache.evictCollectionRegions()
+      cache.evictDefaultQueryRegion()
+    }
+    catch {
+      case x:Exception =>
+        log.error("Could not manually evict the Hibernate cache", x)
+    }
+  }
 
   /**
    * Executes a list query in the given session, forcing the result type into a typed list of the given

@@ -288,15 +288,6 @@
     select v from EndpointView v where v.endpoint.domain.name = :domain_name
   </query>
 
-  <query name="configVersionByDomain" cacheable="false">
-    select d.configVersion from Domain d where d.name = :domain
-  </query>
-
-  <query name="upgradeConfigVersionByDomain" cacheable="false">
-    update Domain d set d.configVersion = d.configVersion + 1 where d.name = :domain
-  </query>
-
-
   <query name="repairActionsByPair" cacheable="true">
     select a from RepairAction a
     join a.pair as p with p.key = :pair_key

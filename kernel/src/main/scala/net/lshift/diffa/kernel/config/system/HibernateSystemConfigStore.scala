@@ -21,7 +21,7 @@ import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
-import org.hibernate.{Query, Session, SessionFactory}
+import org.hibernate.{Query, SessionFactory}
 import org.apache.commons.lang.RandomStringUtils
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
@@ -95,7 +95,8 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
     domainEventSubscribers.foreach(_.onDomainRemoved(domain))
 
-    forceHibernateCacheEviction()
+    // TODO Remove this
+    HibernateQueryUtils.forceHibernateCacheEviction(sessionFactory)
   }
 
   def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))

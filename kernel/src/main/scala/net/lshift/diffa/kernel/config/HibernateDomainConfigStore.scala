@@ -56,8 +56,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  cacheProvider:CacheProvider,
                                  membershipListener:DomainMembershipAware)
     extends DomainConfigStore
-    with DomainLifecycleAware
-    with HibernateQueryUtils {
+    with DomainLifecycleAware {
 
   val hook = hookManager.createDifferencePartitioningHook(sessionFactory)
 
@@ -335,7 +334,9 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       pairEventSubscribers.foreach(_.onPairDeleted(ref))
       hook.pairRemoved(domain, key)
     })
-    forceHibernateCacheEviction()
+
+    // TODO kill this
+    HibernateQueryUtils.forceHibernateCacheEviction(sessionFactory)
   }
 
   def listPairs(domain:String) = cachedPairs.readThrough(domain, () => listPairsInternal(domain))
@@ -596,20 +597,53 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   })
 
-  @Deprecated private def getRepairActionsInPair(domain:String, pairKey: String): Seq[RepairAction] =
-    db.listQuery[RepairAction]("repairActionsByPair", Map("pair_key" -> pairKey,
-                                                          "domain_name" -> domain))
+  def getEndpointDef(domain:String, endpoint: String) = {
+    cachedEndpointsByKey.readThrough(DomainEndpointKey(domain, endpoint), () => {
+      jooq.execute(t => {
+        val record = t.select().
+                       from(ENDPOINT).
+                       where(ENDPOINT.DOMAIN.equal(domain)).
+                         and(ENDPOINT.NAME.equal(endpoint)).
+                       fetchOne()
 
-  @Deprecated private def getEscalationsForPair(domain:String, pairKey:String): Seq[Escalation] =
-    db.listQuery[Escalation]("escalationsByPair", Map("pair_key" -> pairKey,
-                                                      "domain_name" -> domain))
+        if (record == null) {
+          throw new MissingObjectException("endpoint")
+        }
+        else {
+          recordToEndpoint(record)
+        }
+      })
+    })
+  }
 
-  @Deprecated private def getReportsForPair(domain:String, pairKey:String): Seq[PairReport] =
-    db.listQuery[PairReport]("reportsByPair", Map("pair_key" -> pairKey,
-                                                  "domain_name" -> domain))
+  @Deprecated def getEndpoint(domain:String, endpoint: String) = {
 
-  def getEndpointDef(domain:String, name: String) = sessionFactory.withSession(s => toEndpointDef(getEndpoint(s, domain, name)))
-  def getEndpoint(domain:String, name: String) = sessionFactory.withSession(s => getEndpoint(s, domain, name))
+    val endpointDef = getEndpointDef(domain, endpoint)
+
+    val ep = Endpoint(
+      name = endpointDef.name,
+      domain = Domain(name = domain),
+      scanUrl = endpointDef.scanUrl,
+      versionGenerationUrl = endpointDef.versionGenerationUrl,
+      contentRetrievalUrl = endpointDef.contentRetrievalUrl,
+      collation = endpointDef.collation,
+      categories = endpointDef.categories
+    )
+
+    val views = new util.HashSet[EndpointView]()
+
+    endpointDef.views.foreach(v => {
+      views.add(EndpointView(
+        name = v.name,
+        endpoint = ep,
+        categories = v.categories
+      ))
+    })
+
+    ep.setViews(views)
+
+    ep
+  }
 
 
   def getPairDef(domain:String, key: String) = cachedPairsByKey.readThrough(DomainPairKey(domain,key), () => jooq.execute { t =>
@@ -651,8 +685,20 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
   })
 
-  def getConfigVersion(domain:String) = cachedConfigVersions.readThrough(domain, () => sessionFactory.withSession(s => {
-    s.getNamedQuery("configVersionByDomain").setString("domain", domain).uniqueResult().asInstanceOf[Int]
+  def getConfigVersion(domain:String) = cachedConfigVersions.readThrough(domain, () => jooq.execute(t => {
+
+    val result = t.select(DOMAINS.CONFIG_VERSION).
+                   from(DOMAINS).
+                   where(DOMAINS.NAME.equal(domain)).
+                   fetchOne()
+
+    if (result == null) {
+      throw new MissingObjectException("domain")
+    }
+    else {
+      result.getValue(DOMAINS.CONFIG_VERSION)
+    }
+
   }))
 
   private def mapResultsToList[T](results:Result[Record], rowMapper:Record => T) = {
@@ -689,11 +735,17 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     )
   }
 
-  /**
-   * Force the DB to uprev the config version column for this particular domain
-   */
-  @Deprecated private def upgradeConfigVersion(domain:String)(s:Session) = {
-    s.getNamedQuery("upgradeConfigVersionByDomain").setString("domain", domain).executeUpdate()
+  private def recordToEndpoint(record:Record) : EndpointDef = {
+    EndpointDef(
+      name = record.getValue(ENDPOINT.NAME),
+      scanUrl = record.getValue(ENDPOINT.SCAN_URL),
+      contentRetrievalUrl = record.getValue(ENDPOINT.CONTENT_RETRIEVAL_URL),
+      versionGenerationUrl = record.getValue(ENDPOINT.VERSION_GENERATION_URL),
+      inboundUrl = record.getValue(ENDPOINT.INBOUND_URL),
+      categories = null,
+      views = null,
+      collation = record.getValue(ENDPOINT.COLLATION_TYPE)
+    )
   }
 
   /**
@@ -707,22 +759,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       set(DOMAINS.CONFIG_VERSION, DOMAINS.CONFIG_VERSION.add(1)).
       where(DOMAINS.NAME.equal(domain)).
       execute()
-  }
-
-  /**
-   * Force an upgrade of the domain config version in the db and the cache after the DB work has executed successfully.
-   */
-  @Deprecated private def withVersionUpgrade[T](domain:String, dbCommands:Function1[Session, T]) : T = {
-
-    def beforeCommit(session:Session) = upgradeConfigVersion(domain)(session)
-    def commandsToExecute(session:Session) = dbCommands(session)
-    def afterCommit() = cachedConfigVersions.evict(domain)
-
-    sessionFactory.withSession(
-      beforeCommit _,
-      commandsToExecute,
-      afterCommit _
-    )
   }
 
   def allConfigOptions(domain:String) = cachedDomainConfigOptionsMap.readThrough(domain, () => jooq.execute( t => {
