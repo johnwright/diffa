@@ -412,7 +412,6 @@
 
   <bean id="domainConfigStore" class="net.lshift.diffa.kernel.config.HibernateDomainConfigStore">
     <constructor-arg ref="diffaSessionFactory" />
-    <constructor-arg ref="databaseFacade" />
     <constructor-arg ref="jooqDatabaseFacade" />
     <constructor-arg ref="hookManager" />
     <constructor-arg ref="hazelcastCacheProvider" />

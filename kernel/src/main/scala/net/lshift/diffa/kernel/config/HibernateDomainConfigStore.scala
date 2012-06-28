@@ -50,7 +50,6 @@ import org.jooq.impl.Factory
 ;
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
-                                 db:DatabaseFacade,
                                  jooq:JooqDatabaseFacade,
                                  hookManager:HookManager,
                                  cacheProvider:CacheProvider,
@@ -944,11 +943,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
     })
   }).toSeq
-
-  def listEndpointViews(s:Session, domain:String, endpointName:String) =
-    db.listQuery[EndpointView]("endpointViewsByEndpoint", Map("domain_name" -> domain, "endpoint_name" -> endpointName))
-  def listPairViews(s:Session, domain:String, pairKey:String) =
-    db.listQuery[PairView]("pairViewsByPair", Map("domain_name" -> domain, "pair_key" -> pairKey))
 
 }
 

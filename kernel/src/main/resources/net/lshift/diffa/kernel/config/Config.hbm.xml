@@ -259,13 +259,6 @@
     select count(*) from User u where u.name in (:user_names) and u.superuser = true
   </query>
 
-  <query name="endpointViewsByEndpoint" cacheable="true">
-    select v from EndpointView v
-    where
-      v.endpoint.domain.name = :domain_name and
-      v.endpoint.name = :endpoint_name
-  </query>
-
   <!-- Queries by domain only -->
 
   <query name="domainByName" cacheable="true">
@@ -364,11 +357,6 @@
     select l
     from PairServiceLimits l
     where l.limitName = :limit_name
-  </query>
-
-  <query name="pairViewsByPair" cacheable="false">
-    select v from PairView v
-    where v.pair.domain.name = :domain_name and v.pair.key = :pair_key
   </query>
 
 </hibernate-mapping>
