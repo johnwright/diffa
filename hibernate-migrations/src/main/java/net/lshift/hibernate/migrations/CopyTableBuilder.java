@@ -180,12 +180,15 @@ public class CopyTableBuilder extends TraceableMigrationElement {
       String joinedJoinTableNameClause = joiner.join(joinedJoinTableNames);
 
       String constantValuesClause = joiner.join(constants.values());
+      if (constants.size() > 0) {
+        constantValuesClause = "," + constantValuesClause;
+      }
 
       if (sourceColumnNames.length() > 0) {
-        return String.format("select %s,%s,%s from %s s, %s %s", sourceColumnNames, joinedColumnNames, constantValuesClause, sourceTable, joinedJoinTableNameClause, whereClause);
+        return String.format("select %s,%s%s from %s s, %s %s", sourceColumnNames, joinedColumnNames, constantValuesClause, sourceTable, joinedJoinTableNameClause, whereClause);
       }
       else {
-        return String.format("select %s,%s from %s s, %s %s", joinedColumnNames, constantValuesClause, sourceTable, joinedJoinTableNameClause, whereClause);
+        return String.format("select %s%s from %s s, %s %s", joinedColumnNames, constantValuesClause, sourceTable, joinedJoinTableNameClause, whereClause);
       }
 
     }
