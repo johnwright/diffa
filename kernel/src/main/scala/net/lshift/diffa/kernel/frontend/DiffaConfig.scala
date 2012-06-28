@@ -126,6 +126,17 @@ case class DomainEndpointDef(
   @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef],
   @BeanProperty var collation: String = AsciiCollationOrdering.name) {
   def this() = this(domain = null)
+
+  @Deprecated def withoutDomain() = EndpointDef(
+    name = name,
+    scanUrl = scanUrl,
+    contentRetrievalUrl = contentRetrievalUrl,
+    versionGenerationUrl = versionGenerationUrl,
+    inboundUrl = inboundUrl,
+    views = views,
+    categories = categories,
+    collation = collation
+  )
 }
 
 case class EndpointViewDef(

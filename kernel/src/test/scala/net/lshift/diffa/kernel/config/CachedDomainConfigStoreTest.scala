@@ -36,14 +36,13 @@ import net.lshift.diffa.kernel.frontend.PairReportDef
 class CachedDomainConfigStoreTest {
 
   val sf = createStrictMock(classOf[SessionFactory])
-  val db = createStrictMock(classOf[DatabaseFacade])
   val jooq = E4.createStrictMock(classOf[JooqDatabaseFacade])
   val hm = E4.createNiceMock(classOf[HookManager])
   val ml = createStrictMock(classOf[DomainMembershipAware])
 
   val cp = new HazelcastCacheProvider
 
-  val domainConfig = new HibernateDomainConfigStore(sf, db, jooq, hm, cp, ml)
+  val domainConfig = new HibernateDomainConfigStore(sf, jooq, hm, cp, ml)
 
   @Before
   def resetCaches {
