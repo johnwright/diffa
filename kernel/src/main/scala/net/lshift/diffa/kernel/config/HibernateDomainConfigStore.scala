@@ -16,10 +16,8 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils, DatabaseFacade}
-import net.lshift.diffa.schema.hibernate.SessionHelper._
-import net.lshift.diffa.kernel.frontend.FrontendConversions._
-import org.hibernate.{Session, SessionFactory}
+import net.lshift.diffa.kernel.util.db.HibernateQueryUtils
+import org.hibernate.SessionFactory
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.hooks.HookManager
@@ -215,6 +213,7 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       scanUrl = e.scanUrl,
       versionGenerationUrl = e.versionGenerationUrl,
       inboundUrl = e.inboundUrl
+      // TODO categories
     )
   }
 
@@ -257,23 +256,22 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def listEndpoints(domain:String): Seq[EndpointDef] = cachedEndpoints.readThrough(domain, () => {
     jooq.execute(t => {
       val results = t.select().
-                     from(ENDPOINT).
-                     where(ENDPOINT.DOMAIN.equal(domain)).fetch()
+                      from(ENDPOINT).
+                      where(ENDPOINT.DOMAIN.equal(domain)).
+                      fetch()
 
       val endpoints = new java.util.ArrayList[EndpointDef]()
 
-      results.iterator().foreach(r => {
-        endpoints.add(EndpointDef(
-          name = r.getValue(ENDPOINT.NAME)
-
-          // More to map here .........
-        ))
-      })
+      results.iterator().foreach(r => endpoints.add(recordToEndpoint(r)))
 
       endpoints
-
     })
   }).toSeq
+
+
+  private def listEndpointCategories(t:Factory, domain:String) : java.util.List[CategoryDescriptor] = {
+    null
+  }
 
   def createOrUpdatePair(domain:String, pair: PairDef) = {
 

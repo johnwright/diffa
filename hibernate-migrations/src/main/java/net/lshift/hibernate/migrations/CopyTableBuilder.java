@@ -20,10 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class CopyTableBuilder extends TraceableMigrationElement {
 
@@ -38,6 +35,7 @@ public class CopyTableBuilder extends TraceableMigrationElement {
   private List<JoinSpecification> joins = new ArrayList<JoinSpecification>();
 
   private Map<String,String> sourcePredicate;
+  private Map<String,String> constants = new TreeMap<String, String>();
 
   public CopyTableBuilder(String source, String destination, Iterable<String> sourceCols, Iterable<String> destCols) {
     this.sourceTable = source;
@@ -56,6 +54,11 @@ public class CopyTableBuilder extends TraceableMigrationElement {
   public CopyTableBuilder join(String table, String joinColumn, String joinRefColumn, Iterable<String> columnsToJoin) {
     JoinSpecification spec = new JoinSpecification(table, joinColumn,joinRefColumn, columnsToJoin);
     joins.add(spec);
+    return this;
+  }
+
+  public CopyTableBuilder withConstant(String name, String value) {
+    this.constants.put(name, "'" + value + "'");
     return this;
   }
 
@@ -79,7 +82,14 @@ public class CopyTableBuilder extends TraceableMigrationElement {
   public String getSQL() {
     Joiner joiner = Joiner.on(",").skipNulls();
     String destColumnNames = joiner.join(destCols);
-    return String.format("insert into %s(%s) %s", destinationTable, destColumnNames, buildSelect());
+
+    StringBuilder finalColumnNames = new StringBuilder(destColumnNames);
+
+    for (Map.Entry<String, String> entry : constants.entrySet()) {
+      finalColumnNames.append("," + entry.getKey());
+    }
+
+    return String.format("insert into %s(%s) %s", destinationTable, finalColumnNames, buildSelect());
   }
 
   @Override
@@ -169,11 +179,13 @@ public class CopyTableBuilder extends TraceableMigrationElement {
 
       String joinedJoinTableNameClause = joiner.join(joinedJoinTableNames);
 
+      String constantValuesClause = joiner.join(constants.values());
+
       if (sourceColumnNames.length() > 0) {
-        return String.format("select %s,%s from %s s, %s %s", sourceColumnNames, joinedColumnNames, sourceTable, joinedJoinTableNameClause, whereClause);
+        return String.format("select %s,%s,%s from %s s, %s %s", sourceColumnNames, joinedColumnNames, constantValuesClause, sourceTable, joinedJoinTableNameClause, whereClause);
       }
       else {
-        return String.format("select %s from %s s, %s %s", joinedColumnNames, sourceTable, joinedJoinTableNameClause, whereClause);
+        return String.format("select %s,%s from %s s, %s %s", joinedColumnNames, constantValuesClause, sourceTable, joinedJoinTableNameClause, whereClause);
       }
 
     }

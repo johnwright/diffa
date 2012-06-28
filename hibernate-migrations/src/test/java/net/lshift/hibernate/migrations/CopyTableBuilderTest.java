@@ -73,6 +73,34 @@ public class CopyTableBuilderTest {
     verify(conn);
   }
 
+  @Test
+  public void shouldCopyColumnsUsingSingleJoinWithConstants() throws Exception {
+    MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
+
+    Iterable<String> sourceCols = Arrays.asList("id", "bar", "baz");
+    Iterable<String> destCols = Arrays.asList("foo", "bar2", "baz", "c1", "c2");
+
+    Map<String,String> predicate = new HashMap<String,String>();
+    predicate.put("predicate_column","predicate_value");
+
+    mb.copyTableContents("src", "dest", sourceCols, destCols).
+        join("join_table", "src_id", "id", Arrays.asList("kol1", "kol2")).
+        whereSource(predicate).
+        withConstant("constant_column", "constant_value");
+
+    Connection conn = createStrictMock(Connection.class);
+
+    String sql =  "insert into dest(foo,bar2,baz,c1,c2,constant_column) " +
+        "select s.id,s.bar,s.baz,j0.kol1,j0.kol2,'constant_value' from src s, join_table j0 "+
+        "where j0.src_id = s.id and s.predicate_column = 'predicate_value'";
+
+    expect(conn.prepareStatement(sql)).andReturn(mockExecutablePreparedStatementForUpdate(1));
+    replay(conn);
+
+    mb.apply(conn);
+    verify(conn);
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void shouldDetectWhenWrongNumberOfColumnsAreSpecified() throws Exception {
     MigrationBuilder mb = new MigrationBuilder(HibernateHelper.configuration());
