@@ -277,25 +277,53 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     })
   }).toSeq
 
-  def createOrUpdatePair(domain:String, p: PairDef): Unit = {
-    withVersionUpgrade(domain, s => {
-      p.validate()
+  def createOrUpdatePair(domain:String, pair: PairDef) = {
 
-      invalidatePairCachesOnly(domain)
-
-      val dom = getDomain(domain)
-      val toUpdate = DiffaPair(p.key, dom, p.upstreamName, p.downstreamName, p.versionPolicyName, p.matchingTimeout,
-        p.scanCronSpec, p.allowManualScans)
-      s.saveOrUpdate(toUpdate)
+    jooq.execute(t => {
+      t.insertInto(PAIR).
+          set(PAIR.DOMAIN, domain).
+          set(PAIR.PAIR_KEY, pair.key).
+          set(PAIR.UPSTREAM, pair.upstreamName).
+          set(PAIR.DOWNSTREAM, pair.downstreamName).
+          set(PAIR.ALLOW_MANUAL_SCANS, pair.allowManualScans).
+          set(PAIR.MATCHING_TIMEOUT, pair.matchingTimeout.asInstanceOf[Integer]).
+          set(PAIR.SCAN_CRON_SPEC, pair.scanCronSpec).
+          set(PAIR.VERSION_POLICY_NAME, pair.versionPolicyName).
+        onDuplicateKeyUpdate().
+          set(PAIR.UPSTREAM, pair.upstreamName).
+          set(PAIR.DOWNSTREAM, pair.downstreamName).
+          set(PAIR.ALLOW_MANUAL_SCANS, pair.allowManualScans).
+          set(PAIR.MATCHING_TIMEOUT, pair.matchingTimeout.asInstanceOf[Integer]).
+          set(PAIR.SCAN_CRON_SPEC, pair.scanCronSpec).
+          set(PAIR.VERSION_POLICY_NAME, pair.versionPolicyName).
+        execute()
 
       // Update the view definitions
-      val existingViews = listPairViews(s, domain, p.key)
-      val viewsToRemove = existingViews.filter(existing => p.views.find(v => v.name == existing.name).isEmpty)
-      viewsToRemove.foreach(r => s.delete(r))
-      p.views.foreach(v => s.saveOrUpdate(fromPairViewDef(toUpdate, v)))
+
+      t.delete(PAIR_VIEWS).
+        where(PAIR_VIEWS.NAME.notIn(pair.views.map(p => p.name))).
+          and(PAIR_VIEWS.DOMAIN.equal(domain)).
+          and(PAIR_VIEWS.NAME.equal(pair.key)).
+        execute()
+
+      pair.views.foreach(v => {
+        t.insertInto(PAIR_VIEWS).
+            set(PAIR_VIEWS.DOMAIN, domain).
+            set(PAIR_VIEWS.PAIR, pair.key).
+            set(PAIR_VIEWS.NAME, v.name).
+            set(PAIR_VIEWS.SCAN_CRON_SPEC, v.scanCronSpec).
+          onDuplicateKeyUpdate().
+            set(PAIR_VIEWS.SCAN_CRON_SPEC, v.scanCronSpec).
+          execute()
+      })
+
+      upgradeConfigVersion(t, domain)
+
     })
 
-    hook.pairCreated(domain, p.key)
+    invalidatePairCachesOnly(domain)
+
+    hook.pairCreated(domain, pair.key)
   }
 
   def deletePair(domain:String, key: String) = {
