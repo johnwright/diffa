@@ -111,7 +111,7 @@ class HibernatePreparationTest {
   /**
    * Attempting to upgrade a schema at the latest version should be a silent no op.
    */
-  //@Test
+  @Test
   def rerunUpgradeOnLatestVersionShouldSilentlyPassWithoutEffect {
     val adminEnvironment = TestDatabaseEnvironments.adminEnvironment
     val databaseEnvironment = TestDatabaseEnvironments.uniqueEnvironment("target/configStore")
@@ -136,7 +136,7 @@ class HibernatePreparationTest {
     sessionFactory.close
   }
 
-  //@Test
+  @Test
   def verifyExternalDatabase() {
     if(System.getProperty("verifyExternalDB") != null) {
       val config = new Configuration().
