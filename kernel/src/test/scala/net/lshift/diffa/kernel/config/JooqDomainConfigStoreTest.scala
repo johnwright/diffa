@@ -512,6 +512,9 @@ class JooqDomainConfigStoreTest {
     )))
     verifyEndpoints(Seq(down_v4, up_v3))
 
+    verifyEndpoints(Seq(down_v0, up_v3))
+    verifyEndpoints(Seq(down_v0, up_v0))
+
   }
 
   @Test
