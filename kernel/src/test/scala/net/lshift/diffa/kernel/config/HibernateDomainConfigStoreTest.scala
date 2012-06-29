@@ -441,14 +441,40 @@ class HibernateDomainConfigStoreTest {
 
   @Test
   def testRedeclareEndpointSucceeds = {
-    // declare the domain
-    systemConfigStore.createOrUpdateDomain(domain)
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    domainConfigStore.createOrUpdateEndpoint(domainName, EndpointDef(name = upstream1.name, scanUrl = "DIFFERENT_URL",
-                                                                     inboundUrl = "changes"))
-    assertEquals(1, domainConfigStore.listEndpoints(domainName).length)
-    assertEquals("DIFFERENT_URL", domainConfigStore.getEndpointDef(domainName, upstream1.name).scanUrl)
+
+    systemConfigStore.createOrUpdateDomain(Domain(name="domain"))
+
+    val up_v0 = EndpointDef(
+      name = "upstream",
+      scanUrl = "upstream_url"
+    )
+
+    val down_v0 = EndpointDef(
+      name = "downstream",
+      scanUrl = "downstream_url"
+    )
+
+    def verifyEndpoints(endpoints:Seq[EndpointDef]) {
+      endpoints.foreach(e => {
+        domainConfigStore.createOrUpdateEndpoint("domain", e)
+
+        val endpoint = domainConfigStore.getEndpointDef("domain", e.name)
+        assertEquals(e, endpoint)
+      })
+
+      val result = domainConfigStore.listEndpoints("domain")
+      assertEquals(endpoints, result)
+    }
+
+
+    verifyEndpoints(Seq(down_v0, up_v0))
+
+    val up_v1 = up_v0.copy(scanUrl = "some_other_url")
+    domainConfigStore.createOrUpdateEndpoint("domain", up_v1)
+    verifyEndpoints(Seq(down_v0, up_v1))
+
   }
+
 
   @Test
   def rangeCategory = {

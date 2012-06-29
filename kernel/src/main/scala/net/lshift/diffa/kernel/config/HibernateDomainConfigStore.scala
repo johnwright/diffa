@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2010-2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,7 @@ package net.lshift.diffa.kernel.config
 import net.lshift.diffa.kernel.util.db.HibernateQueryUtils
 import org.hibernate.SessionFactory
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.hooks.HookManager
-import java.util.List
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
 import net.lshift.diffa.schema.tables.Domains.DOMAINS
 import net.lshift.diffa.schema.tables.Members.MEMBERS
@@ -35,7 +33,12 @@ import net.lshift.diffa.schema.tables.StoreCheckpoints.STORE_CHECKPOINTS
 import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
 import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
 import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
-import org.jooq.{Result, Record}
+import net.lshift.diffa.schema.tables.UniqueCategoryNames.UNIQUE_CATEGORY_NAMES
+import net.lshift.diffa.schema.tables.RangeCategories.RANGE_CATEGORIES
+import net.lshift.diffa.schema.tables.SetCategories.SET_CATEGORIES
+import net.lshift.diffa.schema.tables.PrefixCategories.PREFIX_CATEGORIES
+import org.jooq._
+import JooqDomainConfigStoreCompanion._
 import net.lshift.diffa.kernel.naming.CacheName._
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.{PairLifecycleAware, DomainLifecycleAware}
@@ -45,7 +48,14 @@ import collection.mutable
 import java.util
 import collection.mutable.ListBuffer
 import org.jooq.impl.Factory
-;
+import net.lshift.diffa.kernel.frontend.DomainEndpointDef
+import net.lshift.diffa.kernel.frontend.DomainPairDef
+import net.lshift.diffa.kernel.frontend.RepairActionDef
+import net.lshift.diffa.kernel.frontend.PairDef
+import net.lshift.diffa.kernel.frontend.PairViewDef
+import net.lshift.diffa.kernel.frontend.EndpointDef
+import net.lshift.diffa.kernel.frontend.EscalationDef
+import net.lshift.diffa.kernel.frontend.PairReportDef
 
 class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
                                  jooq:JooqDatabaseFacade,
@@ -55,17 +65,19 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     extends DomainConfigStore
     with DomainLifecycleAware {
 
+  val VIEW_NAME_COLUMN = UNIQUE_CATEGORY_NAMES.VIEW_NAME.getName
+
   val hook = hookManager.createDifferencePartitioningHook(jooq)
 
   private val pairEventSubscribers = new ListBuffer[PairLifecycleAware]
   def registerPairEventListener(p:PairLifecycleAware) = pairEventSubscribers += p
 
   private val cachedConfigVersions = cacheProvider.getCachedMap[String,Int]("domain.config.versions")
-  private val cachedPairs = cacheProvider.getCachedMap[String, List[DomainPairDef]]("domain.pairs")
+  private val cachedPairs = cacheProvider.getCachedMap[String, java.util.List[DomainPairDef]]("domain.pairs")
   private val cachedPairsByKey = cacheProvider.getCachedMap[DomainPairKey, DomainPairDef]("domain.pairs.by.key")
-  private val cachedEndpoints = cacheProvider.getCachedMap[String, List[EndpointDef]]("domain.endpoints")
-  private val cachedEndpointsByKey = cacheProvider.getCachedMap[DomainEndpointKey, EndpointDef]("domain.endpoints.by.key")
-  private val cachedPairsByEndpoint = cacheProvider.getCachedMap[DomainEndpointKey, List[DomainPairDef]]("domain.pairs.by.endpoint")
+  private val cachedEndpoints = cacheProvider.getCachedMap[String, java.util.List[DomainEndpointDef]]("domain.endpoints")
+  private val cachedEndpointsByKey = cacheProvider.getCachedMap[DomainEndpointKey, DomainEndpointDef]("domain.endpoints.by.key")
+  private val cachedPairsByEndpoint = cacheProvider.getCachedMap[DomainEndpointKey, java.util.List[DomainPairDef]]("domain.pairs.by.endpoint")
 
   // Config options
   private val cachedDomainConfigOptionsMap = cacheProvider.getCachedMap[String, java.util.Map[String,String]](DOMAIN_CONFIG_OPTIONS_MAP)
@@ -159,65 +171,87 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
   def onDomainUpdated(domain: String) = invalidateAllCaches(domain)
   def onDomainRemoved(domain: String) = invalidateAllCaches(domain)
 
-
-
-  def createOrUpdateEndpoint(domainName:String, e: EndpointDef) : DomainEndpointDef = {
+  def createOrUpdateEndpoint(domain:String, endpointDef: EndpointDef) : DomainEndpointDef = {
 
     jooq.execute(t => {
 
-      // TODO create categories
-
-      t.insertInto(ENDPOINT).
-          set(ENDPOINT.DOMAIN, domainName).
-          set(ENDPOINT.NAME, e.name).
-          set(ENDPOINT.COLLATION_TYPE, e.collation).
-          set(ENDPOINT.CONTENT_RETRIEVAL_URL, e.contentRetrievalUrl).
-          set(ENDPOINT.SCAN_URL, e.scanUrl).
-          set(ENDPOINT.VERSION_GENERATION_URL, e.versionGenerationUrl).
-          set(ENDPOINT.INBOUND_URL, e.inboundUrl).
+      val rows = t.insertInto(ENDPOINT).
+          set(ENDPOINT.DOMAIN, domain).
+          set(ENDPOINT.NAME, endpointDef.name).
+          set(ENDPOINT.COLLATION_TYPE, endpointDef.collation).
+          set(ENDPOINT.CONTENT_RETRIEVAL_URL, endpointDef.contentRetrievalUrl).
+          set(ENDPOINT.SCAN_URL, endpointDef.scanUrl).
+          set(ENDPOINT.VERSION_GENERATION_URL, endpointDef.versionGenerationUrl).
+          set(ENDPOINT.INBOUND_URL, endpointDef.inboundUrl).
         onDuplicateKeyUpdate().
-          set(ENDPOINT.COLLATION_TYPE, e.collation).
-          set(ENDPOINT.CONTENT_RETRIEVAL_URL, e.contentRetrievalUrl).
-          set(ENDPOINT.SCAN_URL, e.scanUrl).
-          set(ENDPOINT.VERSION_GENERATION_URL, e.versionGenerationUrl).
-          set(ENDPOINT.INBOUND_URL, e.inboundUrl).
+          set(ENDPOINT.COLLATION_TYPE, endpointDef.collation).
+          set(ENDPOINT.CONTENT_RETRIEVAL_URL, endpointDef.contentRetrievalUrl).
+          set(ENDPOINT.SCAN_URL, endpointDef.scanUrl).
+          set(ENDPOINT.VERSION_GENERATION_URL, endpointDef.versionGenerationUrl).
+          set(ENDPOINT.INBOUND_URL, endpointDef.inboundUrl).
         execute()
+
+      // Don't attempt to update to update any rows per se, just delete every associated
+      // category and re-insert the new definitions, irrespective of
+      // whether they are identical to the previous definitions
+
+      deleteCategories(t, domain, endpointDef.name)
+
+      // Insert categories for the endpoint proper
+      insertCategories(t, domain, endpointDef.name, endpointDef.categories)
 
       // Update the view definitions
 
-      t.delete(ENDPOINT_VIEWS).
-        where(ENDPOINT_VIEWS.NAME.notIn(e.views.map(v => v.name))).
-          and(ENDPOINT_VIEWS.DOMAIN.equal(domainName)).
-          and(ENDPOINT_VIEWS.ENDPOINT.equal(e.name)).
-        execute()
+      if (endpointDef.views.isEmpty) {
 
-      e.views.foreach(v => {
+        t.delete(ENDPOINT_VIEWS).
+          where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).
+            and(ENDPOINT_VIEWS.ENDPOINT.equal(endpointDef.name)).
+          execute()
+
+      } else {
+
+        t.delete(ENDPOINT_VIEWS).
+          where(ENDPOINT_VIEWS.NAME.notIn(endpointDef.views.map(v => v.name))).
+            and(ENDPOINT_VIEWS.DOMAIN.equal(domain)).
+            and(ENDPOINT_VIEWS.ENDPOINT.equal(endpointDef.name)).
+          execute()
+
+      }
+
+      endpointDef.views.foreach(v => {
         t.insertInto(ENDPOINT_VIEWS).
-            set(ENDPOINT_VIEWS.DOMAIN, domainName).
-            set(ENDPOINT_VIEWS.ENDPOINT, e.name).
-            set(ENDPOINT_VIEWS.NAME, v.name).
+          set(ENDPOINT_VIEWS.DOMAIN, domain).
+          set(ENDPOINT_VIEWS.ENDPOINT, endpointDef.name).
+          set(ENDPOINT_VIEWS.NAME, v.name).
           onDuplicateKeyIgnore()
+
+          // Insert categories for the endpoint view
+        insertCategories(t, domain, endpointDef.name, v.categories, Some(v.name))
       })
 
-      upgradeConfigVersion(t, domainName)
+      upgradeConfigVersion(t, domain)
 
     })
 
-    invalidateEndpointCachesOnly(domainName, e.name)
+    invalidateEndpointCachesOnly(domain, endpointDef.name)
 
     DomainEndpointDef(
-      domain = domainName,
-      name = e.name,
-      collation = e.collation,
-      contentRetrievalUrl = e.contentRetrievalUrl,
-      scanUrl = e.scanUrl,
-      versionGenerationUrl = e.versionGenerationUrl,
-      inboundUrl = e.inboundUrl
-      // TODO categories
+      domain = domain,
+      name = endpointDef.name,
+      collation = endpointDef.collation,
+      contentRetrievalUrl = endpointDef.contentRetrievalUrl,
+      scanUrl = endpointDef.scanUrl,
+      versionGenerationUrl = endpointDef.versionGenerationUrl,
+      inboundUrl = endpointDef.inboundUrl,
+      categories = endpointDef.categories,
+      views = endpointDef.views
     )
   }
 
-  def deleteEndpoint(domain:String, name: String) = {
+
+
+  def deleteEndpoint(domain:String, endpoint: String) = {
 
     jooq.execute(t => {
 
@@ -226,22 +260,24 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       val results = t.select(PAIR.DOMAIN, PAIR.PAIR_KEY).
                       from(PAIR).
                       where(PAIR.DOMAIN.equal(domain)).
-                        and(PAIR.UPSTREAM.equal(name).
-                            or(PAIR.DOWNSTREAM.equal(name))).fetch()
+                        and(PAIR.UPSTREAM.equal(endpoint).
+                            or(PAIR.DOWNSTREAM.equal(endpoint))).fetch()
 
       results.iterator().foreach(r => {
         val ref = DiffaPairRef(r.getValue(PAIR.PAIR_KEY), r.getValue(PAIR.DOMAIN))
         deletePairWithDependencies(t, ref)
       })
 
+      deleteCategories(t, domain, endpoint)
+
       t.delete(ENDPOINT_VIEWS).
         where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).
-          and(ENDPOINT_VIEWS.ENDPOINT.equal(name)).
+          and(ENDPOINT_VIEWS.ENDPOINT.equal(endpoint)).
         execute()
 
       t.delete(ENDPOINT).
         where(ENDPOINT.DOMAIN.equal(domain)).
-          and(ENDPOINT.NAME.equal(name)).
+          and(ENDPOINT.NAME.equal(endpoint)).
         execute()
 
       upgradeConfigVersion(t, domain)
@@ -249,28 +285,169 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     })
 
     invalidatePairCachesOnly(domain)
-    invalidateEndpointCachesOnly(domain, name)
+    invalidateEndpointCachesOnly(domain, endpoint)
 
   }
 
-  def listEndpoints(domain:String): Seq[EndpointDef] = cachedEndpoints.readThrough(domain, () => {
-    jooq.execute(t => {
-      val results = t.select().
-                      from(ENDPOINT).
-                      where(ENDPOINT.DOMAIN.equal(domain)).
-                      fetch()
+  def getEndpointDef(domain:String, endpoint: String) = {
+    cachedEndpointsByKey.readThrough(DomainEndpointKey(domain, endpoint), () => {
+      /*
+      jooq.execute(t => {
+        val record = t.select().
+          from(ENDPOINT).
+          where(ENDPOINT.DOMAIN.equal(domain)).
+          and(ENDPOINT.NAME.equal(endpoint)).
+          fetchOne()
 
-      val endpoints = new java.util.ArrayList[EndpointDef]()
+        if (record == null) {
+          throw new MissingObjectException("endpoint")
+        }
+        else {
+          recordToEndpoint(record)
+        }
+      })
+      */
 
-      results.iterator().foreach(r => endpoints.add(recordToEndpoint(r)))
+      val endpoints = listEndpointsInternal(domain, Some(endpoint))
 
-      endpoints
+      if (endpoints.isEmpty) {
+        throw new MissingObjectException("endpoint")
+      } else {
+        endpoints.head
+      }
+
     })
-  }).toSeq
+  }.withoutDomain()
+
+  def listEndpoints(domain:String): Seq[EndpointDef] = {
+    cachedEndpoints.readThrough(domain, () => listEndpointsInternal(domain))
+  }.map(_.withoutDomain())
+
+  def listEndpointsInternal(domain:String, endpoint:Option[String] = None) : java.util.List[DomainEndpointDef] = {
+    jooq.execute(t => {
+      val topHalf =     t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
+                          select(ENDPOINT.getFields).
+                          select(Factory.field("null").as(VIEW_NAME_COLUMN)).
+                          select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
+                          select(PREFIX_CATEGORIES.STEP, PREFIX_CATEGORIES.PREFIX_LENGTH, PREFIX_CATEGORIES.MAX_LENGTH).
+                          select(SET_CATEGORIES.VALUE).
+                          from(ENDPOINT).
+
+                            leftOuterJoin(UNIQUE_CATEGORY_NAMES).
+                              on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+                              and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT.NAME)).
+                              and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_TARGET_TYPE)).
+
+                            leftOuterJoin(RANGE_CATEGORIES).
+                              on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+                              and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
+                              and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+
+                            leftOuterJoin(PREFIX_CATEGORIES).
+                              on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+                              and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
+                              and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+
+                            leftOuterJoin(SET_CATEGORIES).
+                              on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+                              and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
+                              and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+
+                          where(ENDPOINT.DOMAIN.equal(domain))
+
+                          val firstUnionPart = endpoint match {
+                            case None    => topHalf
+                            case Some(e) => topHalf.and(ENDPOINT.NAME.equal(e))
+                          }
+
+                          firstUnionPart.orderBy(ENDPOINT.DOMAIN, ENDPOINT.NAME)
 
 
-  private def listEndpointCategories(t:Factory, domain:String) : java.util.List[CategoryDescriptor] = {
-    null
+      val bottomHalf =  t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
+                          select(ENDPOINT.getFields).
+                          select(ENDPOINT_VIEWS.NAME).
+                          select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
+                          select(PREFIX_CATEGORIES.STEP, PREFIX_CATEGORIES.PREFIX_LENGTH, PREFIX_CATEGORIES.MAX_LENGTH).
+                          select(SET_CATEGORIES.VALUE).
+                          from(ENDPOINT_VIEWS).
+
+                          join(ENDPOINT).
+                            on(ENDPOINT.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+                            and(ENDPOINT.NAME.equal(ENDPOINT_VIEWS.NAME)).
+
+                          leftOuterJoin(UNIQUE_CATEGORY_NAMES).
+                            on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+                            and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_VIEW_TARGET_TYPE)).
+
+                          leftOuterJoin(RANGE_CATEGORIES).
+                            on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+                            and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+
+                          leftOuterJoin(PREFIX_CATEGORIES).
+                            on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+                            and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+
+                          leftOuterJoin(SET_CATEGORIES).
+                            on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+                            and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+
+                          where(ENDPOINT_VIEWS.DOMAIN.equal(domain))
+
+
+                          val secondUnionPart = endpoint match {
+                            case None    => bottomHalf
+                            case Some(e) => bottomHalf.and(ENDPOINT.NAME.equal(e))
+                          }
+
+                          secondUnionPart.orderBy(ENDPOINT_VIEWS.DOMAIN, ENDPOINT_VIEWS.NAME)
+
+      val results = firstUnionPart.unionAll(secondUnionPart).fetch()
+
+      val endpoints = new java.util.TreeMap[String,DomainEndpointDef]()
+
+      results.iterator().foreach(record => {
+
+        val currentEndpoint = DomainEndpointDef(
+          name = record.getValue(ENDPOINT.NAME),
+          scanUrl = record.getValue(ENDPOINT.SCAN_URL),
+          contentRetrievalUrl = record.getValue(ENDPOINT.CONTENT_RETRIEVAL_URL),
+          versionGenerationUrl = record.getValue(ENDPOINT.VERSION_GENERATION_URL),
+          inboundUrl = record.getValue(ENDPOINT.INBOUND_URL),
+          collation = record.getValue(ENDPOINT.COLLATION_TYPE)
+        )
+
+        val compressionKey = currentEndpoint.domain + "/" + currentEndpoint.name
+
+        if (!endpoints.contains(compressionKey)) {
+          endpoints.put(compressionKey, currentEndpoint);
+        }
+
+        val endpoint = endpoints.get(compressionKey)
+
+        if (record.getValue(RANGE_CATEGORIES.DATA_TYPE) != null) {
+          val dataType = record.getValue(RANGE_CATEGORIES.DATA_TYPE)
+          val lowerBound = record.getValue(RANGE_CATEGORIES.LOWER_BOUND)
+          val upperBound = record.getValue(RANGE_CATEGORIES.UPPER_BOUND)
+          val maxGranularity = record.getValue(RANGE_CATEGORIES.MAX_GRANULARITY)
+
+        }
+        else if (record.getValue(PREFIX_CATEGORIES.PREFIX_LENGTH) != null) {
+          val prefixLength = record.getValue(PREFIX_CATEGORIES.PREFIX_LENGTH)
+          val maxLength = record.getValue(PREFIX_CATEGORIES.MAX_LENGTH)
+          val step = record.getValue(PREFIX_CATEGORIES.STEP)
+        }
+        else if (record.getValue(SET_CATEGORIES.VALUE) != null) {
+          val setCategoryValue = record.getValue(SET_CATEGORIES.VALUE)
+        }
+
+      })
+
+      new java.util.ArrayList[DomainEndpointDef](endpoints.values())
+    })
   }
 
   def createOrUpdatePair(domain:String, pair: PairDef) = {
@@ -296,11 +473,23 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
 
       // Update the view definitions
 
-      t.delete(PAIR_VIEWS).
-        where(PAIR_VIEWS.NAME.notIn(pair.views.map(p => p.name))).
-          and(PAIR_VIEWS.DOMAIN.equal(domain)).
-          and(PAIR_VIEWS.NAME.equal(pair.key)).
-        execute()
+      if (pair.views.isEmpty) {
+
+        t.delete(PAIR_VIEWS).
+          where(PAIR_VIEWS.DOMAIN.equal(domain)).
+            and(PAIR_VIEWS.NAME.equal(pair.key)).
+          execute()
+
+      } else {
+
+        t.delete(PAIR_VIEWS).
+          where(PAIR_VIEWS.NAME.notIn(pair.views.map(p => p.name))).
+            and(PAIR_VIEWS.DOMAIN.equal(domain)).
+            and(PAIR_VIEWS.NAME.equal(pair.key)).
+          execute()
+      }
+
+
 
       pair.views.foreach(v => {
         t.insertInto(PAIR_VIEWS).
@@ -593,25 +782,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
     }
 
   })
-
-  def getEndpointDef(domain:String, endpoint: String) = {
-    cachedEndpointsByKey.readThrough(DomainEndpointKey(domain, endpoint), () => {
-      jooq.execute(t => {
-        val record = t.select().
-                       from(ENDPOINT).
-                       where(ENDPOINT.DOMAIN.equal(domain)).
-                         and(ENDPOINT.NAME.equal(endpoint)).
-                       fetchOne()
-
-        if (record == null) {
-          throw new MissingObjectException("endpoint")
-        }
-        else {
-          recordToEndpoint(record)
-        }
-      })
-    })
-  }
 
   @Deprecated def getEndpoint(domain:String, endpoint: String) = {
 

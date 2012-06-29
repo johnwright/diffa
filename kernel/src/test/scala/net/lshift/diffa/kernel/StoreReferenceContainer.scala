@@ -5,7 +5,6 @@ import config.system.HibernateSystemConfigStore
 import differencing.HibernateDomainDifferenceStore
 import hooks.HookManager
 import org.hibernate.dialect.Dialect
-import net.sf.ehcache.CacheManager
 import org.slf4j.LoggerFactory
 import preferences.JooqUserPreferencesStore
 import util.cache.HazelcastCacheProvider
@@ -20,7 +19,6 @@ import net.lshift.diffa.schema.migrations.HibernateConfigStorePreparationStep
 import collection.JavaConversions._
 import com.jolbox.bonecp.BoneCPDataSource
 import net.lshift.diffa.schema.jooq.DatabaseFacade
-import javax.sql.DataSource
 
 object StoreReferenceContainer {
   def withCleanDatabaseEnvironment(env: DatabaseEnvironment) = {
@@ -84,9 +82,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
 
   def facade = new DatabaseFacade(ds, applicationEnvironment.jooqDialect)
 
-  private val cacheManager = new CacheManager
-
-  private val hookManager = new HookManager(applicationConfig)
+  private val hookManager = new HookManager(applicationEnvironment.jooqDialect)
   private val membershipListener = new DomainMembershipAware {
     def onMembershipCreated(member: Member) {}
     def onMembershipRemoved(member: Member) {}
