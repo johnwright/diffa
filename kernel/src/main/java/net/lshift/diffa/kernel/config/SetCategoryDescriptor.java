@@ -44,6 +44,10 @@ public class SetCategoryDescriptor extends CategoryDescriptor {
     return values;
   }
 
+  public void addValue(String v) {
+    values.add(v);
+  }
+
   public void setValues(Set<String> values) {
     this.values = values;
   }

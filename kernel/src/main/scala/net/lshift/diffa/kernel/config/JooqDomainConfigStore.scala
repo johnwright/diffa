@@ -395,7 +395,6 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
                           where(ENDPOINT_VIEWS.DOMAIN.equal(domain))
 
-
                           val secondUnionPart = endpoint match {
                             case None    => bottomHalf
                             case Some(e) => bottomHalf.and(ENDPOINT_VIEWS.ENDPOINT.equal(e))
@@ -424,31 +423,73 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
           endpoints.put(compressionKey, currentEndpoint);
         }
 
-        val endpoint = endpoints.get(compressionKey)
+        val resolvedEndpoint = endpoints.get(compressionKey)
+
+        // Check to see whether this row is for an endpoint view
+
+        val viewName = record.getValueAsString(VIEW_NAME_COLUMN)
+        val currentView = if (viewName != null) {
+          resolvedEndpoint.views.find(v => v.name == viewName) match {
+            case None =>
+              // This view has not yet been attached to the endpoint, so attach it now
+              val viewToAttach = EndpointViewDef(name = viewName)
+              resolvedEndpoint.views.add(viewToAttach)
+              Some(viewToAttach)
+            case x    => x
+          }
+        }
+        else {
+          None
+        }
+
+        val categoryName = record.getValueAsString(UNIQUE_CATEGORY_NAMES.NAME)
+
+        def applyCategoryToEndpointOrView(descriptor:CategoryDescriptor) = {
+          currentView match {
+            case None    => resolvedEndpoint.categories.put(categoryName, descriptor)
+            case Some(v) => v.categories.put(categoryName, descriptor)
+          }
+        }
+
+        def applySetMemberToDescriptorMapForCurrentCategory(value:String, descriptors:java.util.Map[String,CategoryDescriptor]) = {
+          var descriptor = descriptors.get(categoryName)
+          if (descriptor == null) {
+            val setDescriptor = new SetCategoryDescriptor()
+            setDescriptor.addValue(value)
+            descriptors.put(categoryName, setDescriptor)
+          }
+          else {
+            descriptor.asInstanceOf[SetCategoryDescriptor].addValue(value)
+          }
+        }
 
         if (record.getValue(RANGE_CATEGORIES.DATA_TYPE) != null) {
           val dataType = record.getValue(RANGE_CATEGORIES.DATA_TYPE)
           val lowerBound = record.getValue(RANGE_CATEGORIES.LOWER_BOUND)
           val upperBound = record.getValue(RANGE_CATEGORIES.UPPER_BOUND)
           val maxGranularity = record.getValue(RANGE_CATEGORIES.MAX_GRANULARITY)
+          val descriptor = new RangeCategoryDescriptor(dataType, lowerBound, upperBound, maxGranularity)
+          applyCategoryToEndpointOrView(descriptor)
 
         }
         else if (record.getValue(PREFIX_CATEGORIES.PREFIX_LENGTH) != null) {
           val prefixLength = record.getValue(PREFIX_CATEGORIES.PREFIX_LENGTH)
           val maxLength = record.getValue(PREFIX_CATEGORIES.MAX_LENGTH)
           val step = record.getValue(PREFIX_CATEGORIES.STEP)
+          val descriptor = new PrefixCategoryDescriptor(prefixLength, maxLength, step)
+          applyCategoryToEndpointOrView(descriptor)
         }
         else if (record.getValue(SET_CATEGORIES.VALUE) != null) {
+
+          // Set values are a little trickier, since the values for one descriptor are split up over multiple rows
+
           val setCategoryValue = record.getValue(SET_CATEGORIES.VALUE)
-        }
-
-        // Check to see whether this row is for an endpoint view
-
-        val viewName = record.getValueAsString(VIEW_NAME_COLUMN)
-        if (viewName != null) {
-          endpoint.views.add(EndpointViewDef(
-            name = viewName
-          ))
+          currentView match {
+            case None    =>
+              applySetMemberToDescriptorMapForCurrentCategory(setCategoryValue, resolvedEndpoint.categories)
+            case Some(v) =>
+              applySetMemberToDescriptorMapForCurrentCategory(setCategoryValue, v.categories)
+          }
         }
 
       })

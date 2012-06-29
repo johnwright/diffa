@@ -474,8 +474,12 @@ class JooqDomainConfigStoreTest {
     val up_v2 = up_v1.copy(views = List(EndpointViewDef(name = "view1")))
     verifyEndpoints(Seq(down_v0, up_v2))
 
-  }
+    val down_v1 = down_v0.copy(categories = Map("foo" -> new RangeCategoryDescriptor("date", null, null, null)))
+    verifyEndpoints(Seq(down_v1, up_v2))
 
+
+
+  }
 
   @Test
   def rangeCategory = {
