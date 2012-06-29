@@ -466,7 +466,6 @@ class JooqDomainConfigStoreTest {
       scanUrl = "downstream_url"
     )
 
-
     verifyEndpoints(Seq(down_v0, up_v0))
 
     val up_v1 = up_v0.copy(scanUrl = "some_other_url")
@@ -503,6 +502,15 @@ class JooqDomainConfigStoreTest {
         "pom" -> new SetCategoryDescriptor(Set("indigo","victor","charlie"))
       ))
     verifyEndpoints(Seq(down_v4, up_v2))
+
+    val up_v3 = up_v0.copy(views = List(EndpointViewDef(
+      name = "view1",
+      categories = Map(
+        "november" -> new RangeCategoryDescriptor("date", null, "2010-11-11", null),
+        "zulu"     -> new PrefixCategoryDescriptor(3,6,3)
+      )
+    )))
+    verifyEndpoints(Seq(down_v4, up_v3))
 
   }
 

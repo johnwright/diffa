@@ -378,24 +378,25 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
                           leftOuterJoin(UNIQUE_CATEGORY_NAMES).
                             on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
+                            and(UNIQUE_CATEGORY_NAMES.VIEW_NAME.equal(ENDPOINT_VIEWS.NAME)).
                             and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_VIEW_TARGET_TYPE)).
 
                           leftOuterJoin(RANGE_CATEGORIES).
                             on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
                             and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
                             and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                           leftOuterJoin(PREFIX_CATEGORIES).
                             on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
                             and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
                             and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                           leftOuterJoin(SET_CATEGORIES).
                             on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
+                            and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
                             and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
                             and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
@@ -409,6 +410,9 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                           secondUnionPart.orderBy(ENDPOINT_VIEWS.DOMAIN, ENDPOINT_VIEWS.NAME)
 
       val results = firstUnionPart.unionAll(secondUnionPart).fetch()
+
+      val r = t.select().from(RANGE_CATEGORIES).fetch()
+      val p = t.select().from(PREFIX_CATEGORIES).fetch()
 
       val endpoints = new java.util.TreeMap[String,DomainEndpointDef]()
 
