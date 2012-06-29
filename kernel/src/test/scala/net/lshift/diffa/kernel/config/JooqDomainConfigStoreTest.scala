@@ -425,21 +425,6 @@ class JooqDomainConfigStoreTest {
   }
 
   @Test
-  def testDeclarePairNullConstraints: Unit = {
-    // declare the domain
-    systemConfigStore.createOrUpdateDomain(domain)
-    domainConfigStore.createOrUpdateEndpoint(domainName, upstream1)
-    domainConfigStore.createOrUpdateEndpoint(domainName, downstream1)
-
-    expectConfigValidationException("upstreamName") {
-      domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName1, DiffaPair.NO_MATCHING, null, downstream1.name))
-    }
-    expectConfigValidationException("downstreamName") {
-      domainConfigStore.createOrUpdatePair(domainName, PairDef(pairKey, versionPolicyName1, DiffaPair.NO_MATCHING, upstream1.name, null))
-    }
-  }
-
-  @Test
   def shouldBeAbleToRedeclareEndpoints = {
 
     systemConfigStore.createOrUpdateDomain(Domain(name="domain"))
