@@ -40,7 +40,7 @@ trait StoreReferenceContainer {
   def facade: DatabaseFacade
   def dialect: Dialect
   def systemConfigStore: HibernateSystemConfigStore
-  def domainConfigStore: HibernateDomainConfigStore
+  def domainConfigStore: JooqDomainConfigStore
   def domainDifferenceStore: HibernateDomainDifferenceStore
   def serviceLimitsStore: ServiceLimitsStore
 
@@ -111,7 +111,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     makeStore[ServiceLimitsStore](sf => new HibernateServiceLimitsStore(sf, new HibernateDatabaseFacade(sf,ds)), "ServiceLimitsStore")
 
   private lazy val _domainConfigStore =
-    makeStore(sf => new HibernateDomainConfigStore(sf, jooqDatabaseFacade, hookManager, cacheProvider, membershipListener), "domainConfigStore")
+    makeStore(sf => new JooqDomainConfigStore(jooqDatabaseFacade, hookManager, cacheProvider, membershipListener), "domainConfigStore")
 
   private lazy val _systemConfigStore =
     makeStore(sf => {
@@ -131,7 +131,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
 
   def serviceLimitsStore: ServiceLimitsStore = _serviceLimitsStore
   def systemConfigStore: HibernateSystemConfigStore = _systemConfigStore
-  def domainConfigStore: HibernateDomainConfigStore = _domainConfigStore
+  def domainConfigStore: JooqDomainConfigStore = _domainConfigStore
   def domainCredentialsStore: JooqDomainCredentialsStore = _domainCredentialsStore
   def domainDifferenceStore: HibernateDomainDifferenceStore = _domainDifferenceStore
   def userPreferencesStore: JooqUserPreferencesStore = _userPreferencesStore

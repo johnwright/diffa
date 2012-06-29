@@ -17,7 +17,6 @@
 package net.lshift.diffa.kernel.config
 
 import net.lshift.diffa.kernel.util.db.HibernateQueryUtils
-import org.hibernate.SessionFactory
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
@@ -57,11 +56,10 @@ import net.lshift.diffa.kernel.frontend.EndpointDef
 import net.lshift.diffa.kernel.frontend.EscalationDef
 import net.lshift.diffa.kernel.frontend.PairReportDef
 
-class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
-                                 jooq:JooqDatabaseFacade,
-                                 hookManager:HookManager,
-                                 cacheProvider:CacheProvider,
-                                 membershipListener:DomainMembershipAware)
+class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
+                            hookManager:HookManager,
+                            cacheProvider:CacheProvider,
+                            membershipListener:DomainMembershipAware)
     extends DomainConfigStore
     with DomainLifecycleAware {
 
@@ -520,9 +518,6 @@ class HibernateDomainConfigStore(val sessionFactory: SessionFactory,
       pairEventSubscribers.foreach(_.onPairDeleted(ref))
       hook.pairRemoved(domain, key)
     })
-
-    // TODO kill this
-    HibernateQueryUtils.forceHibernateCacheEviction(sessionFactory)
   }
 
   def listPairs(domain:String) = cachedPairs.readThrough(domain, () => listPairsInternal(domain))

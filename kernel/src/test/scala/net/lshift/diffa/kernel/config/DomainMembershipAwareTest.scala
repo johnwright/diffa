@@ -37,7 +37,7 @@ class DomainMembershipAwareTest {
 
   val membershipListener = createStrictMock(classOf[DomainMembershipAware])
 
-  val domainConfigStore = new HibernateDomainConfigStore(sf, jf, hm, cp, membershipListener)
+  val domainConfigStore = new JooqDomainConfigStore(jf, hm, cp, membershipListener)
 
   val member = Member("user","domain")
 

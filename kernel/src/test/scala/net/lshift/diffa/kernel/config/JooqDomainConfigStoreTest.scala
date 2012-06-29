@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory
 import org.junit.{Test, AfterClass, Before}
 import net.lshift.diffa.kernel.preferences.FilteredItemType
 
-class HibernateDomainConfigStoreTest {
+class JooqDomainConfigStoreTest {
   private val log = LoggerFactory.getLogger(getClass)
 
-  private val storeReferences = HibernateDomainConfigStoreTest.storeReferences
+  private val storeReferences = JooqDomainConfigStoreTest.storeReferences
   private val systemConfigStore = storeReferences.systemConfigStore
   private val domainConfigStore = storeReferences.domainConfigStore
   private val userPreferencesStore = storeReferences.userPreferencesStore
@@ -764,11 +764,11 @@ class HibernateDomainConfigStoreTest {
   }
 }
 
-object HibernateDomainConfigStoreTest {
-  private[HibernateDomainConfigStoreTest] val env =
+object JooqDomainConfigStoreTest {
+  private[JooqDomainConfigStoreTest] val env =
     TestDatabaseEnvironments.uniqueEnvironment("target/domainConfigStore")
 
-  private[HibernateDomainConfigStoreTest] val storeReferences =
+  private[JooqDomainConfigStoreTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)
 
   @AfterClass

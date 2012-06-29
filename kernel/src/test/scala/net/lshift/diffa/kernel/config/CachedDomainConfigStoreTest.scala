@@ -42,7 +42,7 @@ class CachedDomainConfigStoreTest {
 
   val cp = new HazelcastCacheProvider
 
-  val domainConfig = new HibernateDomainConfigStore(sf, jooq, hm, cp, ml)
+  val domainConfig = new JooqDomainConfigStore(jooq, hm, cp, ml)
 
   @Before
   def resetCaches {
