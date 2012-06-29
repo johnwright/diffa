@@ -122,7 +122,7 @@ case class DomainEndpointDef(
   @BeanProperty var contentRetrievalUrl: String = null,
   @BeanProperty var versionGenerationUrl: String = null,
   @BeanProperty var inboundUrl: String = null,
-  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor],
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new java.util.TreeMap[String, CategoryDescriptor],
   @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef],
   @BeanProperty var collation: String = AsciiCollationOrdering.name) {
   def this() = this(domain = null)
@@ -141,7 +141,7 @@ case class DomainEndpointDef(
 
 case class EndpointViewDef(
   @BeanProperty var name:String = null,
-  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new java.util.TreeMap[String, CategoryDescriptor]
 ) {
   def this() = this(name = null)
 

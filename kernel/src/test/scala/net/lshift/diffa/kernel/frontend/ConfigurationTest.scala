@@ -204,13 +204,13 @@ class ConfigurationTest {
     val ep1 = DomainEndpointDef(domain= "domain", name = "upstream1", scanUrl = "http://localhost:6543/scan",
           inboundUrl = "http://inbound",
           categories = Map(
-            "b" -> new SetCategoryDescriptor(Set("a", "b", "c")),
-            "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010")))
+            "a" -> new RangeCategoryDescriptor("datetime", "2009", "2010"),
+            "b" -> new SetCategoryDescriptor(Set("a", "b", "c"))))
       // downstream1 is gone, downstream2 is added
     val ep2 = DomainEndpointDef(domain= "domain", name = "downstream2", scanUrl = "http://localhost:54321/scan",
           categories = Map(
-            "d" -> new PrefixCategoryDescriptor(1, 6, 1),
-            "c" -> new PrefixCategoryDescriptor(1, 5, 1)
+            "c" -> new PrefixCategoryDescriptor(1, 5, 1),
+            "d" -> new PrefixCategoryDescriptor(1, 6, 1)
           ))
     val config = new DiffaConfig(
         // diffa.host is changed, a -> b is gone, c -> d is added
