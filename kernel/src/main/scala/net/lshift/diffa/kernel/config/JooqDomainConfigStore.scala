@@ -287,10 +287,14 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
           and(ENDPOINT_VIEWS.ENDPOINT.equal(endpoint)).
         execute()
 
-      t.delete(ENDPOINT).
-        where(ENDPOINT.DOMAIN.equal(domain)).
-          and(ENDPOINT.NAME.equal(endpoint)).
-        execute()
+      var deleted = t.delete(ENDPOINT).
+                      where(ENDPOINT.DOMAIN.equal(domain)).
+                        and(ENDPOINT.NAME.equal(endpoint)).
+                      execute()
+
+      if (deleted == 0) {
+        throw new MissingObjectException("endpoint")
+      }
 
       upgradeConfigVersion(t, domain)
 
@@ -509,6 +513,8 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
   }
 
   def createOrUpdatePair(domain:String, pair: PairDef) = {
+
+    pair.validate()
 
     jooq.execute(t => {
       t.insertInto(PAIR).

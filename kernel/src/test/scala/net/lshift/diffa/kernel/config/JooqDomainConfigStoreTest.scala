@@ -759,35 +759,6 @@ class JooqDomainConfigStoreTest {
     }
   }
 
-  private def expectNullPropertyException(name:String)(f: => Unit) {
-    try {
-      f
-      fail("Expected PropertyValueException")
-    } catch {
-      case e:org.hibernate.PropertyValueException =>
-        assertTrue(
-          "PropertyValueException for wrong object. Expected null error for " + name + ", got msg: " + e.getMessage,
-          e.getMessage.contains("not-null property references a null or transient value"))
-        assertTrue(
-          "PropertyValueException for wrong object. Expected for field " + name + ", got msg: " + e.getMessage,
-          e.getMessage.contains(name))
-    }
-  }
-
-  private def expectConfigValidationException(name:String)(f: => Unit) {
-    try {
-      f
-      fail("Expected ConfigValidationException")
-    } catch {
-      case e:ConfigValidationException =>
-        assertTrue(
-          "ConfigValidationException for wrong object. Expected null error for " + name + ", got msg: " + e.getMessage,
-          e.getMessage.contains("cannot be null or empty"))
-        assertTrue(
-          "ConfigValidationException for wrong object. Expected for field " + name + ", got msg: " + e.getMessage,
-          e.getMessage.contains(name))
-    }
-  }
 }
 
 object JooqDomainConfigStoreTest {
