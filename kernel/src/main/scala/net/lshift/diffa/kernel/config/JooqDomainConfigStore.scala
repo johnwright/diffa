@@ -340,16 +340,19 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                               on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
                               and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
                               and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+                              and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                             leftOuterJoin(PREFIX_CATEGORIES).
                               on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
                               and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
                               and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+                              and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                             leftOuterJoin(SET_CATEGORIES).
                               on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
                               and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
                               and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+                              and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                           where(ENDPOINT.DOMAIN.equal(domain))
 
@@ -382,16 +385,19 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                             on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
                             and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
                             and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+                            and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                           leftOuterJoin(PREFIX_CATEGORIES).
                             on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
                             and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
                             and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+                            and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                           leftOuterJoin(SET_CATEGORIES).
                             on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
                             and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.NAME)).
                             and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+                            and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
                           where(ENDPOINT_VIEWS.DOMAIN.equal(domain))
 

@@ -273,21 +273,21 @@ object JooqDomainConfigStoreCompanion {
   def deleteRangeCategories(t:Factory, domain:String, endpoint:String) = {
     t.delete(RANGE_CATEGORIES).
       where(RANGE_CATEGORIES.DOMAIN.equal(domain)).
-      and(RANGE_CATEGORIES.ENDPOINT.equal(domain)).
+      and(RANGE_CATEGORIES.ENDPOINT.equal(endpoint)).
       execute()
   }
 
   def deleteSetCategories(t:Factory, domain:String, endpoint:String) = {
     t.delete(SET_CATEGORIES).
       where(SET_CATEGORIES.DOMAIN.equal(domain)).
-      and(SET_CATEGORIES.ENDPOINT.equal(domain)).
+      and(SET_CATEGORIES.ENDPOINT.equal(endpoint)).
       execute()
   }
 
   def deletePrefixCategories(t:Factory, domain:String, endpoint:String) = {
     t.delete(PREFIX_CATEGORIES).
       where(PREFIX_CATEGORIES.DOMAIN.equal(domain)).
-      and(PREFIX_CATEGORIES.ENDPOINT.equal(domain)).
+      and(PREFIX_CATEGORIES.ENDPOINT.equal(endpoint)).
       execute()
   }
 
@@ -298,7 +298,7 @@ object JooqDomainConfigStoreCompanion {
 
     t.delete(UNIQUE_CATEGORY_NAMES).
       where(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(domain)).
-      and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(domain)).
+      and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(endpoint)).
       execute()
   }
 
