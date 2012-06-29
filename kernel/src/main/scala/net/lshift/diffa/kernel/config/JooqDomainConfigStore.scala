@@ -365,7 +365,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                             case Some(e) => topHalf.and(ENDPOINT.NAME.equal(e))
                           }
 
-                          firstUnionPart.orderBy(ENDPOINT.DOMAIN, ENDPOINT.NAME)
+                          firstUnionPart.orderBy(ENDPOINT.DOMAIN, ENDPOINT.NAME, UNIQUE_CATEGORY_NAMES.NAME)
 
 
       val bottomHalf =  t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
@@ -411,12 +411,9 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                             case Some(e) => bottomHalf.and(ENDPOINT_VIEWS.ENDPOINT.equal(e))
                           }
 
-                          secondUnionPart.orderBy(ENDPOINT_VIEWS.DOMAIN, ENDPOINT_VIEWS.NAME)
+                          secondUnionPart.orderBy(ENDPOINT_VIEWS.DOMAIN, ENDPOINT_VIEWS.NAME, UNIQUE_CATEGORY_NAMES.NAME)
 
       val results = firstUnionPart.unionAll(secondUnionPart).fetch()
-
-      val r = t.select().from(RANGE_CATEGORIES).fetch()
-      val p = t.select().from(PREFIX_CATEGORIES).fetch()
 
       val endpoints = new java.util.TreeMap[String,DomainEndpointDef]()
 
@@ -541,7 +538,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
         t.delete(PAIR_VIEWS).
           where(PAIR_VIEWS.DOMAIN.equal(domain)).
-            and(PAIR_VIEWS.NAME.equal(pair.key)).
+            and(PAIR_VIEWS.PAIR.equal(pair.key)).
           execute()
 
       } else {
@@ -549,7 +546,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
         t.delete(PAIR_VIEWS).
           where(PAIR_VIEWS.NAME.notIn(pair.views.map(p => p.name))).
             and(PAIR_VIEWS.DOMAIN.equal(domain)).
-            and(PAIR_VIEWS.NAME.equal(pair.key)).
+            and(PAIR_VIEWS.PAIR.equal(pair.key)).
           execute()
       }
 
