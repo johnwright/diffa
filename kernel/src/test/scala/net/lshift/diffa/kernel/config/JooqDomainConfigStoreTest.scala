@@ -440,19 +440,9 @@ class JooqDomainConfigStoreTest {
   }
 
   @Test
-  def testRedeclareEndpointSucceeds = {
+  def shouldBeAbleToRedeclareEndpoints = {
 
     systemConfigStore.createOrUpdateDomain(Domain(name="domain"))
-
-    val up_v0 = EndpointDef(
-      name = "upstream",
-      scanUrl = "upstream_url"
-    )
-
-    val down_v0 = EndpointDef(
-      name = "downstream",
-      scanUrl = "downstream_url"
-    )
 
     def verifyEndpoints(endpoints:Seq[EndpointDef]) {
       endpoints.foreach(e => {
@@ -466,12 +456,23 @@ class JooqDomainConfigStoreTest {
       assertEquals(endpoints, result)
     }
 
+    val up_v0 = EndpointDef(
+      name = "upstream",
+      scanUrl = "upstream_url"
+    )
+
+    val down_v0 = EndpointDef(
+      name = "downstream",
+      scanUrl = "downstream_url"
+    )
 
     verifyEndpoints(Seq(down_v0, up_v0))
 
     val up_v1 = up_v0.copy(scanUrl = "some_other_url")
-    domainConfigStore.createOrUpdateEndpoint("domain", up_v1)
     verifyEndpoints(Seq(down_v0, up_v1))
+
+    val up_v2 = up_v1.copy(views = List(EndpointViewDef(name = "view1")))
+    verifyEndpoints(Seq(down_v0, up_v2))
 
   }
 

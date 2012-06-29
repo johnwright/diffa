@@ -21,6 +21,19 @@ import net.lshift.diffa.schema.tables.PrefixCategories.PREFIX_CATEGORIES
 import net.lshift.diffa.schema.tables.SetCategories.SET_CATEGORIES
 import net.lshift.diffa.schema.tables.RangeCategories.RANGE_CATEGORIES
 import scala.collection.JavaConversions._
+import org.jooq.{Record, Result}
+import net.lshift.diffa.schema.tables.Escalations.ESCALATIONS
+import net.lshift.diffa.schema.tables.PairReports.PAIR_REPORTS
+import net.lshift.diffa.schema.tables.RepairActions.REPAIR_ACTIONS
+import net.lshift.diffa.schema.tables.Pair.PAIR
+import net.lshift.diffa.kernel.util.MissingObjectException
+import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
+import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
+import net.lshift.diffa.schema.tables.StoreCheckpoints.STORE_CHECKPOINTS
+import net.lshift.diffa.kernel.frontend.RepairActionDef
+import scala.Some
+import net.lshift.diffa.kernel.frontend.EscalationDef
+import net.lshift.diffa.kernel.frontend.PairReportDef
 
 /**
  * This object is a workaround for the fact that Scala is so slow
@@ -29,6 +42,103 @@ object JooqDomainConfigStoreCompanion {
 
   val ENDPOINT_TARGET_TYPE = "endpoint"
   val ENDPOINT_VIEW_TARGET_TYPE = "endpoint_view"
+
+  def mapResultsToList[T](results:Result[Record], rowMapper:Record => T) = {
+    val escalations = new java.util.ArrayList[T]()
+    results.iterator().foreach(r => escalations.add(rowMapper(r)))
+    escalations
+  }
+
+  def recordToEscalation(record:Record) : EscalationDef = {
+    EscalationDef(
+      pair = record.getValue(ESCALATIONS.PAIR_KEY),
+      name = record.getValue(ESCALATIONS.NAME),
+      action = record.getValue(ESCALATIONS.ACTION),
+      actionType = record.getValue(ESCALATIONS.ACTION_TYPE),
+      event = record.getValue(ESCALATIONS.EVENT),
+      origin = record.getValue(ESCALATIONS.ORIGIN))
+  }
+
+  def recordToPairReport(record:Record) : PairReportDef = {
+    PairReportDef(
+      pair = record.getValue(PAIR_REPORTS.PAIR_KEY),
+      name = record.getValue(PAIR_REPORTS.NAME),
+      target = record.getValue(PAIR_REPORTS.TARGET),
+      reportType = record.getValue(PAIR_REPORTS.REPORT_TYPE)
+    )
+  }
+
+  def recordToRepairAction(record:Record) : RepairActionDef = {
+    RepairActionDef(
+      pair = record.getValue(REPAIR_ACTIONS.PAIR_KEY),
+      name = record.getValue(REPAIR_ACTIONS.NAME),
+      scope = record.getValue(REPAIR_ACTIONS.SCOPE),
+      url = record.getValue(REPAIR_ACTIONS.URL)
+    )
+  }
+
+  def deletePairWithDependencies(t:Factory, pair:DiffaPairRef) = {
+    deleteRepairActionsByPair(t, pair)
+    deleteEscalationsByPair(t, pair)
+    deleteReportsByPair(t, pair)
+    deletePairViewsByPair(t, pair)
+    deleteStoreCheckpointsByPair(t, pair)
+    deleteUserItemsByPair(t, pair)
+    deletePairWithoutDependencies(t, pair)
+  }
+
+  private def deletePairWithoutDependencies(t:Factory, pair:DiffaPairRef) = {
+    val deleted = t.delete(PAIR).
+      where(PAIR.DOMAIN.equal(pair.domain)).
+      and(PAIR.PAIR_KEY.equal(pair.key)).
+      execute()
+
+    if (deleted == 0) {
+      throw new MissingObjectException(pair.identifier)
+    }
+  }
+
+  def deleteUserItemsByPair(t:Factory, pair:DiffaPairRef) = {
+    t.delete(USER_ITEM_VISIBILITY).
+      where(USER_ITEM_VISIBILITY.DOMAIN.equal(pair.domain)).
+      and(USER_ITEM_VISIBILITY.PAIR.equal(pair.key)).
+      execute()
+  }
+
+  def deleteRepairActionsByPair(t:Factory, pair:DiffaPairRef) = {
+    t.delete(REPAIR_ACTIONS).
+      where(REPAIR_ACTIONS.DOMAIN.equal(pair.domain)).
+      and(REPAIR_ACTIONS.PAIR_KEY.equal(pair.key)).
+      execute()
+  }
+
+  def deleteEscalationsByPair(t:Factory, pair:DiffaPairRef) = {
+    t.delete(ESCALATIONS).
+      where(ESCALATIONS.DOMAIN.equal(pair.domain)).
+      and(ESCALATIONS.PAIR_KEY.equal(pair.key)).
+      execute()
+  }
+
+  def deleteReportsByPair(t:Factory, pair:DiffaPairRef) = {
+    t.delete(PAIR_REPORTS).
+      where(PAIR_REPORTS.DOMAIN.equal(pair.domain)).
+      and(PAIR_REPORTS.PAIR_KEY.equal(pair.key)).
+      execute()
+  }
+
+  def deletePairViewsByPair(t:Factory, pair:DiffaPairRef) = {
+    t.delete(PAIR_VIEWS).
+      where(PAIR_VIEWS.DOMAIN.equal(pair.domain)).
+      and(PAIR_VIEWS.PAIR.equal(pair.key)).
+      execute()
+  }
+
+  def deleteStoreCheckpointsByPair(t:Factory, pair:DiffaPairRef) = {
+    t.delete(STORE_CHECKPOINTS).
+      where(STORE_CHECKPOINTS.DOMAIN.equal(pair.domain)).
+      and(STORE_CHECKPOINTS.PAIR.equal(pair.key)).
+      execute()
+  }
 
   def insertCategories(t:Factory,
                        domain:String,

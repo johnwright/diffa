@@ -47,14 +47,27 @@ import collection.mutable
 import java.util
 import collection.mutable.ListBuffer
 import org.jooq.impl.Factory
+import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.frontend.DomainEndpointDef
 import net.lshift.diffa.kernel.frontend.DomainPairDef
 import net.lshift.diffa.kernel.frontend.RepairActionDef
+import net.lshift.diffa.kernel.config.PairByDomainAndEndpointPredicate
+import net.lshift.diffa.kernel.config.Member
+import net.lshift.diffa.kernel.config.EndpointView
+import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.frontend.PairDef
+import scala.Some
+import net.lshift.diffa.kernel.config.EndpointByDomainPredicate
 import net.lshift.diffa.kernel.frontend.PairViewDef
+import net.lshift.diffa.kernel.config.ConfigOptionByDomainPredicate
+import net.lshift.diffa.kernel.config.DomainConfigKey
 import net.lshift.diffa.kernel.frontend.EndpointDef
 import net.lshift.diffa.kernel.frontend.EscalationDef
+import net.lshift.diffa.kernel.config.PairByDomainPredicate
+import net.lshift.diffa.kernel.config.DomainEndpointKey
 import net.lshift.diffa.kernel.frontend.PairReportDef
+import net.lshift.diffa.kernel.config.DomainPairKey
+import net.lshift.diffa.kernel.config.Endpoint
 
 class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                             hookManager:HookManager,
@@ -173,7 +186,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
     jooq.execute(t => {
 
-      val rows = t.insertInto(ENDPOINT).
+      t.insertInto(ENDPOINT).
           set(ENDPOINT.DOMAIN, domain).
           set(ENDPOINT.NAME, endpointDef.name).
           set(ENDPOINT.COLLATION_TYPE, endpointDef.collation).
@@ -219,10 +232,11 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
       endpointDef.views.foreach(v => {
         t.insertInto(ENDPOINT_VIEWS).
-          set(ENDPOINT_VIEWS.DOMAIN, domain).
-          set(ENDPOINT_VIEWS.ENDPOINT, endpointDef.name).
-          set(ENDPOINT_VIEWS.NAME, v.name).
-          onDuplicateKeyIgnore()
+            set(ENDPOINT_VIEWS.DOMAIN, domain).
+            set(ENDPOINT_VIEWS.ENDPOINT, endpointDef.name).
+            set(ENDPOINT_VIEWS.NAME, v.name).
+          onDuplicateKeyIgnore().
+          execute()
 
           // Insert categories for the endpoint view
         insertCategories(t, domain, endpointDef.name, v.categories, Some(v.name))
@@ -289,22 +303,6 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
   def getEndpointDef(domain:String, endpoint: String) = {
     cachedEndpointsByKey.readThrough(DomainEndpointKey(domain, endpoint), () => {
-      /*
-      jooq.execute(t => {
-        val record = t.select().
-          from(ENDPOINT).
-          where(ENDPOINT.DOMAIN.equal(domain)).
-          and(ENDPOINT.NAME.equal(endpoint)).
-          fetchOne()
-
-        if (record == null) {
-          throw new MissingObjectException("endpoint")
-        }
-        else {
-          recordToEndpoint(record)
-        }
-      })
-      */
 
       val endpoints = listEndpointsInternal(domain, Some(endpoint))
 
@@ -317,9 +315,11 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
     })
   }.withoutDomain()
 
+
   def listEndpoints(domain:String): Seq[EndpointDef] = {
     cachedEndpoints.readThrough(domain, () => listEndpointsInternal(domain))
   }.map(_.withoutDomain())
+
 
   def listEndpointsInternal(domain:String, endpoint:Option[String] = None) : java.util.List[DomainEndpointDef] = {
     jooq.execute(t => {
@@ -363,7 +363,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
       val bottomHalf =  t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
                           select(ENDPOINT.getFields).
-                          select(ENDPOINT_VIEWS.NAME).
+                          select(ENDPOINT_VIEWS.NAME.as(VIEW_NAME_COLUMN)).
                           select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
                           select(PREFIX_CATEGORIES.STEP, PREFIX_CATEGORIES.PREFIX_LENGTH, PREFIX_CATEGORIES.MAX_LENGTH).
                           select(SET_CATEGORIES.VALUE).
@@ -371,7 +371,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
                           join(ENDPOINT).
                             on(ENDPOINT.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(ENDPOINT.NAME.equal(ENDPOINT_VIEWS.NAME)).
+                            and(ENDPOINT.NAME.equal(ENDPOINT_VIEWS.ENDPOINT)).
 
                           leftOuterJoin(UNIQUE_CATEGORY_NAMES).
                             on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
@@ -398,7 +398,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
                           val secondUnionPart = endpoint match {
                             case None    => bottomHalf
-                            case Some(e) => bottomHalf.and(ENDPOINT.NAME.equal(e))
+                            case Some(e) => bottomHalf.and(ENDPOINT_VIEWS.ENDPOINT.equal(e))
                           }
 
                           secondUnionPart.orderBy(ENDPOINT_VIEWS.DOMAIN, ENDPOINT_VIEWS.NAME)
@@ -440,6 +440,15 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
         }
         else if (record.getValue(SET_CATEGORIES.VALUE) != null) {
           val setCategoryValue = record.getValue(SET_CATEGORIES.VALUE)
+        }
+
+        // Check to see whether this row is for an endpoint view
+
+        val viewName = record.getValueAsString(VIEW_NAME_COLUMN)
+        if (viewName != null) {
+          endpoint.views.add(EndpointViewDef(
+            name = viewName
+          ))
         }
 
       })
@@ -863,65 +872,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
   }))
 
-  private def mapResultsToList[T](results:Result[Record], rowMapper:Record => T) = {
-    val escalations = new java.util.ArrayList[T]()
-    results.iterator().foreach(r => escalations.add(rowMapper(r)))
-    escalations
-  }
 
-  private def recordToEscalation(record:Record) : EscalationDef = {
-    EscalationDef(
-      pair = record.getValue(ESCALATIONS.PAIR_KEY),
-      name = record.getValue(ESCALATIONS.NAME),
-      action = record.getValue(ESCALATIONS.ACTION),
-      actionType = record.getValue(ESCALATIONS.ACTION_TYPE),
-      event = record.getValue(ESCALATIONS.EVENT),
-      origin = record.getValue(ESCALATIONS.ORIGIN))
-  }
-
-  private def recordToPairReport(record:Record) : PairReportDef = {
-    PairReportDef(
-      pair = record.getValue(PAIR_REPORTS.PAIR_KEY),
-      name = record.getValue(PAIR_REPORTS.NAME),
-      target = record.getValue(PAIR_REPORTS.TARGET),
-      reportType = record.getValue(PAIR_REPORTS.REPORT_TYPE)
-    )
-  }
-
-  private def recordToRepairAction(record:Record) : RepairActionDef = {
-    RepairActionDef(
-      pair = record.getValue(REPAIR_ACTIONS.PAIR_KEY),
-      name = record.getValue(REPAIR_ACTIONS.NAME),
-      scope = record.getValue(REPAIR_ACTIONS.SCOPE),
-      url = record.getValue(REPAIR_ACTIONS.URL)
-    )
-  }
-
-  private def recordToEndpoint(record:Record) : EndpointDef = {
-    EndpointDef(
-      name = record.getValue(ENDPOINT.NAME),
-      scanUrl = record.getValue(ENDPOINT.SCAN_URL),
-      contentRetrievalUrl = record.getValue(ENDPOINT.CONTENT_RETRIEVAL_URL),
-      versionGenerationUrl = record.getValue(ENDPOINT.VERSION_GENERATION_URL),
-      inboundUrl = record.getValue(ENDPOINT.INBOUND_URL),
-      categories = null,
-      views = null,
-      collation = record.getValue(ENDPOINT.COLLATION_TYPE)
-    )
-  }
-
-  /**
-   * Force the DB to uprev the config version column for this particular domain
-   */
-  private def upgradeConfigVersion(t:Factory, domain:String) {
-
-    cachedConfigVersions.evict(domain)
-
-    t.update(DOMAINS).
-      set(DOMAINS.CONFIG_VERSION, DOMAINS.CONFIG_VERSION.add(1)).
-      where(DOMAINS.NAME.equal(domain)).
-      execute()
-  }
 
   def allConfigOptions(domain:String) = cachedDomainConfigOptionsMap.readThrough(domain, () => jooq.execute( t => {
     val results = t.select(CONFIG_OPTIONS.OPT_KEY, CONFIG_OPTIONS.OPT_VAL).
@@ -997,66 +948,16 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
     invalidateConfigCaches(domain)
   }
 
-  private def deletePairWithDependencies(t:Factory, pair:DiffaPairRef) = {
-    deleteRepairActionsByPair(t, pair)
-    deleteEscalationsByPair(t, pair)
-    deleteReportsByPair(t, pair)
-    deletePairViewsByPair(t, pair)
-    deleteStoreCheckpointsByPair(t, pair)
-    deleteUserItemsByPair(t, pair)
-    deletePairWithoutDependencies(t, pair)
-  }
+  /**
+   * Force the DB to uprev the config version column for this particular domain
+   */
+  private def upgradeConfigVersion(t:Factory, domain:String) {
 
-  private def deletePairWithoutDependencies(t:Factory, pair:DiffaPairRef) = {
-    val deleted = t.delete(PAIR).
-      where(PAIR.DOMAIN.equal(pair.domain)).
-      and(PAIR.PAIR_KEY.equal(pair.key)).
-      execute()
+    cachedConfigVersions.evict(domain)
 
-    if (deleted == 0) {
-      throw new MissingObjectException(pair.identifier)
-    }
-  }
-
-  private def deleteUserItemsByPair(t:Factory, pair:DiffaPairRef) = {
-    t.delete(USER_ITEM_VISIBILITY).
-      where(USER_ITEM_VISIBILITY.DOMAIN.equal(pair.domain)).
-      and(USER_ITEM_VISIBILITY.PAIR.equal(pair.key)).
-      execute()
-  }
-
-  private def deleteRepairActionsByPair(t:Factory, pair:DiffaPairRef) = {
-    t.delete(REPAIR_ACTIONS).
-      where(REPAIR_ACTIONS.DOMAIN.equal(pair.domain)).
-      and(REPAIR_ACTIONS.PAIR_KEY.equal(pair.key)).
-      execute()
-  }
-
-  private def deleteEscalationsByPair(t:Factory, pair:DiffaPairRef) = {
-    t.delete(ESCALATIONS).
-      where(ESCALATIONS.DOMAIN.equal(pair.domain)).
-      and(ESCALATIONS.PAIR_KEY.equal(pair.key)).
-      execute()
-  }
-
-  private def deleteReportsByPair(t:Factory, pair:DiffaPairRef) = {
-    t.delete(PAIR_REPORTS).
-      where(PAIR_REPORTS.DOMAIN.equal(pair.domain)).
-      and(PAIR_REPORTS.PAIR_KEY.equal(pair.key)).
-      execute()
-  }
-
-  private def deletePairViewsByPair(t:Factory, pair:DiffaPairRef) = {
-    t.delete(PAIR_VIEWS).
-      where(PAIR_VIEWS.DOMAIN.equal(pair.domain)).
-      and(PAIR_VIEWS.PAIR.equal(pair.key)).
-      execute()
-  }
-
-  private def deleteStoreCheckpointsByPair(t:Factory, pair:DiffaPairRef) = {
-    t.delete(STORE_CHECKPOINTS).
-      where(STORE_CHECKPOINTS.DOMAIN.equal(pair.domain)).
-      and(STORE_CHECKPOINTS.PAIR.equal(pair.key)).
+    t.update(DOMAINS).
+      set(DOMAINS.CONFIG_VERSION, DOMAINS.CONFIG_VERSION.add(1)).
+      where(DOMAINS.NAME.equal(domain)).
       execute()
   }
 
