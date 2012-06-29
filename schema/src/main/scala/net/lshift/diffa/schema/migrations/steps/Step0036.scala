@@ -115,7 +115,7 @@ object Step0036 extends MigrationStep {
       column("value", Types.VARCHAR, 255, false).
       column("view_name", Types.VARCHAR, 50, true).
       column("target_type", Types.VARCHAR, 20, false, "endpoint").
-      pk("domain", "endpoint", "name", "target_type")
+      pk("domain", "endpoint", "name", "target_type", "value")
 
     migration.alterTable("set_categories").
       addForeignKey("fk_stcg_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))

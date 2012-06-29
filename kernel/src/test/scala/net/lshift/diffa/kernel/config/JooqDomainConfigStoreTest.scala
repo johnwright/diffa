@@ -485,6 +485,25 @@ class JooqDomainConfigStoreTest {
       ))
     verifyEndpoints(Seq(down_v2, up_v2))
 
+    val down_v3 = down_v2.copy(
+      categories = Map(
+        "foo" -> new RangeCategoryDescriptor("date", null, null, null),
+        "bar" -> new PrefixCategoryDescriptor(1,3,1),
+        "baz" -> new SetCategoryDescriptor(Set("a","b","c"))
+      ))
+    verifyEndpoints(Seq(down_v3, up_v2))
+
+    val down_v4 = down_v3.copy(
+      categories = Map(
+        "foo" -> new RangeCategoryDescriptor("date", null, null, null),
+        "ibm" -> new RangeCategoryDescriptor("date", "1999-10-10", "1999-10-11", null),
+        "bar" -> new PrefixCategoryDescriptor(1,3,1),
+        "who" -> new PrefixCategoryDescriptor(2,3,2),
+        "baz" -> new SetCategoryDescriptor(Set("sierra","lima","yankie")),
+        "pom" -> new SetCategoryDescriptor(Set("indigo","victor","charlie"))
+      ))
+    verifyEndpoints(Seq(down_v4, up_v2))
+
   }
 
   @Test
