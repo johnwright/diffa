@@ -67,6 +67,7 @@ class LengthCheckingParserTest { self =>
   lazy val serviceLimitsView = createMock(classOf[PairServiceLimitsView])
   val pairRef = DiffaPairRef("key", "domain")
 
+  lazy val canary = ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
 
   class DummyParser extends JsonScanResultParser {
     val serviceLimitsView = self.serviceLimitsView
@@ -76,7 +77,7 @@ class LengthCheckingParserTest { self =>
     override def parse(s: InputStream) = {
       val reader = new BufferedReader(new InputStreamReader(s, "utf8"))
       this.passedStream = Some(reader.readLine())
-      Array[ScanResultEntry]()
+      Array[ScanResultEntry](canary)
     }
 
   }
@@ -108,12 +109,7 @@ class LengthCheckingParserTest { self =>
     checkingParser.parse(emptyResponse)
 
     assertThat(checkingParser.passedStream, is(Some(emptyResponseContent):Option[String]))
-
-    // Does not throw
   }
-
-
-
 
   @Test(expected = classOf[ScanLimitBreachedException])
   def shouldRejectEntitiesLongerThanScanResponseSizeLimit {
@@ -122,8 +118,17 @@ class LengthCheckingParserTest { self =>
     replay(serviceLimitsView)
 
     checkingParser.parse(emptyResponse)
-    // XXX
   }
+
+  @Test
+  def shouldReturnTheInnerParserResult {
+    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
+      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size)
+    replay(serviceLimitsView)
+
+    assertThat(checkingParser.parse(emptyResponse), is(Array(canary)))
+  }
+
 
 }
 
