@@ -86,13 +86,15 @@ class ScanParticipantRestClient(pair: DiffaPairRef,
 
   }
 
-  def nullJsonParser: InputStream => Seq[ScanResultEntry] = { _ => Seq[ScanResultEntry]() }
+  def nullJsonParser = new JsonScanResultParser {
+    def parse(stream: InputStream): Array[ScanResultEntry] = Array[ScanResultEntry]()
+  }
 
   def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) =
     scan(constraints, aggregations, nullJsonParser)
 
   def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction],
-           parser: InputStream => Seq[ScanResultEntry]): Seq[ScanResultEntry] = {
+           parser: JsonScanResultParser): Seq[ScanResultEntry] = {
 
 
     val query = DiffaHttpQuery(scanUrl).accepting("application/json").
@@ -107,7 +109,7 @@ class ScanParticipantRestClient(pair: DiffaPairRef,
       case Some(QueryParameterCredentials(name, value)) => query.withQuery(Map(name -> Seq(value)))
     }
     this.httpClient.get(queryWithCredentials) match {
-      case Right(stream) => parser(stream)
+      case Right(stream) => parser.parse(stream)
       case Left(ex) => handleHttpError(ex, queryWithCredentials)
 
     }

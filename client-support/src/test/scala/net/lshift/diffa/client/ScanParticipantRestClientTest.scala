@@ -34,10 +34,9 @@ import net.lshift.diffa.kernel.differencing.ScanFailedException
 // Define JsonParser interface thing
 
 class ScanParticipantRestClientTest {
-  val httpClient =  createMock(classOf[DiffaHttpClient])
-  val credentialsLookup = createMock(classOf[DomainCredentialsLookup])
-  lazy val parser = createMock(classOf[InputStream => Seq[ScanResultEntry]])
-
+  lazy val httpClient =  createMock(classOf[DiffaHttpClient])
+  lazy val credentialsLookup = createMock(classOf[DomainCredentialsLookup])
+  lazy val parser = createMock(classOf[JsonScanResultParser])
   val pair = DiffaPairRef("key", "domain")
   val scanUrl = "http://dummy/url"
 
@@ -110,7 +109,7 @@ class ScanParticipantRestClientTest {
   @Test
   def participantParsesResponse {
     expect(httpClient.get(scanQuery)).andStubReturn(Right(emptyResponse))
-    expect(parser.apply(emptyResponse)).andReturn(Seq())
+    expect(parser.parse(emptyResponse)).andReturn(Array())
     replay(httpClient, parser)
     expectingNullCredentials()
 
@@ -124,7 +123,7 @@ class ScanParticipantRestClientTest {
     val entities = Seq(ScanResultEntry.forEntity("id", "version", DateTime.now()))
 
     expect(httpClient.get(scanQuery)).andStubReturn(Right(emptyResponse))
-    expect(parser.apply(emptyResponse)).andReturn(entities)
+    expect(parser.parse(emptyResponse)).andReturn(entities.toArray)
     replay(httpClient, parser)
     expectingNullCredentials()
 
