@@ -3,12 +3,15 @@ package net.lshift.diffa.client
 import org.junit.Test
 import org.hamcrest.Matchers._
 import org.junit.Assert._
-import java.io.ByteArrayInputStream
+import java.io.{InputStreamReader, BufferedReader, InputStream, ByteArrayInputStream}
 import net.lshift.diffa.participant.scanning.ScanResultEntry
 import org.joda.time.{DateTimeZone, DateTime}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.common.ScanEntityValidator
 import org.easymock.EasyMock._
+import net.lshift.diffa.kernel.config.{DiffaPairRef, PairServiceLimitsView}
+import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
+import net.lshift.diffa.kernel.differencing.ScanLimitBreachedException
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -50,19 +53,77 @@ class ValidatingScanResultParserTest {
   }
 
   @Test
-  def shouldValidateEachEntity = {
+  def shouldValidateEachEntity {
     expect(validator.process(singleEntity))
     replay(validator)
     parser.parse(singleEntityStream)
     verify(validator)
   }
 
-  @Test
-  def shouldValidateLengthOfResponse = {
+}
+
+class LengthCheckingParserTest { self =>
+
+  lazy val serviceLimitsView = createMock(classOf[PairServiceLimitsView])
+  val pairRef = DiffaPairRef("key", "domain")
+
+
+  class DummyParser extends JsonScanResultParser {
+    val serviceLimitsView = self.serviceLimitsView
+    val pair = self.pairRef
+
+    var passedStream: Option[String] = None
+    override def parse(s: InputStream) = {
+      val reader = new BufferedReader(new InputStreamReader(s, "utf8"))
+      this.passedStream = Some(reader.readLine())
+      Array[ScanResultEntry]()
+    }
 
   }
+  val checkingParser = new DummyParser with LengthCheckingParser
+
+  val emptyResponseContent = "[" + (" " * 40) + "]"
+
+  lazy val emptyResponse = new ByteArrayInputStream(emptyResponseContent.getBytes("UTF8"))
+
 
   @Test
-  def shouldValidateOrderingOfEntities = ()
+  def shouldQueryForCorrectLength {
+    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
+      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size)
+    replay(serviceLimitsView)
+
+    checkingParser.parse(emptyResponse)
+
+    verify(serviceLimitsView)
+  }
+
+
+  @Test(expected=classOf[Test.None])
+  def shouldAcceptEntitiesLessOrEqualToThanScanResponseSizeLimit {
+    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
+      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size)
+    replay(serviceLimitsView)
+
+    checkingParser.parse(emptyResponse)
+
+    assertThat(checkingParser.passedStream, is(Some(emptyResponseContent):Option[String]))
+
+    // Does not throw
+  }
+
+
+
+
+  @Test(expected = classOf[ScanLimitBreachedException])
+  def shouldRejectEntitiesLongerThanScanResponseSizeLimit {
+    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
+      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size - 1)
+    replay(serviceLimitsView)
+
+    checkingParser.parse(emptyResponse)
+    // XXX
+  }
 
 }
+

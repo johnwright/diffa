@@ -17,7 +17,7 @@ package net.lshift.diffa.client
  */
 
 import org.easymock.EasyMock._
-import net.lshift.diffa.kernel.config.{BasicAuthCredentials, QueryParameterCredentials, DomainCredentialsLookup, DiffaPairRef}
+import net.lshift.diffa.kernel.config._
 import org.junit.Test
 import java.io.{InputStream, ByteArrayInputStream}
 import org.junit.Assert._
@@ -28,7 +28,16 @@ import org.joda.time.DateTime
 import net.lshift.diffa.kernel.participants.{CategoryFunction, StringPrefixCategoryFunction}
 import scala.Right
 import java.net.{SocketTimeoutException, SocketException, ConnectException, URI}
-import net.lshift.diffa.kernel.differencing.ScanFailedException
+import net.lshift.diffa.kernel.differencing.{ScanLimitBreachedException, ScanFailedException}
+import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
+import net.lshift.diffa.kernel.config.DiffaPairRef
+import net.lshift.diffa.kernel.config.QueryParameterCredentials
+import net.lshift.diffa.kernel.config.BasicAuthCredentials
+import scala.Right
+import scala.Some
+import net.lshift.diffa.client.DiffaHttpQuery
+import net.lshift.diffa.kernel.participants.StringPrefixCategoryFunction
+import scala.Left
 
 // TODO:
 // Define JsonParser interface thing
@@ -36,6 +45,7 @@ import net.lshift.diffa.kernel.differencing.ScanFailedException
 class ScanParticipantRestClientTest {
   lazy val httpClient =  createMock(classOf[DiffaHttpClient])
   lazy val credentialsLookup = createMock(classOf[DomainCredentialsLookup])
+
   lazy val parser = createMock(classOf[JsonScanResultParser])
   val pair = DiffaPairRef("key", "domain")
   val scanUrl = "http://dummy/url"
@@ -50,7 +60,9 @@ class ScanParticipantRestClientTest {
     new ScanParticipantRestClient(pair, scanUrl, null, credentialsLookup, httpClient)
   }
 
-  lazy val emptyResponse = new ByteArrayInputStream("[]".getBytes("UTF8"))
+  val emptyResponseContent = "[]" + " " * 40
+
+  lazy val emptyResponse = new ByteArrayInputStream(emptyResponseContent.getBytes("UTF8"))
 
 
   lazy val nullQuery = Map[String, Seq[String]]()
@@ -188,7 +200,6 @@ class ScanParticipantRestClientTest {
     replay(credentialsLookup, httpClient)
 
     scanningParticipant.scan(nullConstraints, nullAggregations)
-    verify(credentialsLookup)
   }
 
   @Test // TODO
@@ -202,7 +213,6 @@ class ScanParticipantRestClientTest {
     replay(credentialsLookup, httpClient)
 
     scanningParticipant.scan(nullConstraints, nullAggregations)
-    verify(credentialsLookup)
   }
 }
 
@@ -228,6 +238,7 @@ class DiffaHttpQueryTest {
       equalTo(Map("property-length" -> Seq("1"))))
 
   }
+
 
 
 }
