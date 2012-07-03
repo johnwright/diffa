@@ -16,10 +16,10 @@
 
 package net.lshift.diffa.client
 
-import net.lshift.diffa.participant.scanning.{ScanResultEntry, ScanConstraint}
+import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanResultEntry, ScanConstraint}
 import net.lshift.diffa.kernel.util.AlertCodes._
 import org.apache.http.impl.client.DefaultHttpClient
-import org.apache.http.client.methods.HttpGet
+import org.apache.http.client.methods.{HttpUriRequest, HttpGet}
 import org.apache.http.client.HttpClient
 import org.slf4j.LoggerFactory
 
@@ -39,21 +39,32 @@ import java.io.{IOException, InputStream}
 import net.lshift.diffa.kernel.differencing.{ScanLimitBreachedException, ScanFailedException}
 import java.net.{SocketTimeoutException, ConnectException, SocketException, URI}
 import net.lshift.diffa.kernel.differencing.EntityValidator
+import javax.ws.rs.core.MultivaluedMap
 
 
-/**
+  /**
  * A ScanningParticipantRestClient is responsible for issuing scan queries to
  * Participants and mapping the JSON response to an Object.
  */
 class ScanningParticipantRestClient(pair: DiffaPairRef,
                                     scanUrl: String,
                                     serviceLimitsView: PairServiceLimitsView,
-                                    credentialsLookup: DomainCredentialsLookup)
-  extends InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsLookup)
-  with ScanningParticipantRef {
+                                    credentialsLookup: DomainCredentialsLookup,
+                                    httpClient: DiffaHttpClient = null)
+  extends /* InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsLookup)
+  with */ ScanningParticipantRef {
 
   private val log = LoggerFactory.getLogger(getClass)
+  private val restClient = new InternalRestClient(pair, scanUrl, serviceLimitsView, credentialsLookup) {
+    def constructGetRequest(queryParams:MultivaluedMapImpl,
+                                  credentials:Option[QueryParameterCredentials]) =
+      super.buildGetRequest(queryParams, credentials)
+    def possiblyAuthenticate(prepareRequest:Option[QueryParameterCredentials] => HttpUriRequest) =
+      super.maybeAuthenticate(prepareRequest)
 
+    def shutdown(client: HttpClient) = super.shutdownImmediate(client)
+
+  }
   /**
    * Issue a single query to a participant.
    *
@@ -68,7 +79,6 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
    * not be exposed via the UI.
    */
   def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]): Seq[ScanResultEntry] = {
-
     val params = new MultivaluedMapImpl
 
     RequestBuildingHelper.constraintsToQueryArguments(params, constraints)
@@ -78,8 +88,8 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
     // any of the constraint or aggregation parameters
     // But we eed to be careful to add these on, since they could potentially leak authentication data
 
-    def prepareRequest(query:Option[QueryParameterCredentials]) = buildGetRequest(params, query)
-    val (httpClient, httpGet) = maybeAuthenticate(prepareRequest)
+    def prepareRequest(query:Option[QueryParameterCredentials]) = restClient.constructGetRequest(params, query)
+    val (httpClient, httpGet) = restClient.possiblyAuthenticate(prepareRequest)
 
     try {
       val response = httpClient.execute(httpGet)
@@ -102,14 +112,14 @@ class ScanningParticipantRestClient(pair: DiffaPairRef,
         log.error("%s Socket closed to %s".format(SCAN_CONNECTION_CLOSED, scanUrl))
         // NOTICE: ScanFailedException is handled specially (see its class documentation).
         throw new ScanFailedException("Connection to %s closed unexpectedly, query %s".format(
-          scanUrl, uri.getQuery))
+          scanUrl, null /* uri.getQuery */))
       case ex: SocketTimeoutException =>
         log.error("%s Socket time out for %s".format(SCAN_SOCKET_TIMEOUT, scanUrl))
         // NOTICE: ScanFailedException is handled specially (see its class documentation).
         throw new ScanFailedException("Socket to %s timed out unexpectedly, query %s".format(
-          scanUrl, uri.getQuery))
+          scanUrl, null /*uri.getQuery */))
     } finally {
-      shutdownImmediate(httpClient)
+      restClient.shutdown(httpClient)
     }
   }
 
