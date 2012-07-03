@@ -72,8 +72,8 @@ class LengthCheckingParserTest { self =>
   class DummyParser extends JsonScanResultParser {
     val serviceLimitsView = self.serviceLimitsView
     val pair = self.pairRef
-
     var passedStream: Option[String] = None
+
     override def parse(s: InputStream) = {
       val reader = new BufferedReader(new InputStreamReader(s, "utf8"))
       this.passedStream = Some(reader.readLine())
@@ -84,51 +84,41 @@ class LengthCheckingParserTest { self =>
   val checkingParser = new DummyParser with LengthCheckingParser
 
   val emptyResponseContent = "[" + (" " * 40) + "]"
-
   lazy val emptyResponse = new ByteArrayInputStream(emptyResponseContent.getBytes("UTF8"))
-
 
   @Test
   def shouldQueryForCorrectLength {
-    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
-      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size)
-    replay(serviceLimitsView)
-
+    withExpectedResponseSizeLimit(emptyResponseContent.size)
     checkingParser.parse(emptyResponse)
-
     verify(serviceLimitsView)
   }
-
-
   @Test(expected=classOf[Test.None])
-  def shouldAcceptEntitiesLessOrEqualToThanScanResponseSizeLimit {
-    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
-      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size)
-    replay(serviceLimitsView)
+  def shouldPassEntitiesBelowTheScanResponseSizeLimitToWrappedParser {
+    withExpectedResponseSizeLimit(emptyResponseContent.size)
 
     checkingParser.parse(emptyResponse)
-
     assertThat(checkingParser.passedStream, is(Some(emptyResponseContent):Option[String]))
   }
 
   @Test(expected = classOf[ScanLimitBreachedException])
   def shouldRejectEntitiesLongerThanScanResponseSizeLimit {
-    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
-      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size - 1)
-    replay(serviceLimitsView)
+    withExpectedResponseSizeLimit(emptyResponseContent.size-1)
 
     checkingParser.parse(emptyResponse)
   }
 
   @Test
   def shouldReturnTheInnerParserResult {
-    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
-      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(emptyResponseContent.size)
-    replay(serviceLimitsView)
+    withExpectedResponseSizeLimit(emptyResponseContent.size)
 
     assertThat(checkingParser.parse(emptyResponse), is(Array(canary)))
   }
 
+  def withExpectedResponseSizeLimit(size: Int) {
+    expect(serviceLimitsView.getEffectiveLimitByNameForPair(
+      pairRef.domain, pairRef.key, ScanResponseSizeLimit)).andReturn(size)
+    replay(serviceLimitsView)
+  }
 
 }
 
