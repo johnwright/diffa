@@ -5,6 +5,7 @@ import net.lshift.diffa.participant.common.{ScanEntityValidator, JSONHelper}
 import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
 import net.lshift.diffa.kernel.differencing.ScanLimitBreachedException
 import net.lshift.diffa.kernel.config.{PairServiceLimitsView, DiffaPairRef}
+import net.lshift.diffa.participant.scanning.{OutOfOrderException, Collation}
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -57,4 +58,19 @@ trait LengthCheckingParser extends JsonScanResultParser {
     }
   }
 
+}
+
+trait CollationOrderCheckingParser extends JsonScanResultParser {
+  val collation: Collation
+
+  abstract override def parse(s: InputStream) = {
+    val results = super.parse(s)
+    results.zip(results.drop(1)).foreach { case (first, second) =>
+      if(collation.sortsBefore(second.getId, first.getId)) {
+        throw new OutOfOrderException(second.getId, first.getId)
+      }
+    }
+
+    results
+  }
 }

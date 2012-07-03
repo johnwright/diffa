@@ -4,7 +4,7 @@ import org.junit.Test
 import org.hamcrest.Matchers._
 import org.junit.Assert._
 import java.io.{InputStreamReader, BufferedReader, InputStream, ByteArrayInputStream}
-import net.lshift.diffa.participant.scanning.ScanResultEntry
+import net.lshift.diffa.participant.scanning.{OutOfOrderException, AsciiCollation, Collation, ScanResultEntry}
 import org.joda.time.{DateTimeZone, DateTime}
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.common.ScanEntityValidator
@@ -122,3 +122,45 @@ class LengthCheckingParserTest { self =>
 
 }
 
+class CollationOrderCheckingParserTest { self =>
+
+  val entity1 = ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
+  val entity2 = ScanResultEntry.forEntity("id2", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
+  val entity3 = ScanResultEntry.forEntity("id3", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
+
+  // A dummy collation that sorts backwards for verification purposes.
+  lazy val reversedAsciiCollation = new AsciiCollation {
+    override def sortsBefore(a: String, b:String) = super.sortsBefore(b, a)
+
+  }
+
+  trait DummyParser extends JsonScanResultParser {
+    val collation = self.reversedAsciiCollation
+    val entities: Array[ScanResultEntry]
+
+    override def parse(s: InputStream) = entities
+  }
+ //  val checkingParser = new DummyParser with CollationOrderCheckingParser
+
+  val emptyResponseContent = "[" + (" " * 40) + "]"
+  lazy val emptyResponse = new ByteArrayInputStream(emptyResponseContent.getBytes("UTF8"))
+
+  @Test
+  def shouldReturnWrappedParserResponseWhenCorrectlyOrdered {
+    val reversedEntities = Array(entity3, entity2, entity1)
+    val parser = new DummyParser with CollationOrderCheckingParser { val entities = reversedEntities }
+    assertThat(parser.parse(emptyResponse), is(reversedEntities))
+  }
+
+
+  @Test(expected=classOf[OutOfOrderException])
+  def shouldRaiseErrorWhenWronglyOrdered {
+    val misorderedEntities = Array(entity3, entity1, entity2)
+    val parser = new DummyParser with CollationOrderCheckingParser { val entities = misorderedEntities }
+    assertThat(parser.parse(emptyResponse), is(misorderedEntities))
+  }
+
+
+
+
+}
