@@ -57,7 +57,7 @@ class ScanParticipantRestClientTest {
 
 
   lazy val scanningParticipant = {
-    new ScanParticipantRestClient(pair, scanUrl, null, credentialsLookup, httpClient)
+    new ScanParticipantRestClient(pair, scanUrl, credentialsLookup, httpClient)
   }
 
   val emptyResponseContent = "[]" + " " * 40

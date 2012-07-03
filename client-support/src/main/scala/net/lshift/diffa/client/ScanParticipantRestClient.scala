@@ -70,9 +70,8 @@ trait DiffaHttpClient {
 
 class ScanParticipantRestClient(pair: DiffaPairRef,
                                 scanUrl: String,
-                                serviceLimitsView: PairServiceLimitsView,
                                 credentialsLookup: DomainCredentialsLookup,
-                                httpClient: DiffaHttpClient = null)
+                                httpClient: DiffaHttpClient)
   extends ScanningParticipantRef {
 
   private val log = LoggerFactory.getLogger(getClass)
