@@ -3,13 +3,12 @@ package net.lshift.diffa.client
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theory, Theories}
 import org.junit.Test
-import net.lshift.diffa.participant.scanning.StringPrefixConstraint
+import net.lshift.diffa.participant.scanning.{TimeRangeConstraint, StringPrefixConstraint}
 import org.junit.Assert._
-import net.lshift.diffa.client.DiffaHttpQuery
 import org.hamcrest.CoreMatchers._
-import net.lshift.diffa.client.DiffaHttpQuery
 import net.lshift.diffa.kernel.participants.StringPrefixCategoryFunction
 import java.net.URI
+import org.joda.time.{DateTimeZone, Duration, ReadableDuration, DateTime}
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -43,6 +42,21 @@ class DiffaHttpQueryTest {
   }
 
   @Test
+  def withTimeRangeConstraints() {
+
+    val start = new DateTime(2012, 07, 04, 16, 47, DateTimeZone.UTC)
+    val end = start.plus(3600 * 1000)
+    val constraints = Seq(new TimeRangeConstraint("property", start, end))
+    val expectedQueryParameters = Map("property-start" -> Seq("2012-07-04T16:47:00.000Z"), "property-end" -> Seq("2012-07-04T17:47:00.000Z"))
+    var withConstraints = dummyQuery.withConstraints(constraints)
+    assertThat(
+      withConstraints.query, equalTo(expectedQueryParameters))
+    assertThat(withConstraints.fullUri, equalTo(
+      new URI("http://dummy/?property-start=2012-07-04T16%3A47%3A00.000Z&property-end=2012-07-04T17%3A47%3A00.000Z")))
+  }
+
+
+  @Test
   def withAggregations {
     val aggregates = Seq(new StringPrefixCategoryFunction("property", 1, 2, 3))
     assertThat(
@@ -71,6 +85,9 @@ object DiffaHttpQueryTest {
   @DataPoint def simpleExample = Example("/", Map("dummy" -> Seq("value")), new URI("/?dummy=value"))
 
   @DataPoint def baseWithAuth = Example("/?auth=dummy", Map(), new URI("/?auth=dummy"))
+  @DataPoint def baseWithQueryParamIncludingDangerousCharacters =
+    Example("/", Map("colon" -> Seq("Mr :")), new URI("/?colon=Mr+%3a"))
+
 
   @DataPoint def baseWithAuthPlusQuery = Example(
     "/?auth=dummy", Map("query" -> Seq("value")), new URI("/?auth=dummy&query=value"))

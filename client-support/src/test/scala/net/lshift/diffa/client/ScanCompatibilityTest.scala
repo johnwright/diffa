@@ -31,6 +31,7 @@ import net.lshift.diffa.schema.servicelimits._
 import org.junit.runner.RunWith
 import org.junit.experimental.theories.{Theories, Theory, DataPoint}
 import net.lshift.diffa.kernel.config._
+import net.lshift.diffa.kernel.differencing.EntityValidator
 
 /**
  * Test ensuring that internal query constraint and aggregation types are passed and parsed by Scala participants.
@@ -269,11 +270,15 @@ object ScanCompatibilityTest {
   val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, None)
 
   lazy val server = new ParticipantServer(serverPort, scanningParticipant)
-  lazy val scanningRestClient = new ScanningParticipantRestClient(
+  // This duplicates what is in ParticipantRestClientFactory
+  lazy val parser = new ValidatingScanResultParser(EntityValidator)
+  lazy val httpClient = new ApacheHttpClient(0, 0)
+  lazy val scanningRestClient = new ScanParticipantRestClient(
     pair,
     "http://localhost:" + serverPort + "/scan",
-    limits,
-    domainCredentialsLookup
+    domainCredentialsLookup,
+    httpClient,
+    parser
   )
 
   def stubAggregationBuilder(a:(HttpServletRequest) => AggregationBuilder) {

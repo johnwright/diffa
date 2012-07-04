@@ -48,24 +48,33 @@ case class DiffaHttpQuery(uri: String,
     val nquery = mvm.foldLeft(query) {
       case (query, (key, value) ) => query + (key -> (query.getOrElse(key, Seq()) ++ value))
     }
+
     copy(query = nquery)
   }
 
   def fullUri: URI = {
-    val u = new URI(this.uri)
-    var queryParams = URLEncodedUtils.parse(u, encoding).toSeq
+
+    val (path, queryPrefix) = uri.split("\\?", 2) match {
+      case Array(p) => (p, None);
+      case Array(p, qs) => (p, Some(qs))
+    }
+
     val additionalQueryParams = for {
       (key, values) <- this.query
       value <- values
     } yield new BasicNameValuePair(key, value)
-    println("from base: %s, moar:%s".format(queryParams, additionalQueryParams))
 
-    val newQuery = URLEncodedUtils.format(queryParams ++ additionalQueryParams, encoding) match {
-      case "" => null
-      case s => s
+    val additionalQuery = URLEncodedUtils.format(additionalQueryParams.toList, encoding) match {
+      case "" => None
+      case s => Some(s)
     }
-    // URI(scheme: String, userInfo: String, host: String, port: Int, path: String, query: String, fragment: String)
-    new URI(u.getScheme, u.getUserInfo, u.getHost, u.getPort,u.getPath, newQuery, u.getFragment)
+    val completeQuery = Seq(queryPrefix, additionalQuery).flatMap(_.toSeq) match {
+      case List() => None
+      case query => Some(query.mkString("&"))
+    }
+
+    new URI(List(Some(path), completeQuery).flatMap(_.toSeq).mkString("?"))
+
   }
 
   //  override def equals(other: Any) = other match {
