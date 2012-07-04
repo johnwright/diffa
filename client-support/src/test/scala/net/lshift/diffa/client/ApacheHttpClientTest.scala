@@ -26,12 +26,12 @@ import org.apache.commons.codec.binary.Base64
  * limitations under the License.
  */
 
-class HttpClientTest {
-  import HttpClientTest._
+class ApacheHttpClientTest {
+  import ApacheHttpClientTest._
 
   val client: DiffaHttpClient = new ApacheHttpClient
 
-  @Before def reset { HttpClientTest.reset }
+  @Before def reset { ApacheHttpClientTest.reset }
 
   // @Test
   def makesCorrectRequestToServer {
@@ -66,7 +66,7 @@ class HttpClientTest {
 
 }
 
-object HttpClientTest {
+object ApacheHttpClientTest {
   val port = 23452
   private val server = new Server(port)
   server.setHandler(new AbstractHandler {
