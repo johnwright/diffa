@@ -46,22 +46,13 @@ import org.apache.http.message.BasicNameValuePair
 class ScanParticipantRestClient(pair: DiffaPairRef,
                                 scanUrl: String,
                                 credentialsLookup: DomainCredentialsLookup,
-                                httpClient: DiffaHttpClient)
+                                httpClient: DiffaHttpClient,
+                                parser: JsonScanResultParser)
   extends ScanningParticipantRef {
 
   private val log = LoggerFactory.getLogger(getClass)
 
-  def nullJsonParser = new JsonScanResultParser {
-    def parse(stream: InputStream): Array[ScanResultEntry] = Array[ScanResultEntry]()
-  }
-
-  def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) =
-    scan(constraints, aggregations, nullJsonParser)
-
-  def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction],
-           parser: JsonScanResultParser): Seq[ScanResultEntry] = {
-
-
+  def scan(constraints: Seq[ScanConstraint], aggregations: Seq[CategoryFunction]) : Seq[ScanResultEntry] = {
     val query = DiffaHttpQuery(scanUrl).accepting("application/json").
       withConstraints(constraints).
       withAggregations(aggregations)

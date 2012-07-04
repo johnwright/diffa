@@ -52,7 +52,7 @@ class ScanParticipantRestClientTest {
 
 
   lazy val scanningParticipant = {
-    new ScanParticipantRestClient(pair, scanUrl, credentialsLookup, httpClient)
+    new ScanParticipantRestClient(pair, scanUrl, credentialsLookup, httpClient, parser)
   }
 
   val emptyResponseContent = "[]" + " " * 40
@@ -100,27 +100,13 @@ class ScanParticipantRestClientTest {
   }
 
   @Test
-  def participantReturnsEmptySequenceWithNoElements {
-
-    expect(httpClient.get(scanQuery)).andStubReturn(Right(emptyResponse))
-    replay(httpClient)
-    expectingNullCredentials()
-
-    assertThat(scanningParticipant.scan(Seq(), Seq()),
-      equalTo(Seq[ScanResultEntry]()))
-
-  }
-
-
-
-  @Test
   def participantParsesResponse {
     expect(httpClient.get(scanQuery)).andStubReturn(Right(emptyResponse))
     expect(parser.parse(emptyResponse)).andReturn(Array())
     replay(httpClient, parser)
     expectingNullCredentials()
 
-    scanningParticipant.scan(nullConstraints, nullAggregations,  parser=parser)
+    scanningParticipant.scan(nullConstraints, nullAggregations)
     verify(parser)
   }
 
@@ -134,7 +120,7 @@ class ScanParticipantRestClientTest {
     replay(httpClient, parser)
     expectingNullCredentials()
 
-    assertThat(scanningParticipant.scan(nullConstraints, nullAggregations,  parser=parser),
+    assertThat(scanningParticipant.scan(nullConstraints, nullAggregations),
       equalTo(entities))
   }
 
