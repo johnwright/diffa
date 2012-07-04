@@ -18,6 +18,9 @@ package net.lshift.diffa.client
 
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.config.{DomainCredentialsLookup, DiffaPairRef, DomainCredentialsManager, PairServiceLimitsView}
+import java.io.InputStream
+import net.lshift.diffa.participant.scanning.ScanResultEntry
+import net.lshift.diffa.kernel.differencing.EntityValidator
 
 trait ParticipantRestClientFactory {
 
@@ -27,11 +30,15 @@ trait ParticipantRestClientFactory {
 class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
 
-  def createParticipantRef(address: String, pair:DiffaPairRef) =
-    new ScanningParticipantRestClient(serviceLimitsView = limits,
-                                      scanUrl = address,
-                                      credentialsLookup = credentialsLookup,
-                                      pair = pair)
+  def createParticipantRef(address: String, pairRef:DiffaPairRef) = {
+   val client = new ApacheHttpClient(0, 0)
+    val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser /* with CollationOrderCheckingParser */ {
+      val serviceLimitsView = limits
+      val pair = pairRef
+      // val collation = magicalFindCollationMethod()
+    }
+    new ScanParticipantRestClient(pairRef, address, credentialsLookup, client, parser)
+  }
 }
 
 class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)

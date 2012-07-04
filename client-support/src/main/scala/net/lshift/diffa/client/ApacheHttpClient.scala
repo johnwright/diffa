@@ -6,6 +6,7 @@ import org.apache.http.client.methods.HttpGet
 import java.net.URI
 import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
 import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
+import org.slf4j.LoggerFactory
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -26,6 +27,7 @@ import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
 class ApacheHttpClient(connectionTimeout: Int,
                         socketTimeout: Int) extends DiffaHttpClient {
 
+  private val logger = LoggerFactory.getLogger(getClass)
 
   lazy val client = {
     val httpParams = new BasicHttpParams
@@ -40,23 +42,30 @@ class ApacheHttpClient(connectionTimeout: Int,
       client.getCredentialsProvider.setCredentials(
         new AuthScope(r.fullUri.getHost, r.fullUri.getPort),
         new UsernamePasswordCredentials(user, pass))
-      println("Set credentials: %s/%s".format(user, pass))
+      debugLog("Set credentials: %s/%s", user, pass)
     }
-    println("Request: %s".format(req.getURI))
+
+    debugLog("Request: %s", req.getURI)
     try {
       val resp = client.execute(req)
-      println("Status: %s / ".format(resp.getStatusLine.getStatusCode))
+      debugLog("Statusline for %s: %s ", req.getURI, resp.getStatusLine.getStatusCode.toString)
 
       resp.getStatusLine.getStatusCode match {
         case code: Int if (200 to 299) contains code => Right(resp.getEntity.getContent)
         case code =>
           resp.getEntity.getContent.close()
+          logger.warn("Query for URI: %s returned %s", resp.getStatusLine)
           Left(new HttpResponseException(code, resp.getStatusLine.getReasonPhrase))
       }
 
     } catch {
       case e: Throwable => Left(e)
     }
+  }
+
+  private def debugLog(format: String, args: AnyRef*) = {
+    if (logger.isDebugEnabled)
+      logger.debug(format, args)
   }
 
 }
