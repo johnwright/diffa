@@ -32,7 +32,7 @@ class OracleIndexRebuilder extends IndexRebuilder {
 
   def rebuild(session: Session, tableName:String) {
     val unusableIndexesQuery = "select index_name from user_indexes where status = 'UNUSABLE' and table_name = ?"
-    val alterIndexSql = "alter index %s rebuild"
+    val alterIndexSql = "alter index %s rebuild wait 10"
 
     session.doWork(new Work {
       def execute(connection: Connection) {

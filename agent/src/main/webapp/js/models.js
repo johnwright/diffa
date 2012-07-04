@@ -268,19 +268,42 @@ Diffa.Collections.CollectionBase = Backbone.Collection.extend(Diffa.Collections.
     }
   }
 });
+
 Diffa.Collections.Endpoints = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Endpoint,
   url: function() { return "/domains/" + this.domain.id + "/config/endpoints"; },
   comparator: function(endpoint) { return endpoint.get('name'); }
 });
+
 Diffa.Collections.EndpointViews = Backbone.Collection.extend({
   model: Diffa.Models.EndpointView
 });
+
 Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Pair,
   url: function() { return "/domains/" + this.domain.id + "/config/pairs"; },
   comparator: function(pair) { return pair.id; }
 });
+
+Diffa.Collections.HiddenSwimLanes = Diffa.Collections.CollectionBase.extend({
+  model: Diffa.Models.Pair,
+
+  initialize: function(models, opts) {
+    this.user = opts.user;
+    console.log("[HiddenSwimLanes.initialize] user: " + this.user);
+  },
+
+  url: function() {
+    return "/users/" + this.user + "/" + this.domain.id + "/filter/SWIM_LANE";
+  },
+
+  putUrl: function() {
+    "/users/guest/diffa/" + this.model.id + "/filter/SWIM_LANE"
+  },
+
+  comparator: function(pair) { return pair.id; }
+});
+
 Diffa.Collections.CategoryCollection = Backbone.Collection.extend({
   model: Backbone.Model,
   initialize: function(models, options) {
@@ -489,11 +512,15 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
 Diffa.Models.Domain = Backbone.Model.extend({
   idAttribute: 'name',
   initialize: function() {
+    var self = this;
+    var user = this.get('user');
+    console.log("[domain.initialize] user: " + user);
     this.endpoints = new Diffa.Collections.Endpoints([], {domain: this});
     this.pairs = new Diffa.Collections.Pairs([], {domain: this});
     this.pairStates = new Diffa.Collections.PairStates([], {domain: this});
     this.diffs = new Diffa.Collections.Diffs([], {domain: this});
     this.aggregates = new Diffa.Collections.DomainAggregates([], {domain: this});
+    this.hiddenSwimLanes = new Diffa.Collections.HiddenSwimLanes([], {domain: this, user: user});
   },
 
   loadAll: function(colls, callback) {
@@ -520,15 +547,19 @@ Diffa.Models.Domain = Backbone.Model.extend({
  */
 Diffa.DomainManager = _.extend({}, Backbone.Events, {
   domains: {},
-  get: function(name) {
+  get: function(name, user) {
     if (!name) {
       name = "diffa";     // Default the domain name when not specified
+    }
+
+    if (!user) {
+      user = "guest";
     }
 
     var domain = this.domains[name];
 
     if (!domain) {
-      domain = new Diffa.Models.Domain({name: name});
+      domain = new Diffa.Models.Domain({name: name, user: user});
       this.domains[name] = domain;
     }
 

@@ -23,7 +23,7 @@
   <head>
     <script type="text/javascript">
       <%
-        // Allow the API root to overriden via the environment
+        // Allow the API root to be overridden via the environment
 
         javax.naming.Context ctx = new javax.naming.InitialContext();
         javax.naming.Context myenv = (javax.naming.Context) ctx.lookup("java:comp/env");

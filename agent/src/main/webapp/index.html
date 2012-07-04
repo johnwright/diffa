@@ -25,6 +25,10 @@
   if (domain == null || domain.equals("")) {
     domain = "diffa";
   }
+  String username = (String) session.getAttribute("username");
+  if (username == null || username.equals("")) {
+    username = "donkey";
+  }
 %>
 
 <html>
@@ -40,6 +44,8 @@
         <h1>Diffa</h1>
       </div>
 
+      <div>Current user: <%= username %></div>
+      <div>Current domain: <%= domain %></div>
       <div class="top-navigation-link">
         <a class="domain-page" href="overview.html">Overview</a>
         <a class="domain-page" href="data.html">Data</a>
@@ -47,10 +53,11 @@
         <a class="domain-page" href="settings.html">Settings</a>
       </div>
 
-      <div id="heatmap" class="diffa-heatmap" data-domain="<%= domain %>"></div>
+      <div id="heatmap" class="diffa-heatmap" data-domain="<%= domain %>" data-user="<%= username %>"></div>
       <div id="diff-list-container" class="diffa-difflist" data-domain="<%= domain %>"></div>
       <div id="contentviewer" class="diffa-contentviewer" data-domain="<%= domain %>"></div>
       <div id="contentinspector" class="diffa-contentinspector" data-domain="<%= domain %>"></div>
+      <div><script type="text/javascript">console.log("<%= domain %>");</script></div>
     </div>
 
   </body>

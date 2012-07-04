@@ -15,6 +15,27 @@
  */
 
 $(function() {
+
+jQuery.fn.multiselect = function() {
+  $(this).each(function() {
+    var checkboxes = $(this).find("input:checkbox");
+    checkboxes.each(function() {
+      var checkbox = $(this);
+      // Highlight pre-selected checkboxes
+      if (checkbox.attr("checked"))
+        checkbox.parent().addClass("multiselect-on");
+
+      // Highlight checkboxes that the user selects
+      checkbox.click(function() {
+        if (checkbox.attr("checked"))
+          checkbox.parent().addClass("multiselect-on");
+        else
+          checkbox.parent().removeClass("multiselect-on");
+      });
+    });
+  });
+};
+
 var directions = {
   left: 'left',
   right: 'right'
@@ -59,7 +80,6 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   defaultZoomLevel:4,       // HOURLY
   defaultMaxRows: 1000,       // Will change as more pairs arrive. Correction: No, it won't!!!
   defaultBucketCount: 31,   // Default number of buckets. Will be overriden once heatmap is ready
-  hiddenPairs: {},
 
   initialize: function() {
     _.bindAll(this, "sync");
@@ -73,12 +93,13 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     });
     this.aggregates = this.get('aggregates');   // Pull the aggregates collection out as a top-level attribute
     this.domain = this.get('domain');
+    this.hiddenPairs = this.domain.hiddenSwimLanes;
 
     var self = this;
     var fireBucketChange = function() { self.trigger('change:buckets'); };
     this.aggregates.on('add', fireBucketChange);
     this.aggregates.on('change', fireBucketChange);
-    this.hiddenPairs = {};
+    console.log("Hidden Pairs: " + self.hiddenPairs.length);
 
     // The two different end time properties should event out as changes to the start time
     this.on('change:fixedEndTime', function() { self.trigger('change:startTime'); });
@@ -145,18 +166,40 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   hidePair: function(cell) {
     var pairs = this.getSwimlaneLabels();
     var toHide = pairs[cell.row];
-    var p = new FilteredPair({domain: domain});
+    console.log(toHide);
+    this.saveHiddenPair(toHide);
+//    var p = new FilteredPair({domain: domain});
     this.hiddenPairs[toHide] = true;
+  },
+
+  saveHiddenPair: function(pairName) {
+    var self = this;
+
+    $.ajax({
+      url: "/users/guest/diffa/" + pairName + "/filter/SWIM_LANE",
+      type: 'PUT',
+      success: function(data) {
+        // TODO
+      },
+      error: function(xhr, status, ex) {
+        // TODO
+      }
+    });
   },
 
   isVisible: function(pairKey) {
     var self = this;
-    $.getJSON("/users/" + $.cookie("loggedInUser") + "/" + self.domain.id + "/" + pairKey + "/filter/heatmap", function(key) {
-      if (key)
-        return false;
-      else
-        return true;
-    })
+    var rv = true;
+
+
+    // TODO replace with using HiddenSwimLanes from Domain model.
+//    $.getJSON("/users/guest/" + self.domain.id + "/filter/SWIM_LANE", function(pairs) {
+//      if ($.inArray(pairKey, pairs))
+//        rv = false;
+//      else
+//        rv = true;
+//    });
+    return rv;
 //    return !self.hiddenPairs[pairKey];
   },
 
@@ -584,7 +627,8 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var offset_x = canvasX;
     var offset_y = canvasY;
     $('.pair-filter-chooser').html(self.pairFilter());
-
+//    $('.pair-filter-chooser').checkboxField();
+//
     $('.pair-filter-chooser select').each(function(i, el) {
       $(el).find("option:first-child").replaceWith("<option></option>");
       $(el).css("width", "20em");
@@ -1330,24 +1374,9 @@ function conditionalLoad(domain, msg, fn) {
   });
 }
 
-Diffa.Models.FilteredPair = Backbone.Model.extend({
-  idAttribute: "key",
-
-  initialize: function(opts) {
-    this.domain = opts.domain;
-    _.bindAll(this, "hide");
-    console.log("domain: " + this.domain.id);
-  },
-
-  url: "/users/" + $.cookie("loggedInUser") + "/" + this.domain.id + "/" + this.id + "/filter/heatmap",
-
-  hide: function() {
-  }
-});
-
 $('.diffa-heatmap').each(function() {
   var elem = this;
-  var domain = Diffa.DomainManager.get($(elem).data('domain'));
+  var domain = Diffa.DomainManager.get($(elem).data('domain'), $(elem).data('user'));
 
   conditionalLoad(
     domain,

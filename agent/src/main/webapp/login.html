@@ -21,9 +21,20 @@
     Please contact your system administrator if you have forgotten your password.
   </p>
 </form>
+<%
+  if (request.getParameter("j_username") != null) {
+    out.println("Username: " + request.getParameter("j_username"));
+  }
+%>
 <script type="text/javascript">
 function trackUser(loginForm) {
   $.cookie("loggedInUser", loginForm.j_username.value);
+  <%
+  if (request.getParameter("j_username") != null) {
+    out.println(request.getParameter("j_username"));
+  }
+  session.setAttribute("username", request.getParameter("j_username"));
+  %>
 }
 </script>
 </body>
