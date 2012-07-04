@@ -1,6 +1,6 @@
 package net.lshift.diffa.client
 
-import org.apache.http.client.HttpClient
+import org.apache.http.client.{HttpResponseException, HttpClient}
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpGet
 import java.net.URI
@@ -43,8 +43,20 @@ class ApacheHttpClient(connectionTimeout: Int,
       println("Set credentials: %s/%s".format(user, pass))
     }
     println("Request: %s".format(req.getURI))
-    client.execute(req)
-    Left(new Exception)
+    try {
+      val resp = client.execute(req)
+      println("Status: %s / ".format(resp.getStatusLine.getStatusCode))
+
+      resp.getStatusLine.getStatusCode match {
+        case code: Int if (200 to 299) contains code => Right(resp.getEntity.getContent)
+        case code =>
+          resp.getEntity.getContent.close()
+          Left(new HttpResponseException(code, resp.getStatusLine.getReasonPhrase))
+      }
+
+    } catch {
+      case e: Throwable => Left(e)
+    }
   }
 
 }

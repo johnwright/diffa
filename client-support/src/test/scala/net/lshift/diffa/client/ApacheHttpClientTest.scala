@@ -7,8 +7,10 @@ import org.junit.{Test, Before}
 import org.junit.Assert._
 import org.hamcrest.Matchers._
 import scala.collection.JavaConversions._
-import java.net.URI
+import java.net.{ConnectException, URI}
 import org.apache.commons.codec.binary.Base64
+import java.io.{IOException, InputStream, InputStreamReader, BufferedReader}
+import org.apache.http.client.HttpResponseException
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -33,7 +35,7 @@ class ApacheHttpClientTest {
 
   @Before def reset { ApacheHttpClientTest.reset }
 
-  // @Test
+  @Test
   def makesCorrectRequestToServer {
     val req = DiffaHttpQuery(baseUrl + "foo").withQuery(Map("name" -> List("param")))
     client.get(req)
@@ -43,7 +45,7 @@ class ApacheHttpClientTest {
         lastRequest.map(_.fullUri), is(Some(new URI("/foo?name=param")).asInstanceOf[Option[URI]]))
   }
 
-  // @Test
+  @Test
   def makesCorrectRequestToServerWithQueryParameters {
     val req = DiffaHttpQuery(baseUrl + "foo?from=baseUri").withQuery(Map("name" -> List("param")))
     client.get(req)
@@ -63,11 +65,35 @@ class ApacheHttpClientTest {
   }
 
 
+  def readLine: InputStream => String = { s =>
+    new BufferedReader(new InputStreamReader(s)).readLine()
+  }
+  @Test
+  def shouldReturnInputStreamOfBodyContentOnSuccess {
 
+    val response = client.get(DiffaHttpQuery(baseUrl)).right.map (readLine)
+    val expected: Either[Throwable, String] = Right(responseString)
+    assertThat(response, equalTo(expected))
+  }
+  @Test
+  def shouldReturnErrorOnConnectionError {
+    // I'm hoping, at least.
+    val queryForNonListeningServer = DiffaHttpQuery("http://127.0.0.1:%d/".format(0xffff))
+    val response = client.get(queryForNonListeningServer)
+    assertThat(response.left.get, instanceOf(classOf[ConnectException]))
+  }
+
+  @Test
+  def shouldReturnErrorOn4xxStatus {
+    val response = client.get(DiffaHttpQuery(baseUrl + "400"))
+    println("400 Response: %s".format(response))
+    assertThat(response.left.get, instanceOf(classOf[HttpResponseException] ) )
+  }
 }
 
 object ApacheHttpClientTest {
   val port = 23452
+  val responseString = "[] "
   private val server = new Server(port)
   server.setHandler(new AbstractHandler {
     override def handle(target: String, jettyReq: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
@@ -77,10 +103,13 @@ object ApacheHttpClientTest {
 
       // println("last req: %s".format(request.getParameterMap))
       if (target == "/auth" && jettyReq.getAuthentication == null) {
-        response.setStatus(401)
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
         response.setHeader("WWW-Authenticate", "basic realm=\"Fnord\"" );
+      } else if (target == "/400") {
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
       }
 
+      response.getWriter.print(responseString)
 
       val authHeader = jettyReq.getHeader("Authorization") match {
         case h: String => Some(h);
