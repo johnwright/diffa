@@ -4,6 +4,7 @@ import org.apache.http.client.HttpClient
 import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpGet
 import java.net.URI
+import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -25,6 +26,12 @@ class ApacheHttpClient extends DiffaHttpClient {
   lazy val client = new DefaultHttpClient
   override def get(r : DiffaHttpQuery) = {
     val req = new HttpGet(r.fullUri)
+    r.basicAuth.foreach { case (user, pass) =>
+      client.getCredentialsProvider.setCredentials(
+        new AuthScope(r.fullUri.getHost, r.fullUri.getPort),
+        new UsernamePasswordCredentials(user, pass))
+      println("Set credentials: %s/%s".format(user, pass))
+    }
     println("Request: %s".format(req.getURI))
     client.execute(req)
     Left(new Exception)
