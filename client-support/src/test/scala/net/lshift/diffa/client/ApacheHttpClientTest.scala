@@ -29,7 +29,7 @@ import org.apache.commons.codec.binary.Base64
 class ApacheHttpClientTest {
   import ApacheHttpClientTest._
 
-  val client: DiffaHttpClient = new ApacheHttpClient
+  val client: DiffaHttpClient = new ApacheHttpClient(0, 0)
 
   @Before def reset { ApacheHttpClientTest.reset }
 

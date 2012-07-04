@@ -5,6 +5,7 @@ import org.apache.http.impl.client.DefaultHttpClient
 import org.apache.http.client.methods.HttpGet
 import java.net.URI
 import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
+import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -22,8 +23,17 @@ import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
  * limitations under the License.
  */
 
-class ApacheHttpClient extends DiffaHttpClient {
-  lazy val client = new DefaultHttpClient
+class ApacheHttpClient(connectionTimeout: Int,
+                        socketTimeout: Int) extends DiffaHttpClient {
+
+
+  lazy val client = {
+    val httpParams = new BasicHttpParams
+    HttpConnectionParams.setConnectionTimeout(httpParams,connectionTimeout)
+    HttpConnectionParams.setSoTimeout(httpParams, socketTimeout)
+    new DefaultHttpClient(httpParams)
+  }
+
   override def get(r : DiffaHttpQuery) = {
     val req = new HttpGet(r.fullUri)
     r.basicAuth.foreach { case (user, pass) =>
