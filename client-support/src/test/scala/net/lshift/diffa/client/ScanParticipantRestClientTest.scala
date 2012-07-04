@@ -23,21 +23,16 @@ import java.io.{InputStream, ByteArrayInputStream}
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
 import net.lshift.diffa.participant.scanning.{ScanConstraint, StringPrefixConstraint, ScanResultEntry}
-import net.lshift.diffa.participant.common.JSONHelper
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.participants.{CategoryFunction, StringPrefixCategoryFunction}
-import scala.Right
+import net.lshift.diffa.kernel.participants.CategoryFunction
 import java.net.{SocketTimeoutException, SocketException, ConnectException, URI}
-import net.lshift.diffa.kernel.differencing.{ScanLimitBreachedException, ScanFailedException}
-import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
+import net.lshift.diffa.kernel.differencing.ScanFailedException
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.config.QueryParameterCredentials
 import net.lshift.diffa.kernel.config.BasicAuthCredentials
-import scala.Right
-import scala.Some
-import net.lshift.diffa.client.DiffaHttpQuery
 import net.lshift.diffa.kernel.participants.StringPrefixCategoryFunction
-import scala.Left
+import org.junit.experimental.theories.{DataPoint, Theories, Theory}
+import org.junit.runner.RunWith
 
 // TODO:
 // Define JsonParser interface thing
@@ -217,7 +212,9 @@ class ScanParticipantRestClientTest {
 }
 
 
+@RunWith(classOf[Theories])
 class DiffaHttpQueryTest {
+  import DiffaHttpQueryTest._
 
   val dummyQuery = DiffaHttpQuery("http://dummy/")
 
@@ -240,5 +237,27 @@ class DiffaHttpQueryTest {
   }
 
 
+  @Theory
+  def verifyRequestUri(ex: Example) {
+
+    var query = DiffaHttpQuery(ex.requestUrl).withQuery(ex.query)
+    assertThat(query.fullUri, equalTo(ex.expected))
+  }
+
+}
+
+object DiffaHttpQueryTest {
+
+  case class Example(requestUrl: String,
+                     query: Map[String, Seq[String]],
+                     expected: URI)
+  @DataPoint def nullExample = Example("/", Map(), new URI("/"))
+
+  @DataPoint def simpleExample = Example("/", Map("dummy" -> Seq("value")), new URI("/?dummy=value"))
+
+  @DataPoint def baseWithAuth = Example("/?auth=dummy", Map(), new URI("/?auth=dummy"))
+
+  @DataPoint def baseWithAuthPlusQuery = Example(
+    "/?auth=dummy", Map("query" -> Seq("value")), new URI("/?auth=dummy&query=value"))
 
 }

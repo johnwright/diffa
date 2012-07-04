@@ -21,6 +21,9 @@ import scala.Some
 import net.lshift.diffa.client.DiffaHttpQuery
 import scala.Left
 import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
+import org.apache.http.client.utils.URLEncodedUtils
+import org.apache.http.NameValuePair
+import org.apache.http.message.BasicNameValuePair
 
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
@@ -42,6 +45,9 @@ case class DiffaHttpQuery(uri: String,
                           accept: Option[String] = None,
                           query: Map[String, Seq[String]] = Map(),
                           basicAuth: Option[(String, String)] = None) {
+
+  var encoding = "utf-8"
+
   def accepting(content: String) = copy(accept=Some(content))
   def withQuery(query: Map[String, Seq[String]]) = copy(query=query)
   def withConstraints(constraints: Seq[ScanConstraint] ) = {
@@ -61,6 +67,28 @@ case class DiffaHttpQuery(uri: String,
     }
     copy(query = nquery)
   }
+
+  def fullUri: URI = {
+    val u = new URI(this.uri)
+    var queryParams = URLEncodedUtils.parse(u, encoding).toSeq
+    val additionalQueryParams = for {
+      (key, values) <- this.query
+      value <- values
+    } yield new BasicNameValuePair(key, value)
+    println("from base: %s, moar:%s".format(queryParams, additionalQueryParams))
+
+    val newQuery = URLEncodedUtils.format(queryParams ++ additionalQueryParams, encoding) match {
+      case "" => null
+      case s => s
+    }
+    // URI(scheme: String, userInfo: String, host: String, port: Int, path: String, query: String, fragment: String)
+    new URI(u.getScheme, u.getUserInfo, u.getHost, u.getPort,u.getPath, newQuery, u.getFragment)
+  }
+
+//  override def equals(other: Any) = other match {
+//    case that : DiffaHttpQuery if this.canEqual(that) =>  this.fullUri == that.fullUri
+//    case _ => false
+//  }
 }
 
 trait DiffaHttpClient {
