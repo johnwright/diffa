@@ -20,26 +20,32 @@ import net.lshift.diffa.agent.itest.support.TestConstants._
 import net.lshift.diffa.agent.client.{SecurityRestClient, SystemConfigRestClient, ConfigurationRestClient, UsersRestClient}
 import org.junit.{Before, Test}
 import org.junit.Assert._
-import net.lshift.diffa.kernel.frontend.{UserDef, DomainDef, DomainPairDef, EndpointDef}
 import com.eaio.uuid.UUID
 import net.lshift.diffa.client.{RestClientParams, AccessDeniedException}
+import net.lshift.diffa.kernel.frontend._
+import net.lshift.diffa.kernel.config.DiffaPairRef
+import net.lshift.diffa.kernel.frontend.DomainPairDef
+import net.lshift.diffa.kernel.frontend.UserDef
+import scala.Some
+import net.lshift.diffa.kernel.frontend.EndpointDef
+import net.lshift.diffa.kernel.frontend.DomainDef
 
 class UserPreferencesTest {
-
   val domain = new UUID().toString
 
   val rootUserPreferencesClient = new UsersRestClient(agentURL, agentUsername)
   val systemConfigClient = new SystemConfigRestClient(agentURL)
+  val defaultDomainConfigClient = new ConfigurationRestClient(agentURL, defaultDomain)
   val configClient = new ConfigurationRestClient(agentURL, domain)
-  val securityClient = new SecurityRestClient(agentURL)
 
+  val securityClient = new SecurityRestClient(agentURL)
   val upstream = EndpointDef(name = new UUID().toString)
   val downstream = EndpointDef(name = new UUID().toString)
+
   val pair = DomainPairDef(key = new UUID().toString,
                            domain = domain,
                            upstreamName = upstream.name,
                            downstreamName = downstream.name)
-
   @Before
   def createTestData {
     systemConfigClient.declareDomain(DomainDef(name = domain))
@@ -47,7 +53,6 @@ class UserPreferencesTest {
     configClient.declareEndpoint(upstream)
     configClient.declareEndpoint(downstream)
     configClient.declarePair(pair.withoutDomain)
-
   }
 
   @Test
@@ -104,4 +109,22 @@ class UserPreferencesTest {
     nonRootUserPreferencesClient.createFilter(pair.asRef, FilteredItemType.SWIM_LANE)
   }
 
+  @Test
+  def whenDefaultSystemUserAddsAnItemFilterToPairInDefaultDomainTheFilterShouldExist {
+    // Given
+    val pairInDefaultDomain = DiffaPairRef(domain = defaultDomain, key = pair.getKey)
+
+    defaultDomainConfigClient.declareEndpoint(upstream)
+    defaultDomainConfigClient.declareEndpoint(downstream)
+    defaultDomainConfigClient.declarePair(pair.withoutDomain)
+
+    // When
+    rootUserPreferencesClient.createFilter(pairInDefaultDomain, FilteredItemType.SWIM_LANE)
+
+    // Then (assumes that no other filter items have been configured for the default system user.
+    assertEquals(pair.getKey(), rootUserPreferencesClient.getFilteredItems(defaultDomain, FilteredItemType.SWIM_LANE).head)
+
+    // Test-specific cleanup
+    rootUserPreferencesClient.removeFilter(pairInDefaultDomain, FilteredItemType.SWIM_LANE)
+  }
 }
