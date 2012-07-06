@@ -22,13 +22,8 @@ import org.junit.{Before, Test}
 import org.junit.Assert._
 import com.eaio.uuid.UUID
 import net.lshift.diffa.client.{RestClientParams, AccessDeniedException}
-import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import net.lshift.diffa.kernel.frontend.DomainPairDef
-import net.lshift.diffa.kernel.frontend.UserDef
-import scala.Some
-import net.lshift.diffa.kernel.frontend.EndpointDef
-import net.lshift.diffa.kernel.frontend.DomainDef
+import net.lshift.diffa.kernel.frontend.{DomainPairDef,UserDef,EndpointDef,DomainDef}
 
 class UserPreferencesTest {
   val domain = new UUID().toString

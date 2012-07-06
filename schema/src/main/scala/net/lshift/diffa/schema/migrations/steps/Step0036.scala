@@ -27,8 +27,9 @@ object Step0036 extends HibernateMigrationStep {
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.insert("members").
-      values(Map("domain_name" -> "diffa", "user_name" -> "guest"))
+    migration.insert("members").values(Map(
+      "domain_name" -> Step0022.defaultDomainName,
+      "user_name" -> Step0022.defaultUserName))
 
     migration
   }
