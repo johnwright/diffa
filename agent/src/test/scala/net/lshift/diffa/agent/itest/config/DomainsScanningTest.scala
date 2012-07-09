@@ -32,7 +32,7 @@ class DomainsScanningTest {
   val pair = DiffaPairRef("foo","bar")
 
   val domainCredentialsLookup = new FixedDomainCredentialsLookup(pair.domain, Some(BasicAuthCredentials("guest", "guest")))
-  val participant = new ScanningParticipantRestClientFactory.create(pair, agentURL + "/root/domains/scan", limits, domainCredentialsLookup)
+  val participant = ScanningParticipantRestClientFactory.create(pair, agentURL + "/root/domains/scan", limits, domainCredentialsLookup)
 
   @Test
   def aggregationShouldIncludeDefaultDomain {

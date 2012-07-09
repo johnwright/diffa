@@ -54,7 +54,7 @@ class ScanLimitsTest {
   import ScanLimitsTest._
 
   val limits = createMock(classOf[PairServiceLimitsView])
-  lazy val scanningRestClient = new ScanningParticipantRestClient(
+  lazy val scanningRestClient = ScanningParticipantRestClientFactory.create(
     pair,
     "http://localhost:" + serverPort + "/scan",
     limits,
