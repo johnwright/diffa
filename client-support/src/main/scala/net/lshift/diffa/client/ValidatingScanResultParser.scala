@@ -36,8 +36,12 @@ trait LengthCheckingParser extends JsonScanResultParser {
   abstract override def parse(s: InputStream) = {
     val responseSizeLimit = serviceLimitsView.getEffectiveLimitByNameForPair(
       pair.domain, pair.key, ScanResponseSizeLimit)
-    // println("%s.getEffectiveLimitByNameForPair(%s, %s, %s) => %s".format(serviceLimitsView, pair.domain, pair.key, ScanResponseSizeLimit, responseSizeLimit))
-    super.parse(new LengthCheckingInputStream(s, responseSizeLimit))
+    println("%s.getEffectiveLimitByNameForPair(%s, %s, %s) => %s".format(serviceLimitsView, pair.domain, pair.key, ScanResponseSizeLimit, responseSizeLimit))
+    try {
+      super.parse(new LengthCheckingInputStream(s, responseSizeLimit))
+    } catch {
+      case e:IOException if e.getCause.isInstanceOf[ScanLimitBreachedException] => throw e.getCause
+    }
   }
 
   class LengthCheckingInputStream(stream: InputStream, sizeLimit:Int) extends InputStream {
