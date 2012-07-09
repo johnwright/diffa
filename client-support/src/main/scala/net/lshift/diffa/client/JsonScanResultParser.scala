@@ -27,6 +27,6 @@ import java.io.InputStream
  */
 
 trait JsonScanResultParser {
-  def parse(stream: InputStream): Array[ScanResultEntry]
+  def parse(stream: InputStream): Seq[ScanResultEntry]
 
 }

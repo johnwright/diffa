@@ -97,7 +97,7 @@ class ScanParticipantRestClientTest {
   @Test
   def participantParsesResponse {
     expect(httpClient.get(scanQuery)).andStubReturn(Right(emptyResponse))
-    expect(parser.parse(emptyResponse)).andReturn(Array())
+    expect(parser.parse(emptyResponse)).andReturn(Seq())
     replay(httpClient, parser)
     expectingNullCredentials()
 
@@ -111,7 +111,7 @@ class ScanParticipantRestClientTest {
     val entities = Seq(ScanResultEntry.forEntity("id", "version", DateTime.now()))
 
     expect(httpClient.get(scanQuery)).andStubReturn(Right(emptyResponse))
-    expect(parser.parse(emptyResponse)).andReturn(entities.toArray)
+    expect(parser.parse(emptyResponse)).andReturn(entities)
     replay(httpClient, parser)
     expectingNullCredentials()
 

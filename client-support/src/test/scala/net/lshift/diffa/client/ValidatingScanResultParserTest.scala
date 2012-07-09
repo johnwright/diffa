@@ -40,7 +40,7 @@ class ValidatingScanResultParserTest {
   @Test
   def shouldParseEmptyJson {
     assertThat(parser.parse(streamFor("[]")),
-      is(equalTo(Array[ScanResultEntry]())))
+      is(equalTo(Seq[ScanResultEntry]())))
   }
   val singleEntityStr = "{\"id\":\"id1\",\"attributes\":{\"a1\":\"a1v1\"},\"version\":\"v1\",\"lastUpdated\":\"2011-06-05T15:03:00.000Z\"}"
   lazy val singleEntity = ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
@@ -49,7 +49,7 @@ class ValidatingScanResultParserTest {
   @Test
   def shouldParseJsonToEntities {
     assertThat(parser.parse(singleEntityStream),
-      is(equalTo(Array(singleEntity))))
+      is(equalTo(Seq(singleEntity))))
   }
 
   @Test
@@ -77,7 +77,7 @@ class LengthCheckingParserTest { self =>
     override def parse(s: InputStream) = {
       val reader = new BufferedReader(new InputStreamReader(s, "utf8"))
       this.passedStream = Some(reader.readLine())
-      Array[ScanResultEntry](canary)
+      Seq(canary)
     }
 
   }
@@ -111,7 +111,7 @@ class LengthCheckingParserTest { self =>
   def shouldReturnTheInnerParserResult {
     withExpectedResponseSizeLimit(emptyResponseContent.size)
 
-    assertThat(checkingParser.parse(emptyResponse), is(Array(canary)))
+    assertThat(checkingParser.parse(emptyResponse), is(Seq(canary)))
   }
 
   def withExpectedResponseSizeLimit(size: Int) {

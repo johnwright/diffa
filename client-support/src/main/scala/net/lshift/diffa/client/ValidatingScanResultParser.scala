@@ -24,7 +24,7 @@ import net.lshift.diffa.participant.scanning.{OutOfOrderException, Collation}
  */
 
 class ValidatingScanResultParser(validator: ScanEntityValidator) extends JsonScanResultParser {
-  def parse(s: InputStream) = JSONHelper.readQueryResult(s, validator)
+  def parse(s: InputStream) = JSONHelper.readQueryResult(s, validator).toSeq
 
 }
 
