@@ -21,6 +21,7 @@ import net.lshift.diffa.kernel.config.{DomainCredentialsLookup, DiffaPairRef, Do
 import java.io.InputStream
 import net.lshift.diffa.participant.scanning.ScanResultEntry
 import net.lshift.diffa.kernel.differencing.EntityValidator
+import net.lshift.diffa.schema.servicelimits.{ScanReadTimeout, ScanConnectTimeout}
 
 trait ParticipantRestClientFactory {
 
@@ -31,7 +32,10 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pairRef:DiffaPairRef) = {
-    val client = new ApacheHttpClient(0, 0)
+    val connectTimeout = limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanConnectTimeout)
+    val readTimeout =limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanReadTimeout)
+
+    val client = new ApacheHttpClient(connectTimeout, readTimeout)
     val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser {
       val serviceLimitsView = limits
       val pair = pairRef
