@@ -74,11 +74,5 @@ case class DiffaHttpQuery(uri: String,
     }
 
     new URI(List(Some(path), completeQuery).flatMap(_.toSeq).mkString("?"))
-
   }
-
-  //  override def equals(other: Any) = other match {
-  //    case that : DiffaHttpQuery if this.canEqual(that) =>  this.fullUri == that.fullUri
-  //    case _ => false
-  //  }
 }
