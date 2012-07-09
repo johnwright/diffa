@@ -314,6 +314,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
           set(PAIR.ALLOW_MANUAL_SCANS, pair.allowManualScans).
           set(PAIR.MATCHING_TIMEOUT, pair.matchingTimeout.asInstanceOf[Integer]).
           set(PAIR.SCAN_CRON_SPEC, pair.scanCronSpec).
+          set(PAIR.SCAN_CRON_ENABLED, boolean2Boolean(pair.scanCronEnabled)).
           set(PAIR.VERSION_POLICY_NAME, pair.versionPolicyName).
         onDuplicateKeyUpdate().
           set(PAIR.UPSTREAM, pair.upstreamName).
@@ -321,6 +322,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
           set(PAIR.ALLOW_MANUAL_SCANS, pair.allowManualScans).
           set(PAIR.MATCHING_TIMEOUT, pair.matchingTimeout.asInstanceOf[Integer]).
           set(PAIR.SCAN_CRON_SPEC, pair.scanCronSpec).
+          set(PAIR.SCAN_CRON_ENABLED, boolean2Boolean(pair.scanCronEnabled)).
           set(PAIR.VERSION_POLICY_NAME, pair.versionPolicyName).
         execute()
 
@@ -350,8 +352,10 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
             set(PAIR_VIEWS.PAIR, pair.key).
             set(PAIR_VIEWS.NAME, v.name).
             set(PAIR_VIEWS.SCAN_CRON_SPEC, v.scanCronSpec).
+            set(PAIR_VIEWS.SCAN_CRON_ENABLED, boolean2Boolean(v.scanCronEnabled)).
           onDuplicateKeyUpdate().
             set(PAIR_VIEWS.SCAN_CRON_SPEC, v.scanCronSpec).
+            set(PAIR_VIEWS.SCAN_CRON_ENABLED, boolean2Boolean(v.scanCronEnabled)).
           execute()
       })
 
