@@ -35,7 +35,6 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
     val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser /* with CollationOrderCheckingParser */ {
       val serviceLimitsView = limits
       val pair = pairRef
-      // val collation = magicalFindCollationMethod()
     }
     new ScanParticipantRestClient(pairRef, address, credentialsLookup, client, parser)
   }
