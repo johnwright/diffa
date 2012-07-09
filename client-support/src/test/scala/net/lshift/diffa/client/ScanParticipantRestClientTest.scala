@@ -90,7 +90,6 @@ class ScanParticipantRestClientTest {
     replay(httpClient)
     expectingNullCredentials()
 
-    // TODO: Push verification of response type / kind into the client by building expectations
     scanningParticipant.scan(sampleConstraints, sampleAggregations)
     verify(httpClient)
   }
@@ -166,7 +165,7 @@ class ScanParticipantRestClientTest {
     scanningParticipant.scan(nullConstraints, nullAggregations)
     verify(credentialsLookup)
   }
-  @Test // TODO
+  @Test
   def itAddsQueryParameterCredentialsToTheRequest {
     val credentials = QueryParameterCredentials("fred",  "foobar")
     expect(credentialsLookup.credentialsForUri(pair.domain, new URI(scanUrl))) andReturn(Some(credentials))
@@ -179,7 +178,7 @@ class ScanParticipantRestClientTest {
     scanningParticipant.scan(nullConstraints, nullAggregations)
   }
 
-  @Test // TODO
+  @Test
   def itAddsBasicAuthToTheRequest {
     val credentials = BasicAuthCredentials("fred",  "foobar")
     expect(credentialsLookup.credentialsForUri(pair.domain, new URI(scanUrl))) andReturn(Some(credentials))
