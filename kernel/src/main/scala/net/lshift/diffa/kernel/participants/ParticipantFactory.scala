@@ -48,20 +48,26 @@ class ParticipantFactory() {
     new CompositeDownstreamParticipant(endpoint.name, scanningParticipant, contentParticipant, versioningParticipant)
   }
 
-  def createScanningParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[ScanningParticipantRef] =
-    createParticipant(scanningFactories, endpoint.scanUrl, pair)
-  def createContentParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[ContentParticipantRef] =
-    createParticipant(contentFactories, endpoint.contentRetrievalUrl, pair)
-  def createVersioningParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[VersioningParticipantRef] =
-    createParticipant(versioningFactories, endpoint.versionGenerationUrl, pair)
-
-  private def createParticipant[T](factories:Seq[AddressDrivenFactory[T]], url:String, pair:DiffaPairRef):Option[T] = url match {
+  private def nullableToOption[T](v: T): Option[T] = v match {
     case null => None
-    case _ =>
-      factories.find(f => f.supportsAddress(url)) match {
-        case None     => throw new InvalidParticipantAddressException(url)
-        case Some(f)  => Some(f.createParticipantRef(url,pair))
+    case _=> Some(v)
+  }
+  def createScanningParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[ScanningParticipantRef] =
+    createParticipant(scanningFactories, endpoint, pair, _.scanUrl)
+  def createContentParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[ContentParticipantRef] =
+    createParticipant(contentFactories, endpoint, pair, _.contentRetrievalUrl)
+  def createVersioningParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[VersioningParticipantRef] =
+    createParticipant(versioningFactories, endpoint, pair, _.versionGenerationUrl)
+
+  private def createParticipant[T](factories:Seq[AddressDrivenFactory[T]], endpoint:Endpoint, pair:DiffaPairRef,
+                                    field: Endpoint => Any) (implicit m: Manifest[T]): Option[T] = {
+    nullableToOption(field(endpoint)) flatMap { _ =>
+      factories.find(f => f.supports(endpoint)) map (
+        _.createParticipantRef(endpoint, pair)
+        ) orElse {
+        throw new InvalidParticipantAddressException(endpoint, m.toString)
       }
+    }
   }
 
   private class CompositeParticipant(partName:String, scanning:Option[ScanningParticipantRef], content:Option[ContentParticipantRef]) extends Participant {
@@ -94,7 +100,7 @@ class ParticipantFactory() {
   }
 }
 
-class InvalidParticipantAddressException(addr:String)
-    extends Exception("The address " + addr + " is not a valid participant address")
+class InvalidParticipantAddressException(endpoint: Endpoint, kind:String)
+    extends Exception("The endpoint " + endpoint + " is not a valid endpoint for "+kind)
 class InvalidParticipantOperationException(partName:String, op:String)
     extends Exception("The participant " + partName + " does not support " + op)
