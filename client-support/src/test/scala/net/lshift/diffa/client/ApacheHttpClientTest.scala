@@ -39,7 +39,6 @@ class ApacheHttpClientTest {
   def makesCorrectRequestToServer {
     val req = DiffaHttpQuery(baseUrl + "foo").withQuery(Map("name" -> List("param")))
     client.get(req)
-    println("client req seen: %s".format(lastRequest))
 
     assertThat[Option[URI]](
         lastRequest.map(_.fullUri), is(Some(new URI("/foo?name=param")).asInstanceOf[Option[URI]]))
@@ -86,7 +85,6 @@ class ApacheHttpClientTest {
   @Test
   def shouldReturnErrorOn4xxStatus {
     val response = client.get(DiffaHttpQuery(baseUrl + "400"))
-    println("400 Response: %s".format(response))
     assertThat(response.left.get, instanceOf(classOf[HttpResponseException] ) )
   }
 }
