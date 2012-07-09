@@ -32,6 +32,7 @@ trait ParticipantRestClientFactory {
 // endpoint..scanUrl
 class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
+  def supports(endpoint: Endpoint) = supportsAddress(endpoint.scanUrl)
 
   def createParticipantRef(endpoint: Endpoint, pairRef:DiffaPairRef) = {
     val connectTimeout = limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanConnectTimeout)
@@ -47,13 +48,14 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
 }
 
 object ScanningParticipantRestClientFactory {
-  def create(pair: DiffaPairRef, scanUrl: String, serviceLimitsView: PairServiceLimitsView, credentialsLookup: DomainCredentialsLookup) =
-      new ScanningParticipantRestClientFactory(credentialsLookup, serviceLimitsView).createParticipantRef(scanUrl, pair)
+  def create(pair: DiffaPairRef, endpoint: Endpoint, serviceLimitsView: PairServiceLimitsView, credentialsLookup: DomainCredentialsLookup) =
+      new ScanningParticipantRestClientFactory(credentialsLookup, serviceLimitsView).createParticipantRef(endpoint, pair)
 }
 
 // endpoint.contentRetrievalUrl
 class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ContentParticipantFactory with ParticipantRestClientFactory {
+  def supports(endpoint: Endpoint) = supportsAddress(endpoint.contentRetrievalUrl)
 
   def createParticipantRef(endpoint: Endpoint, pair:DiffaPairRef)
     = new ContentParticipantRestClient(serviceLimitsView = limits,
@@ -65,6 +67,7 @@ class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLoo
 // endpoint.versionGenerationUrl
 class VersioningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends VersioningParticipantFactory with ParticipantRestClientFactory {
+  def supports(endpoint: Endpoint) = supportsAddress(endpoint.versionGenerationUrl)
 
   def createParticipantRef(endpoint: Endpoint, pair:DiffaPairRef)
     = new VersioningParticipantRestClient(serviceLimitsView = limits,
