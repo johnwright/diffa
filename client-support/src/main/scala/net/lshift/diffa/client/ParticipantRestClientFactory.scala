@@ -40,6 +40,11 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
   }
 }
 
+object ScanningParticipantRestClientFactory {
+  def create(pair: DiffaPairRef, scanUrl: String, serviceLimitsView: PairServiceLimitsView, credentialsLookup: DomainCredentialsLookup) =
+      new ScanningParticipantRestClientFactory(credentialsLookup, serviceLimitsView).createParticipantRef(scanUrl, pair)
+}
+
 class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ContentParticipantFactory with ParticipantRestClientFactory {
 
