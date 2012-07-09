@@ -107,10 +107,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     t.select().from(PAIR).fetch().map(ResultMappingUtil.recordToDomainPairDef)
   }
 
-  def listEndpoints : Seq[DomainEndpointDef] = {
-    null //db.listQuery[Endpoint]("allEndpoints", Map())
-  }
-
+  def listEndpoints : Seq[DomainEndpointDef] = JooqConfigStoreCompanion.listEndpoints(jooq)
 
   // TODO implement create or update using JOOQ
   def createOrUpdateUser(user: User) = {

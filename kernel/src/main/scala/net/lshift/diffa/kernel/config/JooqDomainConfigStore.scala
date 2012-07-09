@@ -16,7 +16,6 @@
 
 package net.lshift.diffa.kernel.config
 
-import net.lshift.diffa.kernel.util.db.HibernateQueryUtils
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
@@ -28,16 +27,9 @@ import net.lshift.diffa.schema.tables.Escalations.ESCALATIONS
 import net.lshift.diffa.schema.tables.PairReports.PAIR_REPORTS
 import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
-import net.lshift.diffa.schema.tables.StoreCheckpoints.STORE_CHECKPOINTS
-import net.lshift.diffa.schema.tables.UserItemVisibility.USER_ITEM_VISIBILITY
 import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
 import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
-import net.lshift.diffa.schema.tables.UniqueCategoryNames.UNIQUE_CATEGORY_NAMES
-import net.lshift.diffa.schema.tables.RangeCategories.RANGE_CATEGORIES
-import net.lshift.diffa.schema.tables.SetCategories.SET_CATEGORIES
-import net.lshift.diffa.schema.tables.PrefixCategories.PREFIX_CATEGORIES
-import org.jooq._
-import JooqDomainConfigStoreCompanion._
+import JooqConfigStoreCompanion._
 import net.lshift.diffa.kernel.naming.CacheName._
 import net.lshift.diffa.kernel.util.MissingObjectException
 import net.lshift.diffa.kernel.lifecycle.{PairLifecycleAware, DomainLifecycleAware}
@@ -47,27 +39,14 @@ import collection.mutable
 import java.util
 import collection.mutable.ListBuffer
 import org.jooq.impl.Factory
-import net.lshift.diffa.kernel.frontend._
 import net.lshift.diffa.kernel.frontend.DomainEndpointDef
 import net.lshift.diffa.kernel.frontend.DomainPairDef
 import net.lshift.diffa.kernel.frontend.RepairActionDef
-import net.lshift.diffa.kernel.config.PairByDomainAndEndpointPredicate
-import net.lshift.diffa.kernel.config.Member
-import net.lshift.diffa.kernel.config.EndpointView
-import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.frontend.PairDef
-import scala.Some
-import net.lshift.diffa.kernel.config.EndpointByDomainPredicate
 import net.lshift.diffa.kernel.frontend.PairViewDef
-import net.lshift.diffa.kernel.config.ConfigOptionByDomainPredicate
-import net.lshift.diffa.kernel.config.DomainConfigKey
 import net.lshift.diffa.kernel.frontend.EndpointDef
 import net.lshift.diffa.kernel.frontend.EscalationDef
-import net.lshift.diffa.kernel.config.PairByDomainPredicate
-import net.lshift.diffa.kernel.config.DomainEndpointKey
 import net.lshift.diffa.kernel.frontend.PairReportDef
-import net.lshift.diffa.kernel.config.DomainPairKey
-import net.lshift.diffa.kernel.config.Endpoint
 
 class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                             hookManager:HookManager,
@@ -75,8 +54,6 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
                             membershipListener:DomainMembershipAware)
     extends DomainConfigStore
     with DomainLifecycleAware {
-
-  val VIEW_NAME_COLUMN = UNIQUE_CATEGORY_NAMES.VIEW_NAME.getName
 
   val hook = hookManager.createDifferencePartitioningHook(jooq)
 
@@ -308,7 +285,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
   def getEndpointDef(domain:String, endpoint: String) = {
     cachedEndpointsByKey.readThrough(DomainEndpointKey(domain, endpoint), () => {
 
-      val endpoints = listEndpointsInternal(domain, Some(endpoint))
+      val endpoints = JooqConfigStoreCompanion.listEndpoints(jooq, Some(domain), Some(endpoint))
 
       if (endpoints.isEmpty) {
         throw new MissingObjectException("endpoint")
@@ -321,193 +298,8 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
 
   def listEndpoints(domain:String): Seq[EndpointDef] = {
-    cachedEndpoints.readThrough(domain, () => listEndpointsInternal(domain))
+    cachedEndpoints.readThrough(domain, () => JooqConfigStoreCompanion.listEndpoints(jooq, Some(domain)))
   }.map(_.withoutDomain())
-
-
-  def listEndpointsInternal(domain:String, endpoint:Option[String] = None) : java.util.List[DomainEndpointDef] = {
-    jooq.execute(t => {
-      val topHalf =     t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
-                          select(ENDPOINT.getFields).
-                          select(Factory.field("null").as(VIEW_NAME_COLUMN)).
-                          select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
-                          select(PREFIX_CATEGORIES.STEP, PREFIX_CATEGORIES.PREFIX_LENGTH, PREFIX_CATEGORIES.MAX_LENGTH).
-                          select(SET_CATEGORIES.VALUE).
-                          from(ENDPOINT).
-
-                            leftOuterJoin(UNIQUE_CATEGORY_NAMES).
-                              on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-                              and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT.NAME)).
-                              and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_TARGET_TYPE)).
-
-                            leftOuterJoin(RANGE_CATEGORIES).
-                              on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-                              and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
-                              and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-                              and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
-
-                            leftOuterJoin(PREFIX_CATEGORIES).
-                              on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-                              and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
-                              and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-                              and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
-
-                            leftOuterJoin(SET_CATEGORIES).
-                              on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-                              and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
-                              and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-                              and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
-
-                          where(ENDPOINT.DOMAIN.equal(domain))
-
-                          val firstUnionPart = endpoint match {
-                            case None    => topHalf
-                            case Some(e) => topHalf.and(ENDPOINT.NAME.equal(e))
-                          }
-
-                          firstUnionPart.orderBy(ENDPOINT.DOMAIN, ENDPOINT.NAME, UNIQUE_CATEGORY_NAMES.NAME)
-
-
-      val bottomHalf =  t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
-                          select(ENDPOINT.getFields).
-                          select(ENDPOINT_VIEWS.NAME.as(VIEW_NAME_COLUMN)).
-                          select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
-                          select(PREFIX_CATEGORIES.STEP, PREFIX_CATEGORIES.PREFIX_LENGTH, PREFIX_CATEGORIES.MAX_LENGTH).
-                          select(SET_CATEGORIES.VALUE).
-                          from(ENDPOINT_VIEWS).
-
-                          join(ENDPOINT).
-                            on(ENDPOINT.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(ENDPOINT.NAME.equal(ENDPOINT_VIEWS.ENDPOINT)).
-
-                          leftOuterJoin(UNIQUE_CATEGORY_NAMES).
-                            on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-                            and(UNIQUE_CATEGORY_NAMES.VIEW_NAME.equal(ENDPOINT_VIEWS.NAME)).
-                            and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_VIEW_TARGET_TYPE)).
-
-                          leftOuterJoin(RANGE_CATEGORIES).
-                            on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-                            and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-                            and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
-
-                          leftOuterJoin(PREFIX_CATEGORIES).
-                            on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-                            and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-                            and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
-
-                          leftOuterJoin(SET_CATEGORIES).
-                            on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-                            and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-                            and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-                            and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
-
-                          where(ENDPOINT_VIEWS.DOMAIN.equal(domain))
-
-                          val secondUnionPart = endpoint match {
-                            case None    => bottomHalf
-                            case Some(e) => bottomHalf.and(ENDPOINT_VIEWS.ENDPOINT.equal(e))
-                          }
-
-                          secondUnionPart.orderBy(ENDPOINT_VIEWS.DOMAIN, ENDPOINT_VIEWS.NAME, UNIQUE_CATEGORY_NAMES.NAME)
-
-      val results = firstUnionPart.unionAll(secondUnionPart).fetch()
-
-      val endpoints = new java.util.TreeMap[String,DomainEndpointDef]()
-
-      results.iterator().foreach(record => {
-
-        val currentEndpoint = DomainEndpointDef(
-          name = record.getValue(ENDPOINT.NAME),
-          scanUrl = record.getValue(ENDPOINT.SCAN_URL),
-          contentRetrievalUrl = record.getValue(ENDPOINT.CONTENT_RETRIEVAL_URL),
-          versionGenerationUrl = record.getValue(ENDPOINT.VERSION_GENERATION_URL),
-          inboundUrl = record.getValue(ENDPOINT.INBOUND_URL),
-          collation = record.getValue(ENDPOINT.COLLATION_TYPE)
-        )
-
-        val compressionKey = currentEndpoint.domain + "/" + currentEndpoint.name
-
-        if (!endpoints.contains(compressionKey)) {
-          endpoints.put(compressionKey, currentEndpoint);
-        }
-
-        val resolvedEndpoint = endpoints.get(compressionKey)
-
-        // Check to see whether this row is for an endpoint view
-
-        val viewName = record.getValueAsString(VIEW_NAME_COLUMN)
-        val currentView = if (viewName != null) {
-          resolvedEndpoint.views.find(v => v.name == viewName) match {
-            case None =>
-              // This view has not yet been attached to the endpoint, so attach it now
-              val viewToAttach = EndpointViewDef(name = viewName)
-              resolvedEndpoint.views.add(viewToAttach)
-              Some(viewToAttach)
-            case x    => x
-          }
-        }
-        else {
-          None
-        }
-
-        val categoryName = record.getValueAsString(UNIQUE_CATEGORY_NAMES.NAME)
-
-        def applyCategoryToEndpointOrView(descriptor:CategoryDescriptor) = {
-          currentView match {
-            case None    => resolvedEndpoint.categories.put(categoryName, descriptor)
-            case Some(v) => v.categories.put(categoryName, descriptor)
-          }
-        }
-
-        def applySetMemberToDescriptorMapForCurrentCategory(value:String, descriptors:java.util.Map[String,CategoryDescriptor]) = {
-          var descriptor = descriptors.get(categoryName)
-          if (descriptor == null) {
-            val setDescriptor = new SetCategoryDescriptor()
-            setDescriptor.addValue(value)
-            descriptors.put(categoryName, setDescriptor)
-          }
-          else {
-            descriptor.asInstanceOf[SetCategoryDescriptor].addValue(value)
-          }
-        }
-
-        if (record.getValue(RANGE_CATEGORIES.DATA_TYPE) != null) {
-          val dataType = record.getValue(RANGE_CATEGORIES.DATA_TYPE)
-          val lowerBound = record.getValue(RANGE_CATEGORIES.LOWER_BOUND)
-          val upperBound = record.getValue(RANGE_CATEGORIES.UPPER_BOUND)
-          val maxGranularity = record.getValue(RANGE_CATEGORIES.MAX_GRANULARITY)
-          val descriptor = new RangeCategoryDescriptor(dataType, lowerBound, upperBound, maxGranularity)
-          applyCategoryToEndpointOrView(descriptor)
-
-        }
-        else if (record.getValue(PREFIX_CATEGORIES.PREFIX_LENGTH) != null) {
-          val prefixLength = record.getValue(PREFIX_CATEGORIES.PREFIX_LENGTH)
-          val maxLength = record.getValue(PREFIX_CATEGORIES.MAX_LENGTH)
-          val step = record.getValue(PREFIX_CATEGORIES.STEP)
-          val descriptor = new PrefixCategoryDescriptor(prefixLength, maxLength, step)
-          applyCategoryToEndpointOrView(descriptor)
-        }
-        else if (record.getValue(SET_CATEGORIES.VALUE) != null) {
-
-          // Set values are a little trickier, since the values for one descriptor are split up over multiple rows
-
-          val setCategoryValue = record.getValue(SET_CATEGORIES.VALUE)
-          currentView match {
-            case None    =>
-              applySetMemberToDescriptorMapForCurrentCategory(setCategoryValue, resolvedEndpoint.categories)
-            case Some(v) =>
-              applySetMemberToDescriptorMapForCurrentCategory(setCategoryValue, v.categories)
-          }
-        }
-
-      })
-
-      new java.util.ArrayList[DomainEndpointDef](endpoints.values())
-    })
-  }
 
   def createOrUpdatePair(domain:String, pair: PairDef) = {
 
