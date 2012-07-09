@@ -97,38 +97,57 @@ object ApacheHttpClientTest {
   private val server = new Server(port)
   server.setHandler(new AbstractHandler {
     override def handle(target: String, jettyReq: Request, request: HttpServletRequest, response: HttpServletResponse): Unit = {
-      val queryParams = request.getParameterMap.map { case (key, v) =>
-        key.asInstanceOf[String] -> v.asInstanceOf[Array[String]].toSeq
-      }.toMap
-
-      // println("last req: %s".format(request.getParameterMap))
-      if (target == "/auth" && jettyReq.getAuthentication == null) {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
-        response.setHeader("WWW-Authenticate", "basic realm=\"Fnord\"" );
-      } else if (target == "/400") {
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+      jettyReq.getPathInfo match {
+        case "/auth" if jettyReq.getAuthentication == null =>
+          response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
+          response.setHeader("WWW-Authenticate", "basic realm=\"Fnord\"" )
+        case "/400" =>
+          response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
+        case _ =>
+          response.setStatus(HttpServletResponse.SC_OK)
+          response.getWriter.print(responseString)
       }
 
-      response.getWriter.print(responseString)
-
-      val authHeader = jettyReq.getHeader("Authorization") match {
-        case h: String => Some(h);
-        case null => None
-      }
-      val auth: Option[(String, String)] = for {
-        h <- authHeader
-        Array("Basic", enc:String) <- Some(h.split(' '))
-        Array(u, p) <- Some(new String(Base64.decodeBase64(enc), "utf-8").split(':'))
-      } yield (u, p)
-
-      val query = (DiffaHttpQuery(request.getPathInfo).withQuery(queryParams) /: auth) { case (query, (u, p)) => query.withBasicAuth(u, p) }
-      // also writable as: val query = DiffaHttpQuery(request.getPathInfo).withQuery(queryParams);
-      // val queryWithAuth = auth.foldLeft(query) { case (query, (u, p)) => query.withBasicAuth(u, p) }
-
-      lastRequest = Some(query)
+      recordRequest(jettyReq)
       jettyReq.setHandled(true)
     }
   })
+
+  def recordRequest(request: Request) {
+    val queryParams = extractQueryParameters(request)
+    val auth = extractAuth(request)
+
+    // also writable as: val query = DiffaHttpQuery(request.getPathInfo).withQuery(queryParams);
+    // val queryWithAuth = auth.foldLeft(query) { case (query, (u, p)) => query.withBasicAuth(u, p) }
+    val query = (DiffaHttpQuery(request.getPathInfo).withQuery(queryParams) /: auth) {
+      case (query, (u, p)) => query.withBasicAuth(u, p)
+    }
+
+    lastRequest = Some(query)
+  }
+
+
+  def extractQueryParameters(request: Request): Map[String, Seq[String]] = {
+    val queryParams = request.getParameterMap.map {
+      case (key, v) =>
+        key.asInstanceOf[String] -> v.asInstanceOf[Array[String]].toSeq
+    }.toMap
+    queryParams
+  }
+
+  def extractAuth(request: Request): Option[(String, String)] = {
+    val authHeader = request.getHeader("Authorization") match {
+      case h: String => Some(h);
+      case null => None
+    }
+    val auth: Option[(String, String)] = for {
+      h <- authHeader
+      Array("Basic", enc: String) <- Some(h.split(' '))
+      Array(u, p) <- Some(new String(Base64.decodeBase64(enc), "utf-8").split(':'))
+    } yield (u, p)
+    auth
+  }
+
   val baseUrl = "http://127.0.0.1:%d/".format(port)
 
   def ensureStarted() = if(!server.isRunning()) server.start()
