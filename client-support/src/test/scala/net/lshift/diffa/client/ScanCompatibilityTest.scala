@@ -271,14 +271,11 @@ object ScanCompatibilityTest {
 
   lazy val server = new ParticipantServer(serverPort, scanningParticipant)
   // This duplicates what is in ParticipantRestClientFactory
-  lazy val parser = new ValidatingScanResultParser(EntityValidator)
-  lazy val httpClient = new ApacheHttpClient(0, 0)
-  lazy val scanningRestClient = new ScanParticipantRestClient(
+  lazy val scanningRestClient = ScanningParticipantRestClientFactory.create(
     pair,
     "http://localhost:" + serverPort + "/scan",
-    domainCredentialsLookup,
-    httpClient,
-    parser
+    limits,
+    domainCredentialsLookup
   )
 
   def stubAggregationBuilder(a:(HttpServletRequest) => AggregationBuilder) {
