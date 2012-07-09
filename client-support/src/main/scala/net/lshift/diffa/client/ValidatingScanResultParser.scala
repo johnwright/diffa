@@ -59,18 +59,3 @@ trait LengthCheckingParser extends JsonScanResultParser {
   }
 
 }
-
-trait CollationOrderCheckingParser extends JsonScanResultParser {
-  val collation: Collation
-
-  abstract override def parse(s: InputStream) = {
-    val results = super.parse(s)
-    results.zip(results.drop(1)).foreach { case (first, second) =>
-      if(collation.sortsBefore(second.getId, first.getId)) {
-        throw new OutOfOrderException(second.getId, first.getId)
-      }
-    }
-
-    results
-  }
-}
