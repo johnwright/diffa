@@ -48,12 +48,12 @@ class HibernatePreparationTest {
   // objects that we don't want to be present.
   val invalidTables = Seq(
     "pair_group",                      // Removed as of the v1 migration
-    "prefix_category_descriptor",      // Removed as of the v36 migration
-    "set_category_descriptor",         // Removed as of the v36 migration
-    "set_constraint_values",           // Removed as of the v36 migration
-    "range_category_descriptor",       // Removed as of the v36 migration
-    "endpoint_categories",             // Removed as of the v36 migration
-    "endpoint_views_categories"        // Removed as of the v36 migration
+    "prefix_category_descriptor",      // Removed as of the v38 migration
+    "set_category_descriptor",         // Removed as of the v38 migration
+    "set_constraint_values",           // Removed as of the v38 migration
+    "range_category_descriptor",       // Removed as of the v38 migration
+    "endpoint_categories",             // Removed as of the v38 migration
+    "endpoint_views_categories"        // Removed as of the v38 migration
   )
   val invalidColumns = Map(
     "pair" -> Seq(

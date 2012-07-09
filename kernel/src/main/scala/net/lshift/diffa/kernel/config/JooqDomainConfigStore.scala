@@ -384,7 +384,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
 
     val baseQuery = t.select(PAIR.getFields).
-                      select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC).
+                      select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC, PAIR_VIEWS.SCAN_CRON_ENABLED).
                       from(PAIR).
                         leftOuterJoin(PAIR_VIEWS).
                           on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
@@ -413,19 +413,20 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
           downstreamName = record.getValue(PAIR.DOWNSTREAM),
           versionPolicyName = record.getValue(PAIR.VERSION_POLICY_NAME),
           scanCronSpec = record.getValue(PAIR.SCAN_CRON_SPEC),
+          scanCronEnabled = record.getValue(PAIR.SCAN_CRON_ENABLED),
           matchingTimeout = record.getValue(PAIR.MATCHING_TIMEOUT),
           allowManualScans = record.getValue(PAIR.ALLOW_MANUAL_SCANS),
           views = new util.ArrayList[PairViewDef]()
         )
       )
 
-      val viewScanCronSpec = record.getValue(PAIR_VIEWS.SCAN_CRON_SPEC)
       val viewName = record.getValue(PAIR_VIEWS.NAME)
 
       if (viewName != null) {
         pair.views.add(PairViewDef(
           name = viewName,
-          scanCronSpec = viewScanCronSpec
+          scanCronSpec = record.getValue(PAIR_VIEWS.SCAN_CRON_SPEC),
+          scanCronEnabled = record.getValue(PAIR_VIEWS.SCAN_CRON_ENABLED)
         ))
       }
 
@@ -667,7 +668,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
     val result =
       t.select(PAIR.getFields).
-        select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC).
+        select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC, PAIR_VIEWS.SCAN_CRON_ENABLED).
         from(PAIR).
           leftOuterJoin(PAIR_VIEWS).
             on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
