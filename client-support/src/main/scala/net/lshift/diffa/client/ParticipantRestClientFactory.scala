@@ -32,7 +32,7 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
 
   def createParticipantRef(address: String, pairRef:DiffaPairRef) = {
    val client = new ApacheHttpClient(0, 0)
-    val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser /* with CollationOrderCheckingParser */ {
+    val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser {
       val serviceLimitsView = limits
       val pair = pairRef
     }
