@@ -235,10 +235,6 @@
 
   <!-- Select all statements -->
 
-  <query name="allEndpoints">
-    select e from Endpoint e
-  </query>
-
   <query name="allUsers">
     select u from User u order by u.name asc
   </query>
