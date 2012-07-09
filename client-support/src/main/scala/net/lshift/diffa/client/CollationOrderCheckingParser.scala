@@ -1,0 +1,36 @@
+package net.lshift.diffa.client
+
+import net.lshift.diffa.participant.scanning.{Collation, OutOfOrderException}
+import java.io.InputStream
+
+/**
+ * Copyright (C) 2010-2012 LShift Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+trait CollationOrderCheckingParser extends JsonScanResultParser {
+  val collation: Collation
+
+  abstract override def parse(s: InputStream) = {
+    val results = super.parse(s)
+    results.zip(results.drop(1)).foreach { case (first, second) =>
+      if(collation.sortsBefore(second.getId, first.getId)) {
+        throw new OutOfOrderException(second.getId, first.getId)
+      }
+    }
+
+    results
+  }
+}
