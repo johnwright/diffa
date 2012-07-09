@@ -1,7 +1,3 @@
-package net.lshift.diffa.client
-
-import java.io.InputStream
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -16,6 +12,21 @@ import java.io.InputStream
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+package net.lshift.diffa.client
+
+import java.io.InputStream
+
+/**
+ * DiffaHttpClient acts as an anti-corruption-layer so that:
+ * 1) We have an easily mockable and relatively stateless interface for
+ *   dealing with external HTTP-based services
+ * 2) So that we can keep the technical details of dealing with the underlying
+ * HTTP Library seperate from the diffa protocol logic.
+ *
+ * This does still leak some of the underlying implementation detail, as
+ * reading the InputStream can still throw exceptions, eg: if the stream is
+ * closed prematurely.
  */
 
 trait DiffaHttpClient {

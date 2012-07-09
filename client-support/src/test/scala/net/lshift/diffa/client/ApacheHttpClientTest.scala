@@ -1,17 +1,3 @@
-package net.lshift.diffa.client
-
-import org.eclipse.jetty.server.{Request, Server}
-import org.eclipse.jetty.server.handler.AbstractHandler
-import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
-import org.junit.{Test, Before}
-import org.junit.Assert._
-import org.hamcrest.Matchers._
-import scala.collection.JavaConversions._
-import java.net.{ConnectException, URI}
-import org.apache.commons.codec.binary.Base64
-import java.io.{IOException, InputStream, InputStreamReader, BufferedReader}
-import org.apache.http.client.HttpResponseException
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -27,6 +13,20 @@ import org.apache.http.client.HttpResponseException
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.client
+
+import org.eclipse.jetty.server.{Request, Server}
+import org.eclipse.jetty.server.handler.AbstractHandler
+import javax.servlet.http.{HttpServletResponse, HttpServletRequest}
+import org.junit.{Test, Before}
+import org.junit.Assert._
+import org.hamcrest.Matchers._
+import scala.collection.JavaConversions._
+import java.net.{ConnectException, URI}
+import org.apache.commons.codec.binary.Base64
+import java.io.{IOException, InputStream, InputStreamReader, BufferedReader}
+import org.apache.http.client.HttpResponseException
 
 class ApacheHttpClientTest {
   import ApacheHttpClientTest._

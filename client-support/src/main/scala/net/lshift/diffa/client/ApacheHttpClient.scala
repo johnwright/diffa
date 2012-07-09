@@ -1,13 +1,3 @@
-package net.lshift.diffa.client
-
-import org.apache.http.client.{HttpResponseException, HttpClient}
-import org.apache.http.impl.client.DefaultHttpClient
-import org.apache.http.client.methods.HttpGet
-import java.net.URI
-import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
-import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
-import org.slf4j.LoggerFactory
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -23,6 +13,16 @@ import org.slf4j.LoggerFactory
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.client
+
+import org.apache.http.client.{HttpResponseException, HttpClient}
+import org.apache.http.impl.client.DefaultHttpClient
+import org.apache.http.client.methods.HttpGet
+import java.net.URI
+import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
+import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
+import org.slf4j.LoggerFactory
 
 class ApacheHttpClient(connectionTimeout: Int,
                         socketTimeout: Int) extends DiffaHttpClient {

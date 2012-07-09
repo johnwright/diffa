@@ -1,5 +1,3 @@
-package net.lshift.diffa.client
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -15,6 +13,8 @@ package net.lshift.diffa.client
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.client
 
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.config._
@@ -33,9 +33,6 @@ import net.lshift.diffa.kernel.config.BasicAuthCredentials
 import net.lshift.diffa.kernel.participants.StringPrefixCategoryFunction
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
 import org.junit.runner.RunWith
-
-// TODO:
-// Define JsonParser interface thing
 
 class ScanParticipantRestClientTest {
   lazy val httpClient =  createMock(classOf[DiffaHttpClient])
@@ -77,7 +74,6 @@ class ScanParticipantRestClientTest {
     replay(httpClient)
     expectingNullCredentials()
 
-    // TODO: Push verification of response type / kind into the client by building expectations
     scanningParticipant.scan(Seq(), Seq())
     verify(httpClient)
   }
@@ -196,5 +192,3 @@ class ScanParticipantRestClientTest {
     scanningParticipant.scan(nullConstraints, nullAggregations)
   }
 }
-
-

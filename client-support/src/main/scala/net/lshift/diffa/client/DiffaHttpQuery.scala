@@ -1,13 +1,3 @@
-package net.lshift.diffa.client
-
-import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
-import javax.ws.rs.core.MultivaluedMap
-import com.sun.jersey.core.util.MultivaluedMapImpl
-import java.net.URI
-import org.apache.http.client.utils.URLEncodedUtils
-import org.apache.http.message.BasicNameValuePair
-import scala.collection.JavaConversions._
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -22,6 +12,22 @@ import scala.collection.JavaConversions._
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ */
+
+package net.lshift.diffa.client
+
+import net.lshift.diffa.participant.scanning.{ScanAggregation, ScanConstraint}
+import javax.ws.rs.core.MultivaluedMap
+import com.sun.jersey.core.util.MultivaluedMapImpl
+import java.net.URI
+import org.apache.http.client.utils.URLEncodedUtils
+import org.apache.http.message.BasicNameValuePair
+import scala.collection.JavaConversions._
+
+/**
+ * This acts as a value type representing an individual HTTP request
+ * (currently only GETs), with a builder-style interface for incrementally
+ * adding information to it (eg: authentication) details.
  */
 
 case class DiffaHttpQuery(uri: String,

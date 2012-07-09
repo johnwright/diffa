@@ -1,18 +1,3 @@
-package net.lshift.diffa.client
-
-import org.junit.Test
-import org.hamcrest.Matchers._
-import org.junit.Assert._
-import java.io.{InputStreamReader, BufferedReader, InputStream, ByteArrayInputStream}
-import net.lshift.diffa.participant.scanning.{OutOfOrderException, AsciiCollation, Collation, ScanResultEntry}
-import org.joda.time.{DateTimeZone, DateTime}
-import scala.collection.JavaConversions._
-import net.lshift.diffa.participant.common.ScanEntityValidator
-import org.easymock.EasyMock._
-import net.lshift.diffa.kernel.config.{DiffaPairRef, PairServiceLimitsView}
-import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
-import net.lshift.diffa.kernel.differencing.ScanLimitBreachedException
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -28,6 +13,21 @@ import net.lshift.diffa.kernel.differencing.ScanLimitBreachedException
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.client
+
+import org.junit.Test
+import org.hamcrest.Matchers._
+import org.junit.Assert._
+import java.io.{InputStreamReader, BufferedReader, InputStream, ByteArrayInputStream}
+import net.lshift.diffa.participant.scanning.{OutOfOrderException, AsciiCollation, Collation, ScanResultEntry}
+import org.joda.time.{DateTimeZone, DateTime}
+import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.common.ScanEntityValidator
+import org.easymock.EasyMock._
+import net.lshift.diffa.kernel.config.{DiffaPairRef, PairServiceLimitsView}
+import net.lshift.diffa.schema.servicelimits.ScanResponseSizeLimit
+import net.lshift.diffa.kernel.differencing.ScanLimitBreachedException
 
 class ValidatingScanResultParserTest {
 

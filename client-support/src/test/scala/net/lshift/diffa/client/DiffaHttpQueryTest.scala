@@ -32,7 +32,6 @@ class DiffaHttpQueryTest {
 
   val dummyQuery = DiffaHttpQuery("http://dummy/")
 
-  // TODO: Find better examples
   @Test
   def withConstraints() {
     val constraints = Seq(new StringPrefixConstraint("property", "thePrefix"))
