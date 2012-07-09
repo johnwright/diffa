@@ -31,7 +31,7 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
 
   def createParticipantRef(address: String, pairRef:DiffaPairRef) = {
-   val client = new ApacheHttpClient(0, 0)
+    val client = new ApacheHttpClient(0, 0)
     val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser {
       val serviceLimitsView = limits
       val pair = pairRef
