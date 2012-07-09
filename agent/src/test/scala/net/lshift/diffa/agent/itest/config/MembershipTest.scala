@@ -45,7 +45,7 @@ class MembershipTest {
 
     def assertIsDomainMember(username:String, expectation:Boolean) = {
       val members = configClient.listDomainMembers
-      val isMember = members.toSeq.find(m => m.name == username).isDefined
+      val isMember = members.toSeq.find(m => m == username).isDefined
       assertEquals(expectation, isMember)
     }
     systemConfigClient.declareDomain(domain)

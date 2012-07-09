@@ -91,8 +91,10 @@ trait CommonDifferenceTests {
 
     assertEquals("abcdef", detail)
 
-    val fileList = messageDir.listFiles
-    assertNotNull("File list was null for dir: " + messageDir, fileList)
+    // TODO Remove mail notifications all together
+    //val fileList = messageDir.listFiles
+    //assertNotNull("File list was null for dir: " + messageDir, fileList)
+
     // #338 This notification test is broken since the default quiet time was set to a non-zero value,
     // but unfortuneately, this requires the config to be dynamically updateable.
     //assertEquals(1, fileList.size)
@@ -129,7 +131,7 @@ trait CommonDifferenceTests {
     }
 
     val fullLowerBound = rightNow.minusMinutes(ZoomLevels.lookupZoomLevel(DAILY) * columns)
-    runScanAndWaitForCompletion(fullLowerBound, upperBound, 100, 100)
+    runScanAndWaitForCompletion(fullLowerBound, upperBound)
 
     val requests = expectedZoomedViews.map { case (zoomLevel, expectedBlobs) =>
       val lowerBound = upperBound.minusMinutes(ZoomLevels.lookupZoomLevel(zoomLevel) * columns)
@@ -162,7 +164,7 @@ trait CommonDifferenceTests {
     }
 
     val fullLowerBound = rightNow.minusMinutes(ZoomLevels.lookupZoomLevel(DAILY) * columns)
-    runScanAndWaitForCompletion(fullLowerBound, upperBound, 100, 100)
+    runScanAndWaitForCompletion(fullLowerBound, upperBound)
 
     val requests = Map(
       "open-top" -> AggregateRequest(upperBound.minusMinutes(50), null, None),

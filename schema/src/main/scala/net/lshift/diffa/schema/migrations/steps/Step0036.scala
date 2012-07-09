@@ -15,24 +15,27 @@
  */
 package net.lshift.diffa.schema.migrations.steps
 
-import net.lshift.diffa.schema.migrations.HibernateMigrationStep
+import java.sql.Types
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import java.sql.Types
+import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 
+object Step0036 extends HibernateMigrationStep {
 
-object Step0035 extends HibernateMigrationStep {
+  def versionId = 36
 
-  def versionId = 35
-  def name = "Ensure that escalations and repair_actions are unique per domain"
+  def name = "Add columns to support enabling/disabling of scan cron specs"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.alterTable("repair_actions").
-      replacePrimaryKey("domain", "pair_key", "name")
-    migration.alterTable("escalations").
-      replacePrimaryKey("domain", "pair_key", "name")
+    migration
+      .alterTable("pair")
+      .addColumn("scan_cron_enabled", Types.BIT, 1, false, 1)
+
+    migration
+      .alterTable("pair_views")
+      .addColumn("scan_cron_enabled", Types.BIT, 1, false, 1)
 
     migration
   }
