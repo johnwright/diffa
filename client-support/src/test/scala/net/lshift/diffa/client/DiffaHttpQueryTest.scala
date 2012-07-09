@@ -1,15 +1,3 @@
-package net.lshift.diffa.client
-
-import org.junit.runner.RunWith
-import org.junit.experimental.theories.{DataPoint, Theory, Theories}
-import org.junit.Test
-import net.lshift.diffa.participant.scanning.{TimeRangeConstraint, StringPrefixConstraint}
-import org.junit.Assert._
-import org.hamcrest.CoreMatchers._
-import net.lshift.diffa.kernel.participants.StringPrefixCategoryFunction
-import java.net.URI
-import org.joda.time.{DateTimeZone, Duration, ReadableDuration, DateTime}
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -25,6 +13,18 @@ import org.joda.time.{DateTimeZone, Duration, ReadableDuration, DateTime}
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.client
+
+import org.junit.runner.RunWith
+import org.junit.experimental.theories.{DataPoint, Theory, Theories}
+import org.junit.Test
+import net.lshift.diffa.participant.scanning.{TimeRangeConstraint, StringPrefixConstraint}
+import org.junit.Assert._
+import org.hamcrest.CoreMatchers._
+import net.lshift.diffa.kernel.participants.StringPrefixCategoryFunction
+import java.net.URI
+import org.joda.time.{DateTimeZone, Duration, ReadableDuration, DateTime}
 
 @RunWith(classOf[Theories])
 class DiffaHttpQueryTest {
