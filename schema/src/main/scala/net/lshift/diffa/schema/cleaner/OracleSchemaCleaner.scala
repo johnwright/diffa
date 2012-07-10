@@ -64,7 +64,8 @@ object OracleSchemaCleaner extends SchemaCleaner {
                 log.debug("Disconnected user: %s".format(disconnectUser))
               } catch {
                 case ex =>
-                  log.info("Failed to disconnect session [%d/%d]".format(sid, serialnum))
+                  log.error("Failed to disconnect session [%d/%d]".format(sid, serialnum))
+                  throw ex
               }
           }
         }
