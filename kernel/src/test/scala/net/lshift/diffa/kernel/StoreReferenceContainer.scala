@@ -56,7 +56,7 @@ trait StoreReferenceContainer {
       systemConfigStore.deleteDomain(domainName)
     }  catch {
       case e: MissingObjectException => {
-        logger.warn("Could not clear configuration for domain " + domainName, e)
+        logger.warn("Could not clear configuration for domain " + domainName)
       }
     }
   }
