@@ -44,11 +44,25 @@ import net.lshift.diffa.kernel.frontend.PairReportDef
  */
 object JooqConfigStoreCompanion {
 
+  /**
+   * A UNIQUE_CATEGORY_NAME can either refer to an endpoint or an endpoint view.
+   * These two enums signify those two legal values.
+   */
   val ENDPOINT_TARGET_TYPE = "endpoint"
   val ENDPOINT_VIEW_TARGET_TYPE = "endpoint_view"
 
+  /**
+   * Common name for the name of the view across both halves of the union query to list endpoints.
+   * In the top half of the union, this column will be null, since that half only deals with endpoints.
+   * In the bottom half of the union, this column will contain the name of the endpoint view.
+   */
   val VIEW_NAME_COLUMN = UNIQUE_CATEGORY_NAMES.VIEW_NAME.getName
 
+  /**
+   * Due to the fact that we need to order the grand union rather than just the individual subselects,
+   * we need to select from the grand union. When doing so, the column names called NAME will clash,
+   * so we alias the UNIQUE_CATEGORY_NAMES.NAME field to something other than NAME.
+   */
   val UNIQUE_CATEGORY_ALIAS = UNIQUE_CATEGORY_NAMES.NAME.as("unique_category_alias")
 
   def listEndpoints(jooq:DatabaseFacade, domain:Option[String] = None, endpoint:Option[String] = None) : java.util.List[DomainEndpointDef] = {
@@ -62,27 +76,27 @@ object JooqConfigStoreCompanion {
         from(ENDPOINT).
 
         leftOuterJoin(UNIQUE_CATEGORY_NAMES).
-        on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-        and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT.NAME)).
-        and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_TARGET_TYPE)).
+          on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+          and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT.NAME)).
+          and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_TARGET_TYPE)).
 
         leftOuterJoin(RANGE_CATEGORIES).
-        on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-        and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
-        and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-        and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
+          on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+          and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
+          and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+          and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
         leftOuterJoin(PREFIX_CATEGORIES).
-        on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-        and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
-        and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-        and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
+          on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+          and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
+          and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+          and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
         leftOuterJoin(SET_CATEGORIES).
-        on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
-        and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
-        and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-        and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME))
+          on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT.DOMAIN)).
+          and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT.NAME)).
+          and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+          and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME))
 
       val firstUnionPart = domain match {
         case None    => topHalf
@@ -103,32 +117,32 @@ object JooqConfigStoreCompanion {
         from(ENDPOINT_VIEWS).
 
         join(ENDPOINT).
-        on(ENDPOINT.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-        and(ENDPOINT.NAME.equal(ENDPOINT_VIEWS.ENDPOINT)).
+          on(ENDPOINT.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+          and(ENDPOINT.NAME.equal(ENDPOINT_VIEWS.ENDPOINT)).
 
         leftOuterJoin(UNIQUE_CATEGORY_NAMES).
-        on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-        and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-        and(UNIQUE_CATEGORY_NAMES.VIEW_NAME.equal(ENDPOINT_VIEWS.NAME)).
-        and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_VIEW_TARGET_TYPE)).
+          on(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+          and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
+          and(UNIQUE_CATEGORY_NAMES.VIEW_NAME.equal(ENDPOINT_VIEWS.NAME)).
+          and(UNIQUE_CATEGORY_NAMES.TARGET_TYPE.equal(ENDPOINT_VIEW_TARGET_TYPE)).
 
         leftOuterJoin(RANGE_CATEGORIES).
-        on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-        and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-        and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-        and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
+          on(RANGE_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+          and(RANGE_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
+          and(RANGE_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+          and(RANGE_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
         leftOuterJoin(PREFIX_CATEGORIES).
-        on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-        and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-        and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-        and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
+          on(PREFIX_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+          and(PREFIX_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
+          and(PREFIX_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+          and(PREFIX_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
 
         leftOuterJoin(SET_CATEGORIES).
-        on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
-        and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-        and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
-        and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME))
+          on(SET_CATEGORIES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
+          and(SET_CATEGORIES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
+          and(SET_CATEGORIES.TARGET_TYPE.equal(UNIQUE_CATEGORY_NAMES.TARGET_TYPE)).
+          and(SET_CATEGORIES.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME))
 
       val secondUnionPart = domain match {
         case None    => bottomHalf
