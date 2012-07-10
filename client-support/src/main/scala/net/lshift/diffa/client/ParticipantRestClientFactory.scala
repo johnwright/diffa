@@ -29,19 +29,12 @@ trait ParticipantRestClientFactory {
   def supportsAddress(address: String) = address.startsWith("http://") || address.startsWith("https://")
 }
 
-// endpoint..scanUrl
 class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ScanningParticipantFactory with ParticipantRestClientFactory {
   def supports(endpoint: Endpoint) = supportsAddress(endpoint.scanUrl)
 
   def createParticipantRef(endpoint: Endpoint, pairRef:DiffaPairRef) = {
 
-/* To be honest, I'm not sure this is the best place for the limits
-    lookup, as we end up doing two things here--both lookup /and/ object
-    creation. --perhaps push it down into the Restclient / consuming entities
-    themselves or create a "curried" PerPairServiceLimitsView?
-    --CS
-*/
     val connectTimeout = limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanConnectTimeout)
     val readTimeout =limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanReadTimeout)
 
