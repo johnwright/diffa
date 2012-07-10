@@ -49,11 +49,11 @@ public class DialectExtensionSelector {
 
     log.info("Using dialect: " + dialect);
 
-    if (dialect.equals("Oracle"))  {
+    if (dialect.equalsIgnoreCase("Oracle"))  {
       return new OracleDialectExtension();
     }
 
-    if (dialect.equals("MySQL"))  {
+    if (dialect.equalsIgnoreCase("MySQL"))  {
       return new MySQL5DialectExtension();
     }
 
