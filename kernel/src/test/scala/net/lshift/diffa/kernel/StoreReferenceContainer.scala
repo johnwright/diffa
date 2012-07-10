@@ -156,15 +156,26 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
 
   def tearDown {
     log.debug("Dropping test schema")
+
+    // This is a bit of a hack, but basically what is happening is that we are connecting to the DB as a DBA and
+    // are nuking the user session on the server side, hence the client side data source (and Hibernate session factory)
+    // will be toast
+
+    try {
+      _ds.get.close()
+    } catch {
+      case _ =>
+    }
+
+    _sessionFactory = None
+    _ds = None
+
     try {
       performCleanerAction(cleaner => cleaner.drop)
     } catch {
       case _ =>
     }
-    _sessionFactory.get.close()
-    _sessionFactory = None
-    _ds.get.close()
-    _ds = None
+
   }
 
   private def performCleanerAction(action: SchemaCleaner => (DatabaseEnvironment, DatabaseEnvironment) => Unit) {
