@@ -92,7 +92,7 @@ object OracleSchemaCleaner extends SchemaCleaner {
                 userExists = false
               } catch {
                 case ex =>
-                  log.debug("Failed to execute prepared statement: %s".format(stmtText))
+                  log.error("Failed to execute prepared statement: %s".format(stmtText))
                   throw ex
               }
             }
@@ -104,7 +104,7 @@ object OracleSchemaCleaner extends SchemaCleaner {
           recreateAttemptCount += 1
           Thread.sleep(retryIntervalMs)
           if (recreateAttemptCount >= recreateAttemptThreshold) {
-            log.info("Failed to drop user [%s]".format(schemaName))
+            log.error("Failed to drop user [%s]".format(schemaName))
             throw ex
           }
       }
@@ -140,7 +140,7 @@ object OracleSchemaCleaner extends SchemaCleaner {
             log.debug("Executed: %s".format(stmtText))
           } catch {
             case ex =>
-              log.info("Failed to execute prepared statement: %s".format(stmtText))
+              log.error("Failed to execute prepared statement: %s".format(stmtText))
               throw ex
           }
         }
@@ -165,7 +165,7 @@ object OracleSchemaCleaner extends SchemaCleaner {
           Thread.sleep(pollIntervalMs)
           failCount += 1
           if (failCount >= failThreshold) {
-            log.info("Timed out waiting for schema creation. Waited %lms".format(timeoutMs))
+            log.error("Timed out waiting for schema creation. Waited %lms".format(timeoutMs))
             throw ex
           }
       }
