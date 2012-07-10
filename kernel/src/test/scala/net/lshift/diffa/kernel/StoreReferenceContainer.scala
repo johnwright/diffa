@@ -164,7 +164,17 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     try {
       _ds.get.close()
     } catch {
-      case _ =>
+      case x => {
+        log.warn("Could not close data source", x)
+      }
+    }
+
+    try {
+      _sessionFactory.get.close()
+    } catch {
+      case x => {
+        log.warn("Could not close sessionFactory", x)
+      }
     }
 
     _sessionFactory = None
