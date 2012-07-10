@@ -48,10 +48,6 @@ class ParticipantFactory() {
     new CompositeDownstreamParticipant(endpoint.name, scanningParticipant, contentParticipant, versioningParticipant)
   }
 
-  private def nullableToOption[T](v: T): Option[T] = v match {
-    case null => None
-    case _=> Some(v)
-  }
   def createScanningParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[ScanningParticipantRef] =
     createParticipant(scanningFactories, endpoint, pair, _.scanUrl)
   def createContentParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[ContentParticipantRef] =
@@ -59,13 +55,15 @@ class ParticipantFactory() {
   def createVersioningParticipant(endpoint:Endpoint, pair:DiffaPairRef): Option[VersioningParticipantRef] =
     createParticipant(versioningFactories, endpoint, pair, _.versionGenerationUrl)
 
-  private def createParticipant[T](factories:Seq[AddressDrivenFactory[T]], endpoint:Endpoint, pair:DiffaPairRef,
-                                    field: Endpoint => Any) (implicit m: Manifest[T]): Option[T] = {
-    nullableToOption(field(endpoint)) flatMap { _ =>
+  private def createParticipant[T](factories:Seq[AddressDrivenFactory[T]],
+                                   endpoint:Endpoint, pair:DiffaPairRef,
+                                    accessor: Endpoint => String) : Option[T] = {
+    val address = accessor(endpoint)
+    Option(address) flatMap { _ =>
       factories.find(f => f.supports(endpoint)) map (
         _.createParticipantRef(endpoint, pair)
         ) orElse {
-        throw new InvalidParticipantAddressException(endpoint, m.toString)
+        throw new InvalidParticipantAddressException(address)
       }
     }
   }
@@ -100,7 +98,7 @@ class ParticipantFactory() {
   }
 }
 
-class InvalidParticipantAddressException(endpoint: Endpoint, kind:String)
-    extends Exception("The endpoint " + endpoint + " is not a valid endpoint for "+kind)
+class InvalidParticipantAddressException(addr:String)
+    extends Exception("The address " + addr + " is not a valid participant address")
 class InvalidParticipantOperationException(partName:String, op:String)
     extends Exception("The participant " + partName + " does not support " + op)
