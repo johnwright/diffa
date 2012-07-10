@@ -49,9 +49,10 @@ object ScanLimitsTest {
 
   object scanningParticipant extends ScanningParticipantHandler {
     import java.util.List
+    var response : List[ScanResultEntry] = Seq[ScanResultEntry]()
     def determineConstraints(req : HttpServletRequest) : List[ScanConstraint] = Seq()
     def determineAggregations(req : HttpServletRequest) : List[ScanAggregation] = Seq ()
-    def doQuery(constraints : List[ScanConstraint], aggregations : List[ScanAggregation])  = Seq[ScanResultEntry]()
+    def doQuery(constraints : List[ScanConstraint], aggregations : List[ScanAggregation])  = response
   }
 
   lazy val server = new ParticipantServer(serverPort, scanningParticipant)
