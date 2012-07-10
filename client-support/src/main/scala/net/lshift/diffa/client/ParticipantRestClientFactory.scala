@@ -52,7 +52,6 @@ object ScanningParticipantRestClientFactory {
       new ScanningParticipantRestClientFactory(credentialsLookup, serviceLimitsView).createParticipantRef(endpoint, pair)
 }
 
-// endpoint.contentRetrievalUrl
 class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends ContentParticipantFactory with ParticipantRestClientFactory {
   def supports(endpoint: Endpoint) = supportsAddress(endpoint.contentRetrievalUrl)
@@ -64,7 +63,6 @@ class ContentParticipantRestClientFactory(credentialsLookup:DomainCredentialsLoo
                                        pair = pair)
 }
 
-// endpoint.versionGenerationUrl
 class VersioningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLookup, limits: PairServiceLimitsView)
   extends VersioningParticipantFactory with ParticipantRestClientFactory {
   def supports(endpoint: Endpoint) = supportsAddress(endpoint.versionGenerationUrl)
