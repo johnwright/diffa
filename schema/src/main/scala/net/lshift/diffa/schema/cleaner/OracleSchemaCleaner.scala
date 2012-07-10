@@ -74,7 +74,7 @@ object OracleSchemaCleaner extends SchemaCleaner {
   }
 
   private def dropSchema(sessionFactory: SessionFactory, schemaName: String) {
-    val dropSchemaStatement = "drop user %s cascade".format(schemaName)
+    val dropSchemaStatement = "drop user %s cascade".format(schemaName.toUpperCase)
     val recreateAttemptThreshold = 3
     val retryIntervalMs = 1000L
     var recreateAttemptCount = 0
@@ -105,7 +105,6 @@ object OracleSchemaCleaner extends SchemaCleaner {
           Thread.sleep(retryIntervalMs)
           if (recreateAttemptCount >= recreateAttemptThreshold) {
             log.info("Failed to drop user [%s]".format(schemaName))
-            log.info(ex.getMessage)
             throw ex
           }
       }
