@@ -25,9 +25,11 @@ trait CollationOrderCheckingParser extends JsonScanResultParser {
 
   abstract override def parse(s: InputStream) = {
     val results = super.parse(s)
-    results.zip(results.drop(1)).foreach { case (first, second) =>
-      if(collation.sortsBefore(second.getId, first.getId)) {
-        throw new OutOfOrderException(second.getId, first.getId)
+
+    val nextResults = results.drop(1)
+    results.zip(nextResults).foreach { case (current, next) =>
+      if(collation.sortsBefore(next.getId, current.getId)) {
+        throw new OutOfOrderException(next.getId, current.getId)
       }
     }
 
