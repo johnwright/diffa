@@ -6,6 +6,8 @@ import org.hibernate.jdbc.Work
 import java.sql.Connection
 import org.hibernate.SessionFactory
 import org.slf4j.LoggerFactory
+import org.joda.time.DateTime
+import org.joda.time.Interval
 
 /**
  * Implements the SchemaCleaner for Oracle databases.
@@ -75,10 +77,12 @@ object OracleSchemaCleaner extends SchemaCleaner {
 
   private def dropSchema(sessionFactory: SessionFactory, schemaName: String) {
     val dropSchemaStatement = "drop user %s cascade".format(schemaName.toUpperCase)
-    val recreateAttemptThreshold = 3
+    val recreateAttemptThreshold = 10
     val retryIntervalMs = 1000L
     var recreateAttemptCount = 0
     var userExists = true
+
+    val start = new DateTime()
 
     // Disconnecting a user can succeed, but the effect may not be immediate.  Retry this a few times.
     while (userExists && recreateAttemptCount < recreateAttemptThreshold) {
@@ -101,12 +105,17 @@ object OracleSchemaCleaner extends SchemaCleaner {
         })
       } catch {
         case ex: Exception =>
+
           recreateAttemptCount += 1
-          Thread.sleep(retryIntervalMs)
+
           if (recreateAttemptCount >= recreateAttemptThreshold) {
-            log.error("Failed to drop user [%s]".format(schemaName))
+            val end = new DateTime()
+            val interval = new Interval(start,end)
+            log.error("Failed to drop user [%s] after %s, attempted at %s".format(schemaName, interval.toPeriod, interval))
             throw ex
           }
+
+          Thread.sleep(retryIntervalMs)
       }
     }
   }
