@@ -21,7 +21,7 @@ import net.lshift.diffa.schema.jooq.DatabaseFacade
 /**
  * Factory for constructing hooks based upon session configuration.
  */
-class HookManager(dialect:String) {
+class HookManager(val dialect:String) {
 
   val dialectExtension = DialectExtensionSelector.select(dialect)
 

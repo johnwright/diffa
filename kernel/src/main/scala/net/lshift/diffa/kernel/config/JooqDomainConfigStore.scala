@@ -379,65 +379,10 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
     })
   }
 
-  def listPairs(domain:String) = cachedPairs.readThrough(domain, () => listPairsInternal(domain))
+  def listPairs(domain:String) = cachedPairs.readThrough(domain, () => JooqConfigStoreCompanion.listPairs(jooq,domain))
 
   def listPairsForEndpoint(domain:String, endpoint:String) =
-    cachedPairsByEndpoint.readThrough(DomainEndpointKey(domain, endpoint), () => listPairsInternal(domain, Some(endpoint)))
-
-  private def listPairsInternal(domain:String, endpoint:Option[String] = None) : Seq[DomainPairDef] = jooq.execute(t => {
-
-
-    val baseQuery = t.select(PAIR.getFields).
-                      select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC, PAIR_VIEWS.SCAN_CRON_ENABLED).
-                      from(PAIR).
-                        leftOuterJoin(PAIR_VIEWS).
-                          on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
-                          and(PAIR_VIEWS.DOMAIN.equal(PAIR.DOMAIN)).
-                      where(PAIR.DOMAIN.equal(domain))
-
-    val query = endpoint match {
-      case None       => baseQuery
-      case Some(name) => baseQuery.and(PAIR.UPSTREAM.equal(name).or(PAIR.DOWNSTREAM.equal(name)))
-    }
-
-    val results = query.fetch()
-
-    val compressed = new mutable.HashMap[String, DomainPairDef]()
-
-    def compressionKey(pairKey:String) = domain + "/" + pairKey
-
-    results.iterator().map(record => {
-      val pairKey = record.getValue(PAIR.PAIR_KEY)
-      val compressedKey = compressionKey(pairKey)
-      val pair = compressed.getOrElseUpdate(compressedKey,
-        DomainPairDef(
-          domain = record.getValue(PAIR.DOMAIN),
-          key = record.getValue(PAIR.PAIR_KEY),
-          upstreamName = record.getValue(PAIR.UPSTREAM),
-          downstreamName = record.getValue(PAIR.DOWNSTREAM),
-          versionPolicyName = record.getValue(PAIR.VERSION_POLICY_NAME),
-          scanCronSpec = record.getValue(PAIR.SCAN_CRON_SPEC),
-          scanCronEnabled = record.getValue(PAIR.SCAN_CRON_ENABLED),
-          matchingTimeout = record.getValue(PAIR.MATCHING_TIMEOUT),
-          allowManualScans = record.getValue(PAIR.ALLOW_MANUAL_SCANS),
-          views = new util.ArrayList[PairViewDef]()
-        )
-      )
-
-      val viewName = record.getValue(PAIR_VIEWS.NAME)
-
-      if (viewName != null) {
-        pair.views.add(PairViewDef(
-          name = viewName,
-          scanCronSpec = record.getValue(PAIR_VIEWS.SCAN_CRON_SPEC),
-          scanCronEnabled = record.getValue(PAIR_VIEWS.SCAN_CRON_ENABLED)
-        ))
-      }
-
-      pair
-
-    }).toList
-  })
+    cachedPairsByEndpoint.readThrough(DomainEndpointKey(domain, endpoint), () => JooqConfigStoreCompanion.listPairs(jooq, domain, Some(endpoint)))
 
   def listEscalationsForPair(domain:String, pairKey: String) : Seq[EscalationDef] = {
     cachedEscalations.readThrough(DomainPairKey(domain, pairKey), () => jooq.execute(t => {

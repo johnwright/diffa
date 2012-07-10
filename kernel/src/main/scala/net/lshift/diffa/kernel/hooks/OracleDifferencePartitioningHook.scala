@@ -78,12 +78,13 @@ class OracleDifferencePartitioningHook(jooq:DatabaseFacade) extends DifferencePa
 
   def hasPartition(t:Factory, partition:String) = {
 
-    t.selectCount().
-      from("user_tab_partitions").
-      where("table_name = ?", "DIFFS").
-      and("partition_name = ?", partition).
-      fetchOne().
-      getValueAsBigDecimal(1).longValue() > 0
+    val result = t.selectCount().
+                   from("user_tab_partitions").
+                   where("table_name = ?", "DIFFS").
+                     and("partition_name = ?", partition.toUpperCase). // Oracle will have forced the partition names to uppercase
+                   fetchOne()
+
+    result.getValueAsBigDecimal(0).longValue() > 0
 
   }
 }

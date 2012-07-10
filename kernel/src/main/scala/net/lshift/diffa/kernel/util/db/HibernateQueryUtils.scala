@@ -133,8 +133,6 @@ trait HibernateQueryUtils {
 
   def getPair(s: Session, domain: String, key: String) = getOrFail(s, classOf[DiffaPair], DomainScopedKey(key, Domain(name = domain)), "pair")
 
-  def listPairsInDomain(domain: String) = sessionFactory.withSession(s => HibernateQueryUtils.listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)))
-
 }
 
 /**

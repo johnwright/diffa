@@ -38,6 +38,7 @@ import net.lshift.diffa.kernel.frontend.DomainEndpointDef
 import net.lshift.diffa.kernel.frontend.RepairActionDef
 import net.lshift.diffa.kernel.frontend.EscalationDef
 import net.lshift.diffa.kernel.frontend.PairReportDef
+import collection.mutable
 
 /**
  * This object is a workaround for the fact that Scala is so slow
@@ -260,6 +261,61 @@ object JooqConfigStoreCompanion {
       new java.util.ArrayList[DomainEndpointDef](endpoints.values())
     })
   }
+
+
+  def listPairs(jooq:DatabaseFacade, domain:String, endpoint:Option[String] = None) : Seq[DomainPairDef] = jooq.execute(t => {
+
+    val baseQuery = t.select(PAIR.getFields).
+      select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC, PAIR_VIEWS.SCAN_CRON_ENABLED).
+      from(PAIR).
+      leftOuterJoin(PAIR_VIEWS).
+      on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
+      and(PAIR_VIEWS.DOMAIN.equal(PAIR.DOMAIN)).
+      where(PAIR.DOMAIN.equal(domain))
+
+    val query = endpoint match {
+      case None       => baseQuery
+      case Some(name) => baseQuery.and(PAIR.UPSTREAM.equal(name).or(PAIR.DOWNSTREAM.equal(name)))
+    }
+
+    val results = query.fetch()
+
+    val compressed = new mutable.HashMap[String, DomainPairDef]()
+
+    def compressionKey(pairKey:String) = domain + "/" + pairKey
+
+    results.iterator().map(record => {
+      val pairKey = record.getValue(PAIR.PAIR_KEY)
+      val compressedKey = compressionKey(pairKey)
+      val pair = compressed.getOrElseUpdate(compressedKey,
+        DomainPairDef(
+          domain = record.getValue(PAIR.DOMAIN),
+          key = record.getValue(PAIR.PAIR_KEY),
+          upstreamName = record.getValue(PAIR.UPSTREAM),
+          downstreamName = record.getValue(PAIR.DOWNSTREAM),
+          versionPolicyName = record.getValue(PAIR.VERSION_POLICY_NAME),
+          scanCronSpec = record.getValue(PAIR.SCAN_CRON_SPEC),
+          scanCronEnabled = record.getValue(PAIR.SCAN_CRON_ENABLED),
+          matchingTimeout = record.getValue(PAIR.MATCHING_TIMEOUT),
+          allowManualScans = record.getValue(PAIR.ALLOW_MANUAL_SCANS),
+          views = new java.util.ArrayList[PairViewDef]()
+        )
+      )
+
+      val viewName = record.getValue(PAIR_VIEWS.NAME)
+
+      if (viewName != null) {
+        pair.views.add(PairViewDef(
+          name = viewName,
+          scanCronSpec = record.getValue(PAIR_VIEWS.SCAN_CRON_SPEC),
+          scanCronEnabled = record.getValue(PAIR_VIEWS.SCAN_CRON_ENABLED)
+        ))
+      }
+
+      pair
+
+    }).toList
+  })
 
   def mapResultsToList[T](results:Result[Record], rowMapper:Record => T) = {
     val escalations = new java.util.ArrayList[T]()
