@@ -18,25 +18,14 @@ package net.lshift.diffa.client
 
 import javax.servlet.http.HttpServletRequest
 import org.easymock.EasyMock._
-import org.easymock.{EasyMock, IAnswer}
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.participant.scanning._
 import org.junit.{Test, Before}
-import net.lshift.diffa.schema.servicelimits.{ServiceLimit, ScanReadTimeout, ScanConnectTimeout, ScanResponseSizeLimit}
+import net.lshift.diffa.schema.servicelimits.{ScanReadTimeout, ScanConnectTimeout, ScanResponseSizeLimit}
 import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.differencing.{ScanLimitBreachedException, ScanFailedException}
-import org.junit.experimental.theories.{Theories, Theory, DataPoint}
-import util.DynamicVariable
-import org.junit.Assert._
-import org.hamcrest.Matchers._
-import org.hamcrest.{Description, BaseMatcher, Matcher}
-import org.junit.internal.matchers.TypeSafeMatcher
-import java.util.Arrays
+import net.lshift.diffa.kernel.differencing.ScanLimitBreachedException
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import scala.Right
-import scala.Left
 import net.lshift.diffa.kernel.config.Endpoint
-import org.junit.runner.RunWith
 
 
 object ScanLimitsTest {
