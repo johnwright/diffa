@@ -49,9 +49,11 @@ object JooqConfigStoreCompanion {
 
   val VIEW_NAME_COLUMN = UNIQUE_CATEGORY_NAMES.VIEW_NAME.getName
 
+  val UNIQUE_CATEGORY_ALIAS = UNIQUE_CATEGORY_NAMES.NAME.as("unique_category_alias")
+
   def listEndpoints(jooq:DatabaseFacade, domain:Option[String] = None, endpoint:Option[String] = None) : java.util.List[DomainEndpointDef] = {
     jooq.execute(t => {
-      val topHalf =     t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
+      val topHalf =     t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_ALIAS).
         select(ENDPOINT.getFields).
         select(Factory.field("null").as(VIEW_NAME_COLUMN)).
         select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
@@ -92,9 +94,7 @@ object JooqConfigStoreCompanion {
           }
       }
 
-      firstUnionPart.orderBy(ENDPOINT.DOMAIN, ENDPOINT.NAME, UNIQUE_CATEGORY_NAMES.NAME)
-
-      val bottomHalf =  t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_NAMES.NAME).
+      val bottomHalf =  t.select(UNIQUE_CATEGORY_NAMES.TARGET_TYPE, UNIQUE_CATEGORY_ALIAS).
         select(ENDPOINT.getFields).
         select(ENDPOINT_VIEWS.NAME.as(VIEW_NAME_COLUMN)).
         select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
@@ -140,9 +140,18 @@ object JooqConfigStoreCompanion {
           }
       }
 
-      secondUnionPart.orderBy(ENDPOINT_VIEWS.DOMAIN, ENDPOINT_VIEWS.NAME, UNIQUE_CATEGORY_NAMES.NAME)
+      // Sort the grand union rather than the individual constituent subselects
 
-      val results = firstUnionPart.unionAll(secondUnionPart).fetch()
+      val grandUnion = firstUnionPart.union(secondUnionPart)
+
+      val results = t.select(grandUnion.getFields).
+                      from(grandUnion).
+                      orderBy(
+                        grandUnion.getField(ENDPOINT.DOMAIN),
+                        grandUnion.getField(ENDPOINT.NAME),
+                        grandUnion.getField(UNIQUE_CATEGORY_ALIAS)
+                      ).
+                      fetch()
 
       val endpoints = new java.util.TreeMap[String,DomainEndpointDef]()
 
@@ -182,7 +191,7 @@ object JooqConfigStoreCompanion {
           None
         }
 
-        val categoryName = record.getValueAsString(UNIQUE_CATEGORY_NAMES.NAME)
+        val categoryName = record.getValueAsString(UNIQUE_CATEGORY_ALIAS)
 
         def applyCategoryToEndpointOrView(descriptor:CategoryDescriptor) = {
           currentView match {
