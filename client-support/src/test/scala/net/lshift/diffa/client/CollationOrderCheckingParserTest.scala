@@ -29,10 +29,10 @@ class CollationOrderCheckingParserTest { self =>
   val entity2 = ScanResultEntry.forEntity("id2", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
   val entity3 = ScanResultEntry.forEntity("id3", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
 
-  // A dummy collation that sorts backwards for verification purposes.
+  // A dummy collation that sorts backwards for verification purposes. You
+  // would only ever use something like this for testing, AFAICS. --CS
   lazy val reversedAsciiCollation = new AsciiCollation {
     override def sortsBefore(a: String, b:String) = super.sortsBefore(b, a)
-
   }
 
   trait DummyParser extends JsonScanResultParser {
@@ -41,7 +41,6 @@ class CollationOrderCheckingParserTest { self =>
 
     override def parse(s: InputStream) = entities
   }
- //  val checkingParser = new DummyParser with CollationOrderCheckingParser
 
   val emptyResponseContent = "[" + (" " * 40) + "]"
   lazy val emptyResponse = new ByteArrayInputStream(emptyResponseContent.getBytes("UTF8"))
