@@ -34,7 +34,6 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
   def supports(endpoint: Endpoint) = supportsAddress(endpoint.scanUrl)
 
   def createParticipantRef(endpoint: Endpoint, pairRef:DiffaPairRef) = {
-
     val connectTimeout = limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanConnectTimeout)
     val readTimeout =limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanReadTimeout)
 
