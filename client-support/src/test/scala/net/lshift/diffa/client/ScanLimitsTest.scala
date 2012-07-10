@@ -60,10 +60,7 @@ object ScanLimitsTest {
   def ensureServerStarted {
     if (!server.isRunning) server.start()
   }
-
-
 }
-
 
 class ScanLimitsTest {
   import ScanLimitsTest._
@@ -112,5 +109,4 @@ class ScanLimitsTest {
     replay(limits)
 
   }
-
 }
