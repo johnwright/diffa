@@ -46,7 +46,7 @@ object OracleSchemaCleaner extends SchemaCleaner {
     sessionFactory.withSession(session => {
       session.doWork(new Work {
         def execute(connection: Connection) {
-          val getSessionInfo = "select sid, serial# from v$session where username = '%s'".format(username.toUpperCase)
+          val getSessionInfo = "select sid, serial# from v$session where upper(username) = '%s'".format(username.toUpperCase)
           val sessionInfoStmt = connection.prepareStatement(getSessionInfo)
           val rs = sessionInfoStmt.executeQuery
           var sessions: List[(Int, Int)] = Nil
