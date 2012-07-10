@@ -35,13 +35,21 @@ class ScanningParticipantRestClientFactory(credentialsLookup:DomainCredentialsLo
   def supports(endpoint: Endpoint) = supportsAddress(endpoint.scanUrl)
 
   def createParticipantRef(endpoint: Endpoint, pairRef:DiffaPairRef) = {
+
+/* To be honest, I'm not sure this is the best place for the limits
+    lookup, as we end up doing two things here--both lookup /and/ object
+    creation. --perhaps push it down into the Restclient / consuming entities
+    themselves or create a "curried" PerPairServiceLimitsView?
+    --CS
+*/
     val connectTimeout = limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanConnectTimeout)
     val readTimeout =limits.getEffectiveLimitByNameForPair(pairRef.domain, pairRef.key, ScanReadTimeout)
 
     val client = new ApacheHttpClient(connectTimeout, readTimeout)
-    val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser {
+    val parser = new ValidatingScanResultParser(EntityValidator) with LengthCheckingParser with CollationOrderCheckingParser {
       val serviceLimitsView = limits
       val pair = pairRef
+      val collation = endpoint.lookupCollation
     }
     new ScanParticipantRestClient(pairRef, endpoint.scanUrl, credentialsLookup, client, parser)
   }
