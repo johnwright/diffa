@@ -1,8 +1,3 @@
-package net.lshift.diffa.client
-
-import net.lshift.diffa.participant.scanning.{Collation, OutOfOrderException}
-import java.io.InputStream
-
 /**
  * Copyright (C) 2010-2012 LShift Ltd.
  *
@@ -18,6 +13,12 @@ import java.io.InputStream
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+package net.lshift.diffa.client
+
+import net.lshift.diffa.participant.scanning.{Collation, OutOfOrderException}
+import java.io.InputStream
+
 
 
 trait CollationOrderCheckingParser extends JsonScanResultParser {
