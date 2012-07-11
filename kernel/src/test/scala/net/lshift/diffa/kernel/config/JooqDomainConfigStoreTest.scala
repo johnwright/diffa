@@ -428,6 +428,10 @@ class JooqDomainConfigStoreTest {
   @Test
   def shouldBeAbleToRedeclareEndpoints = {
 
+    // Note that this is a heuristic that attempts to flush out all of the main state transitions
+    // that we can think of. It is in no way systematic or exhaustive.
+    // If somebody knew their way around property based testing, then could break a leg here.
+
     systemConfigStore.createOrUpdateDomain(Domain(name="domain"))
 
     def verifyEndpoints(endpoints:Seq[EndpointDef]) {
