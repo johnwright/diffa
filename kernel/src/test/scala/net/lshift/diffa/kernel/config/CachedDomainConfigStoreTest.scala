@@ -470,7 +470,7 @@ class CachedDomainConfigStoreTest {
     E4.reset(jooq)
 
     // Add a new underlying value values and expect the DB to be updated. A subsequent call to
-    // get allConfigOptions should also propagate against the DB.
+    // get getEndpointDef should also propagate against the DB.
 
     val modifiedEndpoint = originalEndpoint.copy(scanUrl = "http://acme.com/2")
 
