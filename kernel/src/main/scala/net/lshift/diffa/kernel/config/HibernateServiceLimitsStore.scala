@@ -4,10 +4,17 @@ import net.lshift.diffa.kernel.util.db.{HibernateQueryUtils, DatabaseFacade}
 import net.lshift.diffa.schema.servicelimits._
 import net.lshift.diffa.schema.hibernate.SessionHelper._
 import org.hibernate.SessionFactory
-
+import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
+import net.lshift.diffa.schema.tables.PairLimits.PAIR_LIMITS
+import net.lshift.diffa.schema.tables.DomainLimits.DOMAIN_LIMITS
+import net.lshift.diffa.schema.tables.SystemLimits.SYSTEM_LIMITS
+import org.jooq.impl.{TableImpl, Factory}
+import org.jooq.{Condition, TableField}
+import scala.collection.JavaConversions._
 
 class HibernateServiceLimitsStore(val sessionFactory: SessionFactory,
-                                  db:DatabaseFacade)
+                                  db:DatabaseFacade,
+                                  jooq:JooqDatabaseFacade)
   extends ServiceLimitsStore
   with HibernateQueryUtils {
 
@@ -27,70 +34,72 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory,
     )
   }
 
-  def deleteDomainLimits(domain: String) {
-    deletePairLimitsByDomain(domain)
-    db.execute("deleteDomainServiceLimitsByDomain", Map("domain" -> domain))
-  }
+  def deleteDomainLimits(domain: String) = jooq.execute(t => {
 
-  def deletePairLimitsByDomain(domain: String) {
-    db.execute("deletePairServiceLimitsByDomain", Map("domain" -> domain))
-  }
+    deletePairLimitsByDomainInternal(t, domain)
 
-  def setSystemHardLimit(limit: ServiceLimit, limitValue: Int) {
+    t.delete(DOMAIN_LIMITS).
+      where(DOMAIN_LIMITS.DOMAIN.equal(domain)).
+      execute()
+  })
+
+  def deletePairLimitsByDomain(domain: String) = jooq.execute(deletePairLimitsByDomainInternal(_, domain))
+
+  def setSystemHardLimit(limit: ServiceLimit, limitValue: Int)  = jooq.execute(t => {
     validate(limitValue)
-    setSystemLimit(limit, limitValue, old => old.hardLimit = limitValue)
+
+    setSystemLimit(limit, limitValue, SYSTEM_LIMITS.HARD_LIMIT)
 
     cascadeLimitToSystemDefault(limit, limitValue)
     cascadeLimitToDomainHardLimit(limit, limitValue)
-  }
+  })
 
   def setDomainHardLimit(domainName: String, limit: ServiceLimit, limitValue: Int) {
     validate(limitValue)
-    setDomainLimit(domainName, limit, limitValue, old => old.hardLimit = limitValue)
+    setDomainLimit(domainName, limit, limitValue, DOMAIN_LIMITS.HARD_LIMIT)
 
     cascadeLimitToDomainDefaultLimit(limit, limitValue)
     cascadeLimitToPair(limit, limitValue)
   }
 
   def setSystemDefaultLimit(limit: ServiceLimit, limitValue: Int) {
-    setSystemLimit(limit, limitValue, old => old.defaultLimit = limitValue)
+    setSystemLimit(limit, limitValue, SYSTEM_LIMITS.DEFAULT_LIMIT)
   }
 
   def setDomainDefaultLimit(domainName: String, limit: ServiceLimit, limitValue: Int) {
-    setDomainLimit(domainName, limit, limitValue, old => old.defaultLimit = limitValue)
+    setDomainLimit(domainName, limit, limitValue, DOMAIN_LIMITS.DEFAULT_LIMIT)
   }
 
-  def setPairLimit(domainName: String, pairKey: String, limit: ServiceLimit, limitValue: Int) {
-    val domain = getDomain(domainName)
-    val pair = DiffaPair(key = pairKey, domain = domain)
-
-    createOrUpdate[PairServiceLimits](
-      () => PairServiceLimits(domain, pair, limit.key, limitValue),
-      () => PairScopedLimit(limit.key, pair),
-      old => old.limitValue = limitValue
-    )
-  }
+  def setPairLimit(domainName: String, pairKey: String, limit: ServiceLimit, limitValue: Int) =
+    jooq.execute(setPairLimit(_, domainName, pairKey, limit, limitValue))
 
   def getSystemHardLimitForName(limit: ServiceLimit) =
-    getLimit("systemHardLimitByName", Map("limit_name" -> limit.key))
-
+    getLimit(SYSTEM_LIMITS.HARD_LIMIT, SYSTEM_LIMITS, SYSTEM_LIMITS.NAME.equal(limit.key))
 
   def getSystemDefaultLimitForName(limit: ServiceLimit) =
-    getLimit("systemDefaultLimitByName", Map("limit_name" -> limit.key))
+    getLimit(SYSTEM_LIMITS.DEFAULT_LIMIT, SYSTEM_LIMITS, SYSTEM_LIMITS.NAME.equal(limit.key))
 
   def getDomainHardLimitForDomainAndName(domainName: String, limit: ServiceLimit) =
-    getLimit("domainHardLimitByDomainAndName", Map("limit_name" -> limit.key, "domain_name" -> domainName))
+    getLimit(DOMAIN_LIMITS.HARD_LIMIT, DOMAIN_LIMITS, DOMAIN_LIMITS.NAME.equal(limit.key), DOMAIN_LIMITS.DOMAIN.equal(domainName))
 
   def getDomainDefaultLimitForDomainAndName(domainName: String, limit: ServiceLimit) =
-    getLimit("domainDefaultLimitByDomainAndName",Map("limit_name" -> limit.key, "domain_name" -> domainName))
+    getLimit(DOMAIN_LIMITS.DEFAULT_LIMIT, DOMAIN_LIMITS, DOMAIN_LIMITS.NAME.equal(limit.key), DOMAIN_LIMITS.DOMAIN.equal(domainName))
 
   def getPairLimitForPairAndName(domainName: String, pairKey: String, limit: ServiceLimit) =
-    getLimit("pairLimitByPairAndName", Map("limit_name" -> limit.key, "domain_name" -> domainName, "pair_key" -> pairKey))
+    getLimit(PAIR_LIMITS.LIMIT_VALUE, PAIR_LIMITS,
+             PAIR_LIMITS.NAME.equal(limit.key), PAIR_LIMITS.DOMAIN.equal(domainName), PAIR_LIMITS.PAIR_KEY.equal(pairKey))
 
-  private def getLimit(queryName: String, params: Map[String, String]) =
-    db.singleQueryMaybe[Int](
-      queryName, params
-    )
+  private def getLimit(limitValue:TableField[_,_], table:TableImpl[_], predicate:Condition*) : Option[Int] = jooq.execute(t => {
+
+    val record = t.select(limitValue).from(table).where(predicate).fetchOne()
+
+    if (record != null) {
+      Some(record.getValueAsInteger(limitValue))
+    }
+    else {
+      None
+    }
+  })
 
   private def cascadeLimit(currentLimit: Int, setLimitValue: (ServiceLimit, Int) => Unit,
                            limit: ServiceLimit, newLimit: Int) {
@@ -153,20 +162,39 @@ class HibernateServiceLimitsStore(val sessionFactory: SessionFactory,
     })
   }
 
-  private def setSystemLimit(limit: ServiceLimit, limitValue: Int, updateLimit: SystemServiceLimits => Unit) {
-    createOrUpdate[SystemServiceLimits](
-      () => SystemServiceLimits(limit.key, limitValue, limitValue),
-      () => limit.key,
-      updateLimit
-    )
+  private def setPairLimit(t: Factory, domainName: String, pairKey: String, limit: ServiceLimit, limitValue: Int) = {
+    t.insertInto(PAIR_LIMITS).
+        set(PAIR_LIMITS.NAME, limit.key).
+        set(PAIR_LIMITS.LIMIT_VALUE, int2Integer(limitValue)).
+        set(PAIR_LIMITS.DOMAIN, domainName).
+        set(PAIR_LIMITS.PAIR_KEY, pairKey).
+      onDuplicateKeyUpdate().
+        set(PAIR_LIMITS.LIMIT_VALUE, int2Integer(limitValue)).
+      execute()
   }
 
-  private def setDomainLimit(domainName: String, limit: ServiceLimit, limitValue: Int, updateLimit: DomainServiceLimits => Unit) {
-    val domain = getDomain(domainName)
-    createOrUpdate[DomainServiceLimits](
-      () => DomainServiceLimits(domain, limit.key, limitValue, limitValue),
-      () => DomainScopedLimit(limit.key, domain),
-      updateLimit
-    )
+  private def setSystemLimit(limit: ServiceLimit, limitValue: Int, hardOrDefault:TableField[_,_]) = jooq.execute(t => {
+    t.insertInto(SYSTEM_LIMITS).
+        set(SYSTEM_LIMITS.NAME, limit.key).
+        set(hardOrDefault, limitValue).
+      onDuplicateKeyUpdate().
+        set(hardOrDefault, limitValue).
+      execute()
+  })
+
+  private def setDomainLimit(domain:String, limit: ServiceLimit, limitValue: Int, hardOrDefault:TableField[_,_]) = jooq.execute(t => {
+    t.insertInto(DOMAIN_LIMITS).
+        set(DOMAIN_LIMITS.DOMAIN, domain).
+        set(DOMAIN_LIMITS.NAME, limit.key).
+        set(hardOrDefault, limitValue).
+      onDuplicateKeyUpdate().
+        set(hardOrDefault, limitValue).
+      execute()
+  })
+
+  private def deletePairLimitsByDomainInternal(t:Factory, domain: String) = {
+    t.delete(PAIR_LIMITS).
+      where(PAIR_LIMITS.DOMAIN.equal(domain)).
+      execute()
   }
 }
