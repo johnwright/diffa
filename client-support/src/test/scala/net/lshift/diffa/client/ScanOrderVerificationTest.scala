@@ -89,7 +89,6 @@ class ScanOrderVerificationTest {
 
   @Theory
   def shouldScanSuccessfullyWhenWellOrderedEntitiesEncountered(ex: Example) {
-    println("shouldScanSuccessfullyWhenWellOrderedEntitiesEncountered: %s".format(ex))
     withResponseEntities(ex.correctOrdering) {
       assertThat(scanningRestClientFor(ex).scan(Seq(), Seq()).map(_.getId),
         equalTo(ex.correctOrdering))
@@ -99,7 +98,6 @@ class ScanOrderVerificationTest {
 
   @Theory
   def shouldRaiseErrorWhenIllOrderedEntitiesEncountered(ex: Example) {
-    println("shouldRaiseErrorWhenIllOrderedEntitiesEncountered: %s".format(ex))
     try {
       withResponseEntities(ex.invalidOrdering) { scanningRestClientFor(ex).scan(Seq(), Seq()) }
       fail("Scan on ill ordered entities: %s should fail with exception".format(ex.invalidOrdering))
