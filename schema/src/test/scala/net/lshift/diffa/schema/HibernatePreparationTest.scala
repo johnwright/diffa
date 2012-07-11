@@ -72,7 +72,7 @@ class HibernatePreparationTest {
 
   val startingVersion = 22
   
-  //@Test
+  @Test
   def migrationStepsShouldBeOrderedCorrectly = {
     val steps = HibernateConfigStorePreparationStep.migrationSteps
     for (i <- startingVersion until steps.length) {
