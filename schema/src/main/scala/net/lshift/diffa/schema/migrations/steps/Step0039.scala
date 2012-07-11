@@ -18,18 +18,22 @@ package net.lshift.diffa.schema.migrations.steps
 import net.lshift.diffa.schema.migrations.HibernateMigrationStep
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import scala.collection.JavaConversions._
 
-object Step0036 extends HibernateMigrationStep {
-  def versionId = 36
+object Step0039 extends HibernateMigrationStep {
+  def versionId = 39
   def name = "Add the 'guest' user as a member of domain 'diffa'"
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
 
-    migration.insert("members").values(Map(
-      "domain_name" -> Step0022.defaultDomainName,
-      "user_name" -> Step0022.defaultUserName))
+    migration.sql(
+      """insert into members (domain_name, user_name)
+        | select d.name, u.name
+        | from domains d, users u
+        | where d.name = '%s'
+        | and u.name = '%s'
+        | group by d.name, u.name""".format(
+        Step0022.defaultDomainName, Step0022.defaultUserName))
 
     migration
   }
