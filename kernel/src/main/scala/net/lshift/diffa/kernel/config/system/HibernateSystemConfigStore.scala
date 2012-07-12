@@ -129,7 +129,13 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     count > 0
   }
 
-  def listDomains = db.listQuery[Domain]("allDomains", Map()).sortBy(_.getName)
+  def listDomains = jooq.execute( t => {
+    t.select(DOMAINS.NAME).
+      from(DOMAINS).
+      orderBy(DOMAINS.NAME).
+      fetch().
+      iterator().map(_.getValue(DOMAINS.NAME)).toSeq
+  })
 
   def listPairs = jooq.execute { t =>
     t.select().from(PAIR).fetch().map(ResultMappingUtil.recordToDomainPairDef)

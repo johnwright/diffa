@@ -108,7 +108,7 @@ class HibernateSystemConfigStoreTest {
     domainNames.foreach { name =>
       systemConfigStore.createOrUpdateDomain(name)
     }
-    val results = systemConfigStore.listDomains.map(_.getName)
+    val results = systemConfigStore.listDomains
 
     assertEquals(List("Baz", "Foo", "bar", "diffa", "domain"), results.toList)
 

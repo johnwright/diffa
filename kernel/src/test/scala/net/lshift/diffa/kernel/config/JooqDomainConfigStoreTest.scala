@@ -153,7 +153,7 @@ class JooqDomainConfigStoreTest {
     assertTrue(domainConfigStore.listRepairActions(domainName).isEmpty)
     assertTrue(domainConfigStore.listEscalations(domainName).isEmpty)
 
-    assertTrue(systemConfigStore.listDomains.filter(_.name == domainName).isEmpty)
+    assertTrue(systemConfigStore.listDomains.filter(_ == domainName).isEmpty)
   }
 
 
@@ -176,7 +176,7 @@ class JooqDomainConfigStoreTest {
       anEscalation
     }
     // And at this point, we need to ensure that we have successfully inserted two escalations total.
-    assertThat(systemConfigStore.listDomains.flatMap { d => domainConfigStore.listEscalations(d.name) },
+    assertThat(systemConfigStore.listDomains.flatMap { d => domainConfigStore.listEscalations(d) },
       is(equalTo(escalations)))
   }
 
@@ -200,7 +200,7 @@ class JooqDomainConfigStoreTest {
     }
 
     // And at this point, we need to ensure that we have successfully inserted two repair actions total.
-    assertThat(systemConfigStore.listDomains.flatMap { d => domainConfigStore.listRepairActions(d.name) },
+    assertThat(systemConfigStore.listDomains.flatMap { d => domainConfigStore.listRepairActions(d) },
       is(equalTo(repairActions)))
 
   }

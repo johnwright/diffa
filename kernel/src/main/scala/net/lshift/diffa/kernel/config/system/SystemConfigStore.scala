@@ -29,7 +29,7 @@ trait SystemConfigStore {
   def createOrUpdateDomain(domain: String)
   def deleteDomain(name: String)
   def doesDomainExist(name: String): Boolean
-  def listDomains : Seq[Domain]
+  def listDomains : Seq[String]
   
   /**
    * Sets the given configuration option to the given value.

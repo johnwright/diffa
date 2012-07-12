@@ -241,10 +241,6 @@
     select u from User u order by u.name asc
   </query>
 
-  <query name="allDomains">
-    select d from Domain d order by d.name asc
-  </query>
-
   <query name="allRepairActions">
     select a from RepairAction a
   </query>
@@ -259,66 +255,6 @@
 
   <query name="domainByName" cacheable="true">
     select d from Domain d where d.name = :domain_name
-  </query>
-
-  <!-- Limits -->
-
-  <query name="systemHardLimitByName" cacheable="false">
-    select l.hardLimit
-    from SystemServiceLimits l
-    where l.limitName = :limit_name
-  </query>
-
-  <query name="systemDefaultLimitByName" cacheable="false">
-    select l.defaultLimit
-    from SystemServiceLimits l
-    where l.limitName = :limit_name
-  </query>
-
-  <query name="domainHardLimitByDomainAndName" cacheable="false">
-    select l.hardLimit
-    from DomainServiceLimits l
-    where l.limitName = :limit_name
-    and l.domain.name = :domain_name
-  </query>
-
-  <query name="domainDefaultLimitByDomainAndName" cacheable="false">
-    select l.defaultLimit
-    from DomainServiceLimits l
-    where l.limitName = :limit_name
-    and l.domain.name = :domain_name
-  </query>
-
-  <query name="pairLimitByPairAndName" cacheable="false">
-    select l.limitValue
-    from PairServiceLimits l
-    where l.limitName = :limit_name
-    and l.pair.domain.name = :domain_name
-    and l.pair.key = :pair_key
-  </query>
-
-  <query name="domainServiceLimitsByDomain" cacheable="false">
-    select l
-    from DomainServiceLimits l
-    where l.domain.name = :domain_name
-  </query>
-
-  <query name="pairServiceLimitsByDomain" cacheable="false">
-    select l
-    from PairServiceLimits l
-    where l.pair.domain.name = :domain_name
-  </query>
-
-  <query name="domainServiceLimitsByName" cacheable="false">
-    select l
-    from DomainServiceLimits l
-    where l.limitName = :limit_name
-  </query>
-
-  <query name="pairServiceLimitsByName" cacheable="false">
-    select l
-    from PairServiceLimits l
-    where l.limitName = :limit_name
   </query>
 
 </hibernate-mapping>
