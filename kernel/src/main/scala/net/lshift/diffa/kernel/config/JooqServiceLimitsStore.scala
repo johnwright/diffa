@@ -152,7 +152,7 @@ class JooqServiceLimitsStore(jooq:JooqDatabaseFacade) extends ServiceLimitsStore
   }
 
   /**
-   * This will only get called within the scope of setting a system hard limit, so be careful when trying to it :-)
+   * This will only get called within the scope of setting a system hard limit, so be careful when trying to make it more optimal :-)
    */
   private def cascadeToDomainLimits(t:Factory, limit: ServiceLimit, limitValue: java.lang.Integer, fieldToLimit:TableField[DomainLimitsRecord,java.lang.Integer]) = {
     t.update(DOMAIN_LIMITS).
