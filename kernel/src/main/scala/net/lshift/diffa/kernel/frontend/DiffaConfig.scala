@@ -107,6 +107,12 @@ case class EndpointDef (
     ValidationUtil.ensureUniqueChildren(endPointPath, "views", "name", views.map(v => v.name))
     views.foreach(v => v.validate(this, endPointPath))
   }
+
+
+  def lookupCollation = collation match {
+    case UnicodeCollationOrdering.name => UnicodeCollationOrdering
+    case AsciiCollationOrdering.name => AsciiCollationOrdering
+  }
 }
 
 /**
