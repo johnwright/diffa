@@ -22,6 +22,7 @@ import org.quartz.CronExpression
 import java.util.HashMap
 import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.util.{DownstreamEndpoint, UpstreamEndpoint, EndpointSide}
+import net.lshift.diffa.participant.scanning.Collation
 
 /**
  * Describes a complete Diffa configuration in the context of a domain - this means that all of the objects
@@ -109,10 +110,7 @@ case class EndpointDef (
   }
 
 
-  def lookupCollation = collation match {
-    case UnicodeCollationOrdering.name => UnicodeCollationOrdering
-    case AsciiCollationOrdering.name => AsciiCollationOrdering
-  }
+  def lookupCollation: Collation = CollationOrdering.named(collation)
 }
 
 /**
