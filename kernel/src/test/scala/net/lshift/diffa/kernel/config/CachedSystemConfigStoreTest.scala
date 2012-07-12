@@ -50,5 +50,23 @@ class CachedSystemConfigStoreTest {
 
     E4.verify(jooq)
 
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove the domain and verify that this result is also cached
+
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.lang.Long]]())).andReturn(0L).once()
+
+    E4.replay(jooq)
+
+    configStore.deleteDomain(domain)
+
+    assertFalse(configStore.doesDomainExist(domain))
+    assertFalse(configStore.doesDomainExist(domain))
+
+    E4.verify(jooq)
+
   }
 }
