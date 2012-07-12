@@ -115,49 +115,6 @@ trait HibernateQueryUtils {
     executeUpdate(s, "removeDomainPendingDiffs", Map("domain" -> domain))
   })
 
-  @Deprecated def forceHibernateCacheEviction() = {
-    try {
-      val cache = sessionFactory.getCache
-      cache.evictEntityRegions()
-      cache.evictCollectionRegions()
-      cache.evictDefaultQueryRegion()
-    }
-    catch {
-      case x:Exception =>
-        log.error("Could not manually evict the Hibernate cache", x)
-    }
-  }
-
-  /**
-   * This is un-protected call to set a configuration option.
-   * It is up to the calling context to establish this is authorized.
-   */
-  def writeConfigOption(domainName: String, key: String, value: String) = sessionFactory.withSession(s => {
-    val domain = getDomain(domainName)
-    val scopedKey = DomainScopedKey(key, domain)
-    val co = s.get(classOf[ConfigOption], scopedKey) match {
-      case null =>
-        new ConfigOption(domain = domain, key = key, value = value)
-      case current: ConfigOption => {
-        current.value = value
-        current
-      }
-    }
-    s.saveOrUpdate(co)
-  })
-
-  /**
-   * This is un-protected call to clear a configuration option.
-   * It is up to the calling context to establish this is authorized.
-   */
-  def deleteConfigOption(domain: String, key: String) = sessionFactory.withSession(s => {
-    val scopedKey = DomainScopedKey(key, getDomain(domain))
-    s.get(classOf[ConfigOption], scopedKey) match {
-      case null =>
-      case current: ConfigOption => s.delete(current)
-    }
-  })
-
   def getStoreCheckpoint(pair: DiffaPairRef) = sessionFactory.withSession(s => {
     singleQueryOpt[StoreCheckpoint](s, "storeCheckpointByPairAndDomain",
       Map("pair_key" -> pair.key, "domain_name" -> pair.domain))
@@ -175,23 +132,6 @@ trait HibernateQueryUtils {
   def getUser(s: Session, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
 
   def getPair(s: Session, domain: String, key: String) = getOrFail(s, classOf[DiffaPair], DomainScopedKey(key, Domain(name = domain)), "pair")
-
-  def getRepairAction(s: Session, domain: String, name: String, pairKey: String) =
-    singleQuery[RepairAction](s, "repairActionsByNameAndPair",
-      Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
-      "repair action %s for pair %s in domain %s".format(name, pairKey, domain))
-
-  def getEscalation(s: Session, domain: String, name: String, pairKey: String) =
-    singleQuery[Escalation](s, "escalationsByNameAndPair",
-      Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
-      "esclation %s for pair %s in domain %s".format(name, pairKey, domain))
-
-  def getReport(s: Session, domain: String, name: String, pairKey: String) =
-    singleQuery[PairReport](s, "reportsByNameAndPair",
-      Map("name" -> name, "pair_key" -> pairKey, "domain_name" -> domain),
-      "report %s for pair %s in domain %s".format(name, pairKey, domain))
-
-  def listPairsInDomain(domain: String) = sessionFactory.withSession(s => HibernateQueryUtils.listQuery[DiffaPair](s, "pairsByDomain", Map("domain_name" -> domain)))
 
 }
 
@@ -217,6 +157,19 @@ trait Cursor[T] extends Closeable {
 object HibernateQueryUtils {
 
   val log = LoggerFactory.getLogger(getClass)
+
+  @Deprecated def forceHibernateCacheEviction(sessionFactory:SessionFactory) = {
+    try {
+      val cache = sessionFactory.getCache
+      cache.evictEntityRegions()
+      cache.evictCollectionRegions()
+      cache.evictDefaultQueryRegion()
+    }
+    catch {
+      case x:Exception =>
+        log.error("Could not manually evict the Hibernate cache", x)
+    }
+  }
 
   /**
    * Executes a list query in the given session, forcing the result type into a typed list of the given

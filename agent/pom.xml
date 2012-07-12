@@ -213,6 +213,13 @@
       <artifactId>apacheds-protocol-ldap</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-library</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <distributionManagement>
@@ -356,7 +363,7 @@
             </goals>
             <configuration>
               <excludes>
-                <exclude>none</exclude>
+                <exclude>**/itest/**/*AmqpTest.class</exclude>
               </excludes>
               <includes>
                 <include>**/itest/**/*Test.class</include>

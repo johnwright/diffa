@@ -25,24 +25,535 @@ import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.easymock.classextension.{EasyMock => E4}
 import org.jooq.impl.Factory
-import net.lshift.diffa.kernel.frontend.{EndpointDef, DomainPairDef}
+import net.lshift.diffa.kernel.frontend._
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.frontend.DomainPairDef
+import scala.Some
+import net.lshift.diffa.kernel.frontend.EndpointDef
+import net.lshift.diffa.kernel.frontend.EscalationDef
+import net.lshift.diffa.kernel.frontend.PairReportDef
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 class CachedDomainConfigStoreTest {
 
   val sf = createStrictMock(classOf[SessionFactory])
-  val db = createStrictMock(classOf[DatabaseFacade])
   val jooq = E4.createStrictMock(classOf[JooqDatabaseFacade])
   val hm = E4.createNiceMock(classOf[HookManager])
   val ml = createStrictMock(classOf[DomainMembershipAware])
 
   val cp = new HazelcastCacheProvider
 
-  val domainConfig = new HibernateDomainConfigStore(sf, db, jooq, hm, cp, ml)
+  val domainConfig = new JooqDomainConfigStore(jooq, hm, cp, ml)
 
   @Before
   def resetCaches {
     domainConfig.reset
   }
+
+  @Test
+  def shouldCacheRepairActionsByDomainAndPairAndThenInvalidateOnUpdate {
+
+    val actions = new java.util.ArrayList[RepairActionDef]()
+    actions.add(new RepairActionDef(name = "a1"))
+    actions.add(new RepairActionDef(name = "a2"))
+
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[RepairActionDef]]]())).andReturn(actions).once()
+
+    E4.replay(jooq)
+
+    // The first call to get listRepairActionsForPair should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.listRepairActionsForPair("domain", "pair")
+    assertEquals(actions.toList, firstCall)
+
+    val secondCall = domainConfig.listRepairActionsForPair("domain", "pair")
+    assertEquals(actions.toList, secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get listRepairActionsForPair should also propagate against the DB.
+
+    actions.remove(new RepairActionDef(name = "a1"))
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[RepairActionDef]]]())).andReturn(actions).once()
+
+    E4.replay(jooq)
+
+    domainConfig.deleteRepairAction("domain", "pair", "a1")
+
+    val thirdCall = domainConfig.listRepairActionsForPair("domain", "pair")
+    assertEquals(actions.toList, thirdCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value values and expect the DB to be updated. A subsequent call to
+    // get listRepairActionsForPair should also propagate against the DB.
+
+    actions.add(new RepairActionDef(name = "a3"))
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[RepairActionDef]]]())).andReturn(actions).once()
+
+    E4.replay(jooq)
+
+    domainConfig.createOrUpdateRepairAction("domain", new RepairActionDef(name = "a3", pair = "pair"))
+
+    val fourthCall = domainConfig.listRepairActionsForPair("domain", "pair")
+    assertEquals(actions.toList, fourthCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheReportsByDomainAndPairAndThenInvalidateOnUpdate {
+
+    val reports = new java.util.ArrayList[PairReportDef]()
+    reports.add(new PairReportDef(name = "r1"))
+    reports.add(new PairReportDef(name = "r2"))
+
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[PairReportDef]]]())).andReturn(reports).once()
+
+    E4.replay(jooq)
+
+    // The first call to get listReportsForPair should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.listReportsForPair("domain", "pair")
+    assertEquals(reports.toList, firstCall)
+
+    val secondCall = domainConfig.listReportsForPair("domain", "pair")
+    assertEquals(reports.toList, secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get listReportsForPair should also propagate against the DB.
+
+    reports.remove(new PairReportDef(name = "r1"))
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[PairReportDef]]]())).andReturn(reports).once()
+
+    E4.replay(jooq)
+
+    domainConfig.deleteReport("domain", "pair", "r1")
+
+    val thirdCall = domainConfig.listReportsForPair("domain", "pair")
+    assertEquals(reports.toList, thirdCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value values and expect the DB to be updated. A subsequent call to
+    // get listDomainMembers should also propagate against the DB.
+
+    reports.add(new PairReportDef(name = "r3"))
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[PairReportDef]]]())).andReturn(reports).once()
+
+    E4.replay(jooq)
+
+    domainConfig.createOrUpdateReport("domain", new PairReportDef(name = "r3", pair = "pair"))
+
+    val fourthCall = domainConfig.listReportsForPair("domain", "pair")
+    assertEquals(reports.toList, fourthCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheEscalationsByDomainAndPairAndThenInvalidateOnUpdate {
+
+    val escalations = new java.util.ArrayList[EscalationDef]()
+    escalations.add(new EscalationDef(name = "e1"))
+    escalations.add(new EscalationDef(name = "e2"))
+
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[EscalationDef]]]())).andReturn(escalations).once()
+
+    E4.replay(jooq)
+
+    // The first call to get listEscalationsForPair should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.listEscalationsForPair("domain", "pair")
+    assertEquals(escalations.toList, firstCall)
+
+    val secondCall = domainConfig.listEscalationsForPair("domain", "pair")
+    assertEquals(escalations.toList, secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get listDomainMembers should also propagate against the DB.
+
+    escalations.remove(new EscalationDef(name = "e1"))
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[EscalationDef]]]())).andReturn(escalations).once()
+
+    E4.replay(jooq)
+
+    domainConfig.deleteEscalation("domain", "pair", "e1")
+
+    val thirdCall = domainConfig.listEscalationsForPair("domain", "pair")
+    assertEquals(escalations.toList, thirdCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value values and expect the DB to be updated. A subsequent call to
+    // get listEscalationsForPair should also propagate against the DB.
+
+    escalations.add(new EscalationDef(name = "e3"))
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[EscalationDef]]]())).andReturn(escalations).once()
+
+    E4.replay(jooq)
+
+    domainConfig.createOrUpdateEscalation("domain", new EscalationDef(name = "e3", pair = "pair"))
+
+    val fourthCall = domainConfig.listEscalationsForPair("domain", "pair")
+    assertEquals(escalations.toList, fourthCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheDomainMembershipsAndThenInvalidateOnUpdate {
+
+    val members = new java.util.ArrayList[String]()
+    members.add("m1")
+    members.add("m2")
+
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[String]]]())).andReturn(members).once()
+
+    E4.replay(jooq)
+
+    // The first call to get maybeConfigOption should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.listDomainMembers("domain")
+    assertEquals(members.toList, firstCall)
+
+    val secondCall = domainConfig.listDomainMembers("domain")
+    assertEquals(members.toList, secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get listDomainMembers should also propagate against the DB.
+
+    members.remove("m1")
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[String]]]())).andReturn(members).once()
+
+    E4.replay(jooq)
+
+    domainConfig.removeDomainMembership("domain", "m1")
+
+    val thirdCall = domainConfig.listDomainMembers("domain")
+    assertEquals(members.toList, thirdCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value values and expect the DB to be updated. A subsequent call to
+    // get listDomainMembers should also propagate against the DB.
+
+    members.remove("m3")
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[String]]]())).andReturn(members).once()
+
+    E4.replay(jooq)
+
+    domainConfig.makeDomainMember("domain", "m3")
+
+    val fourthCall = domainConfig.listDomainMembers("domain")
+    assertEquals(members.toList, fourthCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheIndividualDomainConfigOptionsAndThenInvalidateOnUpdate {
+
+    expect(jooq.execute(anyObject[Function1[Factory,String]]())).andReturn("firstValue").once()
+
+    E4.replay(jooq)
+
+    // The first call to get maybeConfigOption should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.maybeConfigOption("domain", "key")
+    assertEquals(Some("firstValue"), firstCall)
+
+    val secondCall = domainConfig.maybeConfigOption("domain", "key")
+    assertEquals(Some("firstValue"), secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get maybeConfigOption should also propagate against the DB.
+
+
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,String]]())).andReturn("\u0000").once()
+
+    E4.replay(jooq)
+
+    domainConfig.clearConfigOption("domain", "key")
+
+    val thirdCall = domainConfig.maybeConfigOption("domain", "key")
+    assertEquals(None, thirdCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value values and expect the DB to be updated. A subsequent call to
+    // get allConfigOptions should also propagate against the DB.
+
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,String]]())).andReturn("secondValue").once()
+
+    E4.replay(jooq)
+
+    domainConfig.setConfigOption("domain", "key", "secondValue")
+
+    val fourthCall = domainConfig.maybeConfigOption("domain", "key")
+    assertEquals(Some("secondValue"), fourthCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheListingDomainConfigOptionsAndThenInvalidateOnUpdate {
+
+    val opts = new java.util.HashMap[String,String]()
+
+    opts.put("k1","v1")
+    opts.put("k2","v2")
+
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.Map[String,String]]]())).andReturn(opts).once()
+
+    E4.replay(jooq)
+
+    // The first call to get allConfigOptions should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.allConfigOptions("domain")
+    assertEquals(opts.toMap, firstCall)
+
+    val secondCall = domainConfig.allConfigOptions("domain")
+    assertEquals(opts.toMap, secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get allConfigOptions should also propagate against the DB.
+
+    opts.remove("k1")
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.Map[String,String]]]())).andReturn(opts).once()
+
+    E4.replay(jooq)
+
+    domainConfig.clearConfigOption("domain", "k1")
+
+    val thirdCall = domainConfig.allConfigOptions("domain")
+    assertEquals(opts.toMap, thirdCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value and expect the DB to be updated. A subsequent call to
+    // get allConfigOptions should also propagate against the DB.
+
+    opts.put("k3","v3")
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.Map[String,String]]]())).andReturn(opts).once()
+
+    E4.replay(jooq)
+
+    domainConfig.setConfigOption("domain", "k3", "v3")
+
+    val fourthCall = domainConfig.allConfigOptions("domain")
+    assertEquals(opts.toMap, fourthCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheIndividualEndpointsAndThenInvalidateOnUpdate {
+
+    val originalEndpoint = DomainEndpointDef(name = "a", scanUrl = "http://acme.com/1")
+
+    val originalEndpointInList = new java.util.ArrayList[DomainEndpointDef]()
+    originalEndpointInList.add(originalEndpoint)
+
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[DomainEndpointDef]]]())).andReturn(originalEndpointInList).once()
+
+    E4.replay(jooq)
+
+    // The first call to get getEndpointDef should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.getEndpointDef("domain", "a")
+    assertEquals(originalEndpoint.withoutDomain(), firstCall)
+
+    val secondCall = domainConfig.getEndpointDef("domain", "a")
+    assertEquals(originalEndpoint.withoutDomain(), secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get getEndpointDef should also propagate against the DB.
+
+
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[DomainEndpointDef]]]())).andThrow(new MissingObjectException("endpoint")).once()
+
+    E4.replay(jooq)
+
+    domainConfig.deleteEndpoint("domain", "a")
+
+    try {
+      domainConfig.getEndpointDef("domain", "a")
+      fail("Should have thrown a MissingObjectException")
+    }
+    catch {
+      case x:MissingObjectException => // ignore
+    }
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value values and expect the DB to be updated. A subsequent call to
+    // get getEndpointDef should also propagate against the DB.
+
+    val modifiedEndpoint = originalEndpoint.copy(scanUrl = "http://acme.com/2")
+
+    val modifiedEndpointInList = new java.util.ArrayList[DomainEndpointDef]()
+    modifiedEndpointInList.add(modifiedEndpoint)
+
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[DomainEndpointDef]]]())).andReturn(modifiedEndpointInList).once()
+
+    E4.replay(jooq)
+
+    domainConfig.createOrUpdateEndpoint("domain", modifiedEndpoint.withoutDomain())
+
+    val fourthCall = domainConfig.getEndpointDef("domain", "a")
+    assertEquals(modifiedEndpoint.withoutDomain(), fourthCall)
+
+    E4.verify(jooq)
+  }
+
+  @Test
+  def shouldCacheListingEndpointsAndThenInvalidateOnUpdate {
+
+    val endpoints = new java.util.ArrayList[DomainEndpointDef]()
+    endpoints.add(DomainEndpointDef(name = "a"))
+    endpoints.add(DomainEndpointDef(name = "b"))
+
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[DomainEndpointDef]]]())).andReturn(endpoints).once()
+
+    E4.replay(jooq)
+
+    // The first call to get listEndpoints should propagate against the DB, but the second call will be cached
+
+    val firstCall = domainConfig.listEndpoints("domain")
+    assertEquals(endpoints.map(_.withoutDomain()), firstCall)
+
+    val secondCall = domainConfig.listEndpoints("domain")
+    assertEquals(endpoints.map(_.withoutDomain()), secondCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Remove one of the underlying values and expect the DB to be updated. A subsequent call to
+    // get listEndpoints should also propagate against the DB.
+
+    endpoints.remove(DomainEndpointDef(name = "a"))
+
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[DomainEndpointDef]]]())).andReturn(endpoints).once()
+
+    E4.replay(jooq)
+
+    domainConfig.deleteEndpoint("domain", "a")
+
+    val thirdCall = domainConfig.listEndpoints("domain")
+    assertEquals(endpoints.map(_.withoutDomain()), thirdCall)
+
+    E4.verify(jooq)
+
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Add a new underlying value and expect the DB to be updated. A subsequent call to
+    // get listEndpoints should also propagate against the DB.
+
+    endpoints.add(DomainEndpointDef(name = "c"))
+
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.util.List[DomainEndpointDef]]]())).andReturn(endpoints).once()
+
+    E4.replay(jooq)
+
+    domainConfig.createOrUpdateEndpoint("domain", EndpointDef(name = "c"))
+
+    val fourthCall = domainConfig.listEndpoints("domain")
+    assertEquals(endpoints.map(_.withoutDomain()), fourthCall)
+
+    E4.verify(jooq)
+  }
+
 
   @Test
   def shouldCacheIndividualPairDefs {
@@ -97,21 +608,4 @@ class CachedDomainConfigStoreTest {
     E4.verify(jooq)
   }
 
-  // TODO Comment this back in when caching for endpoints lands
-  //@Test
-  def shouldCacheIndividualEndpoints {
-
-    val endpoint = EndpointDef(name = "endpoint")
-    expect(jooq.execute(anyObject[Function1[Factory,EndpointDef]]())).andReturn(endpoint).once()
-
-    E4.replay(jooq)
-
-    val firstCall = domainConfig.getEndpointDef("domain", "endpoint")
-    assertEquals(endpoint, firstCall)
-
-    val secondCall = domainConfig.getEndpointDef("domain", "endpoint")
-    assertEquals(endpoint, secondCall)
-
-    E4.verify(jooq)
-  }
 }

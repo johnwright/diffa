@@ -24,6 +24,7 @@
 * [186] - Expose the system and domain limit APIs via the REST API
 * [195] - Provide a mechanism for users to persist their visibility preferences
 * [196] - Support collapsing of heatmap swim lanes via UI controls
+* [215] - Scheduled scans can be disabled
 
 ## General Maintenance
 
@@ -52,6 +53,11 @@
 * [187] - Ensure alphabetical ordering of elements in the UI
 * [194] - Introduce caching of some calls in the domain config store
 * [189] - Allow a user to specify if an endpoint sorts keys by their ASCII-equivalent values, or via the Unicode Collation Algorithm
+* [198] - Port domain and system config options away from Hibernate.
+* [199] - Port domain members away from Hibernate.
+* [190] - Ensure that only printable characters from the ASCII range are valid for use in entity IDs
+* [204] - Port escalations, repairs and reports away from Hibernate.
+* [200] - Update primary keys on escalations, repair_actions and endpoint_categories to be unique per domain.
 
 ## Library Upgrades
 

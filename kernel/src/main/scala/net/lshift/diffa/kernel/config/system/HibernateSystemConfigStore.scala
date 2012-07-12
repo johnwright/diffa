@@ -21,7 +21,7 @@ import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
-import org.hibernate.{Query, Session, SessionFactory}
+import org.hibernate.{Query, SessionFactory}
 import org.apache.commons.lang.RandomStringUtils
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
@@ -31,9 +31,11 @@ import net.lshift.diffa.schema.tables.Escalations.ESCALATIONS
 import net.lshift.diffa.schema.tables.RepairActions.REPAIR_ACTIONS
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import net.lshift.diffa.schema.tables.Pair.PAIR
-import net.lshift.diffa.schema.tables.EndpointViewsCategories.ENDPOINT_VIEWS_CATEGORIES
+import net.lshift.diffa.schema.tables.PrefixCategories.PREFIX_CATEGORIES
+import net.lshift.diffa.schema.tables.SetCategories.SET_CATEGORIES
+import net.lshift.diffa.schema.tables.RangeCategories.RANGE_CATEGORIES
+import net.lshift.diffa.schema.tables.UniqueCategoryNames.UNIQUE_CATEGORY_NAMES
 import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
-import net.lshift.diffa.schema.tables.EndpointCategories.ENDPOINT_CATEGORIES
 import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
 import net.lshift.diffa.schema.tables.ConfigOptions.CONFIG_OPTIONS
 import net.lshift.diffa.schema.tables.Members.MEMBERS
@@ -41,8 +43,10 @@ import net.lshift.diffa.schema.tables.StoreCheckpoints.STORE_CHECKPOINTS
 import net.lshift.diffa.schema.tables.PendingDiffs.PENDING_DIFFS
 import net.lshift.diffa.schema.tables.Diffs.DIFFS
 import net.lshift.diffa.schema.tables.Domains.DOMAINS
+import net.lshift.diffa.schema.tables.SystemConfigOptions.SYSTEM_CONFIG_OPTIONS
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
 import collection.mutable.ListBuffer
+import net.lshift.diffa.kernel.frontend.DomainEndpointDef
 
 class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
                                  db:DatabaseFacade,
@@ -64,14 +68,16 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
     jooq.execute(t => {
       t.delete(USER_ITEM_VISIBILITY).where(USER_ITEM_VISIBILITY.DOMAIN.equal(domain)).execute()
-      t.delete(ENDPOINT_VIEWS_CATEGORIES).where(ENDPOINT_VIEWS_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(PREFIX_CATEGORIES).where(PREFIX_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(SET_CATEGORIES).where(SET_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(RANGE_CATEGORIES).where(RANGE_CATEGORIES.DOMAIN.equal(domain)).execute()
+      t.delete(UNIQUE_CATEGORY_NAMES).where(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(domain)).execute()
       t.delete(ENDPOINT_VIEWS).where(ENDPOINT_VIEWS.DOMAIN.equal(domain)).execute()
       t.delete(PAIR_REPORTS).where(PAIR_REPORTS.DOMAIN.equal(domain)).execute()
       t.delete(ESCALATIONS).where(ESCALATIONS.DOMAIN.equal(domain)).execute()
       t.delete(REPAIR_ACTIONS).where(REPAIR_ACTIONS.DOMAIN.equal(domain)).execute()
       t.delete(PAIR_VIEWS).where(PAIR_VIEWS.DOMAIN.equal(domain)).execute()
       t.delete(PAIR).where(PAIR.DOMAIN.equal(domain)).execute()
-      t.delete(ENDPOINT_CATEGORIES).where(ENDPOINT_CATEGORIES.DOMAIN.equal(domain)).execute()
       t.delete(ENDPOINT).where(ENDPOINT.DOMAIN.equal(domain)).execute()
       t.delete(CONFIG_OPTIONS).where(CONFIG_OPTIONS.DOMAIN.equal(domain)).execute()
       t.delete(MEMBERS).where(MEMBERS.DOMAIN_NAME.equal(domain)).execute()
@@ -89,7 +95,8 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
     domainEventSubscribers.foreach(_.onDomainRemoved(domain))
 
-    forceHibernateCacheEviction()
+    // TODO Remove this
+    HibernateQueryUtils.forceHibernateCacheEviction(sessionFactory)
   }
 
   def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))
@@ -100,8 +107,7 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     t.select().from(PAIR).fetch().map(ResultMappingUtil.recordToDomainPairDef)
   }
 
-  def listEndpoints = db.listQuery[Endpoint]("allEndpoints", Map())
-
+  def listEndpoints : Seq[DomainEndpointDef] = JooqConfigStoreCompanion.listEndpoints(jooq)
 
   // TODO implement create or update using JOOQ
   def createOrUpdateUser(user: User) = {
@@ -154,8 +160,16 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     = db.singleQuery[User]("userByToken", Map("token" -> token), "user token %s".format(token))
 
   def listUsers : Seq[User] = db.listQuery[User]("allUsers", Map())
-  def listDomainMemberships(username: String) : Seq[Member] =
-    db.listQuery[Member]("membersByUser", Map("user_name" -> username))
+
+  def listDomainMemberships(username: String) : Seq[Member] = {
+    jooq.execute(t => {
+      val results = t.select(MEMBERS.DOMAIN_NAME).
+                      from(MEMBERS).
+                      where(MEMBERS.USER_NAME.equal(username)).
+                      fetch()
+      results.iterator().map(r => Member(username, r.getValue(MEMBERS.DOMAIN_NAME)))
+    }).toSeq
+  }
 
   def containsRootUser(usernames: Seq[String]) : Boolean =
     sessionFactory.withSession(s => {
@@ -165,44 +179,41 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
       query.uniqueResult().asInstanceOf[java.lang.Long] > 0
     })
 
-  // TODO Add a unit test for this
-  def maybeSystemConfigOption(key: String) = {
-    sessionFactory.withSession(s => {
-      s.get(classOf[SystemConfigOption], key) match {
-        case null                       => None
-        case current:SystemConfigOption => Some(current.value)
-      }
-    })
-  }
-  def setSystemConfigOption(key:String, value:String) {
-    sessionFactory.withSession(s => {
-      val co = s.get(classOf[SystemConfigOption], key) match {
-        case null =>
-          new SystemConfigOption(key = key, value = value)
-        case current:SystemConfigOption =>  {
-          current.value = value
-          current
-        }
-      }
-      s.saveOrUpdate(co)
-    })
-  }
-  def clearSystemConfigOption(key:String) = sessionFactory.withSession(s => {
-    s.get(classOf[SystemConfigOption], key) match {
-      case null =>
-      case current:SystemConfigOption =>  s.delete(current)
+  def maybeSystemConfigOption(key: String) = jooq.execute( t => {
+    val record = t.select(SYSTEM_CONFIG_OPTIONS.OPT_VAL).
+      from(SYSTEM_CONFIG_OPTIONS).
+      where(SYSTEM_CONFIG_OPTIONS.OPT_KEY.equal(key)).
+      fetchOne()
+
+    if (record != null) {
+      Some(record.getValue(SYSTEM_CONFIG_OPTIONS.OPT_VAL))
+    }
+    else {
+      None
     }
   })
 
   def systemConfigOptionOrDefault(key:String, defaultVal:String) = {
     maybeSystemConfigOption(key) match {
-      case Some(s)   => s
+      case Some(str) => str
       case None      => defaultVal
     }
   }
 
-  private def deleteByDomain[T](s:Session, domain:String, queryName:String) =
-    db.listQuery[T](queryName, Map("domain_name" -> domain)).foreach(s.delete(_))
+  def setSystemConfigOption(key:String, value:String) = jooq.execute(t => {
+    t.insertInto(SYSTEM_CONFIG_OPTIONS).
+        set(SYSTEM_CONFIG_OPTIONS.OPT_KEY, key).
+        set(SYSTEM_CONFIG_OPTIONS.OPT_VAL, value).
+      onDuplicateKeyUpdate().
+        set(SYSTEM_CONFIG_OPTIONS.OPT_VAL, value).
+      execute()
+  })
+
+  def clearSystemConfigOption(key:String) = jooq.execute(t => {
+    t.delete(SYSTEM_CONFIG_OPTIONS).
+      where(SYSTEM_CONFIG_OPTIONS.OPT_KEY.equal(key)).
+      execute()
+  })
 }
 
 /**

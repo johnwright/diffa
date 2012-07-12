@@ -91,8 +91,10 @@ trait CommonDifferenceTests {
 
     assertEquals("abcdef", detail)
 
-    val fileList = messageDir.listFiles
-    assertNotNull("File list was null for dir: " + messageDir, fileList)
+    // TODO Remove mail notifications all together
+    //val fileList = messageDir.listFiles
+    //assertNotNull("File list was null for dir: " + messageDir, fileList)
+
     // #338 This notification test is broken since the default quiet time was set to a non-zero value,
     // but unfortuneately, this requires the config to be dynamically updateable.
     //assertEquals(1, fileList.size)
@@ -129,7 +131,7 @@ trait CommonDifferenceTests {
     }
 
     val fullLowerBound = rightNow.minusMinutes(ZoomLevels.lookupZoomLevel(DAILY) * columns)
-    runScanAndWaitForCompletion(fullLowerBound, upperBound, 100, 100)
+    runScanAndWaitForCompletion(fullLowerBound, upperBound)
 
     val requests = expectedZoomedViews.map { case (zoomLevel, expectedBlobs) =>
       val lowerBound = upperBound.minusMinutes(ZoomLevels.lookupZoomLevel(zoomLevel) * columns)
@@ -162,7 +164,7 @@ trait CommonDifferenceTests {
     }
 
     val fullLowerBound = rightNow.minusMinutes(ZoomLevels.lookupZoomLevel(DAILY) * columns)
-    runScanAndWaitForCompletion(fullLowerBound, upperBound, 100, 100)
+    runScanAndWaitForCompletion(fullLowerBound, upperBound)
 
     val requests = Map(
       "open-top" -> AggregateRequest(upperBound.minusMinutes(50), null, None),
@@ -385,6 +387,25 @@ trait CommonDifferenceTests {
       ScanningHelper.waitForScanStatus(env.scanningClient, env.pairKey, PairScanState.CANCELLED)
     }
   }
+
+  @Test
+  def scanShouldFailWithInvalidIdentifiersInUpstream = {
+    env.upstream.addEntity("\u2603", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
+
+    // This test is sketchy, as it could fail for any number of reasons. We should look at the log to figure out why.
+    env.scanningClient.startScan(env.pairKey)
+    ScanningHelper.waitForScanStatus(env.scanningClient, env.pairKey, PairScanState.FAILED)
+  }
+
+  @Test
+  def scanShouldFailWithInvalidIdentifiersInDownstream = {
+    env.downstream.addEntity("\u2603", datetime = today, someString = "ss", lastUpdated = new DateTime, body = "abcdef")
+
+    // This test is sketchy, as it could fail for any number of reasons. We should look at the log to figure out why.
+    env.scanningClient.startScan(env.pairKey)
+    ScanningHelper.waitForScanStatus(env.scanningClient, env.pairKey, PairScanState.FAILED)
+  }
+
 
   def runScanAndWaitForCompletion(from:DateTime, until:DateTime, n:Int = 200, wait:Int = 200, view:Option[String] = None) {
     env.scanningClient.startScan(env.pairKey, view = view)
