@@ -158,10 +158,11 @@ class JooqServiceLimitsStore(jooq:JooqDatabaseFacade) extends ServiceLimitsStore
     t.update(DOMAIN_LIMITS).
         set(fieldToLimit, limitValue).
       where(DOMAIN_LIMITS.NAME.equal(limit.key)).
+        and(DOMAIN_LIMITS.HARD_LIMIT.greaterThan(limitValue)).
       execute()
 
     verifyDomainDefaultLimit(t)
-    verifyPairLimit(t)
+    verifyPairLimit(t, limit, limitValue)
   }
 
   private def cascadeToPairLimits(t:Factory, domain:String, limit: ServiceLimit, limitValue: java.lang.Integer) = {
@@ -187,10 +188,11 @@ class JooqServiceLimitsStore(jooq:JooqDatabaseFacade) extends ServiceLimitsStore
       execute()
   }
 
-  private def verifyPairLimit(t:Factory) = {
+  private def verifyPairLimit(t:Factory, limit: ServiceLimit, limitValue: java.lang.Integer) = {
     t.update(PAIR_LIMITS).
-        set(PAIR_LIMITS.LIMIT_VALUE, SYSTEM_LIMITS.HARD_LIMIT).
-      where(PAIR_LIMITS.LIMIT_VALUE.greaterThan(SYSTEM_LIMITS.HARD_LIMIT)).
+        set(PAIR_LIMITS.LIMIT_VALUE, limitValue).
+      where(PAIR_LIMITS.LIMIT_VALUE.greaterThan(limitValue)).
+        and(PAIR_LIMITS.NAME.equal(limit.key)).
       execute()
   }
 
