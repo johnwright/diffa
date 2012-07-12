@@ -47,21 +47,36 @@ import net.lshift.diffa.schema.tables.SystemConfigOptions.SYSTEM_CONFIG_OPTIONS
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
 import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.frontend.DomainEndpointDef
+import net.lshift.diffa.kernel.util.cache.CacheProvider
+import net.lshift.diffa.kernel.naming.CacheName._
+import net.lshift.diffa.kernel.frontend.DomainEndpointDef
+import scala.Some
+import net.lshift.diffa.kernel.config.Member
+import net.lshift.diffa.kernel.config.User
+import net.lshift.diffa.kernel.config.DomainConfigKey
 
 class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
                                  db:DatabaseFacade,
-                                 jooq:JooqDatabaseFacade)
+                                 jooq:JooqDatabaseFacade,
+                                 cacheProvider:CacheProvider)
     extends SystemConfigStore with HibernateQueryUtils {
 
   val logger = LoggerFactory.getLogger(getClass)
+
+  private val cachedDomainNames = cacheProvider.getCachedMap[String, java.lang.Long](EXISTING_DOMAIN_NAMES)
 
   private val domainEventSubscribers = new ListBuffer[DomainLifecycleAware]
 
   def registerDomainEventListener(d:DomainLifecycleAware) = domainEventSubscribers += d
 
-  def createOrUpdateDomain(d: Domain) = sessionFactory.withSession( s => {
-    domainEventSubscribers.foreach(_.onDomainUpdated(d.name))
-    s.saveOrUpdate(d)
+  def createOrUpdateDomain(domain:String) = jooq.execute(t => {
+
+    t.insertInto(DOMAINS).
+      set(DOMAINS.NAME, domain).
+      onDuplicateKeyIgnore().
+      execute()
+
+    domainEventSubscribers.foreach(_.onDomainUpdated(domain))
   })
 
   def deleteDomain(domain:String) = {
@@ -99,7 +114,18 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     HibernateQueryUtils.forceHibernateCacheEviction(sessionFactory)
   }
 
-  def doesDomainExist(name: String) = null != sessionFactory.withSession(s => s.get(classOf[Domain], name))
+  def doesDomainExist(domain: String) = {
+    val count = cachedDomainNames.readThrough(domain, () => jooq.execute(t => {
+      t.selectCount().
+        from(DOMAINS).
+        where(DOMAINS.NAME.equal(domain)).
+        fetchOne().
+        getValueAsBigInteger(0).
+        longValue()
+    }))
+
+    count > 0
+  }
 
   def listDomains = db.listQuery[Domain]("allDomains", Map()).sortBy(_.getName)
 

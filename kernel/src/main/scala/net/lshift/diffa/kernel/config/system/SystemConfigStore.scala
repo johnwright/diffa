@@ -26,7 +26,7 @@ import net.lshift.diffa.kernel.frontend.{DomainEndpointDef, DomainPairDef, PairD
  */
 trait SystemConfigStore {
 
-  def createOrUpdateDomain(domain: Domain)
+  def createOrUpdateDomain(domain: String)
   def deleteDomain(name: String)
   def doesDomainExist(name: String): Boolean
   def listDomains : Seq[Domain]

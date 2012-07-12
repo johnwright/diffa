@@ -79,7 +79,7 @@ class ConfigurationTest {
     catch {
       case e:MissingObjectException => // ignore non-existent domain, since the point of this call was to delete it anyway
     }
-    systemConfigStore.createOrUpdateDomain(domain)
+    systemConfigStore.createOrUpdateDomain(domainName)
   }
 
   @Test

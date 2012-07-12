@@ -37,7 +37,7 @@ class HibernateSystemConfigStoreTest {
   @Before
   def setup() {
     storeReferences.clearConfiguration(domainName)
-    systemConfigStore.createOrUpdateDomain(domain)
+    systemConfigStore.createOrUpdateDomain(domainName)
 
     storeReferences.clearUserConfig
   }
@@ -106,7 +106,7 @@ class HibernateSystemConfigStoreTest {
   def shouldListDomainsWithAsciiCollationByDefault = {
     val domainNames = Seq("bar", "Baz", "Foo", "diffa", domainName)
     domainNames.foreach { name =>
-      systemConfigStore.createOrUpdateDomain(Domain(name))
+      systemConfigStore.createOrUpdateDomain(name)
     }
     val results = systemConfigStore.listDomains.map(_.getName)
 
