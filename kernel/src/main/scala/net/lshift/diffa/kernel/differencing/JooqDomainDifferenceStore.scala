@@ -395,8 +395,6 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
 
       if (domain != null && persistentValue != null) {
 
-        logger.warn("Initializing using sequence for domain %s using %s".format(domain, persistentValue))
-
         val key = generateKeyName(domain)
         val currentValue = sequenceProvider.currentSequenceValue(key)
         if (persistentValue > currentValue) {
