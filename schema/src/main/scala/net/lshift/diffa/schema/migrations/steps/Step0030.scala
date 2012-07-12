@@ -18,9 +18,9 @@ package net.lshift.diffa.schema.migrations.steps
 import org.hibernate.cfg.Configuration
 import net.lshift.diffa.schema.servicelimits.ChangeEventRate
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.schema.migrations.{MigrationUtil, HibernateMigrationStep}
+import net.lshift.diffa.schema.migrations.{MigrationUtil, MigrationStep}
 
-object Step0030 extends HibernateMigrationStep {
+object Step0030 extends MigrationStep {
   def versionId = 30
   def name = "Configure system-wide change event rate limit"
 

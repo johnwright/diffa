@@ -15,11 +15,13 @@
  */
 package net.lshift.diffa.schema.migrations.steps
 
-import net.lshift.diffa.schema.migrations.HibernateMigrationStep
+import net.lshift.diffa.schema.migrations.VerifiedMigrationStep
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
+import org.apache.commons.lang.RandomStringUtils
+import scala.collection.JavaConversions._
 
-object Step0039 extends HibernateMigrationStep {
+object Step0039 extends VerifiedMigrationStep {
   def versionId = 39
   def name = "Add the 'guest' user as a member of domain 'diffa'"
 
@@ -28,13 +30,52 @@ object Step0039 extends HibernateMigrationStep {
 
     migration.sql(
       """insert into members (domain_name, user_name)
-        | select d.name, u.name
-        | from domains d, users u
-        | where d.name = '%s'
-        | and u.name = '%s'
-        | group by d.name, u.name""".format(
+        select d.name, u.name
+        from domains d, users u
+        where d.name = '%s'
+        and u.name = '%s'
+        group by d.name, u.name""".format(
         Step0022.defaultDomainName, Step0022.defaultUserName))
 
     migration
   }
+
+  /**
+   * This allows for a step to insert data into the database to prove this step works
+   * and to provide an existing state for a subsequent migration to use
+   */
+  def applyVerification(config: Configuration) = {
+    val migration = new MigrationBuilder(config)
+
+    val user = Step0022.defaultUserName
+    val domain = Step0022.defaultDomainName
+    val (up, down) = (randomString(10), randomString(10))
+    val pair = randomString(10)
+    val itemType = randomString(10)
+
+    Seq(up,down) foreach { ep =>
+      migration.insert("endpoint").values(Map(
+        "domain" -> domain,
+        "name" -> ep
+      ))
+    }
+
+    migration.insert("pair").values(Map(
+      "domain" -> domain,
+      "pair_key" -> pair,
+      "upstream" -> up,
+      "downstream" -> down
+    ))
+
+    migration.insert("user_item_visibility").values(Map(
+      "domain" -> domain,
+      "pair" -> pair,
+      "username" -> user,
+      "item_type" -> itemType)
+    )
+
+    migration
+  }
+
+  def randomString(length: Int) = RandomStringUtils.randomAlphanumeric(length)
 }

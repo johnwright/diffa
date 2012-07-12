@@ -109,9 +109,39 @@ case class EndpointDef (
   }
 }
 
+/**
+ * This is the next generation version of the Endpoint, but with serialization and friendly fields.
+ * This has been made java friendly to ensure it can be serialized correctly when inserted into caches.
+ * When Hibernate has been removed completely, the Endpoint object can be deleted all together and
+ * get replaced with this more useful definition.
+ */
+case class DomainEndpointDef(
+  @BeanProperty var domain: String = null,
+  @BeanProperty var name: String = null,
+  @BeanProperty var scanUrl: String = null,
+  @BeanProperty var contentRetrievalUrl: String = null,
+  @BeanProperty var versionGenerationUrl: String = null,
+  @BeanProperty var inboundUrl: String = null,
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new java.util.TreeMap[String, CategoryDescriptor],
+  @BeanProperty var views: java.util.List[EndpointViewDef] = new java.util.ArrayList[EndpointViewDef],
+  @BeanProperty var collation: String = AsciiCollationOrdering.name) {
+  def this() = this(domain = null)
+
+  @Deprecated def withoutDomain() = EndpointDef(
+    name = name,
+    scanUrl = scanUrl,
+    contentRetrievalUrl = contentRetrievalUrl,
+    versionGenerationUrl = versionGenerationUrl,
+    inboundUrl = inboundUrl,
+    views = views,
+    categories = categories,
+    collation = collation
+  )
+}
+
 case class EndpointViewDef(
   @BeanProperty var name:String = null,
-  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new HashMap[String, CategoryDescriptor]
+  @BeanProperty var categories: java.util.Map[String,CategoryDescriptor] = new java.util.TreeMap[String, CategoryDescriptor]
 ) {
   def this() = this(name = null)
 
@@ -154,6 +184,7 @@ case class PairDef(
   @BeanProperty var upstreamName: String = null,
   @BeanProperty var downstreamName: String = null,
   @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var scanCronEnabled: Boolean = true,
   @BeanProperty var allowManualScans: java.lang.Boolean = null,
   @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
 
@@ -234,7 +265,8 @@ case class PairDef(
 
 case class PairViewDef(
   @BeanProperty var name:String = null,
-  @BeanProperty var scanCronSpec:String = null
+  @BeanProperty var scanCronSpec:String = null,
+  @BeanProperty var scanCronEnabled:Boolean = true
 ) {
   def this() = this(name = null)
 
@@ -278,6 +310,7 @@ case class DomainPairDef(
   @BeanProperty var upstreamName: String = null,
   @BeanProperty var downstreamName: String = null,
   @BeanProperty var scanCronSpec: String = null,
+  @BeanProperty var scanCronEnabled: Boolean = true,
   @BeanProperty var allowManualScans: java.lang.Boolean = null,
   @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
 
@@ -292,6 +325,7 @@ case class DomainPairDef(
     upstreamName = upstreamName,
     downstreamName = downstreamName,
     scanCronSpec = scanCronSpec,
+    scanCronEnabled = scanCronEnabled,
     allowManualScans = allowManualScans,
     views = views
   )
