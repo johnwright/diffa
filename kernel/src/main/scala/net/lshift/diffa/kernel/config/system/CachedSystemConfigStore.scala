@@ -60,8 +60,6 @@ class CachedSystemConfigStore(underlying:SystemConfigStore, cacheProvider:CacheP
   def listPairs = underlying.listPairs
   def listEndpoints = underlying.listEndpoints
   def createOrUpdateUser(user: User) = underlying.createOrUpdateUser(user)
-  def createUser(user: User) = underlying.createUser(user)
-  def updateUser(user: User) = underlying.updateUser(user)
   def getUserToken(username: String) = underlying.getUserToken(username)
 
   def clearUserToken(username: String) = {

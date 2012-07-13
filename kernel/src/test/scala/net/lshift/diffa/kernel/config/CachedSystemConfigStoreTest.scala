@@ -24,7 +24,7 @@ import org.easymock.EasyMock._
 import org.jooq.impl.Factory
 import org.junit.Assert._
 import org.hibernate.SessionFactory
-import net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore
+import net.lshift.diffa.kernel.config.system.JooqSystemConfigStore
 
 class CachedSystemConfigStoreTest {
 
@@ -33,7 +33,7 @@ class CachedSystemConfigStoreTest {
   val sf = createStrictMock(classOf[SessionFactory])
   val db = createStrictMock(classOf[OldDatabaseFacade])
 
-  val configStore = new HibernateSystemConfigStore(sf,db,jooq,cp)
+  val configStore = new JooqSystemConfigStore(sf,db,jooq,cp)
 
   @Test
   def shouldCacheDomainExistenceAndInvalidateOnRemoval {

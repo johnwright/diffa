@@ -23,8 +23,8 @@ import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import org.junit.{AfterClass, Before, Test}
 import net.lshift.diffa.kernel.config.{User, Domain}
 
-class HibernateSystemConfigStoreTest {
-  private val storeReferences = HibernateSystemConfigStoreTest.storeReferences
+class JooqSystemConfigStoreTest {
+  private val storeReferences = JooqSystemConfigStoreTest.storeReferences
 
   private val systemConfigStore = storeReferences.systemConfigStore
 
@@ -115,11 +115,11 @@ class HibernateSystemConfigStoreTest {
   }
 }
 
-object HibernateSystemConfigStoreTest {
-  private[HibernateSystemConfigStoreTest] val env =
+object JooqSystemConfigStoreTest {
+  private[JooqSystemConfigStoreTest] val env =
     TestDatabaseEnvironments.uniqueEnvironment("target/systemConfigStore")
 
-  private[HibernateSystemConfigStoreTest] val storeReferences =
+  private[JooqSystemConfigStoreTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)
 
   @AfterClass

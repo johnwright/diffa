@@ -16,12 +16,9 @@
 
 package net.lshift.diffa.kernel.config.system
 
-import net.lshift.diffa.kernel.util.db.{DatabaseFacade,HibernateQueryUtils}
-import net.lshift.diffa.schema.hibernate.SessionHelper._
 import scala.collection.JavaConversions._
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.util.{AlertCodes, MissingObjectException}
-import org.hibernate.{Query, SessionFactory}
 import org.apache.commons.lang.RandomStringUtils
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
@@ -50,16 +47,14 @@ import collection.mutable.ListBuffer
 import net.lshift.diffa.kernel.util.cache.CacheProvider
 import net.lshift.diffa.kernel.naming.CacheName._
 import net.lshift.diffa.kernel.frontend.DomainEndpointDef
-import scala.Some
 import net.lshift.diffa.kernel.config.Member
 import net.lshift.diffa.kernel.config.User
-import net.lshift.diffa.kernel.config.DomainConfigKey
+import org.jooq.{TableField, Record}
+import net.lshift.diffa.schema.tables.records.UsersRecord
 
-class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
-                                 db:DatabaseFacade,
-                                 jooq:JooqDatabaseFacade,
-                                 cacheProvider:CacheProvider)
-    extends SystemConfigStore with HibernateQueryUtils {
+class JooqSystemConfigStore(jooq:JooqDatabaseFacade,
+                            cacheProvider:CacheProvider)
+    extends SystemConfigStore {
 
   val logger = LoggerFactory.getLogger(getClass)
 
@@ -178,26 +173,29 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     }
   })
 
-  def clearUserToken(username: String) {
-    sessionFactory.withSession(s => {
-      val user = getUser(s, username)
-      user.token = null
-
-      s.saveOrUpdate(user)
-    })
-  }
-
-  def deleteUser(name: String) = sessionFactory.withSession(s => {
-    val user = getUser(s, name)
-    s.delete(user)
+  def clearUserToken(username: String) = jooq.execute(t => {
+    val nullString:String = null
+    t.update(USERS).
+        set(USERS.TOKEN, nullString).
+      where(USERS.NAME.equal(username)).
+      execute()
   })
 
-  def getUser(name: String) : User = sessionFactory.withSession(getUser(_,name))
+  def deleteUser(username: String) = jooq.execute(t => {
+    t.delete(USERS).
+      where(USERS.NAME.equal(username)).
+      execute()
+  })
 
-  def getUserByToken(token: String) : User
-    = db.singleQuery[User]("userByToken", Map("token" -> token), "user token %s".format(token))
+  def getUser(name: String) : User = getUserByPredicate(name, USERS.NAME)
+  def getUserByToken(token: String) : User = getUserByPredicate(token, USERS.TOKEN)
 
-  def listUsers : Seq[User] = db.listQuery[User]("allUsers", Map())
+  def listUsers : Seq[User] = jooq.execute(t => {
+    val results = t.select().
+                    from(USERS).
+                    fetch()
+    results.iterator().map(recordToUser(_)).toSeq
+  })
 
   def listDomainMemberships(username: String) : Seq[Member] = {
     jooq.execute(t => {
@@ -209,13 +207,14 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
     }).toSeq
   }
 
-  def containsRootUser(usernames: Seq[String]) : Boolean =
-    sessionFactory.withSession(s => {
-      val query: Query = s.getNamedQuery("rootUserCount")
-      query.setParameterList("user_names", seqAsJavaList(usernames))
-
-      query.uniqueResult().asInstanceOf[java.lang.Long] > 0
-    })
+  def containsRootUser(usernames: Seq[String]) : Boolean = jooq.execute(t => {
+    val count = t.selectCount().
+                  from(USERS).
+                  where(USERS.NAME.in(usernames)).
+                    and(USERS.SUPERUSER.isTrue).
+                  fetchOne().getValueAsBigInteger(0).longValue()
+    count > 0
+  })
 
   def maybeSystemConfigOption(key: String) = jooq.execute( t => {
     val record = t.select(SYSTEM_CONFIG_OPTIONS.OPT_VAL).
@@ -252,6 +251,30 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
       where(SYSTEM_CONFIG_OPTIONS.OPT_KEY.equal(key)).
       execute()
   })
+
+  private def getUserByPredicate(predicate: String, fieldToMatch:TableField[UsersRecord, String]) : User = jooq.execute(t => {
+    val record =  t.select().
+                    from(USERS).
+                    where(fieldToMatch.equal(predicate)).
+                    fetchOne()
+
+    if (record == null) {
+      null
+    }
+    else {
+      recordToUser(record)
+    }
+  })
+
+  private def recordToUser(record:Record) = {
+    User(
+      name = record.getValue(USERS.NAME),
+      email = record.getValue(USERS.EMAIL),
+      token = record.getValue(USERS.TOKEN),
+      superuser = record.getValue(USERS.SUPERUSER)
+      // Don't return the password - but what about the token?
+    )
+  }
 }
 
 /**

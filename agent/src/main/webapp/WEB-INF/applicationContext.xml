@@ -407,10 +407,9 @@
     ===========
   -->
 
-  <bean id="underlyingConfigStore" class="net.lshift.diffa.kernel.config.system.HibernateSystemConfigStore">
-    <constructor-arg ref="diffaSessionFactory" />
-    <constructor-arg ref="databaseFacade" />
+  <bean id="underlyingConfigStore" class="net.lshift.diffa.kernel.config.system.JooqSystemConfigStore">
     <constructor-arg ref="jooqDatabaseFacade" />
+    <constructor-arg ref="hazelcastCacheProvider" />
   </bean>
 
   <bean id="domainConfigStore" class="net.lshift.diffa.kernel.config.JooqDomainConfigStore">
