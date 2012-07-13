@@ -141,7 +141,6 @@ class HibernatePreparationTest {
     if(System.getProperty("verifyExternalDB") != null) {
       val config = new Configuration().
       addResource("net/lshift/diffa/kernel/config/Config.hbm.xml").
-      addResource("net/lshift/diffa/kernel/config/SystemConfig.hbm.xml").
       addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml").
       addResource("net/lshift/diffa/kernel/differencing/Differences.hbm.xml").
       setProperty("hibernate.dialect", DatabaseEnvironment.HIBERNATE_DIALECT).

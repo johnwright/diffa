@@ -101,19 +101,6 @@ trait HibernateQueryUtils {
     query.executeUpdate()
   }
 
-  /**
-   * Returns a domain by its name
-   */
-  def getDomain(name: String) = sessionFactory.withSession(s => {
-    singleQuery[Domain](s, "domainByName", Map("domain_name" -> name), "domain %s".format(name))
-  })
-
-  def getEndpoint(s: Session, domain: String, name: String) = getOrFail(s, classOf[Endpoint], DomainScopedName(name, Domain(name = domain)), "endpoint")
-
-  def getUser(s: Session, name: String) = singleQuery[User](s, "userByName", Map("name" -> name), "user %s".format(name))
-
-  def getPair(s: Session, domain: String, key: String) = getOrFail(s, classOf[DiffaPair], DomainScopedKey(key, Domain(name = domain)), "pair")
-
 }
 
 /**

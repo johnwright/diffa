@@ -228,29 +228,4 @@
     <property name="target" type="string" column="target" not-null="true" length="1024" />
   </class>
 
-  <query name="userByName" cacheable="true">
-    select u from User u where u.name = :name
-  </query>
-  <query name="userByToken" cacheable="true">
-    select u from User u where u.token = :token
-  </query>
-
-  <!-- Select all statements -->
-
-  <query name="allUsers">
-    select u from User u order by u.name asc
-  </query>
-
-  <query name="allRepairActions">
-    select a from RepairAction a
-  </query>
-
-  <query name="allEscalations">
-    select e from Escalation e
-  </query>
-
-  <query name="domainByName" cacheable="true">
-    select d from Domain d where d.name = :domain_name
-  </query>
-
 </hibernate-mapping>

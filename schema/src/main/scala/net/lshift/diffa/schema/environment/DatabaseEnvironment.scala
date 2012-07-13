@@ -78,7 +78,6 @@ class DatabaseEnvironment(path: String) {
   def getHibernateConfiguration: Configuration = {
     getHibernateConfigurationWithoutMappingResources
       .addResource("net/lshift/diffa/kernel/config/Config.hbm.xml")
-      .addResource("net/lshift/diffa/kernel/config/SystemConfig.hbm.xml")
       .addResource("net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml")
   }
 
