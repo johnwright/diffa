@@ -8,7 +8,6 @@ import org.hibernate.dialect.Dialect
 import org.slf4j.LoggerFactory
 import preferences.JooqUserPreferencesStore
 import util.cache.HazelcastCacheProvider
-import util.db.HibernateDatabaseFacade
 import util.sequence.HazelcastSequenceProvider
 import util.MissingObjectException
 import org.hibernate.SessionFactory
@@ -73,7 +72,7 @@ trait StoreReferenceContainer {
 class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvironment) extends StoreReferenceContainer {
   private val log = LoggerFactory.getLogger(getClass)
   
-  private val applicationConfig = applicationEnvironment.getHibernateConfiguration.
+  private val applicationConfig = applicationEnvironment.getHibernateConfigurationWithoutMappingResources.
     setProperty("hibernate.generate_statistics", "true").
     setProperty("hibernate.connection.autocommit", "true")  // Turn this on to make the tests repeatable,
                                                             // otherwise the preparation step will not get committed
@@ -192,7 +191,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   private def performCleanerAction(action: SchemaCleaner => (DatabaseEnvironment, DatabaseEnvironment) => Unit) {
     val sysEnv = TestDatabaseEnvironments.adminEnvironment
 
-    val dialect = Dialect.getDialect(sysEnv.getHibernateConfiguration.getProperties)
+    val dialect = Dialect.getDialect(sysEnv.getHibernateConfigurationWithoutMappingResources.getProperties)
     val cleaner = SchemaCleaner.forDialect(dialect)
     try {
       action(cleaner)(sysEnv, applicationEnvironment)

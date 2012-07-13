@@ -17,10 +17,8 @@ package net.lshift.diffa.kernel.config
 
 import org.junit.{Before, Test}
 import org.junit.Assert._
-import org.hibernate.SessionFactory
 import org.easymock.EasyMock._
 import net.lshift.diffa.schema.jooq.{DatabaseFacade => JooqDatabaseFacade}
-import net.lshift.diffa.kernel.util.db.DatabaseFacade
 import net.lshift.diffa.kernel.hooks.HookManager
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.easymock.classextension.{EasyMock => E4}

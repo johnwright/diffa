@@ -356,15 +356,9 @@
     <property name="hibernateProperties">
       <bean class="net.lshift.diffa.agent.util.HibernatePropertiesFactory">
         <constructor-arg ref="hibernateDialect"/>
-        <constructor-arg value="net.sf.ehcache.hibernate.EhCacheRegionFactory"/>
       </bean>
     </property>
-    <property name="mappingResources">
-      <list>
-          <value>net/lshift/diffa/kernel/differencing/DifferenceEvents.hbm.xml</value>
-          <value>net/lshift/diffa/kernel/config/Config.hbm.xml</value>
-      </list>
-    </property>
+
     <property name="preparationSteps">
       <list>
         <bean class="net.lshift.diffa.schema.migrations.HibernateConfigStorePreparationStep" />
