@@ -347,7 +347,7 @@
     <constructor-arg ref="jooqDialect"/>
   </bean>
 
-  <bean id="diffaSessionFactory" class="net.lshift.diffa.agent.util.ListeningLocalSessionFactoryBean">
+  <bean id="diffaSessionFactory" class="net.lshift.diffa.agent.util.ListeningLocalSessionFactoryBean" lazy-init="false">
     <property name="dataSource">
       <bean class="org.springframework.jndi.JndiObjectFactoryBean">
             <property name="jndiName" value="java:comp/env/jdbc/diffaDS"/>
