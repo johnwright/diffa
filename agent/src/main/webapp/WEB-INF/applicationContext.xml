@@ -347,6 +347,8 @@
     <constructor-arg ref="jooqDialect"/>
   </bean>
 
+  <!-- Keep the Hibernate session factory around until the migration steps are ported away from Hibernate -->
+
   <bean id="diffaSessionFactory" class="net.lshift.diffa.agent.util.ListeningLocalSessionFactoryBean" lazy-init="false">
     <property name="dataSource">
       <bean class="org.springframework.jndi.JndiObjectFactoryBean">
