@@ -17,23 +17,19 @@ package net.lshift.diffa.kernel.config
 
 import org.easymock.classextension.{EasyMock => E4}
 import net.lshift.diffa.schema.jooq.DatabaseFacade
-import net.lshift.diffa.kernel.util.db.{DatabaseFacade=> OldDatabaseFacade}
 import net.lshift.diffa.kernel.util.cache.HazelcastCacheProvider
 import org.junit.Test
 import org.easymock.EasyMock._
 import org.jooq.impl.Factory
 import org.junit.Assert._
-import org.hibernate.SessionFactory
 import net.lshift.diffa.kernel.config.system.JooqSystemConfigStore
 
 class CachedSystemConfigStoreTest {
 
   val jooq = E4.createStrictMock(classOf[DatabaseFacade])
   val cp = new HazelcastCacheProvider
-  val sf = createStrictMock(classOf[SessionFactory])
-  val db = createStrictMock(classOf[OldDatabaseFacade])
 
-  val configStore = new JooqSystemConfigStore(sf,db,jooq,cp)
+  val configStore = new JooqSystemConfigStore(jooq,cp)
 
   @Test
   def shouldCacheDomainExistenceAndInvalidateOnRemoval {
