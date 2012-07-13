@@ -23,8 +23,10 @@ import org.junit.Test
 import org.hamcrest.Matchers._
 import org.junit.Assert._
 import scala.collection.JavaConversions._
+import net.lshift.diffa.participant.common.ScanEntityValidator
+import org.easymock.EasyMock._
 
-class CollationOrderCheckingParserTest { self =>
+class CollationOrderEntityValidatorTest { self =>
   val entity1 = ScanResultEntry.forEntity("id1", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
   val entity2 = ScanResultEntry.forEntity("id2", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
   val entity3 = ScanResultEntry.forEntity("id3", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
@@ -35,12 +37,7 @@ class CollationOrderCheckingParserTest { self =>
     override def sortsBefore(a: String, b:String) = super.sortsBefore(b, a)
   }
 
-  trait DummyParser extends JsonScanResultParser {
-    val collation = self.reversedAsciiCollation
-    val entities: Seq[ScanResultEntry]
-
-    override def parse(s: InputStream) = entities
-  }
+  val mockValidator = createMock(classOf[ScanEntityValidator])
 
   val emptyResponseContent = "[" + (" " * 40) + "]"
   lazy val emptyResponse = new ByteArrayInputStream(emptyResponseContent.getBytes("UTF8"))
@@ -48,15 +45,15 @@ class CollationOrderCheckingParserTest { self =>
   @Test
   def shouldReturnWrappedParserResponseWhenCorrectlyOrdered {
     val reversedEntities = Seq(entity3, entity2, entity1)
-    val parser = new DummyParser with CollationOrderCheckingParser { val entities = reversedEntities }
-    assertThat(parser.parse(emptyResponse), is(reversedEntities))
+    val validator = new CollationOrderEntityValidator(reversedAsciiCollation)
+    reversedEntities.foreach(validator.process _)
   }
 
 
   @Test(expected=classOf[OutOfOrderException])
   def shouldRaiseErrorWhenWronglyOrdered {
     val misorderedEntities = Seq(entity3, entity1, entity2)
-    val parser = new DummyParser with CollationOrderCheckingParser { val entities = misorderedEntities }
-    parser.parse(emptyResponse)
+    val validator = new CollationOrderEntityValidator(reversedAsciiCollation)
+    misorderedEntities.foreach(validator.process _)
   }
 }
