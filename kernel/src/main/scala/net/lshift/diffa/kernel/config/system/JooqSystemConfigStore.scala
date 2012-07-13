@@ -271,8 +271,8 @@ class JooqSystemConfigStore(jooq:JooqDatabaseFacade,
       name = record.getValue(USERS.NAME),
       email = record.getValue(USERS.EMAIL),
       token = record.getValue(USERS.TOKEN),
-      superuser = record.getValue(USERS.SUPERUSER)
-      // Don't return the password - but what about the token?
+      superuser = record.getValue(USERS.SUPERUSER),
+      passwordEnc = record.getValue(USERS.PASSWORD_ENC)
     )
   }
 }
