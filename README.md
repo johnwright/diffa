@@ -2,7 +2,7 @@
 
 Diffa provides real time health checks between arbitrary system components.
 
-For more information, please see the website: http://diffa.lshift.net
+For more information, please see the website: https://diffa.io
 
 # License
 
