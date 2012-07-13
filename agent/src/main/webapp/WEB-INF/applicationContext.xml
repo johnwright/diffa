@@ -338,15 +338,6 @@
     </constructor-arg>
   </bean>
 
-  <bean id="databaseFacade" class="net.lshift.diffa.kernel.util.db.HibernateDatabaseFacade">
-    <constructor-arg ref="diffaSessionFactory" />
-    <constructor-arg>
-      <bean class="org.springframework.jndi.JndiObjectFactoryBean">
-        <property name="jndiName" value="java:comp/env/jdbc/diffaDS"/>
-      </bean>
-    </constructor-arg>
-  </bean>
-
   <bean id="jooqDatabaseFacade" class="net.lshift.diffa.schema.jooq.DatabaseFacade">
     <constructor-arg>
       <bean class="org.springframework.jndi.JndiObjectFactoryBean">
