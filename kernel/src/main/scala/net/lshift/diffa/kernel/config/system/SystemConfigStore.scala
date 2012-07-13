@@ -54,8 +54,6 @@ trait SystemConfigStore {
   def listEndpoints : Seq[DomainEndpointDef]
 
   def createOrUpdateUser(user: User)
-  def createUser(user: User)
-  def updateUser(user: User) : Int
 
   def getUserToken(username: String): String
   def clearUserToken(username: String)

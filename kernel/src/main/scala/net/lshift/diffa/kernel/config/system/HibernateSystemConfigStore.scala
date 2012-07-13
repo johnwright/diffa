@@ -44,9 +44,9 @@ import net.lshift.diffa.schema.tables.PendingDiffs.PENDING_DIFFS
 import net.lshift.diffa.schema.tables.Diffs.DIFFS
 import net.lshift.diffa.schema.tables.Domains.DOMAINS
 import net.lshift.diffa.schema.tables.SystemConfigOptions.SYSTEM_CONFIG_OPTIONS
+import net.lshift.diffa.schema.tables.Users.USERS
 import net.lshift.diffa.kernel.lifecycle.DomainLifecycleAware
 import collection.mutable.ListBuffer
-import net.lshift.diffa.kernel.frontend.DomainEndpointDef
 import net.lshift.diffa.kernel.util.cache.CacheProvider
 import net.lshift.diffa.kernel.naming.CacheName._
 import net.lshift.diffa.kernel.frontend.DomainEndpointDef
@@ -143,37 +143,41 @@ class HibernateSystemConfigStore(val sessionFactory:SessionFactory,
 
   def listEndpoints : Seq[DomainEndpointDef] = JooqConfigStoreCompanion.listEndpoints(jooq)
 
-  // TODO implement create or update using JOOQ
-  def createOrUpdateUser(user: User) = {
-    if (updateUser(user) == 0) {
-      createUser(user)
+  def createOrUpdateUser(user: User) = jooq.execute(t => {
+    t.insertInto(USERS).
+        set(USERS.EMAIL, user.email).
+        set(USERS.NAME, user.name).
+        set(USERS.PASSWORD_ENC, user.passwordEnc).
+        set(USERS.SUPERUSER, boolean2Boolean(user.superuser)).
+      onDuplicateKeyUpdate().
+        set(USERS.EMAIL, user.email).
+        set(USERS.PASSWORD_ENC, user.passwordEnc).
+        set(USERS.SUPERUSER, boolean2Boolean(user.superuser)).
+      execute()
+  })
+
+  def getUserToken(username: String) = jooq.execute(t => {
+    val token = t.select(USERS.TOKEN).
+                  from(USERS).
+                  where(USERS.NAME.equal(username)).
+                  fetchOne().
+                  getValue(USERS.TOKEN)
+
+    if (token == null) {
+      // Generate token on demand
+      val newToken = RandomStringUtils.randomAlphanumeric(40)
+
+      t.update(USERS).
+        set(USERS.TOKEN, newToken).
+        execute()
+
+      newToken
     }
-  }
+    else {
+      token
+    }
+  })
 
-  def createUser(user: User) = db.execute("insertUser", Map(
-    "name" -> user.name,
-    "password_enc" -> user.passwordEnc,
-    "email" -> user.email,
-    "superuser" -> user.superuser
-  ))
-
-  def updateUser(user: User) = db.execute("updateUser", Map(
-    "name" -> user.name,
-    "password_enc" -> user.passwordEnc,
-    "email" -> user.email,
-    "superuser" -> user.superuser
-  ))
-
-  def getUserToken(username: String) = {
-    sessionFactory.withSession(s => {
-      val user = getUser(s, username)
-      if (user.token == null) {
-        // Generate token on demand
-        user.token = RandomStringUtils.randomAlphanumeric(40)
-      }
-      user.token
-    })
-  }
   def clearUserToken(username: String) {
     sessionFactory.withSession(s => {
       val user = getUser(s, username)
