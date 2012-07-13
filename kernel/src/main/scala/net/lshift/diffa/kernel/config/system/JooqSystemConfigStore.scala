@@ -106,9 +106,6 @@ class JooqSystemConfigStore(jooq:JooqDatabaseFacade,
     domainEventSubscribers.foreach(_.onDomainRemoved(domain))
 
     cachedDomainNames.evict(domain)
-
-    // TODO Remove this
-    //HibernateQueryUtils.forceHibernateCacheEviction(sessionFactory)
   }
 
   def doesDomainExist(domain: String) = {
