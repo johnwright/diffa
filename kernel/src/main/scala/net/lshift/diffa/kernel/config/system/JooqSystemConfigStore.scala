@@ -259,7 +259,7 @@ class JooqSystemConfigStore(jooq:JooqDatabaseFacade,
                     fetchOne()
 
     if (record == null) {
-      null
+      throw new MissingObjectException("user")
     }
     else {
       recordToUser(record)
