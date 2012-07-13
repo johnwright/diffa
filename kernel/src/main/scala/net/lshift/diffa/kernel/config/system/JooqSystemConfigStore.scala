@@ -164,6 +164,7 @@ class JooqSystemConfigStore(jooq:JooqDatabaseFacade,
 
       t.update(USERS).
         set(USERS.TOKEN, newToken).
+        where(USERS.NAME.equal(username)).
         execute()
 
       newToken
