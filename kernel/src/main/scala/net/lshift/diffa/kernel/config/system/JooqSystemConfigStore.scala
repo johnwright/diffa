@@ -64,15 +64,19 @@ class JooqSystemConfigStore(jooq:JooqDatabaseFacade,
 
   def registerDomainEventListener(d:DomainLifecycleAware) = domainEventSubscribers += d
 
-  def createOrUpdateDomain(domain:String) = jooq.execute(t => {
+  def createOrUpdateDomain(domain:String) = {
 
-    t.insertInto(DOMAINS).
-      set(DOMAINS.NAME, domain).
-      onDuplicateKeyIgnore().
-      execute()
+    jooq.execute(t => {
 
+      t.insertInto(DOMAINS).
+        set(DOMAINS.NAME, domain).
+        onDuplicateKeyIgnore().
+        execute()
+    })
+
+    cachedDomainNames.evict(domain)
     domainEventSubscribers.foreach(_.onDomainUpdated(domain))
-  })
+  }
 
   def deleteDomain(domain:String) = {
 

@@ -64,5 +64,24 @@ class CachedSystemConfigStoreTest {
 
     E4.verify(jooq)
 
+    // Reset the mocks control and an intermediate step to verify the calls to the underlying mock are all in order
+
+    E4.reset(jooq)
+
+    // Now re-add the old domain and make sure that doesDomainExist reflects this coherently
+    expect(jooq.execute(anyObject[Function1[Factory,Unit]]())).andReturn(Unit).once()
+    expect(jooq.execute(anyObject[Function1[Factory,java.lang.Long]]())).andReturn(1L).once()
+
+    E4.replay(jooq)
+
+    configStore.createOrUpdateDomain(domain)
+
+    // The first call to get doesDomainExist should propagate against the DB, but the second call will be cached
+
+    assertTrue(configStore.doesDomainExist(domain))
+    assertTrue(configStore.doesDomainExist(domain))
+
+    E4.verify(jooq)
+
   }
 }
