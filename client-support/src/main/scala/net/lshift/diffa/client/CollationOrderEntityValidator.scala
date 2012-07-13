@@ -23,19 +23,19 @@ import net.lshift.diffa.participant.changes.ChangeEvent
 
 
 class CollationOrderEntityValidator(collation: Collation, private val next: ScanEntityValidator = null) extends ScanEntityValidator {
-  private var previous: Option[ScanResultEntry] = None
+  private var previousId: Option[String] = None
   val nextValidator = Option(next)
 
    override def process(current: ScanResultEntry) = {
-     previous.foreach { prev =>
-       var res = collation.sortsBefore(current.getId, prev.getId)
+     for {
+       prevId <- previousId
+       currentId <- Option(current.getId)
 
-       if(res) {
-        throw new OutOfOrderException(current.getId, prev.getId)
-       }
+     } if(collation.sortsBefore(currentId, prevId)) {
+       throw new OutOfOrderException(currentId, prevId)
      }
      nextValidator.foreach(_.process(current))
-     previous = Some(current)
+     previousId = Option(current.getId)
   }
 
   override def process(c: ChangeEvent) = ()

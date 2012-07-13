@@ -31,6 +31,9 @@ class CollationOrderEntityValidatorTest { self =>
   val entity2 = ScanResultEntry.forEntity("id2", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
   val entity3 = ScanResultEntry.forEntity("id3", "v1", new DateTime(2011, 6, 5, 15, 3, 0, 0, DateTimeZone.UTC), Map("a1" -> "a1v1"))
 
+  val aggregates = Seq(ScanResultEntry.forAggregate("version0", Map[String, String]()),
+                        ScanResultEntry.forAggregate("Another version", Map[String, String]()))
+
   // A dummy collation that sorts backwards for verification purposes. You
   // would only ever use something like this for testing, AFAICS. --CS
   lazy val reversedAsciiCollation = new AsciiCollation {
@@ -64,6 +67,15 @@ class CollationOrderEntityValidatorTest { self =>
     reversedEntities.foreach { e:ScanResultEntry => expect(nextValidator.process(e)) }
     replay(nextValidator)
     reversedEntities.foreach(validator.process _)
+    verify(nextValidator)
+  }
+
+  @Test
+  def shouldPassAggregateResultsThroughToChainedValidator {
+    val validator = new CollationOrderEntityValidator(reversedAsciiCollation, nextValidator)
+    aggregates.foreach { e:ScanResultEntry => expect(nextValidator.process(e)) }
+    replay(nextValidator)
+    aggregates.foreach(validator.process _)
     verify(nextValidator)
 
   }
