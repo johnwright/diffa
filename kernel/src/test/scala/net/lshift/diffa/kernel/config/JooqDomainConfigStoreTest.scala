@@ -239,7 +239,7 @@ class JooqDomainConfigStoreTest {
   def removingPairShouldRemoveAnyUserSettingsRelatedToThatPair {
     declareAll()
 
-    systemConfigStore.createUser(user)
+    systemConfigStore.createOrUpdateUser(user)
     domainConfigStore.makeDomainMember(domainName, user.name)
     userPreferencesStore.createFilteredItem(pairRef, user.name, FilteredItemType.SWIM_LANE)
 

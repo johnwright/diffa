@@ -116,7 +116,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
 
   private lazy val _systemConfigStore =
     makeStore(sf => {
-      val store = new JooqSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade, cacheProvider)
+      val store = new JooqSystemConfigStore(jooqDatabaseFacade, cacheProvider)
       store.registerDomainEventListener(_domainConfigStore)
       store
     }, "SystemConfigStore")
