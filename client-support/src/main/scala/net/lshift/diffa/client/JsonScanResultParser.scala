@@ -28,5 +28,4 @@ import java.io.InputStream
 
 trait JsonScanResultParser {
   def parse(stream: InputStream): Seq[ScanResultEntry]
-
 }

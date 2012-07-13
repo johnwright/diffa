@@ -54,7 +54,6 @@ class ScanParticipantRestClient(pair: DiffaPairRef,
     this.httpClient.get(queryWithCredentials) match {
       case Right(stream) => parser.parse(stream)
       case Left(ex) => handleHttpError(ex, queryWithCredentials)
-
     }
   }
 

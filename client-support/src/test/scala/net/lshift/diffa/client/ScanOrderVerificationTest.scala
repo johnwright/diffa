@@ -28,7 +28,7 @@ import org.hamcrest.Matchers._
 import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.config.Endpoint
 import scala.collection.JavaConversions._
-
+import java.io.IOException
 
 
 object ScanOrderVerificationTest {
@@ -103,6 +103,13 @@ class ScanOrderVerificationTest {
       fail("Scan on ill ordered entities: %s should fail with exception".format(ex.invalidOrdering))
     } catch {
       case ex: OutOfOrderException => assertTrue("Failed correctly", true)
+      // When the id order validator is running as a ScanEntityValidator in
+      // passed to JSONHelper, then any exceptions it throws will get
+      // automagically be wrapped in an IOException. So, because the
+      // PairActor (top of the call stack for the scanning code) will treat
+      // most IOException and OutOfOrderException equally, it's okay for it
+      // to not be explicitly unwrapped.
+      case ex: IOException if ex.getCause.isInstanceOf[OutOfOrderException] => assertTrue("Failed correctly", true)
     }
   }
 }
