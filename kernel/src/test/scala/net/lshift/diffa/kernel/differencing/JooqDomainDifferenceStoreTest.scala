@@ -24,7 +24,7 @@ import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 import org.junit._
 import experimental.theories.{Theories, DataPoint, Theory}
 import runner.RunWith
-import net.lshift.diffa.kernel.differencing.HibernateDomainDifferenceStoreTest.TileScenario
+import net.lshift.diffa.kernel.differencing.JooqDomainDifferenceStoreTest.TileScenario
 import org.joda.time.{DateTime, Interval, DateTimeZone}
 import org.hibernate.dialect.Dialect
 import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
@@ -34,37 +34,35 @@ import org.jooq.exception.DataAccessException
 import java.sql.SQLIntegrityConstraintViolationException
 
 /**
- * Test cases for the HibernateDomainDifferenceStore.
+ * Test cases for the JooqDomainDifferenceStore.
  */
 @RunWith(classOf[Theories])
-class HibernateDomainDifferenceStoreTest {
-  private val storeReferences = HibernateDomainDifferenceStoreTest.storeReferences
-  private val indexRebuilder = IndexRebuilder.dialectSpecificRebuilder(storeReferences.dialect)
+class JooqDomainDifferenceStoreTest {
+  private val storeReferences = JooqDomainDifferenceStoreTest.storeReferences
 
   private val systemConfigStore = storeReferences.systemConfigStore
   private val domainConfigStore = storeReferences.domainConfigStore
   private val domainDiffStore = storeReferences.domainDifferenceStore
 
   private val domainName = "domain"
-  private val domain = Domain(domainName)
 
   @Before
   def clear() {
     domainDiffStore.clearAllDifferences
 
-    systemConfigStore.createOrUpdateDomain(domain)
+    systemConfigStore.createOrUpdateDomain(domainName)
     val us = EndpointDef(name = "upstream")
     val ds = EndpointDef(name = "downstream")
-    domainConfigStore.createOrUpdateEndpoint(domain.name, us)
-    domainConfigStore.createOrUpdateEndpoint(domain.name, ds)
+    domainConfigStore.createOrUpdateEndpoint(domainName, us)
+    domainConfigStore.createOrUpdateEndpoint(domainName, ds)
 
     val pairTemplate = PairDef(upstreamName = us.name, downstreamName = ds.name)
     val pair1 = pairTemplate.copy(key = "pair1")
     val pair2 = pairTemplate.copy(key = "pair2")
 
-    domainConfigStore.listPairs(domain.name).foreach(p => domainConfigStore.deletePair(domain.name, p.key))
-    domainConfigStore.createOrUpdatePair(domain.name, pair1)
-    domainConfigStore.createOrUpdatePair(domain.name, pair2)
+    domainConfigStore.listPairs(domainName).foreach(p => domainConfigStore.deletePair(domainName, p.key))
+    domainConfigStore.createOrUpdatePair(domainName, pair1)
+    domainConfigStore.createOrUpdatePair(domainName, pair2)
 
     domainDiffStore.reset
   }
@@ -843,11 +841,11 @@ class HibernateDomainDifferenceStoreTest {
   }
 }
 
-object HibernateDomainDifferenceStoreTest {
-  private[HibernateDomainDifferenceStoreTest] val env =
+object JooqDomainDifferenceStoreTest {
+  private[JooqDomainDifferenceStoreTest] val env =
     TestDatabaseEnvironments.uniqueEnvironment("target/domainCache")
 
-  private[HibernateDomainDifferenceStoreTest] val storeReferences =
+  private[JooqDomainDifferenceStoreTest] val storeReferences =
     StoreReferenceContainer.withCleanDatabaseEnvironment(env)
 
   @AfterClass
