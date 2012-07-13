@@ -37,14 +37,16 @@ class CollationOrderEntityValidatorTest { self =>
     override def sortsBefore(a: String, b:String) = super.sortsBefore(b, a)
   }
 
-  val mockValidator = createMock(classOf[ScanEntityValidator])
+  val nextValidator = createMock(classOf[ScanEntityValidator])
 
   val emptyResponseContent = "[" + (" " * 40) + "]"
   lazy val emptyResponse = new ByteArrayInputStream(emptyResponseContent.getBytes("UTF8"))
 
+  val reversedEntities = Seq(entity3, entity2, entity1)
+  val misorderedEntities = Seq(entity3, entity1, entity2)
+
   @Test
   def shouldReturnWrappedParserResponseWhenCorrectlyOrdered {
-    val reversedEntities = Seq(entity3, entity2, entity1)
     val validator = new CollationOrderEntityValidator(reversedAsciiCollation)
     reversedEntities.foreach(validator.process _)
   }
@@ -52,8 +54,17 @@ class CollationOrderEntityValidatorTest { self =>
 
   @Test(expected=classOf[OutOfOrderException])
   def shouldRaiseErrorWhenWronglyOrdered {
-    val misorderedEntities = Seq(entity3, entity1, entity2)
     val validator = new CollationOrderEntityValidator(reversedAsciiCollation)
     misorderedEntities.foreach(validator.process _)
+  }
+
+  @Test
+  def shouldPassEntityToChainedValidator {
+    val validator = new CollationOrderEntityValidator(reversedAsciiCollation, nextValidator)
+    reversedEntities.foreach { e:ScanResultEntry => expect(nextValidator.process(e)) }
+    replay(nextValidator)
+    reversedEntities.foreach(validator.process _)
+    verify(nextValidator)
+
   }
 }
