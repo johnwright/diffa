@@ -6,7 +6,11 @@
 
   <rule>
     <note>Forward deprecated domains nomenclature to current spaces nomenclature</note>
-    <from>/domains/</from>
+    <!--
+      Only match on URLs that start with /domains, since other URLs that contain domains
+      are not exposed to non-root clients.
+    -->
+    <from>^/domains/</from>
     <!-- Note that this is a server side forward for now, this should get changed to an HTTP 301 at some stage -->
     <to type="forward">/spaces/</to>
   </rule>
