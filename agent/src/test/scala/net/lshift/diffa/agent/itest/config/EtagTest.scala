@@ -62,13 +62,7 @@ class EtagTest {
     val get = new HttpGet(agentURL + "/domains/diffa/diffs/aggregates")
 
     val httpResponse = httpClient.execute(get, basicAuthContext(targetHost))
-    scala.io.Source.fromInputStream(httpResponse.getEntity.getContent) .getLines.foreach {
-      line => println("Response line: [%s]".format(line))
-    }
     val etag = httpResponse.getLastHeader("ETag")
-    httpResponse.getAllHeaders foreach { header =>
-      println("Header [%s]".format(header))
-    }
     httpClient.getConnectionManager.shutdown()
     etag.getValue
   }
