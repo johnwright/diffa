@@ -59,9 +59,10 @@ class EtagTest {
       new AuthScope(agentHost, agentPort),
       new UsernamePasswordCredentials(agentUsername, agentPassword))
 
-    val get = new HttpGet(agentURL + "/domains/diffa/diffs/aggregates")
+    val httpResponse = httpClient.execute(
+      new HttpGet(agentURL + "/domains/diffa/diffs/aggregates"),
+      basicAuthContext(targetHost))
 
-    val httpResponse = httpClient.execute(get, basicAuthContext(targetHost))
     val etag = httpResponse.getLastHeader("ETag")
     httpClient.getConnectionManager.shutdown()
     etag.getValue
