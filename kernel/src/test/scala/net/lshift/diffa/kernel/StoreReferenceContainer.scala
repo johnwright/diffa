@@ -1,14 +1,13 @@
 package net.lshift.diffa.kernel
 
 import config._
-import config.system.HibernateSystemConfigStore
-import differencing.HibernateDomainDifferenceStore
+import config.system.JooqSystemConfigStore
+import differencing.JooqDomainDifferenceStore
 import hooks.HookManager
 import org.hibernate.dialect.Dialect
 import org.slf4j.LoggerFactory
 import preferences.JooqUserPreferencesStore
 import util.cache.HazelcastCacheProvider
-import util.db.HibernateDatabaseFacade
 import util.sequence.HazelcastSequenceProvider
 import util.MissingObjectException
 import org.hibernate.SessionFactory
@@ -39,9 +38,9 @@ trait StoreReferenceContainer {
   def sessionFactory: SessionFactory
   def facade: DatabaseFacade
   def dialect: Dialect
-  def systemConfigStore: HibernateSystemConfigStore
+  def systemConfigStore: JooqSystemConfigStore
   def domainConfigStore: JooqDomainConfigStore
-  def domainDifferenceStore: HibernateDomainDifferenceStore
+  def domainDifferenceStore: JooqDomainDifferenceStore
   def serviceLimitsStore: ServiceLimitsStore
 
   def prepareEnvironmentForStores: Unit
@@ -73,7 +72,7 @@ trait StoreReferenceContainer {
 class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvironment) extends StoreReferenceContainer {
   private val log = LoggerFactory.getLogger(getClass)
   
-  private val applicationConfig = applicationEnvironment.getHibernateConfiguration.
+  private val applicationConfig = applicationEnvironment.getHibernateConfigurationWithoutMappingResources.
     setProperty("hibernate.generate_statistics", "true").
     setProperty("hibernate.connection.autocommit", "true")  // Turn this on to make the tests repeatable,
                                                             // otherwise the preparation step will not get committed
@@ -109,14 +108,14 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   }
 
   private lazy val _serviceLimitsStore =
-    makeStore[ServiceLimitsStore](sf => new HibernateServiceLimitsStore(sf, new HibernateDatabaseFacade(sf,ds)), "ServiceLimitsStore")
+    makeStore[ServiceLimitsStore](sf => new JooqServiceLimitsStore(jooqDatabaseFacade), "ServiceLimitsStore")
 
   private lazy val _domainConfigStore =
     makeStore(sf => new JooqDomainConfigStore(jooqDatabaseFacade, hookManager, cacheProvider, membershipListener), "domainConfigStore")
 
   private lazy val _systemConfigStore =
     makeStore(sf => {
-      val store = new HibernateSystemConfigStore(sf, new HibernateDatabaseFacade(sf,ds), jooqDatabaseFacade)
+      val store = new JooqSystemConfigStore(jooqDatabaseFacade, cacheProvider)
       store.registerDomainEventListener(_domainConfigStore)
       store
     }, "SystemConfigStore")
@@ -128,13 +127,13 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
     makeStore(sf => new JooqUserPreferencesStore(facade, cacheProvider), "userPreferencesStore")
 
   private lazy val _domainDifferenceStore =
-    makeStore(sf => new HibernateDomainDifferenceStore(sf, facade, cacheProvider, sequenceProvider, hookManager), "DomainDifferenceStore")
+    makeStore(sf => new JooqDomainDifferenceStore(facade, cacheProvider, sequenceProvider, hookManager), "DomainDifferenceStore")
 
   def serviceLimitsStore: ServiceLimitsStore = _serviceLimitsStore
-  def systemConfigStore: HibernateSystemConfigStore = _systemConfigStore
+  def systemConfigStore: JooqSystemConfigStore = _systemConfigStore
   def domainConfigStore: JooqDomainConfigStore = _domainConfigStore
   def domainCredentialsStore: JooqDomainCredentialsStore = _domainCredentialsStore
-  def domainDifferenceStore: HibernateDomainDifferenceStore = _domainDifferenceStore
+  def domainDifferenceStore: JooqDomainDifferenceStore = _domainDifferenceStore
   def userPreferencesStore: JooqUserPreferencesStore = _userPreferencesStore
 
   def prepareEnvironmentForStores {
@@ -192,7 +191,7 @@ class LazyCleanStoreReferenceContainer(val applicationEnvironment: DatabaseEnvir
   private def performCleanerAction(action: SchemaCleaner => (DatabaseEnvironment, DatabaseEnvironment) => Unit) {
     val sysEnv = TestDatabaseEnvironments.adminEnvironment
 
-    val dialect = Dialect.getDialect(sysEnv.getHibernateConfiguration.getProperties)
+    val dialect = Dialect.getDialect(sysEnv.getHibernateConfigurationWithoutMappingResources.getProperties)
     val cleaner = SchemaCleaner.forDialect(dialect)
     try {
       action(cleaner)(sysEnv, applicationEnvironment)
