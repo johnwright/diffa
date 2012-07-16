@@ -25,6 +25,10 @@
   if (domain == null || domain.equals("")) {
     domain = "diffa";
   }
+  String username = (String) session.getAttribute("username");
+  if (username == null || username.equals("")) {
+    username = "";
+  }
 %>
 
 <html>
