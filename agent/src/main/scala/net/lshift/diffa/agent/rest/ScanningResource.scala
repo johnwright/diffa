@@ -17,15 +17,12 @@
 package net.lshift.diffa.agent.rest
 
 import net.lshift.diffa.kernel.actors.PairPolicyClient
-import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import javax.ws.rs.core.Response
 import net.lshift.diffa.kernel.frontend.Configuration
 import javax.ws.rs._
 import net.lshift.diffa.kernel.diag.DiagnosticsManager
 import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore}
 import org.slf4j.{LoggerFactory, Logger}
-import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.util.AlertCodes._
 
 class ScanningResource(val pairPolicyClient:PairPolicyClient,
@@ -39,7 +36,6 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
 
   @GET
   @Path("/states")
-  @Description("Lists the scanning state for every configured pair within this domain.")
   def getAllPairStates = {
     val states = diagnostics.retrievePairScanStatesForDomain(domain)
     Response.ok(scala.collection.JavaConversions.mapAsJavaMap(states)).build
@@ -47,9 +43,6 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
 
   @POST
   @Path("/pairs/{pairKey}/scan")
-  @Description("Starts a scan for the given pair.")
-  @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
-  @OptionalParam(name = "view", datatype="string", description="Child View to Scan")
   def startScan(@PathParam("pairKey") pairKey:String, @FormParam("view") view:String) = {
 
     val infoString = formatAlertCode(domain, pairKey, API_SCAN_STARTED) + " scan initiated by " + currentUser
@@ -67,8 +60,6 @@ class ScanningResource(val pairPolicyClient:PairPolicyClient,
 
   @DELETE
   @Path("/pairs/{pairKey}/scan")
-  @Description("Cancels any current and/or pending scans for the given pair.")
-  @MandatoryParams(Array(new MandatoryParam(name="pairKey", datatype="string", description="Pair Key")))
   def cancelScanning(@PathParam("pairKey") pairKey:String) = {
     pairPolicyClient.cancelScans(DiffaPairRef(pairKey, domain))
     Response.status(Response.Status.OK).build

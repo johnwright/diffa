@@ -23,8 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import net.lshift.diffa.kernel.config.system.CachedSystemConfigStore
 import com.sun.jersey.api.NotFoundException
 import net.lshift.diffa.kernel.preferences.{UserPreferencesStore, FilteredItemType}
-import scala.collection.JavaConversions._
-import net.lshift.diffa.kernel.config.DiffaPairRef
 import net.lshift.diffa.kernel.config.DiffaPairRef
 
 @Path("/users/{user}/{domain}")

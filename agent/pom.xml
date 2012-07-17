@@ -176,11 +176,6 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>net.lshift.diffa</groupId>
-      <artifactId>diffa-docgen-maven-plugin</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.rabbitmq</groupId>
       <artifactId>amqp-client</artifactId>
       <version>${rabbitmq.version}</version>
@@ -379,37 +374,6 @@
           </execution>
         </executions>
       </plugin>
-      <!--plugin>
-        <groupId>net.lshift.diffa</groupId>
-        <artifactId>diffa-docgen-maven-plugin</artifactId>
-        <version>${project.version}</version>
-        <configuration>
-          <templateDir>${basedir}/src/main/resources/docgen/md</templateDir>
-          <examplesFactoryClass>net.lshift.diffa.kernel.util.DocExamplesFactory</examplesFactoryClass>
-          <parentResource>net.lshift.diffa.agent.rest.DomainResource</parentResource>
-          <resources>
-            <resource>net.lshift.diffa.agent.rest.ChangesResource</resource>
-            <resource>net.lshift.diffa.agent.rest.ConfigurationResource</resource>
-            <resource>net.lshift.diffa.agent.rest.ScanningResource</resource>
-            <resource>net.lshift.diffa.agent.rest.DiagnosticsResource</resource>
-            <resource>net.lshift.diffa.agent.rest.DifferencesResource</resource>
-            <resource>net.lshift.diffa.agent.rest.ActionsResource</resource>
-            <resource>net.lshift.diffa.agent.rest.SecurityResource</resource>
-            <resource>net.lshift.diffa.agent.rest.EscalationsResource</resource>
-            <resource>net.lshift.diffa.agent.rest.SystemConfigResource</resource>
-          </resources>
-          <targetDir>${docs.targetDir}</targetDir>
-          <consoleOutput>false</consoleOutput>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>generate-docs</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin-->
       <plugin>
         <groupId>ro.isdc.wro4j</groupId>
         <artifactId>wro4j-maven-plugin</artifactId>

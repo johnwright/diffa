@@ -19,13 +19,10 @@ package net.lshift.diffa.agent.rest
 import javax.ws.rs._
 import core._
 import org.slf4j.{Logger, LoggerFactory}
-import net.lshift.diffa.docgen.annotations.{OptionalParams, MandatoryParams, Description}
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.participants.ParticipantType
 import scala.collection.JavaConversions._
 import org.joda.time.format.{ISODateTimeFormat, DateTimeFormat}
 import org.joda.time.{DateTime, Interval}
-import net.lshift.diffa.docgen.annotations.OptionalParams.OptionalParam
 import net.lshift.diffa.kernel.differencing.{EventOptions, DifferencesManager}
 import javax.servlet.http.HttpServletRequest
 import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef}
@@ -42,15 +39,6 @@ class DifferencesResource(val differencesManager: DifferencesManager,
 
   @GET
   @Produces(Array("application/json"))
-  @Description("Returns a list of outstanding differences for the domain in a paged format.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name = "pairKey", datatype = "string", description = "Pair Key")))
-  @OptionalParams(Array(
-    new OptionalParam(name = "range-start", datatype = "date", description = "The lower bound of the items to be paged."),
-    new OptionalParam(name = "range-end", datatype = "date", description = "The upper bound of the items to be paged."),
-    new OptionalParam(name = "offset", datatype = "int", description = "The offset to base the page on."),
-    new OptionalParam(name = "length", datatype = "int", description = "The number of items to return in the page."),
-    new OptionalParam(name = "include-ignored", datatype = "bool", description = "Whether to include ignored differences (defaults to false).")))
   def getDifferenceEvents(@QueryParam("pairKey") pairKey:String,
                           @QueryParam("range-start") from_param:String,
                           @QueryParam("range-end") until_param:String,
@@ -90,7 +78,6 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @GET
   @Path("/aggregates")
   @Produces(Array("application/json"))
-  @Description("Returns an aggregate view for all pairs in a domain")
   def getAggregates(@Context request: Request, @Context servletRequest:HttpServletRequest): Response = {
     val domainVsn = validateETag(request)
 
@@ -105,7 +92,6 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @GET
   @Path("/aggregates/{pair}")
   @Produces(Array("application/json"))
-  @Description("Returns an aggregate view for a given pair")
   def getAggregates(@PathParam("pair") pair:String, @Context request: Request, @Context servletRequest:HttpServletRequest): Response = {
     val domainVsn = validateETag(request)
 
@@ -118,11 +104,6 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @GET
   @Path("/events/{evtSeqId}/{participant}")
   @Produces(Array("text/plain"))
-  @Description("Returns the verbatim detail from each participant for the event that corresponds to the sequence id.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID"),
-    new MandatoryParam(name = "participant", datatype = "string", description = "Denotes whether the upstream or downstream participant is intended. Legal values are {upstream,downstream}.")
-  ))
   def getDetail(@PathParam("evtSeqId") evtSeqId:String,
                 @PathParam("participant") participant:String) : String =
     differencesManager.retrieveEventDetail(domain, evtSeqId, ParticipantType.withName(participant))
@@ -130,10 +111,6 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @DELETE
   @Path("/events/{evtSeqId}")
   @Produces(Array("application/json"))
-  @Description("Ignores the difference with the given sequence id.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
-  ))
   def ignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
     val ignored = differencesManager.ignoreDifference(domain, evtSeqId)
 
@@ -143,10 +120,6 @@ class DifferencesResource(val differencesManager: DifferencesManager,
   @PUT
   @Path("/events/{evtSeqId}")
   @Produces(Array("application/json"))
-  @Description("Unignores a difference with the given sequence id.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name = "evtSeqId", datatype = "string", description = "Event Sequence ID")
-  ))
   def unignoreDifference(@PathParam("evtSeqId") evtSeqId:String):Response = {
     val restored = differencesManager.unignoreDifference(domain, evtSeqId)
 

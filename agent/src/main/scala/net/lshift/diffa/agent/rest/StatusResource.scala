@@ -16,7 +16,6 @@
 package net.lshift.diffa.agent.rest
 
 import javax.ws.rs.core.Response
-import net.lshift.diffa.docgen.annotations.Description
 import javax.ws.rs.{Path, GET}
 import org.springframework.stereotype.Component
 
@@ -28,7 +27,6 @@ import org.springframework.stereotype.Component
 @Component
 class StatusResource {
   @GET
-  @Description("Retrieves a basic yes/no status of the agent for use with monitoring and balancing systems")
   def checkStatus = {
     Response.ok.build
   }

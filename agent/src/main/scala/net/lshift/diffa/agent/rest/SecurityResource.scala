@@ -18,8 +18,6 @@ package net.lshift.diffa.agent.rest
 
 import org.springframework.stereotype.Component
 import org.springframework.beans.factory.annotation.Autowired
-import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.config.User
 import javax.ws.rs._
 import core.{Response, Context, UriInfo}
@@ -45,20 +43,16 @@ class SecurityResource {
   @GET
   @Path("/users")
   @Produces(Array("application/json"))
-  @Description("Returns a list of all the users registered with the agent.")
   def listUsers() = systemConfig.listUsers.toArray
 
   @GET
   @Produces(Array("application/json"))
   @Path("/users/{name}")
-  @Description("Returns a user by its name.")
-  @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
   def getUser(@PathParam("name") name:String) = systemConfig.getUser(name)
 
   @POST
   @Path("/users")
   @Consumes(Array("application/json"))
-  @Description("Registers a new user with the agent.")
   def createUser(user:UserDef) = {
     systemConfig.createOrUpdateUser(user)
     resourceCreated(user.name, uriInfo)
@@ -68,22 +62,16 @@ class SecurityResource {
   @Consumes(Array("application/json"))
   @Produces(Array("application/json"))
   @Path("/users/{name}")
-  @Description("Updates the attributes of a user that is registered with the agent.")
-  @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
   def updateUser(@PathParam("name") name:String, user:UserDef) = systemConfig.createOrUpdateUser(user)
   // TODO This PUT is buggy
 
   @GET
   @Produces(Array("text/plain"))
   @Path("/users/{name}/token")
-  @Description("Retrieves the token that can be used by the user for login")
-  @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
   def getUserToken(@PathParam("name") name:String) = systemConfig.getUserToken(name)
 
   @DELETE
   @Path("/users/{name}/token")
-  @Description("Clears the user login token.")
-  @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
   def clearUserToken(@PathParam("name") name:String) = {
     systemConfig.clearUserToken(name)
 
@@ -92,22 +80,17 @@ class SecurityResource {
 
   @DELETE
   @Path("/users/{name}")
-  @Description("Removes an endpoint that is registered with the agent.")
-  @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
   def deleteUser(@PathParam("name") name:String) = systemConfig.deleteUser(name)
   
   @GET
   @Produces(Array("application/json"))
   @Path("/users/{name}/memberships")
-  @Description("Retrieves the domains which the user is a member of.")
-  @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Username")))
   def listUserDomains(@PathParam("name") name: String) : Array[String] =
     systemConfig.listDomainMemberships(name).map(m => m.domain).toArray
 
   @GET
   @Produces(Array("application/json"))
   @Path("/scan")
-  @Description("Provides a scanning endpoint for querying the user list")
   def scan(@Context request:HttpServletRequest) = {
     def generateVersion(user:User) = ScannableUtils.generateDigest(user.name, user.token)
 

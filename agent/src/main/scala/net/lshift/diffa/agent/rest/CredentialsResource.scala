@@ -16,7 +16,6 @@
 package net.lshift.diffa.agent.rest
 
 import net.lshift.diffa.kernel.config.DomainCredentialsManager
-import net.lshift.diffa.docgen.annotations.Description
 import net.lshift.diffa.kernel.frontend.InboundExternalHttpCredentialsDef
 import javax.ws.rs._
 import core.{Response, UriInfo}
@@ -30,13 +29,11 @@ class CredentialsResource(val credentialsManager:DomainCredentialsManager,
   @GET
   @Path("/")
   @Produces(Array("application/json"))
-  @Description("Returns a list of all the credential keys registered for the current domain.")
   def listCredentials = credentialsManager.listCredentials(domain).toArray
 
   @POST
   @Path("/")
   @Consumes(Array("application/json"))
-  @Description("Creates or updates credentials for the current domain.")
   def addCredentials(creds:InboundExternalHttpCredentialsDef) = {
     credentialsManager.addExternalHttpCredentials(domain, creds)
     resourceCreated(creds.url + "/" + creds.`type`, uri)
@@ -44,7 +41,6 @@ class CredentialsResource(val credentialsManager:DomainCredentialsManager,
 
   @DELETE
   @Path("/{url}")
-  @Description("Removes the credential for the given url from the current domain.")
   def deleteCredentials(@PathParam("url") url:String) = {
     credentialsManager.deleteExternalHttpCredentials(domain, url)
     Response.noContent().build()
