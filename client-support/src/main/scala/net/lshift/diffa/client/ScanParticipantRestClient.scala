@@ -21,7 +21,6 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.participants.{CategoryFunction, ScanningParticipantRef}
 import org.slf4j.LoggerFactory
 import java.net.{SocketTimeoutException, SocketException, ConnectException, URI}
-import scala.collection.JavaConversions._
 import net.lshift.diffa.kernel.differencing.ScanFailedException
 import net.lshift.diffa.kernel.util.AlertCodes._
 import net.lshift.diffa.kernel.config.DiffaPairRef
@@ -55,7 +54,6 @@ class ScanParticipantRestClient(pair: DiffaPairRef,
     this.httpClient.get(queryWithCredentials) match {
       case Right(stream) => parser.parse(stream)
       case Left(ex) => handleHttpError(ex, queryWithCredentials)
-
     }
   }
 
