@@ -16,9 +16,6 @@
 
 package net.lshift.diffa.agent.rest
 
-import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam._
 import javax.ws.rs._
 import net.lshift.diffa.kernel.frontend.{EscalationDef, Configuration}
 
@@ -34,8 +31,6 @@ class EscalationsResource(val config:Configuration,
   @GET
   @Path("/{pairId}")
   @Produces(Array("application/json"))
-  @Description("Returns a list of escalations that are configured for a pair.")
-  @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
   def listEscalations(@PathParam("pairId") pairId: String): Array[EscalationDef] = config.listEscalationForPair(domain, pairId).toArray
 
 }
