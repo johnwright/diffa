@@ -16,8 +16,11 @@
 package net.lshift.diffa.agent.itest.credentials
 
 import net.lshift.diffa.agent.itest.support.TestConstants._
+import net.lshift.diffa.agent.itest.IsolatedDomainTest
+
+import net.lshift.diffa.participants.{QueryParameterAuthenticationMechanism, AuthenticationMechanism}
 import net.lshift.diffa.agent.client.{ConfigurationRestClient, ScanningRestClient, CredentialsRestClient}
-import net.lshift.diffa.participants.{QueryParameterAuthenticationMechanism, AuthenticationMechanism, BasicAuthenticationMechanism, ParticipantRpcServer}
+import net.lshift.diffa.participants.{BasicAuthenticationMechanism, ParticipantRpcServer}
 import javax.servlet.http.HttpServletRequest
 import com.eaio.uuid.UUID
 import java.util.List
@@ -26,23 +29,24 @@ import net.lshift.diffa.kernel.differencing.PairScanState
 import scala.collection.JavaConversions._
 import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.frontend.{InboundExternalHttpCredentialsDef, PairDef, EndpointDef}
-import net.lshift.diffa.kernel.config.{HttpCredentials, ExternalHttpCredentials}
+import net.lshift.diffa.kernel.config.ExternalHttpCredentials
 import org.junit.experimental.theories.{DataPoints, Theories, Theory}
 import org.junit.runner.RunWith
 import scala.collection.JavaConversions._
 import org.junit.Before
 
 @RunWith(classOf[Theories])
-class ExternalHttpCredentialsTest {
+class ExternalHttpCredentialsTest extends IsolatedDomainTest {
   import ExternalHttpCredentialsTest._
 
-  val credentialsClient = new CredentialsRestClient(agentURL, domain)
-  val scanClient = new ScanningRestClient(agentURL, domain)
-  val configClient = new ConfigurationRestClient(agentURL, domain)
+  val credentialsClient = new CredentialsRestClient(agentURL, isolatedDomain)
+  val scanClient = new ScanningRestClient(agentURL, isolatedDomain)
+  val configClient = new ConfigurationRestClient(agentURL, isolatedDomain)
   var pair: String = ""
 
   @Before
-  def eraseCredentialsAndDeclareConfig {
+  override def setup {
+    super.setup
     // Make that the creds do not exist the DB before this test is run (e.g. from a previous test run)
     try {
       credentialsClient.deleteCredentials(baseUrl)
