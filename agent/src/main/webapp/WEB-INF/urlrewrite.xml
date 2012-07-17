@@ -32,6 +32,28 @@
 
   </rule>
 
+  <!-- Allow spaces in repair action and escalation names -->
+
+  <rule>
+    <from>^/domains/([a-z0-9][a-z0-9-_]*)/actions/([a-z0-9][a-z0-9-_]*)/(.*)/([a-z0-9][a-z0-9-_]*)</from>
+    <to type="forward" last="true">/spaces/$1/actions/$2/${replace:$3: :%20}/$4</to>
+  </rule>
+
+  <rule>
+    <from>^/domains/([a-z0-9][a-z0-9-_]*)/actions/([a-z0-9][a-z0-9-_]*)/(.*)</from>
+    <to type="forward" last="true">/spaces/$1/actions/$2/${replace:$3: :%20}</to>
+  </rule>
+
+  <rule>
+    <from>^/domains/([a-z0-9][a-z0-9-_]*)/config/pairs/([a-z0-9][a-z0-9-_]*)/repair-actions/(.*)</from>
+    <to type="forward" last="true">/spaces/$1/config/pairs/$2/repair-actions/${replace:$3: :%20}</to>
+  </rule>
+
+  <rule>
+    <from>^/domains/([a-z0-9][a-z0-9-_]*)/config/pairs/([a-z0-9][a-z0-9-_]*)/escalations/(.*)</from>
+    <to type="forward" last="true">/spaces/$1/config/pairs/$2/escalations/${replace:$3: :%20}</to>
+  </rule>
+
   <rule>
 
     <!--
