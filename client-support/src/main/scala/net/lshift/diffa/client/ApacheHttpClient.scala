@@ -16,10 +16,9 @@
 
 package net.lshift.diffa.client
 
-import org.apache.http.client.{HttpResponseException, HttpClient}
+import org.apache.http.client.HttpResponseException
 import org.apache.http.impl.client.{BasicAuthCache, DefaultHttpClient}
 import org.apache.http.client.methods.HttpGet
-import java.net.URI
 import org.apache.http.auth.{UsernamePasswordCredentials, AuthScope}
 import org.apache.http.params.{HttpConnectionParams, BasicHttpParams}
 import org.slf4j.LoggerFactory

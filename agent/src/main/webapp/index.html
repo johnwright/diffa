@@ -27,7 +27,7 @@
   }
   String username = (String) session.getAttribute("username");
   if (username == null || username.equals("")) {
-    username = "donkey";
+    username = "";
   }
 %>
 
@@ -52,6 +52,7 @@
         <a class="domain-page" href="status.html">Status</a>
         <a class="domain-page" href="settings.html">Settings</a>
       </div>
+      <div class="user-info">Current user: <%= username %></div>
 
       <div id="heatmap" class="diffa-heatmap" data-domain="<%= domain %>" data-user="<%= username %>"></div>
       <div id="diff-list-container" class="diffa-difflist" data-domain="<%= domain %>"></div>

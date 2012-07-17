@@ -6,8 +6,9 @@
 
 ## New Features
 
+* [226] - The API namespace /domains is deprecated in favor of /spaces. Use server side forwarding to provide short term backwards compatibility.
 * [196] - Support collapsing of heatmap swim lanes via UI controls
-* [219] - The collation of entity and aggregate scan results are validated as part of the scan deserialization pipeline 
+* [219] - The collation of entity and aggregate scan results are validated as part of the scan deserialization pipeline
 
 ## General Maintenance
 

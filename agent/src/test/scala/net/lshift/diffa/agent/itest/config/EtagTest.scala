@@ -22,7 +22,7 @@ import net.lshift.diffa.agent.client.ConfigurationRestClient
 import org.apache.http.impl.client.{BasicAuthCache, DefaultHttpClient}
 import org.apache.http.client.methods.HttpGet
 import org.junit.Assert._
-import org.apache.http.auth.{AuthSchemeRegistry, AuthScope, Credentials, UsernamePasswordCredentials}
+import org.apache.http.auth.{AuthScope, UsernamePasswordCredentials}
 import org.apache.http.HttpHost
 import org.apache.http.impl.auth.BasicScheme
 import org.apache.http.protocol.BasicHttpContext
@@ -59,12 +59,10 @@ class EtagTest {
       new AuthScope(agentHost, agentPort),
       new UsernamePasswordCredentials(agentUsername, agentPassword))
 
-    val get = new HttpGet(agentURL + "/domains/diffa/diffs/aggregates")
+    val httpResponse = httpClient.execute(
+      new HttpGet(agentURL + "/%s/diffa/diffs/aggregates".format(domainsLabel)),
+      basicAuthContext(targetHost))
 
-    val httpResponse = httpClient.execute(get, basicAuthContext(targetHost))
-    scala.io.Source.fromInputStream(httpResponse.getEntity.getContent) .getLines.foreach {
-      line => println("Response line: [%s]".format(line))
-    }
     val etag = httpResponse.getLastHeader("ETag")
     httpResponse.getAllHeaders foreach { header =>
       println("Header [%s]".format(header))
