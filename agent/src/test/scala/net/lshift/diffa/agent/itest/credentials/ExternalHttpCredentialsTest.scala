@@ -29,31 +29,13 @@ import net.lshift.diffa.participant.scanning._
 import net.lshift.diffa.kernel.frontend.{DomainDef, InboundExternalHttpCredentialsDef, PairDef, EndpointDef}
 import net.lshift.diffa.kernel.config.ExternalHttpCredentials
 import org.slf4j.LoggerFactory
+import net.lshift.diffa.agent.itest.IsolatedDomainTest
 
-class ExternalHttpCredentialsTest {
+class ExternalHttpCredentialsTest extends IsolatedDomainTest {
 
-  val log = LoggerFactory.getLogger(getClass)
-
-  val domainName = new UUID().toString
-
-  val systemConfig = new SystemConfigRestClient(agentURL)
-
-  val credentialsClient = new CredentialsRestClient(agentURL, domainName)
-  val scanClient = new ScanningRestClient(agentURL, domainName)
-  val configClient = new ConfigurationRestClient(agentURL, domainName)
-
-
-  @Before
-  def declareDomain {
-    log.info("Creating domain: " + domainName)
-    systemConfig.declareDomain(DomainDef(name = domainName))
-  }
-
-  @After
-  def deleteDomain {
-    log.info("Deleting domain: " + domainName)
-    systemConfig.removeDomain(domainName)
-  }
+  val credentialsClient = new CredentialsRestClient(agentURL, isolatedDomain)
+  val scanClient = new ScanningRestClient(agentURL, isolatedDomain)
+  val configClient = new ConfigurationRestClient(agentURL, isolatedDomain)
 
   @Test
   def shouldUseExternalCredentialsForScan = {
