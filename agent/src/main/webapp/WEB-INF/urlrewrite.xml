@@ -4,15 +4,34 @@
 
 <urlrewrite>
 
+  <!--
+    Forward deprecated domains nomenclature to current spaces nomenclature
+  -->
+
   <rule>
-    <note>Forward deprecated domains nomenclature to current spaces nomenclature</note>
+
+    <!-- Make sure that URLs that contain encoded URLs themselves are correctly re-encoded when forwarded -->
+    <!-- ([a-z0-9][a-z0-9-_]*) is the (as yet) not enforced standard for a (domain) space name -->
+
+    <from>^/domains/([a-z0-9][a-z0-9-_]*)/credentials/(http[s]?://.*)</from>
+
+    <to type="forward" last="true">/spaces/$1/credentials/${escape:utf8:$2}</to>
+
+  </rule>
+
+  <rule>
+
     <!--
       Only match on URLs that start with /domains, since other URLs that contain domains
       are not exposed to non-root clients.
     -->
+
     <from>^/domains/</from>
+
     <!-- Note that this is a server side forward for now, this should get changed to an HTTP 301 at some stage -->
+
     <to type="forward">/spaces/</to>
+
   </rule>
 
 </urlrewrite>
