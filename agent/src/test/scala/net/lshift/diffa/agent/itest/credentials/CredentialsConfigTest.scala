@@ -26,6 +26,7 @@ import net.lshift.diffa.kernel.config.ExternalHttpCredentials
 
 @RunWith(classOf[Theories])
 class CredentialsConfigTest {
+  import CredentialsConfigTest.Scenario
 
   val client = new CredentialsRestClient(agentURL, domain)
 
@@ -40,9 +41,10 @@ class CredentialsConfigTest {
   }
 }
 
-case class Scenario(inbound: InboundExternalHttpCredentialsDef, outbound: OutboundExternalHttpCredentialsDef)
 
 object CredentialsConfigTest {
+  private[CredentialsConfigTest] case class Scenario(inbound: InboundExternalHttpCredentialsDef,
+                                                     outbound: OutboundExternalHttpCredentialsDef)
 
   @DataPoint def basicAuth = Scenario(
     InboundExternalHttpCredentialsDef(url = "https://acme.com", key = "scott", value = "tiger", `type` = ExternalHttpCredentials.BASIC_AUTH),
