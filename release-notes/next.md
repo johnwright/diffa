@@ -12,7 +12,7 @@
 
 ## General Maintenance
 
-* [??] -
+* [229] - Addressed a regression whereby ignoring a difference in the UI did have immediate effect.
 
 ## Library Upgrades
 
