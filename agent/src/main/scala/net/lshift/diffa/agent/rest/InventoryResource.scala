@@ -15,8 +15,6 @@ package net.lshift.diffa.agent.rest
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import javax.ws.rs._
 import core.{Context, UriInfo, Response}
 import net.lshift.diffa.kernel.frontend.{Configuration, Changes}
@@ -34,17 +32,10 @@ import net.lshift.diffa.participant.scanning.{ScanRequest, AggregationBuilder, C
 class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:String) {
   @GET
   @Path("/{endpoint}")
-  @Description("Retrieves a list of inventory segments that should be submitted to sync the given endpoint")
-  @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
   def startInventory(@PathParam("endpoint") endpoint: String):Response = startInventory(endpoint, null)
 
   @GET
   @Path("/{endpoint}/{view}")
-  @Description("Retrieves a list of inventory segments that should be submitted to sync the given endpoint")
-  @MandatoryParams(Array(
-    new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier"),
-    new MandatoryParam(name="view", datatype="string", description="Endpoint View")
-  ))
   def startInventory(@PathParam("endpoint") endpoint: String, @PathParam("view") view:String):Response = {
     val requests = changes.startInventory(domain, endpoint, if (view != null) Some(view) else None)
 
@@ -56,19 +47,12 @@ class InventoryResource(changes:Changes, configStore:DomainConfigStore, domain:S
   @POST
   @Path("/{endpoint}")
   @Consumes(Array("text/csv"))
-  @Description("Submits an inventory for the given endpoint within a domain")
-  @MandatoryParams(Array(new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier")))
   def submitInventory(@PathParam("endpoint") endpoint: String, @Context request:HttpServletRequest, content:ScanResultList):Response =
     submitInventory(endpoint, null, request, content)
 
   @POST
   @Path("/{endpoint}/{view}")
   @Consumes(Array("text/csv"))
-  @Description("Submits an inventory for the given endpoint within a domain")
-  @MandatoryParams(Array(
-    new MandatoryParam(name="endpoint", datatype="string", description="Endpoint Identifier"),
-    new MandatoryParam(name="view", datatype="string", description="Endpoint View")
-  ))
   def submitInventory(@PathParam("endpoint") endpoint: String, @PathParam("view") view: String, @Context request:HttpServletRequest, content:ScanResultList):Response = {
     val constraintsBuilder = new ConstraintsBuilder(request)
     val aggregationBuilder = new AggregationBuilder(request)

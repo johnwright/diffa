@@ -18,8 +18,6 @@ package net.lshift.diffa.agent.rest
 
 import javax.ws.rs._
 import core.UriInfo
-import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import net.lshift.diffa.kernel.frontend.wire.InvocationResult
 import net.lshift.diffa.kernel.client.{Actionable, ActionableRequest, ActionsClient}
 import net.lshift.diffa.kernel.config.{DiffaPairRef, RepairAction}
@@ -31,8 +29,6 @@ class ActionsResource(val proxy:ActionsClient,
   @GET
   @Path("/{pairId}")
   @Produces(Array("application/json"))
-  @Description("Returns a list of actions that can be invoked on the pair.")
-  @MandatoryParams(Array(new MandatoryParam(name="pairId", datatype="string", description="The identifier of the pair")))
   def listActions(@PathParam("pairId") pairId: String,
                   @QueryParam("scope") scope: String): Array[Actionable] = (scope match {
     case RepairAction.ENTITY_SCOPE => proxy.listEntityScopedActions(DiffaPairRef(pairId,domain))
@@ -43,24 +39,13 @@ class ActionsResource(val proxy:ActionsClient,
   @POST
   @Path("/{pairId}/{actionId}")
   @Produces(Array("application/json"))
-  @Description("Invokes a pair-scoped action on the pair.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name="pairId", datatype="string", description="The indentifier of the pair"),
-    new MandatoryParam(name="actionId", datatype="string", description="The name of the action to invoke")
-  ))
   def invokeAction(@PathParam("pairId") pairId:String,
                    @PathParam("actionId") actionId:String)
     = proxy.invoke(ActionableRequest(pairId, domain, actionId, null))
 
   @POST
   @Path("/{pairId}/{actionId}/{entityId}")
-  @Produces(Array("application/json"))  
-  @Description("Invokes an entity-scoped action on the pair.")
-  @MandatoryParams(Array(
-    new MandatoryParam(name="pairId", datatype="string", description="The indentifier of the pair"),
-    new MandatoryParam(name="actionId", datatype="string", description="The name of the action to invoke"),
-    new MandatoryParam(name="entityId", datatype="string", description="The id of the pair to perform the action on")
-  ))
+  @Produces(Array("application/json"))
   def invokeAction(@PathParam("pairId") pairId:String,
                    @PathParam("actionId") actionId:String,
                    @PathParam("entityId") entityId:String) : InvocationResult

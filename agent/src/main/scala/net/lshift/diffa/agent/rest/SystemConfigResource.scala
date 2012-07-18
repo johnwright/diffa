@@ -19,8 +19,6 @@ package net.lshift.diffa.agent.rest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import net.lshift.diffa.agent.rest.ResponseUtils._
-import net.lshift.diffa.docgen.annotations.{MandatoryParams, Description}
-import net.lshift.diffa.docgen.annotations.MandatoryParams.MandatoryParam
 import javax.ws.rs._
 import core._
 import org.springframework.security.access.prepost.PreAuthorize
@@ -43,7 +41,6 @@ class SystemConfigResource {
   @POST
   @Path("/domains")
   @Consumes(Array("application/json"))
-  @Description("Creates a new domain within the agent.")
   def createDomain(domain:DomainDef) = {
     systemConfig.createOrUpdateDomain(domain)
     resourceCreated(domain.name, uriInfo)
@@ -51,14 +48,11 @@ class SystemConfigResource {
 
   @DELETE
   @Path("/domains/{name}")
-  @Description("Removes a domain from the agent.")
-  @MandatoryParams(Array(new MandatoryParam(name="name", datatype="string", description="Domain name")))
   def deleteEndpoint(@PathParam("name") name:String) = systemConfig.deleteDomain(name)
 
   @POST
   @Path("/system/config")
   @Consumes(Array(MediaType.APPLICATION_FORM_URLENCODED))
-  @Description("Sets multiple system wide properties.")
   def setSystemConfigOption(params: Form) = {
     val update = params.keySet().map(k => {
       k -> params.getFirst(k)
@@ -72,7 +66,6 @@ class SystemConfigResource {
   @PUT
   @Path("/system/config/{key}")
   @Consumes(Array("text/plain"))
-  @Description("Sets a system wide property.")
   def setSystemConfigOption(@PathParam("key") key:String,
                             value:String) = {
     if (value == null) {
@@ -91,15 +84,11 @@ class SystemConfigResource {
 
   @DELETE
   @Path("/system/config/{key}")
-  @Description("Removes a system wide property.")
-  @MandatoryParams(Array(new MandatoryParam(name="key", datatype="string", description="Property name")))
   def clearSystemConfigOption(@PathParam("key") key:String) = systemConfig.clearSystemConfigOption(key)
   
   @GET
   @Path("/system/config/{key}")
   @Produces(Array("text/plain"))
-  @Description("Retrieves a system wide property, if it has been set.")
-  @MandatoryParams(Array(new MandatoryParam(name="key", datatype="string", description="Property name")))
   def getSystemConfigOption(@PathParam("key") key:String) = {    
     systemConfig.getSystemConfigOption(key) match {
       case Some(value) => value
@@ -110,7 +99,6 @@ class SystemConfigResource {
   @GET
   @Path("/domains/scan")
   @Produces(Array("application/json"))
-  @Description("")
   def scanPairs(@Context request:HttpServletRequest) = {
     def generateVersion(domain:String) = ScannableUtils.generateDigest(domain)
 
@@ -124,7 +112,7 @@ class SystemConfigResource {
 
     val domains = ScannableUtils.filterByKey[String](systemConfig.listDomains, constraints, x => x)
     val scanResults = domains.map { d => new ScanResultEntry(d, generateVersion(d), null, Map("name" -> d)) }
-    val aggregated = ScannableUtils.maybeAggregate(scanResults, aggregations)
+    val aggregated = ScannableUtils.maybeAggregate(scanResults, aggregations, systemConfig)
 
     Response.ok(aggregated).build()
   }

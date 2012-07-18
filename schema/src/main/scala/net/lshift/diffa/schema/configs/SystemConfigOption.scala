@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2010-2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.diffa.schema.configs
 
-package net.lshift.diffa.docgen.annotations;
+/**
+ * Describes a system configuration option.
+ */
+trait SystemConfigOption {
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+  def key:String
+  def description:String
+  def defaultValue:String
 
-@Target({ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface MandatoryParams {
-    public @interface MandatoryParam {
-        String name();
-        String datatype();
-        String description();
-    }
-
-    MandatoryParam[] value();
 }

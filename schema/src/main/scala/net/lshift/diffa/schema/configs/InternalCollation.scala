@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2011 LShift Ltd.
+ * Copyright (C) 2010-2012 LShift Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package net.lshift.diffa.schema.configs
 
-package net.lshift.diffa.docgen;
-
-public class OptionalParameter {
-  private String name;
-  private String datatype;
-  private String description;
-
-    public OptionalParameter(String name, String datatype, String description) {
-        this.name = name;
-        this.datatype = datatype;
-        this.description = description;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDatatype() {
-        return datatype;
-    }
-
-    public String getDescription() {
-        return description;
-    }
+object InternalCollation extends SystemConfigOption {
+  def key = "internal.collation"
+  def description = "The collation that the Diffa uses internally for when it presents itself as a scanning adapter."
+  def defaultValue = "ascii"
 }
