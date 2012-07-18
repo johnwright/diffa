@@ -12,7 +12,7 @@
 
 ## General Maintenance
 
-* [??] -
+* [228] - The underlying client used by the Scan Participant REST client was inappropriately re-used, causing all but the first scan to fail.
 
 ## Library Upgrades
 
