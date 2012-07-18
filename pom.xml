@@ -4,7 +4,7 @@
 
   <groupId>net.lshift.diffa</groupId>
   <artifactId>diffa-parent</artifactId>
-  <version>1.5.1</version>
+  <version>1.5.2-SNAPSHOT</version>
 
   <name>LShift Diffa Parent POM</name>
 
@@ -441,7 +441,7 @@
     <dependency>
       <groupId>net.lshift</groupId>
       <artifactId>hibernate-migrations</artifactId>
-      <version>1.5.1</version>
+      <version>1.5.2-SNAPSHOT</version>
     </dependency>
 
     <dependency>
