@@ -97,12 +97,65 @@ object Step0041 extends MigrationStep {
                                 Seq("domain", "endpoint", "name", "view_name")).
               whereSource(Map("target_type" -> "endpoint_views"))
 
-    /*
+    migration.copyTableContents("prefix_categories", "prefix_category_views",
+      Seq("domain", "endpoint", "name", "view_name", "prefix_length", "max_length", "step"),
+      Seq("domain", "endpoint", "name", "view_name", "prefix_length", "max_length", "step")).
+      whereSource(Map("target_type" -> "endpoint_views"))
+
+    migration.copyTableContents("set_categories", "set_category_views",
+      Seq("domain", "endpoint", "name", "view_name", "value"),
+      Seq("domain", "endpoint", "name", "view_name", "value")).
+      whereSource(Map("target_type" -> "endpoint_views"))
+
     migration.copyTableContents("range_categories", "range_category_views",
       Seq("domain", "endpoint", "name", "view_name", "data_type", "lower_bound", "upper_bound", "max_granularity"),
       Seq("domain", "endpoint", "name", "view_name", "data_type", "lower_bound", "upper_bound", "max_granularity")).
-      whereSource(Map("target_type" -> "endpoint_view"))
-    */
+      whereSource(Map("target_type" -> "endpoint_views"))
+
+    // 3. Nuke the view data specific to views from the old table layout
+
+    migration.delete("prefix_categories").where("target_type").is("endpoint_views")
+    migration.delete("set_categories").where("target_type").is("endpoint_views")
+    migration.delete("range_categories").where("target_type").is("endpoint_views")
+    migration.delete("unique_category_names").where("target_type").is("endpoint_views")
+
+    // 4. Remove the view_name and target_type columns from the old table layout
+
+    migration.alterTable("prefix_categories").dropForeignKey("fk_pfcg_ucns")
+    migration.alterTable("prefix_categories").dropForeignKey("fk_pfcg_evws")
+    migration.alterTable("prefix_categories").dropPrimaryKey()
+    migration.alterTable("prefix_categories").dropColumn("target_type")
+    migration.alterTable("prefix_categories").dropColumn("view_name")
+    migration.alterTable("prefix_categories").addPrimaryKey("domain", "endpoint", "name")
+
+    migration.alterTable("set_categories").dropForeignKey("fk_stcg_ucns")
+    migration.alterTable("set_categories").dropForeignKey("fk_stcg_evws")
+    migration.alterTable("set_categories").dropPrimaryKey()
+    migration.alterTable("set_categories").dropColumn("target_type")
+    migration.alterTable("set_categories").dropColumn("view_name")
+    migration.alterTable("set_categories").addPrimaryKey("domain", "endpoint", "name")
+
+    migration.alterTable("range_categories").dropForeignKey("fk_racg_ucns")
+    migration.alterTable("range_categories").dropForeignKey("fk_racg_evws")
+    migration.alterTable("range_categories").dropPrimaryKey()
+    migration.alterTable("range_categories").dropColumn("target_type")
+    migration.alterTable("range_categories").dropColumn("view_name")
+    migration.alterTable("range_categories").addPrimaryKey("domain", "endpoint", "name")
+
+    migration.alterTable("unique_category_names").dropForeignKey("fk_ucns_evws")
+    migration.alterTable("unique_category_names").dropPrimaryKey()
+    migration.alterTable("unique_category_names").dropColumn("target_type")
+    migration.alterTable("unique_category_names").dropColumn("view_name")
+    migration.alterTable("unique_category_names").addPrimaryKey("domain", "endpoint", "name")
+
+    migration.alterTable("prefix_categories").
+      addForeignKey("fk_pfcg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    migration.alterTable("set_categories").
+      addForeignKey("fk_stcg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    migration.alterTable("range_categories").
+      addForeignKey("fk_racg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
 
     migration
   }
