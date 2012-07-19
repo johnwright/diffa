@@ -29,11 +29,13 @@ Diffa.Helpers.ViewsHelper = {
     model.set({views: model.views.toJSON()}, {silent: true});
   }
 };
+
 Diffa.Helpers.DatesHelper = {
   toISOString: function(d) {
   return d.toISOString().replace(/-/g, "").replace(/:/g, "").replace(/\.\d\d\d/g, "");
   }
 };
+
 Diffa.Helpers.CategoriesHelper = {
   extractCategories: function(model, viewCollectionClass) {
     var updateCategories = function() {
@@ -60,6 +62,7 @@ Diffa.Helpers.CategoriesHelper = {
     model.set({categories: categories}, {silent: true});
   }
 };
+
 Diffa.Models.Endpoint = Backbone.Model.extend({
   idAttribute: 'name',
   initialize: function() {
@@ -81,6 +84,7 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
     }, opts));
   }
 });
+
 Diffa.Models.EndpointView = Backbone.Model.extend({
   idAttribute: 'name',
   initialize: function() {
@@ -90,6 +94,7 @@ Diffa.Models.EndpointView = Backbone.Model.extend({
     Diffa.Helpers.CategoriesHelper.packCategories(this);
   }
 });
+
 Diffa.Models.Pair = Backbone.Model.extend({
   idAttribute: "key",
   urlRoot: function() { return "/domains/" + (this.domain || this.collection.domain).id + "/config/pairs"; },
@@ -108,6 +113,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
     this.views.reset(this.get('views'));
   }
 });
+
 Diffa.Models.PairState = Backbone.Model.extend({
   logPollInterval: 2000,
   initialize: function() {
@@ -231,6 +237,7 @@ Diffa.Collections.Watchable = {
     }
   }
 };
+
 Diffa.Collections.CollectionBase = Backbone.Collection.extend(Diffa.Collections.Watchable).extend({
   initialize: function(models, opts) {
     var self = this;
@@ -286,22 +293,29 @@ Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
 });
 
 Diffa.Collections.HiddenSwimLanes = Diffa.Collections.CollectionBase.extend({
-  model: Diffa.Models.Pair,
-
   initialize: function(models, opts) {
     this.user = opts.user;
-    console.log("[HiddenSwimLanes.initialize] user: " + this.user);
+    this.domain = opts.domain;
+    console.debug("[HiddenSwimLanes.initialize] user: " + this.user);
+    console.debug("[HiddenSwimLanes.initialize] domain: " + this.domain.id);
+    this.fetch();
   },
-
   url: function() {
+    console.debug("[HiddenSwimLanes.url] user: " + this.user);
+    console.debug("[HiddenSwimLanes.url] domain: " + this.domain.id);
     return "/users/" + this.user + "/" + this.domain.id + "/filter/SWIM_LANE";
   },
-
-  putUrl: function() {
-    "/users/guest/diffa/" + this.model.id + "/filter/SWIM_LANE"
+  hidePair: function(pairKey) {
+    console.debug('[hidePair] pairKey: ' + pairKey);
+    $.ajax({
+      url: this.putUrl(pairKey),
+      type: 'PUT'
+    });
   },
-
-  comparator: function(pair) { return pair.id; }
+  // TODO: use Collection.parse!!
+  putUrl: function(pairKey) {
+    return "/users/" + this.user + "/" + this.domain.id + "/" + pairKey + "/filter/SWIM_LANE";
+  }
 });
 
 Diffa.Collections.CategoryCollection = Backbone.Collection.extend({
@@ -333,6 +347,7 @@ Diffa.Collections.CategoryCollection = Backbone.Collection.extend({
     });
   }
 });
+
 Diffa.Collections.PairStates = Diffa.Collections.CollectionBase.extend({
   watchInterval: 5000,        // We poll for pair status updates every 5s
   model: Diffa.Models.PairState,
@@ -514,7 +529,7 @@ Diffa.Models.Domain = Backbone.Model.extend({
   initialize: function() {
     var self = this;
     var user = this.get('user');
-    console.log("[domain.initialize] user: " + user);
+    console.debug("[domain.initialize] user: " + user);
     this.endpoints = new Diffa.Collections.Endpoints([], {domain: this});
     this.pairs = new Diffa.Collections.Pairs([], {domain: this});
     this.pairStates = new Diffa.Collections.PairStates([], {domain: this});

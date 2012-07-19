@@ -93,13 +93,15 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     });
     this.aggregates = this.get('aggregates');   // Pull the aggregates collection out as a top-level attribute
     this.domain = this.get('domain');
-    this.hiddenPairs = this.domain.hiddenSwimLanes;
 
     var self = this;
+    console.log('[HeatmapProjection.initialize] domain: ' + self.domain);
+    this.hiddenPairs = this.domain.hiddenSwimLanes;
+    console.debug('[HeatmapProjection.initialize] hiddenPairs: ' + self.hiddenPairs.length);
+
     var fireBucketChange = function() { self.trigger('change:buckets'); };
     this.aggregates.on('add', fireBucketChange);
     this.aggregates.on('change', fireBucketChange);
-    console.log("Hidden Pairs: " + self.hiddenPairs.length);
 
     // The two different end time properties should event out as changes to the start time
     this.on('change:fixedEndTime', function() { self.trigger('change:startTime'); });
@@ -166,39 +168,23 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   hidePair: function(cell) {
     var pairs = this.getSwimlaneLabels();
     var toHide = pairs[cell.row];
-    console.log(toHide);
     this.saveHiddenPair(toHide);
-//    var p = new FilteredPair({domain: domain});
     this.hiddenPairs[toHide] = true;
   },
 
   saveHiddenPair: function(pairName) {
     var self = this;
+    console.log("[HeatmapProjection.saveHiddenPair] pair: " + pairName)
 
-    $.ajax({
-      url: "/users/guest/diffa/" + pairName + "/filter/SWIM_LANE",
-      type: 'PUT',
-      success: function(data) {
-        // TODO
-      },
-      error: function(xhr, status, ex) {
-        // TODO
-      }
-    });
+    this.hiddenPairs.hidePair(pairName);
   },
 
   isVisible: function(pairKey) {
     var self = this;
     var rv = true;
 
-
     // TODO replace with using HiddenSwimLanes from Domain model.
-//    $.getJSON("/users/guest/" + self.domain.id + "/filter/SWIM_LANE", function(pairs) {
-//      if ($.inArray(pairKey, pairs))
-//        rv = false;
-//      else
-//        rv = true;
-//    });
+    console.debug('[isVisible] pair: ' + self.hiddenPairs.get(pairKey));
     return rv;
 //    return !self.hiddenPairs[pairKey];
   },
@@ -1366,9 +1352,9 @@ function nearestHour() {
 }
 
 function conditionalLoad(domain, msg, fn) {
-  domain.loadAll(['pairs'], function() {
+  domain.loadAll(['pairs', 'hiddenSwimLanes'], function() {
     if (domain.pairs.length > 0) {
-//      alert(msg);
+      console.debug('[conditionalLoad] ' + msg);
       fn();
     }
   });
