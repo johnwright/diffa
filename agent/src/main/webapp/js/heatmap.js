@@ -184,7 +184,15 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     var rv = true;
 
     // TODO replace with using HiddenSwimLanes from Domain model.
-    console.debug('[isVisible] pair: ' + self.hiddenPairs.get(pairKey));
+    console.debug('[HeatmapProjection.isVisible] pair: ' + self.hiddenPairs.get(pairKey).id);
+    var key = self.hiddenPairs.get(pairKey);
+    if (key) {
+      console.debug('[HeatmapProjection.isVisible] hidden: ' + key.id);
+      return false;
+    } else {
+      console.debug('[HeatmapProjection.isVisible] visible: ' + pairKey);
+      return true;
+    }
     return rv;
 //    return !self.hiddenPairs[pairKey];
   },

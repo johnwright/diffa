@@ -292,7 +292,14 @@ Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
   comparator: function(pair) { return pair.id; }
 });
 
+var SwimLaneModel = Backbone.Model.extend({
+  parse: function(response) {
+    console.debug('[SwimLaneModel.parse] response: ' + response.id);
+    return response;
+  }
+});
 Diffa.Collections.HiddenSwimLanes = Diffa.Collections.CollectionBase.extend({
+  model: SwimLaneModel,
   initialize: function(models, opts) {
     this.user = opts.user;
     this.domain = opts.domain;
@@ -312,7 +319,12 @@ Diffa.Collections.HiddenSwimLanes = Diffa.Collections.CollectionBase.extend({
       type: 'PUT'
     });
   },
-  // TODO: use Collection.parse!!
+  identify: function(ident) {
+    return {id: ident};
+  },
+  parse: function(response) {
+    return response.map(this.identify);
+  },
   putUrl: function(pairKey) {
     return "/users/" + this.user + "/" + this.domain.id + "/" + pairKey + "/filter/SWIM_LANE";
   }
