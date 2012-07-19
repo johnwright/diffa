@@ -39,11 +39,17 @@ import net.lshift.diffa.kernel.frontend.RepairActionDef
 import net.lshift.diffa.kernel.frontend.EscalationDef
 import net.lshift.diffa.kernel.frontend.PairReportDef
 import collection.mutable
+import org.slf4j.LoggerFactory
+import org.jooq.exception.DataAccessException
+import java.sql.SQLIntegrityConstraintViolationException
+import net.lshift.diffa.kernel.util.AlertCodes._
 
 /**
  * This object is a workaround for the fact that Scala is so slow
  */
 object JooqConfigStoreCompanion {
+
+  val log = LoggerFactory.getLogger(getClass)
 
   /**
    * A UNIQUE_CATEGORY_NAME can either refer to an endpoint or an endpoint view.
@@ -449,8 +455,15 @@ object JooqConfigStoreCompanion {
       }
       catch
         {
-          // TODO Catch the unique constraint exception
-          case x => throw x
+          case e:DataAccessException if e.getCause.isInstanceOf[SQLIntegrityConstraintViolationException] =>
+            val msg = "Integrity constaint during insert into UNIQUE_CATEGORY_NAMES: domain = %s; endpoint = %s; categories = %s; view = %s".
+                      format(domain, endpoint, categories, viewName)
+            log.warn("%s %s".format(formatAlertCode(domain, INTEGRITY_CONSTRAINT_VIOLATED), msg))
+            log.warn("%s %s".format(formatAlertCode(domain, INTEGRITY_CONSTRAINT_VIOLATED), e.getMessage))
+            throw e
+          case x =>
+            log.error("%s Error inserting categories".format(formatAlertCode(domain, DB_EXECUTION_ERROR)), x)
+            throw x
         }
     }}
   }
