@@ -19,6 +19,7 @@ import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
 import net.lshift.diffa.schema.migrations.MigrationStep
 import java.sql.Types
+import scala.collection.JavaConversions._
 
 object Step0041 extends MigrationStep {
 
@@ -28,6 +29,8 @@ object Step0041 extends MigrationStep {
 
   def createMigration(config: Configuration) = {
     val migration = new MigrationBuilder(config)
+
+    // 1, Create the new target tables for all of the view based data and wire in all of the constraints
 
     migration.createTable("unique_category_view_names").
       column("domain", Types.VARCHAR, 50, false).
@@ -67,7 +70,7 @@ object Step0041 extends MigrationStep {
       addForeignKey("fk_stcv_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
     migration.alterTable("set_category_views").
-      addForeignKey("fk_stcv_ucns", Array("domain", "endpoint", "name", "view_name"), "unique_category_names", Array("domain", "endpoint", "name", "view_name"))
+      addForeignKey("fk_stcv_ucns", Array("domain", "endpoint", "name", "view_name"), "unique_category_view_names", Array("domain", "endpoint", "name", "view_name"))
 
     migration.createTable("range_category_views").
       column("domain", Types.VARCHAR, 50, false).
@@ -83,11 +86,23 @@ object Step0041 extends MigrationStep {
     migration.alterTable("range_category_views").
       addForeignKey("fk_racv_evws", Array("domain", "endpoint", "view_name"), "endpoint_views", Array("domain", "endpoint", "name"))
 
-    // Make sure names across all category tables are unique
-
     migration.alterTable("range_category_views").
-      addForeignKey("fk_racv_ucns", Array("domain", "endpoint", "name", "view_name"), "unique_category_names", Array("domain", "endpoint", "name", "view_name"))
+      addForeignKey("fk_racv_ucns", Array("domain", "endpoint", "name", "view_name"), "unique_category_view_names", Array("domain", "endpoint", "name", "view_name"))
 
+
+    // 2. Extract the data specific to views from the old table layout and populate the view specific tables with this
+
+    migration.copyTableContents("unique_category_names", "unique_category_view_names",
+                                Seq("domain", "endpoint", "name", "view_name"),
+                                Seq("domain", "endpoint", "name", "view_name")).
+              whereSource(Map("target_type" -> "endpoint_views"))
+
+    /*
+    migration.copyTableContents("range_categories", "range_category_views",
+      Seq("domain", "endpoint", "name", "view_name", "data_type", "lower_bound", "upper_bound", "max_granularity"),
+      Seq("domain", "endpoint", "name", "view_name", "data_type", "lower_bound", "upper_bound", "max_granularity")).
+      whereSource(Map("target_type" -> "endpoint_view"))
+    */
 
     migration
   }
