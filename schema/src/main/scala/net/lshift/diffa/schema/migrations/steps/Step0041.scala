@@ -269,7 +269,43 @@ object Step0041 extends VerifiedMigrationStep {
       "max_granularity" -> "daily"
     ))
 
-    // 4. Make sure that set and prefix categories can also still be migrated (each time just on one of the endpoints, this will probably suffice)
+    // Make sure that set and prefix categories can also still be migrated (each time just on one of the endpoints, this will probably suffice)
+
+    // 4. Put a prefix category with a view onto the upstream
+
+    migration.insert("unique_category_names").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> upstreamEndpoint,
+      "name"      -> "some-prefix-based-category"
+    ))
+
+    migration.insert("prefix_categories").values(Map(
+      "domain"          -> domain,
+      "endpoint"        -> upstreamEndpoint,
+      "name"            -> "some-prefix-based-category",
+      "prefix_length"   -> "1",
+      "max_length"      -> "2",
+      "step"            -> "1"
+    ))
+
+    migration.insert("unique_category_view_names").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> upstreamEndpoint,
+      "name"      -> "some-prefix-based-category",
+      "view_name" -> upstreamEndpointView
+    ))
+
+    migration.insert("prefix_category_views").values(Map(
+      "domain"          -> domain,
+      "endpoint"        -> upstreamEndpoint,
+      "name"            -> "some-prefix-based-category",
+      "view_name"       -> upstreamEndpointView,
+      "prefix_length"   -> "1",
+      "max_length"      -> "2",
+      "step"            -> "1"
+    ))
+
+    // 5. Put a set category with a view onto the downstream
 
     migration.insert("unique_category_names").values(Map(
       "domain"    -> domain,
