@@ -72,13 +72,13 @@ object JooqConfigStoreCompanion {
   /**
    * Due to the fact that we need to order the grand union rather than just the individual subselects,
    * we need to select from the grand union. When doing so, the column names called NAME will clash,
-   * so we alias the UNIQUE_CATEGORY_NAMES.NAME field to something other than NAME.
+   * so we alias the UNIQUE_CATEGORY_NAMES.NAME and UNIQUE_CATEGORY_VIEW_NAMES.NAME fields to something other than NAME.
    */
-  val UNIQUE_CATEGORY_ALIAS = UNIQUE_CATEGORY_NAMES.NAME.as("unique_category_alias")
+  val UNIQUE_CATEGORY_ALIAS = "unique_category_alias"
 
   def listEndpoints(jooq:DatabaseFacade, domain:Option[String] = None, endpoint:Option[String] = None) : java.util.List[DomainEndpointDef] = {
     jooq.execute(t => {
-      val topHalf =     t.select(UNIQUE_CATEGORY_ALIAS).
+      val topHalf =     t.select(UNIQUE_CATEGORY_NAMES.NAME.as(UNIQUE_CATEGORY_ALIAS)).
         select(ENDPOINT.getFields).
         select(Factory.field("null").as(VIEW_NAME_COLUMN)).
         select(RANGE_CATEGORIES.DATA_TYPE, RANGE_CATEGORIES.LOWER_BOUND, RANGE_CATEGORIES.UPPER_BOUND, RANGE_CATEGORIES.MAX_GRANULARITY).
@@ -115,7 +115,7 @@ object JooqConfigStoreCompanion {
           }
       }
 
-      val bottomHalf =  t.select(UNIQUE_CATEGORY_ALIAS).
+      val bottomHalf =  t.select(UNIQUE_CATEGORY_VIEW_NAMES.NAME.as(UNIQUE_CATEGORY_ALIAS)).
         select(ENDPOINT.getFields).
         select(ENDPOINT_VIEWS.NAME.as(VIEW_NAME_COLUMN)).
         select(RANGE_CATEGORY_VIEWS.DATA_TYPE, RANGE_CATEGORY_VIEWS.LOWER_BOUND, RANGE_CATEGORY_VIEWS.UPPER_BOUND, RANGE_CATEGORY_VIEWS.MAX_GRANULARITY).
@@ -130,22 +130,22 @@ object JooqConfigStoreCompanion {
         leftOuterJoin(UNIQUE_CATEGORY_VIEW_NAMES).
           on(UNIQUE_CATEGORY_VIEW_NAMES.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
           and(UNIQUE_CATEGORY_VIEW_NAMES.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-          and(UNIQUE_CATEGORY_VIEW_NAMES.VIEW_NAME.equal(ENDPOINT_VIEWS.NAME)).
+          and(UNIQUE_CATEGORY_VIEW_NAMES.VIEW_NAME.equal(UNIQUE_CATEGORY_VIEW_NAMES.NAME)).
 
         leftOuterJoin(RANGE_CATEGORY_VIEWS).
           on(RANGE_CATEGORY_VIEWS.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
           and(RANGE_CATEGORY_VIEWS.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-          and(RANGE_CATEGORY_VIEWS.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
+          and(RANGE_CATEGORY_VIEWS.NAME.equal(UNIQUE_CATEGORY_VIEW_NAMES.NAME)).
 
         leftOuterJoin(PREFIX_CATEGORY_VIEWS).
           on(PREFIX_CATEGORY_VIEWS.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
           and(PREFIX_CATEGORY_VIEWS.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-          and(PREFIX_CATEGORY_VIEWS.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME)).
+          and(PREFIX_CATEGORY_VIEWS.NAME.equal(UNIQUE_CATEGORY_VIEW_NAMES.NAME)).
 
         leftOuterJoin(SET_CATEGORY_VIEWS).
           on(SET_CATEGORY_VIEWS.DOMAIN.equal(ENDPOINT_VIEWS.DOMAIN)).
           and(SET_CATEGORY_VIEWS.ENDPOINT.equal(ENDPOINT_VIEWS.ENDPOINT)).
-          and(SET_CATEGORY_VIEWS.NAME.equal(UNIQUE_CATEGORY_NAMES.NAME))
+          and(SET_CATEGORY_VIEWS.NAME.equal(UNIQUE_CATEGORY_VIEW_NAMES.NAME))
 
       val secondUnionPart = domain match {
         case None    => bottomHalf
@@ -166,7 +166,7 @@ object JooqConfigStoreCompanion {
                       orderBy(
                         grandUnion.getField(ENDPOINT.DOMAIN),
                         grandUnion.getField(ENDPOINT.NAME),
-                        grandUnion.getField(UNIQUE_CATEGORY_ALIAS)
+                        Factory.field(UNIQUE_CATEGORY_ALIAS)
                       ).
                       fetch()
 
