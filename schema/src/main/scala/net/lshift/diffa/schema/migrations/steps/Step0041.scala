@@ -17,11 +17,11 @@ package net.lshift.diffa.schema.migrations.steps
 
 import org.hibernate.cfg.Configuration
 import net.lshift.hibernate.migrations.MigrationBuilder
-import net.lshift.diffa.schema.migrations.MigrationStep
+import net.lshift.diffa.schema.migrations.VerifiedMigrationStep
 import java.sql.Types
 import scala.collection.JavaConversions._
 
-object Step0041 extends MigrationStep {
+object Step0041 extends VerifiedMigrationStep {
 
   def versionId = 41
 
@@ -156,6 +156,118 @@ object Step0041 extends MigrationStep {
 
     migration.alterTable("range_categories").
       addForeignKey("fk_racg_ucns", Array("domain", "endpoint", "name"), "unique_category_names", Array("domain", "endpoint", "name"))
+
+    migration
+  }
+
+  def applyVerification(config: Configuration) = {
+    val migration = new MigrationBuilder(config)
+
+    val domain = randomString()
+    val upstreamEndpoint = randomString()
+    val upstreamEndpointView = randomString()
+    val downstreamEndpoint = randomString()
+    val downstreamEndpointView = randomString()
+
+    // 1. Set up the domain with an upstream and a downstream endpoint
+
+    migration.insert("domains").values(Map(
+      "name"  -> domain
+    ))
+
+    migration.insert("endpoint").values(Map(
+      "domain"  -> domain,
+      "name"    -> upstreamEndpoint
+    ))
+
+    migration.insert("endpoint").values(Map(
+      "domain"  -> domain,
+      "name"    -> downstreamEndpoint
+    ))
+
+    migration.insert("endpoint_views").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> upstreamEndpoint,
+      "name"      -> upstreamEndpointView
+    ))
+
+    migration.insert("endpoint_views").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> downstreamEndpoint,
+      "name"      -> downstreamEndpointView
+    ))
+
+    // 2. Add a range category to each of the upstream and downstream parents
+
+    migration.insert("unique_category_names").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> upstreamEndpoint,
+      "name"      -> "some-date-based-category"
+    ))
+
+    migration.insert("unique_category_names").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> downstreamEndpoint,
+      "name"      -> "some-date-based-category"
+    ))
+
+    migration.insert("range_categories").values(Map(
+      "domain"          -> domain,
+      "endpoint"        -> upstreamEndpoint,
+      "name"            -> "some-date-based-category",
+      "data_type"       -> "date",
+      "lower_bound"     -> "1999-10-10",
+      "upper_bound"     -> "1999-10-11",
+      "max_granularity" -> "daily"
+    ))
+
+    migration.insert("range_categories").values(Map(
+      "domain"          -> domain,
+      "endpoint"        -> downstreamEndpoint,
+      "name"            -> "some-date-based-category",
+      "data_type"       -> "date",
+      "lower_bound"     -> "1999-10-10",
+      "upper_bound"     -> "1999-10-11",
+      "max_granularity" -> "daily"
+    ))
+
+    // 3. Add a range category to each of the respective view
+
+    migration.insert("unique_category_view_names").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> upstreamEndpoint,
+      "name"      -> "some-date-based-category",
+      "view_name" -> upstreamEndpointView
+    ))
+
+    migration.insert("unique_category_view_names").values(Map(
+      "domain"    -> domain,
+      "endpoint"  -> downstreamEndpoint,
+      "name"      -> "some-date-based-category",
+      "view_name" -> downstreamEndpointView
+    ))
+
+    migration.insert("range_category_views").values(Map(
+      "domain"          -> domain,
+      "endpoint"        -> upstreamEndpoint,
+      "name"            -> "some-date-based-category",
+      "view_name"       -> upstreamEndpointView,
+      "data_type"       -> "date",
+      "lower_bound"     -> "1999-10-10",
+      "upper_bound"     -> "1999-10-11",
+      "max_granularity" -> "daily"
+    ))
+
+    migration.insert("range_category_views").values(Map(
+      "domain"          -> domain,
+      "endpoint"        -> downstreamEndpoint,
+      "name"            -> "some-date-based-category",
+      "view_name"       -> downstreamEndpointView,
+      "data_type"       -> "date",
+      "lower_bound"     -> "1999-10-10",
+      "upper_bound"     -> "1999-10-11",
+      "max_granularity" -> "daily"
+    ))
 
     migration
   }
