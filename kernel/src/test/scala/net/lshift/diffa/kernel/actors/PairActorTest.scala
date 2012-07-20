@@ -200,6 +200,34 @@ class PairActorTest {
     expect(writer.rollback())
   }
 
+  def executeAndValidateScan(expectUpstream:Boolean = true, expectDownstream:Boolean = true) = {
+    val monitor = new Object
+
+    scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall.atLeastOnce()
+
+    if (expectUpstream) expectUpstreamScan()
+    if (expectDownstream) expectDownstreamScan()
+
+    expectDifferencesReplay()
+
+    scanListener.pairScanStateChanged(pair.asRef, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
+      def answer = { monitor.synchronized { monitor.notifyAll } }
+    })
+    diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan completed"); expectLastCall
+
+    val numberOfScans = 1
+    expectScanCommencement(numberOfScans)
+
+    replay(writer, store, versionPolicy, scanListener, diagnostics)
+
+    supervisor.startActor(pair.asRef)
+    supervisor.scanPair(pair.asRef, None)
+    monitor.synchronized {
+      monitor.wait(1000)
+    }
+    verify(writer, versionPolicy, scanListener, diagnostics)
+  }
+
   @Test
   def runDifference = {
     val monitor = new Object
@@ -226,30 +254,19 @@ class PairActorTest {
 
   @Test
   def runScan = {
-    val monitor = new Object
+    executeAndValidateScan(expectUpstream = true, expectDownstream = true)
+  }
 
-    scanListener.pairScanStateChanged(pair.asRef, PairScanState.SCANNING); expectLastCall.atLeastOnce()
+  @Test
+  def runScanWithUnscannableUpstream = {
+    upstream.scanUrl = null
+    executeAndValidateScan(expectUpstream = false, expectDownstream = true)
+  }
 
-    expectScans
-
-    expectDifferencesReplay()
-
-    scanListener.pairScanStateChanged(pair.asRef, PairScanState.UP_TO_DATE); expectLastCall[Unit].andAnswer(new IAnswer[Unit] {
-      def answer = { monitor.synchronized { monitor.notifyAll } }
-    })
-    diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan completed"); expectLastCall
-
-    val numberOfScans = 1
-    expectScanCommencement(numberOfScans)
-
-    replay(writer, store, versionPolicy, scanListener, diagnostics)
-
-    supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pair.asRef, None)
-    monitor.synchronized {
-      monitor.wait(1000)
-    }
-    verify(writer, versionPolicy, scanListener, diagnostics)
+  @Test
+  def runScanWithUnscannableDownstream = {
+    downstream.scanUrl = null
+    executeAndValidateScan(expectUpstream = true, expectDownstream = false)
   }
 
   @Test
