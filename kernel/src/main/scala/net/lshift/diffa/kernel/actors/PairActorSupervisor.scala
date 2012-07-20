@@ -32,6 +32,7 @@ import net.lshift.diffa.kernel.util.AlertCodes._
 import akka.dispatch.Await
 import akka.util.duration._
 import akka.util.Timeout
+import net.lshift.diffa.kernel.scanning.ScanActivityStore
 
 case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                systemConfig:SystemConfigStore,
@@ -41,6 +42,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
                                participantFactory:ParticipantFactory,
                                stores:VersionCorrelationStoreFactory,
                                diagnostics:DiagnosticsManager,
+                               scanActivityStore:ScanActivityStore,
                                changeEventBusyTimeoutMillis:Long,
                                changeEventQuietTimeoutMillis:Long,
                                indexWriterCloseInterval: Int,
@@ -69,7 +71,7 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
        Some(actorSystem.actorOf(Props(
          new PairActor(pair, us, ds, usp, dsp, pol, stores(pairRef),
            differencesManager, pairScanListener,
-           diagnostics, domainConfig, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis,
+           diagnostics, domainConfig, scanActivityStore, changeEventBusyTimeoutMillis, changeEventQuietTimeoutMillis,
            indexWriterCloseInterval, actorSystem)
        )))
      case None =>

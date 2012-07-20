@@ -17,11 +17,11 @@ package net.lshift.diffa.kernel.scanning
 
 import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import net.lshift.diffa.kernel.StoreReferenceContainer
-import org.junit.{After, Before, Test, AfterClass}
+import org.junit.{Test, AfterClass}
 import org.junit.Assert._
 import com.eaio.uuid.UUID
 import org.joda.time.DateTime
-import net.lshift.diffa.kernel.config.{User, DiffaPairRef}
+import net.lshift.diffa.kernel.config.DiffaPairRef
 
 class JooqScanActivityStoreTest {
 

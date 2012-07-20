@@ -42,6 +42,7 @@ import org.junit.runner.RunWith
 import org.junit.experimental.theories.{DataPoint, Theories, Theory}
 import org.junit.{Test, After, Before}
 import net.lshift.diffa.kernel.frontend.{DomainPairDef, FrontendConversions}
+import net.lshift.diffa.kernel.scanning.{ScanStatement, ScanActivityStore}
 
 @RunWith(classOf[Theories])
 class PairActorTest {
@@ -122,7 +123,11 @@ class PairActorTest {
 
   val actorSystem = ActorSystem("PairActorSTest%#x".format(hashCode()))
 
-  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, 50, 100, closeInterval, actorSystem)
+  val scanActivityStore = createStrictMock(classOf[ScanActivityStore])
+  expect(scanActivityStore.createOrUpdateStatement(EasyMock.isA(classOf[ScanStatement]))); expectLastCall().atLeastOnce()
+  replay(scanActivityStore)
+
+  val supervisor = new PairActorSupervisor(versionPolicyManager, systemConfigStore, domainConfigStore, differencesManager, scanListener, participantFactory, stores, diagnostics, scanActivityStore, 50, 100, closeInterval, actorSystem)
   supervisor.onAgentAssemblyCompleted
   supervisor.onAgentConfigurationActivated
 
