@@ -292,41 +292,85 @@ Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
   comparator: function(pair) { return pair.id; }
 });
 
-var SwimLaneModel = Backbone.Model.extend({
+Diffa.Models.HiddenPair = Backbone.Model.extend({
   parse: function(response) {
-    console.debug('[SwimLaneModel.parse] response: ' + response.id);
+    console.debug('[HiddenPair.parse] response: ' + response.id);
     return response;
+  },
+  sync: function(method, model, opts) {
+    var self = this;
+    console.debug('[HiddenPair.sync] method: ' + method);
+    if (method == "read") {
+      Backbone.sync(method, model, opts);
+    } else if (method == "delete") {
+      self.deleteModel(self.deleteUrl(self.collection.user, self.collection.domain.id, self.id));
+    }
+  },
+  deleteUrl: function(user, domain, pairKey) {
+    return "/users/" + this.collection.user + "/" + this.collection.domain.id + "/" + pairKey + "/filter/SWIM_LANE";
+  },
+  deleteModel: function(url) {
+    console.debug('[HiddenPair.deleteModel] url: ' + url);
+    $.ajax({
+      url: url,
+      type: 'DELETE'
+    });
   }
 });
-Diffa.Collections.HiddenSwimLanes = Diffa.Collections.CollectionBase.extend({
-  model: SwimLaneModel,
+
+Diffa.Collections.HiddenPairs = Diffa.Collections.CollectionBase.extend({
+  model: Diffa.Models.HiddenPair,
   initialize: function(models, opts) {
     this.user = opts.user;
     this.domain = opts.domain;
-    console.debug("[HiddenSwimLanes.initialize] user: " + this.user);
-    console.debug("[HiddenSwimLanes.initialize] domain: " + this.domain.id);
     this.fetch();
   },
   url: function() {
-    console.debug("[HiddenSwimLanes.url] user: " + this.user);
-    console.debug("[HiddenSwimLanes.url] domain: " + this.domain.id);
     return "/users/" + this.user + "/" + this.domain.id + "/filter/SWIM_LANE";
-  },
-  hidePair: function(pairKey) {
-    console.debug('[hidePair] pairKey: ' + pairKey);
-    $.ajax({
-      url: this.putUrl(pairKey),
-      type: 'PUT'
-    });
-  },
-  identify: function(ident) {
-    return {id: ident};
   },
   parse: function(response) {
     return response.map(this.identify);
   },
   putUrl: function(pairKey) {
     return "/users/" + this.user + "/" + this.domain.id + "/" + pairKey + "/filter/SWIM_LANE";
+  },
+  deleteUrl: function(pairKey) {
+    return this.putUrl(pairKey);
+  },
+  hidePair: function(pairKey) {
+    var self = this;
+    self.add({id: pairKey, user: self.user, domain: self.domain.id});
+    $.ajax({
+      url: self.putUrl(pairKey),
+      type: 'PUT'
+    });
+  },
+  revealPair: function(pairKey) {
+    var model = this.get({id: pairKey});
+    if (model) {
+      model.destroy({wait: true});
+    }
+  },
+  revealAllPairs: function() {
+    var self = this;
+    console.debug('[HiddenPairs.revealAllPairs]');
+    self.remove(self.models);
+  },
+  remove: function(models, options) {
+    var self = this;
+    _.each(models, function(model) {
+      console.debug('[HiddenPairs.remove] model: ' + model.id);
+      if (model) {
+        model.destroy({wait: true});
+      }
+    });
+  },
+  identify: function(ident) {
+    var self = this;
+    return {id: ident};
+  },
+  comparator: function(pair) {
+    return pair.get("id");
   }
 });
 
@@ -492,6 +536,7 @@ Diffa.Models.PairAggregates = Backbone.Model.extend(Diffa.Collections.Watchable)
     this.lastRequests = requestDetails;
   }
 });
+
 Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Aggregator).extend({
   model: Diffa.Models.PairAggregates,
 
@@ -541,13 +586,12 @@ Diffa.Models.Domain = Backbone.Model.extend({
   initialize: function() {
     var self = this;
     var user = this.get('user');
-    console.debug("[domain.initialize] user: " + user);
     this.endpoints = new Diffa.Collections.Endpoints([], {domain: this});
     this.pairs = new Diffa.Collections.Pairs([], {domain: this});
     this.pairStates = new Diffa.Collections.PairStates([], {domain: this});
     this.diffs = new Diffa.Collections.Diffs([], {domain: this});
     this.aggregates = new Diffa.Collections.DomainAggregates([], {domain: this});
-    this.hiddenSwimLanes = new Diffa.Collections.HiddenSwimLanes([], {domain: this, user: user});
+    this.hiddenPairs = new Diffa.Collections.HiddenPairs([], {domain: this, user: user});
   },
 
   loadAll: function(colls, callback) {
