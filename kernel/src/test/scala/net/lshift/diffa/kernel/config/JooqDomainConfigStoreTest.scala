@@ -28,6 +28,7 @@ import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import org.slf4j.LoggerFactory
 import org.junit.{Test, AfterClass, Before}
 import net.lshift.diffa.kernel.preferences.FilteredItemType
+import com.eaio.uuid.UUID
 
 class JooqDomainConfigStoreTest {
   private val log = LoggerFactory.getLogger(getClass)
@@ -568,6 +569,30 @@ class JooqDomainConfigStoreTest {
 
     val view = pair.views(0)
     assertEquals("a-only", view.name)
+  }
+
+  @Test
+  def shouldAllowViewsWithTheSameNameToBeAppliedToBothSidesOfAPair = {
+    val domain = new UUID().toString
+
+    val parentCategories = Map("some-date-category" ->  new RangeCategoryDescriptor("date", "2009-11-11", "2009-11-20"))
+    val viewCategories = Map("some-date-category" ->  new RangeCategoryDescriptor("date", "2009-11-18", "2009-11-19"))
+
+    val upstreamView = EndpointViewDef(name = "shared-name", categories = viewCategories)
+    val downstreamView = EndpointViewDef(name = "shared-name", categories = viewCategories)
+
+    val upstream = EndpointDef(name = new UUID().toString, categories = parentCategories, views = Seq(upstreamView))
+    val downstream = EndpointDef(name = new UUID().toString, categories = parentCategories, views = Seq(downstreamView))
+
+    val pair = PairDef(key = new UUID().toString, upstreamName = upstream.name, downstreamName = downstream.name)
+
+    systemConfigStore.createOrUpdateDomain(domain)
+
+    domainConfigStore.createOrUpdateEndpoint(domain, upstream)
+    domainConfigStore.createOrUpdateEndpoint(domain, downstream)
+    domainConfigStore.createOrUpdatePair(domain, pair)
+
+    systemConfigStore.deleteDomain(domain)
   }
 
   @Test
