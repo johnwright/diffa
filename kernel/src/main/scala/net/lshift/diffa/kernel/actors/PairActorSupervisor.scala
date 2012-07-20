@@ -99,14 +99,14 @@ case class PairActorSupervisor(policyManager:VersionPolicyManager,
   def difference(pairRef:DiffaPairRef) =
     findActor(pairRef) ! DifferenceMessage
 
-  def scanPair(pair:DiffaPairRef, scanView:Option[String]) = {
+  def scanPair(pair:DiffaPairRef, scanView:Option[String], initiatingUser:Option[String]) = {
     log.debug("Initiating scan %s with view %s".format(pair.identifier, scanView))
     // Update the scan state ourselves. The policy itself will send an update shortly, but since that happens
     // asynchronously, we might have returned before then, and this may potentially result in clients seeing
     // a "Up To Date" view, even though we're just about to transition out of that state.
     pairScanListener.pairScanStateChanged(pair, PairScanState.SCANNING)
     
-    findActor(pair) ! ScanMessage(scanView)
+    findActor(pair) ! ScanMessage(scanView, initiatingUser)
   }
 
   def cancelScans(pairRef:DiffaPairRef) = {

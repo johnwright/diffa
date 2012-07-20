@@ -113,7 +113,7 @@ case class PairActor(pair:DomainPairDef,
     def scanId:Long   // The id of the scan that this message is coming from
   }
 
-  private case class OutstandingScan(startTime:DateTime) {
+  private case class OutstandingScan(startTime:DateTime, initiatingUser:Option[String]) {
 
     val id = startTime.getMillis
 
@@ -219,8 +219,8 @@ case class PairActor(pair:DomainPairDef,
    * and will be re-delivered into this actor's mailbox when the scan state is exited.
    */
   def receive = {
-    case ScanMessage(scanView) => {
-      if (handleScanMessage(scanView)) {
+    case ScanMessage(scanView, initiatingUser) => {
+      if (handleScanMessage(scanView, initiatingUser)) {
         // Go into the scanning state
         context.become(receiveWhilstScanning)
       }
@@ -265,7 +265,7 @@ case class PairActor(pair:DomainPairDef,
         logger.trace("Received writer command (%s) for different scan worker - sending cancellation".format(c), c.exception)
         sender ! CancelMessage
       }
-    case ScanMessage(scanView)              =>
+    case ScanMessage(scanView, _)           =>
       // ignore any scan requests whilst scanning
       diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Ignoring scan request received during current scan")
       logger.warn("%s Ignoring scan request; view = %s".format(formatAlertCode(pairRef, SCAN_REQUEST_IGNORED), scanView))
@@ -336,11 +336,16 @@ case class PairActor(pair:DomainPairDef,
       case _                        => // Ignore - not a state that we'll see
     }
 
+    val user = activeScan.initiatingUser match {
+      case Some(x) => x
+      case None    => null
+    }
+
     val scanStatement = ScanStatement(
       id = activeScan.id,
       pair = pairRef.key,
       domain = pairRef.domain,
-      initiatedBy = "unknown",
+      initiatedBy = user,
       startTime = activeScan.startTime,
       endTime = new DateTime(DateTimeZone.UTC),
       state = ScanStatement.resolveScanState(state)
@@ -449,8 +454,8 @@ case class PairActor(pair:DomainPairDef,
    * Implements the top half of the request to scan the participants for digests.
    * This actor will still be in the scan state after this callback has returned.
    */
-  def handleScanMessage(scanView:Option[String]) : Boolean = {
-    val createdScan = OutstandingScan(new DateTime(DateTimeZone.UTC))
+  def handleScanMessage(scanView:Option[String], initiatingUser:Option[String]) : Boolean = {
+    val createdScan = OutstandingScan(new DateTime(DateTimeZone.UTC), initiatingUser)
     implicit val system = actorSystem
     implicit val executionContext = ExecutionContext.defaultExecutionContext
 
@@ -615,7 +620,7 @@ case object Cancellation extends Result
 abstract class Deferrable
 case class ChangeMessage(event: PairChangeEvent) extends Deferrable
 case object DifferenceMessage extends Deferrable
-case class ScanMessage(scanView:Option[String])
+case class ScanMessage(scanView:Option[String], initiatingUser:Option[String])
 case class StartInventoryMessage(side:EndpointSide, view:Option[String])
 case class InventoryMessage(side:EndpointSide, constraints:Seq[ScanConstraint], aggregations:Seq[ScanAggregation], entries:Seq[ScanResultEntry])
 

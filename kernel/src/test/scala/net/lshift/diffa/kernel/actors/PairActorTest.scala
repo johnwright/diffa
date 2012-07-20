@@ -250,7 +250,7 @@ class PairActorTest {
     replay(writer, store, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pair.asRef, None)
+    supervisor.scanPair(pair.asRef, None, None)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -300,7 +300,7 @@ class PairActorTest {
     replay(writer, store, versionPolicy, diagnostics)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pairRef, None)
+    supervisor.scanPair(pairRef, None, None)
 
     scanMonitor.synchronized {
       scanMonitor.wait(timeToWait)
@@ -308,7 +308,7 @@ class PairActorTest {
 
     // Request a second scan that should get ignored by the actor that should be busy handling the first scan
 
-    supervisor.scanPair(pairRef, None)
+    supervisor.scanPair(pairRef, None, None)
 
     verify(writer, store, versionPolicy)
 
@@ -371,7 +371,7 @@ class PairActorTest {
     replay(writer, store, diffWriter, versionPolicy, scanListener)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pair.asRef, None)
+    supervisor.scanPair(pair.asRef, None, None)
 
     flushMonitor.synchronized {
       flushMonitor.wait(2000)
@@ -446,7 +446,7 @@ class PairActorTest {
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pair.asRef, None)
+    supervisor.scanPair(pair.asRef, None, None)
 
     responseMonitor.synchronized {
       responseMonitor.wait(timeToWait * 2)
@@ -476,7 +476,7 @@ class PairActorTest {
     replay(store, writer, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pair.asRef, None)
+    supervisor.scanPair(pair.asRef, None, None)
     monitor.synchronized {
       monitor.wait(1000)
     }
@@ -504,7 +504,7 @@ class PairActorTest {
     replay(writer, store, diffWriter, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pair.asRef, None)
+    supervisor.scanPair(pair.asRef, None, None)
     assertTrue(wasMarkedAsCancelled.get(4000).getOrElse(throw new Exception("Feedback handle check never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
   }
@@ -547,7 +547,7 @@ class PairActorTest {
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pair.asRef, None)
+    supervisor.scanPair(pair.asRef, None, None)
 
     assertTrue(proxyDidGenerateException.get(4000).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     verify(versionPolicy, scanListener, diagnostics)
@@ -590,7 +590,7 @@ class PairActorTest {
         },
       failStateHandler = new IAnswer[Unit] {
           def answer {
-            supervisor.scanPair(pair.asRef, None)      // Run a second scan when the first one fails
+            supervisor.scanPair(pair.asRef, None, None)      // Run a second scan when the first one fails
           }
         })
 
@@ -620,7 +620,7 @@ class PairActorTest {
     replay(store, diffWriter, writer, versionPolicy, scanListener, diagnostics)
 
     supervisor.startActor(pair.asRef)
-    supervisor.scanPair(pairRef, None)
+    supervisor.scanPair(pairRef, None, None)
 
     assertTrue(proxyDidGenerateException.get(overallProcessWait).getOrElse(throw new Exception("Exception validation never reached in participant stub")))
     completionMonitor.synchronized { completionMonitor.wait(1000) }   // Wait for the scan to complete too

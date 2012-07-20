@@ -33,7 +33,7 @@ object Step0042 extends VerifiedMigrationStep {
       column("id", Types.BIGINT, false).
       column("domain", Types.VARCHAR, 50, false).
       column("pair", Types.VARCHAR, 50, false).
-      column("intiated_by", Types.VARCHAR, 50, false).
+      column("intiated_by", Types.VARCHAR, 50, true).
       column("start_time", Types.TIMESTAMP, false).
       column("end_time", Types.TIMESTAMP, 50, true).
       column("state", Types.INTEGER, 1, false, 0).
