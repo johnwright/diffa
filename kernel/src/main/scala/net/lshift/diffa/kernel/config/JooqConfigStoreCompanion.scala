@@ -595,32 +595,63 @@ object JooqConfigStoreCompanion {
   def deleteRangeCategories(t:Factory, domain:String, endpoint:String) = {
     t.delete(RANGE_CATEGORIES).
       where(RANGE_CATEGORIES.DOMAIN.equal(domain)).
-      and(RANGE_CATEGORIES.ENDPOINT.equal(endpoint)).
+        and(RANGE_CATEGORIES.ENDPOINT.equal(endpoint)).
+      execute()
+  }
+
+  def deleteRangeCategoryViews(t:Factory, domain:String, endpoint:String) = {
+    t.delete(RANGE_CATEGORY_VIEWS).
+      where(RANGE_CATEGORY_VIEWS.DOMAIN.equal(domain)).
+        and(RANGE_CATEGORY_VIEWS.ENDPOINT.equal(endpoint)).
       execute()
   }
 
   def deleteSetCategories(t:Factory, domain:String, endpoint:String) = {
     t.delete(SET_CATEGORIES).
       where(SET_CATEGORIES.DOMAIN.equal(domain)).
-      and(SET_CATEGORIES.ENDPOINT.equal(endpoint)).
+        and(SET_CATEGORIES.ENDPOINT.equal(endpoint)).
+      execute()
+  }
+
+  def deleteSetCategoryViews(t:Factory, domain:String, endpoint:String) = {
+    t.delete(SET_CATEGORY_VIEWS).
+      where(SET_CATEGORY_VIEWS.DOMAIN.equal(domain)).
+        and(SET_CATEGORY_VIEWS.ENDPOINT.equal(endpoint)).
       execute()
   }
 
   def deletePrefixCategories(t:Factory, domain:String, endpoint:String) = {
     t.delete(PREFIX_CATEGORIES).
       where(PREFIX_CATEGORIES.DOMAIN.equal(domain)).
-      and(PREFIX_CATEGORIES.ENDPOINT.equal(endpoint)).
+        and(PREFIX_CATEGORIES.ENDPOINT.equal(endpoint)).
+      execute()
+  }
+
+  def deletePrefixCategoryViews(t:Factory, domain:String, endpoint:String) = {
+    t.delete(PREFIX_CATEGORY_VIEWS).
+      where(PREFIX_CATEGORY_VIEWS.DOMAIN.equal(domain)).
+        and(PREFIX_CATEGORY_VIEWS.ENDPOINT.equal(endpoint)).
       execute()
   }
 
   def deleteCategories(t:Factory, domain:String, endpoint:String) = {
     deletePrefixCategories(t, domain, endpoint)
+    deletePrefixCategoryViews(t, domain, endpoint)
+
     deleteSetCategories(t, domain, endpoint)
+    deleteSetCategoryViews(t, domain, endpoint)
+
     deleteRangeCategories(t, domain, endpoint)
+    deleteRangeCategoryViews(t, domain, endpoint)
 
     t.delete(UNIQUE_CATEGORY_NAMES).
       where(UNIQUE_CATEGORY_NAMES.DOMAIN.equal(domain)).
-      and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(endpoint)).
+        and(UNIQUE_CATEGORY_NAMES.ENDPOINT.equal(endpoint)).
+      execute()
+
+    t.delete(UNIQUE_CATEGORY_VIEW_NAMES).
+      where(UNIQUE_CATEGORY_VIEW_NAMES.DOMAIN.equal(domain)).
+        and(UNIQUE_CATEGORY_VIEW_NAMES.ENDPOINT.equal(endpoint)).
       execute()
   }
 
