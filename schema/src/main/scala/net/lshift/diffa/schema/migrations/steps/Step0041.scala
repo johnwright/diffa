@@ -133,7 +133,7 @@ object Step0041 extends MigrationStep {
     migration.alterTable("set_categories").dropPrimaryKey()
     migration.alterTable("set_categories").dropColumn("target_type")
     migration.alterTable("set_categories").dropColumn("view_name")
-    migration.alterTable("set_categories").addPrimaryKey("domain", "endpoint", "name")
+    migration.alterTable("set_categories").addPrimaryKey("domain", "endpoint", "name", "value")
 
     migration.alterTable("range_categories").dropForeignKey("fk_racg_ucns")
     migration.alterTable("range_categories").dropForeignKey("fk_racg_evws")
