@@ -100,8 +100,6 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     var fireBucketChange = function() { self.trigger('change:buckets'); };
     this.aggregates.on('add', fireBucketChange);
     this.aggregates.on('change', fireBucketChange);
-    this.hiddenPairs.on('revealPair', fireBucketChange);
-    this.hiddenPairs.on('hidePair', fireBucketChange);
 
     // The two different end time properties should event out as changes to the start time
     this.on('change:fixedEndTime', function() { self.trigger('change:startTime'); });
@@ -183,10 +181,8 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   isVisible: function(pairKey) {
     var key = this.hiddenPairs.get(pairKey);
     if (key) {
-//      console.debug('[HeatmapProjection.isVisible] hidden: ' + key.id);
       return false;
     } else {
-//      console.debug('[HeatmapProjection.isVisible] visible: ' + pairKey);
       return true;
     }
   },
@@ -341,13 +337,14 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
   },
 
   pollAndUpdate: function() {
-    console.debug('[Heatmap.pollAndUpdate]');
-    this.update();
-    this.model.sync();
+    var self = this;
+    self.model.hiddenPairs.fetch({success: function(collection, response) {
+      self.update();
+      self.model.sync();
+    }});
   },
 
   update: function() {
-    console.debug('[Heatmap.update]');
     this.clearEverything();
     this.recalibrateHeatmap();
     this.context.translate(this.o_x, this.o_y);
@@ -445,20 +442,18 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
   hidePairsExcept: function(visiblePairs) {
     var self = this;
-    _.each(self.model.aggregates.pluck('pair'), function(pair) {
+    var pairsToHide =_.reject(self.model.aggregates.pluck('pair'), function(key) {
+      return _.contains(visiblePairs, key);
+    });
+    _.each(pairsToHide, function(pair) {
       try {
-        console.debug('[Heatmap.hidePairsExcept] hiding pair: ' + pair);
         self.model.hiddenPairs.hidePair(pair);
       } catch (e) {}
-      _.each(visiblePairs, function(vp) {
-        if (vp == pair) {
-          console.debug('[Heatmap.hidePairsExcept] revealing pair: ' + pair);
-          self.model.hiddenPairs.revealPair(pair);
-        }
-      });
     });
-//    self.pollAndUpdate();
-//    window.location.reload(true);
+    _.each(visiblePairs, function(pair) {
+      self.model.hiddenPairs.revealPair(pair);
+    });
+    self.pollAndUpdate();
   },
 
   buildOption: function(pair, optHiddenPair) {
@@ -475,7 +470,7 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var self = this;
     var pairs = this.model.aggregates.pluck('pair');
 
-    var html = '<select id="pair-filter" data-placeholder="Select pairs to hide" style="width: 600px;" multiple class="chzn-select">'
+    var html = '<select id="pair-filter" data-placeholder="All pairs hidden; select pairs to show" multiple class="chzn-select">'
     html = html + '<option value=""></option>'
     _.each(pairs, function(pair) {
       html = html + self.buildOption(pair, self.model.hiddenPairs.get(pair));

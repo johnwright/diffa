@@ -293,28 +293,13 @@ Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
 });
 
 Diffa.Models.HiddenPair = Backbone.Model.extend({
-  parse: function(response) {
-    console.debug('[HiddenPair.parse] response: ' + response.id);
-    return response;
+  initialize: function(model, opts) {
+    this.id = model.id;
+    this.user = opts.collection.user;
+    this.domain = opts.collection.domain.id;
   },
-  sync: function(method, model, opts) {
-    var self = this;
-    console.debug('[HiddenPair.sync] method: ' + method);
-    if (method == "read") {
-      Backbone.sync(method, model, opts);
-    } else if (method == "delete") {
-      self.deleteModel(self.deleteUrl(self.collection.user, self.collection.domain.id, self.id));
-    }
-  },
-  deleteUrl: function(user, domain, pairKey) {
-    return "/users/" + this.collection.user + "/" + this.collection.domain.id + "/" + pairKey + "/filter/SWIM_LANE";
-  },
-  deleteModel: function(url) {
-    console.debug('[HiddenPair.deleteModel] url: ' + url);
-    $.ajax({
-      url: url,
-      type: 'DELETE'
-    });
+  url: function() {
+    return "/users/" + this.user + "/" + this.domain + "/" + this.id + "/filter/SWIM_LANE";
   }
 });
 
@@ -331,46 +316,33 @@ Diffa.Collections.HiddenPairs = Diffa.Collections.CollectionBase.extend({
   parse: function(response) {
     return response.map(this.identify);
   },
-  putUrl: function(pairKey) {
-    return "/users/" + this.user + "/" + this.domain.id + "/" + pairKey + "/filter/SWIM_LANE";
-  },
-  deleteUrl: function(pairKey) {
-    return this.putUrl(pairKey);
-  },
-  hidePair: function(pairKey) {
-    var self = this;
-    self.add({id: pairKey, user: self.user, domain: self.domain.id});
-    $.ajax({
-      url: self.putUrl(pairKey),
-      type: 'PUT'
-    });
-  },
-  revealPair: function(pairKey) {
-    var model = this.get({id: pairKey});
-    if (model) {
-      model.destroy({wait: true});
-    }
-  },
-  revealAllPairs: function() {
-    var self = this;
-    console.debug('[HiddenPairs.revealAllPairs]');
-    self.remove(self.models);
-  },
-  remove: function(models, options) {
-    var self = this;
-    _.each(models, function(model) {
-      console.debug('[HiddenPairs.remove] model: ' + model.id);
-      if (model) {
-        model.destroy({wait: true});
-      }
-    });
-  },
   identify: function(ident) {
-    var self = this;
     return {id: ident};
   },
   comparator: function(pair) {
     return pair.get("id");
+  },
+  remove: function(models, options) {
+    var self = this;
+    _.each(models, function(model) {
+      if (model && model.destroy) {
+        model.destroy({wait: true});
+      }
+    });
+    self.fetch();
+  },
+  hidePair: function(pairKey) {
+    var model = new Diffa.Models.HiddenPair({id: pairKey}, {collection: this});
+    this.create(model);
+  },
+  revealPair: function(pairKey) {
+    var model = this.get({id: pairKey});
+    if (model) {
+      this.remove([model]);
+    }
+  },
+  revealAllPairs: function() {
+    this.remove(this.models);
   }
 });
 
