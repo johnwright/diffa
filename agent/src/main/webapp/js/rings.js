@@ -273,6 +273,12 @@ $('.diffa-ringset').each(function() {
   if (zoomHref) {
     $(this).bind('ring-clicked', function(e, details) {
       var targetUrl = zoomHref + '?domain=' + domain.id + '&pair=' + details.pair;
+      if (details.startTime) {
+        targetUrl += "&startTime=" + Diffa.Helpers.DatesHelper.toISOString(details.startTime);
+      }
+      if (details.endTime) {
+        targetUrl += "&endTime=" + Diffa.Helpers.DatesHelper.toISOString(details.endTime);
+      }
 
       if (zoomInLightbox) {
         window.location = targetUrl;
