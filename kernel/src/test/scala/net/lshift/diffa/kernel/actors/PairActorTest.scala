@@ -193,6 +193,9 @@ class PairActorTest {
     } else {
       expectLastCall()
     }
+
+    // Expect the Lucene writer to be closed
+    writer.close(); expectLastCall.asStub
   }
 
   def expectWriterRollback() {
