@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory
 import org.junit.{Test, AfterClass, Before}
 import net.lshift.diffa.kernel.preferences.FilteredItemType
 import com.eaio.uuid.UUID
+import java.sql.SQLIntegrityConstraintViolationException
+import org.jooq.exception.DataAccessException
 
 class JooqDomainConfigStoreTest {
   private val log = LoggerFactory.getLogger(getClass)
@@ -578,11 +580,20 @@ class JooqDomainConfigStoreTest {
     val parentCategories = Map("some-date-category" ->  new RangeCategoryDescriptor("date", "2009-11-11", "2009-11-20"))
     val viewCategories = Map("some-date-category" ->  new RangeCategoryDescriptor("date", "2009-11-18", "2009-11-19"))
 
-    val upstreamView = EndpointViewDef(name = "shared-name", categories = viewCategories)
-    val downstreamView = EndpointViewDef(name = "shared-name", categories = viewCategories)
+    // It should be possible to have:
+    // - An endpoint with multiple views each having a category of the same name
+    // - Shared view names across endpoints
 
-    val upstream = EndpointDef(name = new UUID().toString, categories = parentCategories, views = Seq(upstreamView))
-    val downstream = EndpointDef(name = new UUID().toString, categories = parentCategories, views = Seq(downstreamView))
+    val uv1 = EndpointViewDef(name = "first-shared-name", categories = viewCategories)
+    val uv2 = uv1.copy(name = "second-shared-name")
+    val dv1 = EndpointViewDef(name = "first-shared-name", categories = viewCategories)
+    val dv2 = dv1.copy(name = "second-shared-name")
+
+    val upstreamViews = Seq(uv1,uv2)
+    val downstreamViews = Seq(dv1,dv2)
+
+    val upstream = EndpointDef(name = new UUID().toString, categories = parentCategories, views = upstreamViews)
+    val downstream = EndpointDef(name = new UUID().toString, categories = parentCategories, views = downstreamViews)
 
     val pair = PairDef(key = new UUID().toString, upstreamName = upstream.name, downstreamName = downstream.name)
 
@@ -592,7 +603,23 @@ class JooqDomainConfigStoreTest {
     domainConfigStore.createOrUpdateEndpoint(domain, downstream)
     domainConfigStore.createOrUpdatePair(domain, pair)
 
-    systemConfigStore.deleteDomain(domain)
+    // It should not be possible to create more than one view with the same name within the same endpoint
+
+    val uv3 = uv2.copy()
+    val invalidUpstreamViews = Seq(uv1,uv2,uv3)
+    val invalidUpstream = EndpointDef(name = new UUID().toString, categories = parentCategories, views = invalidUpstreamViews)
+
+    try {
+      domainConfigStore.createOrUpdateEndpoint(domain, invalidUpstream)
+      fail("Should have thrown integrity error")
+    }
+    catch {
+      case x:DataAccessException => // expected
+    }
+    finally {
+      systemConfigStore.deleteDomain(domain)
+    }
+
   }
 
   @Test
