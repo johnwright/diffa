@@ -267,8 +267,8 @@ $('.diffa-rings').each(function() {
 $('.diffa-ringset').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
   var zoomHref = $(this).data('zoom-href');
-  var zoomInLightbox = $(this).data('zoom-with-lightbox') == 'true';
-
+  var zoomInLightbox = !!$(this).data('zoom-with-lightbox');
+  
   new Diffa.Views.RingSet({el: $(this), model: domain});
   if (zoomHref) {
     $(this).bind('ring-clicked', function(e, details) {
@@ -280,7 +280,7 @@ $('.diffa-ringset').each(function() {
         targetUrl += "&endTime=" + Diffa.Helpers.DatesHelper.toISOString(details.endTime);
       }
 
-      if (zoomInLightbox) {
+      if (!zoomInLightbox) {
         window.location = targetUrl;
       } else {
         $.colorbox({
