@@ -25,6 +25,15 @@
   if (domain == null || domain.equals("")) {
     domain = "diffa";
   }
+  String pair = request.getParameter("pair");
+  String pairAttr = "";
+  if (pair != null && !pair.equals("")) {
+    pairAttr = "data-pair=\"" + pair + "\"";
+  }
+  String username = (String) session.getAttribute("username");
+  if (username == null || username.equals("")) {
+    username = "";
+  }
 %>
 
 <html>
@@ -35,17 +44,15 @@
 
   <body>
 
-    <div class="diffa-rings-page" data-domain="<%= domain %>">
-      <div class="main-logo">
-        <h1>Diffa</h1>
-      </div>
+    <div class="diffa-heatmap-page" data-domain="<%= domain %>">
+      <div id="heatmap" class="diffa-heatmap" data-domain="<%= domain %>" <%= pairAttr %>></div>
 
-      <div class="top-navigation-link">
-        <a class="domain-page" href="index.html">Diffa</a>
-      </div>
+      <div id="diff-list-container" class="diffa-difflist" data-domain="<%= domain %>" <%= pairAttr %>></div>
 
-      <div id="rings" class="diffa-ringset" data-domain="<%= domain %>"
-           data-zoom-href="heatmap.html" data-zoom-with-lightbox="true"></div>
+      <div id="contentviewer" class="diffa-contentviewer" data-domain="<%= domain %>" <%= pairAttr %>></div>
+
+      <div id="contentinspector" class="diffa-contentinspector" data-domain="<%= domain %>" <%= pairAttr %>></div>
     </div>
+
   </body>
 </html>

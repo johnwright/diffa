@@ -138,12 +138,28 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   },
 
   getSwimlaneLabels: function() {
-    return this.aggregates.pluck('pair');
+    if (this.aggregates.containsMultiplePairs) {
+      return this.aggregates.pluck('pair');
+    } else {
+      return [this.aggregates.id];
+    }
+  },
+
+  aggregatesForRow: function(row) {
+    if (this.aggregates.containsMultiplePairs && this.aggregates.length > row) {
+      return this.aggregates.at(row);
+    } else if (!this.aggregates.containsMultiplePairs && row == 0) {
+      return this.aggregates;
+    } else {
+      return null;
+    }
   },
 
   getRow: function(row) {
-    if (this.aggregates.length > row) {
-      var pairAggs = this.aggregates.at(row).get('map') || [];
+    var rowAggs = this.aggregatesForRow(row);
+
+    if (rowAggs) {
+      var pairAggs = rowAggs.get('map') || [];
       var bucketCount = this.get('bucketCount');
 
       // Determine how many buckets different the projection is to the currently loaded data
@@ -171,16 +187,20 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   },
 
   getLeftCount: function(row) {
-    if (this.aggregates.length > row) {
-      return (this.aggregates.at(row).get('left') || [0])[0];
+    var rowAggs = this.aggregatesForRow(row);
+
+    if (rowAggs) {
+      return (rowAggs.get('left') || [0])[0];
     } else {
       return 0;
     }
   },
 
   getRightCount: function(row) {
-    if (this.aggregates.length > row) {
-      return (this.aggregates.at(row).get('right') || [0])[0];
+    var rowAggs = this.aggregatesForRow(row);
+
+    if (rowAggs) {
+      return (rowAggs.get('right') || [0])[0];
     } else {
       return 0;
     }
@@ -432,7 +452,7 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
   highlighted: null,
 
-  initialize: function() {
+  initialize: function(opts) {
     _.bindAll(this, "render", "update", "pollAndUpdate", "mouseUp", "mouseMove", "mouseDown");
 
     $(document).mouseup(this.mouseUp);
@@ -441,6 +461,10 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     this.model.watch($(this.el));
 
     this.model.bind('change:buckets', this.update);
+
+    if (opts.pair) {
+      this.minRows = 1;
+    }
 
     this.render();
     this.zoomControls = new Diffa.Views.ZoomControls({el: this.$('.heatmap-controls'), model: this.model});
@@ -1215,7 +1239,17 @@ function nearestHour() {
 
 $('.diffa-heatmap').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
-  new Diffa.Views.Heatmap({el: $(this), model: new Diffa.Models.HeatmapProjection({aggregates: domain.aggregates})});
+  var pair = $(this).data('pair');
+
+  if (pair == null) {
+    new Diffa.Views.Heatmap({el: $(this), model: new Diffa.Models.HeatmapProjection({aggregates: domain.aggregates})});
+  } else {
+    new Diffa.Views.Heatmap({
+      el: $(this),
+      pair: pair,
+      model: new Diffa.Models.HeatmapProjection({aggregates: domain.aggregates.forPair(pair)})
+    });
+  }
 });
 $('.diffa-difflist').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
