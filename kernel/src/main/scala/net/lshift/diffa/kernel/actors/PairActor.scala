@@ -155,12 +155,12 @@ case class PairActor(pair:DomainPairDef,
       pairRef.domain, CorrelationWriterProxy.TIMEOUT_KEY,
       CorrelationWriterProxy.TIMEOUT_DEFAULT_VALUE).toInt
 
-    def clearUpstreamVersion(id: VersionID) = call( _.clearUpstreamVersion(id) )
-    def clearDownstreamVersion(id: VersionID) = call( _.clearDownstreamVersion(id) )
-    def storeDownstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String)
-      = call( _.storeDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn) )
-    def storeUpstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, vsn: String)
-      = call( _.storeUpstreamVersion(id, attributes, lastUpdated, vsn) )
+    def clearUpstreamVersion(id: VersionID, scanId:Option[Long]) = call( _.clearUpstreamVersion(id, scanId) )
+    def clearDownstreamVersion(id: VersionID, scanId:Option[Long]) = call( _.clearDownstreamVersion(id, scanId) )
+    def storeDownstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, uvsn: String, dvsn: String, scanId:Option[Long])
+      = call( _.storeDownstreamVersion(id, attributes, lastUpdated, uvsn, dvsn, scanId) )
+    def storeUpstreamVersion(id: VersionID, attributes: Map[String, TypedAttribute], lastUpdated: DateTime, vsn: String, scanId:Option[Long])
+      = call( _.storeUpstreamVersion(id, attributes, lastUpdated, vsn, scanId) )
     def call(command:(LimitedVersionCorrelationWriter => Correlation)) = {
       implicit val askTimeout : Timeout = timeout seconds
       val message = VersionCorrelationWriterCommand(scanId, command)
@@ -267,7 +267,7 @@ case class PairActor(pair:DomainPairDef,
       }
     case ScanMessage(scanView, _)           =>
       // ignore any scan requests whilst scanning
-      diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Ignoring scan request received during current scan")
+      diagnostics.logPairEvent(None, pairRef, DiagnosticLevel.INFO, "Ignoring scan request received during current scan")
       logger.warn("%s Ignoring scan request; view = %s".format(formatAlertCode(pairRef, SCAN_REQUEST_IGNORED), scanView))
     case d: Deferrable                      => deferred.enqueue(d)
     case a: ChildActorCompletionMessage     if isOwnedByActiveScan(a) => {
@@ -307,7 +307,7 @@ case class PairActor(pair:DomainPairDef,
       writer.flush()
 
       try {
-        diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Calculating differences")
+        diagnostics.logPairEvent(Some(activeScan.id), pairRef, DiagnosticLevel.INFO, "Calculating differences")
         replayCorrelationStore(differencesManager, writer, store, pairRef, us, ds, TriggeredByScan)
       } catch {
         case ex =>
@@ -330,9 +330,9 @@ case class PairActor(pair:DomainPairDef,
     }
 
     state match {
-      case PairScanState.FAILED => diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Scan failed")
-      case PairScanState.CANCELLED => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan cancelled")
-      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Scan completed")
+      case PairScanState.FAILED => diagnostics.logPairEvent(Some(activeScan.id), pairRef, DiagnosticLevel.ERROR, "Scan failed")
+      case PairScanState.CANCELLED => diagnostics.logPairEvent(Some(activeScan.id), pairRef, DiagnosticLevel.INFO, "Scan cancelled")
+      case PairScanState.UP_TO_DATE => diagnostics.logPairEvent(Some(activeScan.id), pairRef, DiagnosticLevel.INFO, "Scan completed")
       case _                        => // Ignore - not a state that we'll see
     }
 
@@ -364,7 +364,7 @@ case class PairActor(pair:DomainPairDef,
 
     // Inform the diagnostics manager that we've completed a major operation, so it should checkpoint the explanation
     // data.
-    diagnostics.checkpointExplanations(pair.asRef)
+    diagnostics.checkpointExplanations(Some(activeScan.id), pair.asRef)
 
     logger.info(formatAlertCode(pairRef, SCAN_COMPLETED_BENCHMARK))
     cleanupIndexFilesIfCorrelationStoreBackedByLucene
@@ -444,7 +444,7 @@ case class PairActor(pair:DomainPairDef,
       replayCorrelationStore(differencesManager, writer, store, pairRef, us, ds, TriggeredByBoot)
     } catch {
       case ex => {
-        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to Difference Pair: " + ex.getMessage)
+        diagnostics.logPairEvent(None, pairRef, DiagnosticLevel.ERROR, "Failed to Difference Pair: " + ex.getMessage)
         logger.error(formatAlertCode(pairRef, DIFFERENCING_FAILURE), ex)
       }
     }
@@ -480,12 +480,12 @@ case class PairActor(pair:DomainPairDef,
         case None =>       "Commencing non-filtered scan for pair %s".format(pairRef.key)
       }
 
-      diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, infoMsg)
+      diagnostics.logPairEvent(Some(createdScan.id), pairRef, DiagnosticLevel.INFO, infoMsg)
 
       if (us.supportsScanning) {
         Future {
           try {
-            policy.scanUpstream(pairRef, us, scanView, writerProxy, usp, bufferingListener, currentFeedbackHandle)
+            policy.scanUpstream(createdScan.id, pairRef, us, scanView, writerProxy, usp, bufferingListener, currentFeedbackHandle)
             self ! ChildActorCompletionMessage(createdScan.id, Up, Success)
             logger.info(formatAlertCode(pairRef, UPSTREAM_SCAN_COMPLETED_BENCHMARK))
           }
@@ -504,7 +504,7 @@ case class PairActor(pair:DomainPairDef,
       if (ds.supportsScanning) {
         Future {
           try {
-            policy.scanDownstream(pairRef, ds, scanView, writerProxy, usp, dsp, bufferingListener, currentFeedbackHandle)
+            policy.scanDownstream(createdScan.id, pairRef, ds, scanView, writerProxy, usp, dsp, bufferingListener, currentFeedbackHandle)
             self ! ChildActorCompletionMessage(createdScan.id, Down, Success)
             logger.info(formatAlertCode(pairRef, DOWNSTREAM_SCAN_COMPLETED_BENCHMARK))
           }
@@ -531,7 +531,7 @@ case class PairActor(pair:DomainPairDef,
     } catch {
       case x: Exception => {
         logger.error(formatAlertCode(pairRef, SCAN_INITIALIZATION_FAILURE), x)
-        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Failed to initiate scan for pair: " + x.getMessage)
+        diagnostics.logPairEvent(Some(createdScan.id), pairRef, DiagnosticLevel.ERROR, "Failed to initiate scan for pair: " + x.getMessage)
         processBacklog(PairScanState.FAILED)
         false
       }
@@ -562,7 +562,7 @@ case class PairActor(pair:DomainPairDef,
         logger.error(logTemplate.format(prefix, scanId), e)
     }
 
-    diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "%s scan failed: %s".format(marker, x.getMessage))
+    diagnostics.logPairEvent(Some(scanId), pairRef, DiagnosticLevel.ERROR, "%s scan failed: %s".format(marker, x.getMessage))
     actor ! ChildActorCompletionMessage(scanId, upOrDown, Failure)
   }
 

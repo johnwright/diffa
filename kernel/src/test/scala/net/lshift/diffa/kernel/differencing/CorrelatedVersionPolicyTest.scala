@@ -124,8 +124,8 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(pair.asRef, upstream, None, writer, usMock, nullListener, feedbackHandle)
-    policy.scanDownstream(pair.asRef, downstream, None, writer, usMock, dsMock, nullListener, feedbackHandle)
+    policy.scanUpstream(0L, pair.asRef, upstream, None, writer, usMock, nullListener, feedbackHandle)
+    policy.scanDownstream(0L, pair.asRef, downstream, None, writer, usMock, dsMock, nullListener, feedbackHandle)
 
     verifyAll
   }
@@ -175,8 +175,8 @@ class CorrelatedVersionPolicyTest extends AbstractPolicyTest {
 
     replayAll
 
-    policy.scanUpstream(pair.asRef, upstream, None, writer, usMock, listener, feedbackHandle)
-    policy.scanDownstream(pair.asRef, downstream, None, writer, usMock, dsMock, listener, feedbackHandle)
+    policy.scanUpstream(0L, pair.asRef, upstream, None, writer, usMock, listener, feedbackHandle)
+    policy.scanDownstream(0L, pair.asRef, downstream, None, writer, usMock, dsMock, listener, feedbackHandle)
 
     verifyAll
   }
