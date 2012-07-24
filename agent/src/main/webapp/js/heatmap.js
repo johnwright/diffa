@@ -16,26 +16,6 @@
 
 $(function() {
 
-jQuery.fn.multiselect = function() {
-  $(this).each(function() {
-    var checkboxes = $(this).find("input:checkbox");
-    checkboxes.each(function() {
-      var checkbox = $(this);
-      // Highlight pre-selected checkboxes
-      if (checkbox.attr("checked"))
-        checkbox.parent().addClass("multiselect-on");
-
-      // Highlight checkboxes that the user selects
-      checkbox.click(function() {
-        if (checkbox.attr("checked"))
-          checkbox.parent().addClass("multiselect-on");
-        else
-          checkbox.parent().removeClass("multiselect-on");
-      });
-    });
-  });
-};
-
 var directions = {
   left: 'left',
   right: 'right'
@@ -79,7 +59,7 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   watchInterval: 5000,      // How frequently we poll for blob updates
   defaultZoomLevel:4,       // HOURLY
   defaultMaxRows: 1000,       // Will change as more pairs arrive. Correction: No, it won't!!!
-  defaultBucketCount: 31,   // Default number of buckets. Will be overriden once heatmap is ready
+  defaultBucketCount: 31,   // Default number of buckets. Will be overridden once heatmap is ready
 
   initialize: function() {
     _.bindAll(this, "sync");
@@ -226,17 +206,10 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     }
   },
 
-  getLeftCount: function(row) {
-    if (this.aggregates.length > row) {
-      return (this.aggregates.at(row).get('left') || [0])[0];
-    } else {
-      return 0;
-    }
-  },
-
-  getRightCount: function(row) {
-    if (this.aggregates.length > row) {
-      return (this.aggregates.at(row).get('right') || [0])[0];
+  getCount: function(pairKey, direction) {
+    var aggregate = this.aggregates.get(pairKey);
+    if (aggregate) {
+      return (aggregate.get(direction) || [0])[0];
     } else {
       return 0;
     }
@@ -433,11 +406,44 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var offset_x = canvasX;
     var offset_y = canvasY;
     $('.pair-filter-chooser').html(self.pairFilter());
-    $('.chzn-select').chosen();
-    $('#pair-filter').chosen().on("change", function(event) {
-      var remainingPairs = $(this).val();
-      self.hidePairsExcept(remainingPairs);
+    $('#pair-filter').multiselect({
+      selectedText: function(numChecked, numTotal, checkedItems) {
+        return "Showing " + numChecked + " of " + numTotal + " pairs";
+      },
+      minWidth: 400
+    }).multiselectfilter({width: 140});
+
+    $('#pair-filter').on("change", function(e) {
+      var selected = _.filter(e.currentTarget.children, function(elem) {
+        return elem.selected;
+      }).map(function(elem) { return elem.value; });
+
+      self.hidePairsExcept(selected);
+      $('#pair-filter').multiselect('refresh');
     });
+  },
+
+  pairFilter: function() {
+    var self = this;
+    var pairs = this.model.aggregates.pluck('pair');
+
+    var html = '<select id="pair-filter" multiple="multiple">'
+    _.each(pairs, function(pair) {
+      html = html + self.buildOption(pair, self.model.hiddenPairs.get(pair));
+    });
+    html = html + '</select>';
+
+    return html;
+  },
+
+  buildOption: function(pair, optHiddenPair) {
+    var html = '';
+    if (optHiddenPair) {
+      html = '<option value="' + pair + '">' + pair + '</option>';
+    } else {
+      html = '<option selected value="' + pair + '">' + pair + '</option>';
+    }
+    return html;
   },
 
   hidePairsExcept: function(visiblePairs) {
@@ -456,30 +462,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     self.pollAndUpdate();
   },
 
-  buildOption: function(pair, optHiddenPair) {
-    var html = '';
-    if (optHiddenPair) {
-      html = '<option value="' + pair + '">' + pair + '</option>';
-    } else {
-      html = '<option selected="selected" value="' + pair + '">' + pair + '</option>';
-    }
-    return html;
-  },
-
-  pairFilter: function() {
-    var self = this;
-    var pairs = this.model.aggregates.pluck('pair');
-
-    var html = '<select id="pair-filter" data-placeholder="All pairs hidden; select pairs to show" multiple class="chzn-select">'
-    html = html + '<option value=""></option>'
-    _.each(pairs, function(pair) {
-      html = html + self.buildOption(pair, self.model.hiddenPairs.get(pair));
-    });
-    html = html + '</select>';
-
-    return html;
-  },
-
   coordToPositionStyle: function(x, y) {
     return 'style="position: absolute; top: ' + y + 'px; left: ' + x + 'px;"';
   },
@@ -494,24 +476,24 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var labelBaseline = laneTop + marginTop; // y2 > y1 <=> y2 is below y1
 
     this.dashedLine(this.underlayContext, 0, offset, this.canvas.width, offset, 2);
-    if (swimLaneLabels[laneIndex] != null) {
+    var pairKey = swimLaneLabels[laneIndex];
+    if (pairKey != null) {
       this.underlayContext.fillStyle = colours.translucent;
       var textWidth = this.underlayContext.measureText(swimLaneLabels[laneIndex]).width;
-      this.underlayContext.fillRect(marginSide, laneTop + marginTop, textWidth, labelBaseline - laneTop - marginTop + textHeight)
+      this.underlayContext.fillRect(marginSide, laneTop + marginTop, textWidth, labelBaseline - laneTop - marginTop + textHeight);
 
       this.underlayContext.fillStyle = colours.black;
       this.underlayContext.textBaseline = "top";
       this.underlayContext.font = textHeight.toString() + "px 'Lucida Grande', Tahoma, Arial, Verdana, sans-serif";
       this.underlayContext.fillText(swimLaneLabels[laneIndex], marginSide, labelBaseline);
-    }
 
-    // Draw arrows if we have values outside the map for this row
-    var cell = this.coordsToCell({"x": viewportX, "y": laneTop});
-    if (this.model.getLeftCount(cell.row)) {
-      this.drawArrow(this.underlayContext, directions.left, marginSide, offset - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
-    }
-    if (this.model.getRightCount(cell.row)) {
-      this.drawArrow(this.underlayContext, directions.right, this.canvas.width - marginSide - arrowWidth, offset - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
+      // Draw arrows if we have values outside the map for this row
+      if (this.model.getCount(pairKey, directions.left)) {
+        this.drawArrow(this.underlayContext, directions.left, marginSide, offset - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
+      }
+      if (this.model.getCount(pairKey, directions.right)) {
+        this.drawArrow(this.underlayContext, directions.right, this.canvas.width - marginSide - arrowWidth, offset - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
+      }
     }
   },
 
