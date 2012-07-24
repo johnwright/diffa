@@ -62,6 +62,7 @@ Diffa.Helpers.CategoriesHelper = {
 };
 Diffa.Models.Endpoint = Backbone.Model.extend({
   idAttribute: 'name',
+  type: 'endpoint',
   initialize: function() {
     Diffa.Helpers.CategoriesHelper.extractCategories(this);
     Diffa.Helpers.ViewsHelper.extractViews(this, Diffa.Collections.EndpointViews);
@@ -92,6 +93,7 @@ Diffa.Models.EndpointView = Backbone.Model.extend({
 });
 Diffa.Models.Pair = Backbone.Model.extend({
   idAttribute: "key",
+  type: 'pair',
   urlRoot: function() { return "/domains/" + (this.domain || this.collection.domain).id + "/config/pairs"; },
   initialize: function() {
     Diffa.Helpers.ViewsHelper.extractViews(this);
