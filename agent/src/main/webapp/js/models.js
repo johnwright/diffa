@@ -326,7 +326,7 @@ Diffa.Collections.HiddenPairs = Diffa.Collections.CollectionBase.extend({
     var self = this;
     _.each(models, function(model) {
       if (model && model.destroy) {
-        model.destroy({wait: true});
+        model.destroy();
       }
     });
     self.fetch();
