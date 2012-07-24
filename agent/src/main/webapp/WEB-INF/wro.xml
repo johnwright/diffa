@@ -17,6 +17,7 @@
     <js>/js/models.js</js>
     <js>/js/thirdparty/glDatePicker.js</js>
     <js>/js/thirdparty/select2.js</js>
+    <js>/js/thirdparty/rivets.min.js</js>
   </group>
 
   <group name="styling">

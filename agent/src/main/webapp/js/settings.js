@@ -193,8 +193,10 @@ Diffa.Views.FormEditor = Backbone.View.extend({
 
     // Clear the contents of all bound fields, except for radio buttons
     $('input[data-key]', this.el).not('input:radio').val(''); 
-    Backbone.ModelBinding.bind(this, {all: "data-key"});
-  
+    var binding = {};
+    binding[this.model.type] = this.model;
+    rivets.bind($(this.el), binding);
+
     this.postBind();
 
     var nameContainer = $('.name-container', this.el);
@@ -311,13 +313,13 @@ Diffa.Views.EndpointEditor = Diffa.Views.FormEditor.extend({
     this.viewsEditor = new Diffa.Views.EndpointViewsEditor({collection: this.model.views, el: this.$('.views')});
 
     var self = this;
-    this.model.bind('change:scanUrl', function() {
+    /*this.model.bind('change:scanUrl', function() {
       if (self.model.get('scanUrl')) {
         self.$('tr[data-target-pane=scanning] .description').text("Scanning is configured");
       } else {
         self.$('tr[data-target-pane=scanning] .description').text("Scanning is not configured");
       }
-    }).trigger('change:scanUrl');
+    }).trigger('change:scanUrl');*/
   },
   postClose: function() {
     if (this.categoryEditors) _.each(this.categoryEditors, function(editor) { editor.close(); });
@@ -575,19 +577,51 @@ Diffa.Helpers.bindEditor = function(el, elementType, collectionName, modelClass,
 };
 
 rivets.configure({
+  prefix: 'bind',
+
   adapter: {
     subscribe: function(obj, keypath, callback) {
-      callback.wrapped = function(m, v) { callback(v) };
-      obj.on('change:' + keypath, callback.wrapped);
+      if (!obj) return;
+
+      if (keypath) {
+        callback.wrapped = function(m, v) { callback(v) };
+        obj.on('change:' + keypath, callback.wrapped);
+      } else {
+        callback.wrapped = function(m, v) { callback(m.toJSON()) };
+        obj.on('change', callback.wrapped);
+      }
     },
     unsubscribe: function(obj, keypath, callback) {
-      obj.off('change:' + keypath, callback.wrapped);
+      obj.off('change' + (keypath ? ':' + keypath : ''), callback.wrapped);
     },
     read: function(obj, keypath) {
-      return obj.get(keypath);
+      if (!obj) return;
+
+      if (keypath) {
+        return obj.get(keypath);
+      } else {
+        return obj.toJSON();
+      }
     },
     publish: function(obj, keypath, value) {
       obj.set(keypath, value);
+    }
+  },
+
+  formatters: {
+    scanningStatus: function(value) {
+      if (value.scanUrl) {
+        return "Scanning configured via " + value.scanUrl;
+      } else {
+        return "Scanning not configured";
+      }
+    },
+    inspectionStatus: function(value) {
+      if (value.contentRetrievalUrl) {
+        return "Content inspection configured via " + value.contentRetrievalUrl;
+      } else {
+        return "Inspection not configured";
+      }
     }
   }
 });

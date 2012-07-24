@@ -1,20 +1,20 @@
 <div class="error"></div>
 <div class="pane" data-pane="root">
   <dl>
-    <dt>Name:</dt><dd class="name-container"><input data-key="name" type="text"><span data-bind="name"></span></dd>
+    <dt>Name:</dt><dd class="name-container"><input data-bind-value="endpoint.name" type="text"><span data-bind-text="endpoint.name"></span></dd>
     <dt>Collation order</dt>
     <dd class="collation">
-      <input type="radio" data-key="collation" id="collationAscii" name="collation" value="ascii" checked="checked"/>
+      <input type="radio" data-bind-checked="endpoint.collation" id="collationAscii" name="collation" value="ascii" checked="checked"/>
         <label for="collationAscii">Ascii</label>
-      <input type="radio" data-key="collation" id="collationUnicode" name="collation" value="unicode" />
+      <input type="radio" data-bind-checked="endpoint.collation" id="collationUnicode" name="collation" value="unicode" />
         <label for="collationUnicode" title="Case insensitive">Unicode</label>
     </dd>
   </dl>
 
   <h4>Features</h4>
   <table class="feature-table">
-    <tr data-target-pane="scanning"><td class="key">Scanning</td><td class="description">Scanning not configured</td></tr>
-    <tr data-target-pane="inspection"><td class="key">Content Inspection</td><td class="description">Content inspection not configured</td></tr>
+    <tr data-target-pane="scanning"><td class="key">Scanning</td><td data-bind-text="endpoint | scanningStatus" class="description"></td></tr>
+    <tr data-target-pane="inspection"><td class="key">Content Inspection</td><td data-bind-text="endpoint | inspectionStatus" class="description">Content inspection not configured</td></tr>
     <tr data-target-pane="advanced-urls"><td class="key">Advanced Interrogation</td><td class="description">Advanced interrogation not configured</td></tr>
     <tr data-target-pane="categories"><td class="key">Data Categorisation</td><td class="description">No categories configured</td></tr>
     <tr data-target-pane="views"><td class="key">Views</td><td class="description">No views configured</td></tr>
@@ -27,7 +27,7 @@
   </div>
 
   <dl>
-    <dt>Scan URL:</dt><dd><input data-key="scanUrl" type="text" size="60"></dd>
+    <dt>Scan URL:</dt><dd><input data-bind-value="endpoint.scanUrl" type="text" size="60"></dd>
   </dl>
 </div>
 <div class="pane" data-pane="inspection">
@@ -37,7 +37,7 @@
   </div>
 
   <dl>
-    <dt>Content Retrieval URL:</dt><dd><input data-key="contentRetrievalUrl" type="text" size="60"></dd>
+    <dt>Content Retrieval URL:</dt><dd><input data-bind-value="endpoint.contentRetrievalUrl" type="text" size="60"></dd>
   </dl>
 </div>
 <div class="pane" data-pane="advanced-urls">
@@ -58,8 +58,8 @@
   </div>
 
   <dl>
-    <dt>Version Generation URL:</dt><dd><input data-key="versionGenerationUrl" type="text" size="60"></dd>
-    <dt>Inbound URL:</dt><dd><input data-key="inboundUrl" type="text" size="60"></dd>
+    <dt>Version Generation URL:</dt><dd><input data-bind-value="endpoint.versionGenerationUrl" type="text" size="60"></dd>
+    <dt>Inbound URL:</dt><dd><input data-bind-value="endpoint.inboundUrl" type="text" size="60"></dd>
   </dl>
 </div>
 <div class="pane" data-pane="categories">
