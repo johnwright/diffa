@@ -6,15 +6,12 @@
 
 ## New Features
 
-* [226] - The API namespace /domains is deprecated in favor of /spaces. Use server side forwarding to provide short term backwards compatibility.
 * [196] - Support collapsing of heatmap swim lanes via UI controls
-* [219] - The collation of entity and aggregate scan results are validated as part of the scan deserialization pipeline
-* [227] - The collation that Diffa uses itself to respond to scan requests is now configurable
+* [234] - Clicking on a ring in the overview page will open up a light box containing a cutdown heatmap for the relevant pair.
 
 ## General Maintenance
 
-* [228] - The underlying client used by the Scan Participant REST client was inappropriately re-used, causing all but the first scan to fail.
-* [229] - Addressed a regression whereby ignoring a difference in the UI did not have immediate effect.
+* [??] -
 
 ## Library Upgrades
 

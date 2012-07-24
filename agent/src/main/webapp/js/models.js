@@ -506,7 +506,13 @@ Diffa.Models.PairAggregates = Backbone.Model.extend(Diffa.Collections.Watchable)
     this.set(result, opts);
     
     this.lastRequests = requestDetails;
-  }
+  },
+
+  getMap: function() {
+    return this.get('map');
+  },
+
+  containsMultiplePairs: false
 });
 
 Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Aggregator).extend({
@@ -547,7 +553,18 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
 
   change: function() {
     this.forEach(function(pair) { pair.change(); });
-  }
+  },
+
+  getMap: function(pairKey) {
+    var pairAggregate = this.get(pairKey);
+    if (pairAggregate) {
+      return pairAggregate.getMap();
+    } else {
+      return [];
+    }
+  },
+
+  containsMultiplePairs: true
 });
 
 /**

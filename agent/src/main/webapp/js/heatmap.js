@@ -34,7 +34,9 @@ var colours = {
 Diffa.Routers.Blobs = Backbone.Router.extend({
   routes: {
     "":                             "index",     // #
-    "blobs/:pair/:start-:end":      "viewBlob"   // # blobs/WEB-1/20110801134500/3600/5
+    "blobs/:pair/:start-:end":      "viewBlob",  // # blobs/WEB-1/20110801T134500Z-20110801T134500Z
+    "blobs/:pair/-:end":            "viewBlobEnd",  // # blobs/WEB-1/-20110801T134500Z
+    "blobs/:pair/:start-":          "viewBlobStart"  // # blobs/WEB-1/20110801T134500Z-
   },
 
   initialize: function(opts) {
@@ -42,7 +44,7 @@ Diffa.Routers.Blobs = Backbone.Router.extend({
     this.domain = opts.domain;
 
     opts.el.on('blob:selected', function(event, selectedPair, startTime, endTime) {
-      self.navigate("blobs/" + selectedPair + '/' + startTime + '-' + endTime, true);
+      self.navigateBlob(selectedPair, startTime, endTime);
     });
   },
 
@@ -52,6 +54,16 @@ Diffa.Routers.Blobs = Backbone.Router.extend({
   viewBlob: function(pairKey, start, end) {
     // Currently, only the Diff list displays selection. When #320 is done, this will also need to inform the heatmap.
     this.domain.diffs.select(pairKey, start, end);
+  },
+  viewBlobEnd: function(pairKey, end) {
+    this.viewBlob(pairKey, null, end);
+  },
+  viewBlobStart: function(pairKey, start) {
+    this.viewBlob(pairKey, start, null);
+  },
+
+  navigateBlob: function(pair, startTime, endTime) {
+    this.navigate("blobs/" + pair + '/' + startTime + '-' + endTime, true);
   }
 });
 
@@ -158,28 +170,26 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     this.hiddenPairs.hidePair(pairName);
   },
 
-  isVisible: function(pairKey) {
-    var key = this.hiddenPairs.get(pairKey);
-    if (key) {
-      return false;
-    } else {
-      return true;
-    }
+  isHidden: function(pairKey) {
+    return (this.hiddenPairs.get(pairKey) != undefined);
   },
 
   getSwimlaneLabels: function() {
     var self = this;
-    return _.filter(self.aggregates.pluck('pair'), function(pairKey) {
-      return self.isVisible(pairKey);
-    });
+    if (this.aggregates.containsMultiplePairs) {
+      // filter out hidden aggregates
+      return _.reject(self.aggregates.pluck('pair'), function(pairKey) {
+        return self.isHidden(pairKey);
+      });
+    } else {
+      return [this.aggregates.id];
+    }
   },
 
-  // VERY IMPORTANT. TODO: Fix this to update properly.
   getRow: function(row) {
-    var pair = (this.getSwimlaneLabels())[row];
+    var pairAggs = this.aggregates.getMap((this.getSwimlaneLabels())[row]);
 
-    if (pair) {
-      var pairAggs = this.aggregates.get(pair).get('map') || [];
+    if (pairAggs) {
       var bucketCount = this.get('bucketCount');
 
       // Determine how many buckets different the projection is to the currently loaded data
@@ -206,8 +216,9 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     }
   },
 
-  getCount: function(pairKey, direction) {
+  getOutOfViewDiffCount: function(pairKey, direction) {
     var aggregate = this.aggregates.get(pairKey);
+
     if (aggregate) {
       return (aggregate.get(direction) || [0])[0];
     } else {
@@ -248,6 +259,201 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
   }
 });
 
+Diffa.Models.Diff = Backbone.Model.extend({
+  pendingUpstreamRequest: null,
+  pendingDownstreamRequest: null,
+
+  initialize: function() {
+    _.bindAll(this, "retrieveDetails", "ignore");
+  },
+
+  /**
+   * Fill out this diff with more expensive-to-capture details, such as upstream/downstream content.
+   */
+  retrieveDetails: function() {
+    var self = this;
+
+    // Only retrieve the pair info if we don't already have it
+    if (!self.get('upstreamName') || !self.get('downstreamName')) {
+      $.get("/domains/" + self.collection.domain.id + "/config/pairs/" + this.get('objId').pair.key, function(data, status, xhr) {
+        self.set({upstreamName: data.upstreamName, downstreamName: data.downstreamName});
+      });
+    }
+
+    // Always retrieve the latest content for the content panels
+    var getContent = function(field, upOrDown, pendingRequest) {
+      if (pendingRequest) pendingRequest.abort();
+
+      function setContent(content) {
+        var attrs = {};
+        attrs[field] = content;
+        self.set(attrs);
+      }
+
+      pendingRequest = $.ajax({
+            url: "/domains/" + self.collection.domain.id + "/diffs/events/" + self.id + "/" + upOrDown,
+            success: function(data) {
+              setContent(data || "no content found for " + upOrDown);
+            },
+            error: function(xhr, status, ex) {
+              if (status != "abort") {
+                if(console && console.log)
+                  console.log('error getting the content for ' + upOrDown, status, ex, xhr);
+
+                setContent("Content retrieval failed");
+              }
+            }
+          });
+      return pendingRequest;
+    };
+
+    this.pendingUpstreamRequest = getContent("upstreamContent", "upstream", this.pendingUpstreamRequest);
+    this.pendingDownstreamRequest = getContent("downstreamContent", "downstream", this.pendingDownstreamRequest);
+  },
+
+  /**
+   * Instructs the agent to ignore this difference.
+   */
+  ignore: function() {
+    var self = this;
+
+    $.ajax({
+      url: "/domains/" + this.collection.domain.id + "/diffs/events/" + this.id,
+      type: 'DELETE',
+      success: function(data) {
+        self.collection.domain.aggregates.sync();
+        self.collection.domain.diffs.sync();
+      },
+      error: function(xhr, status, ex) {
+        // TODO: 
+      }
+    });
+  }
+});
+
+Diffa.Collections.Diffs = Diffa.Collections.CollectionBase.extend({
+  watchInterval: 5000,      // How frequently we poll for diff updates
+  range: null,
+  page: 0,
+  listSize: 20,
+  selectedEvent: null,
+  model: Diffa.Models.Diff,
+  totalEvents: 0,
+  totalPages: 0,
+  lastSeqId: null,
+
+  initialize: function(models, opts) {
+    _.bindAll(this, "sync", "select", "selectEvent", "selectNextEvent");
+
+    this.domain = opts.domain;
+  },
+
+  sync: function(force) {
+    var self = this;
+
+    if (this.range == null) {
+      this.reset([]);
+    } else {
+      var url = "/domains/" + self.domain.id + "/diffs?pairKey=" + this.range.pairKey +
+                  "&offset=" + (this.page * this.listSize) + "&length=" + this.listSize;
+      if (this.range.start && this.range.start.length > 0) url += "&range-start=" + this.range.start;
+      if (this.range.end && this.range.end.length > 0) url += "&range-end=" + this.range.end;
+
+    $.get(url, function(data) {
+        if (!force && data.seqId == self.lastSeqId) return;
+
+        var diffs = _.map(data.diffs, function(diffEl) { diffEl.id = diffEl.seqId; return diffEl; });
+
+        if (self.totalEvents != data.total) {
+          self.totalEvents = data.total;
+          self.totalPages = Math.ceil(self.totalEvents / self.listSize);
+          self.trigger("change:totalEvents", self);
+        }
+
+        // Apply updates to the diffs that we currently have
+        var newDiffEls = _.map(diffs, function(diff) {
+          var current = self.get(diff.seqId);
+          if (current == null) {
+            return diff;
+          } else {
+            current.set(diff);    // Apply changes to the difference
+            return current;
+          }
+        });
+        self.reset(newDiffEls);
+
+        // Select the first event when we don't have anything selected, or when the current selection is no longer
+        // valid
+        if (self.selectedEvent == null || !self.get(self.selectedEvent.id)) {
+          if (diffs.length > 0)
+            self.selectEvent(diffs[0].seqId);
+          else
+            self.selectEvent(null);
+        }
+
+        // If we're now beyond the last page, then scroll back to it
+        if (self.page >= self.totalPages && self.totalPages > 0) {
+          self.setPage(self.totalPages - 1, true);
+        }
+
+        self.lastSeqId = data.seqId;
+      });
+    }
+  },
+
+  select: function(pairKey, start, end) {
+    this.range = {
+      pairKey: pairKey,
+      start: start,
+      end: end
+    };
+    this.setPage(0, true);
+  },
+
+  selectEvent: function(evtId) {
+    this.selectedEvent = this.get(evtId);
+    this.trigger("change:selectedEvent", this.selectedEvent);
+  },
+
+  selectNextEvent: function() {
+    this.selectEventWithOffset(1);
+  },
+
+  selectPreviousEvent: function() {
+    this.selectEventWithOffset(-1);
+  },
+
+  selectEventWithOffset: function(offset) {
+    if (this.selectedEvent != null) {
+      var selectedIdx = this.indexOf(this.selectedEvent);
+      var newIdx = selectedIdx + offset;
+      if (newIdx >= 0 && newIdx < this.length) {
+        var nextEvent = this.at(newIdx);
+        if (nextEvent != null) {
+          this.selectEvent(nextEvent.id);
+        }
+      }
+    }
+  },
+
+  nextPage: function() {
+    if (this.page < this.totalPages) this.setPage(this.page + 1);
+  },
+
+  previousPage: function() {
+    if (this.page > 0) this.setPage(this.page - 1);
+  },
+
+  setPage: function(page, force) {
+    if (force || this.page != page) {
+      this.page = page;
+      this.trigger("change:page", this);
+
+      this.sync(true);
+    }
+  }
+});
+
 Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
   minRows: 0,         // Minimum number of rows to be displayed
 
@@ -266,7 +472,7 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
   highlighted: null,
 
-  initialize: function() {
+  initialize: function(opts) {
     _.bindAll(this, "render", "update", "pollAndUpdate", "mouseUp", "mouseMove", "mouseDown");
 
     $(document).mouseup(this.mouseUp);
@@ -275,6 +481,11 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     this.model.watch($(this.el));
 
     this.model.bind('change:buckets', this.update);
+
+    if (opts.pair) {
+      this.minRows = 1;
+      this.statusBarHeight = 0; // don't show the statusbar if a single pair is being shown in isolation.
+    }
 
     this.render();
     this.zoomControls = new Diffa.Views.ZoomControls({el: this.$('.heatmap-controls'), model: this.model});
@@ -322,7 +533,9 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     this.recalibrateHeatmap();
     this.context.translate(this.o_x, this.o_y);
     this.scaleContext.translate(this.o_x, this.o_y);
-    this.drawStatusBar();
+    if (this.model.aggregates.containsMultiplePairs) {
+      this.drawStatusBar();
+    }
     this.drawGrid();
   },
 
@@ -352,7 +565,7 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
     this.$('.heatmap-controls').
         show().
-        css('top', $(this.heatmap).offset().top + 20).
+        css('top', $(this.heatmap).offset().top + this.statusBarHeight).
         css('left', $(this.heatmap).offset().left - this.$('.heatmap-controls')[0].offsetWidth);
   },
   recalibrateHeatmap: function() {
@@ -488,10 +701,10 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       this.underlayContext.fillText(swimLaneLabels[laneIndex], marginSide, labelBaseline);
 
       // Draw arrows if we have values outside the map for this row
-      if (this.model.getCount(pairKey, directions.left)) {
+      if (this.model.getOutOfViewDiffCount(pairKey, directions.left)) {
         this.drawArrow(this.underlayContext, directions.left, marginSide, offset - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
       }
-      if (this.model.getCount(pairKey, directions.right)) {
+      if (this.model.getOutOfViewDiffCount(pairKey, directions.right)) {
         this.drawArrow(this.underlayContext, directions.right, this.canvas.width - marginSide - arrowWidth, offset - (arrowHeight / 4) - (this.gridSize / 2), arrowWidth, arrowHeight);
       }
     }
@@ -528,12 +741,12 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     // (x,y) are pixel co-ordinates relative to an origin at top-left of heatmap.
     for (var x = 0; x <= region_width; x += this.gridSize) {
       for (var y = this.statusBarHeight; y <= this.canvas.height; y += laneHeight) {
-        this.drawCircle(x, y);
+        this.drawCircle(this.context, x, y);
       }
     }
   },
 
-  drawCircle: function(x, y) {
+  drawCircle: function(ctx, x, y) {
     var cell = this.coordsToCell({"x":x, "y":y});
 
     if (cell.column <= this.visibleColumns && cell.row < this.model.get('maxRows')) {
@@ -547,7 +760,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       // *****************************************
       var bucketSize = this.model.getRow(cell.row)[cell.column] || 0;
 
-
       var maximum = Math.floor((this.gridSize - 1) / 2);
 
       var cappedSize = this.transformBucketSize(bucketSize, {
@@ -560,17 +772,15 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       var isOverMaximum = cappedSize.limited;
 
       if (size > 0) {
-//        console.debug('[Heatmap.drawCircle] (x,y): (' + x + ',' + y + ')');
-//        console.debug('[Heatmap.drawCircle] (row,col): (' + cell.row + ',' + cell.column + ')');
         // if the size has been limited, draw the outline slightly thicker
-        this.context.lineWidth = isOverMaximum ? 3 : 2;
-        this.context.strokeStyle = colours.black;
-        this.context.fillStyle = colours.white;
-        this.context.beginPath();
-        this.context.arc(cell_x, cell_y, size, 0, Math.PI * 2, false);
-        this.context.closePath();
-        this.context.stroke();
-        this.context.fill();
+        ctx.lineWidth = isOverMaximum ? 3 : 2;
+        ctx.strokeStyle = colours.black;
+        ctx.fillStyle = colours.white;
+        ctx.beginPath();
+        ctx.arc(cell_x, cell_y, size, 0, Math.PI * 2, false);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fill();
       }
     }
   },
@@ -686,16 +896,16 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     ctx.restore();
   },
 
-  drawOverlay: function() {
+  drawOverlay: function(ctx) {
     if (this.highlighted != null && this.highlighted.column >= 0 && this.highlighted.row >= 0) {
       var value = this.model.getRow(this.highlighted.row)[this.highlighted.column];
       if (value > 0) {
         var c_x = this.highlighted.column * this.gridSize;
         var c_y = this.statusBarHeight + (this.highlighted.row * this.swimlaneHeight()) + this.gutterSize + this.gridSize;
-        this.overlayContext.font = "12px sans-serif";
-        this.overlayContext.textBaseline = "top";
-        var width = this.context.measureText("" + value).width;
-        this.overlayContext.fillText(value, c_x + Math.floor(this.gridSize / 2) - Math.floor(width / 2), c_y);
+        ctx.font = "12px sans-serif";
+        ctx.textBaseline = "top";
+        var width = ctx.measureText("" + value).width;
+        ctx.fillText(value, c_x + Math.floor(this.gridSize / 2) - Math.floor(width / 2), c_y);
       }
     }
   },
@@ -746,34 +956,9 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
   lastClick: undefined,
   lastClickTime: undefined,
 
-  // TODO: register for double-click event instead. Although that may have strange consequences.
-  isDoubleClick: function(lastClick, lastClickTime, thisClick) {
-    var dblClick = false;
-    var driftMargin = 6;
-    var activeWindow = 400; // milliseconds
-    var clickTime = new Date();
-
-    if (lastClick && lastClickTime) {
-      var cLast = this.coords(lastClick);
-      var cThis = this.coords(thisClick);
-      if (Math.abs(cLast.x - cThis.x) < driftMargin && Math.abs(cLast.y - cThis.y) < driftMargin) {
-        if (clickTime - lastClickTime < activeWindow) {
-          dblClick = true;
-        }
-      }
-    }
-    this.lastClickTime = clickTime;
-    this.lastClick = lastClick;
-    return dblClick;
-  },
-
   mouseUp: function(e) {
     var self = this;
     var c = this.coords(e);
-    if (self.isDoubleClick(self.lastClick, self.lastClickTime, e)) {
-      this.model.hidePair(this.coordsToCell(c));
-      self.pollAndUpdate();
-    }
 
     this.show_grid = false;
     this.dragging = false;
@@ -847,14 +1032,8 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
     if (cell.row >= 0 && cell.row < this.model.get('maxRows') && cell.column >= 0 && cell.column < this.visibleColumns) {
       this.highlighted = cell;
-      this.drawOverlay();
+      this.drawOverlay(this.overlayContext);
     }
-  }
-});
-
-Diffa.Views.PairFilter = Backbone.View.extend({
-  events: {
-    "click .chzn-drop": ""
   }
 });
 
@@ -914,200 +1093,6 @@ Diffa.Views.ZoomControls = Backbone.View.extend({
   zoomIn: function() { this.model.zoomIn(); },
 
   preventFocus: function(e) { $(e.target).blur(); }
-});
-
-Diffa.Models.Diff = Backbone.Model.extend({
-  pendingUpstreamRequest: null,
-  pendingDownstreamRequest: null,
-
-  initialize: function() {
-    _.bindAll(this, "retrieveDetails", "ignore");
-  },
-
-  /**
-   * Fill out this diff with more expensive-to-capture details, such as upstream/downstream content.
-   */
-  retrieveDetails: function() {
-    var self = this;
-
-    // Only retrieve the pair info if we don't already have it
-    if (!self.get('upstreamName') || !self.get('downstreamName')) {
-      $.get("/domains/" + self.collection.domain.id + "/config/pairs/" + this.get('objId').pair.key, function(data, status, xhr) {
-        self.set({upstreamName: data.upstreamName, downstreamName: data.downstreamName});
-      });
-    }
-
-    // Always retrieve the latest content for the content panels
-    var getContent = function(field, upOrDown, pendingRequest) {
-      if (pendingRequest) pendingRequest.abort();
-
-      function setContent(content) {
-        var attrs = {};
-        attrs[field] = content;
-        self.set(attrs);
-      }
-
-      pendingRequest = $.ajax({
-            url: "/domains/" + self.collection.domain.id + "/diffs/events/" + self.id + "/" + upOrDown,
-            success: function(data) {
-              setContent(data || "no content found for " + upOrDown);
-            },
-            error: function(xhr, status, ex) {
-              if (status != "abort") {
-                if(console && console.warn)
-                  console.warn('error getting the content for ' + upOrDown, status, ex, xhr);
-
-                setContent("Content retrieval failed");
-              }
-            }
-          });
-      return pendingRequest;
-    };
-
-    this.pendingUpstreamRequest = getContent("upstreamContent", "upstream", this.pendingUpstreamRequest);
-    this.pendingDownstreamRequest = getContent("downstreamContent", "downstream", this.pendingDownstreamRequest);
-  },
-
-  /**
-   * Instructs the agent to ignore this difference.
-   */
-  ignore: function() {
-    var self = this;
-
-    $.ajax({
-      url: "/domains/" + this.collection.domain.id + "/diffs/events/" + this.id,
-      type: 'DELETE',
-      success: function(data) {
-        self.collection.domain.aggregates.sync();
-        self.collection.domain.diffs.sync();
-      },
-      error: function(xhr, status, ex) {
-        // TODO:
-      }
-    });
-  }
-});
-
-Diffa.Collections.Diffs = Diffa.Collections.CollectionBase.extend({
-  watchInterval: 5000,      // How frequently we poll for diff updates
-  range: null,
-  page: 0,
-  listSize: 20,
-  selectedEvent: null,
-  model: Diffa.Models.Diff,
-  totalEvents: 0,
-  totalPages: 0,
-  lastSeqId: null,
-
-  initialize: function(models, opts) {
-    _.bindAll(this, "sync", "select", "selectEvent", "selectNextEvent");
-
-    this.domain = opts.domain;
-  },
-
-  sync: function(force) {
-    var self = this;
-
-    if (this.range == null) {
-      this.reset([]);
-    } else {
-      var url = "/domains/" + self.domain.id + "/diffs?pairKey=" + this.range.pairKey + "&range-start="
-          + this.range.start + "&range-end=" + this.range.end
-          + "&offset=" + (this.page * this.listSize) + "&length=" + this.listSize;
-
-      $.get(url, function(data) {
-        if (!force && data.seqId == self.lastSeqId) return;
-
-        var diffs = _.map(data.diffs, function(diffEl) { diffEl.id = diffEl.seqId; return diffEl; });
-
-        if (self.totalEvents != data.total) {
-          self.totalEvents = data.total;
-          self.totalPages = Math.ceil(self.totalEvents / self.listSize);
-          self.trigger("change:totalEvents", self);
-        }
-
-        // Apply updates to the diffs that we currently have
-        var newDiffEls = _.map(diffs, function(diff) {
-          var current = self.get(diff.seqId);
-          if (current == null) {
-            return diff;
-          } else {
-            current.set(diff);    // Apply changes to the difference
-            return current;
-          }
-        });
-        self.reset(newDiffEls);
-
-        // Select the first event when we don't have anything selected, or when the current selection is no longer
-        // valid
-        if (self.selectedEvent == null || !self.get(self.selectedEvent.id)) {
-          if (diffs.length > 0)
-            self.selectEvent(diffs[0].seqId);
-          else
-            self.selectEvent(null);
-        }
-
-        // If we're now beyond the last page, then scroll back to it
-        if (self.page >= self.totalPages && self.totalPages > 0) {
-          self.setPage(self.totalPages - 1, true);
-        }
-
-        self.lastSeqId = data.seqId;
-      });
-    }
-  },
-
-  select: function(pairKey, start, end) {
-    this.range = {
-      pairKey: pairKey,
-      start: start,
-      end: end
-    };
-    this.setPage(0, true);
-  },
-
-  selectEvent: function(evtId) {
-    this.selectedEvent = this.get(evtId);
-    this.trigger("change:selectedEvent", this.selectedEvent);
-  },
-
-  selectNextEvent: function() {
-    this.selectEventWithOffset(1);
-  },
-
-  selectPreviousEvent: function() {
-    this.selectEventWithOffset(-1);
-  },
-
-  selectEventWithOffset: function(offset) {
-    if (this.selectedEvent != null) {
-      var selectedIdx = this.indexOf(this.selectedEvent);
-      var newIdx = selectedIdx + offset;
-      if (newIdx >= 0 && newIdx < this.length) {
-        var nextEvent = this.at(newIdx);
-        if (nextEvent != null) {
-          this.selectEvent(nextEvent.id);
-        }
-      }
-    }
-  },
-
-  nextPage: function() {
-    if (this.page < this.totalPages) this.setPage(this.page + 1);
-  },
-
-  previousPage: function() {
-    if (this.page > 0) this.setPage(this.page - 1);
-  },
-
-  setPage: function(page, force) {
-    if (force || this.page != page) {
-      this.page = page;
-      this.trigger("change:page", this);
-
-      this.sync(true);
-    }
-  }
 });
 
 Diffa.Views.DiffList = Backbone.View.extend({
@@ -1421,10 +1406,20 @@ $('.diffa-heatmap').each(function() {
     domain,
     'diffa-heatmap',
     function() {
-      new Diffa.Views.Heatmap({
-        el: $(elem),
-        model: new Diffa.Models.HeatmapProjection({aggregates: domain.aggregates, domain: domain})
-      });
+      var pair = $(elem).data('pair');
+
+      if (pair == null) {
+        new Diffa.Views.Heatmap({
+          el: $(elem),
+          model: new Diffa.Models.HeatmapProjection({aggregates: domain.aggregates, domain: domain})
+        });
+      } else {
+        new Diffa.Views.Heatmap({
+          el: $(elem),
+          pair: pair,
+          model: new Diffa.Models.HeatmapProjection({aggregates: domain.aggregates.forPair(pair), domain: domain})
+        });
+      }
     }
   );
 });
@@ -1467,8 +1462,14 @@ $('.diffa-contentinspector').each(function() {
 
 $('.diffa-heatmap-page').each(function() {
   var domain = Diffa.DomainManager.get($(this).data('domain'));
-
-  new Diffa.Routers.Blobs({domain: domain, el: $(this)});
+  var router = new Diffa.Routers.Blobs({domain: domain, el: $(this)});
   Backbone.history.start();
+
+  var pair = $(this).data('pair');
+  var startTime = $(this).data('start-time');
+  var endTime = $(this).data('end-time');
+  if (startTime || endTime) {
+    router.navigateBlob(pair, startTime || "", endTime || "")
+  }
 });
 });
