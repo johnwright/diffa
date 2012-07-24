@@ -56,6 +56,7 @@
     <link rel="stylesheet" href="assets/styling.css" type="text/css" media="screen, projection">
     <link rel="stylesheet" href="less/colorbox.css" type="text/css" media="screen, projection">
     <link rel="stylesheet" href="less/jquery.multiselect.css" type="text/css" media="screen, projection">
+    <link rel="stylesheet" href="less/jquery.multiselect.filter.css" type="text/css" media="screen, projection">
     <link rel="stylesheet" href="less/jquery.ui.all.css" type="text/css" media="screen, projection">
 
     <script type="text/javascript" src="js/thirdparty/jquery-1.7.2.min.js" charset="utf-8"></script>
