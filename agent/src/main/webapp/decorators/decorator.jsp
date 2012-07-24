@@ -55,12 +55,15 @@
     <link rel="stylesheet" href="assets/widgets.css" type="text/css" media="screen, projection">
     <link rel="stylesheet" href="assets/styling.css" type="text/css" media="screen, projection">
     <link rel="stylesheet" href="less/colorbox.css" type="text/css" media="screen, projection">
-    <link rel="stylesheet" href="less/chosen/chosen-0.9.8.css" type="text/css" media="screen, projection">
+    <link rel="stylesheet" href="less/jquery.multiselect.css" type="text/css" media="screen, projection">
+    <link rel="stylesheet" href="less/jquery.ui.all.css" type="text/css" media="screen, projection">
 
-    <script type="text/javascript" src="js/thirdparty/jquery-1.7.1.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery-1.7.2.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery-ui-1.8.21.custom.min.js" charset="utf-8"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery.multiselect-1.12.js" charset="utf-8"></script>
+    <script type="text/javascript" src="js/thirdparty/jquery.multiselect.filter-1.4.js" charset="utf-8"></script>
     <script type="text/javascript" src="js/thirdparty/jquery.colorbox-1.3.19-min.js" charset="utf-8"></script>
     <script type="text/javascript" src="js/thirdparty/jquery.cookie.js" charset="utf-8"></script>
-    <script type="text/javascript" src="js/thirdparty/chosen.jquery-0.9.8.js" charset="utf-8"></script>
     <script type="text/javascript" src="assets/diffa-core.js" charset="utf-8"></script>
 
     <script src="js/current-domain.js"></script>
