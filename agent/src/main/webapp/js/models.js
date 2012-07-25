@@ -127,7 +127,7 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
 
       return count + " view" + (count > 1 ? "s" : "") + " configured";
     } else {
-      return "No view configured";
+      return "No views configured";
     }
   }
 });
@@ -157,6 +157,30 @@ Diffa.Models.Pair = Backbone.Model.extend({
   },
   updateViews: function() {
     this.views.reset(this.get('views'));
+  },
+  scanningStatus: function() {
+    var result = "Manual scanning " + (this.get('allowManualScans') ? "enabled" : "disabled");
+
+    if (this.get('scanCronSpec') && this.get('scanCronEnabled')) {
+      result += ". Periodic scanning enabled"
+    }
+
+    return result;
+  },
+  viewsStatus: function() {
+    if (this.get('views') && this.get('views').length > 0) {
+      var count = this.get('views').length;
+
+      return count + " view" + (count > 1 ? "s" : "") + " configured";
+    } else {
+      return "No views configured";
+    }
+  },
+  repairActionsStatus: function() {
+    return "No repair actions configured";
+  },
+  escalationsStatus: function() {
+    return "No escalations configured";
   }
 });
 Diffa.Models.PairState = Backbone.Model.extend({
