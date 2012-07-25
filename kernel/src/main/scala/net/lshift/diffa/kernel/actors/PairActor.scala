@@ -364,7 +364,7 @@ case class PairActor(pair:DomainPairDef,
 
     // Inform the diagnostics manager that we've completed a major operation, so it should checkpoint the explanation
     // data.
-    diagnostics.checkpointExplanations(Some(activeScan.id), pair.asRef)
+    diagnostics.checkpointExplanations(Some(scanStatement.id), pair.asRef)
 
     logger.info(formatAlertCode(pairRef, SCAN_COMPLETED_BENCHMARK))
     cleanupIndexFilesIfCorrelationStoreBackedByLucene
