@@ -619,6 +619,7 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       selectedText: function(numChecked, numTotal, checkedItems) {
         return "Showing " + numChecked + " of " + numTotal + " pairs";
       },
+      header: "",
       minWidth: 400
     }).multiselectfilter({width: 140});
 
