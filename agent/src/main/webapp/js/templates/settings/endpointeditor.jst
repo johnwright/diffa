@@ -14,10 +14,10 @@
   <h4>Features</h4>
   <table class="feature-table">
     <tr data-target-pane="scanning"><td class="key">Scanning</td><td data-bind-text="endpoint | scanningStatus" class="description"></td></tr>
-    <tr data-target-pane="inspection"><td class="key">Content Inspection</td><td data-bind-text="endpoint | inspectionStatus" class="description">Content inspection not configured</td></tr>
-    <tr data-target-pane="advanced-urls"><td class="key">Advanced Interrogation</td><td class="description">Advanced interrogation not configured</td></tr>
-    <tr data-target-pane="categories"><td class="key">Data Categorisation</td><td class="description">No categories configured</td></tr>
-    <tr data-target-pane="views"><td class="key">Views</td><td class="description">No views configured</td></tr>
+    <tr data-target-pane="inspection"><td class="key">Content Inspection</td><td data-bind-text="endpoint | inspectionStatus" class="description"></td></tr>
+    <tr data-target-pane="advanced-urls"><td class="key">Advanced Interrogation</td><td class="description" data-bind-text="endpoint | advancedInterrogationStatus"></td></tr>
+    <tr data-target-pane="categories"><td class="key">Data Categorisation</td><td class="description" data-bind-text="endpoint | categoriesStatus"></td></tr>
+    <tr data-target-pane="views"><td class="key">Views</td><td class="description" data-bind-text="endpoint | viewsStatus"></td></tr>
   </table>
 </div>
 <div class="pane" data-pane="scanning">

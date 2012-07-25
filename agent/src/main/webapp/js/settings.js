@@ -199,6 +199,10 @@ Diffa.Views.SettingsBreadcrumb = Backbone.View.extend({
       }
     } else if (endpoint) {
       $(this.el).append(' > <a href="#endpoint/' + endpoint+ '">endpoint: ' + endpoint + '</a>');
+
+      if (pane) {
+        $(this.el).append(' > <a href="#endpoint/' + endpoint + '/' + pane + '">' + pane + '</a>');
+      }
     }
   }
 });
@@ -611,7 +615,7 @@ rivets.configure({
         callback.wrapped = function(m, v) { callback(v) };
         obj.on('change:' + keypath, callback.wrapped);
       } else {
-        callback.wrapped = function(m, v) { callback(m.toJSON()) };
+        callback.wrapped = function(m, v) { callback(m) };
         obj.on('change', callback.wrapped);
       }
     },
@@ -622,28 +626,11 @@ rivets.configure({
       if (keypath) {
         return obj.get(keypath);
       } else {
-        return obj.toJSON();
+        return obj;
       }
     },
     publish: function(obj, keypath, value) {
       obj.set(keypath, value);
-    }
-  },
-
-  formatters: {
-    scanningStatus: function(value) {
-      if (value.scanUrl) {
-        return "Scanning configured via " + value.scanUrl;
-      } else {
-        return "Scanning not configured";
-      }
-    },
-    inspectionStatus: function(value) {
-      if (value.contentRetrievalUrl) {
-        return "Content inspection configured via " + value.contentRetrievalUrl;
-      } else {
-        return "Inspection not configured";
-      }
     }
   }
 });

@@ -80,6 +80,55 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
       data: f,
       processData: false
     }, opts));
+  },
+  scanningStatus: function() {
+    if (this.get('scanUrl')) {
+      return "Scanning configured via " + this.get('scanUrl');
+    } else {
+      return "Scanning not configured";
+    }
+  },
+  inspectionStatus: function() {
+    if (this.get('contentRetrievalUrl')) {
+      return "Content inspection configured via " + this.get('contentRetrievalUrl');
+    } else {
+      return "Inspection not configured";
+    }
+  },
+  advancedInterrogationStatus: function() {
+    if (this.get('versionGenerationUrl') || this.get('inboundUrl')) {
+      return "Advanced interrogation configured"
+    } else {
+      return "Advanced interrogation not configured"
+    }
+  },
+  categoriesStatus: function() {
+    var result = [];
+    var applyCategory = function(name, categories) {
+      var count = categories.length;
+      if (count > 0) {
+        result.push(count + " " + name + " categor" + (count > 1 ? "ies" : "y"));
+      }
+    };
+
+    applyCategory("range", this.rangeCategories);
+    applyCategory("set", this.setCategories);
+    applyCategory("prefix", this.prefixCategories);
+
+    if (result.length > 0) {
+      return result.join(", ");
+    } else {
+      return "No categories configured";
+    }
+  },
+  viewsStatus: function() {
+    if (this.get('views') && this.get('views').length > 0) {
+      var count = this.get('views').length;
+
+      return count + " view" + (count > 1 ? "s" : "") + " configured";
+    } else {
+      return "No view configured";
+    }
   }
 });
 Diffa.Models.EndpointView = Backbone.Model.extend({
@@ -216,6 +265,9 @@ Diffa.Models.PairState = Backbone.Model.extend({
     });
   }
 });
+Diffa.Models.Category = Backbone.Model.extend({
+  idAttribute: "name"
+});
 
 Diffa.Collections.Watchable = {
   // Indicates that the given element is watching this collection, and it should periodically update itself.
@@ -284,7 +336,7 @@ Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
   comparator: function(pair) { return pair.id; }
 });
 Diffa.Collections.CategoryCollection = Backbone.Collection.extend({
-  model: Backbone.Model,
+  model: Diffa.Models.Category,
   initialize: function(models, options) {
     Diffa.Collections.CategoryCollection.__super__.initialize.call(this, models, options);
     this.categoryType = options.categoryType;
