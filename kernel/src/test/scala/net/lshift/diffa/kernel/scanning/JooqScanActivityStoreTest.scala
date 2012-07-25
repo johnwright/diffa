@@ -22,6 +22,7 @@ import org.junit.Assert._
 import com.eaio.uuid.UUID
 import org.joda.time.DateTime
 import net.lshift.diffa.kernel.config.DiffaPairRef
+import org.apache.commons.lang.RandomStringUtils
 
 class JooqScanActivityStoreTest {
 
@@ -31,8 +32,8 @@ class JooqScanActivityStoreTest {
   @Test
   def shouldBeAbleToReadInitialStatementAndThenUpdateIt {
 
-    val domain = new UUID().toString
-    val pair = new UUID().toString
+    val domain = RandomStringUtils.randomAlphanumeric(10)
+    val pair = RandomStringUtils.randomAlphanumeric(10)
     val id = System.currentTimeMillis()
 
     val ref = DiffaPairRef(key = pair, domain = domain)
