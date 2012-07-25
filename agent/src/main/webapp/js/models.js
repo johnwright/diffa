@@ -340,9 +340,6 @@ Diffa.Collections.HiddenPairs = Diffa.Collections.CollectionBase.extend({
     if (model) {
       this.remove([model]);
     }
-  },
-  revealAllPairs: function() {
-    this.remove(this.models);
   }
 });
 
