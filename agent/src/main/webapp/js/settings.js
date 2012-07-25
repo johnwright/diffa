@@ -34,6 +34,7 @@ Diffa.Routers.Config = Backbone.Router.extend({
     this.selectorEl = $('.diffa-element-selector', this.el);
     this.endpointEditorEl = $('.diffa-endpoint-editor', this.el);
     this.pairEditorEl = $('.diffa-pair-editor', this.el);
+    this.breadcrumbsEl = $('.diffa-settings-crumbs', this.el);
 
     $(this.el).on('pair:saved', function(event, pairId) {
       self.navigate("pair/" + pairId, {replace: true, trigger: true});
@@ -73,12 +74,24 @@ Diffa.Routers.Config = Backbone.Router.extend({
     if (!opts.endpoint) this.endpointEditorEl.removeData('endpoint').removeData('pane').trigger('changed:endpoint');
     if (!opts.selector) this.selectorEl.hide();
 
-    if (opts.pair != undefined)
+    this.breadcrumbsEl.removeData('pair').removeData('endpoint').removeData('pane');
+
+
+    if (opts.pair != undefined) {
       this.pairEditorEl.data('pair', opts.pair).data('pane', opts.pairPane || 'root').trigger('changed:pair');
-    if (opts.endpoint != undefined)
+      this.breadcrumbsEl.data('pair', opts.pair);
+    }
+    if (opts.endpoint != undefined) {
       this.endpointEditorEl.data('endpoint', opts.endpoint).data('pane', opts.endpointPane || 'root').trigger('changed:endpoint');
+      this.breadcrumbsEl.data('endpoint', opts.endpoint);
+    }
     if (opts.selector)
       this.selectorEl.show();
+
+    if (opts.pairPane) this.breadcrumbsEl.data('pane', opts.pairPane);
+    if (opts.endpointPane) this.breadcrumbsEl.data('pane', opts.endpointPane);
+
+    this.breadcrumbsEl.trigger('changed');
   }
 });
 
@@ -162,6 +175,33 @@ Diffa.Views.ElementListItem = Backbone.View.extend({
     $('a', this.el).css('background-color', '#ffff99').animate({'background-color': '#FFFFFF'});
   }
 });
+Diffa.Views.SettingsBreadcrumb = Backbone.View.extend({
+  events: {
+    'changed': 'render'
+  },
+
+  initialize: function() {
+    this.render();
+  },
+
+  render: function() {
+    var endpoint = $(this.el).data('endpoint');
+    var pair = $(this.el).data('pair');
+    var pane = $(this.el).data('pane');
+
+    $(this.el).html('<a href="#">Settings</a>');
+
+    if (pair) {
+      $(this.el).append(' > <a href="#pair/' + pair + '">Pair: ' + pair + '</a>');
+
+      if (pane) {
+        $(this.el).append(' > <a href="#pair/' + pair + '/' + pane + '">' + pane + '</a>');
+      }
+    } else if (endpoint) {
+      $(this.el).append(' > <a href="#endpoint/' + endpoint+ '">endpoint: ' + endpoint + '</a>');
+    }
+  }
+});
 Diffa.Views.FormEditor = Backbone.View.extend({
   events: {
     "click .save": 'saveChanges',
@@ -195,7 +235,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     $('input[data-key]', this.el).not('input:radio').val(''); 
     var binding = {};
     binding[this.model.type] = this.model;
-    rivets.bind($(this.el), binding);
+    this.viewBinding = rivets.bind(this.el, binding);
 
     this.postBind();
 
@@ -226,7 +266,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     this.$('tr[data-target-pane] .key').each(function() {
       var keyField = $(this);
       var targetPane = keyField.closest('[data-target-pane]').data('target-pane');
-      var linkTarget = '#endpoint/' + self.model.id + '/' + targetPane;
+      var linkTarget = '#' + self.model.type + '/' + self.model.id + '/' + targetPane;
 
       var currentLink = keyField.find('a');
       if (currentLink.length > 0) {
@@ -246,7 +286,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     $(this.el).hide();
 
     this.undelegateEvents();
-    Backbone.ModelBinding.unbind(this);
+    this.viewBinding.unbind();
 
     this.postClose();
   },
@@ -311,15 +351,6 @@ Diffa.Views.EndpointEditor = Diffa.Views.FormEditor.extend({
     ];
 
     this.viewsEditor = new Diffa.Views.EndpointViewsEditor({collection: this.model.views, el: this.$('.views')});
-
-    var self = this;
-    /*this.model.bind('change:scanUrl', function() {
-      if (self.model.get('scanUrl')) {
-        self.$('tr[data-target-pane=scanning] .description').text("Scanning is configured");
-      } else {
-        self.$('tr[data-target-pane=scanning] .description').text("Scanning is not configured");
-      }
-    }).trigger('change:scanUrl');*/
   },
   postClose: function() {
     if (this.categoryEditors) _.each(this.categoryEditors, function(editor) { editor.close(); });
@@ -410,7 +441,7 @@ Diffa.Views.CategoryEditor = Backbone.View.extend({
     "click .remove-category": 'remove'
   },
   initialize: function() {
-    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
+    this.viewBinding = rivets.bind(this.el, {category: this.model});
 
     new Diffa.Binders.ListBinder(this, "data-el-list-key");
   },
@@ -426,7 +457,7 @@ Diffa.Views.PairViewEditor = Backbone.View.extend({
     "click .remove-view": 'remove'
   },
   initialize: function() {
-    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
+    this.viewBinding = rivets.bind(this.el, {view: this.model});
   },
   remove: function() {
     this.model.collection.remove(this.model);
@@ -440,7 +471,7 @@ Diffa.Views.EndpointViewEditor = Backbone.View.extend({
     "click .remove-view": 'remove'
   },
   initialize: function() {
-    Backbone.ModelBinding.bind(this, {all: "data-el-key"});
+    this.viewBinding = rivets.bind(this.el, {view: this.model});
     
     this.categoryEditors = [
       new Diffa.Views.CategoriesEditor({collection: this.model.rangeCategories, el: this.$('.range-categories')}),
@@ -553,11 +584,6 @@ Diffa.Helpers.bindEditor = function(el, elementType, collectionName, modelClass,
         } else {
           model = new modelClass();
           model.domain = domain;
-
-          // If we've got at least two endpoints, then try to make the endpoint selections sensible
-          if (domain.endpoints.length >= 2) {
-            pair.set({upstreamName: domain.endpoints.at(0).id, downstreamName: domain.endpoints.at(1).id});
-        }
         }
 
         if (initNewElHelper) initNewElHelper(model, domain);
@@ -581,8 +607,6 @@ rivets.configure({
 
   adapter: {
     subscribe: function(obj, keypath, callback) {
-      if (!obj) return;
-
       if (keypath) {
         callback.wrapped = function(m, v) { callback(v) };
         obj.on('change:' + keypath, callback.wrapped);
@@ -595,8 +619,6 @@ rivets.configure({
       obj.off('change' + (keypath ? ':' + keypath : ''), callback.wrapped);
     },
     read: function(obj, keypath) {
-      if (!obj) return;
-
       if (keypath) {
         return obj.get(keypath);
       } else {
@@ -655,8 +677,8 @@ $('.diffa-pair-editor').each(function() {
     }
   });
 });
-$('.diffa-action-editor').each(function() {
-  Diffa.Helpers.bindEditor(this, "action", "actions", Diffa.Models.Action, Diffa.Views.ActionEditor);
+$('.diffa-settings-crumbs').each(function() {
+  new Diffa.Views.SettingsBreadcrumb({el: this});
 });
 
 });
