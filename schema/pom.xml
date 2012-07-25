@@ -5,12 +5,12 @@
   <parent>
     <groupId>net.lshift.diffa</groupId>
     <artifactId>diffa-parent</artifactId>
-    <version>1.5.2-SNAPSHOT</version>
+    <version>1.5.3-SNAPSHOT</version>
   </parent>
 
   <groupId>net.lshift.diffa</groupId>
   <artifactId>diffa-schema</artifactId>
-  <version>1.5.2-SNAPSHOT</version>
+  <version>1.5.3-SNAPSHOT</version>
 
   <name>LShift Diffa Schema</name>
   <description>Database schema and migrations</description>
