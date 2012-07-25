@@ -685,7 +685,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var textHeight = 11;
     var labelBaseline = laneTop + marginTop; // y2 > y1 <=> y2 is below y1
 
-    this.dashedLine(this.underlayContext, 0, offset, this.canvas.width, offset, 2);
     var pairKey = swimLaneLabels[laneIndex];
     if (pairKey != null) {
       this.underlayContext.fillStyle = colours.translucent;
@@ -715,6 +714,8 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var lane = 0;
     for (var y_offset = laneHeight + this.statusBarHeight; y_offset <= canvasHeight; y_offset += laneHeight) {
       this.drawSwimLane(lane, swimLaneLabels, laneHeight, y_offset, viewportX);
+      if (y_offset < canvasHeight)
+        this.drawDashedLine(this.underlayContext, 0, y_offset, this.canvas.width, y_offset);
       lane++;
     }
   },
@@ -829,7 +830,7 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     return new Date(next);
   },
 
-  dashedLine: function(ctx, x1, y1, x2, y2, dashLen) {
+  drawDashedLine: function(ctx, x1, y1, x2, y2, dashLen) {
     if (dashLen == undefined) dashLen = 2;
 
     ctx.beginPath();
