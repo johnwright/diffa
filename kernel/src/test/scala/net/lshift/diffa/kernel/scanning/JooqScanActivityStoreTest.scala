@@ -32,6 +32,8 @@ class JooqScanActivityStoreTest {
   @Test
   def shouldBeAbleToReadInitialStatementAndThenUpdateIt {
 
+    // Note the use of withMillisOfSecond(0) to avoid timestamp truncation in MySQL
+
     val domain = RandomStringUtils.randomAlphanumeric(10)
     val pair = RandomStringUtils.randomAlphanumeric(10)
     val id = System.currentTimeMillis()
@@ -43,7 +45,7 @@ class JooqScanActivityStoreTest {
       domain =  domain,
       pair =  pair,
       initiatedBy = "some-user",
-      startTime =  new DateTime
+      startTime =  new DateTime().withMillisOfSecond(0)
     )
 
     scanActivityStore.createOrUpdateStatement(originalStatement)
@@ -51,7 +53,7 @@ class JooqScanActivityStoreTest {
     val firstRetrievedStatement = scanActivityStore.getStatement(ref, id)
     assertEquals(originalStatement, firstRetrievedStatement)
 
-    val updatedStatement = originalStatement.copy(endTime = new DateTime(), state = 1)
+    val updatedStatement = originalStatement.copy(endTime = new DateTime().withMillisOfSecond(0), state = 1)
 
     scanActivityStore.createOrUpdateStatement(updatedStatement)
 
