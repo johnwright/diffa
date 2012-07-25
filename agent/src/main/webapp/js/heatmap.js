@@ -493,10 +493,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     // Attach a mousedown handler to the overlay
     this.overlay.onmousedown = this.mouseDown;
     var self = this;
-
-    $('.pair-filter-reset button').on("click", function(event) {
-      self.resetPairFilter();
-    });
   },
 
   render: function() {
@@ -946,7 +942,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
   dragged: false,
 
   mouseDown: function(e) {
-    this.show_grid = true;
     this.dragging = e;
     this.dragged = false;
     e.target.style.cursor = "move";
@@ -960,7 +955,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var self = this;
     var c = this.coords(e);
 
-    this.show_grid = false;
     this.dragging = false;
     if (!this.dragged) {
       if (e.target.tagName == "CANVAS") {
