@@ -161,10 +161,6 @@ Diffa.Models.HeatmapProjection = Backbone.Model.extend(Diffa.Collections.Watchab
     this.saveHiddenPair(toHide);
   },
 
-  resetPairFilter: function() {
-    this.hiddenPairs.revealAllPairs();
-  },
-
   saveHiddenPair: function(pairName) {
     var self = this;
     this.hiddenPairs.hidePair(pairName);
@@ -482,6 +478,8 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
     this.model.bind('change:buckets', this.update);
 
+    this.model.hiddenPairs.on('reset', this.pollAndUpdate, this);
+
     if (opts.pair) {
       this.minRows = 1;
       this.statusBarHeight = 0; // don't show the statusbar if a single pair is being shown in isolation.
@@ -518,10 +516,8 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
 
   pollAndUpdate: function() {
     var self = this;
-    self.model.hiddenPairs.fetch({success: function(collection, response) {
-      self.update();
-      self.model.sync();
-    }});
+    self.update();
+    self.model.sync();
   },
 
   update: function() {
@@ -603,11 +599,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     this.drawLivenessIndicator();
   },
 
-  resetPairFilter: function(event) {
-    this.model.resetPairFilter();
-    this.pollAndUpdate();
-  },
-
   placePairFilterChooser: function() {
     var self = this;
     var canvasX = $(self.canvas).offset().left;
@@ -661,15 +652,9 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     var pairsToHide =_.reject(self.model.aggregates.pluck('pair'), function(key) {
       return _.contains(visiblePairs, key);
     });
-    _.each(pairsToHide, function(pair) {
-      try {
-        self.model.hiddenPairs.hidePair(pair);
-      } catch (e) {}
-    });
-    _.each(visiblePairs, function(pair) {
-      self.model.hiddenPairs.revealPair(pair);
-    });
-    self.pollAndUpdate();
+    self.model.hiddenPairs.reset(_.map(pairsToHide, function(pair) {
+      return new Diffa.Models.HiddenPair({id: pair}, {collection: self.model.hiddenPairs});
+    }));
   },
 
   coordToPositionStyle: function(x, y) {
