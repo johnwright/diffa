@@ -416,7 +416,7 @@ abstract class AbstractDataDrivenPolicyTest {
     entities.foreach(v => {
       val downstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
 
-      expect(writer.storeUpstreamVersion(VersionID(pair, v.id), v.typedAttrs, v.lastUpdated, v.vsn)).
+      expect(writer.storeUpstreamVersion(VersionID(pair, v.id), v.typedAttrs, v.lastUpdated, v.vsn, None)).
         andReturn(new Correlation(null, pair, v.id, v.strAttrs, null, v.lastUpdated, now, v.vsn, downstreamVsnToUse, downstreamVsnToUse, matched))
     })
   }
@@ -424,7 +424,7 @@ abstract class AbstractDataDrivenPolicyTest {
     entities.foreach(v => {
       val upstreamVsnToUse = if (matched) { v.vsn } else { null }   // If we're matched, make the vsn match
 
-      expect(writer.storeDownstreamVersion(VersionID(pair, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn)).
+      expect(writer.storeDownstreamVersion(VersionID(pair, v.id), v.typedAttrs, v.lastUpdated, v.vsn, v.vsn, None)).
         andReturn(new Correlation(null, pair, v.id, null, v.strAttrs, v.lastUpdated, now, upstreamVsnToUse, v.vsn, v.vsn, matched))
     })
   }

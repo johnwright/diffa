@@ -566,7 +566,7 @@ class PairActorTest {
         val writer = EasyMock.getCurrentArguments()(4).asInstanceOf[LimitedVersionCorrelationWriter]
         println("writer (args(3))#getClass() -> %s".format(writer.getClass()))
         try {
-          writer.clearDownstreamVersion(VersionID(DiffaPairRef("p1","domain"), "abc"))
+          writer.clearDownstreamVersion(EasyMock.eq(VersionID(DiffaPairRef("p1","domain"), "abc")), EasyMock.anyObject[Option[Long]]())
           proxyDidGenerateException.set(false)
         } catch {
           case c:ScanCancelledException => proxyDidGenerateException.set(true)
@@ -609,7 +609,7 @@ class PairActorTest {
             if (secondScanIsRunning.get(waitForSecondScanToStartDelay).isDefined) {
               val writer = EasyMock.getCurrentArguments()(4).asInstanceOf[LimitedVersionCorrelationWriter]
               try {
-                writer.clearDownstreamVersion(VersionID(DiffaPairRef("p1","domain"), "abc"))
+                writer.clearDownstreamVersion(EasyMock.eq(VersionID(DiffaPairRef("p1","domain"), "abc")), EasyMock.anyObject[Option[Long]]())
                 proxyDidGenerateException.set(false)
               } catch {
                 case c:ScanCancelledException => proxyDidGenerateException.set(true)

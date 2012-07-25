@@ -54,16 +54,16 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
     val corr = evt match {
       case UpstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
-        case null => writer.clearUpstreamVersion(id)
-        case _    => writer.storeUpstreamVersion(id, evt.attributes, maybe(lastUpdate), vsn)
+        case null => writer.clearUpstreamVersion(id, None)
+        case _    => writer.storeUpstreamVersion(id, evt.attributes, maybe(lastUpdate), vsn, None)
       }
       case DownstreamPairChangeEvent(id, _, lastUpdate, vsn) => vsn match {
-        case null => writer.clearDownstreamVersion(id)
-        case _    => writer.storeDownstreamVersion(id, evt.attributes, maybe(lastUpdate), vsn, vsn)
+        case null => writer.clearDownstreamVersion(id, None)
+        case _    => writer.storeDownstreamVersion(id, evt.attributes, maybe(lastUpdate), vsn, vsn, None)
       }
       case DownstreamCorrelatedPairChangeEvent(id, _, lastUpdate, uvsn, dvsn) => (uvsn, dvsn) match {
-        case (null, null) => writer.clearDownstreamVersion(id)
-        case _            => writer.storeDownstreamVersion(id, evt.attributes, maybe(lastUpdate), uvsn, dvsn)
+        case (null, null) => writer.clearDownstreamVersion(id, None)
+        case _            => writer.storeDownstreamVersion(id, evt.attributes, maybe(lastUpdate), uvsn, dvsn, None)
       }
     }
 
@@ -252,7 +252,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
 
       DigestDifferencingUtils.differenceEntities(endpointCategories, validRemoteVersions, cachedVersions, constraints)
-        .foreach(handleMismatch(pair, writer, _, listener))
+        .foreach(handleMismatch(Some(scanId), pair, writer, _, listener))
     }
 
     private def writeCommonHeader(pw:PrintWriter, pair:DiffaPairRef, endpoint:Endpoint, requestTimestamp:DateTime, responseTimestamp:DateTime) = {
@@ -280,7 +280,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
         val cachedVersions = getEntities(pair, constraints)
 
         DigestDifferencingUtils.differenceEntities(endpointCategories, inventoryEntries, cachedVersions, constraints)
-          .foreach(handleMismatch(pair, writer, _, listener))
+          .foreach(handleMismatch(None, pair, writer, _, listener))
 
         Seq()
       } else {
@@ -316,7 +316,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
     def getAggregates(pair:DiffaPairRef, bucketing:Seq[ScanAggregation], constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
     def getEntities(pair:DiffaPairRef, constraints:Seq[ScanConstraint]) : Seq[ScanResultEntry]
-    def handleMismatch(pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
+    def handleMismatch(scanId:Option[Long], pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener)
   }
 
   protected class UpstreamScanStrategy (collation: Collation) extends ScanStrategy {
@@ -334,13 +334,13 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       })
     }
 
-    def handleMismatch(pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
+    def handleMismatch(scanId:Option[Long], pair:DiffaPairRef, writer: LimitedVersionCorrelationWriter, vm:VersionMismatch, listener:DifferencingListener) = {
       vm match {
         case VersionMismatch(id, attributes, lastUpdate,  usVsn, _) =>
           if (usVsn != null) {
-            handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pair, id), attributes, lastUpdate, usVsn))
+            handleUpdatedCorrelation(writer.storeUpstreamVersion(VersionID(pair, id), attributes, lastUpdate, usVsn, scanId))
           } else {
-            handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pair, id)))
+            handleUpdatedCorrelation(writer.clearUpstreamVersion(VersionID(pair, id), scanId))
           }
       }
     }
