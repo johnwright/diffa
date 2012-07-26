@@ -615,6 +615,14 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
       selectedText: function(numChecked, numTotal, checkedItems) {
         return "Showing " + numChecked + " of " + numTotal + " pairs";
       },
+      click: function(e) {
+        if ($(this).multiselect("widget").find("input:checked").length < 1) {
+          alert("Please reveal another pair before hiding the last visible pair.");
+          return false;
+        } else {
+          return true;
+        }
+      },
       header: "",
       minWidth: 400
     }).multiselectfilter({width: 140});
@@ -685,7 +693,6 @@ Diffa.Views.Heatmap = Backbone.View.extend(Diffa.Helpers.Viz).extend({
     if (pairKey != null) {
       this.underlayContext.fillStyle = colours.translucent;
       var textWidth = this.underlayContext.measureText(swimLaneLabels[laneIndex]).width;
-      this.underlayContext.fillRect(marginSide, laneTop + marginTop, textWidth, labelBaseline - laneTop - marginTop + textHeight);
 
       this.underlayContext.fillStyle = colours.black;
       this.underlayContext.textBaseline = "top";
