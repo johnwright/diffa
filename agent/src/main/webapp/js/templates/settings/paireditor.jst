@@ -18,6 +18,7 @@
     <tr data-target-pane="scanning"><td class="key">Scanning</td><td class="description" data-bind-text="pair | scanningStatus"></td></tr>
     <tr data-target-pane="views"><td class="key">Views</td><td class="description" data-bind-text="pair | viewsStatus">No views configured</td></tr>
     <tr data-target-pane="repairs"><td class="key">Repairs</td><td class="description" data-bind-text="pair | repairActionsStatus">No repair operations defined</td></tr>
+    <tr data-target-pane="reports"><td class="key">Reports</td><td class="description" data-bind-text="pair | reportsStatus">No escalations defined</td></tr>
     <tr data-target-pane="escalations"><td class="key">Escalations</td><td class="description" data-bind-text="pair | escalationsStatus">No escalations defined</td></tr>
   </table>
 </div>
@@ -35,21 +36,36 @@
   </dl>
 </div>
 <div class="pane" data-pane="views">
-  <dl>
-    <dt>Views</dt>
-    <dd class="views">
-      <table class="editable-table" data-template="pair-view">
-        <thead><tr><td>Name</td><td>View Scan Cron Specification</td><td>Actions</td></tr></thead>
-      </table>
-      <a class="add-link" href="">Add New</a>
-    </dd>
-  </dl>
+  <div class="views">
+    <table class="editable-table" data-template="pair-view">
+      <thead><tr><td>Name</td><td>View Scan Cron Specification</td><td>Actions</td></tr></thead>
+    </table>
+    <a class="add-link" href="">Add New</a>
+  </div>
 </div>
 <div class="pane" data-pane="repairs">
-
+  <div class="repair-actions">
+    <table class="editable-table" data-template="repair-action">
+      <thead><tr><td>Name</td><td>Url</td><td>Scope</td><td>Actions</td></tr></thead>
+    </table>
+    <a class="add-link" href="">Add New</a>
+  </div>
 </div>
 <div class="pane" data-pane="escalations">
-  
+  <div class="escalations">
+    <table class="editable-table" data-template="escalation">
+      <thead><tr><td>Name</td><td>Type</td><td>Action</td><td>Event</td><td>Origin</td><td>Actions</td></tr></thead>
+    </table>
+    <a class="add-link" href="">Add New</a>
+  </div>
+</div>
+<div class="pane" data-pane="reports">
+  <div class="reports">
+    <table class="editable-table" data-template="report">
+      <thead><tr><td>Name</td><td>Type</td><td>Target</td><td>Actions</td></tr></thead>
+    </table>
+    <a class="add-link" href="">Add New</a>
+  </div>
 </div>
 
 <dl>

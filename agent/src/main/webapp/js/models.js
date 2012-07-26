@@ -143,9 +143,15 @@ Diffa.Models.EndpointView = Backbone.Model.extend({
 Diffa.Models.Pair = Backbone.Model.extend({
   idAttribute: "key",
   type: 'pair',
-  urlRoot: function() { return "/domains/" + (this.domain || this.collection.domain).id + "/config/pairs"; },
+  urlRoot: function() { return "/domains/" + this.domain.id + "/config/pairs"; },
   initialize: function() {
     Diffa.Helpers.ViewsHelper.extractViews(this);
+
+    this.actions = new Diffa.Collections.RepairActions(this.get('repairActions'), {pair: this});
+    this.escalations = new Diffa.Collections.Escalations(this.get('escalations'), {pair: this});
+    this.reports = new Diffa.Collections.Reports(this.get('reports'), {pair: this});
+
+    if (this.collection) this.domain = this.collection.domain;
   },
   prepareForSave: function() {
       // Remove properties artifacts from the databinding library
@@ -154,6 +160,15 @@ Diffa.Models.Pair = Backbone.Model.extend({
     this.unset('downstreamName_text', {silent: true});
 
     Diffa.Helpers.ViewsHelper.packViews(this);
+
+    this.set({
+      repairActions: this.actions.toJSON(),
+      escalations: this.escalations.toJSON(),
+      reports: this.reports.toJSON()
+    });
+  },
+  fetchExtra: function() {
+    this.actions.ensureFetched();
   },
   updateViews: function() {
     this.views.reset(this.get('views'));
@@ -177,10 +192,31 @@ Diffa.Models.Pair = Backbone.Model.extend({
     }
   },
   repairActionsStatus: function() {
-    return "No repair actions configured";
+    if (this.actions.length > 0) {
+      var count = this.actions.length;
+
+      return count + " repair action" + (count > 1 ? "s" : "") + " configured";
+    } else {
+      return "No repair actions configured";
+    }
+  },
+  reportsStatus: function() {
+    if (this.reports.length > 0) {
+      var count = this.reports.length;
+
+      return count + " report" + (count > 1 ? "s" : "") + " configured";
+    } else {
+      return "No reports configured";
+    }
   },
   escalationsStatus: function() {
-    return "No escalations configured";
+    if (this.escalations.length > 0) {
+      var count = this.escalations.length;
+
+      return count + " escalation" + (count > 1 ? "s" : "") + " configured";
+    } else {
+      return "No escalations configured";
+    }
   }
 });
 Diffa.Models.PairState = Backbone.Model.extend({
@@ -292,6 +328,15 @@ Diffa.Models.PairState = Backbone.Model.extend({
 Diffa.Models.Category = Backbone.Model.extend({
   idAttribute: "name"
 });
+Diffa.Models.RepairAction = Backbone.Model.extend({
+  idAttribute: "name"
+});
+Diffa.Models.Escalation = Backbone.Model.extend({
+  idAttribute: "name"
+});
+Diffa.Models.Report = Backbone.Model.extend({
+  idAttribute: "name"
+});
 
 Diffa.Collections.Watchable = {
   // Indicates that the given element is watching this collection, and it should periodically update itself.
@@ -387,6 +432,15 @@ Diffa.Collections.CategoryCollection = Backbone.Collection.extend({
       }
     });
   }
+});
+Diffa.Collections.RepairActions = Diffa.Collections.CollectionBase.extend({
+  model: Diffa.Models.RepairAction
+});
+Diffa.Collections.Escalations = Diffa.Collections.CollectionBase.extend({
+  model: Diffa.Models.Escalation
+});
+Diffa.Collections.Reports = Diffa.Collections.CollectionBase.extend({
+  model: Diffa.Models.Report
 });
 Diffa.Collections.PairStates = Diffa.Collections.CollectionBase.extend({
   watchInterval: 5000,        // We poll for pair status updates every 5s

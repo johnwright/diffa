@@ -224,8 +224,6 @@ Diffa.Views.FormEditor = Backbone.View.extend({
       this.delegateEvents(this.events);
     }
 
-    this.model.bind('fetch', this.render);
-
     this.render();
     // :visible because a form may have its first input as hidden
     this.$("input:visible").first().focus();
@@ -376,6 +374,9 @@ Diffa.Views.PairEditor = Diffa.Views.FormEditor.extend({
   },
   postBind: function() {
     this.viewsEditor = new Diffa.Views.PairViewsEditor({collection: this.model.views, el: this.$('.views')});
+    this.actionsEditor = new Diffa.Views.RepairActionsEditor({collection: this.model.actions, el: this.$('.repair-actions')});
+    this.reportsEditor = new Diffa.Views.ReportsEditor({collection: this.model.reports, el: this.$('.reports')});
+    this.escalationsEditor = new Diffa.Views.EscalationsEditor({collection: this.model.escalations, el: this.$('.escalations')});
   },
   postClose: function() {
     if (this.viewsEditor) this.viewsEditor.close();
@@ -430,7 +431,7 @@ Diffa.Views.TableEditor = Backbone.View.extend({
   },
 
   createRow: function() {
-    this.collection.add(new this.collection.model({}));
+    this.collection.add(new this.collection.model({}, {collection: this.collection}));
   },
 
   close: function() {
@@ -440,7 +441,12 @@ Diffa.Views.TableEditor = Backbone.View.extend({
     this.collection.unbind("reset", this.render);
   }
 });
-Diffa.Views.CategoryEditor = Backbone.View.extend({
+Diffa.Views.RowEditor = Backbone.View.extend({
+  remove: function() {
+    this.model.collection.remove(this.model);
+  }
+})
+Diffa.Views.CategoryEditor = Diffa.Views.RowEditor.extend({
   events: {
     "click .remove-category": 'remove'
   },
@@ -448,29 +454,23 @@ Diffa.Views.CategoryEditor = Backbone.View.extend({
     this.viewBinding = rivets.bind(this.el, {category: this.model});
 
     new Diffa.Binders.ListBinder(this, "data-el-list-key");
-  },
-  remove: function() {
-    this.model.collection.remove(this.model);
   }
 });
 Diffa.Views.CategoriesEditor = Diffa.Views.TableEditor.extend({
   rowEditor: Diffa.Views.CategoryEditor
 });
-Diffa.Views.PairViewEditor = Backbone.View.extend({
+Diffa.Views.PairViewEditor = Diffa.Views.RowEditor.extend({
   events: {
     "click .remove-view": 'remove'
   },
   initialize: function() {
     this.viewBinding = rivets.bind(this.el, {view: this.model});
-  },
-  remove: function() {
-    this.model.collection.remove(this.model);
   }
 });
 Diffa.Views.PairViewsEditor = Diffa.Views.TableEditor.extend({
   rowEditor: Diffa.Views.PairViewEditor
 });
-Diffa.Views.EndpointViewEditor = Backbone.View.extend({
+Diffa.Views.EndpointViewEditor = Diffa.Views.RowEditor.extend({
   events: {
     "click .remove-view": 'remove'
   },
@@ -482,15 +482,44 @@ Diffa.Views.EndpointViewEditor = Backbone.View.extend({
       new Diffa.Views.CategoriesEditor({collection: this.model.setCategories, el: this.$('.set-categories')}),
       new Diffa.Views.CategoriesEditor({collection: this.model.prefixCategories, el: this.$('.prefix-categories')})
     ];
-  },
-  remove: function() {
-    this.model.collection.remove(this.model);
   }
 });
 Diffa.Views.EndpointViewsEditor = Diffa.Views.TableEditor.extend({
   rowEditor: Diffa.Views.EndpointViewEditor
 });
-
+Diffa.Views.RepairActionEditor = Backbone.View.extend({
+  events: {
+    "click .remove-action": 'remove'
+  },
+  initialize: function() {
+    this.viewBinding = rivets.bind(this.el, {action: this.model});
+  }
+});
+Diffa.Views.RepairActionsEditor = Diffa.Views.TableEditor.extend({
+  rowEditor: Diffa.Views.RepairActionEditor
+});
+Diffa.Views.ReportEditor = Backbone.View.extend({
+  events: {
+    "click .remove-report": 'remove'
+  },
+  initialize: function() {
+    this.viewBinding = rivets.bind(this.el, {report: this.model});
+  }
+});
+Diffa.Views.ReportsEditor = Diffa.Views.TableEditor.extend({
+  rowEditor: Diffa.Views.ReportEditor
+});
+Diffa.Views.EscalationEditor = Backbone.View.extend({
+  events: {
+    "click .remove-escalation": 'remove'
+  },
+  initialize: function() {
+    this.viewBinding = rivets.bind(this.el, {escalation: this.model});
+  }
+});
+Diffa.Views.EscalationsEditor = Diffa.Views.TableEditor.extend({
+  rowEditor: Diffa.Views.EscalationEditor
+});
 
 Diffa.Binder = function(options) {
   this.initialize.apply(this, arguments);
