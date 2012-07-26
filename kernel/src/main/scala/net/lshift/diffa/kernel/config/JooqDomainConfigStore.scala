@@ -382,7 +382,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
   def listPairs(domain:String) = cachedPairs.readThrough(domain, () => JooqConfigStoreCompanion.listPairs(jooq,domain))
 
   def listPairsForEndpoint(domain:String, endpoint:String) =
-    cachedPairsByEndpoint.readThrough(DomainEndpointKey(domain, endpoint), () => JooqConfigStoreCompanion.listPairs(jooq, domain, Some(endpoint)))
+    cachedPairsByEndpoint.readThrough(DomainEndpointKey(domain, endpoint), () => JooqConfigStoreCompanion.listPairs(jooq, domain, endpoint = Some(endpoint)))
 
   def listEscalationsForPair(domain:String, pairKey: String) : Seq[EscalationDef] = {
     cachedEscalations.readThrough(DomainPairKey(domain, pairKey), () => jooq.execute(t => {
@@ -614,31 +614,10 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
 
   def getPairDef(domain:String, key: String) = cachedPairsByKey.readThrough(DomainPairKey(domain,key), () => jooq.execute { t =>
-
-    val result =
-      t.select(PAIR.getFields).
-        select(PAIR_VIEWS.NAME, PAIR_VIEWS.SCAN_CRON_SPEC, PAIR_VIEWS.SCAN_CRON_ENABLED).
-        from(PAIR).
-          leftOuterJoin(PAIR_VIEWS).
-            on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
-            and(PAIR_VIEWS.DOMAIN.equal(PAIR.DOMAIN)).
-        where(PAIR.DOMAIN.equal(domain).
-          and(PAIR.PAIR_KEY.equal(key)).
-          and(
-            PAIR_VIEWS.DOMAIN.equal(domain).
-            and(PAIR_VIEWS.PAIR.equal(key)).
-            orNotExists(
-              t.selectOne().
-                from(PAIR_VIEWS).
-                where(
-                  PAIR_VIEWS.DOMAIN.equal(domain).
-                  and(PAIR_VIEWS.PAIR.equal(key))
-              )
-            )
-          )
-        ).fetch()
-
-    if (result.size() == 0) {
+    val pairs = JooqConfigStoreCompanion.listPairs(jooq, domain, key = Some(key))
+    if (pairs.length == 1) {
+      pairs(0)
+    } else {
       //throw new MissingObjectException(domain + "/" + key)
 
       // TODO Ideally this code should throw something more descriptive like the above error
@@ -646,10 +625,6 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
       throw new MissingObjectException("pair")
     }
-    else {
-      ResultMappingUtil.singleParentRecordToDomainPairDef(result)
-    }
-
   })
 
   def getConfigVersion(domain:String) = cachedConfigVersions.readThrough(domain, () => jooq.execute(t => {

@@ -32,19 +32,13 @@ case class DiffaConfig(
   members:Set[String] = Set(),
   properties:Map[String, String] = Map(),
   endpoints:Set[EndpointDef] = Set(),
-  pairs:Set[PairDef] = Set(),
-  repairActions:Set[RepairActionDef] = Set(),
-  escalations:Set[EscalationDef] = Set(),
-  reports:Set[PairReportDef] = Set()
+  pairs:Set[PairDef] = Set()
 ) {
 
   def validate() {
     val path = "config"
     endpoints.foreach(_.validate(path))
     pairs.foreach(_.validate(path, endpoints))
-    repairActions.foreach(_.validate(path))
-    escalations.foreach(_.validate(path))
-    reports.foreach(_.validate(path))
   }
 }
 
@@ -190,7 +184,11 @@ case class PairDef(
   @BeanProperty var scanCronSpec: String = null,
   @BeanProperty var scanCronEnabled: Boolean = true,
   @BeanProperty var allowManualScans: java.lang.Boolean = null,
-  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
+  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef],
+  @BeanProperty var repairActions:java.util.Set[RepairActionDef] = new java.util.HashSet[RepairActionDef],
+  @BeanProperty var reports:java.util.Set[PairReportDef] = new java.util.HashSet[PairReportDef],
+  @BeanProperty var escalations:java.util.Set[EscalationDef] = new java.util.HashSet[EscalationDef]
+) {
 
   def this() = this(key = null)
 
@@ -264,6 +262,10 @@ case class PairDef(
 
       views.foreach(v => v.validate(this, pairPath, upstreamEp, downstreamEp))
     }
+    
+    repairActions.foreach(_.validate(pairPath))
+    escalations.foreach(_.validate(pairPath))
+    reports.foreach(_.validate(pairPath))
   }
 }
 
@@ -316,7 +318,11 @@ case class DomainPairDef(
   @BeanProperty var scanCronSpec: String = null,
   @BeanProperty var scanCronEnabled: Boolean = true,
   @BeanProperty var allowManualScans: java.lang.Boolean = null,
-  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef]) {
+  @BeanProperty var views:java.util.List[PairViewDef] = new java.util.ArrayList[PairViewDef],
+  @BeanProperty var repairActions:java.util.Set[RepairActionDef] = new java.util.HashSet[RepairActionDef],
+  @BeanProperty var reports:java.util.Set[PairReportDef] = new java.util.HashSet[PairReportDef],
+  @BeanProperty var escalations:java.util.Set[EscalationDef] = new java.util.HashSet[EscalationDef]
+) {
 
   def this() = this(domain = null)
 
@@ -331,7 +337,10 @@ case class DomainPairDef(
     scanCronSpec = scanCronSpec,
     scanCronEnabled = scanCronEnabled,
     allowManualScans = allowManualScans,
-    views = views
+    views = views,
+    repairActions = repairActions,
+    reports = reports,
+    escalations = escalations
   )
 
   def identifier = asRef.identifier
