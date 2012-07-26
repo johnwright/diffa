@@ -29,15 +29,15 @@ class JooqScanActivityStore(jooq:DatabaseFacade) extends ScanActivityStore {
         set(SCAN_STATEMENTS.ID, long2Long(s.id)).
         set(SCAN_STATEMENTS.DOMAIN, s.domain).
         set(SCAN_STATEMENTS.PAIR, s.pair).
-        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy).
+        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy.getOrElse(null)).
         set(SCAN_STATEMENTS.START_TIME, dateTimeToTimestamp(s.startTime)).
-        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime)).
-        set(SCAN_STATEMENTS.STATE, int2Integer(s.state)).
+        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime.getOrElse(null))).
+        set(SCAN_STATEMENTS.STATE, s.state).
       onDuplicateKeyUpdate().
-        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy).
+        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy.getOrElse(null)).
         set(SCAN_STATEMENTS.START_TIME, dateTimeToTimestamp(s.startTime)).
-        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime)).
-        set(SCAN_STATEMENTS.STATE, int2Integer(s.state)).
+        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime.getOrElse(null))).
+        set(SCAN_STATEMENTS.STATE, s.state).
       execute()
   })
 
@@ -55,9 +55,9 @@ class JooqScanActivityStore(jooq:DatabaseFacade) extends ScanActivityStore {
     id = record.getValue(SCAN_STATEMENTS.ID),
     domain =  record.getValue(SCAN_STATEMENTS.DOMAIN),
     pair =  record.getValue(SCAN_STATEMENTS.PAIR),
-    initiatedBy =  record.getValue(SCAN_STATEMENTS.INTIATED_BY),
+    initiatedBy =  Option(record.getValue(SCAN_STATEMENTS.INTIATED_BY)),
     startTime =  timestampToDateTime(record.getValue(SCAN_STATEMENTS.START_TIME)),
-    endTime =  timestampToDateTime(record.getValue(SCAN_STATEMENTS.END_TIME)),
+    endTime =  Option(timestampToDateTime(record.getValue(SCAN_STATEMENTS.END_TIME))),
     state = record.getValue(SCAN_STATEMENTS.STATE)
   )
 }

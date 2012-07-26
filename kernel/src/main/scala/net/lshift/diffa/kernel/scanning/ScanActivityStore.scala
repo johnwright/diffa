@@ -32,16 +32,16 @@ trait ScanActivityStore {
 case class ScanStatement(id:Long = System.currentTimeMillis(),
                          domain:String,
                          pair:String,
-                         initiatedBy:String,
+                         initiatedBy:Option[String] = None,
                          startTime:DateTime = new DateTime(),
-                         endTime:DateTime = null,
-                         state:Int = 0)
+                         endTime:Option[DateTime] = None,
+                         state:String = "UNKNOWN")
 
 object ScanStatement {
   def resolveScanState(scanState:PairScanState) = scanState match {
-    case PairScanState.UP_TO_DATE => 1
-    case PairScanState.FAILED     => 2
-    case PairScanState.CANCELLED  => 3
-    case _                        => 4
+    case PairScanState.UP_TO_DATE => "COMPLETED"
+    case PairScanState.FAILED     => "FAILED"
+    case PairScanState.CANCELLED  => "CANCELLED"
+    case _                        => "UNKNOWN"
   }
 }

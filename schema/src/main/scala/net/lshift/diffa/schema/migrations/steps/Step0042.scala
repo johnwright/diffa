@@ -36,8 +36,8 @@ object Step0042 extends VerifiedMigrationStep {
       column("intiated_by", Types.VARCHAR, 50, true).
       column("start_time", Types.TIMESTAMP, false).
       column("end_time", Types.TIMESTAMP, 50, true).
-      column("state", Types.INTEGER, 1, false, 0).
-      pk("id", "domain", "pair")
+      column("state", Types.VARCHAR, 20, false, "STARTED").
+      pk("domain", "pair", "id")
 
     migration
   }
@@ -46,13 +46,13 @@ object Step0042 extends VerifiedMigrationStep {
     val migration = new MigrationBuilder(config)
 
     migration.insert("scan_statements").values(Map(
-      "id"          -> randomInt(),
       "domain"      -> randomString(),
       "pair"        -> randomString(),
+      "id"          -> randomInt(),
       "intiated_by" -> randomString(),
       "start_time"  -> randomTimestamp(),
       "end_time"    -> randomTimestamp(),
-      "state"       -> "1"
+      "state"       -> "COMPLETED"
     ))
 
     migration

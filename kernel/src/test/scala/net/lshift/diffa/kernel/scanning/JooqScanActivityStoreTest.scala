@@ -44,7 +44,7 @@ class JooqScanActivityStoreTest {
       id = id,
       domain =  domain,
       pair =  pair,
-      initiatedBy = "some-user",
+      initiatedBy = Some("some-user"),
       startTime =  new DateTime().withMillisOfSecond(0)
     )
 
@@ -53,7 +53,7 @@ class JooqScanActivityStoreTest {
     val firstRetrievedStatement = scanActivityStore.getStatement(ref, id)
     assertEquals(originalStatement, firstRetrievedStatement)
 
-    val updatedStatement = originalStatement.copy(endTime = new DateTime().withMillisOfSecond(0), state = 1)
+    val updatedStatement = originalStatement.copy(endTime = Some(new DateTime().withMillisOfSecond(0)), state = "COMPLETED")
 
     scanActivityStore.createOrUpdateStatement(updatedStatement)
 

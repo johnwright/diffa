@@ -336,18 +336,13 @@ case class PairActor(pair:DomainPairDef,
       case _                        => // Ignore - not a state that we'll see
     }
 
-    val user = activeScan.initiatingUser match {
-      case Some(x) => x
-      case None    => null
-    }
-
     val scanStatement = ScanStatement(
       id = activeScan.id,
       pair = pairRef.key,
       domain = pairRef.domain,
-      initiatedBy = user,
+      initiatedBy = activeScan.initiatingUser,
       startTime = activeScan.startTime,
-      endTime = new DateTime(DateTimeZone.UTC),
+      endTime = Some(new DateTime(DateTimeZone.UTC)),
       state = ScanStatement.resolveScanState(state)
     )
 
