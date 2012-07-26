@@ -44,7 +44,7 @@
 
   <logger name="org.eclipse.jetty.util.log" level="ERROR" />
 
-  <root level="debug">
+  <root level="info">
     <appender-ref ref="STDOUT" />
   </root>
 
