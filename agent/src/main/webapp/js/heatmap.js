@@ -1237,6 +1237,10 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
 
     $(this.el).html(template({API_BASE: API_BASE}));
     this.render();
+    var $viewer = $('#contentviewer');
+    if ($viewer.children().length > 0) {
+      $viewer.addClass('contentviewer-visible');
+    }
   },
 
   updateSelected: function(newSelected) {
