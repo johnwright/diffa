@@ -29,14 +29,14 @@ class JooqScanActivityStore(jooq:DatabaseFacade) extends ScanActivityStore {
         set(SCAN_STATEMENTS.ID, long2Long(s.id)).
         set(SCAN_STATEMENTS.DOMAIN, s.domain).
         set(SCAN_STATEMENTS.PAIR, s.pair).
-        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy.getOrElse(null)).
+        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy.orNull).
         set(SCAN_STATEMENTS.START_TIME, dateTimeToTimestamp(s.startTime)).
-        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime.getOrElse(null))).
+        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime.orNull)).
         set(SCAN_STATEMENTS.STATE, s.state).
       onDuplicateKeyUpdate().
-        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy.getOrElse(null)).
+        set(SCAN_STATEMENTS.INTIATED_BY, s.initiatedBy.orNull).
         set(SCAN_STATEMENTS.START_TIME, dateTimeToTimestamp(s.startTime)).
-        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime.getOrElse(null))).
+        set(SCAN_STATEMENTS.END_TIME, dateTimeToTimestamp(s.endTime.orNull)).
         set(SCAN_STATEMENTS.STATE, s.state).
       execute()
   })
