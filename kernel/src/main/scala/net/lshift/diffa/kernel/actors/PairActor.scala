@@ -324,6 +324,9 @@ case class PairActor(pair:DomainPairDef,
    */
   def leaveScanState(state:PairScanState) = {
 
+    // Leave the scan state
+    context.unbecome()
+
     if (state == PairScanState.FAILED || state == PairScanState.CANCELLED) {
       feedbackHandle.cancel()     // In the scenario where we failed, we want to make sure any dangling processes cancel
       writer.rollback()
@@ -363,9 +366,6 @@ case class PairActor(pair:DomainPairDef,
 
     logger.info(formatAlertCode(pairRef, SCAN_COMPLETED_BENCHMARK))
     cleanupIndexFilesIfCorrelationStoreBackedByLucene
-
-    // Leave the scan state
-    context.unbecome()
   }
 
   /**
