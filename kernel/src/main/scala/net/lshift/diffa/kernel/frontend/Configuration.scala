@@ -219,7 +219,7 @@ class Configuration(val configStore: DomainConfigStore,
 
   def createOrUpdateRepairAction(domain:String, pairKey:String, action: RepairActionDef) {
     action.validate()
-    updatePair(domain, pairKey, pair => replaceByName(pair.repairActions.toSet, action))
+    updatePair(domain, pairKey, pair => replaceByName(pair.repairActions, action))
   }
 
   def deleteRepairAction(domain:String, name: String, pairKey: String) {
@@ -232,7 +232,7 @@ class Configuration(val configStore: DomainConfigStore,
 
   def createOrUpdateEscalation(domain:String, pairKey:String, escalation: EscalationDef) {
     escalation.validate()
-    updatePair(domain, pairKey, pair => replaceByName(pair.escalations.toSet, escalation))
+    updatePair(domain, pairKey, pair => replaceByName(pair.escalations, escalation))
   }
 
   def deleteEscalation(domain:String, name: String, pairKey: String) {
@@ -249,7 +249,7 @@ class Configuration(val configStore: DomainConfigStore,
 
   def createOrUpdateReport(domain:String, pairKey:String, report: PairReportDef) {
     report.validate()
-    updatePair(domain, pairKey, pair => replaceByName(pair.reports.toSet, report))
+    updatePair(domain, pairKey, pair => replaceByName(pair.reports, report))
   }
 
   def makeDomainMember(domain:String, userName:String) = configStore.makeDomainMember(domain,userName)
@@ -295,7 +295,7 @@ class Configuration(val configStore: DomainConfigStore,
     configStore.createOrUpdatePair(domain, pair)
   }
 
-  private def replaceByName[T <: {def name:String}](list:Set[T], obj:T) {
+  private def replaceByName[T <: {def name:String}](list:java.util.Set[T], obj:T) {
     list.find(_.name == obj.name) match {
       case Some(a) => list.remove(a)
       case None    =>
