@@ -159,11 +159,11 @@ class ConfigurationTest {
       pairs = Set(
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 * * * * ?",
           allowManualScans = true, views = List(PairViewDef("v1", "0 * * * * ?", false)),
-          repairActions = Set(RepairActionDef("Resend Sauce", "resend", "pair", "ab")),
-          reports = Set(PairReportDef("Bulk Send Differences", "ab", "differences", "http://location:5432/diffhandler")),
+          repairActions = Set(RepairActionDef("Resend Sauce", "resend", "pair")),
+          reports = Set(PairReportDef("Bulk Send Differences", "differences", "http://location:5432/diffhandler")),
           escalations = Set(
-            EscalationDef("Resend Missing", "ab", "Resend Sauce", "repair", "downstream-missing", "scan"),
-            EscalationDef("Report Differences", "ab", "Bulk Send Differences", "report", "scan-completed")
+            EscalationDef("Resend Missing", "Resend Sauce", "repair", "downstream-missing", "scan"),
+            EscalationDef("Report Differences", "Bulk Send Differences", "report", "scan-completed")
           )
         ),
         PairDef("ac", "same", 5, "upstream1", "downstream1", "0 * * * * ?", scanCronEnabled = false))
@@ -224,11 +224,11 @@ class ConfigurationTest {
       pairs = Set(
           // ab has moved from gaa to gcc
         PairDef("ab", "same", 5, "upstream1", "downstream2", "0 * * * * ?",
-          repairActions = Set(RepairActionDef("Resend Source", "resend", "pair", "ab")),
-          escalations = Set(EscalationDef(name = "Resend Another Missing", pair = "ab",
+          repairActions = Set(RepairActionDef("Resend Source", "resend", "pair")),
+          escalations = Set(EscalationDef(name = "Resend Another Missing",
                                         action = "Resend Source", actionType = "repair",
                                         event = "downstream-missing", origin = "scan")),
-          reports = Set(PairReportDef("Bulk Send Reports Elsewhere", "ab", "differences", "http://location:5431/diffhandler"))
+          reports = Set(PairReportDef("Bulk Send Reports Elsewhere", "differences", "http://location:5431/diffhandler"))
         ),
           // ac is gone
         PairDef("ad", "same", 5, "upstream1", "downstream2"))
@@ -270,7 +270,7 @@ class ConfigurationTest {
     assertEquals(config, newConfig)
 
     // check that the action was updated
-    assertEquals(Set(RepairActionDef("Resend Source", "resend", "pair", "ab")),
+    assertEquals(Set(RepairActionDef("Resend Source", "resend", "pair")),
       newConfig.pairs.find(_.key == "ab").get.repairActions.toSet)
     verifyAll
   }
