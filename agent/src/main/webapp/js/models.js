@@ -605,10 +605,6 @@ Diffa.Models.Domain = Backbone.Model.extend({
 Diffa.DomainManager = _.extend({}, Backbone.Events, {
   domains: {},
   get: function(name, user) {
-    if (!user) {
-      user = "guest";
-    }
-
     var domain = this.domains[name];
 
     if (!domain) {
