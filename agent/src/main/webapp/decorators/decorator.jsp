@@ -67,7 +67,6 @@
     <script type="text/javascript" src="js/thirdparty/jquery.cookie.js" charset="utf-8"></script>
     <script type="text/javascript" src="assets/diffa-core.js" charset="utf-8"></script>
 
-    <script src="js/current-domain.js"></script>
     <script src="js/diffa-ajax-setup.js"></script>
 
     <script type="text/javascript" src="assets/widgets.js"></script>
