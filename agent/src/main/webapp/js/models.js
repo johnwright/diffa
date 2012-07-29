@@ -125,8 +125,8 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
     }
   },
   viewsStatus: function() {
-    if (this.get('views') && this.get('views').length > 0) {
-      var count = this.get('views').length;
+    if (this.views && this.views.length > 0) {
+      var count = this.views.length;
 
       return count + " view" + (count > 1 ? "s" : "") + " configured";
     } else {
@@ -188,8 +188,8 @@ Diffa.Models.Pair = Backbone.Model.extend({
     return result;
   },
   viewsStatus: function() {
-    if (this.get('views') && this.get('views').length > 0) {
-      var count = this.get('views').length;
+    if (this.views && this.views.length > 0) {
+      var count = this.views.length;
 
       return count + " view" + (count > 1 ? "s" : "") + " configured";
     } else {
