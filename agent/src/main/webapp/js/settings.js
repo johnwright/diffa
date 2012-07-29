@@ -239,6 +239,9 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     binding[this.model.type] = this.model;
     this.viewBinding = rivets.bind(this.el, binding);
 
+    this.$('.feature-table').toggle(!!this.model.isSaved);
+    this.$('.features-not-available').toggle(!this.model.isSaved);
+
     this.postBind();
 
     var nameContainer = $('.name-container', this.el);
@@ -614,9 +617,11 @@ Diffa.Helpers.bindEditor = function(el, elementType, collectionName, modelClass,
         var model;
         if (elName != "") {
           model = domain[collectionName].get(elName)
+          model.isSaved = true;
         } else {
           model = new modelClass();
           model.domain = domain;
+          model.isSaved = false;
         }
 
         if (initNewElHelper) initNewElHelper(model, domain);
