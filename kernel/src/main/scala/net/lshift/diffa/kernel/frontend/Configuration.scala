@@ -171,35 +171,6 @@ class Configuration(val configStore: DomainConfigStore,
   def createOrUpdatePair(domain:String, pairDef: PairDef) {
     pairDef.validate(null, configStore.listEndpoints(domain).toSet)
     configStore.createOrUpdatePair(domain, pairDef)
-
-    val removedActions =
-      configStore.listRepairActionsForPair(domain, pairDef.key).filter(a => pairDef.repairActions
-        .find(newA => newA.name == a.name).isEmpty)
-    removedActions.foreach(a => deleteRepairAction(domain, a.name, pairDef.key))
-    pairDef.repairActions.foreach { a =>
-      a.pair = pairDef.key
-      createOrUpdateRepairAction(domain, a)
-    }
-
-    val removedEscalations =
-      configStore.listEscalationsForPair(domain, pairDef.key).filter(e => pairDef.escalations
-        .find(newE => newE.name == e.name).isEmpty)
-    removedEscalations.foreach(e => deleteEscalation(domain, e.name, pairDef.key))
-    pairDef.escalations.foreach { e =>
-      e.pair = pairDef.key;
-      createOrUpdateEscalation(domain, e)
-    }
-
-    // Remove missing reports, and create/update the rest
-    val removedReports =
-      configStore.listReportsForPair(domain, pairDef.key).filter(r => pairDef.reports
-        .find(newR => newR.name == r.name && newR.pair == r.pair).isEmpty)
-    removedReports.foreach(r => deleteReport(domain, r.name, pairDef.key))
-    pairDef.reports.foreach { r =>
-      r.pair = pairDef.key
-      createOrUpdateReport(domain, r)
-    }
-
     withCurrentPair(domain, pairDef.key, notifyPairUpdate(_))
   }
 
