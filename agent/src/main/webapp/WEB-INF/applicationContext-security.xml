@@ -34,7 +34,7 @@
     <intercept-url pattern="/js/**" access="permitAll" />
     <intercept-url pattern="/images/**" access="permitAll" />
     <intercept-url pattern="/assets/**" access="permitAll" />
-    <intercept-url pattern="/**/*.html" access="permitAll" />
+    <intercept-url pattern="/login.html" access="permitAll" />
     <!-- 
 	As an aside, with the SavedRequestAwareAuthenticationSuccessHandler, the
 	auth/auth system will remember the last URL requested, and redirect back to
@@ -60,6 +60,8 @@
   </beans:bean>
 
   <beans:bean id="successHandler" class="org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler">
+    <beans:property name="alwaysUseDefaultTargetUrl" value="true"/>
+    <beans:property name="defaultTargetUrl" value="/index.html"/>
   </beans:bean>
 
   <beans:bean id="failureHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">

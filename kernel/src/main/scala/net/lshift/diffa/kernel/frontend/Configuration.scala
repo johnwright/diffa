@@ -168,7 +168,7 @@ class Configuration(val configStore: DomainConfigStore,
   * */
   def declarePair(domain:String, pairDef: PairDef): Unit = createOrUpdatePair(domain, pairDef)
 
-  def createOrUpdatePair(domain:String, pairDef: PairDef): Unit = {
+  def createOrUpdatePair(domain:String, pairDef: PairDef) {
     pairDef.validate(null, configStore.listEndpoints(domain).toSet)
     configStore.createOrUpdatePair(domain, pairDef)
 
@@ -242,51 +242,43 @@ class Configuration(val configStore: DomainConfigStore,
     f(current)
   }
 
-  def declareRepairAction(domain:String, action: RepairActionDef) {
-    createOrUpdateRepairAction(domain, action)
+  def declareRepairAction(domain:String, pairKey:String, action: RepairActionDef) {
+    createOrUpdateRepairAction(domain, pairKey, action)
   }
 
-  def createOrUpdateRepairAction(domain:String, action: RepairActionDef) {
+  def createOrUpdateRepairAction(domain:String, pairKey:String, action: RepairActionDef) {
     action.validate()
-    configStore.createOrUpdateRepairAction(domain, action)
+    updatePair(domain, pairKey, pair => replaceByName(pair.repairActions, action))
   }
 
   def deleteRepairAction(domain:String, name: String, pairKey: String) {
-    configStore.deleteRepairAction(domain, name, pairKey)
-  }
-
-  def listRepairActions (domain:String) : Seq[RepairActionDef] = {
-    configStore.listRepairActions(domain)
+    updatePair(domain, pairKey, pair => pair.repairActions.retain(_.name != name))
   }
 
   def listRepairActionsForPair(domain:String, pairKey: String): Seq[RepairActionDef] = {
-    configStore.listRepairActionsForPair(domain, pairKey)
+    configStore.getPairDef(domain, pairKey).repairActions.toSeq
   }
 
-  def createOrUpdateEscalation(domain:String, escalation: EscalationDef) {
+  def createOrUpdateEscalation(domain:String, pairKey:String, escalation: EscalationDef) {
     escalation.validate()
-    configStore.createOrUpdateEscalation(domain, escalation)
+    updatePair(domain, pairKey, pair => replaceByName(pair.escalations, escalation))
   }
 
   def deleteEscalation(domain:String, name: String, pairKey: String) {
-    configStore.deleteEscalation(domain, name, pairKey)
-  }
-
-  def listEscalations(domain:String) : Seq[EscalationDef] = {
-    configStore.listEscalations(domain)
+    updatePair(domain, pairKey, pair => pair.escalations.retain(_.name != name))
   }
 
   def listEscalationForPair(domain:String, pairKey: String): Seq[EscalationDef] = {
-    configStore.listEscalationsForPair(domain, pairKey)
+    configStore.getPairDef(domain, pairKey).escalations.toSeq
   }
 
   def deleteReport(domain:String, name: String, pairKey: String) {
-    configStore.deleteReport(domain, name, pairKey)
+    updatePair(domain, pairKey, pair => pair.reports.retain(_.name != name))
   }
 
-  def createOrUpdateReport(domain:String, report: PairReportDef) {
+  def createOrUpdateReport(domain:String, pairKey:String, report: PairReportDef) {
     report.validate()
-    configStore.createOrUpdateReport(domain, report)
+    updatePair(domain, pairKey, pair => replaceByName(pair.reports, report))
   }
 
   def makeDomainMember(domain:String, userName:String) = configStore.makeDomainMember(domain,userName)
@@ -324,6 +316,20 @@ class Configuration(val configStore: DomainConfigStore,
   def setPairLimit(pair:DiffaPairRef, limitName:String, value:Int) = {
     val limit = ValidServiceLimits.lookupLimit(limitName)
     serviceLimitsStore.setPairLimit(pair.domain, pair.key, limit, value)
+  }
+
+  private def updatePair(domain:String, pairKey:String, f:PairDef => Unit) {
+    val pair = configStore.getPairDef(domain, pairKey).withoutDomain
+    f(pair)
+    configStore.createOrUpdatePair(domain, pair)
+  }
+
+  private def replaceByName[T <: {def name:String}](list:java.util.Set[T], obj:T) {
+    list.find(_.name == obj.name) match {
+      case Some(a) => list.remove(a)
+      case None    =>
+    }
+    list.add(obj)
   }
 
 }

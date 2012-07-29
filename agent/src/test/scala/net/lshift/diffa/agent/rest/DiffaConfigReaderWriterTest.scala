@@ -64,16 +64,16 @@ class DiffaConfigReaderWriterTest {
         PairDef("ab", "same", 5, "upstream1", "downstream1", "0 0 0 * 0 0", scanCronEnabled=false,
           views = List(PairViewDef(name = "little-view", scanCronSpec = "0 0 0 * * 0")),
           repairActions = Set(
-            RepairActionDef(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}", pair="ab"),
-            RepairActionDef(name="Delete Result", scope="entity", url="http://example.com/delete/{id}", pair="ab")
+            RepairActionDef(name="Resend Sauce", scope="entity", url="http://example.com/resend/{id}"),
+            RepairActionDef(name="Delete Result", scope="entity", url="http://example.com/delete/{id}")
           ),
           reports = Set(
-            PairReportDef(name="Bulk Fix Differences", reportType="differences", target="http://example.com/bulk_diff_handler", pair="ab")
+            PairReportDef(name="Bulk Fix Differences", reportType="differences", target="http://example.com/bulk_diff_handler")
           ),
           escalations = Set(
-            EscalationDef(name="Delete From Upstream", action="Delete Result", actionType="repair", event="upstream-missing", origin="scan", pair="ab"),
-            EscalationDef(name="Resend Missing Downstream", action="Resend Sauce", actionType="repair", event="downstream-missing", origin="scan", pair="ab"),
-            EscalationDef(name="Resend On Mismatch", action="Resend Sauce", actionType="repair", event="mismatch", origin="scan", pair="ab")
+            EscalationDef(name="Delete From Upstream", action="Delete Result", actionType="repair", event="upstream-missing", origin="scan"),
+            EscalationDef(name="Resend Missing Downstream", action="Resend Sauce", actionType="repair", event="downstream-missing", origin="scan"),
+            EscalationDef(name="Resend On Mismatch", action="Resend Sauce", actionType="repair", event="mismatch", origin="scan")
           )
         ),
         PairDef("ac", "same", 5, "upstream1", "downstream1", allowManualScans = false))

@@ -24,6 +24,8 @@ import org.apache.commons.io.FileUtils
 import java.io.{FileInputStream, FileWriter, PrintWriter, File}
 import org.apache.http.entity.InputStreamEntity
 import org.joda.time.format.ISODateTimeFormat
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.util.MissingObjectException
 
 /**
  * Component responsible for executing reports defined on a pair.
@@ -36,9 +38,10 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
    * @throws MissingObjectException if the requested report doesn't exist.
    */
   def executeReport(pair:DiffaPairRef, name:String) {
-    val reportDef = configStore.getPairReportDef(pair.domain, name, pair.key)
+    val reportDef = configStore.getPairDef(pair.domain, pair.key).reports.
+      find(_.name == name).getOrElse(throw new MissingObjectException("pair report"))
 
-    diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Initiating report %s".format(name))
+    diagnostics.logPairEvent(None, pair, DiagnosticLevel.INFO, "Initiating report %s".format(name))
     try {
       // Execute the report, and stream it to disk. It is necessary to do this because a HttpPost needs to
       // include a length, which we won't know till we've assembled the report
@@ -54,10 +57,10 @@ class ReportManager(configStore:DomainConfigStore, diffStore:DomainDifferenceSto
 
         postReport(reportDef.target, reportTmp)
       })
-      diagnostics.logPairEvent(DiagnosticLevel.INFO, pair, "Completed report %s".format(name))
+      diagnostics.logPairEvent(None, pair, DiagnosticLevel.INFO, "Completed report %s".format(name))
     } catch {
       case e =>
-        diagnostics.logPairEvent(DiagnosticLevel.ERROR, pair, "Report %s failed: %s".format(name, e.getMessage))
+        diagnostics.logPairEvent(None, pair, DiagnosticLevel.ERROR, "Report %s failed: %s".format(name, e.getMessage))
     }
   }
 

@@ -29,11 +29,13 @@ Diffa.Helpers.ViewsHelper = {
     model.set({views: model.views.toJSON()}, {silent: true});
   }
 };
+
 Diffa.Helpers.DatesHelper = {
   toISOString: function(d) {
   return d.toISOString().replace(/-/g, "").replace(/:/g, "").replace(/\.\d\d\d/g, "");
   }
 };
+
 Diffa.Helpers.CategoriesHelper = {
   extractCategories: function(model, viewCollectionClass) {
     var updateCategories = function() {
@@ -60,6 +62,7 @@ Diffa.Helpers.CategoriesHelper = {
     model.set({categories: categories}, {silent: true});
   }
 };
+
 Diffa.Models.Endpoint = Backbone.Model.extend({
   idAttribute: 'name',
   type: 'endpoint',
@@ -131,6 +134,7 @@ Diffa.Models.Endpoint = Backbone.Model.extend({
     }
   }
 });
+
 Diffa.Models.EndpointView = Backbone.Model.extend({
   idAttribute: 'name',
   initialize: function() {
@@ -140,6 +144,7 @@ Diffa.Models.EndpointView = Backbone.Model.extend({
     Diffa.Helpers.CategoriesHelper.packCategories(this);
   }
 });
+
 Diffa.Models.Pair = Backbone.Model.extend({
   idAttribute: "key",
   type: 'pair',
@@ -219,6 +224,7 @@ Diffa.Models.Pair = Backbone.Model.extend({
     }
   }
 });
+
 Diffa.Models.PairState = Backbone.Model.extend({
   logPollInterval: 2000,
   initialize: function() {
@@ -354,6 +360,7 @@ Diffa.Collections.Watchable = {
     }
   }
 };
+
 Diffa.Collections.CollectionBase = Backbone.Collection.extend(Diffa.Collections.Watchable).extend({
   initialize: function(models, opts) {
     var self = this;
@@ -391,19 +398,74 @@ Diffa.Collections.CollectionBase = Backbone.Collection.extend(Diffa.Collections.
     }
   }
 });
+
 Diffa.Collections.Endpoints = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Endpoint,
   url: function() { return "/domains/" + this.domain.id + "/config/endpoints"; },
   comparator: function(endpoint) { return endpoint.get('name'); }
 });
+
 Diffa.Collections.EndpointViews = Backbone.Collection.extend({
   model: Diffa.Models.EndpointView
 });
+
 Diffa.Collections.Pairs = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Pair,
   url: function() { return "/domains/" + this.domain.id + "/config/pairs"; },
   comparator: function(pair) { return pair.id; }
 });
+
+Diffa.Models.HiddenPair = Backbone.Model.extend({
+  initialize: function(model, opts) {
+    this.id = model.id;
+    this.user = opts.collection.user;
+    this.domain = opts.collection.domain.id;
+  },
+  url: function() {
+    return "/users/" + this.user + "/" + this.domain + "/" + this.id + "/filter/SWIM_LANE";
+  }
+});
+
+Diffa.Collections.HiddenPairs = Diffa.Collections.CollectionBase.extend({
+  model: Diffa.Models.HiddenPair,
+  initialize: function(models, opts) {
+    this.user = opts.user;
+    this.domain = opts.domain;
+    this.fetch();
+  },
+  url: function() {
+    return "/users/" + this.user + "/" + this.domain.id + "/filter/SWIM_LANE";
+  },
+  parse: function(response) {
+    return response.map(this.identify);
+  },
+  identify: function(ident) {
+    return {id: ident};
+  },
+  comparator: function(pair) {
+    return pair.get("id");
+  },
+  remove: function(models, options) {
+    var self = this;
+    _.each(models, function(model) {
+      if (model && model.destroy) {
+        model.destroy();
+      }
+    });
+    self.fetch();
+  },
+  hidePair: function(pairKey) {
+    var model = new Diffa.Models.HiddenPair({id: pairKey}, {collection: this});
+    this.create(model);
+  },
+  revealPair: function(pairKey) {
+    var model = this.get({id: pairKey});
+    if (model) {
+      this.remove([model]);
+    }
+  }
+});
+
 Diffa.Collections.CategoryCollection = Backbone.Collection.extend({
   model: Diffa.Models.Category,
   initialize: function(models, options) {
@@ -442,6 +504,7 @@ Diffa.Collections.Escalations = Diffa.Collections.CollectionBase.extend({
 Diffa.Collections.Reports = Diffa.Collections.CollectionBase.extend({
   model: Diffa.Models.Report
 });
+
 Diffa.Collections.PairStates = Diffa.Collections.CollectionBase.extend({
   watchInterval: 5000,        // We poll for pair status updates every 5s
   model: Diffa.Models.PairState,
@@ -572,8 +635,15 @@ Diffa.Models.PairAggregates = Backbone.Model.extend(Diffa.Collections.Watchable)
     this.set(result, opts);
     
     this.lastRequests = requestDetails;
-  }
+  },
+
+  getMap: function() {
+    return this.get('map');
+  },
+
+  containsMultiplePairs: false
 });
+
 Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Aggregator).extend({
   model: Diffa.Models.PairAggregates,
 
@@ -612,7 +682,18 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
 
   change: function() {
     this.forEach(function(pair) { pair.change(); });
-  }
+  },
+
+  getMap: function(pairKey) {
+    var pairAggregate = this.get(pairKey);
+    if (pairAggregate) {
+      return pairAggregate.getMap();
+    } else {
+      return [];
+    }
+  },
+
+  containsMultiplePairs: true
 });
 
 /**
@@ -621,11 +702,14 @@ Diffa.Collections.DomainAggregates = Backbone.Collection.extend(Diffa.Models.Agg
 Diffa.Models.Domain = Backbone.Model.extend({
   idAttribute: 'name',
   initialize: function() {
+    var self = this;
+    var user = this.get('user');
     this.endpoints = new Diffa.Collections.Endpoints([], {domain: this});
     this.pairs = new Diffa.Collections.Pairs([], {domain: this});
     this.pairStates = new Diffa.Collections.PairStates([], {domain: this});
     this.diffs = new Diffa.Collections.Diffs([], {domain: this});
     this.aggregates = new Diffa.Collections.DomainAggregates([], {domain: this});
+    this.hiddenPairs = new Diffa.Collections.HiddenPairs([], {domain: this, user: user});
   },
 
   loadAll: function(colls, callback) {
@@ -652,15 +736,11 @@ Diffa.Models.Domain = Backbone.Model.extend({
  */
 Diffa.DomainManager = _.extend({}, Backbone.Events, {
   domains: {},
-  get: function(name) {
-    if (!name) {
-      name = "diffa";     // Default the domain name when not specified
-    }
-
+  get: function(name, user) {
     var domain = this.domains[name];
 
     if (!domain) {
-      domain = new Diffa.Models.Domain({name: name});
+      domain = new Diffa.Models.Domain({name: name, user: user});
       this.domains[name] = domain;
     }
 

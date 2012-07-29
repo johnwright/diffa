@@ -274,18 +274,18 @@ object JooqConfigStoreCompanion {
       select(PAIR_REPORTS.getFields).
       from(PAIR).
       leftOuterJoin(PAIR_VIEWS).
-      on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
-      and(PAIR_VIEWS.DOMAIN.equal(PAIR.DOMAIN)).
+        on(PAIR_VIEWS.PAIR.equal(PAIR.PAIR_KEY)).
+        and(PAIR_VIEWS.DOMAIN.equal(PAIR.DOMAIN)).
       leftOuterJoin(REPAIR_ACTIONS).
-      on(REPAIR_ACTIONS.PAIR_KEY.equal(PAIR.PAIR_KEY)).
-      and(REPAIR_ACTIONS.DOMAIN.equal(PAIR.DOMAIN)).
+        on(REPAIR_ACTIONS.PAIR_KEY.equal(PAIR.PAIR_KEY)).
+        and(REPAIR_ACTIONS.DOMAIN.equal(PAIR.DOMAIN)).
       leftOuterJoin(ESCALATIONS).
-      on(ESCALATIONS.PAIR_KEY.equal(PAIR.PAIR_KEY)).
-      and(ESCALATIONS.DOMAIN.equal(PAIR.DOMAIN)).
+        on(ESCALATIONS.PAIR_KEY.equal(PAIR.PAIR_KEY)).
+        and(ESCALATIONS.DOMAIN.equal(PAIR.DOMAIN)).
       leftOuterJoin(PAIR_REPORTS).
-      on(PAIR_REPORTS.PAIR_KEY.equal(PAIR.PAIR_KEY)).
-      and(PAIR_REPORTS.DOMAIN.equal(PAIR.DOMAIN)).
-      where(PAIR.DOMAIN.equal(domain))
+        on(PAIR_REPORTS.PAIR_KEY.equal(PAIR.PAIR_KEY)).
+        and(PAIR_REPORTS.DOMAIN.equal(PAIR.DOMAIN)).
+        where(PAIR.DOMAIN.equal(domain))
 
     val keyedQuery = key match {
       case None       => baseQuery
@@ -366,7 +366,6 @@ object JooqConfigStoreCompanion {
 
   def recordToEscalation(record:Record) : EscalationDef = {
     EscalationDef(
-      pair = record.getValue(ESCALATIONS.PAIR_KEY),
       name = record.getValue(ESCALATIONS.NAME),
       action = record.getValue(ESCALATIONS.ACTION),
       actionType = record.getValue(ESCALATIONS.ACTION_TYPE),
@@ -376,7 +375,6 @@ object JooqConfigStoreCompanion {
 
   def recordToPairReport(record:Record) : PairReportDef = {
     PairReportDef(
-      pair = record.getValue(PAIR_REPORTS.PAIR_KEY),
       name = record.getValue(PAIR_REPORTS.NAME),
       target = record.getValue(PAIR_REPORTS.TARGET),
       reportType = record.getValue(PAIR_REPORTS.REPORT_TYPE)
@@ -385,7 +383,6 @@ object JooqConfigStoreCompanion {
 
   def recordToRepairAction(record:Record) : RepairActionDef = {
     RepairActionDef(
-      pair = record.getValue(REPAIR_ACTIONS.PAIR_KEY),
       name = record.getValue(REPAIR_ACTIONS.NAME),
       scope = record.getValue(REPAIR_ACTIONS.SCOPE),
       url = record.getValue(REPAIR_ACTIONS.URL)

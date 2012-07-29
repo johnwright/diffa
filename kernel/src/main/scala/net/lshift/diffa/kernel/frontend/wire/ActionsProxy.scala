@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory
 import org.apache.http.client.methods.HttpPost
 import org.apache.http.client.HttpClient
 import com.sun.xml.internal.ws.Closeable
+import net.lshift.diffa.kernel.util.MissingObjectException
+import scala.collection.JavaConversions._
 
 /**
  * This is a conduit to the actions that are provided by participants
@@ -48,7 +50,7 @@ class ActionsProxy(val config:DomainConfigStore,
 
   def listActions(pair:DiffaPairRef): Seq[Actionable] =
     withValidPair(pair) { p =>
-      config.listRepairActionsForPair(pair.domain, pair.key).map(Actionable.fromRepairAction(pair.domain,_))
+      config.getPairDef(pair.domain, pair.key).repairActions.map(Actionable.fromRepairAction(pair.domain, pair.key, _)).toSeq
     }
 
   def listEntityScopedActions(pair:DiffaPairRef) = listActions(pair).filter(_.scope == RepairAction.ENTITY_SCOPE)
@@ -58,7 +60,8 @@ class ActionsProxy(val config:DomainConfigStore,
   def invoke(request: ActionableRequest): InvocationResult =
     withValidPair(DiffaPairRef(request.pairKey, request.domain)) { pairRef =>
 
-      val repairAction = config.getRepairActionDef(request.domain, request.actionId, request.pairKey)
+      val repairAction = config.getPairDef(request.domain, request.pairKey).repairActions.
+        find(_.name == request.actionId).getOrElse(throw new MissingObjectException("repair action"))
       val url = repairAction.scope match {
         case RepairAction.ENTITY_SCOPE => repairAction.url.replace("{id}", request.entityId)
         case RepairAction.PAIR_SCOPE => repairAction.url
@@ -67,7 +70,7 @@ class ActionsProxy(val config:DomainConfigStore,
         case RepairAction.ENTITY_SCOPE => "entity " + request.entityId + " of pair " + request.pairKey
         case RepairAction.PAIR_SCOPE => "pair " + request.pairKey
       })
-      diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Initiating action " + actionDescription)
+      diagnostics.logPairEvent(None, pairRef, DiagnosticLevel.INFO, "Initiating action " + actionDescription)
 
 
       val httpClient = createHttpClient()
@@ -77,14 +80,14 @@ class ActionsProxy(val config:DomainConfigStore,
         val httpEntity = EntityUtils.toString(httpResponse.getEntity)
 
         if (httpCode >= 200 && httpCode < 300) {
-          diagnostics.logPairEvent(DiagnosticLevel.INFO, pairRef, "Action " + actionDescription + " succeeded: " + httpEntity)
+          diagnostics.logPairEvent(None, pairRef, DiagnosticLevel.INFO, "Action " + actionDescription + " succeeded: " + httpEntity)
         } else {
-          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Action " + actionDescription + " failed: " + httpEntity)
+          diagnostics.logPairEvent(None, pairRef, DiagnosticLevel.ERROR, "Action " + actionDescription + " failed: " + httpEntity)
         }
         InvocationResult.received(httpCode, httpEntity)
       } catch {
         case e: Exception =>
-          diagnostics.logPairEvent(DiagnosticLevel.ERROR, pairRef, "Action " + actionDescription + " failed: " + e.getMessage)
+          diagnostics.logPairEvent(None, pairRef, DiagnosticLevel.ERROR, "Action " + actionDescription + " failed: " + e.getMessage)
           InvocationResult.failure(e)
       } finally {
         immediatelyShutDownClient(httpClient, pairRef)
