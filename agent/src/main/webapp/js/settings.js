@@ -490,7 +490,7 @@ Diffa.Views.EndpointViewEditor = Diffa.Views.RowEditor.extend({
 Diffa.Views.EndpointViewsEditor = Diffa.Views.TableEditor.extend({
   rowEditor: Diffa.Views.EndpointViewEditor
 });
-Diffa.Views.RepairActionEditor = Backbone.View.extend({
+Diffa.Views.RepairActionEditor = Diffa.Views.RowEditor.extend({
   events: {
     "click .remove-action": 'remove'
   },
@@ -501,7 +501,7 @@ Diffa.Views.RepairActionEditor = Backbone.View.extend({
 Diffa.Views.RepairActionsEditor = Diffa.Views.TableEditor.extend({
   rowEditor: Diffa.Views.RepairActionEditor
 });
-Diffa.Views.ReportEditor = Backbone.View.extend({
+Diffa.Views.ReportEditor = Diffa.Views.RowEditor.extend({
   events: {
     "click .remove-report": 'remove'
   },
@@ -512,7 +512,7 @@ Diffa.Views.ReportEditor = Backbone.View.extend({
 Diffa.Views.ReportsEditor = Diffa.Views.TableEditor.extend({
   rowEditor: Diffa.Views.ReportEditor
 });
-Diffa.Views.EscalationEditor = Backbone.View.extend({
+Diffa.Views.EscalationEditor = Diffa.Views.RowEditor.extend({
   events: {
     "click .remove-escalation": 'remove'
   },
