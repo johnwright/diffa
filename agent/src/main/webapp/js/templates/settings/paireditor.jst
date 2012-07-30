@@ -39,6 +39,11 @@
   </dl>
 </div>
 <div class="pane" data-pane="views">
+  <div class="description">
+    Pair views match together endpoint views of the same name, enabling a scan to be run on a subset of data across
+    your entire system. Pair views can also be scheduled, to allow for data subsets to be scanned at different times.
+  </div>
+
   <div class="views">
     <table class="editable-table" data-template="pair-view">
       <thead><tr><td>Name</td><td>View Scan Cron Specification</td><td>Actions</td></tr></thead>
@@ -47,6 +52,12 @@
   </div>
 </div>
 <div class="pane" data-pane="repairs">
+  <div class="description">
+    A repair action enables Diffa users to attempt a repair of a detected difference right from within Diffa. A repair
+    action describes a URL that can be invoked (along with a pair or entity id) to indicate to your system that some form
+    of action should be taken. Actions might include resending a missing object, or deleting an excess object.
+  </div>
+
   <div class="repair-actions">
     <table class="editable-table" data-template="repair-action">
       <thead><tr><td>Name</td><td>Url</td><td>Scope</td><td>Actions</td></tr></thead>
@@ -55,6 +66,12 @@
   </div>
 </div>
 <div class="pane" data-pane="escalations">
+  <div class="description">
+    Escalations build upon reports and repair actions to enable automated system actions. An escalation is configured
+    to trigger on certain event types (such as a specific type of difference being detected), and then triggers a specified
+    repair action or report. This enables Diffa to attempt to automatically correct system issues.
+  </div>
+
   <div class="escalations">
     <table class="editable-table" data-template="escalation">
       <thead><tr><td>Name</td><td>Type</td><td>Action</td><td>Event</td><td>Origin</td><td>Actions</td></tr></thead>
@@ -63,6 +80,12 @@
   </div>
 </div>
 <div class="pane" data-pane="reports">
+  <div class="description">
+    Reports allow for Diffa to generate and publish a report of differences to a HTTP endpoint. This enables a number
+    of opportunities - a custom repair system can do a bulk-repair based upon the entire set of known differences, or
+    a custom reporting system can utilise the current difference status.
+  </div>
+
   <div class="reports">
     <table class="editable-table" data-template="report">
       <thead><tr><td>Name</td><td>Type</td><td>Target</td><td>Actions</td></tr></thead>
