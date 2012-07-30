@@ -381,6 +381,24 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
     }
   }
 
+  def pendingEscalatees(cutoff:DateTime, callback:(DifferenceEvent) => Unit) = db.execute { t =>
+    val escalatees =
+      t.selectFrom(DIFFS).
+        where(DIFFS.NEXT_ESCALATION_TIME.lessThan(dateTimeToTimestamp(cutoff))).
+        fetchLazy()
+
+    db.processAsStream(escalatees, recordToReportedDifferenceEventAsDifferenceEvent.andThen(callback))
+  }
+
+
+  def scheduleEscalation(diff: DifferenceEvent, escalationName: String, escalationTime: DateTime) = db.execute { t =>
+    t.update(DIFFS).
+      set(DIFFS.NEXT_ESCALATION, escalationName).
+      set(DIFFS.NEXT_ESCALATION_TIME, dateTimeToTimestamp(escalationTime)).
+      where(DIFFS.DOMAIN.equal(diff.objId.pair.domain).
+        and(DIFFS.PAIR.equal(diff.objId.pair.key)).and(DIFFS.ENTITY_ID.equal(diff.objId.id)))
+  }
+
   def clearAllDifferences = db.execute { t =>
     reset
     t.truncate(DIFFS).execute()
@@ -516,7 +534,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
 
   private def reportedEventExists(event:ReportedDifferenceEvent) = event.seqId != NON_EXISTENT_SEQUENCE_ID
 
-  private def addReportableMismatch(reportableUnmatched:ReportedDifferenceEvent) : DifferenceEvent = {
+  private def addReportableMismatch(reportableUnmatched:ReportedDifferenceEvent) : (DifferenceEventStatus, DifferenceEvent) = {
     val event = getEventById(reportableUnmatched.objId)
 
     if (reportedEventExists(event)) {
@@ -525,9 +543,9 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
           if (identicalEventVersions(event, reportableUnmatched)) {
             // Update the last time it was seen
             val updatedEvent = updateTimestampForPreviouslyReportedEvent(event, reportableUnmatched.lastSeen)
-            updatedEvent.asDifferenceEvent
+            (UnchangedIgnoredEvent, updatedEvent.asDifferenceEvent))
           } else {
-            ignorePreviouslyReportedEvent(event)
+            (UpdatedIgnoredEvent, ignorePreviouslyReportedEvent(event))
           }
         case MatchState.UNMATCHED =>
           // We've already got an unmatched event. See if it matches all the criteria.
@@ -535,22 +553,22 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
             // Update the last time it was seen
             val updatedEvent = updateTimestampForPreviouslyReportedEvent(event, reportableUnmatched.lastSeen)
             // No need to update the aggregate cache, since it won't affect the aggregate counts
-            updatedEvent.asDifferenceEvent
+            (UnchangedUnmatchedEvent, updatedEvent.asDifferenceEvent)
           } else {
             reportableUnmatched.seqId = event.seqId
-            upgradePreviouslyReportedEvent(reportableUnmatched)
+            (UpdatedUnmatchedEvent, upgradePreviouslyReportedEvent(reportableUnmatched))
           }
 
         case MatchState.MATCHED =>
           // The difference has re-occurred. Remove the match, and add a difference.
-          upgradePreviouslyReportedEvent(reportableUnmatched)
+          (ReturnedUnmatchedEvent, upgradePreviouslyReportedEvent(reportableUnmatched))
       }
     }
     else {
       val domain = reportableUnmatched.objId.pair.domain
       val nextSeqId = nextEventSequenceValue(domain)
       try {
-        db.execute(t => createReportedEvent(t, reportableUnmatched, nextSeqId))
+        db.execute(t => (NewUnmatchedEvent, createReportedEvent(t, reportableUnmatched, nextSeqId)))
       } catch {
         case x: Exception =>
           val pair = reportableUnmatched.objId.pair.key
