@@ -263,6 +263,9 @@ Diffa.Views.FormEditor = Backbone.View.extend({
   showHidePanes: function() {
     this.$('.pane').hide();
     this.$('.pane[data-pane=' + this.pane + ']').show();
+
+    this.$('.root-controls').toggle(this.pane == 'root');
+    this.$('.pane-controls').toggle(this.pane != 'root');
   },
 
   linkPanes: function() {
@@ -280,6 +283,8 @@ Diffa.Views.FormEditor = Backbone.View.extend({
         keyField.wrapInner('<a href="' + linkTarget + '"/>');
       }
     });
+
+    this.$('a.return').attr('href', '#' + self.model.type + '/' + self.model.id);
   },
 
   // Callback function to be implemented by subclasses that need to add field values before binding.
