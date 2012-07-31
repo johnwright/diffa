@@ -371,6 +371,11 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
       execute()
 
     if (deleted > 0) {
+
+      logger.info("Expired %s events".format(deleted))
+      reportedEvents.evictAll()
+
+      /*
       val cachedEvents = reportedEvents.valueSubset("isMatch")
       // TODO Index the cache and add a date predicate rather than doing this manually
       cachedEvents.foreach(e => {
@@ -378,6 +383,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
           reportedEvents.evict(e.objId)
         }
       })
+      */
     }
   }
 
