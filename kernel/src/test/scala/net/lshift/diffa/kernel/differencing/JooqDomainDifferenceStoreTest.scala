@@ -166,14 +166,14 @@ class JooqDomainDifferenceStoreTest {
   @Test(expected = classOf[IllegalArgumentException])
   def shouldNotBeAbleToIgnoreDifferenceViaWrongDomain() {
     val timestamp = new DateTime()
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     domainDiffStore.ignoreEvent("domain2", evt.seqId)
   }
 
   @Test
   def shouldNotPublishAnIgnoredReportableUnmatchedEventInRetrieveUnmatchedEventsQuery() {
     val timestamp = new DateTime()
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     domainDiffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
@@ -184,9 +184,9 @@ class JooqDomainDifferenceStoreTest {
   @Test
   def shouldUpdatePreviouslyIgnoredReportableUnmatchedEvent() {
     val timestamp = new DateTime()
-    val event1 = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV1", "dV1", timestamp)
+    val (_, event1) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV1", "dV1", timestamp)
     domainDiffStore.ignoreEvent("domain", event1.seqId)
-    val event2 = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV2", "dV1", timestamp)
+    val (_, event2) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV2", "dV1", timestamp)
     assertTrue(event1.seqId.toInt < event2.seqId.toInt)
   }
 
@@ -246,7 +246,7 @@ class JooqDomainDifferenceStoreTest {
   def shouldNotCountMatchedEvents() {
     val timestamp = new DateTime
 
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     domainDiffStore.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
@@ -259,7 +259,7 @@ class JooqDomainDifferenceStoreTest {
     val timestamp = new DateTime
     val id = VersionID(DiffaPairRef("pair2", "domain"), "id2")
 
-    val event1 = domainDiffStore.addReportableUnmatchedEvent(id, timestamp, "uV", "dV", timestamp)
+    val (_, event1) = domainDiffStore.addReportableUnmatchedEvent(id, timestamp, "uV", "dV", timestamp)
     val event2 = domainDiffStore.ignoreEvent("domain", event1.seqId)
     assertMatchState("domain", event2.seqId, MatchState.IGNORED)
 
@@ -276,7 +276,7 @@ class JooqDomainDifferenceStoreTest {
   def shouldNotCountIgnoredEvents() {
     val timestamp = new DateTime
 
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     domainDiffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
@@ -339,7 +339,7 @@ class JooqDomainDifferenceStoreTest {
   @Test
   def shouldNotPublishAnIgnoredReportableUnmatchedEventInPagedEventQuery() {
     val timestamp = new DateTime()
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     domainDiffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
@@ -350,7 +350,7 @@ class JooqDomainDifferenceStoreTest {
   @Test
   def shouldPublishAnIgnoredReportableUnmatchedEventInPagedEventQueryWhenIgnoredEntitiesAreRequested() {
     val timestamp = new DateTime()
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     domainDiffStore.ignoreEvent("domain", evt.seqId)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
@@ -363,7 +363,7 @@ class JooqDomainDifferenceStoreTest {
   @Test
   def shouldPublishAnEventThatHasBeenUnignored() {
     val timestamp = new DateTime()
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     val ignored = domainDiffStore.ignoreEvent("domain", evt.seqId)
     domainDiffStore.unignoreEvent("domain", ignored.seqId)
 
@@ -399,7 +399,7 @@ class JooqDomainDifferenceStoreTest {
   @Test
   def shouldAddMatchedEventThatOverridesIgnoredEventWhenAskingForSequenceUpdate() {
     val timestamp = currentDateTime
-    val newUnmatched = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
+    val (_, newUnmatched) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uuV", "ddV", timestamp)
 
     val interval = new Interval(timestamp.minusDays(1), timestamp.plusDays(1))
     val unmatched = domainDiffStore.retrieveUnmatchedEvents("domain", interval).sortWith(_.sequenceId < _.sequenceId)
@@ -511,7 +511,7 @@ class JooqDomainDifferenceStoreTest {
   @Test
   def shouldAllowRetrievalOfReportedEvent() {
     val timestamp = currentDateTime
-    val evt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, evt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
 
     val retrieved = domainDiffStore.getEvent("domain", evt.seqId)
     validateUnmatchedEvent(retrieved, evt.objId, evt.upstreamVsn, evt.downstreamVsn, evt.detectedAt, evt.lastSeen)
@@ -530,7 +530,7 @@ class JooqDomainDifferenceStoreTest {
   @Test(expected = classOf[InvalidSequenceNumberException])
   def shouldThrowExceptionWhenRetrievingEventBySequenceNumberOfRemovedEvent() {
     val timestamp = new DateTime()
-    val unmatchedEvt = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
+    val (_, unmatchedEvt) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), timestamp, "uV", "dV", timestamp)
     domainDiffStore.addMatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), "uV")
 
     domainDiffStore.getEvent("domain", unmatchedEvt.seqId)    // Unmatched event should have been removed when matched event was added
@@ -626,7 +626,7 @@ class JooqDomainDifferenceStoreTest {
     val unmatchedAt = timestamp.plusSeconds(3)
     val seenNext = timestamp.plusSeconds(4)
 
-    val event = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), detectedAt, "uV", null, seenFirst)
+    val (_, event) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair2","domain"), "id2"), detectedAt, "uV", null, seenFirst)
     domainDiffStore.addPendingUnmatchedEvent(VersionID(DiffaPairRef("pair2", "domain"), "id2"), unmatchedAt, "uV", "dV", seenNext)
 
     try {

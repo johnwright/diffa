@@ -32,7 +32,6 @@ import net.lshift.diffa.kernel.actors.AbstractActorSupervisor
 import akka.actor.{ActorSystem, Props, Actor}
 import scala.collection.JavaConversions._
 import java.util.{Timer, TimerTask}
-import net.lshift.diffa.kernel.actors.AbstractActorSupervisor._
 import net.lshift.diffa.kernel.frontend.EscalationDef
 
 /**
@@ -193,7 +192,7 @@ class EscalationManager(val config:DomainConfigStore,
   def mapDifferenceType(t:DifferenceType) = t match {
     case UpstreamMissing => UPSTREAM_MISSING
     case DownstreamMissing => DOWNSTREAM_MISSING
-    case VersionMismatch => MISMATCH
+    case ConflictingVersions => MISMATCH
   }
 }
 

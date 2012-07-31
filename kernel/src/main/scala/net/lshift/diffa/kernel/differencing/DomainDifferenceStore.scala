@@ -144,7 +144,7 @@ trait DomainDifferenceStore {
   /**
    * Retrieves a list of difference events that should be escalated.
    */
-  def pendingEscalatees(cutoff:DateTime, callback:(DifferenceEvent) => Unit): Seq[DifferenceEvent]
+  def pendingEscalatees(cutoff:DateTime, callback:(DifferenceEvent) => Unit)
 
   /**
    * Schedules the given difference event to have the given escalation applied at the given time. Escalation for

@@ -50,7 +50,8 @@ class EscalationManagerTest {
   val configStore = createMock(classOf[DomainConfigStore])
   val actionsClient = createStrictMock(classOf[ActionsClient])
   val reportManager = EasyMock4Classes.createStrictMock(classOf[ReportManager])
-  val escalationManager = new EscalationManager(configStore, actionsClient, reportManager, actorSystem)
+  val diffs = createStrictMock(classOf[DomainDifferenceStore])
+  val escalationManager = new EscalationManager(configStore, diffs, actionsClient, reportManager, actorSystem)
 
   escalationManager.onAgentInstantiationCompleted(notificationCentre)
 

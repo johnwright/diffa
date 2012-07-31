@@ -54,6 +54,11 @@ object EasyMockScalaUtils {
     ""
   }
 
+  def anyTimestamp = {
+    EasyMock.anyObject()
+    new DateTime
+  }
+
   /**
    * Allows a DateTime to be validated by being between two values.
    */

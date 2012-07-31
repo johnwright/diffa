@@ -543,7 +543,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
           if (identicalEventVersions(event, reportableUnmatched)) {
             // Update the last time it was seen
             val updatedEvent = updateTimestampForPreviouslyReportedEvent(event, reportableUnmatched.lastSeen)
-            (UnchangedIgnoredEvent, updatedEvent.asDifferenceEvent))
+            (UnchangedIgnoredEvent, updatedEvent.asDifferenceEvent)
           } else {
             (UpdatedIgnoredEvent, ignorePreviouslyReportedEvent(event))
           }
