@@ -22,6 +22,7 @@ Diffa.Helpers.ViewsHelper = {
 
     model.bind('change:views', updateViews);
     model.views = new (viewCollectionClass || Backbone.Collection)([]);
+    Diffa.Helpers.DirtyTracker.proxyChange(model, [model.views]);
     updateViews();
   },
   packViews: function(model) {
@@ -50,6 +51,8 @@ Diffa.Helpers.CategoriesHelper = {
     model.setCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'set'});
     model.prefixCategories = new Diffa.Collections.CategoryCollection([], {categoryType: 'prefix'});
 
+    Diffa.Helpers.DirtyTracker.proxyChange(model, [model.rangeCategories, model.setCategories, model.prefixCategories]);
+
     updateCategories();
   },
   packCategories: function(model) {
@@ -63,12 +66,35 @@ Diffa.Helpers.CategoriesHelper = {
   }
 };
 
+Diffa.Helpers.DirtyTracker = {
+  attach: function(model) {
+    model.dirty = false;
+
+    model.clearDirty = function() {
+      model.dirty = false;
+      model.trigger('change:dirty', model, false);
+    };
+
+    model.bind('change', function() {
+      model.dirty = true;
+      model.trigger('change:dirty', model, true);
+    })
+  },
+
+  proxyChange: function(model, childModels) {
+    _.each(childModels, function(childModel) {
+      childModel.bind('change', function() { model.trigger('change'); });
+    });
+  }
+};
+
 Diffa.Models.Endpoint = Backbone.Model.extend({
   idAttribute: 'name',
   type: 'endpoint',
   initialize: function() {
     Diffa.Helpers.CategoriesHelper.extractCategories(this);
     Diffa.Helpers.ViewsHelper.extractViews(this, Diffa.Collections.EndpointViews);
+    Diffa.Helpers.DirtyTracker.attach(this);
   },
   urlRoot: function() { return "/domains/" + (this.domain || this.collection.domain).id + "/config/endpoints"; },
   prepareForSave: function() {
@@ -155,6 +181,9 @@ Diffa.Models.Pair = Backbone.Model.extend({
     this.actions = new Diffa.Collections.RepairActions(this.get('repairActions'), {pair: this});
     this.escalations = new Diffa.Collections.Escalations(this.get('escalations'), {pair: this});
     this.reports = new Diffa.Collections.Reports(this.get('reports'), {pair: this});
+
+    Diffa.Helpers.DirtyTracker.attach(this);
+    Diffa.Helpers.DirtyTracker.proxyChange(this, [this.actions, this.escalations, this.reports]);
 
     if (this.collection) this.domain = this.collection.domain;
   },

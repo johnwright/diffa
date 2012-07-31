@@ -1,4 +1,7 @@
 <div class="error"></div>
+<div class="unsaved-changes" data-bind-show="pair.dirty">
+  The pair has unsaved changes! <button class="save">Save</button>
+</div>
 <div class="pane" data-pane="root">
   <dl>
     <dt>Key:</dt><dd class="name-container"><input data-bind-value="pair.key" type="text"><span data-bind-text="pair.key"></span></dd>

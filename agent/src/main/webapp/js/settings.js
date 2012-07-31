@@ -313,6 +313,7 @@ Diffa.Views.FormEditor = Backbone.View.extend({
       global: false,        // Don't invoke global event handlers - we'll deal with errors here locally
       success: function() {
         saveButton.removeAttr('disabled');
+        self.model.clearDirty();
 
         if (!self.collection.get(self.model.id)) {
           self.collection.add(self.model);
@@ -662,7 +663,9 @@ rivets.configure({
       obj.off('change' + (keypath ? ':' + keypath : ''), callback.wrapped);
     },
     read: function(obj, keypath) {
-      if (keypath) {
+      if (keypath == 'dirty') {
+        return obj.dirty;
+      } else if (keypath) {
         return obj.get(keypath);
       } else {
         return obj;
