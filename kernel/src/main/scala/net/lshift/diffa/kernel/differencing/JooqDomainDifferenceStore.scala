@@ -630,8 +630,8 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
     // TODO Theoretically this should never happen ....
     if (rows == 0) {
       val alert = formatAlertCode(domain, pair, INCONSISTENT_DIFF_STORE)
-      val msg = " %s No rows updated for pending event %s, next sequence id was %s".format(alert, reportableUnmatched, nextSeqId)
-      logger.error(msg)
+      val msg = " %s No rows updated for previously reported diff %s, next sequence id was %s".format(alert, reportableUnmatched, nextSeqId)
+      logger.error(msg, new Exception().fillInStackTrace())
     }
 
     updateSequenceValueAndCache(reportableUnmatched, nextSeqId)
