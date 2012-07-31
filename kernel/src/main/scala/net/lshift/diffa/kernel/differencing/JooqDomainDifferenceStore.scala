@@ -549,6 +549,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
 
         case MatchState.MATCHED =>
           // The difference has re-occurred. Remove the match, and add a difference.
+          reportableUnmatched.seqId = event.seqId
           upgradePreviouslyReportedEvent(reportableUnmatched)
       }
     }
