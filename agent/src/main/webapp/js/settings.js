@@ -225,6 +225,8 @@ Diffa.Views.FormEditor = Backbone.View.extend({
     }
 
     this.render();
+    Diffa.Helpers.ChangeMonitor.monitorInputsForChanges(this.el);
+
     // :visible because a form may have its first input as hidden
     this.$("input:visible").first().focus();
   },
@@ -645,6 +647,40 @@ Diffa.Helpers.bindEditor = function(el, elementType, collectionName, modelClass,
   $(el).on('changed:' + elementType, function() { refresh(); });
   refresh();
 };
+
+Diffa.Helpers.ChangeMonitor = {
+  monitorInputsForChanges: function(el) {
+    $(el).delegate('input', 'focus', function() {
+      var inputEl = $(this);
+      var currentVal = inputEl.val();
+      var monitor = window.setInterval(function() {
+        var newVal = inputEl.val();
+        if (newVal != currentVal) {
+          // Triggering the event with jQuery doesn't result in Rivets being activated. Generate a native
+          // change event instead.
+          if(inputEl[0].fireEvent) {
+            inputEl[0].fireEvent("onchange");
+          } else {
+            var ev = document.createEvent('HTMLEvents');
+            ev.initEvent("change", true, false);
+            inputEl[0].dispatchEvent(ev);
+          }
+        }
+      }, 1000);
+
+      var blurHandler = function() {
+        if (monitor) {
+          window.clearInterval(monitor);
+          monitor = null;
+
+          $(inputEl).unbind('blur', blurHandler);
+        }
+      };
+
+      $(inputEl).blur(blurHandler);
+    });
+  }
+}
 
 rivets.configure({
   prefix: 'bind',
