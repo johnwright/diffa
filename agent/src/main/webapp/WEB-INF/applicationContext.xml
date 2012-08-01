@@ -113,7 +113,7 @@
   </bean>
 
   <bean id="sweeper" class="net.lshift.diffa.kernel.util.Sweeper" init-method="start" destroy-method="shutdown">
-    <constructor-arg value="5" />
+    <constructor-arg value="30" />
     <constructor-arg ref="domainDifferenceStore" />
   </bean>
 
