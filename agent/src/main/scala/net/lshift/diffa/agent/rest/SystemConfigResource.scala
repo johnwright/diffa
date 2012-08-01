@@ -39,16 +39,27 @@ class SystemConfigResource {
   @Context var uriInfo:UriInfo = null
 
   @POST
-  @Path("/domains")
+  @Path("/spaces")
   @Consumes(Array("application/json"))
-  def createDomain(domain:DomainDef) = {
+  def createSpace(domain:DomainDef) = {
     systemConfig.createOrUpdateDomain(domain)
     resourceCreated(domain.name, uriInfo)
   }
 
+  @POST
+  @Path("/domains")
+  @Consumes(Array("application/json"))
+  @Deprecated
+  def createBackwardsCompatibleDomain(domain:DomainDef) = createSpace(domain)
+
+  @DELETE
+  @Path("/spaces/{name}")
+  def deleteSpace(@PathParam("name") name:String) = systemConfig.deleteDomain(name)
+
   @DELETE
   @Path("/domains/{name}")
-  def deleteEndpoint(@PathParam("name") name:String) = systemConfig.deleteDomain(name)
+  @Deprecated
+  def deleteBackwardsCompatibleDomain(@PathParam("name") name:String) = deleteSpace(name)
 
   @POST
   @Path("/system/config")
@@ -97,7 +108,7 @@ class SystemConfigResource {
   }
 
   @GET
-  @Path("/domains/scan")
+  @Path("/spaces/scan")
   @Produces(Array("application/json"))
   def scanPairs(@Context request:HttpServletRequest) = {
     def generateVersion(domain:String) = ScannableUtils.generateDigest(domain)
@@ -116,6 +127,12 @@ class SystemConfigResource {
 
     Response.ok(aggregated).build()
   }
+
+  @GET
+  @Path("/domains/scan")
+  @Produces(Array("application/json"))
+  @Deprecated
+  def scanBackwardsCompatiblePairs(@Context request:HttpServletRequest) = scanPairs(request)
 
   @GET
   @Path("/system/limits/{name}")

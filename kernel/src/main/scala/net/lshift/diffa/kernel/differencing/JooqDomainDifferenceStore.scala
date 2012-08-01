@@ -371,6 +371,11 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
       execute()
 
     if (deleted > 0) {
+
+      logger.info("Expired %s events".format(deleted))
+      reportedEvents.evictAll()
+
+      /*
       val cachedEvents = reportedEvents.valueSubset("isMatch")
       // TODO Index the cache and add a date predicate rather than doing this manually
       cachedEvents.foreach(e => {
@@ -378,6 +383,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
           reportedEvents.evict(e.objId)
         }
       })
+      */
     }
   }
 
@@ -561,6 +567,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
 
         case MatchState.MATCHED =>
           // The difference has re-occurred. Remove the match, and add a difference.
+          reportableUnmatched.seqId = event.seqId
           (ReturnedUnmatchedEvent, upgradePreviouslyReportedEvent(reportableUnmatched))
       }
     }
@@ -648,8 +655,8 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
     // TODO Theoretically this should never happen ....
     if (rows == 0) {
       val alert = formatAlertCode(domain, pair, INCONSISTENT_DIFF_STORE)
-      val msg = " %s No rows updated for pending event %s, next sequence id was %s".format(alert, reportableUnmatched, nextSeqId)
-      logger.error(msg)
+      val msg = " %s No rows updated for previously reported diff %s, next sequence id was %s".format(alert, reportableUnmatched, nextSeqId)
+      logger.error(msg, new Exception().fillInStackTrace())
     }
 
     updateSequenceValueAndCache(reportableUnmatched, nextSeqId)
