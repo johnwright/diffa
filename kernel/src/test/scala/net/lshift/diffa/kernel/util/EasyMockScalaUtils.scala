@@ -26,6 +26,14 @@ import org.easymock.{IAnswer, IArgumentMatcher, EasyMock}
 
 object EasyMockScalaUtils {
   /**
+   * Replacement for EasyMock.anyObject when working with a Function1 that returns Unit.
+   */
+  def anyUnitF1[A] = {
+    EasyMock.anyObject
+    (a:A) => {}
+  }
+
+  /**
    * Replacement for EasyMock.anyObject when working with a Function3 that returns Unit.
    */
   def anyUnitF3[A, B, C] = {
