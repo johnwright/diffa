@@ -1306,7 +1306,7 @@ Diffa.Views.DiffDetail = Backbone.View.extend({
 
     var pairKey = event.get('objId').pair.key;
     var itemID = event.get('objId').id;
-    var actionListContainer = this.$(".actionList").empty();
+    var actionListContainer = this.$(".actionlist").empty();
     var actionListCallback = function(actionList, status, xhr) {
       if (!actionList) {
         return;
