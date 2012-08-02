@@ -209,7 +209,7 @@ class JooqDomainDifferenceStoreTest {
 
   @Test
   def shouldAllowAnEscalationToBeScheduled() {
-    val timestamp = new DateTime()
+    val timestamp = (new DateTime()).withMillis(0)      // MySQL truncates milliseconds, so use a round value
 
     val (_, event1) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp, "uV1", "dV1", timestamp)
     domainDiffStore.scheduleEscalation(event1, "esc1", timestamp.plusSeconds(10))

@@ -39,6 +39,7 @@ import org.junit.{Ignore, Before, After}
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 import java.util.concurrent.atomic.AtomicInteger
 import system.SystemConfigStore
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
@@ -79,15 +80,13 @@ class EscalationManagerTest {
     ).anyTimes()
   }
 
-  def expectActionsClient(count:Int, monitor: Object) {
+  def expectActionsClient(count:Int, latch: CountDownLatch) {
     if (count > 0) {
       val answer = new IAnswer[InvocationResult] {
         var counter = 0
         def answer = {
           counter += 1
-          if (counter == count) monitor.synchronized {
-            monitor.notifyAll()
-          }
+          if (counter == count) latch.countDown()
           InvocationResult("200", "Success")
         }
       }
@@ -145,7 +144,8 @@ class EscalationManagerTest {
       upstreamVsn = s.uvsn, downstreamVsn = s.dvsn, detectedAt = now,
       nextEscalation = s.expectedSelections.head.name)
     val callCounter = new AtomicInteger(0)
-    val callCompletionMonitor = new Object
+    val actionCompletionMonitor = new CountDownLatch(1)
+    val schedulingCompletionMonitor = new CountDownLatch(1)
 
     // Return our pair to have a corresponding actor started
     expect(systemConfig.listPairs).andReturn(
@@ -163,15 +163,18 @@ class EscalationManagerTest {
     expect(configStore.getPairDef(event.objId.pair)).
       andReturn(DomainPairDef(escalations = new java.util.HashSet(
         s.escalations.map(_.copy(actionType = EscalationActionType.REPAIR, action = "some-action"))))).atLeastOnce()
-    expectActionsClient(1, callCompletionMonitor)
-    diffs.scheduleEscalation(EasyMock.eq(event), anyString, anyTimestamp)
+    expectActionsClient(1, actionCompletionMonitor)
+    expect(diffs.scheduleEscalation(EasyMock.eq(event), anyString, anyTimestamp)).andAnswer(new IAnswer[Unit] {
+      def answer() {
+        schedulingCompletionMonitor.countDown()
+      }
+    })
     replayAll()
 
-    callCompletionMonitor.synchronized {
-      escalationManager.start()
+    escalationManager.start()
 
-      callCompletionMonitor.wait(5000)
-    }
+    actionCompletionMonitor.await(5000, TimeUnit.MILLISECONDS)
+    schedulingCompletionMonitor.await(5000, TimeUnit.MILLISECONDS)
     verifyAll()
   }
 
@@ -181,7 +184,7 @@ class EscalationManagerTest {
     val pairScenario = scenario.asInstanceOf[PairScenario]
     
     expectConfigStoreWithReports(pairScenario.event)
-    expectActionsClient(0, new Object)
+    expectActionsClient(0, new CountDownLatch(0))
     expectReportManager(pairScenario.invocations)
     replayAll()
     
