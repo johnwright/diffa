@@ -24,7 +24,7 @@ import org.hibernate.mapping.Column
 
 object Step0043 extends VerifiedMigrationStep {
 
-  def versionId = 42
+  def versionId = 43
   def name = "Add plannable escalations"
 
   def createMigration(config: Configuration) = {
