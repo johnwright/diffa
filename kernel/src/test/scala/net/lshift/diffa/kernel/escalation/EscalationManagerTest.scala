@@ -38,6 +38,7 @@ import net.lshift.diffa.kernel.frontend.{DomainPairDef, PairDef, EscalationDef}
 import org.junit.{Ignore, Before, After}
 import net.lshift.diffa.kernel.util.EasyMockScalaUtils._
 import java.util.concurrent.atomic.AtomicInteger
+import system.SystemConfigStore
 
 @RunWith(classOf[Theories])
 class EscalationManagerTest {
@@ -49,11 +50,12 @@ class EscalationManagerTest {
   actorSystem.registerOnTermination(println("Per-test actor system shutdown; %s".format(this)))
 
   val notificationCentre = new NotificationCentre
+  val systemConfig = createMock(classOf[SystemConfigStore])
   val configStore = createMock(classOf[DomainConfigStore])
   val actionsClient = createStrictMock(classOf[ActionsClient])
   val reportManager = EasyMock4Classes.createStrictMock(classOf[ReportManager])
   val diffs = createStrictMock(classOf[DomainDifferenceStore])
-  val escalationManager = new EscalationManager(configStore, diffs, actionsClient, reportManager, actorSystem)
+  val escalationManager = new EscalationManager(configStore, systemConfig, diffs, actionsClient, reportManager, actorSystem)
 
   escalationManager.onAgentInstantiationCompleted(notificationCentre)
 
@@ -145,6 +147,10 @@ class EscalationManagerTest {
     val callCounter = new AtomicInteger(0)
     val callCompletionMonitor = new Object
 
+    // Return our pair to have a corresponding actor started
+    expect(systemConfig.listPairs).andReturn(
+      Seq(DomainPairDef(domain = event.objId.pair.domain, key = event.objId.pair.key)))
+
     // Make the diffs store return the difference once
     expect(diffs.pendingEscalatees(anyTimestamp, anyUnitF1)).andAnswer(new IAnswer[Unit] {
       def answer() {
@@ -162,7 +168,6 @@ class EscalationManagerTest {
     replayAll()
 
     callCompletionMonitor.synchronized {
-      escalationManager.startActor(event.objId.pair)
       escalationManager.start()
 
       callCompletionMonitor.wait(5000)
@@ -186,17 +191,17 @@ class EscalationManagerTest {
   }
 
   def resetAll() {
-    reset(configStore, actionsClient, diffs)
+    reset(configStore, systemConfig, actionsClient, diffs)
     EasyMock4Classes.reset(reportManager)
   }
 
   def replayAll() {
-    replay(configStore, actionsClient, diffs)
+    replay(configStore, systemConfig, actionsClient, diffs)
     EasyMock4Classes.replay(reportManager)
   }
 
   def verifyAll() {
-    verify(configStore, actionsClient, diffs)
+    verify(configStore, systemConfig, actionsClient, diffs)
     EasyMock4Classes.verify(reportManager)
   }
 }

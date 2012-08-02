@@ -33,24 +33,23 @@ import akka.actor.{ActorSystem, Props, Actor}
 import scala.collection.JavaConversions._
 import java.util.{Timer, TimerTask}
 import net.lshift.diffa.kernel.frontend.EscalationDef
+import net.lshift.diffa.kernel.config.system.SystemConfigStore
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
  *
- *
- * TODO Revise this description when the full blown escalation manager lands.
- * ATM the scope of this manager is just to invoke actions that are triggered by mismatches
- * that still exist after a scan.
- *
- * THis means that for now, escalations don't have to be persistent, because the only thing that can
- * can trigger an escalation is a scan and it is assumed that a sane deployment will not have too
- * many scans configured.
- *
- * In future versions, this procedure will make escalations persistent and the process of escalation
- * will not be driven by difference events, rather there will be a poll loop to drive the procedure
- * through configurable steps.
+ * There are two broad types of event that can be escalated. Pair level events, and entity level
+ * event. Pair events are escalated in an event-driven manner - escalation is triggered as they
+ * appear. Entity level escalation is managed in a persistent manner. When a candidate difference
+ * is detected elsewhere in the system (currently the DifferenceManager), initiateEscalation should
+ * be called with the event. Valid escalations will be identified and ordered (based upon their delay),
+ * and then the first escalation will be scheduled for the difference. Periodically, the manager will
+ * identify differences that have a pending escalation, and trigger this. Once an escalation has been
+ * triggered, the difference will be progressed, and have the next escalation scheduled (or none if no
+ * more valid escalations are configured).
  */
 class EscalationManager(val config:DomainConfigStore,
+                        val systemConfig:SystemConfigStore,
                         val diffs:DomainDifferenceStore,
                         val actionsClient:ActionsClient,
                         val reportManager:ReportManager,
@@ -83,6 +82,8 @@ class EscalationManager(val config:DomainConfigStore,
   val period = 1
 
   def start() {
+    systemConfig.listPairs.foreach(p => startActor(p.asRef))
+
     timer.schedule(escalateTask, period * 1000, period * 1000)
   }
 

@@ -175,12 +175,16 @@ case class ReportedDifferenceEvent(
   @BeanProperty var upstreamVsn:String = null,
   @BeanProperty var downstreamVsn:String = null,
   @BeanProperty var lastSeen:DateTime = null,
-  @BeanProperty var ignored:Boolean = false
+  @BeanProperty var ignored:Boolean = false,
+  @BeanProperty var nextEscalation:String = null,
+  @BeanProperty var nextEscalationTime:DateTime = null
 ) {
 
   def this() = this(seqId = null)
 
-  def asDifferenceEvent = DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen)
+  def asDifferenceEvent =
+    DifferenceEvent(seqId.toString, objId, detectedAt, state, upstreamVsn, downstreamVsn, lastSeen,
+      nextEscalation, nextEscalationTime)
   def state = if (isMatch) {
       MatchState.MATCHED
     } else {

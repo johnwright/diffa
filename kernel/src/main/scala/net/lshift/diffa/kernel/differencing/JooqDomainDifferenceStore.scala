@@ -31,9 +31,9 @@ import net.lshift.diffa.schema.Tables._
 import net.lshift.diffa.schema.tables.records.{PendingDiffsRecord, DiffsRecord}
 import org.jooq.impl.Factory._
 import net.lshift.diffa.kernel.util.MissingObjectException
-import org.jooq.{ResultQuery, Record}
 import org.jooq.impl.Factory
 import org.slf4j.LoggerFactory
+import org.jooq.{Field, ResultQuery, Record}
 
 /**
  * Hibernate backed Domain Cache provider.
@@ -390,7 +390,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
   def pendingEscalatees(cutoff:DateTime, callback:(DifferenceEvent) => Unit) = db.execute { t =>
     val escalatees =
       t.selectFrom(DIFFS).
-        where(DIFFS.NEXT_ESCALATION_TIME.lessThan(dateTimeToTimestamp(cutoff))).
+        where(DIFFS.NEXT_ESCALATION_TIME.lessOrEqual(dateTimeToTimestamp(cutoff))).
         fetchLazy()
 
     db.processAsStream(escalatees, recordToReportedDifferenceEventAsDifferenceEvent.andThen(callback))
@@ -402,7 +402,8 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
       set(DIFFS.NEXT_ESCALATION, escalationName).
       set(DIFFS.NEXT_ESCALATION_TIME, dateTimeToTimestamp(escalationTime)).
       where(DIFFS.DOMAIN.equal(diff.objId.pair.domain).
-        and(DIFFS.PAIR.equal(diff.objId.pair.key)).and(DIFFS.ENTITY_ID.equal(diff.objId.id)))
+        and(DIFFS.PAIR.equal(diff.objId.pair.key)).and(DIFFS.ENTITY_ID.equal(diff.objId.id))).
+      execute()
   }
 
   def clearAllDifferences = db.execute { t =>
@@ -593,7 +594,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
     first.upstreamVsn == second.upstreamVsn && first.downstreamVsn == second.downstreamVsn
 
   private def updateAndConvertEvent(evt:ReportedDifferenceEvent, previousDetectionTime:DateTime) = {
-    var res = upgradePreviouslyReportedEvent(evt)
+    val res = upgradePreviouslyReportedEvent(evt)
     updateAggregateCache(evt.objId.pair, previousDetectionTime)
     res
   }
@@ -635,6 +636,11 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
     val nextSeqId: java.lang.Long = nextEventSequenceValue(domain)
 
     val rows = db.execute { t =>
+      val escalationChanges:Map[Field[_], _] = if (reportableUnmatched.isMatch)
+          Map(DIFFS.NEXT_ESCALATION -> null, DIFFS.NEXT_ESCALATION_TIME -> null)
+        else
+          Map()
+
       t.update(DIFFS).
         set(DIFFS.SEQ_ID, nextSeqId).
         set(DIFFS.DOMAIN, domain).
@@ -646,6 +652,7 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
         set(DIFFS.UPSTREAM_VSN, reportableUnmatched.upstreamVsn).
         set(DIFFS.DOWNSTREAM_VSN, reportableUnmatched.downstreamVsn).
         set(DIFFS.IGNORED, java.lang.Boolean.valueOf(reportableUnmatched.ignored)).
+        set(escalationChanges).
         where(DIFFS.SEQ_ID.equal(reportableUnmatched.seqId)).
         and(DIFFS.DOMAIN.equal(domain)).
         and(DIFFS.PAIR.equal(pair)).
@@ -750,7 +757,9 @@ class JooqDomainDifferenceStore(db: DatabaseFacade,
       lastSeen = timestampToDateTime(r.getValue(DIFFS.LAST_SEEN)),
       upstreamVsn = r.getValue(DIFFS.UPSTREAM_VSN),
       downstreamVsn = r.getValue(DIFFS.DOWNSTREAM_VSN),
-      ignored = r.getValue(DIFFS.IGNORED))
+      ignored = r.getValue(DIFFS.IGNORED),
+      nextEscalation = r.getValue(DIFFS.NEXT_ESCALATION),
+      nextEscalationTime = timestampToDateTime(r.getValue(DIFFS.NEXT_ESCALATION_TIME)))
 
   private val recordToReportedDifferenceEventAsDifferenceEvent =
     recordToReportedDifferenceEvent.andThen(_.asDifferenceEvent)

@@ -129,6 +129,7 @@
         init-method="start"
         destroy-method="close">
     <constructor-arg ref="domainConfigStore" />
+    <constructor-arg ref="systemConfigStore" />
     <constructor-arg ref="domainDifferenceStore" />
     <constructor-arg ref="actionsFrontend" />
     <constructor-arg ref="reportManager" />

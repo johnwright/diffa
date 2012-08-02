@@ -20,7 +20,6 @@ import org.hibernate.exception.ConstraintViolationException
 import org.junit.Assert._
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.kernel.events.VersionID
-import net.lshift.diffa.kernel.frontend.{EndpointDef, PairDef}
 import org.junit._
 import experimental.theories.{Theories, DataPoint, Theory}
 import runner.RunWith
@@ -32,6 +31,9 @@ import net.lshift.diffa.kernel.StoreReferenceContainer
 import net.lshift.hibernate.migrations.dialects.DialectExtensionSelector
 import org.jooq.exception.DataAccessException
 import java.sql.SQLIntegrityConstraintViolationException
+import collection.mutable.ListBuffer
+import scala.collection.JavaConversions._
+import net.lshift.diffa.kernel.frontend.{RepairActionDef, EscalationDef, EndpointDef, PairDef}
 
 /**
  * Test cases for the JooqDomainDifferenceStore.
@@ -57,7 +59,9 @@ class JooqDomainDifferenceStoreTest {
     domainConfigStore.createOrUpdateEndpoint(domainName, ds)
 
     val pairTemplate = PairDef(upstreamName = us.name, downstreamName = ds.name)
-    val pair1 = pairTemplate.copy(key = "pair1")
+    val pair1 = pairTemplate.copy(key = "pair1",
+      repairActions = Set(RepairActionDef(name = "r1", url = "http://localhost/repair", scope = "entity")),
+      escalations = Set(EscalationDef(name = "esc1", action = "r1", actionType = "repair", event = "upstream-missing", origin = "scan")))
     val pair2 = pairTemplate.copy(key = "pair2")
 
     domainConfigStore.listPairs(domainName).foreach(p => domainConfigStore.deletePair(domainName, p.key))
@@ -201,6 +205,43 @@ class JooqDomainDifferenceStoreTest {
 
     val unmatched = domainDiffStore.retrieveUnmatchedEvents("domain", interval)
     assertEquals(size - frontFence - rearFence, unmatched.length)
+  }
+
+  @Test
+  def shouldAllowAnEscalationToBeScheduled() {
+    val timestamp = new DateTime()
+
+    val (_, event1) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp, "uV1", "dV1", timestamp)
+    domainDiffStore.scheduleEscalation(event1, "esc1", timestamp.plusSeconds(10))
+    val scheduledEvent = domainDiffStore.getEvent("domain", event1.seqId)
+    assertEquals("esc1", scheduledEvent.nextEscalation)
+    assertEquals(timestamp.plusSeconds(10), scheduledEvent.nextEscalationTime)
+
+    val (_, event2) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id3"), timestamp, "uV1", "dV1", timestamp)
+    domainDiffStore.scheduleEscalation(event2, "esc1", timestamp.plusSeconds(30))
+
+    def collectDifferences(cutoff:DateTime) = {
+      val buffer = ListBuffer[DifferenceEvent]()
+      domainDiffStore.pendingEscalatees(cutoff, e => buffer += e)
+      buffer.toSeq
+    }
+
+    assertEquals(Set[String](), collectDifferences(timestamp).map(_.objId.id).toSet)
+    assertEquals(Set[String]("id2"), collectDifferences(timestamp.plusSeconds(10)).map(_.objId.id).toSet)
+    assertEquals(Set[String]("id2", "id3"), collectDifferences(timestamp.plusSeconds(30)).map(_.objId.id).toSet)
+  }
+
+  @Test
+  def shouldRemoveScheduledEscalationsFromMatchedEvent() {
+    val timestamp = new DateTime()
+
+    val (_, event1) = domainDiffStore.addReportableUnmatchedEvent(VersionID(DiffaPairRef("pair1", "domain"), "id2"), timestamp, "uV1", "dV1", timestamp)
+    domainDiffStore.scheduleEscalation(event1, "esc1", timestamp.plusSeconds(10))
+    val matched = domainDiffStore.addMatchedEvent(event1.objId, "v1")
+
+    val scheduledEvent = domainDiffStore.getEvent("domain", matched.seqId)
+    assertNull(scheduledEvent.nextEscalation)
+    assertNull(scheduledEvent.nextEscalationTime)
   }
 
   @Test
