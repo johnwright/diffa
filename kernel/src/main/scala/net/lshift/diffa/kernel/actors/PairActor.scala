@@ -311,7 +311,8 @@ case class PairActor(pair:DomainPairDef,
         replayCorrelationStore(differencesManager, writer, store, pairRef, us, ds, TriggeredByScan)
       } catch {
         case ex =>
-          logger.error(formatAlertCode(pairRef, DIFFERENCE_REPLAY_FAILURE) + " failed to apply unmatched differences to the differences manager", ex)
+          logger.error(formatAlertCode(pairRef, DIFFERENCE_REPLAY_FAILURE) + " failed to apply unmatched differences to the differences manager")
+          logger.error(formatAlertCode(pairRef, DIFFERENCE_REPLAY_FAILURE), ex)
       }
 
       // Re-queue all buffered commands
