@@ -14,7 +14,7 @@
 ## General Maintenance
 
 * [240] - Never default the username to guest and control default domain from one entry point.
-* [xxx] - Check that both endpoints of a pair support scanning before initiating a scan.
+* [245] - Check that both endpoints of a pair support scanning before initiating a scan.
 
 ## Library Upgrades
 
