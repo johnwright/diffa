@@ -15,6 +15,7 @@
  */
 package net.lshift.diffa.schema.servicelimits
 
+@deprecated
 object ExplainFiles extends ServiceLimit {
   def key = "explain.files"
   def description = "The number of explain files that should be retained for later analysis"
