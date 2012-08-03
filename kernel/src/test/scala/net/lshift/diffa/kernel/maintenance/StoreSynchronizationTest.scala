@@ -29,7 +29,6 @@ import net.lshift.diffa.kernel.actors.PairPolicyClient
 import org.junit.Assert._
 import net.lshift.diffa.kernel.util.StoreSynchronizationUtils._
 import net.lshift.diffa.kernel.frontend.FrontendConversions._
-import net.lshift.diffa.kernel.diag.{LocalDiagnosticsManager, DiagnosticsManager}
 import java.io.File
 import org.apache.commons.io.FileUtils
 import net.lshift.diffa.kernel.matching.{MatchingStatusListener, MatchingManager, EventMatcher}
@@ -38,6 +37,7 @@ import org.junit.{AfterClass, After, Before, Test}
 import net.lshift.diffa.kernel.config.{Domain, Endpoint, DiffaPair}
 import net.lshift.diffa.schema.environment.TestDatabaseEnvironments
 import net.lshift.diffa.kernel.escalation.EscalationHandler
+import net.lshift.diffa.kernel.diag.{DiagnosticsManager, LocalDiagnosticsManager, NoOpExplainLogStore}
 
 class StoreSynchronizationTest {
 
@@ -78,7 +78,7 @@ class StoreSynchronizationTest {
   private val serviceLimitsStore = storeReferences.serviceLimitsStore
 
   val diagnosticsManager: DiagnosticsManager =
-    new LocalDiagnosticsManager(systemConfigStore, domainConfigStore, serviceLimitsStore, StoreSynchronizationTest.explainDir)
+    new LocalDiagnosticsManager(systemConfigStore, domainConfigStore, serviceLimitsStore, NoOpExplainLogStore)
 
   var store:VersionCorrelationStore = null
   var stores:LuceneVersionCorrelationStoreFactory = null

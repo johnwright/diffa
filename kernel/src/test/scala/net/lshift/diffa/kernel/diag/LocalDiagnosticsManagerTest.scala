@@ -2,15 +2,12 @@ package net.lshift.diffa.kernel.diag
 
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
-import org.hamcrest.number.OrderingComparison._
 import org.joda.time.DateTime
 import org.easymock.EasyMock._
 import net.lshift.diffa.kernel.util.HamcrestDateTimeHelpers._
 import net.lshift.diffa.kernel.differencing.{PairScanState}
-import org.junit.{Before, Test}
-import java.io.{FileInputStream, File}
-import org.apache.commons.io.{IOUtils, FileDeleteStrategy}
-import java.util.zip.ZipInputStream
+import org.junit.Test
+import java.io.OutputStream
 import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.servicelimits._
 import system.SystemConfigStore
@@ -20,9 +17,9 @@ class LocalDiagnosticsManagerTest {
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
   val systemConfigStore = createStrictMock(classOf[SystemConfigStore])
   val serviceLimitsStore = createStrictMock(classOf[ServiceLimitsStore])
+  val explainLogStore = createStrictMock(classOf[ExplainLogStore])
 
-  val explainRoot = new File("target/explain")
-  val diagnostics = new LocalDiagnosticsManager(systemConfigStore, domainConfigStore, serviceLimitsStore, explainRoot.getPath)
+  val diagnostics = new LocalDiagnosticsManager(systemConfigStore, domainConfigStore, serviceLimitsStore, explainLogStore)
 
   val domainName = "domain"
   val testDomain = Domain(name=domainName)
@@ -32,11 +29,6 @@ class LocalDiagnosticsManagerTest {
 
   val pair1 = DomainPairDef(key = "pair1", domain = domainName, versionPolicyName = "policy", upstreamName = u.name, downstreamName = d.name)
   val pair2 = DomainPairDef(key = "pair2", domain = domainName, versionPolicyName = "policy", upstreamName = u.name, downstreamName = d.name)
-
-  @Before
-  def cleanupExplanations() {
-    FileDeleteStrategy.FORCE.delete(explainRoot)
-  }
 
   @Test
   def shouldAcceptAndStoreLogEventForPair() {
@@ -112,169 +104,40 @@ class LocalDiagnosticsManagerTest {
     diagnostics.onDeletePair(pair1.asRef)
     assertEquals(Map("pair2" -> PairScanState.UNKNOWN), diagnostics.retrievePairScanStatesForDomain(domainName))
   }
-  
-  @Test
-  def shouldNotGenerateAnyOutputWhenCheckpointIsCalledOnASilentPair() {
-    val key = "quiet"
-    diagnostics.checkpointExplanations(None, DiffaPairRef(key, domainName))
-
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, key))
-    if (pairDir.exists())
-      assertEquals(0, pairDir.listFiles().length)
-  }
 
   @Test
-  def shouldGenerateOutputWhenExplanationsHaveBeenLogged() {
+  def shouldDelegateToExplainLogStoreWhenExplanationsAreLogged() {
     val pairKey = "explained"
     val pair = DiffaPairRef(pairKey, domainName)
 
-    expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
+    expect(explainLogStore.logPairExplanation(None, pair, "Test Case", "Diffa did something"))
+    replay(explainLogStore)
 
     diagnostics.logPairExplanation(None, pair, "Test Case", "Diffa did something")
-    diagnostics.checkpointExplanations(None, pair)
 
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
-    val zips = pairDir.listFiles()
-
-    assertEquals(1, zips.length)
-    assertTrue(zips(0).getName.endsWith(".zip"))
-
-    val zis = new ZipInputStream(new FileInputStream(zips(0)))
-    val entry = zis.getNextEntry
-    assertEquals("explain.log", entry.getName)
-
-    val content = IOUtils.toString(zis)
-    assertTrue(content.contains("[Test Case] Diffa did something"))
+    verify(explainLogStore)
   }
 
   @Test
-  def shouldIncludeContentsOfObjectsAdded() {
+  def shouldDelegateToExplainLogStoreWhenExplanationObjectsAreLogged() {
     val pairKey = "explainedobj"
     val pair = DiffaPairRef(pairKey, domainName)
-
-    expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
 
     val timestamp = new DateTime(2012, 8, 3, 11, 53, 07, 123)
-    val expectedFilename = "upstream-foo-2012-08-03_11_53_07.123.json"
+    val callback = (os: OutputStream) => os.write("{a: 1}".getBytes("UTF-8"))
 
-    diagnostics.writePairExplanationObject(None, pair, "Test Case", "upstream-foo", timestamp, os => {
-      os.write("{a: 1}".getBytes("UTF-8"))
-    })
-    diagnostics.checkpointExplanations(None, pair)
+    expect(explainLogStore.logPairExplanationAttachment(None, pair, "Test Case", "upstream-foo", timestamp, callback))
+    replay(explainLogStore)
 
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
-    val zips = pairDir.listFiles()
+    diagnostics.logPairExplanationAttachment(None, pair, "Test Case", "upstream-foo", timestamp, callback)
 
-    assertEquals(1, zips.length)
-    assertTrue(zips(0).getName.endsWith(".zip"))
-
-    val zis = new ZipInputStream(new FileInputStream(zips(0)))
-
-    var entry = zis.getNextEntry
-    while (entry != null && entry.getName != expectedFilename) entry = zis.getNextEntry
-
-    if (entry == null) fail("Could not find entry " + expectedFilename)
-
-    val content = IOUtils.toString(zis)
-    assertEquals("{a: 1}", content)
-  }
-
-  @Test
-  def shouldAddLogMessageIndicatingObjectWasAttached() {
-    val pairKey = "explainedobj"
-    val pair = DiffaPairRef(pairKey, domainName)
-
-    expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
-
-    val timestamp = new DateTime(2012, 8, 3, 11, 51, 0)
-
-    diagnostics.writePairExplanationObject(None, pair, "Test Case", "upstream-foo", timestamp, os => {
-      os.write("{a: 1}".getBytes("UTF-8"))
-    })
-    diagnostics.checkpointExplanations(None, pair)
-
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
-    val zips = pairDir.listFiles()
-
-    assertEquals(1, zips.length)
-    assertTrue(zips(0).getName.endsWith(".zip"))
-
-    val zis = new ZipInputStream(new FileInputStream(zips(0)))
-
-    var entry = zis.getNextEntry
-    while (entry != null && entry.getName != "explain.log") entry = zis.getNextEntry
-
-    if (entry == null) fail("Could not find entry explain.log")
-
-    val content = IOUtils.toString(zis)
-    assertTrue(content.contains("[Test Case] Attached object upstream-foo-2012-08-03_11_51_00.000.json"))
-  }
-
-  @Test
-  def shouldCreateMultipleOutputsWhenMultipleNonQuietRunsHaveBeenMade() {
-    val pairKey = "explained_20_2"
-
-    expectMaxExplainFilesLimitQuery(domainName, pairKey, 2)
-
-    val pair = DiffaPairRef(pairKey, domainName)
-
-    diagnostics.logPairExplanation(None, pair, "Test Case", "Diffa did something")
-    diagnostics.checkpointExplanations(None, pair)
-
-    diagnostics.logPairExplanation(None, pair, "Test Case" , "Diffa did something else")
-    diagnostics.checkpointExplanations(None, pair)
-
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
-    val zips = pairDir.listFiles()
-
-    assertEquals(2, zips.length)
-  }
-
-  @Test
-  def shouldKeepNumberOfExplanationFilesUnderControl() {
-    val filesToKeep = 20
-    val generateCount = 100
-    val pairKey = "controlled_100_20"
-    val pair = DiffaPairRef(pairKey, domainName)
-
-    expectMaxExplainFilesLimitQuery(domainName, pairKey, filesToKeep)
-
-    for (i <- 1 until generateCount) {
-      diagnostics.logPairExplanation(None, pair, "Test Case", i.toString)
-      diagnostics.checkpointExplanations(None, pair)
-    }
-
-    val pairDir = new File(explainRoot, "%s/%s".format(domainName, pairKey))
-    val zips = pairDir.listFiles()
-
-    assertEquals(filesToKeep, zips.length)
-
-    zips.foreach(z => verifyZipContent(generateCount - filesToKeep)(z))
-  }
-  
-  private def verifyZipContent(earliestEntryNum: Int)(zipFile: File) {
-    val zipInputStream = new ZipInputStream(new FileInputStream(zipFile))
-    zipInputStream.getNextEntry
-    val content = IOUtils.toString(zipInputStream)
-    zipInputStream.close()
-    
-    val entryNum = content.trim().split(" ").last
-    assertThat(new Integer(entryNum), is(greaterThanOrEqualTo(new Integer(earliestEntryNum))))
+    verify(explainLogStore)
   }
 
   private def expectEventBufferLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
 
     expect(serviceLimitsStore.
       getEffectiveLimitByNameForPair(domain, pairKey, DiagnosticEventBufferSize)).
-      andReturn(eventBufferSize).atLeastOnce()
-
-    replay(serviceLimitsStore)
-  }
-
-  private def expectMaxExplainFilesLimitQuery(domain:String, pairKey:String, eventBufferSize:Int) = {
-
-    expect(serviceLimitsStore.
-      getEffectiveLimitByNameForPair(domain, pairKey, ExplainFiles)).
       andReturn(eventBufferSize).atLeastOnce()
 
     replay(serviceLimitsStore)

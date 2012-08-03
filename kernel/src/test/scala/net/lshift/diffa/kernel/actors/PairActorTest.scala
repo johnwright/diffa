@@ -66,7 +66,7 @@ class PairActorTest {
   val us = createStrictMock("upstreamParticipant", classOf[UpstreamParticipant])
   val ds = createStrictMock("downstreamParticipant", classOf[DownstreamParticipant])
   val diagnostics = createMock("diagnosticsManager", classOf[DiagnosticsManager])
-  diagnostics.checkpointExplanations(EasyMock.anyObject[Option[Long]](), EasyMock.eq(pairRef)); expectLastCall().asStub()
+  //diagnostics.checkpointExplanations(EasyMock.anyObject[Option[Long]](), EasyMock.eq(pairRef)); expectLastCall().asStub()
 
   val participantFactory = org.easymock.classextension.EasyMock.createStrictMock("participantFactory", classOf[ParticipantFactory])
   expect(participantFactory.createUpstreamParticipant(upstream, pairRef)).andReturn(us)

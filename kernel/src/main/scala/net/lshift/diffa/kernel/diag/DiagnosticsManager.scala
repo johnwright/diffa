@@ -19,12 +19,6 @@ trait DiagnosticsManager {
   def logPairEvent(scanId:Option[Long] = None, pair:DiffaPairRef, level:DiagnosticLevel, msg:String)
 
   /**
-   * Indicates to the diagnostics manager that a significant unit of work has been completed, and that explanation
-   * data can be cycled to indicate this.
-   */
-  def checkpointExplanations(scanId:Option[Long] = None, pair:DiffaPairRef)
-
-  /**
    * Logs an explanation event for a pair. Explanations are expected to be highly verbose details about system
    * internals, and the diagnostics manager is responsible for aggregating these into sets for later system analysis.
    */
@@ -35,12 +29,12 @@ trait DiagnosticsManager {
    * participants. The diagnostics manager will store this object alongside explanation information, using the provided
    * object name as a marker.
    */
-  def writePairExplanationObject(scanId: Option[Long] = None,
-                                 pair: DiffaPairRef,
-                                 source: String,
-                                 objName: String,
-                                 requestTimestamp: DateTime,
-                                 f: OutputStream => Unit)
+  def logPairExplanationAttachment(scanId: Option[Long] = None,
+                                   pair: DiffaPairRef,
+                                   source: String,
+                                   tag: String,
+                                   requestTimestamp: DateTime,
+                                   f: OutputStream => Unit)
 
   /**
    * Queries for known events about the given pair.

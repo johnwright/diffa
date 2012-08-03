@@ -185,7 +185,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val localDigests = getAggregates(pair, bucketing, constraints)
 
       // Generate a diagnostic object detailing the response provided by the participant
-      diagnostics.writePairExplanationObject(Some(scanId), pair, "Version Policy", name + "-Aggregates", requestTimestamp, os => {
+      diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Aggregates", requestTimestamp, os => {
         val pw = new PrintWriter(os)
         writeCommonHeader(pw, pair, endpoint, requestTimestamp, responseTimestamp)
         pw.println("Bucketing: %s".format(bucketing))
@@ -222,7 +222,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val cachedVersions = getEntities(pair, constraints)
 
       // Generate a diagnostic object detailing the response provided by the participant
-      diagnostics.writePairExplanationObject(Some(scanId), pair, "Version Policy", name + "-Entities", requestTimestamp, os => {
+      diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Entities", requestTimestamp, os => {
         val pw = new PrintWriter(os)
         writeCommonHeader(pw, pair, endpoint, requestTimestamp, responseTimestamp)
         pw.println("Constraints: %s".format(constraints))
