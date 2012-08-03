@@ -35,7 +35,12 @@ trait DiagnosticsManager {
    * participants. The diagnostics manager will store this object alongside explanation information, using the provided
    * object name as a marker.
    */
-  def writePairExplanationObject(scanId:Option[Long] = None, pair:DiffaPairRef, source:String, objName: String, f:OutputStream => Unit)
+  def writePairExplanationObject(scanId: Option[Long] = None,
+                                 pair: DiffaPairRef,
+                                 source: String,
+                                 objName: String,
+                                 requestTimestamp: DateTime,
+                                 f: OutputStream => Unit)
 
   /**
    * Queries for known events about the given pair.
@@ -51,15 +56,6 @@ trait DiagnosticsManager {
    * Informs the diagnostics manager that a pair has been deleted.
    */
   def onDeletePair(pair:DiffaPairRef)
-}
-
-object DiagnosticsManager {
-
-  /**
-   * Template specification so that the files produced via the diagnostics process have vaguely sane names
-   */
-  val fileSystemFriendlyDateFormat = "yyyy-MM-dd_HH_mm_ss.SSS"
-
 }
 
 /**

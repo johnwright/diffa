@@ -154,7 +154,10 @@ class LocalDiagnosticsManagerTest {
 
     expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
 
-    diagnostics.writePairExplanationObject(None, pair, "Test Case", "upstream.123.json", os => {
+    val timestamp = new DateTime(2012, 8, 3, 11, 53, 07, 123)
+    val expectedFilename = "upstream-foo-2012-08-03_11_53_07.123.json"
+
+    diagnostics.writePairExplanationObject(None, pair, "Test Case", "upstream-foo", timestamp, os => {
       os.write("{a: 1}".getBytes("UTF-8"))
     })
     diagnostics.checkpointExplanations(None, pair)
@@ -168,9 +171,9 @@ class LocalDiagnosticsManagerTest {
     val zis = new ZipInputStream(new FileInputStream(zips(0)))
 
     var entry = zis.getNextEntry
-    while (entry != null && entry.getName != "upstream.123.json") entry = zis.getNextEntry
+    while (entry != null && entry.getName != expectedFilename) entry = zis.getNextEntry
 
-    if (entry == null) fail("Could not find entry upstream.123.json")
+    if (entry == null) fail("Could not find entry " + expectedFilename)
 
     val content = IOUtils.toString(zis)
     assertEquals("{a: 1}", content)
@@ -183,7 +186,9 @@ class LocalDiagnosticsManagerTest {
 
     expectMaxExplainFilesLimitQuery(domainName, pairKey, 1)
 
-    diagnostics.writePairExplanationObject(None, pair, "Test Case", "upstream.123.json", os => {
+    val timestamp = new DateTime(2012, 8, 3, 11, 51, 0)
+
+    diagnostics.writePairExplanationObject(None, pair, "Test Case", "upstream-foo", timestamp, os => {
       os.write("{a: 1}".getBytes("UTF-8"))
     })
     diagnostics.checkpointExplanations(None, pair)
@@ -202,7 +207,7 @@ class LocalDiagnosticsManagerTest {
     if (entry == null) fail("Could not find entry explain.log")
 
     val content = IOUtils.toString(zis)
-    assertTrue(content.contains("[Test Case] Attached object upstream.123.json"))
+    assertTrue(content.contains("[Test Case] Attached object upstream-foo-2012-08-03_11_51_00.000.json"))
   }
 
   @Test

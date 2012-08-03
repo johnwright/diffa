@@ -28,9 +28,6 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
 
   private val pairs = HashMap[DiffaPairRef, PairDiagnostics]()
 
-  private val timeFormatter = ISODateTimeFormat.time()
-  private val fileNameFormatter = DateTimeFormat.forPattern(DiagnosticsManager.fileSystemFriendlyDateFormat)
-  
   def getPairFromRef(ref: DiffaPairRef) = domainConfigStore.getPairDef(ref.domain, ref.key)
 
   def checkpointExplanations(scanId:Option[Long], pair: DiffaPairRef) {
@@ -46,8 +43,14 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
     getOrCreatePair(pair).logPairExplanation(source, msg)
   }
 
-  def writePairExplanationObject(scanId:Option[Long], pair:DiffaPairRef, source:String, objName: String, f:OutputStream => Unit) {
-    getOrCreatePair(pair).writePairExplanationObject(source, objName, f)
+  def writePairExplanationObject(scanId: Option[Long] = None,
+                                 pair: DiffaPairRef,
+                                 source: String,
+                                 objName: String,
+                                 requestTimestamp: DateTime,
+                                 f: OutputStream => Unit) {
+
+    getOrCreatePair(pair).writePairExplanationObject(scanId, source, objName, requestTimestamp, f)
   }
 
   def queryEvents(pair:DiffaPairRef, maxEvents: Int) = {
@@ -106,6 +109,13 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
     pairs.synchronized { pairs.get(pair) }
 
   private class PairDiagnostics(pair:DiffaPairRef) {
+    /**
+     * Template specification so that the files produced via the diagnostics process have vaguely sane names
+     */
+    private val fileNameFormatter = DateTimeFormat.forPattern("yyyy-MM-dd_HH_mm_ss.SSS")
+
+    private val timeFormatter = ISODateTimeFormat.time()
+
     private val pairExplainRoot = new File(explainRootDir, pair.identifier)
     private val log = ListBuffer[PairEvent]()
     var scanState:PairScanState = PairScanState.UNKNOWN
@@ -169,10 +179,17 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
       }
     }
 
-    def writePairExplanationObject(source:String, objName: String, f:OutputStream => Unit) {
+    def writePairExplanationObject(scanId: Option[Long],
+                                   source:String,
+                                   objName: String,
+                                   requestTimestamp: DateTime,
+                                   f:OutputStream => Unit) {
+
+      val fileName = "%s-%s.json".format(objName, fileNameFormatter.print(requestTimestamp))
+
       if (getMaxExplainFiles > 0) {
         explainLock.synchronized {
-          val outputFile = new File(currentExplainDirectory, objName)
+          val outputFile = new File(currentExplainDirectory, fileName)
           val outputStream = new FileOutputStream(outputFile)
           try {
             f(outputStream)
@@ -180,7 +197,7 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
             outputStream.close()
           }
 
-          logPairExplanation(source, "Attached object " + objName)
+          logPairExplanation(source, "Attached object " + fileName)
         }
       }
     }
