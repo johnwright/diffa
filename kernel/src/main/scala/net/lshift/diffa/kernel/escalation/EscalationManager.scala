@@ -24,7 +24,6 @@ import net.lshift.diffa.kernel.client.{ActionableRequest, ActionsClient}
 import org.slf4j.LoggerFactory
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
 import net.lshift.diffa.kernel.differencing._
-import net.lshift.diffa.kernel.config.{DiffaPairRef, DomainConfigStore}
 import net.lshift.diffa.kernel.reporting.ReportManager
 import net.lshift.diffa.kernel.util.AlertCodes._
 import java.io.Closeable
@@ -35,6 +34,8 @@ import java.util.{Timer, TimerTask}
 import net.lshift.diffa.kernel.frontend.EscalationDef
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import org.josql.filters.DefaultObjectFilter
+import net.lshift.diffa.kernel.config.{ConfigValidationException, DiffaPairRef, DomainConfigStore}
+import org.josql.QueryParseException
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -188,8 +189,13 @@ class EscalationManager(val config:DomainConfigStore,
 }
 
 object EscalationManager {
-  def validateRule(rule:String) {
-    new DefaultObjectFilter(rule, classOf[DifferenceEvent])
+  def validateRule(rule:String, path:String) {
+    try {
+      new DefaultObjectFilter(rule, classOf[DifferenceEvent])
+    } catch {
+      case e:QueryParseException => throw new ConfigValidationException(path,
+        "invalid rule '%s': %s".format(rule, e.getMessage))
+    }
   }
 }
 

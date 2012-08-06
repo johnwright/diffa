@@ -403,7 +403,7 @@ case class EscalationDef (
     // Ensure that the action type is supported, and validate the parameters that depend on it
     actionType match {
       case REPAIR | IGNORE =>
-        EscalationManager.validateRule(rule)
+        EscalationManager.validateRule(rule, escalationPath)
       case REPORT =>
         rule match {
           case SCAN_FAILED | SCAN_COMPLETED => rule
