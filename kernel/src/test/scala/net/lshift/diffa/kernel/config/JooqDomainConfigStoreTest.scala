@@ -79,9 +79,8 @@ class JooqDomainConfigStoreTest {
                                        scope=RepairAction.ENTITY_SCOPE,
                                        url="resend")
   val escalation = EscalationDef(name="esc", action = "test_action",
-                                   event = EscalationEvent.UPSTREAM_MISSING,
+                                   rule = "upstreamVsn is null",
                                    actionType = EscalationActionType.REPAIR,
-                                   origin = EscalationOrigin.SCAN,
                                    delay = 30)
   val report = PairReportDef(name = "REPORT_NAME",
                              reportType = "differences", target = "http://example.com/diff_listener")
@@ -166,8 +165,8 @@ class JooqDomainConfigStoreTest {
 
     val repairAction2 = repairAction.copy(url = "resend2")
     val repairAction3 = repairAction.copy(url = "resend3")
-    val escalation2 = escalation.copy(event = EscalationEvent.DOWNSTREAM_MISSING)
-    val escalation3 = escalation.copy(event = EscalationEvent.MISMATCH)
+    val escalation2 = escalation.copy(rule = "downstreamVsn is null")
+    val escalation3 = escalation.copy(rule = "upstreamVsn is null")
     val report2 = report.copy(target = "http://example.com/diff_listener2")
     val report3 = report.copy(target = "http://example.com/diff_listener3")
 

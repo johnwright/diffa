@@ -132,14 +132,14 @@ class EscalationManager(val config:DomainConfigStore,
   def findEscalations(pair: DiffaPairRef, diff:DifferenceEvent) = {
     config.getPairDef(pair).escalations.
       filter(e => {
-        val filter = new DefaultObjectFilter(e.event, classOf[DifferenceEvent])
+        val filter = new DefaultObjectFilter(e.rule, classOf[DifferenceEvent])
         filter.accept(diff)
     })
   }
 
   def findEscalationsForPair(pair: DiffaPairRef, eventType:String) = {
     config.getPairDef(pair).escalations.
-      filter(e => e.event == eventType && e.actionType == REPORT)
+      filter(e => e.rule == eventType && e.actionType == REPORT)
   }
 
   def findEscalation(pair: DiffaPairRef, name:String) =
@@ -184,6 +184,12 @@ class EscalationManager(val config:DomainConfigStore,
     case UpstreamMissing => UPSTREAM_MISSING
     case DownstreamMissing => DOWNSTREAM_MISSING
     case ConflictingVersions => MISMATCH
+  }
+}
+
+object EscalationManager {
+  def validateRule(rule:String) {
+    new DefaultObjectFilter(rule, classOf[DifferenceEvent])
   }
 }
 

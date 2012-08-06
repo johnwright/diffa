@@ -67,10 +67,10 @@ class EscalationManagerTest {
   @After
   def shutdown = escalationManager.close()
 
-  def expectConfigStoreWithRepairs(event:String) {
+  def expectConfigStoreWithRepairs(rule:String) {
 
     expect(configStore.getPairDef(DiffaPairRef(pairKey, domain))).andReturn(
-      DomainPairDef(escalations = Set(EscalationDef("foo", "bar", EscalationActionType.REPAIR, event, EscalationOrigin.SCAN)))
+      DomainPairDef(escalations = Set(EscalationDef("foo", "bar", EscalationActionType.REPAIR, rule)))
     ).anyTimes()
   }
 
@@ -240,73 +240,73 @@ object EscalationManagerTest {
 
   @DataPoints def noMatchingEscalations = Array(
     EscalationSchedulingScenario("usvn", "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "downstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "downstreamVsn is null")
     )),
     EscalationSchedulingScenario(null, "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
-      EscalationDef(name = "e2", event = "downstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
+      EscalationDef(name = "e2", rule = "downstreamVsn is null")
     )),
     EscalationSchedulingScenario("usvn", null, EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
     ))
   )
 
   @DataPoints def immediateMatchingEscalations = Array(
     EscalationSchedulingScenario("usvn", "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
     ), Selection("e2", Some(0))),
     EscalationSchedulingScenario(null, "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
-      EscalationDef(name = "e2", event = "upstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
+      EscalationDef(name = "e2", rule = "upstreamVsn is null")
     ), Selection("e2", Some(0))),
     EscalationSchedulingScenario("usvn", null, EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "downstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "downstreamVsn is null")
     ), Selection("e2", Some(0)))
   )
 
   @DataPoints def ignoreEscalations = Array(
     EscalationSchedulingScenario("usvn", "dvsn", EscalationActionType.IGNORE, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
     ), Selection("e2", Some(0))),
     EscalationSchedulingScenario(null, "dvsn", EscalationActionType.IGNORE, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
-      EscalationDef(name = "e2", event = "upstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
+      EscalationDef(name = "e2", rule = "upstreamVsn is null")
     ), Selection("e2", Some(0))),
     EscalationSchedulingScenario("usvn", null, EscalationActionType.IGNORE, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "downstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "downstreamVsn is null")
     ), Selection("e2", Some(0)))
   )
 
   @DataPoints def delayedEscalationsProcessedInOrder = Array(
     EscalationSchedulingScenario("usvn", "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 50),
-      EscalationDef(name = "e2", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 10)
+      EscalationDef(name = "e1", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 50),
+      EscalationDef(name = "e2", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 10)
     ), Selection("e2", Some(10)), Selection("e1", Some(50))),
     EscalationSchedulingScenario("usvn", "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 50),
-      EscalationDef(name = "e2", event = "upstreamVsn is null", delay = 20),
-      EscalationDef(name = "e3", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 10)
+      EscalationDef(name = "e1", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 50),
+      EscalationDef(name = "e2", rule = "upstreamVsn is null", delay = 20),
+      EscalationDef(name = "e3", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null", delay = 10)
     ), Selection("e3", Some(10)), Selection("e1", Some(50)))
   )
 
   @DataPoints def noProgressingToInvalidScenarios = Array(
     EscalationSchedulingScenario("usvn", "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null")
     ), Selection("e2", Some(0))),
     EscalationSchedulingScenario(null, "dvsn", EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
-      EscalationDef(name = "e2", event = "upstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null"),
+      EscalationDef(name = "e2", rule = "upstreamVsn is null")
     ), Selection("e2", Some(0))),
     EscalationSchedulingScenario("usvn", null, EscalationActionType.REPAIR, Seq(
-      EscalationDef(name = "e1", event = "upstreamVsn is null"),
-      EscalationDef(name = "e2", event = "downstreamVsn is null")
+      EscalationDef(name = "e1", rule = "upstreamVsn is null"),
+      EscalationDef(name = "e2", rule = "downstreamVsn is null")
     ), Selection("e2", Some(0)))
   )
 

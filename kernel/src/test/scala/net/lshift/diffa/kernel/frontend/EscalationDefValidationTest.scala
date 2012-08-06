@@ -10,12 +10,12 @@ class EscalationDefValidationTest extends DefValidationTestBase {
   @Test
   def shouldRejectNameThatIsTooLong {
     validateExceedsMaxKeyLength("config/escalation[name=%s]: name",
-      name => EscalationDef(name = name, actionType = "report", event = "scan-completed"))
+      name => EscalationDef(name = name, actionType = "report", rule = "scan-completed"))
   }
 
   @Test
   def shouldRejectActionThatIsTooLong {
     validateExceedsMaxKeyLength("config/escalation[name=a]: action",
-      action => EscalationDef(name = "a", action = action, actionType = "report", event = "scan-completed"))
+      action => EscalationDef(name = "a", action = action, actionType = "report", rule = "scan-completed"))
   }
 }
