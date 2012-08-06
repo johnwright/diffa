@@ -20,17 +20,15 @@ import net.lshift.diffa.kernel.events._
 import net.lshift.diffa.kernel.participants._
 import net.lshift.diffa.kernel.alerting.Alerter
 import org.slf4j.LoggerFactory
-import concurrent.SyncVar
-import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import net.lshift.diffa.participant.common.JSONHelper
-import net.lshift.diffa.kernel.config.{DomainConfigStore, DiffaPairRef, Endpoint}
-import org.joda.time.{DateTimeZone, DateTime, Interval}
-import org.joda.time.format.DateTimeFormat
-import java.io.{OutputStream, PrintWriter}
+import net.lshift.diffa.kernel.config.{DiffaPairRef, Endpoint}
+import org.joda.time.{DateTime, Interval}
 import net.lshift.diffa.kernel.diag.{DiagnosticsManager, DiagnosticLevel}
 import net.lshift.diffa.participant.scanning._
 import collection.JavaConversions._
 import net.lshift.diffa.kernel.util.{CategoryUtil, DownstreamEndpoint, EndpointSide, UpstreamEndpoint}
+import org.codehaus.jackson.map.{SerializationConfig, ObjectMapper}
+import org.codehaus.jackson.JsonGenerator
 
 /**
  * Standard behaviours supported by scanning version policies.
@@ -185,15 +183,20 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val localDigests = getAggregates(pair, bucketing, constraints)
 
       // Generate a diagnostic object detailing the response provided by the participant
-      diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Aggregates", requestTimestamp, os => {
-        val pw = new PrintWriter(os)
-        writeCommonHeader(pw, pair, endpoint, requestTimestamp, responseTimestamp)
-        pw.println("Bucketing: %s".format(bucketing))
-        pw.println("Constraints: %s".format(constraints))
-        pw.println("------------------------")
-        pw.flush()
+      diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Aggregates", requestTimestamp, json => {
+        writeCommonHeader(json, pair, endpoint, requestTimestamp, responseTimestamp)
 
-        JSONHelper.formatQueryResult(os, remoteDigests)
+        json.writeArrayFieldStart("bucketing")
+        for (b <- bucketing) json.writeObject(b)
+        json.writeEndArray()
+
+        json.writeArrayFieldStart("constraints")
+        for (c <- constraints) json.writeObject(c)
+        json.writeEndArray()
+
+        json.writeArrayFieldStart("remoteDigests")
+        for (r <- remoteDigests) json.writeObject(r)
+        json.writeEndArray()
       })
 
       DigestDifferencingUtils.differenceAggregates(remoteDigests, localDigests, bucketing, constraints).foreach(o => o match {
@@ -222,14 +225,16 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
       val cachedVersions = getEntities(pair, constraints)
 
       // Generate a diagnostic object detailing the response provided by the participant
-      diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Entities", requestTimestamp, os => {
-        val pw = new PrintWriter(os)
-        writeCommonHeader(pw, pair, endpoint, requestTimestamp, responseTimestamp)
-        pw.println("Constraints: %s".format(constraints))
-        pw.println("------------------------")
-        pw.flush()
+      diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Entities", requestTimestamp, json => {
+        writeCommonHeader(json, pair, endpoint, requestTimestamp, responseTimestamp)
 
-        JSONHelper.formatQueryResult(os, remoteVersions)
+        json.writeArrayFieldStart("constraints")
+        for (c <- constraints) json.writeObject(c)
+        json.writeEndArray()
+
+        json.writeArrayFieldStart("remoteVersions")
+        for (rv <- remoteVersions) json.writeObject(rv)
+        json.writeEndArray()
       })
 
       // Validate that the entities provided meet the constraints of the endpoint
@@ -256,13 +261,14 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
         .foreach(handleMismatch(Some(scanId), pair, writer, _, listener))
     }
 
-    private def writeCommonHeader(pw:PrintWriter, pair:DiffaPairRef, endpoint:Endpoint, requestTimestamp:DateTime, responseTimestamp:DateTime) = {
-      pw.println("Pair: %s".format(pair))
-      pw.println("Endpoint at: %s".format(endpoint))
-      pw.println("Requested at: %s".format(requestTimestamp))
-      pw.println("Response received at: %s".format(responseTimestamp))
+    private def writeCommonHeader(json:JsonGenerator, pair:DiffaPairRef, endpoint:Endpoint, requestTimestamp:DateTime, responseTimestamp:DateTime) = {
+      json.writeStringField("pair", pair.toString)
+      json.writeStringField("endpoint", endpoint.name)
+      json.writeStringField("requestedAt", requestTimestamp.toString)
+      json.writeStringField("responseReceivedAt", responseTimestamp.toString)
+
       val timeTaken = new Interval(requestTimestamp,responseTimestamp).toPeriod()
-      pw.println("Time taken : %s".format(timeTaken))
+      json.writeStringField("timeTaken", timeTaken.toString)
     }
 
     def startInventory(pair: DiffaPairRef, endpoint: Endpoint, view:Option[String], writer: LimitedVersionCorrelationWriter): Seq[ScanRequest] = {

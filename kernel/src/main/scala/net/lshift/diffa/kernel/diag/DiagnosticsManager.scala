@@ -4,7 +4,7 @@ import org.joda.time.DateTime
 import reflect.BeanProperty
 import net.lshift.diffa.kernel.differencing.PairScanState
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import java.io.OutputStream
+import org.codehaus.jackson.JsonGenerator
 
 /**
  * Manager responsible for collecting and providing access to diagnostic information within the system. Diagnostics
@@ -34,7 +34,7 @@ trait DiagnosticsManager {
                                    source: String,
                                    tag: String,
                                    requestTimestamp: DateTime,
-                                   f: OutputStream => Unit)
+                                   f: JsonGenerator => Unit)
 
   /**
    * Queries for known events about the given pair.

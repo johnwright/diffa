@@ -17,8 +17,9 @@
 package net.lshift.diffa.kernel.diag
 
 import net.lshift.diffa.kernel.config.DiffaPairRef
+import org.codehaus.jackson.JsonGenerator
 import org.joda.time.DateTime
-import java.io.OutputStream
+
 
 trait ExplainLogStore {
 
@@ -29,7 +30,7 @@ trait ExplainLogStore {
                                    source: String,
                                    tag: String,
                                    requestTimestamp: DateTime,
-                                   f: OutputStream => Unit)
+                                   f: JsonGenerator => Unit)
 }
 
 object NoOpExplainLogStore extends ExplainLogStore {
@@ -41,5 +42,5 @@ object NoOpExplainLogStore extends ExplainLogStore {
                                    source: String,
                                    tag: String,
                                    requestTimestamp: DateTime,
-                                   f: OutputStream => Unit) {}
+                                   f: JsonGenerator => Unit) {}
 }

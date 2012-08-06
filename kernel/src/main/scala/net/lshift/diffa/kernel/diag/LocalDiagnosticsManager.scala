@@ -3,14 +3,11 @@ package net.lshift.diffa.kernel.diag
 import collection.mutable.{ListBuffer, HashMap}
 import net.lshift.diffa.kernel.differencing.{PairScanState, PairScanListener}
 import net.lshift.diffa.kernel.lifecycle.{NotificationCentre, AgentLifecycleAware}
-import java.io._
-import java.util.zip.{ZipEntry, ZipOutputStream}
-import org.apache.commons.io.IOUtils
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
-import org.joda.time.format.{DateTimeFormat, ISODateTimeFormat}
-import org.joda.time.DateTime
 import net.lshift.diffa.kernel.config.{PairServiceLimitsView, DiffaPairRef, DomainConfigStore}
 import net.lshift.diffa.schema.servicelimits._
+import org.codehaus.jackson.JsonGenerator
+import org.joda.time.DateTime
 
 /**
  * Local in-memory implementation of the DiagnosticsManager.
@@ -43,7 +40,7 @@ class LocalDiagnosticsManager(systemConfigStore:SystemConfigStore,
                                    source: String,
                                    tag: String,
                                    requestTimestamp: DateTime,
-                                   f: OutputStream => Unit) {
+                                   f: JsonGenerator => Unit) {
 
     explainLogStore.logPairExplanationAttachment(scanId, pair, source, tag, requestTimestamp, f)
   }
