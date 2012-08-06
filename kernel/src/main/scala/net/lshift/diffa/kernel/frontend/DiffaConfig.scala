@@ -407,12 +407,12 @@ case class EscalationDef (
           case SCAN =>
           case _    => throw new ConfigValidationException(escalationPath, "Invalid escalation origin: " + origin)
         }
-        event match {
+        /*event match {
           case UPSTREAM_MISSING | DOWNSTREAM_MISSING | MISMATCH  => event
           case _ =>
             throw new ConfigValidationException(escalationPath,
               "Invalid escalation event source type %s for action type %s".format(event, actionType))
-        }
+        }*/
       case REPORT =>
         // We don't support origins for reports
         if (origin != null)
