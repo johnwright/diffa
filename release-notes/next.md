@@ -10,6 +10,7 @@
 * [234] - Clicking on a ring in the overview page will open up a light box containing a cutdown heatmap for the relevant pair.
 * [233] - Scan summary information will be persisted.
 * [241] - Escalations are now phased rather than running as a batch action on completion of scan.
+* [248] - Escalations can trigger an ignore.
 
 ## General Maintenance
 
