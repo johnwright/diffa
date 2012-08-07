@@ -400,6 +400,7 @@ case class EscalationDef (
 
     ValidationUtil.ensureLengthLimit(escalationPath, "name", name, DefaultLimits.KEY_LENGTH_LIMIT)
     ValidationUtil.ensureLengthLimit(escalationPath, "action", action, DefaultLimits.KEY_LENGTH_LIMIT)
+    ValidationUtil.ensureLengthLimit(escalationPath, "rule", rule, DefaultLimits.URL_LENGTH_LIMIT)
 
     // Ensure that the action type is supported, and validate the parameters that depend on it
     actionType match {

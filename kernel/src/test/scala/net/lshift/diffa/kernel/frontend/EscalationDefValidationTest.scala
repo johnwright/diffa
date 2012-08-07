@@ -20,6 +20,12 @@ class EscalationDefValidationTest extends DefValidationTestBase {
   }
 
   @Test
+  def shouldRejectRuleThatIsTooLong {
+    validateExceedsMaxUrlLength("config/escalation[name=a]: rule",
+      rule => EscalationDef(name = "a", action = "", actionType = "ignore", rule = rule))
+  }
+
+  @Test
   def validateRejectsInvalidRuleDefinition {
     validateError(EscalationDef(name = "a", actionType = "ignore", rule = "blah"),
       "config/escalation[name=a]: invalid rule 'blah': Unable to create getter: blah"
