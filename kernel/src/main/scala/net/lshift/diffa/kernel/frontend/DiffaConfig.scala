@@ -396,6 +396,7 @@ case class EscalationDef (
     val escalationPath = ValidationUtil.buildPath(path, "escalation", Map("name" -> name))
 
     action = ValidationUtil.maybeNullify(action)
+    rule = ValidationUtil.maybeNullify(rule)
 
     ValidationUtil.ensureLengthLimit(escalationPath, "name", name, DefaultLimits.KEY_LENGTH_LIMIT)
     ValidationUtil.ensureLengthLimit(escalationPath, "action", action, DefaultLimits.KEY_LENGTH_LIMIT)

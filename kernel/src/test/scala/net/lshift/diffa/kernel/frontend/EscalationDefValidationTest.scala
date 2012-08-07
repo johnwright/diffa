@@ -51,6 +51,16 @@ class EscalationDefValidationTest extends DefValidationTestBase {
     validateValidEscalationRule("id like 'a*'")
   }
 
+  @Test
+  def validateAcceptsNullRule {
+    validateValidEscalationRule(null)
+  }
+
+  @Test
+  def validateAcceptsEmptyRule {
+    validateValidEscalationRule("")
+  }
+
   private def validateValidEscalationRule(rule:String) {
     EscalationDef(name = "a", actionType = "ignore", rule = rule).validate()
   }

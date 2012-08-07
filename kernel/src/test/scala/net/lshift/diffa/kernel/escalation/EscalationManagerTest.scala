@@ -265,7 +265,10 @@ object EscalationManagerTest {
     EscalationSchedulingScenario("usvn", null, EscalationActionType.REPAIR, Seq(
       EscalationDef(name = "e1", rule = "upstreamVsn is null"),
       EscalationDef(name = "e2", rule = "downstreamVsn is null")
-    ), Selection("e2", Some(0)))
+    ), Selection("e2", Some(0))),
+    EscalationSchedulingScenario("usvn", null, EscalationActionType.REPAIR, Seq(
+      EscalationDef(name = "e1", rule = null)
+    ), Selection("e1", Some(0)))
   )
 
   @DataPoints def ignoreEscalations = Array(
