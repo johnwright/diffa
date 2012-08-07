@@ -27,6 +27,16 @@ class EscalationDefValidationTest extends DefValidationTestBase {
   }
 
   @Test
+  def validateAcceptsScanCompletedRuleForReportActionType {
+    EscalationDef(name = "a", actionType = "report", action = "r1", rule = "scan-completed").validate()
+  }
+
+  @Test
+  def validateAcceptsScanFailedRuleForReportActionType {
+    EscalationDef(name = "a", actionType = "report", action = "r1", rule = "scan-failed").validate()
+  }
+
+  @Test
   def validateAcceptsRuleForUpstreamVsn {
     validateValidEscalationRule("upstreamVsn is null")
   }

@@ -180,12 +180,6 @@ class EscalationManager(val config:DomainConfigStore,
         diffs.scheduleEscalation(diff, esc.name, escalateTime)
     }
   }
-
-  def mapDifferenceType(t:DifferenceType) = t match {
-    case UpstreamMissing => UPSTREAM_MISSING
-    case DownstreamMissing => DOWNSTREAM_MISSING
-    case ConflictingVersions => MISMATCH
-  }
 }
 
 object EscalationManager {
