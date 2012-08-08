@@ -57,7 +57,8 @@ class EscalationManagerTest {
   val reportManager = EasyMock4Classes.createStrictMock(classOf[ReportManager])
   val diffs = createStrictMock(classOf[DomainDifferenceStore])
   checkOrder(diffs, false)
-  val escalationManager = new EscalationManager(configStore, systemConfig, diffs, actionsClient, reportManager, actorSystem)
+  val breakers = new BreakerHelper(configStore)
+  val escalationManager = new EscalationManager(configStore, systemConfig, diffs, actionsClient, reportManager, actorSystem, breakers)
 
   escalationManager.onAgentInstantiationCompleted(notificationCentre)
 

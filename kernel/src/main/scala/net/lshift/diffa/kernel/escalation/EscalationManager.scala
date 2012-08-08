@@ -34,8 +34,8 @@ import java.util.{Timer, TimerTask}
 import net.lshift.diffa.kernel.frontend.EscalationDef
 import net.lshift.diffa.kernel.config.system.SystemConfigStore
 import org.josql.filters.DefaultObjectFilter
-import net.lshift.diffa.kernel.config.{ConfigValidationException, DiffaPairRef, DomainConfigStore}
 import org.josql.QueryParseException
+import net.lshift.diffa.kernel.config.{BreakerHelper, ConfigValidationException, DiffaPairRef, DomainConfigStore}
 
 /**
  * This deals with escalating mismatches based on configurable escalation policies.
@@ -55,7 +55,8 @@ class EscalationManager(val config:DomainConfigStore,
                         val diffs:DomainDifferenceStore,
                         val actionsClient:ActionsClient,
                         val reportManager:ReportManager,
-                        val actorSystem: ActorSystem)
+                        val actorSystem: ActorSystem,
+                        val breakerHelper: BreakerHelper)
     extends AbstractActorSupervisor
     with AgentLifecycleAware
     with PairScanListener
@@ -68,7 +69,7 @@ class EscalationManager(val config:DomainConfigStore,
     
     def receive = {
       case Escalate(d:DifferenceEvent)            =>
-        if (isEscalationEnabled(pair, d.nextEscalation)) {
+        if (breakerHelper.isEscalationEnabled(pair, d.nextEscalation)) {
           findEscalation(d.objId.pair, d.nextEscalation).map(e => {
             e.actionType match {
               case REPAIR =>
@@ -188,14 +189,6 @@ class EscalationManager(val config:DomainConfigStore,
         diffs.scheduleEscalation(diff, esc.name, escalateTime)
     }
   }
-
-  def isEscalationEnabled(pair:DiffaPairRef, name:String) = {
-    !config.isBreakerTripped(pair.domain, pair.key, nameForAllEscalationsBreaker) &&
-      !config.isBreakerTripped(pair.domain, pair.key, nameForEscalationBreaker(name))
-  }
-
-  def nameForEscalationBreaker(escalationName:String) = "escalation:" + escalationName
-  val nameForAllEscalationsBreaker = nameForEscalationBreaker("*")
 }
 
 object EscalationManager {

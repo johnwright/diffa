@@ -435,6 +435,10 @@
     <constructor-arg ref="hazelcastCacheProvider" />
   </bean>
 
+  <bean id="breakerHelper" class="net.lshift.diffa.kernel.config.BreakerHelper">
+    <constructor-arg ref="domainConfigStore" />
+  </bean>
+
   <!--
     ===========
       Scan Reporting
