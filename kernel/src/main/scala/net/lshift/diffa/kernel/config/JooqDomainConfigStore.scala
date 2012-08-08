@@ -29,6 +29,7 @@ import net.lshift.diffa.schema.tables.Pair.PAIR
 import net.lshift.diffa.schema.tables.PairViews.PAIR_VIEWS
 import net.lshift.diffa.schema.tables.Endpoint.ENDPOINT
 import net.lshift.diffa.schema.tables.EndpointViews.ENDPOINT_VIEWS
+import net.lshift.diffa.schema.tables.Breakers.BREAKERS
 import JooqConfigStoreCompanion._
 import net.lshift.diffa.kernel.naming.CacheName._
 import net.lshift.diffa.kernel.util.MissingObjectException
@@ -39,6 +40,7 @@ import collection.mutable
 import java.util
 import collection.mutable.ListBuffer
 import org.jooq.impl.Factory
+import org.jooq.impl.Factory._
 import net.lshift.diffa.kernel.frontend.DomainEndpointDef
 import net.lshift.diffa.kernel.frontend.DomainPairDef
 import net.lshift.diffa.kernel.frontend.RepairActionDef
@@ -578,6 +580,45 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
     })
   }).toSeq
 
+  def isBreakerTripped(domain: String, pair: String, name: String) = {
+    jooq.execute(t => {
+      val c = t.select(count(BREAKERS.NAME)).
+        from(BREAKERS).
+        where(BREAKERS.DOMAIN.equal(domain)).
+          and(BREAKERS.PAIR_KEY.equal(pair)).
+          and(BREAKERS.NAME.equal(name)).
+        fetchOne().
+        getValue(0).asInstanceOf[java.lang.Number]
+
+      val breakerPresent = (c != null && c.intValue() > 0)
+
+      // We consider a breaker to be tripped (ie, the feature should not be used) when there is a matching row in
+      // the table.
+      breakerPresent
+    })
+  }
+
+  def tripBreaker(domain: String, pair: String, name: String) {
+    if (!isBreakerTripped(domain, pair, name)) {
+      jooq.execute(t => {
+        t.insertInto(BREAKERS).
+          set(Map(BREAKERS.DOMAIN -> domain, BREAKERS.PAIR_KEY -> pair, BREAKERS.NAME -> name)).
+          execute()
+      })
+    }
+  }
+
+  def clearBreaker(domain: String, pair: String, name: String) {
+    if (isBreakerTripped(domain, pair, name)) {
+      jooq.execute(t => {
+        t.delete(BREAKERS).
+          where(BREAKERS.DOMAIN.equal(domain)).
+            and(BREAKERS.PAIR_KEY.equal(pair)).
+            and(BREAKERS.NAME.equal(name)).
+          execute()
+      })
+    }
+  }
 }
 
 // These key classes need to be serializable .......

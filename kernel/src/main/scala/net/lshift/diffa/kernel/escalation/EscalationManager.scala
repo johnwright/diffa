@@ -68,15 +68,19 @@ class EscalationManager(val config:DomainConfigStore,
     
     def receive = {
       case Escalate(d:DifferenceEvent)            =>
-        findEscalation(d.objId.pair, d.nextEscalation).map(e => {
-          e.actionType match {
-            case REPAIR =>
-              val result = actionsClient.invoke(ActionableRequest(d.objId.pair.key, d.objId.pair.domain, e.action, d.objId.id))
-              log.debug("Escalation result for action [%s] using %s is %s".format(e.name, d.objId, result))
-            case IGNORE =>
-              diffs.ignoreEvent(d.objId.pair.domain, d.seqId)
-          }
-        })
+        if (isEscalationEnabled(pair, d.nextEscalation)) {
+          findEscalation(d.objId.pair, d.nextEscalation).map(e => {
+            e.actionType match {
+              case REPAIR =>
+                val result = actionsClient.invoke(ActionableRequest(d.objId.pair.key, d.objId.pair.domain, e.action, d.objId.id))
+                log.debug("Escalation result for action [%s] using %s is %s".format(e.name, d.objId, result))
+              case IGNORE =>
+                diffs.ignoreEvent(d.objId.pair.domain, d.seqId)
+            }
+          })
+        } else {
+          log.debug("Not processing escalation on %s as breaker has been ")
+        }
 
       case other =>
         log.warn("{} EscalationActor received unexpected message: {}",
@@ -184,6 +188,14 @@ class EscalationManager(val config:DomainConfigStore,
         diffs.scheduleEscalation(diff, esc.name, escalateTime)
     }
   }
+
+  def isEscalationEnabled(pair:DiffaPairRef, name:String) = {
+    !config.isBreakerTripped(pair.domain, pair.key, nameForAllEscalationsBreaker) &&
+      !config.isBreakerTripped(pair.domain, pair.key, nameForEscalationBreaker(name))
+  }
+
+  def nameForEscalationBreaker(escalationName:String) = "escalation:" + escalationName
+  val nameForAllEscalationsBreaker = nameForEscalationBreaker("*")
 }
 
 object EscalationManager {
