@@ -136,8 +136,8 @@ class EscalationManager(val config:DomainConfigStore,
         if (e.rule == null) {
           true
         } else {
-          val filter = new DefaultObjectFilter(e.rule, classOf[DifferenceEvent])
-          filter.accept(diff)
+          val filter = new DefaultObjectFilter(e.rule, classOf[DifferenceEventRuleView])
+          filter.accept(DifferenceEventRuleView(diff))
         }
     })
   }
@@ -191,7 +191,7 @@ object EscalationManager {
     if (rule == null) return
 
     try {
-      new DefaultObjectFilter(rule, classOf[DifferenceEvent])
+      new DefaultObjectFilter(rule, classOf[DifferenceEventRuleView])
     } catch {
       case e:QueryParseException => throw new ConfigValidationException(path,
         "invalid rule '%s': %s".format(rule, e.getMessage))
@@ -200,3 +200,17 @@ object EscalationManager {
 }
 
 case class Escalate(e:DifferenceEvent)
+
+case class DifferenceEventRuleView(event:DifferenceEvent) {
+  def getId = event.objId.id
+  def getUpstream = event.upstreamVsn
+  def getDownstream = event.downstreamVsn
+  def getDetectedAt = event.detectedAt
+  def getLastSeen = event.lastSeen
+
+  def getHasUpstream = event.upstreamVsn != null
+  def getUpstreamMissing = !getHasUpstream
+  def getHasDownstream = event.downstreamVsn != null
+  def getDownstreamMissing = !getHasDownstream
+  def isMismatch = getHasUpstream && getHasDownstream && getUpstream != getDownstream
+}

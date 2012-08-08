@@ -44,17 +44,42 @@ class EscalationDefValidationTest extends DefValidationTestBase {
 
   @Test
   def validateAcceptsRuleForUpstreamVsn {
-    validateValidEscalationRule("upstreamVsn is null")
+    validateValidEscalationRule("upstream is null")
   }
 
   @Test
   def validateAcceptsRuleForDownstreamVsn {
-    validateValidEscalationRule("downstreamVsn is null")
+    validateValidEscalationRule("downstream is null")
   }
 
   @Test
   def validateAcceptsRuleForId {
     validateValidEscalationRule("id like 'a*'")
+  }
+
+  @Test
+  def validateAcceptsRuleForMismatch {
+    validateValidEscalationRule("mismatch")
+  }
+
+  @Test
+  def validateAcceptsRuleForUpstreamMissing {
+    validateValidEscalationRule("upstreamMissing")
+  }
+
+  @Test
+  def validateAcceptsRuleForDownstreamMissing {
+    validateValidEscalationRule("downstreamMissing")
+  }
+
+  @Test
+  def validateAcceptsRuleForHasUpstream {
+    validateValidEscalationRule("hasUpstream")
+  }
+
+  @Test
+  def validateAcceptsRuleForHasDownstream {
+    validateValidEscalationRule("hasDownstream")
   }
 
   @Test

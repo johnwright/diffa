@@ -32,9 +32,9 @@ object Step0045 extends VerifiedMigrationStep {
     migration.alterTable("escalations").
       addColumn("rule", Types.VARCHAR, 1024, true, null)
 
-    migration.sql("UPDATE escalations SET rule='upstreamVsn is null' WHERE event='missing-upstream'")
-    migration.sql("UPDATE escalations SET rule='downstreamVsn is null' WHERE event='missing-downstream'")
-    migration.sql("UPDATE escalations SET rule='upstreamVsn != downstreamVsn AND upstreamVsn != null AND downstreamVsn != null' WHERE event='mismatch'")
+    migration.sql("UPDATE escalations SET rule='upstreamMissing' WHERE event='upstream-missing'")
+    migration.sql("UPDATE escalations SET rule='downstreamMissing' WHERE event='downstream-missing'")
+      // The event 'mismatch' is still supported as-is
 
     migration.alterTable("escalations").
       dropColumn("origin").
@@ -85,7 +85,7 @@ object Step0045 extends VerifiedMigrationStep {
       "name"        -> escalation,
       "action"      -> repair,
       "action_type" -> "repair",
-      "rule"        -> "downstreamVsn is null",
+      "rule"        -> "downstreamMissing",
       "delay"       -> randomInt()
     ))
 
