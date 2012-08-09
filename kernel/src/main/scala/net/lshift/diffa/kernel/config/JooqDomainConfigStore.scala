@@ -606,6 +606,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
       jooq.execute(t => {
         t.insertInto(BREAKERS).
           set(Map(BREAKERS.DOMAIN -> domain, BREAKERS.PAIR_KEY -> pair, BREAKERS.NAME -> name)).
+          onDuplicateKeyIgnore().
           execute()
       })
 
