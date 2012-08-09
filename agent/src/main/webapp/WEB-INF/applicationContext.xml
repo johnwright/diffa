@@ -134,6 +134,7 @@
     <constructor-arg ref="actionsFrontend" />
     <constructor-arg ref="reportManager" />
     <constructor-arg ref="actorSystem" />
+    <constructor-arg ref="breakerHelper" />
   </bean>
 
   <bean id="reportManager" class="net.lshift.diffa.kernel.reporting.ReportManager">

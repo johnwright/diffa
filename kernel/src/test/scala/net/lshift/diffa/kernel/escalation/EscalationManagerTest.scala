@@ -159,6 +159,9 @@ class EscalationManagerTest {
     val actionCompletionMonitor = new CountDownLatch(1)
     val schedulingCompletionMonitor = new CountDownLatch(1)
 
+      // Don't let the breakers stop anything
+    expect(configStore.isBreakerTripped(EasyMock.eq("d"), EasyMock.eq("p1"), anyString)).andStubReturn(false)
+
     // Return our pair to have a corresponding actor started
     expect(systemConfig.listPairs).andReturn(
       Seq(DomainPairDef(domain = event.objId.pair.domain, key = event.objId.pair.key)))
