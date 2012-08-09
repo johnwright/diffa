@@ -43,7 +43,7 @@
     <rabbitmq.version>2.7.0</rabbitmq.version>
     <accent.version>0.9</accent.version>
     <commons.io.version>2.0.1</commons.io.version>
-    <hector.version>1.1-0</hector.version>
+    <hector.version>1.1-1</hector.version>
     <jersey.version>1.13</jersey.version>
     <urlrewritefilter.version>4.0.3</urlrewritefilter.version>
     <jackson.version>1.9.2</jackson.version>
@@ -478,6 +478,17 @@
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
       <version>1.2.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hectorclient</groupId>
+      <artifactId>hector-test</artifactId>
+      <version>${hector.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.stephenc</groupId>
+      <artifactId>jamm</artifactId>
+      <version>0.2.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
