@@ -35,6 +35,7 @@
     <!-- Patched from: https://github.com/0x6e6562/hibernate-core/commit/615aa049e7a557d4a8506a09eb1d2be38714b78f -->
     <hibernate.version>3.6.7-2L</hibernate.version>
 
+    <commons.cli.version>1.2</commons.cli.version>
     <hsqldb.version>2.2.8</hsqldb.version>
     <postgresql.version>9.1-901.jdbc4</postgresql.version>
     <bonecp.version>0.7.1.RELEASE</bonecp.version>
@@ -42,6 +43,7 @@
     <rabbitmq.version>2.7.0</rabbitmq.version>
     <accent.version>0.9</accent.version>
     <commons.io.version>2.0.1</commons.io.version>
+    <hector.version>1.1-0</hector.version>
     <jersey.version>1.13</jersey.version>
     <urlrewritefilter.version>4.0.3</urlrewritefilter.version>
     <jackson.version>1.9.2</jackson.version>
@@ -56,6 +58,7 @@
     <quartz.version>2.1.3</quartz.version>
     <wroj.version>1.4.4</wroj.version>
     <hazelcast.version>2.1.2</hazelcast.version>
+    <metrics.version>2.1.2</metrics.version>
   </properties>
 
   <scm>
@@ -185,6 +188,21 @@
         <exclusion>
           <groupId>commons-logging</groupId>
           <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.hectorclient</groupId>
+      <artifactId>hector-core</artifactId>
+      <version>${hector.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -419,7 +437,7 @@
     <dependency>
       <groupId>commons-cli</groupId>
       <artifactId>commons-cli</artifactId>
-      <version>1.2</version>
+      <version>${commons.cli.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -503,6 +521,11 @@
       <groupId>org.jooq</groupId>
       <artifactId>jooq</artifactId>
       <version>${jooq.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.yammer.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
+      <version>${metrics.version}</version>
     </dependency>
   </dependencies>
   </dependencyManagement>
