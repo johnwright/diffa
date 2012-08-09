@@ -17,10 +17,12 @@
 package net.lshift.diffa.kernel.diag
 
 import net.lshift.diffa.kernel.config.DiffaPairRef
-import org.codehaus.jackson.JsonGenerator
 import org.joda.time.DateTime
+import org.codehaus.jackson.{JsonNode, JsonGenerator}
 
-
+/**
+ * Stores diagnostic explanation logs.
+ */
 trait ExplainLogStore {
 
   def logPairExplanation(scanId: Option[Long], pair: DiffaPairRef, source: String, msg: String)
@@ -31,6 +33,10 @@ trait ExplainLogStore {
                                    tag: String,
                                    requestTimestamp: DateTime,
                                    f: JsonGenerator => Unit)
+
+  def retrieveExplanations(pair: DiffaPairRef, start: DateTime, end: DateTime, count: Int): Iterable[ExplainLogEntry]
+
+  def retrieveAttachment(pair: DiffaPairRef, attachmentId: String): Option[JsonNode]
 }
 
 object NoOpExplainLogStore extends ExplainLogStore {
@@ -43,4 +49,10 @@ object NoOpExplainLogStore extends ExplainLogStore {
                                    tag: String,
                                    requestTimestamp: DateTime,
                                    f: JsonGenerator => Unit) {}
+
+  def retrieveExplanations(pair: DiffaPairRef, start: DateTime, end: DateTime, count: Int): Iterable[ExplainLogEntry] =
+    Nil
+
+  def retrieveAttachment(pair: DiffaPairRef, attachmentId: String): Option[JsonNode] =
+    None
 }

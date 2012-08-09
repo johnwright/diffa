@@ -184,7 +184,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
       // Generate a diagnostic object detailing the response provided by the participant
       diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Aggregates", requestTimestamp, json => {
-        writeCommonHeader(json, pair, endpoint, requestTimestamp, responseTimestamp)
+        writeCommonFields(json, endpoint, requestTimestamp, responseTimestamp)
 
         json.writeArrayFieldStart("bucketing")
         for (b <- bucketing) json.writeObject(b)
@@ -226,7 +226,7 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
 
       // Generate a diagnostic object detailing the response provided by the participant
       diagnostics.logPairExplanationAttachment(Some(scanId), pair, "Version Policy", name + "-Entities", requestTimestamp, json => {
-        writeCommonHeader(json, pair, endpoint, requestTimestamp, responseTimestamp)
+        writeCommonFields(json, endpoint, requestTimestamp, responseTimestamp)
 
         json.writeArrayFieldStart("constraints")
         for (c <- constraints) json.writeObject(c)
@@ -261,11 +261,10 @@ abstract class BaseScanningVersionPolicy(val stores:VersionCorrelationStoreFacto
         .foreach(handleMismatch(Some(scanId), pair, writer, _, listener))
     }
 
-    private def writeCommonHeader(json:JsonGenerator, pair:DiffaPairRef, endpoint:Endpoint, requestTimestamp:DateTime, responseTimestamp:DateTime) = {
-      json.writeStringField("pair", pair.toString)
+    private def writeCommonFields(json:JsonGenerator, endpoint:Endpoint, requestTimestamp:DateTime, responseTimestamp:DateTime) = {
       json.writeStringField("endpoint", endpoint.name)
-      json.writeStringField("requestedAt", requestTimestamp.toString)
-      json.writeStringField("responseReceivedAt", responseTimestamp.toString)
+      json.writeStringField("requestTimestamp", requestTimestamp.toString)
+      json.writeStringField("responseTimestamp", responseTimestamp.toString)
 
       val timeTaken = new Interval(requestTimestamp,responseTimestamp).toPeriod()
       json.writeStringField("timeTaken", timeTaken.toString)

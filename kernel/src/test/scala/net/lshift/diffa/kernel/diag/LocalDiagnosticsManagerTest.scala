@@ -12,6 +12,7 @@ import net.lshift.diffa.kernel.config._
 import net.lshift.diffa.schema.servicelimits._
 import system.SystemConfigStore
 import net.lshift.diffa.kernel.frontend.DomainPairDef
+import org.codehaus.jackson.JsonGenerator
 
 class LocalDiagnosticsManagerTest {
   val domainConfigStore = createStrictMock(classOf[DomainConfigStore])
@@ -124,7 +125,7 @@ class LocalDiagnosticsManagerTest {
     val pair = DiffaPairRef(pairKey, domainName)
 
     val timestamp = new DateTime(2012, 8, 3, 11, 53, 07, 123)
-    val callback = (os: OutputStream) => os.write("{a: 1}".getBytes("UTF-8"))
+    val callback = (json: JsonGenerator) => ()
 
     expect(explainLogStore.logPairExplanationAttachment(None, pair, "Test Case", "upstream-foo", timestamp, callback))
     replay(explainLogStore)
