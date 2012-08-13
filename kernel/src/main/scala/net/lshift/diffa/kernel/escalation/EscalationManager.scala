@@ -159,10 +159,12 @@ class EscalationManager(val config:DomainConfigStore,
     escalations.sortBy(e => (e.delay, e.name))
 
   def escalateDiffs() {
-    diffs.pendingEscalatees(DateTime.now(), diff => {
-      findActor(diff.objId) ! Escalate(diff)
-      progressDiff(diff)
-    })
+    diffs.pendingEscalatees(DateTime.now(), escalateDiff(_))
+  }
+
+  def escalateDiff(diff:DifferenceEvent) {
+    findActor(diff.objId) ! Escalate(diff)
+    progressDiff(diff)
   }
 
   def progressDiff(diff:DifferenceEvent) {
