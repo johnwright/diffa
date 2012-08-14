@@ -69,7 +69,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
   private val cachedEndpoints = cacheProvider.getCachedMap[String, java.util.List[DomainEndpointDef]]("domain.endpoints")
   private val cachedEndpointsByKey = cacheProvider.getCachedMap[DomainEndpointKey, DomainEndpointDef]("domain.endpoints.by.key")
   private val cachedPairsByEndpoint = cacheProvider.getCachedMap[DomainEndpointKey, java.util.List[DomainPairDef]]("domain.pairs.by.endpoint")
-  private val cachedBreakers = cacheProvider.getCachedMap[BreakerKey, Boolean]("domain.pairs.breakers")
+  private val cachedBreakers = cacheProvider.getCachedMap[BreakerKey, Boolean](DOMAIN_PAIR_BREAKERS)
 
   // Config options
   private val cachedDomainConfigOptionsMap = cacheProvider.getCachedMap[String, java.util.Map[String,String]](DOMAIN_CONFIG_OPTIONS_MAP)
@@ -585,7 +585,7 @@ class JooqDomainConfigStore(jooq:JooqDatabaseFacade,
 
   def isBreakerTripped(domain: String, pair: String, name: String) = {
     cachedBreakers.readThrough(BreakerKey(domain, pair, name), () => jooq.execute(t => {
-      val c = t.select(count(BREAKERS.NAME)).
+      val c = t.selectCount().
         from(BREAKERS).
         where(BREAKERS.DOMAIN.equal(domain)).
           and(BREAKERS.PAIR_KEY.equal(pair)).
